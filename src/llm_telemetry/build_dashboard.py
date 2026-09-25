@@ -188,8 +188,30 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  #flowwrap{position:relative;width:100%;height:calc(100vh - 250px);min-height:460px}
  #flow{width:100%;height:100%;display:block;cursor:grab}
  #flow.drag{cursor:grabbing}
+ /* Work-proportional glow. --heat (0..1) is sqrt(calls/maxCalls), set per node
+    in renderFlow, so the busiest node burns brightest and idle ones stay flat.
+    drop-shadow on the GROUP (not the circle) so the label glows with it.
+    Radii are generous (up to 26px): a 9px blur on a 26px node was measurably
+    present but invisible against the dark card. Three stacked shadows — tight
+    core, mid bloom, wide falloff — read as light rather than a flat ring. */
+ .nd{cursor:grab;
+   filter:drop-shadow(0 0 calc(1px + 5px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(95% * var(--heat,0)), transparent))
+          drop-shadow(0 0 calc(2px + 13px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(75% * var(--heat,0)), transparent))
+          drop-shadow(0 0 calc(3px + 26px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(45% * var(--heat,0)), transparent));
+   transition:filter .18s ease}
+ /* Dragging overrides the heat ramp: while held, a node is always legible. */
+ .nd.dragging{cursor:grabbing;
+   filter:drop-shadow(0 0 8px color-mix(in srgb, var(--glow,#fff) 95%, transparent))
+          drop-shadow(0 0 22px color-mix(in srgb, var(--glow,#fff) 70%, transparent))}
+ .nd.dragging circle{stroke-width:2.5}
+ /* A node the user placed keeps a thin ring, so deliberate layout survives
+    visually even after the pointer leaves. */
+ .nd.pinned circle{stroke-dasharray:2 2}
  #flow .lnk{stroke:var(--border);stroke-opacity:.55;fill:none}
- #flow .nd{cursor:pointer}
+ /* grab, not pointer: these nodes are draggable. Higher specificity than the
+    .nd base rule, so it must carry the drag cursor too. */
+ #flow .nd{cursor:grab}
+ #flow .nd.dragging{cursor:grabbing}
  #flow .nd circle{transition:stroke-width .12s ease}
  #flow .nd text{font-size:9px;fill:var(--muted);pointer-events:none;
    text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:2.5px}
@@ -1776,6 +1798,16 @@ function renderFlow(rows){
     c.setAttribute('stroke-width','1.5');
     g.appendChild(c);
 
+    // Glow intensity = how much work this node did, as a share of the busiest
+    // node. sqrt matches the radius scale, so glow and size tell the same
+    // story; a linear ramp would leave everything but the top node dark.
+    // Stored as a CSS var so the drag handler can brighten without recomputing.
+    const heat = Math.sqrt(n.calls / maxCalls) || 0;
+    n.heat = heat;
+    g.style.setProperty('--heat', heat.toFixed(3));
+    g.style.setProperty('--glow', col);
+    n.circle = c;
+
     // Label every node big enough to carry one; tiny task nodes stay bare and
     // rely on the tooltip, otherwise the graph turns into a word cloud.
     if (n.kind !== 'task' || R(n) > 9){
@@ -1788,8 +1820,72 @@ function renderFlow(rows){
     n.el = g; gn.appendChild(g);
   });
 
-  // --- interaction: hover focuses a subtree, tooltip shows the numbers ---
+  // --- interaction: drag to reposition, hover focuses a subtree ---
+  // Dragging is worth the complexity here: the force layout optimises for "no
+  // overlaps", not "the comparison you care about" — let people pull a node
+  // clear of its neighbours to read it.
   const tip = $('flowtip');
+
+  // Viewport px -> SVG user units. The SVG is scaled by CSS (viewBox 0 0 W H
+  // rendered into whatever the card is), so using clientX directly makes the
+  // node drift away from the cursor on any non-1:1 card.
+  function toSvg(ev){
+    const b = svg.getBoundingClientRect();
+    return { x: (ev.clientX - b.left) * (W / b.width),
+             y: (ev.clientY - b.top)  * (H / b.height) };
+  }
+
+  let drag = null;
+  function moveNode(n, x, y){
+    const r = R(n) + 4;
+    n.x = Math.max(r, Math.min(W - r, x));
+    n.y = Math.max(r, Math.min(H - r, y));
+    n.el.setAttribute('transform', `translate(${n.x.toFixed(1)},${n.y.toFixed(1)})`);
+    // Redraw only the links touching this node — rebuilding all of them on
+    // every pointermove is what makes naive drag implementations stutter.
+    links.forEach(l => {
+      if (l.s !== n && l.t !== n) return;
+      const mx = (l.s.x + l.t.x) / 2, my = (l.s.y + l.t.y) / 2;
+      const dx = l.t.x - l.s.x, dy = l.t.y - l.s.y;
+      const nx = -dy * 0.12, ny = dx * 0.12;
+      l.el.setAttribute('d',
+        `M${l.s.x.toFixed(1)},${l.s.y.toFixed(1)} Q${(mx+nx).toFixed(1)},${(my+ny).toFixed(1)} ${l.t.x.toFixed(1)},${l.t.y.toFixed(1)}`);
+    });
+  }
+
+  nodes.forEach(n => {
+    if (n.kind === 'root') return;          // root is pinned to the centre
+    n.el.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      const p = toSvg(ev);
+      drag = { n, dx: n.x - p.x, dy: n.y - p.y, moved: false };
+      // Capture on the SVG, not the node: a fast drag outruns the cursor and
+      // would otherwise drop the node the moment the pointer leaves its circle.
+      svg.setPointerCapture(ev.pointerId);
+      svg.classList.add('drag');
+      n.el.classList.add('dragging');
+    });
+  });
+
+  svg.addEventListener('pointermove', ev => {
+    if (!drag) return;
+    const p = toSvg(ev);
+    drag.moved = true;
+    moveNode(drag.n, p.x + drag.dx, p.y + drag.dy);
+  });
+
+  function endDrag(ev){
+    if (!drag) return;
+    drag.n.el.classList.remove('dragging');
+    // Mark as user-placed so it reads as deliberately positioned, and so a
+    // future re-layout can respect the placement instead of snapping it back.
+    if (drag.moved) drag.n.el.classList.add('pinned');
+    svg.classList.remove('drag');
+    try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
+    drag = null;
+  }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
   const kids = new Map();          // node -> descendant set (computed once)
   function descend(n, set){ (n.kids||[]).forEach(k => { set.add(k); descend(k, set); }); return set; }
   nodes.forEach(n => kids.set(n, descend(n, new Set())));
