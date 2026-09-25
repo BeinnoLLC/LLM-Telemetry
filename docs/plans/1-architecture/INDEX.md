@@ -218,6 +218,37 @@ dimension on this page. Ctrl+F is the feature.
 - [ ] **P6-05 · First tests for the price sheet** 🟡 ⏱ 3h ·
       [`P6-05`](./phase-06-price-sheet/tickets/P6-05.md)
 
+## 7. Local cost & settings (0/5)
+
+Local models report **$0**. They are not free — they burn electricity.
+Full plan: [`phase-07-local-cost-and-settings/INDEX.md`](./phase-07-local-cost-and-settings/INDEX.md)
+
+Measured on live data: 8 local models, 55.5M in / 1.17M out tokens, real
+electricity cost **$1.0355**, reported **$0.00**. `build_costs.py` already has a
+complete working power model (`local_rates()`, tariff 0.047 USD/kWh, 350 W GPU +
+90 W host) — but `pricing.py` never calls it: `rates_for()` returns `None` for
+local models, so `price_row()` leaves `market_value_usd = 0.0` on every local
+row. The model lives in one module, the cost path in another, and the two were
+never connected.
+
+The label is worse than the dollars: the class is literally named **"free"**,
+while `build_costs.py`'s own docstring says *"Local models are NOT free in
+reality"*. Also found: `Config.electricity_rate_kwh` is documented in the README
+and read **nowhere** — dead config, with `build_costs.py` hardcoding its own
+copy.
+
+- [ ] **P7-01 · Price local models from the tariff** 🟡 ⏱ 4h ·
+      [`P7-01`](./phase-07-local-cost-and-settings/tickets/P7-01.md)
+- [ ] **P7-02 · Tariff from config, not hardcoded constants** 🟢 ⏱ 2h ·
+      [`P7-02`](./phase-07-local-cost-and-settings/tickets/P7-02.md)
+- [ ] **P7-03 · Settings page: tariff + hardware, explained** 🟡 ⏱ 4h ·
+      [`P7-03`](./phase-07-local-cost-and-settings/tickets/P7-03.md)
+- [ ] **P7-04 · Stop calling local models "free"** 🟢 ⏱ 2h ·
+      [`P7-04`](./phase-07-local-cost-and-settings/tickets/P7-04.md)
+- [ ] **P7-05 · Tests for the electricity cost model** 🟢 ⏱ 2h ·
+      [`P7-05`](./phase-07-local-cost-and-settings/tickets/P7-05.md)
+
+
 
 
 ## Decisions for the owner (not tasks)
