@@ -371,6 +371,18 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .ev.err .b{color:#fca5a5}
  #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
    display:flex;align-items:center;justify-content:space-between;font-size:10px}
+ /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
+    because auto-fit + a fixed `span 2` disagree about the column count and
+    leave dead space or a 0px track. Below 1000px the charts go under the list
+    full-width rather than squeezing into an unreadable column. */
+ .livegrid{display:grid;gap:var(--gap);align-items:stretch;
+   grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}
+ .livegrid > *{min-width:0}
+ @media(max-width:1000px){
+   .livegrid{grid-template-columns:minmax(0,1fr)}
+   /* the list is height-capped for the side-by-side case; unpin it when stacked */
+   .livegrid > .card:first-child{max-height:none !important}
+ }
  /* Mobile */
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
@@ -429,8 +441,14 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
        used to stop short and leave a dead gap. Capping the row height and
        letting the list scroll inside itself keeps both columns the same height
        at any session count. -->
-  <div style="display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));align-items:stretch" id="live-grid">
-   <div class="card p-4" style="grid-column:span 2;min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px)">
+  <!-- Explicit two-column layout, NOT auto-fit. The list used to carry
+      `grid-column:span 2` against an auto-fit track list, so the column count
+      changed with width while the span stayed at 2: at ~900px the charts wrapped
+      onto their own row at half width (leaving ~465px dead), and at 640px the
+      track list collapsed to `589px 0px` — a zero-width column with the list
+      overflowing it. Fixed tracks + a media query remove both failure modes. -->
+ <div class="livegrid" id="live-grid">
+   <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px)">
     <div class="lbl mb-2.5 shrink-0">In progress now <span id="livestamp" class="muted text-[9px] normal-case tracking-normal ml-1">live · every 5s</span></div>
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>

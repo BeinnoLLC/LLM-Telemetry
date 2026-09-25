@@ -2350,4 +2350,37 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) pollL
 setInterval(() => { if(!document.hidden) doRefresh(true); }, 60000);
 // catch up immediately when the tab comes back to the foreground
 document.addEventListener('visibilitychange', () => { if(!document.hidden) doRefresh(true); });
-</script></body></html>
+</script><script>addEventListener('load',function(){setTimeout(function(){var b=[].slice.call(document.querySelectorAll('[data-vtab]')).filter(function(x){return x.dataset.vtab==='Detail';})[0];if(b)b.click();setTimeout(function(){(function(){
+  var out=[];
+  var de=document.documentElement;
+  var vw=de.clientWidth;
+  out.push('VW '+vw);
+  if(de.scrollWidth>vw+1) out.push('OVERFLOW doc '+de.scrollWidth+'>'+vw);
+  document.querySelectorAll('*').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.width>0&&r.right>vw+2){
+      var id=el.id?('#'+el.id):(el.className&&el.className.baseVal===undefined?('.'+String(el.className).split(' ').slice(0,2).join('.')):el.tagName);
+      out.push('SPILL '+id+' right='+Math.round(r.right)+' w='+Math.round(r.width));
+    }
+  });
+  document.querySelectorAll('[data-view]').forEach(function(v){
+    if(v.hidden) return;
+    v.querySelectorAll('div[style*="grid-template-columns"]').forEach(function(g){
+      var cs=getComputedStyle(g).gridTemplateColumns;
+      out.push('GRID '+(g.id||'-')+' cols='+cs);
+    });
+  });
+  var t=document.getElementById('cTools');
+  if(t){var r=t.getBoundingClientRect();out.push('CTOOLS w='+Math.round(r.width)+' h='+Math.round(r.height));}
+  var lg=document.getElementById('live-grid');
+  if(lg){
+    var kids=[].slice.call(lg.children).map(function(c){return Math.round(c.getBoundingClientRect().width);});
+    out.push('LIVEGRID kids='+kids.join(','));
+  }
+  document.title='AUDIT::'+out.join(' || ');
+  var pre=document.createElement('pre');
+  pre.id='auditout';
+  pre.textContent=out.join('\n');
+  document.body.insertBefore(pre,document.body.firstChild);
+})();
+},700);},900);});</script></body></html>
