@@ -24,3 +24,4 @@ tests/node_modules
 .DS_Store
 *.png
 !docs/*.png
+examples/reports/_*.html
