@@ -271,8 +271,12 @@ upload figure 3.65x — P8-06 settles it before the views are built.
       [`P8-01`](./phase-08-bandwidth/tickets/P8-01.md)
 - [ ] **P8-02 · Bandwidth columns in the model and provider tables** 🟡 ⏱ 4h ·
       [`P8-02`](./phase-08-bandwidth/tickets/P8-02.md)
-- [ ] **P8-03 · Live view: per-session bandwidth** 🟡 ⏱ 4h ·
-      [`P8-03`](./phase-08-bandwidth/tickets/P8-03.md)
+- [x] **P8-03 · Live view: per-session bandwidth** 🟡 ⏱ 4h ·
+      [`P8-03`](./phase-08-bandwidth/tickets/P8-03.md) — shipped `87a084a`:
+      up/down arrows per live row plus an aggregated card above the fold.
+      Classification is **per-endpoint**, not per-session: all 7 live sessions
+      used both a local and a hosted endpoint, so a per-session `is_local` flag
+      misattributed 4.6 GB of metered traffic as LAN.
 - [ ] **P8-04 · Persist bandwidth per day** 🟡 ⏱ 3h ·
       [`P8-04`](./phase-08-bandwidth/tickets/P8-04.md)
 - [ ] **P8-05 · Bandwidth trend and context re-send panel** 🟡 ⏱ 3h ·
@@ -280,6 +284,35 @@ upload figure 3.65x — P8-06 settles it before the views are built.
 - [ ] **P8-06 · Settle request-body gzip** 🟢 ⏱ 2h ·
       [`P8-06`](./phase-08-bandwidth/tickets/P8-06.md)
 
+
+
+
+## 9. Brand, transcript preview, and unused signals (1/6)
+
+Branding the header, a read-only transcript preview from live rows, and four
+panels built from columns the DB already stores but nothing reads.
+Full plan: [`phase-09-insights/`](./phase-09-insights/)
+
+The theme of the phase: **the collector already gathers more than the UI shows**.
+`compression_fallback_streak` and `compression_ineffective_count` are populated
+on 292 sessions, `end_reason` on 279, and none of it renders anywhere.
+
+- [x] **P9-01 · Brand the header: logo before the title** 🟢 ⏱ 2h ·
+      [`P9-01`](./phase-09-insights/tickets/P9-01.md) — shipped `799a504`.
+      The requested rename was already done in `17fea48`; the real gap was the
+      missing logo.
+- [ ] **P9-02 · Read-only chat transcript modal** 🔴 ⏱ 8h ·
+      [`P9-02`](./phase-09-insights/tickets/P9-02.md) — **blocked on an owner
+      decision**: one live session holds 72,421 messages / 30.6 MB, which cannot
+      be inlined into a static artifact.
+- [ ] **P9-03 · Context bloat panel** 🟡 ⏱ 4h ·
+      [`P9-03`](./phase-09-insights/tickets/P9-03.md)
+- [ ] **P9-04 · Compression and session-end signals** 🟡 ⏱ 4h ·
+      [`P9-04`](./phase-09-insights/tickets/P9-04.md)
+- [ ] **P9-05 · Flag unpriced models costing $0** 🟡 ⏱ 3h ·
+      [`P9-05`](./phase-09-insights/tickets/P9-05.md)
+- [ ] **P9-06 · Concurrency panel** 🟡 ⏱ 3h ·
+      [`P9-06`](./phase-09-insights/tickets/P9-06.md)
 
 
 
