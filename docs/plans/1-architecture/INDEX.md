@@ -248,6 +248,38 @@ copy.
 - [ ] **P7-05 · Tests for the electricity cost model** 🟢 ⏱ 2h ·
       [`P7-05`](./phase-07-local-cost-and-settings/tickets/P7-05.md)
 
+## 8. Bandwidth (0/6)
+
+Estimate upload/download per session and model, render it in the tables, keep
+tracking it. Epic [#77](https://github.com/BeinnoLLC/LLM-Telemetry/issues/77).
+Full plan: [`phase-08-bandwidth/INDEX.md`](./phase-08-bandwidth/INDEX.md)
+
+No byte counters exist in the schema and `messages.token_count` is NULL in all
+425,427 rows, so bandwidth is derived: a session-level join gives **~4.6 bytes
+per token** (reproducible via `examples/recalibrate_bytes_per_token.py`). The
+finding that shapes the phase: **97.6%** of prompt tokens are `cache_read`, so
+context is re-sent **42x** per unique stored byte. Estimate is **18.74 GB up /
+0.07 GB down** over 31,782 calls — a 278:1 ratio, inverted versus normal web
+traffic.
+
+Prefix-vs-handle caching is **resolved** from live data (`cache_write > 0` and
+146k read tokens per call on Anthropic = prefix caching, so those tokens really
+do cross the wire). Request-body gzip is **not** resolved and would cut the
+upload figure 3.65x — P8-06 settles it before the views are built.
+
+- [ ] **P8-01 · Byte estimator, calibrated, assumptions named** 🟡 ⏱ 4h ·
+      [`P8-01`](./phase-08-bandwidth/tickets/P8-01.md)
+- [ ] **P8-02 · Bandwidth columns in the model and provider tables** 🟡 ⏱ 4h ·
+      [`P8-02`](./phase-08-bandwidth/tickets/P8-02.md)
+- [ ] **P8-03 · Live view: per-session bandwidth** 🟡 ⏱ 4h ·
+      [`P8-03`](./phase-08-bandwidth/tickets/P8-03.md)
+- [ ] **P8-04 · Persist bandwidth per day** 🟡 ⏱ 3h ·
+      [`P8-04`](./phase-08-bandwidth/tickets/P8-04.md)
+- [ ] **P8-05 · Bandwidth trend and context re-send panel** 🟡 ⏱ 3h ·
+      [`P8-05`](./phase-08-bandwidth/tickets/P8-05.md)
+- [ ] **P8-06 · Settle request-body gzip** 🟢 ⏱ 2h ·
+      [`P8-06`](./phase-08-bandwidth/tickets/P8-06.md)
+
 
 
 
