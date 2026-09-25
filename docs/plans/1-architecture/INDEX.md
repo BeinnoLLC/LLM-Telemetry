@@ -126,6 +126,69 @@ get. Today the collectors have no type checking and no direct tests.
       place. 🟢 ⏱ 2h ·
       Ticket [`P3-03`](./phase-03-collectors/tickets/P3-03.md)
 
+## 4. Project distribution (0/12)
+
+Answer "where did my spend actually go?" per *project*, not per profile or model.
+Full plan: [`phase-04-project-distribution/INDEX.md`](./phase-04-project-distribution/INDEX.md)
+
+The premise ("projects are the session name") was measured against the live
+`state.db` before design, and needed adjusting on three counts: there is **no**
+session-name column (`display_name` is empty in all 282 rows), `title` is a
+headline rather than a key (the cron job fragments into 25 timestamped
+variants), and session-count coverage is only 16% — while *cost* coverage is
+85%. Hence the phase is built cost-weighted; a session-count chart would be 84%
+"unknown" and look broken.
+
+- [ ] **P4-01 · Project key resolver, defined once** 🟡 ⏱ 3h ·
+      [`P4-01`](./phase-04-project-distribution/tickets/P4-01.md)
+- [ ] **P4-02 · `project` dimension in the analytics payload** 🟡 ⏱ 3h ·
+      [`P4-02`](./phase-04-project-distribution/tickets/P4-02.md)
+- [ ] **P4-03 · Subagent/cron sessions inherit the parent project** 🟢 ⏱ 2h ·
+      [`P4-03`](./phase-04-project-distribution/tickets/P4-03.md)
+- [ ] **P4-04 · Unattributed is a first-class bucket** 🟢 ⏱ 2h ·
+      [`P4-04`](./phase-04-project-distribution/tickets/P4-04.md)
+- [ ] **P4-05 · Projects view: project × model matrix** 🟡 ⏱ 5h ·
+      [`P4-05`](./phase-04-project-distribution/tickets/P4-05.md)
+- [ ] **P4-06 · Project × provider distribution** 🟡 ⏱ 3h ·
+      [`P4-06`](./phase-04-project-distribution/tickets/P4-06.md)
+- [ ] **P4-07 · Project drill-down panel** 🟡 ⏱ 4h ·
+      [`P4-07`](./phase-04-project-distribution/tickets/P4-07.md)
+- [ ] **P4-08 · Cost/calls/tokens weighting toggle** 🟢 ⏱ 2h ·
+      [`P4-08`](./phase-04-project-distribution/tickets/P4-08.md)
+- [ ] **P4-09 · Project as a global cross-filter** 🟡 ⏱ 3h ·
+      [`P4-09`](./phase-04-project-distribution/tickets/P4-09.md)
+- [ ] **P4-10 · Per-project trend over time** 🟡 ⏱ 3h ·
+      [`P4-10`](./phase-04-project-distribution/tickets/P4-10.md)
+- [ ] **P4-11 · Projects nav entry + homepage card** 🟢 ⏱ 1h ·
+      [`P4-11`](./phase-04-project-distribution/tickets/P4-11.md)
+- [ ] **P4-12 · Per-project cost table in `costs.html`** 🟡 ⏱ 3h ·
+      [`P4-12`](./phase-04-project-distribution/tickets/P4-12.md)
+
+## 5. Profile autodiscovery (0/6)
+
+Discovery already works; the bugs are in how config interacts with it.
+Full plan: [`phase-05-profile-autodiscovery/INDEX.md`](./phase-05-profile-autodiscovery/INDEX.md)
+
+Two reproduced defects. `"profiles": []` in `examples/sample-config.json` is
+ignored and autodiscovery runs anyway — so **CI renders the sample dashboard
+from the developer's real `~/.hermes`**, making the green build meaningless and
+bypassing the leak gate. And naming one profile in config makes every other
+on-disk profile invisible with no warning, so totals silently exclude it.
+
+- [ ] **P5-01 · `"profiles": []` must mean none, not "discover"** 🟢 ⏱ 1h ·
+      [`P5-01`](./phase-05-profile-autodiscovery/tickets/P5-01.md)
+- [ ] **P5-02 · Merge configured with discovered, never replace** 🟡 ⏱ 3h ·
+      [`P5-02`](./phase-05-profile-autodiscovery/tickets/P5-02.md)
+- [ ] **P5-03 · `agent_home` from config + env var** 🟢 ⏱ 2h ·
+      [`P5-03`](./phase-05-profile-autodiscovery/tickets/P5-03.md)
+- [ ] **P5-04 · Report discovered/skipped/unreadable profiles** 🟢 ⏱ 2h ·
+      [`P5-04`](./phase-05-profile-autodiscovery/tickets/P5-04.md)
+- [ ] **P5-05 · Pick up a profile created after the config** 🟢 ⏱ 2h ·
+      [`P5-05`](./phase-05-profile-autodiscovery/tickets/P5-05.md)
+- [ ] **P5-06 · CI must not read the real `~/.hermes`** 🟡 ⏱ 3h ·
+      [`P5-06`](./phase-05-profile-autodiscovery/tickets/P5-06.md)
+
+
 ## Decisions for the owner (not tasks)
 
 These are product calls. An agent that silently picks one has decided something
@@ -138,9 +201,10 @@ nobody reviewed.
       pressure" still needs a definition. Proposal: GPU ≥ 85% **and** queue ≥ 2
       sustained over three consecutive 5s probes, so a single spike does not
       light it up. **Needs approval on the numbers.**
-- [ ] **Should the repo name be fixed?** It is `LLM-Telemtry` (missing an `e`)
-      while the package is `llm-telemetry`. GitHub redirects renamed repos, so
-      the cost is low and one-time; leaving it is also defensible. Owner's call.
+- [x] **Should the repo name be fixed?** ~~It is `LLM-Telemtry` (missing an
+      `e`)~~ **Done** — renamed to `LLM-Telemetry`; remote, `pyproject.toml`
+      URLs and the README clone command updated. GitHub redirects the old name,
+      so existing links keep working.
 - [ ] **Does this stay a single-user tool?** The whole architecture above assumes
       one operator watching their own fleet from static files. Multi-user access
       would invalidate the "static files, no server" decision in ADR 0001 —

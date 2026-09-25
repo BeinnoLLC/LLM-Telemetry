@@ -32,8 +32,8 @@ verified perceptually (CIE76 ΔE) rather than by eye.
 ## Install
 
 ```bash
-git clone git@github.com:BeinnoLLC/LLM-Telemtry.git
-cd LLM-Telemtry
+git clone git@github.com:BeinnoLLC/LLM-Telemetry.git
+cd LLM-Telemetry
 pip install -e .
 ```
 
