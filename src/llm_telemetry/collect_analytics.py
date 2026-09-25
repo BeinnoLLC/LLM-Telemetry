@@ -125,6 +125,29 @@ order by coalesce(s.last_activity_at, s.started_at) desc
 """
 LIVE_COLS = "id title init_model phase idle_s parent tools model nmodels base_url".split()
 
+# Token totals per (live session, endpoint), for bandwidth estimation.
+#
+# Split per ENDPOINT, not per session: a session routinely runs several models
+# (up to 6 observed), so classifying a whole session by its current model
+# attributed gigabytes of metered traffic to the LAN. The caller decides which
+# URLs are local, using config.local_host_patterns — the patterns are not
+# duplicated into this SQL.
+#
+# Upload counts cache_read because every provider here uses PREFIX caching: the
+# client re-sends the whole prompt and the server merely skips recomputation, so
+# those tokens genuinely cross the link (verified: anthropic reports
+# cache_write > 0 and ~146k cache_read tokens per call).
+LIVE_BYTES = """
+select u.session_id,
+       coalesce(u.billing_base_url,''),
+       coalesce(sum(u.input_tokens + u.cache_read_tokens),0),
+       coalesce(sum(u.output_tokens),0)
+from session_model_usage u join sessions s on s.id = u.session_id
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+group by u.session_id, u.billing_base_url
+"""
+
 # Recent completed sessions (last 48h) for the Live tab activity table.
 RECENT_SESSIONS = """
 select s.id,
