@@ -1728,7 +1728,7 @@ const TOOL_ROSTER = [
   'read_file','write_file','patch','search_files','glob',
   'terminal','execute_code','process_manage',
   'web_search','web_extract','browser_exec',
-  'skill_view','skills_list','skill_manage','context_notes',
+  'skill_view','skills_list','skill_manage','context_notes','memory',
   'delegate_task','todo_list','clarify',
   'vision_analyze','text_to_speech',
   // Deferred/loadable tools also appear in logs; listing them keeps their
