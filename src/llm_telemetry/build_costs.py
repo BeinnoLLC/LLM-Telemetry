@@ -244,7 +244,15 @@ tbody tr:last-child td{border-bottom:none}
 @media(max-width:640px){.calcbox .out{margin-left:0;text-align:left}}
 </style></head><body><div class="wrap">
 <a class="back" href="dashboard.html">&larr; Analytics dashboard</a>
-<h1>Model price sheet</h1>
+<h1><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+  style="color:var(--accent);vertical-align:-3px;margin-right:8px">
+ <path d="M3 17.5 8 11l4 3.5L21 5"/>
+ <circle cx="8" cy="11" r="1.6" fill="currentColor" stroke="none"/>
+ <circle cx="12" cy="14.5" r="1.6" fill="currentColor" stroke="none"/>
+ <circle cx="21" cy="5" r="1.8" fill="currentColor" stroke="none"/>
+ <path d="M3 21h18" opacity=".35"/>
+</svg>Model price sheet</h1>
 <div class="sub">Exactly how every cost number on the dashboard is produced &mdash;
   per-million-token rates, their source, and the observed spend at those rates.
   <br>Generated __GEN__ &middot; OpenRouter catalogue: __CATSIZE__ models (__CATSRC__)

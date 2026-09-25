@@ -105,6 +105,8 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
  /* Canvases and long strings would otherwise set the track's min-content width
     and blow the grid out sideways. */
+ .brandmark{color:var(--accent);flex:0 0 auto}
+ @media(max-width:640px){.brandmark{width:20px;height:20px}}
  .grid-2 > *,.grid-auto > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
@@ -558,9 +560,23 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   <div class="lbl">loading analytics</div></div>
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
-  <div>
-   <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
-   <div class="muted text-[11px] mt-0.5"><span class="dot"></span><span id="meta"></span></div>
+  <div class="flex items-center gap-2">
+   <!-- Inline SVG, not a file: the dashboard is one self-contained artifact
+        (ADR 0001), so an external src would break opening it from file://.
+        currentColor so the mark follows the theme instead of vanishing. -->
+   <svg class="brandmark" viewBox="0 0 24 24" width="26" height="26" fill="none"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 17.5 8 11l4 3.5L21 5"/>
+    <circle cx="8" cy="11" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="14.5" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="21" cy="5" r="1.8" fill="currentColor" stroke="none"/>
+    <path d="M3 21h18" opacity=".35"/>
+   </svg>
+   <div>
+    <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
+    <div class="muted text-[11px] mt-0.5"><span class="dot"></span><span id="meta"></span></div>
+   </div>
   </div>
   <div class="flex gap-2 items-center flex-wrap">
    <div class="flex gap-1.5 flex-wrap" id="tabs"></div>
