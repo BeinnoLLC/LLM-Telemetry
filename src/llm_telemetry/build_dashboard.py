@@ -36,10 +36,34 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    --bg:#0b0f17; --card:#131822; --fg:#e6edf6; --muted:#8b98ab;
    --border:#232b39; --accent:#6366f1; --accent2:#22c55e;
    --fs:15px; --gap:16px; --pad:20px;
+   /* ---- Fluid type + spacing scale ---------------------------------
+      One continuous scale instead of per-breakpoint font rules. Every
+      step is clamp(min, preferred, max) so text grows with the viewport
+      and never drops below a legible floor on a phone: --fs-xs is 11px
+      at 360px, which is the smallest size we allow anywhere. */
+   --fs-xs:clamp(11px,.62vw + 8.8px,12px);
+   --fs-sm:clamp(12px,.70vw + 9.5px,13.5px);
+   --fs-md:clamp(13px,.75vw + 10.3px,15px);
+   --fs-lg:clamp(15px,1.1vw + 11px,18px);
+   --fs-xl:clamp(17px,1.8vw + 11px,24px);
+   --sp-1:4px;  --sp-2:6px;
+   --sp-3:clamp(8px,1vw,10px);
+   --sp-4:clamp(10px,1.4vw,14px);
+   --sp-5:clamp(14px,2vw,20px);
+   --sp-6:clamp(18px,2.8vw,28px);
+   /* Gauge sizing — a single knob drives stroke, ticks and readout. */
+   --gauge-size:84px;
+   /* Gauge severity zones, themeable without touching the SVG code. */
+   --z-ok:hsl(142 65% 45%); --z-warn:hsl(38 92% 52%); --z-bad:hsl(0 72% 55%);
+   --z-ok-fg:hsl(142 55% 52%); --z-warn-fg:hsl(38 88% 58%); --z-bad-fg:hsl(0 70% 64%);
+   --nav-w:232px; --rail-w:60px; --bar-h:52px;
  }
  [data-theme=light]{
    --bg:#f7f8fb; --card:#ffffff; --fg:#111827; --muted:#6b7280;
    --border:#e5e7eb; --accent:#4f46e5; --accent2:#16a34a;
+   /* Darker zone fills: the dark-theme hues fail 3:1 against a white card. */
+   --z-ok:hsl(142 62% 34%); --z-warn:hsl(32 92% 42%); --z-bad:hsl(0 70% 46%);
+   --z-ok-fg:hsl(142 62% 28%); --z-warn-fg:hsl(28 92% 35%); --z-bad-fg:hsl(0 70% 42%);
  }
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
@@ -73,6 +97,15 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  .grid-kpi{display:grid;gap:10px;
    grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))}
+ /* Two-up chart rows. Written as auto-fit rather than `1fr 1fr` so a narrow
+    viewport reflows to one column instead of producing two ~160px tracks that
+    hold a squashed canvas and force horizontal overflow. min() keeps the track
+    from ever exceeding the available width. */
+ .grid-2{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+ /* Canvases and long strings would otherwise set the track's min-content width
+    and blow the grid out sideways. */
+ .grid-2 > *,.grid-auto > *{min-width:0}
  /* Preloader */
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -93,6 +126,110 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    .loe .needle{animation:none;transform:rotate(var(--d))}
  }
  @keyframes loe-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+ /* ==== App shell: left nav drawer + top app bar ========================
+    Section navigation used to be a wrapping row of chips in the header,
+    competing with Logs/Rates/refresh/theme for the same line. The drawer
+    owns sections now; the bar owns global actions. Three drawer modes,
+    driven purely by width:
+      >=1200px  expanded (icon + label), pinned, content shifted right
+      641-1199  icon rail, labels on hover/tooltip
+      <=640px   off-canvas over a scrim, opened from the hamburger      */
+ #nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav-w);z-index:64;
+   background:var(--card);border-right:1px solid var(--border);
+   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+   transition:transform .2s ease,width .2s ease}
+ #nav::-webkit-scrollbar{width:6px}
+ #nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ .navbrand{display:flex;align-items:center;gap:8px;padding:14px 14px 12px;
+   font-weight:700;font-size:var(--fs-sm);letter-spacing:-.01em;flex:none;
+   border-bottom:1px solid var(--border)}
+ .navbrand svg{flex:none}
+ .navsec{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+   color:var(--muted);padding:12px 14px 4px;flex:none}
+ .navlist{display:flex;flex-direction:column;gap:2px;padding:6px 8px}
+ /* Real anchors, so middle-click and ⌘-click open a section in a new tab. */
+ .navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;
+   border-radius:6px;color:var(--muted);text-decoration:none;font-size:var(--fs-sm);
+   position:relative;min-height:40px;cursor:pointer;
+   border-left:2px solid transparent;transition:background .12s ease,color .12s ease}
+ .navitem:hover{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--fg)}
+ .navitem.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
+   border-left-color:var(--accent);font-weight:600}
+ .navico{width:20px;flex:none;text-align:center;font-size:14px;line-height:1}
+ .navlbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .navbadge{margin-left:auto;font-size:9px;font-weight:700;padding:1px 6px;
+   border-radius:999px;background:var(--border);color:var(--fg);flex:none;
+   font-variant-numeric:tabular-nums}
+ .navbadge.alert{background:#ef4444;color:#fff}
+ .navbadge[hidden]{display:none}
+ .navsep{height:1px;background:var(--border);margin:8px 12px;flex:none}
+ .navfoot{margin-top:auto;padding:10px 12px;font-size:9.5px;color:var(--muted)}
+ #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
+   cursor:pointer;font-size:13px;line-height:1;padding:2px 4px}
+ #navpin:hover{color:var(--accent)}
+ #navscrim{position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
+   backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
+ #navscrim.open{opacity:1;pointer-events:auto}
+ /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
+ body{--shell-pad:var(--nav-w)}
+ .shell{padding-left:var(--shell-pad);transition:padding-left .2s ease}
+
+ /* Top app bar — slim, sticky, one row at every width. */
+ .appbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;
+   gap:var(--sp-3);min-height:var(--bar-h);padding:var(--sp-2) var(--pad);
+   background:color-mix(in srgb,var(--bg) 88%,transparent);
+   backdrop-filter:blur(8px);border-bottom:1px solid transparent;
+   transition:border-color .15s ease}
+ .appbar.scrolled{border-bottom-color:var(--border)}
+ .appbar .bartitle{font-size:var(--fs-lg);font-weight:650;letter-spacing:-.02em;
+   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .appbar .barmeta{font-size:var(--fs-xs);color:var(--muted);white-space:nowrap;
+   overflow:hidden;text-overflow:ellipsis}
+ .baractions{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2)}
+ #hamburger{display:none;background:none;border:1px solid var(--border);
+   color:var(--fg);border-radius:6px;width:38px;height:38px;cursor:pointer;
+   font-size:16px;line-height:1;flex:none}
+ #hamburger:hover{border-color:var(--accent);color:var(--accent)}
+ /* Below ~480px the secondary actions collapse behind a ⋯ menu. */
+ #barmore{display:none;position:relative}
+ #barmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:45;
+   background:var(--card);border:1px solid var(--border);border-radius:8px;
+   padding:6px;min-width:172px;box-shadow:0 14px 34px rgba(0,0,0,.45);
+   flex-direction:column;gap:2px;display:none}
+ #barmenu.open{display:flex}
+ #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
+
+ /* ---- Home: navigation cards ---------------------------------------- */
+ .homegrid{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ .homecard{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-5);
+   text-decoration:none;color:inherit;border-radius:10px;
+   background:var(--card);border:1px solid var(--border);min-width:0;
+   transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}
+ .homecard:hover{transform:translateY(-2px);border-color:var(--accent);
+   box-shadow:0 10px 26px rgba(0,0,0,.28)}
+ .homecard .hc-top{display:flex;align-items:center;gap:9px}
+ .homecard .hc-ico{width:34px;height:34px;border-radius:9px;flex:none;
+   display:flex;align-items:center;justify-content:center;font-size:16px;
+   background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+ .homecard .hc-name{font-size:var(--fs-md);font-weight:650}
+ .homecard .hc-desc{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
+ .homecard .hc-stat{margin-top:auto;padding-top:var(--sp-2);font-size:var(--fs-sm);
+   font-weight:650;font-variant-numeric:tabular-nums}
+
+ /* ---- Empty states --------------------------------------------------- */
+ .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+   gap:6px;padding:var(--sp-6) var(--sp-4);text-align:center;color:var(--muted)}
+ .empty .e-ico{font-size:24px;opacity:.55;line-height:1}
+ .empty .e-msg{font-size:var(--fs-sm)}
+ .empty .e-hint{font-size:var(--fs-xs);opacity:.8}
+
+ /* A focus ring that is actually visible in both themes. Applied globally via
+    :focus-visible so keyboard users never lose their place, while mouse
+    clicks stay ring-free. */
+ :where(a,button,input,select,summary,[tabindex]):focus-visible{
+   outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
  /* Speedometer: LAST column, fixed width, so every gauge lands on the same
     vertical line no matter how long the title or model name is. The meta
     column beside it is fixed too — otherwise its width would shift the dial. */
