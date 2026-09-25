@@ -27,7 +27,7 @@ data["router"] = json.load(open(CFG.reports_dir / "router-data.json"))["profiles
 
 HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hermes Router Analytics</title>
+<title>LLM Telemetry</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%236366f1'/%3E%3Cg fill='%23fff'%3E%3Crect x='7' y='17' width='4' height='9' rx='1'/%3E%3Crect x='14' y='11' width='4' height='15' rx='1'/%3E%3Crect x='21' y='6' width='4' height='20' rx='1'/%3E%3C/g%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -369,7 +369,7 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
   <div>
-   <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">Model Router Analytics</div>
+   <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
    <div class="muted text-[11px] mt-0.5"><span class="dot"></span><span id="meta"></span></div>
   </div>
   <div class="flex gap-2 items-center flex-wrap">

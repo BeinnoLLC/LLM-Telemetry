@@ -1,4 +1,4 @@
-# llm-telemetry
+# LLM Telemetry
 
 Observability for a mixed LLM fleet — local Ollama boxes and hosted APIs on one
 dashboard. Reads agent telemetry from SQLite, probes inference hosts, and
