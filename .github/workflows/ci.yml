@@ -1,0 +1,32 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+
+      - name: Install
+        run: |
+          pip install -e .
+          npm install --no-save jsdom
+
+      - name: Leak gate (samples must carry nothing identifying)
+        run: python3 examples/check_no_leaks.py
+
+      - name: Render dashboard from committed sample data
+        env:
+          LLM_TELEMETRY_NO_COLLECT: '1'
+          LLM_TELEMETRY_CONFIG: examples/sample-config.json
+        run: python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
+
+      - name: DOM suites
+        env:
+          LLM_TELEMETRY_REPORTS: examples/reports
+          NODE_PATH: node_modules
+        run: node tests/run-all.js

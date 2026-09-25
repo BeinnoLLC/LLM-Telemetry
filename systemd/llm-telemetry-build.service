@@ -1,0 +1,7 @@
+[Unit]
+Description=Rebuild the LLM telemetry dashboard
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/llm-telemetry dashboard
+ExecStart=%h/.local/bin/llm-telemetry costs

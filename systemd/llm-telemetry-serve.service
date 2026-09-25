@@ -1,0 +1,14 @@
+[Unit]
+Description=Serve LLM telemetry reports
+After=network.target
+
+[Service]
+# Type=exec, not simple: systemd then reports a bind failure (port in use) as a
+# start failure instead of pretending the unit came up fine.
+Type=exec
+ExecStart=%h/.local/bin/llm-telemetry serve
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

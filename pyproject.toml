@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-telemetry"
+version = "0.1.0"
+description = "Observability dashboard for local and hosted LLM fleets: spend, routing, failures and GPU load."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Hazem Hagrass"}]
+keywords = ["llm", "observability", "dashboard", "ollama", "telemetry", "gpu"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: System :: Monitoring",
+]
+# PyYAML is the only hard dependency: the router page reads agent config.yaml
+# files. Everything else (sqlite3, urllib, http.server) is stdlib on purpose,
+# so this runs on a bare box with no build toolchain.
+dependencies = ["PyYAML>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/BeinnoLLC/LLM-Telemtry"
+Issues = "https://github.com/BeinnoLLC/LLM-Telemtry/issues"
+
+[project.scripts]
+llm-telemetry = "llm_telemetry.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

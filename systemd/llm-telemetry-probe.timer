@@ -1,0 +1,13 @@
+[Unit]
+Description=Probe inference hosts every 5s
+
+[Timer]
+OnBootSec=20s
+# 5s: GPU residency, queue depth and which model is resident change on the
+# scale of a single request. At 20s the panel routinely showed a box as idle
+# while it was mid-generation. The probe is cheap (local HTTP + nvidia-smi).
+OnUnitActiveSec=5s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

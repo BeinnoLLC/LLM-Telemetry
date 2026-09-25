@@ -1,0 +1,26 @@
+# Real telemetry: chat titles, spend, host addresses. Never commit.
+reports/
+*.db
+*.db-wal
+*.db-shm
+
+# Synthetic samples ARE committed (examples/reports/) so a clone renders.
+# live-data.json and ollama-data.json are committed TOO: the DOM suites read
+# them directly, so excluding them makes CI unrunnable on a fresh clone.
+!examples/reports/
+examples/reports/pricing-cache.json
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+node_modules/
+tests/node_modules
+
+.DS_Store
+*.png
+!docs/*.png

@@ -1,0 +1,6 @@
+[Unit]
+Description=Probe LLM inference hosts (GPU/queue/residency)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/llm-telemetry probe
