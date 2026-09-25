@@ -284,7 +284,7 @@ cost = <b>(input_tokens &times; input_rate)</b> + <b>(output_tokens &times; outp
 <br><span class="muted"># rates are resolved in this order, first hit wins:</span>
 <br>1. <b>local</b> &nbsp;&nbsp;&nbsp;&nbsp;&rarr; power model below (never counted as spend)
 <br>2. <b>vendor</b> &nbsp;&nbsp;&nbsp;&rarr; official pricing page, hardcoded in <b>pricing.py WEB_RATES</b>
-<br>3. <b>openrouter</b> &rarr; live OpenRouter catalogue, cached 24h, refreshed by cron
+<br>3. <b>openrouter</b> &rarr; live OpenRouter catalogue, cached 6h, refreshed by cron
 <br>4. <b>unpriced</b> &nbsp;&rarr; no rate found; contributes <b>$0</b> and is flagged red above
   </div>
 </div>

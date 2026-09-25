@@ -322,7 +322,8 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  /* ---- Flow graph (Provider -> model -> task) -------------------------
     Force-directed, rendered as plain SVG. No d3: the layout is ~100 nodes,
     so a small velocity-Verlet loop is cheaper than shipping a library. */
- #flowwrap{position:relative;width:100%;height:calc(100vh - 250px);min-height:460px}
+ #flowwrap{position:relative;width:100%;height:calc(100vh - 250px);
+   height:calc(100dvh - 250px);min-height:460px}
  #flow{width:100%;height:100%;display:block;cursor:grab}
  #flow.drag{cursor:grabbing}
  /* Work-proportional glow. --heat (0..1) is sqrt(calls/maxCalls), set per node
@@ -585,11 +586,11 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
       track list collapsed to `589px 0px` — a zero-width column with the list
       overflowing it. Fixed tracks + a media query remove both failure modes. -->
  <div class="livegrid" id="live-grid">
-   <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px)">
+   <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
     <div class="lbl mb-2.5 shrink-0">In progress now <span id="livestamp" class="muted text-[9px] normal-case tracking-normal ml-1">live · every 5s</span></div>
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
-   <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);min-width:0">
+   <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">By category</div><div style="flex:1;min-height:0;position:relative"><canvas id="cLiveCat"></canvas></div></div>
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
@@ -639,12 +640,12 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    <div style="height:clamp(130px,12vw,180px)"><canvas id="cProvDist"></canvas></div>
   </div>
   <!-- Row 2: Calls by model + Token share -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)" class="mb-4">
+  <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Calls by model</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cModels"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Token share</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cShare"></canvas></div></div>
   </div>
   <!-- Row 3: Daily activity + Hourly distribution -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)">
+  <div class="grid-2">
    <div class="card p-4"><div class="lbl mb-2.5">Daily activity</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cDaily"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Hourly distribution</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cHours"></canvas></div></div>
   </div>
@@ -652,12 +653,12 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 
  <div class="view" data-view="Cost" hidden>
   <!-- Row 1: Cost by category + Calls by task -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)" class="mb-4">
+  <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Cost by category</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTaskCost"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Calls by task</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTasks"></canvas></div></div>
   </div>
   <!-- Row 2: Cost by model + Provider mix -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)" class="mb-4">
+  <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Cost by model</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cModelCost"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Provider mix</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cProv"></canvas></div></div>
   </div>
