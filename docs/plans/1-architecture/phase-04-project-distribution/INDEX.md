@@ -3,7 +3,7 @@
 **Goal:** answer "where did my spend and my model usage actually go?" broken
 down by *project*, not by profile or model alone.
 
-**Status:** not started · 12 tickets · est ~34h
+**Status:** not started · 11 tickets (+1 withdrawn) · est ~31h
 
 ---
 
@@ -90,7 +90,14 @@ inheritance lifts attribution from 45 to 69 sessions at zero guesswork cost
 | P4-09 | Project as a global cross-filter | 3h | P4-05 |
 | P4-10 | Per-project trend over time | 3h | P4-02 |
 | P4-11 | Projects entry in the nav drawer + homepage card | 1h | #3, #4 |
-| P4-12 | Per-project cost table in `costs.html` | 3h | P4-02 |
+| ~~P4-12~~ | ~~Per-project cost table in `costs.html`~~ — **withdrawn** | — | — |
+
+**P4-12 was withdrawn** (#49). It was filed on a misreading of `costs.html`,
+which is a price sheet and debugging reference, not a spend report: it answers
+"what does a token cost right now", does not filter, and must not grow a
+project dimension. Per-project spend lives here in Phase 4 only — two pages
+computing the same total is two pages that can disagree. Price-sheet work moved
+to [Phase 6](../phase-06-price-sheet/INDEX.md).
 
 ## Sequencing
 

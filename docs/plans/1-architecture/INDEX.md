@@ -1,7 +1,7 @@
 # LLM Telemetry — v0.2 Plan: split the data plane from the presentation plane
 
 This plan closes the gap identified in
-[ADR 0001](../adr/0001-language-and-runtime-split.md): the collectors are sound,
+[ADR 0001](../../adr/0001-language-and-runtime-split.md): the collectors are sound,
 but the dashboard is a 1,789-line frontend application stored inside a Python
 string literal, where no linter, type checker, or editor can see it. Every
 recent hard-to-find bug came from that blind spot or from the unversioned
@@ -126,7 +126,7 @@ get. Today the collectors have no type checking and no direct tests.
       place. 🟢 ⏱ 2h ·
       Ticket [`P3-03`](./phase-03-collectors/tickets/P3-03.md)
 
-## 4. Project distribution (0/12)
+## 4. Project distribution (0/11, 1 withdrawn)
 
 Answer "where did my spend actually go?" per *project*, not per profile or model.
 Full plan: [`phase-04-project-distribution/INDEX.md`](./phase-04-project-distribution/INDEX.md)
@@ -161,8 +161,11 @@ variants), and session-count coverage is only 16% — while *cost* coverage is
       [`P4-10`](./phase-04-project-distribution/tickets/P4-10.md)
 - [ ] **P4-11 · Projects nav entry + homepage card** 🟢 ⏱ 1h ·
       [`P4-11`](./phase-04-project-distribution/tickets/P4-11.md)
-- [ ] **P4-12 · Per-project cost table in `costs.html`** 🟡 ⏱ 3h ·
-      [`P4-12`](./phase-04-project-distribution/tickets/P4-12.md)
+- [ ] ~~**P4-12 · Per-project cost table in `costs.html`**~~ — **withdrawn**,
+      see [`P4-12`](./phase-04-project-distribution/tickets/P4-12.md) and
+      [#49](https://github.com/BeinnoLLC/LLM-Telemetry/issues/49). Filed on a
+      misreading of `costs.html`, which is a price sheet, not a spend report.
+      Replaced by [Phase 6](#6-price-sheet-05).
 
 ## 5. Profile autodiscovery (0/6)
 
@@ -187,6 +190,34 @@ on-disk profile invisible with no warning, so totals silently exclude it.
       [`P5-05`](./phase-05-profile-autodiscovery/tickets/P5-05.md)
 - [ ] **P5-06 · CI must not read the real `~/.hermes`** 🟡 ⏱ 3h ·
       [`P5-06`](./phase-05-profile-autodiscovery/tickets/P5-06.md)
+
+## 6. Price sheet (0/5)
+
+`costs.html` answers one question: **what does a token cost right now, on any
+model.** It is a price sheet and debugging reference, not a spend report.
+Full plan: [`phase-06-price-sheet/INDEX.md`](./phase-06-price-sheet/INDEX.md)
+
+Measured: the catalogue holds **460 models**, the page renders **24** — only
+those with recorded traffic — so it cannot answer "what would model X cost"
+before you have already used X. Two further defects found while checking:
+the page claims the catalogue is "cached 24h" when `pricing.py` sets
+`TTL = 6 * 3600`, and a stale or unavailable catalogue is reported in small
+grey text beside a table of numbers that may be days old.
+
+**Standing constraint:** no filtering controls, and no project / profile / date
+dimension on this page. Ctrl+F is the feature.
+
+- [ ] **P6-01 · List the whole catalogue, not just used models** 🟡 ⏱ 4h ·
+      [`P6-01`](./phase-06-price-sheet/tickets/P6-01.md)
+- [ ] **P6-02 · Catalogue freshness is load-bearing; fix the 24h lie** 🟢 ⏱ 2h ·
+      [`P6-02`](./phase-06-price-sheet/tickets/P6-02.md)
+- [ ] **P6-03 · Make unpriced models impossible to miss** 🟢 ⏱ 2h ·
+      [`P6-03`](./phase-06-price-sheet/tickets/P6-03.md)
+- [ ] **P6-04 · Job calculator covers every model** 🟢 ⏱ 2h ·
+      [`P6-04`](./phase-06-price-sheet/tickets/P6-04.md)
+- [ ] **P6-05 · First tests for the price sheet** 🟡 ⏱ 3h ·
+      [`P6-05`](./phase-06-price-sheet/tickets/P6-05.md)
+
 
 
 ## Decisions for the owner (not tasks)
