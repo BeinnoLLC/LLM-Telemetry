@@ -12,8 +12,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("LLM_TELEMETRY_NO_COLLECT", "1")
 from llm_telemetry import pricing  # noqa: E402
 
-CATALOG = os.path.expanduser("~/.hermes/reports/pricing-cache.json")
-cat = json.load(open(CATALOG))["models"] if os.path.exists(CATALOG) else pricing.fetch_catalog()[0]
+# The catalog cache location belongs to the config, not to this test — hard
+# coding a path here would make the guard pass or fail depending on whose
+# machine ran it.
+cat = json.load(open(pricing.CACHE))["models"] if os.path.exists(pricing.CACHE) \
+    else pricing.fetch_catalog()[0]
 
 # Names exactly as Hermes writes them into session_model_usage.
 MUST_PRICE = [
