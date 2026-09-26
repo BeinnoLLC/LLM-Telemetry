@@ -800,6 +800,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .unpricedbanner a{color:var(--accent);text-decoration:underline}
  .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
    color:var(--accent2);display:inline-block}
+ .resendname{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
  /* Settings (P7-03, #67) */
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:10px}
@@ -1230,6 +1232,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4">
    <div class="lbl mb-2.5">Cost by provider</div>
    <div class="overflow-x-auto"><table class="w-full text-[12px]" id="tblProv"></table></div>
+  </div>
+  <!-- Context re-send (P9-03, #80). One panel for the fact that the bandwidth
+       re-send panel (#72, Usage) shows in bytes: here it is in dollars, per
+       session, worst first. -->
+  <div class="card p-4 mt-4" id="resendpanel">
+   <div class="flex items-baseline justify-between flex-wrap gap-2 mb-2">
+    <div class="lbl">Context re-sent per session</div>
+    <span class="muted text-[11px]" id="resendsub"></span>
+   </div>
+   <div class="muted text-[11px] mb-2">Every call re-sends the conversation so far. The cached share is billed at the
+    cache-read rate; this ranks sessions by what that re-sent context is worth. Sessions under
+    <span id="resendmin"></span> calls are left out: a short session has no meaningful average.</div>
+   <div class="overflow-x-auto"><table class="w-full text-[12px]" id="resendtbl"></table></div>
   </div>
  </div>
 
@@ -1854,6 +1869,46 @@ function renderUnpriced(rows){
     + ` Est. cost excludes that traffic, so it is understated.`
     + ` <a href="costs.html">Price sheet</a> shows the fix.`;
 }
+// ---- Context re-send per session (P9-03, #80) ------------------------------
+// Rows come from the collector (p.resend): calls, average prompt context per
+// call, cache-read share, and re-sent cost priced by the same price_row() as
+// the Cost view. Filtered by the date range on the session's last activity.
+const RESEND_MIN = 10;   // mirrors RESEND_MIN_CALLS in collect_analytics.py
+const escA = v => esc(v).replace(/"/g, '&quot;');   // attribute-safe: titles are user text
+function renderResend(p, inR){
+  const tbl = $('resendtbl'); if (!tbl) return;
+  $('resendmin').textContent = RESEND_MIN;
+  const day = ts => { const d = new Date(ts * 1000);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+  const rows = (p.resend || []).filter(r => r.calls >= RESEND_MIN && (!r.last || inR(day(r.last))));
+  if (!rows.length){
+    tbl.innerHTML = '<tr><td class="muted py-2">No session in this range has enough calls to average.</td></tr>';
+    $('resendsub').textContent = '';
+    return;
+  }
+  const total = rows.reduce((s, r) => s + (r.resend_usd || 0), 0);
+  $('resendsub').textContent = `${rows.length} sessions · $${total.toFixed(2)} of re-sent context`;
+  const mx = Math.max(...rows.map(r => r.resend_usd || 0), 0.01);
+  const head = `<tr class="muted text-[10px] uppercase tracking-wide">
+    <th class="text-left py-1">Session</th><th class="text-left rsx">Model</th>
+    <th class="text-right">Calls</th><th class="text-right rsx" title="Average prompt tokens per call: fresh input + cache write + cache read">Avg context</th>
+    <th class="text-right" title="Share of prompt tokens served from cache">Cached</th>
+    <th class="text-right">Re-sent cost</th><th class="rsx"></th></tr>`;
+  tbl.innerHTML = head + rows.slice(0, 15).map(r => {
+    const cost = r.cost_class === 'local' ? costCell(r.resend_usd, true) : '$' + (r.resend_usd || 0).toFixed(2);
+    const name = esc(r.title || r.id);
+    return `<tr class="resendrow" data-sid="${escA(r.id)}" style="border-top:1px solid var(--border)">
+      <td class="py-1 pr-2 resendname" title="${escA(r.id)}">${name}</td>
+      <td class="pr-2 rsx" style="white-space:nowrap">${esc(short(r.model))}</td>
+      <td class="text-right">${r.calls.toLocaleString()}</td>
+      <td class="text-right rsx">${fmt(r.ctx_per_call)}</td>
+      <td class="text-right">${r.cread_pct.toFixed(1)}%</td>
+      <td class="text-right font-semibold">${cost}</td>
+      <td class="pl-3 rsx" style="width:18%"><div style="height:4px;border-radius:2px;background:var(--accent);width:${Math.max(2, (r.resend_usd||0) / mx * 100)}%"></div></td>
+    </tr>`;
+  }).join('');
+}
+
 function render(){
   const p = DATA.profiles[current];
   const from = $('from').value, to = $('to').value;
@@ -1917,6 +1972,7 @@ function render(){
   // Before the empty-range return: a range with no ledger rows must say so,
   // not keep showing the previous range's numbers.
   renderBandwidthPanel(p, inR);
+  renderResend(p, inR);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -2566,6 +2622,10 @@ function buildAll(profiles){
   const dates = rows.map(r=>r.date).filter(Boolean).sort();
   const recent_sessions = names.flatMap(n=>(profiles[n].recent_sessions||[]).map(r=>({...r,profile:n})))
     .sort((a,b)=>(b.last_ts||0)-(a.last_ts||0)).slice(0,40);
+  // Context re-send (#80): session ids are unique per profile, so the merged
+  // list is a concatenation re-ranked by cost, never a sum.
+  const resend = names.flatMap(n=>(profiles[n].resend||[]).map(r=>({...r,profile:n})))
+    .sort((a,b)=>(b.resend_usd||0)-(a.resend_usd||0)).slice(0,60);
   // Heatmap: sum the per-day call counts across profiles so the merged tab
   // shows total activity per day, not one profile's.
   const HM = {};
@@ -2588,7 +2648,7 @@ function buildAll(profiles){
   Object.keys(NS).forEach(k => {
     NS[k].sort((a,b)=>b.calls-a.calls); NS[k] = NS[k].slice(0,5);
   });
-  return {rows, hours, sessions:sess, live, active, health, recent_sessions, heatmap,
+  return {rows, hours, sessions:sess, live, active, health, recent_sessions, resend, heatmap,
           node_sessions: NS,
           // Delegation outcomes merge like health does: per-child counters add
           // up across profiles. Omitting this left the DEFAULT tab with an

@@ -33,6 +33,23 @@ from session_model_usage u join sessions s on s.id = u.session_id
 group by d, u.model, u.billing_provider, task
 order by d
 """
+# Context re-send per session (P9-03, #80). One row per (session, model) over
+# the last 30 days. Sessions under RESEND_MIN_CALLS calls are dropped: a
+# 3-call session has no meaningful average context.
+RESEND_MIN_CALLS = 10
+RESEND = """
+select u.session_id, coalesce(nullif(s.title,''), '') title, u.model,
+       max(u.billing_provider), max(u.billing_base_url),
+       sum(u.api_call_count), sum(u.input_tokens), sum(u.cache_write_tokens),
+       sum(u.cache_read_tokens), max(u.last_seen)
+from session_model_usage u join sessions s on s.id = u.session_id
+where u.last_seen > strftime('%s','now') - 2592000
+group by u.session_id, u.model
+having sum(u.api_call_count) >= ?
+order by sum(u.cache_read_tokens) desc
+limit 60
+"""
+
 # Top sessions per (model, task) — powers "which chat" on the Flow graph.
 # Capped at 5 per node: 504 (model,task,session) combos exist, but a tooltip
 # can only show a handful, and shipping them all would bloat every payload.
@@ -308,6 +325,23 @@ def build():
                                      and L["model"] != L["init_model"])
             tools_recent = [{"tool": t, "calls": n} for t, n in con.execute(RECENT_TOOLS)]
             recent_sessions = [dict(zip(RECENT_SESSIONS_COLS, r)) for r in con.execute(RECENT_SESSIONS)]
+            # Context re-send per session (P9-03, #80). Re-sent cost is the
+            # cache-read tokens priced by price_row() on a cache-only row, so
+            # it reconciles with the Cost view: no third disagreeing figure.
+            resend = []
+            for (sid, title, mdl, prov, url, calls, inp, cw, cr,
+                 last) in con.execute(RESEND, (RESEND_MIN_CALLS,)):
+                prompt = (inp or 0) + (cw or 0) + (cr or 0)
+                pr = pricing.price_row({"provider": prov, "model": mdl, "base_url": url,
+                                        "input_tokens": 0, "output_tokens": 0,
+                                        "cache_read": cr or 0}, catalog)
+                resend.append({
+                    "id": sid, "title": title, "model": mdl, "calls": calls,
+                    "ctx_per_call": round(prompt / calls) if calls else 0,
+                    "cread_pct": round(100.0 * (cr or 0) / prompt, 1) if prompt else 0.0,
+                    "resend_usd": pr["market_value_usd"], "cost_class": pr["cost_class"],
+                    "last": last})
+            resend.sort(key=lambda x: -x["resend_usd"])
             # Must run BEFORE the finally below closes the connection.
             deleg = delegations.collect(con)
         finally:
@@ -343,6 +377,7 @@ def build():
                                  "live": live,
                                  "tools_recent": tools_recent,
                                  "recent_sessions": recent_sessions,
+                                 "resend": resend,
                                  "health": health,
                                  "heatmap": heatmap,
                                  "node_sessions": node_sessions,

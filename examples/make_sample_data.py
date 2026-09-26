@@ -143,6 +143,9 @@ def main():
     # through the same path a real build uses.
     from reprice_samples import reprice
     reprice(data)
+    # Per-session context re-send (P9-03, #80), priced through price_row().
+    from add_resend_to_samples import add_resend
+    add_resend(data)
     os.makedirs(OUT, exist_ok=True)
     with open(f"{OUT}/analytics-data.json", "w") as f:
         json.dump(data, f)
