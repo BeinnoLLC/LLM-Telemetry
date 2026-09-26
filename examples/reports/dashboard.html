@@ -117,15 +117,64 @@
 /* Content clears the fixed rail. The chip strip is redundant once the rail is
    showing, so it hides on desktop only — below the breakpoint the rail is gone
    and the chips are the nav, until #4 lands the off-canvas sheet. */
-@media (min-width:1025px){
-  body.hasnav .page{ margin-left:232px; }
-  body.hasnav #views{ display:none; }
+@media (min-width:1200px){ body.hasnav .page{ margin-left:232px; } }
+/* The rail is the nav at every width now (#4), so the chip strip is redundant
+   everywhere rather than only on desktop. */
+body.hasnav #views{ display:none; }
+/* ---- Nav drawer responsive modes (#4) ------------------------------------
+   Three modes: expanded >=1200, icon rail 641-1199, off-canvas <=640.
+   The rail is the same element in all three; only width and offset change. */
+
+/* Icon rail: labels out of flow, icons centred. Hovering expands it over the
+   content rather than reflowing the page, so the layout never jumps. */
+@media (min-width:641px) and (max-width:1199px){
+  #navdrawer{ width:60px; }
+  #navdrawer .nvlabel, #navdrawer .navbrand span:not(:first-child){ display:none; }
+  #navdrawer .navitem{ justify-content:center; padding:9px 0; }
+  #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
+  #navdrawer .navitem{ position:relative; }
+  body.hasnav .page{ margin-left:60px; }
+  /* Hover/focus expands over content, not pushing it. */
+  #navdrawer:hover, #navdrawer:focus-within{
+    width:232px; box-shadow:0 8px 28px rgba(0,0,0,.28);
+  }
+  #navdrawer:hover .nvlabel, #navdrawer:focus-within .nvlabel{ display:block; }
+  #navdrawer:hover .navitem, #navdrawer:focus-within .navitem{
+    justify-content:flex-start; padding:8px 10px;
+  }
+  #navdrawer:hover .nvbadge, #navdrawer:focus-within .nvbadge{
+    position:static; transform:none;
+  }
 }
-/* Below the tablet breakpoint the rail is hidden and the chip strip returns,
-   so navigation never disappears. #4 replaces this with an off-canvas sheet. */
-@media (max-width:1024px){
-  #navdrawer{ display:none; }
+
+/* Off-canvas: hidden by default, slides in over a scrim. The rail keeps its
+   full width here — on a phone a 60px icon strip is harder to hit than a
+   proper panel. */
+@media (max-width:640px){
+  #navdrawer{
+    display:flex; width:264px; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:0 8px 28px rgba(0,0,0,.35);
+  }
+  body.navopen #navdrawer{ transform:translateX(0); }
   body.hasnav .page{ margin-left:0; }
+  /* Scrim matches #helpscrim so the two overlays feel like one system. */
+  #navscrim{
+    position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.55);
+    backdrop-filter:blur(2px); opacity:0; pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  body.navopen #navscrim{ opacity:1; pointer-events:auto; }
+  /* Scroll lock while the panel is open, released on close. */
+  body.navopen{ overflow:hidden; }
+  #navtoggle{ display:inline-flex; }
+  #navscrim{ display:block; }
+}
+/* The hamburger and scrim only exist in off-canvas mode. */
+#navtoggle{ display:none; }
+#navscrim{ display:none; }
+
+@media (prefers-reduced-motion:reduce){
+  #navdrawer, #navscrim{ transition:none; }
 }
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
@@ -592,6 +641,7 @@
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
+<div id="navscrim"></div>
 <nav id="navdrawer" aria-label="Sections">
  <div class="navbrand"><span style="color:var(--accent)">◈</span> LLM Telemetry</div>
  <div id="navlist"></div>
@@ -602,6 +652,7 @@
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
   <div class="flex items-center gap-2">
+   <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <!-- Inline SVG, not a file: the dashboard is one self-contained artifact
         (ADR 0001), so an external src would break opening it from file://.
         currentColor so the mark follows the theme instead of vanishing. -->
@@ -2618,6 +2669,84 @@ function navSync(){
     b.hidden = !n;
   });
 }
+// ---- Off-canvas drawer control (#4) --------------------------------------
+// Mobile only. The panel is the same #navdrawer; a body class drives the
+// transform, so there is one source of truth for open/closed.
+let navOpen = false;
+
+function isOffCanvas(){
+  return window.matchMedia('(max-width:640px)').matches;
+}
+
+// Focus trap. Only while the panel is open on mobile: it is a modal surface
+// there, and tabbing out to content the scrim covers would leave the keyboard
+// somewhere the eye cannot follow.
+function navFocusables(){
+  const rail = document.getElementById('navdrawer');
+  if (!rail) return [];
+  // No visibility filtering here: offsetParent is null for everything under
+  // jsdom and for any element in a transformed container, which emptied the
+  // list and silently disabled both the focus move and the trap. The rail only
+  // contains nav controls, and it is only focus-managed while open, so every
+  // control in it is a legitimate target.
+  return [...rail.querySelectorAll('a[href],button:not([disabled])')];
+}
+
+function navTrap(e){
+  if (!navOpen || e.key !== 'Tab') return;
+  const f = navFocusables();
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+
+function navSetOpen(on){
+  navOpen = !!on && isOffCanvas();
+  document.body.classList.toggle('navopen', navOpen);
+  const t = document.getElementById('navtoggle');
+  if (t) t.setAttribute('aria-expanded', navOpen ? 'true' : 'false');
+  const rail = document.getElementById('navdrawer');
+  // aria-hidden only in off-canvas mode: on desktop the rail is permanent
+  // furniture and must stay in the accessibility tree.
+  if (rail){
+    if (isOffCanvas() && !navOpen) rail.setAttribute('aria-hidden', 'true');
+    else rail.removeAttribute('aria-hidden');
+  }
+  if (navOpen){
+    const f = navFocusables();
+    if (f.length) f[0].focus();
+  } else if (t && isOffCanvas()){
+    // Focus returns to the control that opened it, not to the top of the page.
+    t.focus();
+  }
+}
+
+// Wiring. Every close path the ticket names: scrim, Esc, nav activation, and
+// crossing the breakpoint.
+function navInstall(){
+  document.getElementById('navtoggle')
+    ?.addEventListener('click', () => navSetOpen(!navOpen));
+  document.getElementById('navscrim')
+    ?.addEventListener('click', () => navSetOpen(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && navOpen) navSetOpen(false);
+    navTrap(e);
+  });
+  // Activating a section closes the panel: on mobile the content is what you
+  // asked for, and leaving the sheet over it would hide the result.
+  document.getElementById('navlist')?.addEventListener('click', e => {
+    if (e.target.closest('[data-nav]') && navOpen) navSetOpen(false);
+  });
+  // Resizing past the breakpoint must not leave a scroll lock or a stuck
+  // panel behind — the class is cleared whenever off-canvas stops applying.
+  window.addEventListener('resize', () => {
+    if (!isOffCanvas() && navOpen) navSetOpen(false);
+    else if (!isOffCanvas()) document.body.classList.remove('navopen');
+  });
+  // Set the initial aria state for the current width.
+  navSetOpen(false);
+}
 function views(){
   $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
@@ -2646,6 +2775,7 @@ function pickView(v){
 }
 views();
 renderNav();
+navInstall();
 document.body.classList.add('hasnav');
 
 // Prepend the merged "All" view so it is the default tab. Done before `current`
