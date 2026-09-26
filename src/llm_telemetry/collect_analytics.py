@@ -10,6 +10,7 @@ from . import pricing
 from .schema import stamp
 from . import failures
 from . import bandwidth
+from . import bandwidth_history
 from . import delegations
 
 from .config import get as _cfg
@@ -309,6 +310,13 @@ def build():
                                  "delegations": deleg,
                                  "min_date": dates[0] if dates else None,
                                  "max_date": dates[-1] if dates else None}
+    # P8-04: persist the per-day bandwidth series. Closed days are frozen with
+    # the bytes_per_token they were computed with, so a recalibration never
+    # restates history. The page reads the series from here, not from rows.
+    series = bandwidth_history.update(
+        REPORTS, {n: p["rows"] for n, p in out["profiles"].items()})
+    for n, p in out["profiles"].items():
+        p["bandwidth_daily"] = series.get(n, [])
     return stamp(out)
 
 if __name__ == "__main__":

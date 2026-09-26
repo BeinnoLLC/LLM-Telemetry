@@ -54,11 +54,12 @@ looks like "no data" rather than "wrong data".
 Target: a versioned, machine-checkable schema that *both* sides assert against,
 so a mismatch fails loudly in CI instead of silently at render time.
 
-- [ ] **P1-01 · Version every payload** — add `schema_version` to all four
+- [x] **P1-01 · Version every payload** — add `schema_version` to all four
       payloads and refuse to render on mismatch, with a visible error instead of
       an empty chart. The consumer currently cannot distinguish "collector wrote
       nothing" from "collector wrote a shape I don't understand". 🟢 ⏱ 2h ·
-      Ticket [`P1-01`](./phase-01-contract/tickets/P1-01.md)
+      Ticket [`P1-01`](./phase-01-contract/tickets/P1-01.md) — shipped `4c38683`
+      (#23): all five payloads, page + builder refuse a mismatch.
 - [ ] **P1-02 · JSON Schema for the four payloads** — `analytics`, `live`,
       `ollama`, `router`. Validate on the Python side at write time and in the
       jsdom suites at read time, so producer and consumer are checked against
@@ -267,22 +268,24 @@ Prefix-vs-handle caching is **resolved** from live data (`cache_write > 0` and
 do cross the wire). Request-body gzip is **not** resolved and would cut the
 upload figure 3.65x — P8-06 settles it before the views are built.
 
-- [ ] **P8-01 · Byte estimator, calibrated, assumptions named** 🟡 ⏱ 4h ·
-      [`P8-01`](./phase-08-bandwidth/tickets/P8-01.md)
-- [ ] **P8-02 · Bandwidth columns in the model and provider tables** 🟡 ⏱ 4h ·
-      [`P8-02`](./phase-08-bandwidth/tickets/P8-02.md)
+- [x] **P8-01 · Byte estimator, calibrated, assumptions named** 🟡 ⏱ 4h ·
+      [`P8-01`](./phase-08-bandwidth/tickets/P8-01.md) — shipped `ad578ea` (#74)
+- [x] **P8-02 · Bandwidth columns in the model and provider tables** 🟡 ⏱ 4h ·
+      [`P8-02`](./phase-08-bandwidth/tickets/P8-02.md) — shipped `ad578ea` (#71)
 - [x] **P8-03 · Live view: per-session bandwidth** 🟡 ⏱ 4h ·
       [`P8-03`](./phase-08-bandwidth/tickets/P8-03.md) — shipped `87a084a`:
       up/down arrows per live row plus an aggregated card above the fold.
       Classification is **per-endpoint**, not per-session: all 7 live sessions
       used both a local and a hosted endpoint, so a per-session `is_local` flag
       misattributed 4.6 GB of metered traffic as LAN.
-- [ ] **P8-04 · Persist bandwidth per day** 🟡 ⏱ 3h ·
-      [`P8-04`](./phase-08-bandwidth/tickets/P8-04.md)
+- [x] **P8-04 · Persist bandwidth per day** 🟡 ⏱ 3h ·
+      [`P8-04`](./phase-08-bandwidth/tickets/P8-04.md) — shipped (#76): ledger
+      `bandwidth-history.json`, closed days frozen with their `bytes_per_token`.
 - [ ] **P8-05 · Bandwidth trend and context re-send panel** 🟡 ⏱ 3h ·
       [`P8-05`](./phase-08-bandwidth/tickets/P8-05.md)
-- [ ] **P8-06 · Settle request-body gzip** 🟢 ⏱ 2h ·
-      [`P8-06`](./phase-08-bandwidth/tickets/P8-06.md)
+- [x] **P8-06 · Settle request-body gzip** 🟢 ⏱ 2h ·
+      [`P8-06`](./phase-08-bandwidth/tickets/P8-06.md) — shipped `ad578ea` (#73):
+      request bodies are NOT gzipped (captured on loopback).
 
 
 
