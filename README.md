@@ -60,6 +60,8 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
   "reports_dir": "~/.local/share/llm-telemetry/reports",
   "port": 8477,
   "electricity_rate_kwh": 0.047,
+  "gpu_draw_watts": 350,
+  "host_overhead_watts": 90,
   "local_host_patterns": ["192.168.", "10.", "gpu-01"]
 }
 ```

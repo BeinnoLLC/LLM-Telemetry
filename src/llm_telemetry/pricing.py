@@ -42,9 +42,10 @@ PROVIDER_CLASS = {
     "openai-codex": "subscription",
     "copilot": "subscription",
     "nous": "subscription",
-    "custom": "free",
-    "local": "free",
-    "ollama": "free",
+    # Local inference is "local", never "free": it costs electricity (P7-01).
+    "custom": "local",
+    "local": "local",
+    "ollama": "local",
     "": "unknown",
 }
 
@@ -217,7 +218,11 @@ def rates_for(model, catalog):
     OpenRouter does not list (Codex/Astra) or lists under a different SKU.
     """
     if is_local(model):
-        return None
+        # Local inference is priced from the electricity model (P7-01): a
+        # local "qwen3" must never pick up a cloud qwen's catalogue price.
+        from . import energy as E
+        (ri, ro, rc), _tps = E.local_rates(model)
+        return (ri / 1e6, ro / 1e6, rc / 1e6)
     w = WEB_RATES.get(model) or WEB_RATES.get((model or "").split("/")[-1])
     if w:
         return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
@@ -256,9 +261,11 @@ def price_row(row, catalog):
         # Ensemble/router preset: members are billed on their own rows.
         cls = "preset"
     elif (model or "").lower().endswith(FREE_TIER_SUFFIX):
+        # OpenRouter ":free" tier: genuinely $0 per token, a different thing
+        # from local inference.
         cls = "free"
     elif is_local(model):
-        cls = "free"
+        cls = "local"
     elif metered_by_model(model):
         # The model name proves pay-per-token, so it outranks the provider slot
         # (Fireworks/OpenRouter traffic is often recorded under "custom").
@@ -274,10 +281,15 @@ def price_row(row, catalog):
         value = (row.get("input_tokens", 0) * pin
                  + row.get("output_tokens", 0) * pout
                  + row.get("cache_read", 0) * pcache)
+    energy = value if cls == "local" else 0.0
     return {
         "cost_class": cls,
-        "market_value_usd": round(value, 4),
-        "billed_usd": round(value, 4) if cls == "metered" else 0.0,
+        "market_value_usd": round(value, 6),
+        # Billed = money that leaves an account. Electricity is paid to the
+        # utility, not per call, so it is carried in energy_usd and never
+        # silently folded into billed spend.
+        "billed_usd": round(value, 6) if cls == "metered" else 0.0,
+        "energy_usd": round(energy, 6),
         "priced": bool(r),
     }
 

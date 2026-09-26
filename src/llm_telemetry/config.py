@@ -91,8 +91,12 @@ class Config:
     bind: str = "0.0.0.0"
     # Used to turn local GPU wattage into a cost figure so self-hosted models
     # can be compared against metered APIs on the same axis.
+    # The whole power model (P7-02, #66), read by energy.local_rates() and
+    # nowhere else. USD throughout; the old `currency` key was never read by
+    # anything, so it was removed rather than left as a dead setting.
     electricity_rate_kwh: float = 0.047
-    currency: str = "$"
+    gpu_draw_watts: float = 350
+    host_overhead_watts: float = 90
     # Where the agent keeps its profiles (P5-03). Resolved in load():
     # $LLM_TELEMETRY_AGENT_HOME > this key > ~/.hermes.
     agent_home: str = ""

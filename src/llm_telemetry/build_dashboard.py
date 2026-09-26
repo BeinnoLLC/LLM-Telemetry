@@ -783,6 +783,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Est. cost pulses so the number the user cares about most catches the eye
     without shouting — opacity only, no layout shift. */
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+ /* Local electricity cost (P7-04, #68): distinct from billed spend. */
+ .elecmark{font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+   padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
+ .kpisub{font-size:10px;font-weight:500;margin-top:1px;color:var(--muted)}
  .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
    color:var(--accent2);display:inline-block}
 
@@ -1163,10 +1167,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  </div>
 
  <div class="text-[11px] muted border-l-2 pl-3" style="border-color:var(--accent)">
-  <b>Est. cost</b> is what every request would cost at public API rates &mdash; local models at
-  $0.00, everything else priced per token (input, output and cache-read rated separately) from
-  the OpenRouter catalogue refreshed daily, plus official vendor rates for models OpenRouter does
-  not list (Codex/Astra, some Fireworks SKUs).
+  <b>Est. cost</b> is what every request would cost at public API rates, priced per token (input,
+  output and cache-read rated separately) from the OpenRouter catalogue refreshed daily, plus
+  official vendor rates for models OpenRouter does not list (Codex/Astra, some Fireworks SKUs).
+  Local models are priced from electricity at your tariff and marked <b>elec</b>; they are
+  never shown as $0.
   It is a <i>consumption estimate, not an invoice</i>: traffic on Anthropic OAuth, OpenCode Go and
   Codex is covered by flat monthly subscriptions, so the dollars here show the worth of what you
   consumed rather than money leaving your account. Only Fireworks is genuinely pay-per-token.
@@ -1723,6 +1728,16 @@ function renderBandwidthPanel(p, inR){
     `Re-send = (input + cache read + cache write) ÷ (input + cache write).`;
 }
 
+// Local rows are electricity, not billing (P7-04, #68): a real figure with a
+// visible "elec" marker, never "$0" or "free". Cents matter here — a local run
+// is often a fraction of a dollar — so small values keep enough digits to be
+// non-zero.
+function costCell(v, local){
+  v = +v || 0;
+  if (!local) return '$' + v.toFixed(2);
+  const s = v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toFixed(4) : '0';
+  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">elec</span></span>`;
+}
 function render(){
   const p = DATA.profiles[current];
   const from = $('from').value, to = $('to').value;
@@ -1739,6 +1754,7 @@ function render(){
   const cache=rows.reduce((s,r)=>s+r.cread,0);
   const billed=rows.reduce((s,r)=>s+(r.billed_usd||0),0);
   const market=rows.reduce((s,r)=>s+(r.market_value_usd||0),0);
+  const elec=rows.reduce((s,r)=>s+(r.cost_class==='local'?(r.energy_usd||0):0),0);
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
   $('meta').textContent=`generated ${DATA.generated.replace('T',' ')} · auto-refresh every 1 min`;
@@ -1764,7 +1780,7 @@ function render(){
     ['Cache read',fmt(cache)],['Sessions',nsess.toLocaleString()],
     ['Success rate',srVal],
     ['In progress',liveDot],
-    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>']]
+    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':'')]]
     .map(([l,v])=>`<div class="card p-2.5"><div class="text-[17px] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>
       <div class="muted text-[10px] uppercase tracking-wide">${l}</div></div>`).join('');
 
@@ -1895,8 +1911,8 @@ function render(){
 
   const t={};
   rows.forEach(r=>{const k=short(r.model)+'|'+provOf(r.provider,r.model,r.base_url);
-    const o=t[k]||(t[k]={calls:0,tok:0,inp:0,outp:0,cache:0,cost:0,mkt:0,up:0,down:0,free:true,tasks:new Set()});
-    o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;o.cache+=r.cread;o.cost+=(r.billed_usd||0);o.mkt+=(r.market_value_usd||0);o.up+=(r.up_bytes||0)+(r.lan_up_bytes||0);o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);if(r.cost_class!=='free')o.free=false;o.tasks.add(r.task);});
+    const o=t[k]||(t[k]={calls:0,tok:0,inp:0,outp:0,cache:0,cost:0,mkt:0,elec:0,up:0,down:0,local:false,tasks:new Set()});
+    o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;o.cache+=r.cread;o.cost+=(r.billed_usd||0);o.mkt+=(r.market_value_usd||0);o.up+=(r.up_bytes||0)+(r.lan_up_bytes||0);o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);if(r.cost_class==='local'){o.local=true;o.elec+=(r.energy_usd||0);}o.tasks.add(r.task);});
   const mx=Math.max(...Object.values(t).map(r=>r.calls),1);
   $('tbl').innerHTML=`<tr class="muted text-[10px] uppercase tracking-wide">
     <th class="text-left py-1.5">Model</th><th class="text-left">Provider</th>
@@ -1907,13 +1923,13 @@ function render(){
     <th class="text-right">Est. cost</th>
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
-      return `<tr style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[14px] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
+      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[14px] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
         <td>${provBadge(pr)}</td>
         <td class="text-right">${v.calls.toLocaleString()}</td><td class="text-right">${fmt(v.inp)}</td><td class="text-right">${fmt(v.outp)}</td>
         <td class="text-right">${fmt(v.cache)}</td>
         <td class="text-right bwup">${fmtB(v.up)}</td>
         <td class="text-right bwdown">${fmtB(v.down)}</td>
-        <td class="text-right">$${(+v.mkt).toFixed(2)}</td>
+        <td class="text-right">${costCell(v.mkt, v.local)}</td>
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[10px] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
 }

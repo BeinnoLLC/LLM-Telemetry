@@ -139,6 +139,10 @@ def main():
         "sample": True,
         "schema_version": SCHEMA_VERSION,
     }
+    # Local rows are electricity, never "free" at $0 (P7-01, #65): price them
+    # through the same path a real build uses.
+    from reprice_samples import reprice
+    reprice(data)
     os.makedirs(OUT, exist_ok=True)
     with open(f"{OUT}/analytics-data.json", "w") as f:
         json.dump(data, f)

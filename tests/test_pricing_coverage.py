@@ -25,8 +25,9 @@ MUST_PRICE = [
     "claude-sonnet-4-5-20250929", "claude-opus-4-5-20251101",
     "glm-5.3-flash", "glm-5.3", "deepseek-v4.1-flash",
 ]
-# Must NOT price (local hardware) — a resolver that is too eager would start
-# charging Ollama traffic at cloud rates.
+# Local hardware: priced from ELECTRICITY (P7-01, #65), never at cloud rates.
+# A resolver that is too eager would start charging Ollama traffic at a cloud
+# qwen's list price; one that is too timid returns None and the row reads $0.
 MUST_NOT = ["qwen3-coder:30b", "gpt-oss:20b", "deepseek-r1:14b", "qwen3.8:latest"]
 
 fails = 0
@@ -35,10 +36,14 @@ for m in MUST_PRICE:
     ok = r is not None and r[0] > 0 and r[1] > 0
     print(f"  {'OK  ' if ok else 'FAIL'} {m:30s} {r}")
     fails += not ok
+from llm_telemetry import energy  # noqa: E402
 for m in MUST_NOT:
     r = pricing.rates_for(m, cat)
-    ok = r is None
-    print(f"  {'OK  ' if ok else 'FAIL'} {m:30s} local -> {r}")
+    (ei, eo, ec), _ = energy.local_rates(m)
+    want = (ei / 1e6, eo / 1e6, ec / 1e6)
+    ok = (r is not None and r[1] > 0
+          and all(abs(a - b) < 1e-15 for a, b in zip(r, want)))
+    print(f"  {'OK  ' if ok else 'FAIL'} {m:30s} local -> electricity {r and round(r[1] * 1e6, 4)} $/M out")
     fails += not ok
 
 # Negative control on the fallback itself: an unknown dashed name must not

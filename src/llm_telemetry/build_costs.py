@@ -6,10 +6,9 @@ produced?" It shows, per model, the exact input/output/cache rate applied,
 where that rate came from (official vendor page, OpenRouter catalogue, or the
 local-electricity model), and what the observed traffic cost at that rate.
 
-Local models are NOT free in reality — they burn electricity. They are excluded
-from the dashboard's spend total (no money leaves the account) but priced here
-so the true cost of running them is visible. The rate is derived from measured
-throughput and the machine's draw at the user's tariff.
+Local models are NOT free — they burn electricity. That cost is shown as its
+own figure (energy_usd), never folded into billed spend, and priced here from
+measured throughput and the machine's draw at the configured tariff.
 """
 import json, os, sys, subprocess, datetime, collections
 
@@ -24,52 +23,18 @@ DATA = str(CFG.reports_dir / "analytics-data.json")
 OUT = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "costs.html")
 
 # ---------------------------------------------------------------- electricity
-# User-stated tariff. Everything about local pricing derives from these three
-# numbers, so they are declared once, shown on the page, and never hardcoded
-# into a rate table where they would silently go stale.
-KWH_PRICE_USD = 0.047          # user's tariff, USD per kWh
-GPU_DRAW_W = 350               # sustained draw of the inference box under load
-HOST_OVERHEAD_W = 90           # CPU, RAM, fans, PSU loss while a job runs
+# The power model lives in energy.py (P7-01/02): one module, tariff and
+# wattage read from config. This page only displays what it returns.
+from . import energy as E
 
-# Measured generation throughput, output tokens/sec, per local model size band.
-# A 7B model on this hardware generates far faster than a 70B one, so a single
-# blended rate would misprice both. Bands are matched by substring on the name.
-LOCAL_TPS = [
-    ("70b", 11), ("72b", 11), ("34b", 26), ("32b", 28), ("30b", 30),
-    ("27b", 33), ("14b", 55), ("13b", 58), ("8b", 95), ("7b", 100),
-    ("4b", 150), ("3b", 170), ("1.5b", 240), ("1b", 300),
-]
-LOCAL_TPS_DEFAULT = 40         # unknown size: assume a mid-range band
-
-# Prompt processing is far cheaper per token than generation — it is a single
-# batched forward pass, not one pass per token. Measured ratio on this hardware.
-PREFILL_SPEEDUP = 12
-
-# A cache read skips the forward pass but still streams KV tensors out of VRAM,
-# so it is bounded by memory bandwidth rather than compute. ~60x cheaper than
-# generating a token, which lines up with the 10-20% of list price that metered
-# providers charge for cache reads.
-CACHE_SPEEDUP = 60
+KWH_PRICE_USD, GPU_DRAW_W, HOST_OVERHEAD_W = E.tariff(CFG)
+PREFILL_SPEEDUP = E.PREFILL_SPEEDUP
+CACHE_SPEEDUP = E.CACHE_SPEEDUP
 
 
 def local_rates(model):
-    """-> (input, output, cache) USD per 1M tokens, from the electricity model."""
-    m = (model or "").lower()
-    tps = LOCAL_TPS_DEFAULT
-    for band, rate in LOCAL_TPS:
-        if band in m:
-            tps = rate
-            break
-    watts = GPU_DRAW_W + HOST_OVERHEAD_W
-    # Cost of one second of inference, in USD.
-    usd_per_sec = (watts / 1000.0) * KWH_PRICE_USD / 3600.0
-    out_per_1m = usd_per_sec * (1e6 / tps)
-    in_per_1m = out_per_1m / PREFILL_SPEEDUP
-    # A cache hit still costs power: the KV tensors are streamed out of VRAM and
-    # the GPU stays powered while it happens. It skips the matmuls, not the
-    # memory traffic, so it is far cheaper than prefill but not free.
-    cache_per_1m = out_per_1m / CACHE_SPEEDUP
-    return (in_per_1m, out_per_1m, cache_per_1m), tps
+    """-> ((input, output, cache) USD per 1M tokens, tokens/s)."""
+    return E.local_rates(model, CFG)
 
 
 def rate_source(model, catalog):
@@ -290,7 +255,7 @@ __KPIS__
 cost = <b>(input_tokens &times; input_rate)</b> + <b>(output_tokens &times; output_rate)</b> + <b>(cache_read_tokens &times; cache_rate)</b>
 <br>
 <br><span class="muted"># rates are resolved in this order, first hit wins:</span>
-<br>1. <b>local</b> &nbsp;&nbsp;&nbsp;&nbsp;&rarr; power model below (never counted as spend)
+<br>1. <b>local</b> &nbsp;&nbsp;&nbsp;&nbsp;&rarr; electricity model below (your tariff &times; the box's draw)
 <br>2. <b>vendor</b> &nbsp;&nbsp;&nbsp;&rarr; official pricing page, hardcoded in <b>pricing.py WEB_RATES</b>
 <br>3. <b>openrouter</b> &rarr; live OpenRouter catalogue, cached 6h, refreshed by cron
 <br>4. <b>unpriced</b> &nbsp;&rarr; no rate found; contributes <b>$0</b> and is flagged red above
@@ -322,10 +287,12 @@ cost = <b>(input_tokens &times; input_rate)</b> + <b>(output_tokens &times; outp
 <br>cache  = $__EX_OUT__ / __CACHEX__ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="r">$__EX_CACHE__ per 1M cached tokens</span>
   </div>
   <div class="note" style="margin-top:14px">
-    <b>Local cost is real but never added to the dashboard total.</b> No money leaves your
-    account when a local model runs &mdash; the electricity was already going to be billed by
-    your utility. It is priced here so the true cost of a local run is visible, and so
-    "free" is never mistaken for "costs nothing". Throughput per model size is measured on
+    <b>Local cost is electricity, shown separately from billed spend.</b> No provider
+    invoices a local run; the power is paid to your utility at the tariff above. The
+    dashboard shows it as its own figure (marked <b>elec</b>) next to billed spend, so a
+    local model never reads as $0 and electricity is never mistaken for an API bill.
+    Tariff and wattage come from your config (<b>electricity_rate_kwh</b>,
+    <b>gpu_draw_watts</b>, <b>host_overhead_watts</b>). Throughput per model size is measured on
     your own hardware; a cache read is priced at 1/__CACHEX__ of a generated token because it
     skips the forward pass but still streams the KV tensors out of VRAM with the GPU powered.
   </div>
@@ -541,9 +508,9 @@ def render(d):
             .replace("__TABLE__", table)
             .replace("__CALCDATA__", calc_json)
             .replace("__KWH__", f'{d["kwh"]:.3f}')
-            .replace("__GPUW__", str(d["gpu_w"]))
-            .replace("__HOSTW__", str(d["host_w"]))
-            .replace("__WATTS__", str(watts))
+            .replace("__GPUW__", f'{d["gpu_w"]:g}')
+            .replace("__HOSTW__", f'{d["host_w"]:g}')
+            .replace("__WATTS__", f'{watts:g}')
             .replace("__USDSEC__", f"{usd_sec:.9f}")
             .replace("__PREFILL__", str(d["prefill"]))
             .replace("__CACHEX__", str(d["cachex"]))
