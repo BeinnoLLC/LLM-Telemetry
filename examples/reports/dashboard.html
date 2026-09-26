@@ -673,6 +673,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olidle{font-size:11px;color:var(--muted);padding:4px 0}
  .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);
    margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+ #soundtoggle.on{border-color:var(--accent);color:var(--accent)}
  .olwork b{color:var(--foreground);font-weight:600;font-variant-numeric:tabular-nums}
  .olstale{font-size:10px;color:hsl(38 92% 60%)}
 
@@ -823,6 +824,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <a href="costs.html" class="chip" title="Per-million-token price sheet &mdash; how costs are calculated">&#36; Rates</a>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
+   <button id="soundtoggle" class="chip" type="button" aria-pressed="false"
+     title="Play a tone when a session or task completes (off by default)">&#128263;</button>
    <button id="helpbtn" title="How your work gets routed (?)">?</button>
   </div>
  </div>
@@ -3578,6 +3581,121 @@ $('refresh').onclick = () => doRefresh(false);
 const LIVE_MS = 5000;
 let liveBusy = false, liveFails = 0;
 
+// ---- Completion sound (#105) -----------------------------------------------
+// Off by default (localStorage remembers the choice), generated with Web
+// Audio so there is no audio file to ship (the dashboard is one
+// self-contained HTML page, ADR 0001). Browsers block audio until a user
+// gesture, so turning it on is itself the gesture -- no separate unlock step
+// is needed or possible.
+let soundOn = localStorage.getItem('lt-sound') === '1';
+let audioCtx = null;
+let soundBaseline = true;   // true until the first poll has been diffed once
+let seenEnded = new Set();  // session ids already sounded for, across polls
+let seenDeleg = new Set();  // delegation ids already sounded for
+let soundDebounceUntil = 0;
+
+function ensureAudioCtx(){
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// Two short, distinct tones: a rising two-note chime for success, a single
+// lower note for failure. Both are quiet (gain 0.06) and under 300ms so a
+// burst of completions does not read as an alarm.
+function playTone(kind){
+  if (!soundOn) return;
+  // Sound is most useful when you are not looking at the tab; still allowed
+  // when visible (some users want it either way), but never on a baseline
+  // snapshot or a profile switch -- those are not real completions.
+  const ctx = ensureAudioCtx();
+  const now = ctx.currentTime;
+  const notes = kind === 'success' ? [880, 1174.66] : [220];
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    const t0 = now + i * 0.09;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(0.06, t0 + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0 + 0.16);
+  });
+}
+
+// Debounce: several completions inside one poll, or across polls within 2s,
+// play as a single tone rather than a burst. `kind` escalates to 'fail' if
+// anything in the batch failed, even if most succeeded. A prior version
+// returned early once inside the 2s window WITHOUT scheduling a play, which
+// silently dropped a completion that arrived mid-window instead of merging
+// it into the next tone -- fixed by always scheduling, timed to fire no
+// sooner than the window allows.
+let pendingKind = null;
+let soundTimerPending = false;
+function scheduleTone(kind){
+  if (kind === 'fail') pendingKind = 'fail';
+  else if (!pendingKind) pendingKind = 'success';
+  if (soundTimerPending) return;   // a play is already queued; it will pick up any escalation
+  soundTimerPending = true;
+  const wait = Math.max(0, soundDebounceUntil - Date.now());
+  setTimeout(() => {
+    if (pendingKind) playTone(pendingKind);
+    pendingKind = null;
+    soundTimerPending = false;
+    soundDebounceUntil = Date.now() + 2000;
+  }, wait);
+}
+
+// Diff recent_ended / recent_delegations against what has already sounded.
+// Runs on every poll for every profile that was fetched, not just the one
+// showing, so a completion in a background profile is never missed.
+function checkCompletions(freshProfiles){
+  let any = false;
+  Object.values(freshProfiles).forEach(f => {
+    (f.recent_ended || []).forEach(s => {
+      if (seenEnded.has(s.id)) return;
+      seenEnded.add(s.id);
+      if (soundBaseline) return;
+      any = true;
+      const bad = /orphan_reap|error/i.test(s.end_reason || '');
+      scheduleTone(bad ? 'fail' : 'success');
+    });
+    (f.recent_delegations || []).forEach(d => {
+      if (seenDeleg.has(d.id)) return;
+      seenDeleg.add(d.id);
+      if (soundBaseline) return;
+      any = true;
+      scheduleTone(d.state === 'error' ? 'fail' : 'success');
+    });
+  });
+  return any;
+}
+
+function soundToggleInstall(){
+  const btn = $('soundtoggle');
+  if (!btn) return;
+  // Expose the module-scope `let` bindings on window: they are plain lexical
+  // vars (not properties), so a test harness driving pollLive() directly
+  // needs a live view of them, not a snapshot taken at install time.
+  Object.defineProperty(window, 'soundOn', { get: () => soundOn, set: v => { soundOn = v; } });
+  Object.defineProperty(window, 'soundBaseline', { get: () => soundBaseline, set: v => { soundBaseline = v; } });
+  Object.defineProperty(window, 'seenEnded', { get: () => seenEnded, set: v => { seenEnded = v; } });
+  Object.defineProperty(window, 'seenDeleg', { get: () => seenDeleg, set: v => { seenDeleg = v; } });
+  const paint = () => {
+    btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+    btn.classList.toggle('on', soundOn);
+    btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+  };
+  paint();
+  btn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    localStorage.setItem('lt-sound', soundOn ? '1' : '0');
+    if (soundOn) { ensureAudioCtx(); playTone('success'); }
+    paint();
+  });
+}
+
+
 // ---- Logs drawer ---------------------------------------------------------
 // One chronological feed merging two sources: model failures parsed from
 // errors.log, and tool events from the live sessions. Kept out of the tab
@@ -3706,6 +3824,13 @@ async function pollLive(){
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const fresh = await r.json();
     if (!fresh.profiles) throw new Error('empty payload');
+    // Diff for completions BEFORE merging into DATA -- once merged there is
+    // no "previous" state left to compare against. First call ever is a
+    // baseline (soundBaseline stays true through it): every open session and
+    // delegation is "recent" on a page load, and none of that is a real
+    // completion the user should hear about.
+    checkCompletions(fresh.profiles);
+    soundBaseline = false;
     // Merge the live slice into each profile in place, then rebuild the
     // synthetic All profile so its merged live list stays correct.
     Object.keys(fresh.profiles).forEach(n => {
@@ -3753,6 +3878,7 @@ async function pollLive(){
 }
 setInterval(pollLive, LIVE_MS);
 installDrawer();
+soundToggleInstall();
 pollLive();   // populate the drawer before the first 5s tick
 document.addEventListener('visibilitychange', () => { if(!document.hidden) pollLive(); });
 

@@ -99,6 +99,30 @@ order by m.timestamp desc limit 80
 """
 LIVE_LOGS_COLS = "ts title role tool preview".split()
 
+# Sessions that ended within the last 90 seconds: two missed 5s polls of
+# margin without stretching so wide that an old close is mistaken for a
+# fresh completion. The dashboard diffs consecutive polls itself, so this
+# just needs to guarantee an ended session appears in at least one payload.
+RECENT_ENDED = """
+select id, title, ended_at, end_reason
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 90
+order by ended_at desc
+"""
+
+# Delegated child runs (#90) that finished in the same 90s window. state is
+# the delegation-level outcome ('completed'/'error'); good enough for a
+# completion tone -- the per-child status inside result_json is only needed
+# for the Health tab's failure-rate breakdown, not for "did something finish".
+RECENT_DELEGATIONS = """
+select delegation_id, state, completed_at
+from async_delegations
+where completed_at is not null
+  and completed_at > strftime('%s','now') - 90
+order by completed_at desc
+"""
+
 
 def tail_errors(limit=60, window_s=7200):
     """Recent failure lines from every profile's errors.log, newest first.
@@ -247,6 +271,21 @@ def build_live():
                 {"tool": t, "calls": n} for t, n in con.execute(LIVE_TOOLS)
             ]
             logs = [dict(zip(LIVE_LOGS_COLS, r)) for r in con.execute(LIVE_LOGS)]
+            recent_ended = [
+                {"id": sid, "title": title, "ended_at": ended_at, "end_reason": reason}
+                for sid, title, ended_at, reason in con.execute(RECENT_ENDED)
+            ]
+            try:
+                recent_delegations = [
+                    {"id": did, "state": state, "completed_at": completed_at}
+                    for did, state, completed_at in con.execute(RECENT_DELEGATIONS)
+                ]
+            except sqlite3.OperationalError as e:
+                # Same guard as delegations.py: older Hermes builds have no
+                # async_delegations table at all. That is not an error.
+                if "no such table" not in str(e).lower():
+                    raise
+                recent_delegations = []
         finally:
             con.close()
         out["profiles"][name] = {
@@ -254,6 +293,8 @@ def build_live():
             "live": live,
             "tools_recent": tools_recent,
             "logs": logs,
+            "recent_ended": recent_ended,
+            "recent_delegations": recent_delegations,
         }
     return out
 
