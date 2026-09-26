@@ -96,6 +96,28 @@ setTimeout(() => {
   chk(tot.querySelector('.bwup') && tot.querySelector('.bwdown'),
     'reuses the shared up/down colour classes');
 
+// --- the two cards must not look interchangeable -------------------------
+// They sat adjacent showing 23.8 GB and 12.1 GB, both labelled "estimated",
+// with nothing saying one covers every session in the date range and the other
+// covers only sessions open right now (whose lifetime totals ignore the range).
+(() => {
+  const xfer = dom.window.document.getElementById('xfercard');
+  const bw = dom.window.document.getElementById('bwcard');
+  if (!xfer || !bw) { chk(false, 'both transfer cards exist'); return; }
+  const xt = xfer.textContent.toLowerCase();
+  const bt = bw.textContent.toLowerCase();
+  chk(/all sessions/.test(xt) && /date range/.test(xt),
+      'Transferred names its scope (all sessions, date range)');
+  chk(/open sessions/.test(bt), 'Bandwidth names its scope (open sessions only)');
+  chk(/lifetime/.test(bt), 'Bandwidth says its totals are lifetime, not range-bound');
+  // The distinguishing words must actually differ between the two cards.
+  const scopeOf = el => (el.querySelector('.lbl span') || {}).textContent || '';
+  chk(scopeOf(xfer).trim() !== scopeOf(bw).trim(),
+      'the two scope captions are not identical');
+  chk(!!(bw.querySelector('[title]') || {}).title,
+      'Bandwidth carries a tooltip explaining it is not a subset of Transferred');
+})();
+
   console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);
   process.exit(f === 0 ? 0 : 1);
 }, 1600);

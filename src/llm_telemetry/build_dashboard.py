@@ -804,7 +804,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="card p-3" id="xfercard" hidden>
   <div class="flex items-center gap-3 flex-wrap">
    <div class="lbl">Transferred
-    <span class="muted normal-case tracking-normal text-[10px] ml-1">estimated, selected range</span>
+    <span class="muted normal-case tracking-normal text-[10px] ml-1"
+      title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</span>
    </div>
    <div id="xfertot" class="bw"></div>
    <div class="muted text-[10px] ml-auto" id="xfernote"></div>
@@ -813,7 +814,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="card p-3" id="bwcard" hidden>
   <div class="flex items-center gap-3 flex-wrap">
    <div class="lbl">Bandwidth
-    <span class="muted normal-case tracking-normal text-[10px] ml-1">estimated</span>
+    <span class="muted normal-case tracking-normal text-[10px] ml-1"
+      title="Lifetime totals for sessions still open and active in the last 10 minutes. Not a subset of Transferred: it ignores the date range and counts each open session's whole history.">open sessions only &middot; lifetime totals &middot; estimated</span>
    </div>
    <div id="bwtot" class="bw"></div>
    <div class="muted text-[10px] ml-auto" id="bwnote"></div>
@@ -1679,7 +1681,10 @@ function renderBwCard(){
     + (ratio ? `<span class="muted text-[10px]">${ratio.toFixed(0)}:1</span>` : '');
   const bits = [];
   if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp)}&uarr; ${fmtB(lanDown)}&darr; (not metered)`);
-  bits.push(`derived from tokens x ${(DATA.bytes_per_token || 4.68)} bytes`);
+  // Say how many sessions this covers. Without it the card looks like a smaller
+  // version of Transferred rather than a different question entirely.
+  bits.push(`${live.length} open session${live.length === 1 ? '' : 's'}`);
+  bits.push(`derived: tokens &times; ${(DATA.bytes_per_token || 4.68)} bytes`);
   $('bwnote').innerHTML = bits.join(' · ');
 }
 
