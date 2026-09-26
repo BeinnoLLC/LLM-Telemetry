@@ -82,7 +82,10 @@ setTimeout(() => {
 
   // Secondary entries complete the nav.
   chk(!!d.querySelector('#navdrawer a[href="costs.html"]'), 'rail links to the price sheet');
-  chk(!!d.getElementById('navlogs'), 'rail has a Logs entry');
+  // Logs is a full view now (#104), so it comes from the .view list like every
+  // other section; the drawer keeps its own entry as the live tail.
+  chk(!!d.querySelector('#navdrawer [data-nav="Logs"]'), 'rail has a Logs view entry');
+  chk(!!d.getElementById('navdrawerbtn'), 'rail has a live-tail drawer entry');
 
   console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);
   process.exit(f === 0 ? 0 : 1);

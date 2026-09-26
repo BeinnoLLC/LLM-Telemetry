@@ -144,6 +144,39 @@
 /* The rail is the nav at every width now (#4), so the chip strip is redundant
    everywhere rather than only on desktop. */
 body.hasnav #views{ display:none; }
+/* ---- Logs page (#104) ------------------------------------------------- */
+.lgfacets{display:flex;flex-direction:column;gap:6px}
+.lgrow{display:flex;align-items:flex-start;gap:10px}
+.lglbl{flex:0 0 62px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);padding-top:4px}
+.lgchips{display:flex;gap:5px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
+.lgchip{border:1px solid var(--border);background:var(--bg);color:var(--muted);
+  border-radius:999px;padding:2px 9px;font-size:11px;cursor:pointer;line-height:1.6;
+  white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.lgchip:hover{border-color:var(--accent);color:var(--fg)}
+.lgchip.on{background:color-mix(in srgb,var(--accent) 18%,transparent);
+  border-color:var(--accent);color:var(--accent);font-weight:600}
+.lgchip .n{opacity:.65;margin-left:5px;font-variant-numeric:tabular-nums}
+/* Event rows: monospace timestamps so they form a readable column. */
+.lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid var(--border);font-size:11.5px}
+.lgev:last-child{border-bottom:0}
+.lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px}
+.lgtag{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgtag.error{color:var(--z-bad-fg);font-weight:700}
+.lgtag.tool{color:var(--accent)}
+.lgtag.assistant{color:var(--z-ok-fg)}
+.lgtag.user{color:var(--muted)}
+.lgmsg{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgev.open .lgmsg{white-space:pre-wrap;word-break:break-word}
+.lgmeta{color:var(--muted);font-size:10px;margin-left:6px}
+@media (max-width:640px){
+  .lgev{grid-template-columns:58px 1fr}
+  .lgev .lgtag{grid-column:2}
+  .lglbl{flex-basis:52px}
+}
+
 /* ---- Nav rail: collapsible, collapsed by default (#102) -------------------
    One element, one width variable. `body.navcollapsed` drives --rail-now, and
    .page reads the SAME variable for its offset, so the content can never
@@ -688,7 +721,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div id="navlist"></div>
  <div class="navsep"></div>
  <a class="navitem" href="costs.html" data-tip="Rates"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Rates</span></a>
- <button class="navitem" type="button" id="navlogs" data-tip="Logs"><span class="nvico" aria-hidden="true">☰</span><span class="nvlabel">Logs</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+ <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><span class="nvico" aria-hidden="true">▤</span><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
@@ -807,6 +840,45 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="flowctl" id="flowctl"></span>
    </div>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
+  </div>
+ </div>
+
+ <div class="view" data-view="Logs" hidden>
+  <div class="card p-4 mb-3">
+   <div class="flex items-center gap-2 flex-wrap mb-3">
+    <div class="lbl">Log events</div>
+    <span class="muted text-[10px]" id="lgscope">—</span>
+    <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+     <input id="lgq" type="search" placeholder="Search text, tool, session…"
+       style="background:var(--bg);border:1px solid var(--border);border-radius:7px;
+              padding:5px 9px;font-size:12px;color:var(--fg);min-width:min(260px,52vw)">
+     <button id="lgclear" class="chip" type="button">Clear</button>
+    </span>
+   </div>
+   <!-- Facet rows. Each chip carries the count over the WHOLE window, not the
+        capped slice, so the numbers stay true when events are truncated. -->
+   <div class="lgfacets">
+    <div class="lgrow"><span class="lglbl">Level</span><span id="lgf-level" class="lgchips"></span></div>
+    <div class="lgrow"><span class="lglbl">Role</span><span id="lgf-role" class="lgchips"></span></div>
+    <div class="lgrow"><span class="lglbl">Tool</span><span id="lgf-tool" class="lgchips"></span></div>
+    <div class="lgrow"><span class="lglbl">Model</span><span id="lgf-model" class="lgchips"></span></div>
+    <div class="lgrow"><span class="lglbl">Session</span><span id="lgf-session" class="lgchips"></span></div>
+    <div class="lgrow" id="lgrow-kind"><span class="lglbl">Failure</span><span id="lgf-kind" class="lgchips"></span></div>
+    <div class="lgrow"><span class="lglbl">Window</span><span class="lgchips">
+      <button class="lgchip" data-win="1">1h</button>
+      <button class="lgchip" data-win="6">6h</button>
+      <button class="lgchip on" data-win="24">24h</button>
+      <button class="lgchip" data-win="0">All loaded</button>
+    </span></div>
+   </div>
+  </div>
+  <div class="card p-4">
+   <div class="flex items-center gap-2 mb-2">
+    <span class="muted text-[10px]" id="lgcount">—</span>
+    <span class="muted text-[10px]" id="lgcap" hidden></span>
+    <button id="lgcsv" class="chip" type="button" style="margin-left:auto">Export CSV</button>
+   </div>
+   <div id="lglist" style="max-height:clamp(320px,58vh,760px);overflow:auto"></div>
   </div>
  </div>
 
@@ -930,8 +1002,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 <div id="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
  <div class="dhead">
   <span class="dot"></span>
-  <b style="font-size:13px">Logs</b>
+  <b style="font-size:13px">Live tail</b>
   <span class="muted" id="dstamp" style="font-size:10px">live</span>
+  <a href="#/logs" id="dfull" class="chip" style="font-size:10px;text-transform:none;letter-spacing:0">All logs &rarr;</a>
   <button id="dclose" class="chip" style="margin-left:auto" title="Close">&times;</button>
  </div>
  <div class="dtabs">
@@ -946,7 +1019,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div id="dbody"></div>
  <div id="dfoot">
   <span class="muted" id="dcount">—</span>
-  <span class="muted">refreshes every 5s</span>
+  <span class="muted">summary · refreshes every 5s</span>
  </div>
 </div>
 
@@ -2875,7 +2948,7 @@ function setCrumb(v){
 // behave, with a click handler for in-page routing.
 const NAV_ICONS = {
   Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Usage:'\u2211',
-  Cost:'$', Health:'\u2713', Detail:'\u2261'
+  Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630'
 };
 
 function navViews(){
@@ -3002,6 +3075,169 @@ function navSetCollapsed(on){
   navApplyCollapsed(on);
 }
 
+// ---- Logs page (#104) ---------------------------------------------------
+// Fetched lazily: logs-data.json is ~1.3 MB per profile and most visits never
+// open this view, so loading it with the dashboard would tax every page view
+// for a minority feature. The drawer keeps its own 80-row live feed and is
+// untouched by any of this — that answers "what is happening", this answers
+// "find the thing that happened".
+let LOGS = null, logsLoading = false, logsErr = '';
+const lgSel = {level:new Set(), role:new Set(), tool:new Set(), model:new Set(),
+               session:new Set(), kind:new Set()};
+let lgWindow = 24, lgQ = '';
+
+async function loadLogs(){
+  if (LOGS || logsLoading) return;
+  logsLoading = true; logsErr = '';
+  renderLogs();
+  try {
+    const r = await fetch('logs-data.json?t=' + Date.now(), {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    LOGS = await r.json();
+  } catch (e) {
+    // file:// and a missing collector both land here. Say which, rather than
+    // showing an empty list that looks like "no logs".
+    logsErr = e.message;
+  } finally {
+    logsLoading = false;
+    renderLogs();
+  }
+}
+
+function lgProfile(){
+  if (!LOGS || !LOGS.profiles) return null;
+  // The merged "All" tab has no logs profile of its own; fall back to the
+  // first real one rather than rendering nothing.
+  return LOGS.profiles[current] || LOGS.profiles[Object.keys(LOGS.profiles)[0]] || null;
+}
+
+function lgMatch(e, p){
+  if (lgSel.level.size && !lgSel.level.has(e.level)) return false;
+  if (lgSel.role.size  && !lgSel.role.has(e.role))   return false;
+  if (lgSel.tool.size  && !lgSel.tool.has(e.tool))   return false;
+  if (lgSel.model.size && !lgSel.model.has(e.model)) return false;
+  if (lgSel.session.size && !lgSel.session.has(e.session)) return false;
+  if (lgSel.kind.size  && !lgSel.kind.has(e.kind))   return false;
+  if (lgWindow){
+    const cutoff = (p.generated || (Date.now()/1000)) - lgWindow*3600;
+    if (e.ts < cutoff) return false;
+  }
+  if (lgQ){
+    const hay = (e.preview + ' ' + e.tool + ' ' + e.title + ' ' + e.model + ' ' + e.session).toLowerCase();
+    if (!hay.includes(lgQ)) return false;
+  }
+  return true;
+}
+
+function lgChips(boxId, key, items, labelOf){
+  const box = $(boxId);
+  if (!box) return;
+  if (!items || !items.length){ box.innerHTML = '<span class="muted text-[10px]">none</span>'; return; }
+  box.innerHTML = items.map(it => {
+    const v = it.v, on = lgSel[key].has(v) ? ' on' : '';
+    return `<button class="lgchip${on}" data-facet="${key}" data-val="${esc(v)}" title="${esc(labelOf ? labelOf(it) : v)}">`
+         + `${esc((labelOf ? labelOf(it) : v) || '—')}<span class="n">${fmt(it.n)}</span></button>`;
+  }).join('');
+}
+
+function renderLogs(){
+  const list = $('lglist');
+  if (!list) return;
+  if (logsLoading){ list.innerHTML = '<div class="muted text-[12px]">Loading log events…</div>'; return; }
+  if (logsErr){
+    list.innerHTML = `<div class="muted text-[12px]">Could not load logs-data.json (${esc(logsErr)}).`
+      + ` Run <code>llm-telemetry logs</code>, and note that fetch is blocked when the page is opened from file://.</div>`;
+    return;
+  }
+  const p = lgProfile();
+  if (!p){ list.innerHTML = '<div class="muted text-[12px]">No log events in this window.</div>'; return; }
+
+  // Level facet is derived: errors come from errors.log, everything else is a
+  // message row. Counting them here keeps the chip honest without a second query.
+  const lvl = {};
+  p.events.forEach(e => lvl[e.level] = (lvl[e.level]||0)+1);
+  lgChips('lgf-level', 'level', Object.entries(lvl).map(([v,n])=>({v,n})).sort((a,b)=>b.n-a.n));
+  lgChips('lgf-role', 'role', p.facets.role);
+  lgChips('lgf-tool', 'tool', p.facets.tool);
+  lgChips('lgf-model', 'model', (p.facets.model||[]).map(x=>({...x, v:x.v})), it=>short(it.v));
+  lgChips('lgf-session', 'session', p.facets.session, it => it.label || it.v.slice(0,8));
+  const kindRow = $('lgrow-kind');
+  if (kindRow) kindRow.hidden = !(p.facets.kind && p.facets.kind.length);
+  if (p.facets.kind) lgChips('lgf-kind', 'kind', p.facets.kind);
+
+  const rows = p.events.filter(e => lgMatch(e, p));
+  $('lgcount').textContent = `${fmt(rows.length)} shown`;
+  const cap = $('lgcap');
+  if (cap){
+    // The cap is disclosed, never hidden: the facet counts are computed over
+    // the whole window, so they legitimately exceed the number of rows here.
+    cap.hidden = !p.capped;
+    cap.textContent = p.capped
+      ? `· newest ${fmt(p.events_shown)} of ${fmt(p.events_total)} in the last ${p.window_h}h — filter counts cover the full window`
+      : '';
+  }
+  $('lgscope').textContent = `last ${p.window_h}h · ${fmt(p.events_total)} events`;
+
+  list.innerHTML = rows.slice(0, 1200).map((e,i) => {
+    const t = new Date(e.ts*1000).toLocaleTimeString();
+    const tag = e.level === 'error' ? (e.kind || 'error') : (e.tool || e.role);
+    const cls = e.level === 'error' ? 'error' : e.role;
+    const meta = [e.title, short(e.model||'')].filter(Boolean).join(' · ');
+    return `<div class="lgev" data-i="${i}">`
+      + `<span class="lgts">${t}</span>`
+      + `<span class="lgtag ${cls}">${esc(tag)}</span>`
+      + `<span class="lgmsg">${esc(e.preview||'')}`
+      + (meta ? `<span class="lgmeta">${esc(meta)}</span>` : '') + `</span></div>`;
+  }).join('') || '<div class="muted text-[12px]">Nothing matches these filters.</div>';
+  if (rows.length > 1200){
+    list.insertAdjacentHTML('beforeend',
+      `<div class="muted text-[10px]" style="padding-top:6px">Showing the newest 1,200 of ${fmt(rows.length)} matches — narrow the filters to see more.</div>`);
+  }
+}
+
+function logsInstall(){
+  // Facet clicks toggle; delegated so re-rendered chips keep working.
+  document.querySelector('[data-view="Logs"]')?.addEventListener('click', e => {
+    const chip = e.target.closest('[data-facet]');
+    if (chip){
+      const k = chip.dataset.facet, v = chip.dataset.val;
+      lgSel[k].has(v) ? lgSel[k].delete(v) : lgSel[k].add(v);
+      renderLogs(); return;
+    }
+    const win = e.target.closest('[data-win]');
+    if (win){
+      lgWindow = +win.dataset.win;
+      document.querySelectorAll('[data-win]').forEach(b =>
+        b.classList.toggle('on', b === win));
+      renderLogs(); return;
+    }
+    // Clicking a row expands it: previews are one line by default so the list
+    // stays scannable, but the full 120 chars must be readable without leaving.
+    const row = e.target.closest('.lgev');
+    if (row) row.classList.toggle('open');
+  });
+  $('lgq')?.addEventListener('input', e => { lgQ = e.target.value.trim().toLowerCase(); renderLogs(); });
+  $('lgclear')?.addEventListener('click', () => {
+    Object.values(lgSel).forEach(s => s.clear());
+    lgQ = ''; const q = $('lgq'); if (q) q.value = '';
+    renderLogs();
+  });
+  $('lgcsv')?.addEventListener('click', () => {
+    const p = lgProfile(); if (!p) return;
+    const rows = p.events.filter(e => lgMatch(e, p));
+    // Quote every field: previews contain commas and quotes routinely.
+    const q = s => '"' + String(s == null ? '' : s).replace(/"/g,'""') + '"';
+    const csv = ['when,level,role,tool,model,session,title,preview']
+      .concat(rows.map(e => [new Date(e.ts*1000).toISOString(), e.level, e.role,
+        e.tool, e.model, e.session, e.title, e.preview].map(q).join(',')))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'log-events.csv'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+}
+
 // Wiring. Every close path the ticket names: scrim, Esc, nav activation, and
 // crossing the breakpoint.
 function navInstall(){
@@ -3030,7 +3266,7 @@ function navInstall(){
   navSetOpen(false);
 }
 function views(){
-  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail']
+  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
 }
 function pickView(v){
@@ -3045,6 +3281,9 @@ function pickView(v){
   setCrumb(v);
   navSync();
   render();
+  // The logs payload is ~1.3 MB and most visits never open this view, so it
+  // is fetched on first navigation rather than with the page.
+  if (v === 'Logs') loadLogs();
   // Re-render the graph AFTER the view is unhidden: the force layout needs the
   // real wrapper size, and while the tab was hidden it measured 0 — which
   // collapsed every node into a single clump in the corner.
@@ -3056,6 +3295,7 @@ function pickView(v){
   });
 }
 views();
+logsInstall();
 renderNav();
 navInstall();
 document.body.classList.add('hasnav');
@@ -3189,7 +3429,14 @@ function drawerEvents(){
       });
     });
   });
-  return ev.sort((a, b) => b.ts - a.ts).slice(0, 300);
+  // Summary only (#104). The drawer answers "anything I should look at right
+  // now"; the Logs view answers "find the thing that happened". Routine
+  // read-only tool chatter is dropped here so failures cannot be buried by it
+  // — read_file/search_files alone are ~48k of the last 24h.
+  const NOISE = new Set(['read_file','search_files','skill_view','tool_describe',
+                         'tool_search','web_search','web_extract']);
+  const notable = ev.filter(e => e.level === 'error' || !NOISE.has(e.tool || ''));
+  return notable.sort((a, b) => b.ts - a.ts).slice(0, 120);
 }
 
 function drawerSync(){
@@ -3244,10 +3491,18 @@ function drawerOpen(on){
 function installDrawer(){
   $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
-  $('navlogs')?.addEventListener('click', () => drawerOpen(!dOpen));
+  $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
+  // The drawer's "All logs" link hands off to the full view: close the panel,
+  // then navigate, so the page you asked for is not sitting behind a sheet.
+  $('dfull')?.addEventListener('click', e => {
+    e.preventDefault();
+    drawerOpen(false);
+    pickView('Logs');
+  });
   $('dclose')?.addEventListener('click', () => drawerOpen(false));
   $('scrim')?.addEventListener('click', () => drawerOpen(false));
-  // The Health tab's failure panel is a summary; the drawer is the full feed.
+  // The Health tab's failure panel and this drawer are both summaries; the
+  // Logs view is the searchable record.
   $('tolog')?.addEventListener('click', () => drawerOpen(true));
   document.querySelectorAll('.dtab').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.dtab').forEach(x => x.classList.remove('on'));
