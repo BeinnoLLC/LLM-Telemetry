@@ -720,6 +720,28 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    line-height:1.7;white-space:nowrap}
  .fchip:hover{border-color:var(--accent)}
  .fchip.on{background:var(--card);font-weight:600}
+ /* Health page (#110) */
+ .hsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+ @media (max-width:900px){.hsum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ .hsumc{padding:12px 14px;min-width:0}
+ .hsumv{font-size:22px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .hsuml{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .hsums{font-size:10.5px;margin-top:2px}
+ .hhdr{display:flex;align-items:baseline;gap:8px}
+ .hsub{text-transform:none;letter-spacing:0;font-weight:400;font-size:10.5px}
+ .hrow.hthin{opacity:.5}
+ .ffwrap{display:flex;flex-direction:column;gap:6px}
+ .ffrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+ .fflbl{width:48px;flex:none;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .frow{padding:4px 6px;border-radius:4px}
+ .frow:hover{background:var(--card)}
+ .fwhen{min-width:74px;font-variant-numeric:tabular-nums}
+ .fmsg{flex:1;min-width:0;color:var(--fg)}
+ .fcnt{min-width:36px;text-align:center;font-size:10px;font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
+ .fkind{width:72px;text-align:center}
+ .fmodel{width:150px}
+ .fwhen{width:92px}
+ .fmsg{flex:1;min-width:0}
  #faillist::-webkit-scrollbar{width:7px}
  #faillist::-webkit-scrollbar-track{background:transparent}
  #faillist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -982,7 +1004,30 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  </div>
 
  <div class="view" data-view="Health">
-  <div class="card p-4 mb-3" id="delegcard" hidden>
+  <!-- Order follows the question a reader brings here: "is anything failing?"
+       (headline strip) -> "which model?" (success rate) -> "what exactly?"
+       (failures) -> subagent runs, the narrowest slice, last. The delegated
+       panel used to open the page and push the main answer below the fold. -->
+  <div id="hsummary" class="hsum mb-3"></div>
+  <div class="card p-4 mb-3">
+   <div class="lbl mb-2.5 hhdr">Success rate by model
+    <span class="muted hsub">most failures first · faded rows have under 5 calls</span>
+   </div>
+   <div id="healthgrid" class="flex flex-col gap-1.5"></div>
+  </div>
+  <div class="card p-4 mb-3">
+   <div class="lbl mb-2.5 hhdr">Recent failures
+    <span class="muted hsub">identical errors grouped</span>
+    <button id="tolog" class="chip" style="margin-left:auto;font-size:10px;text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
+   </div>
+   <!-- Filter chips are built from the data, so a kind only appears when it
+        actually occurred; counts make a burst obvious before you read a row. -->
+   <div id="failfilters" class="ffwrap mb-2.5"></div>
+   <div id="faillist" class="flex flex-col gap-1.5"
+     style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
+   <div id="failcount" class="muted text-[10px] mt-2"></div>
+  </div>
+  <div class="card p-4" id="delegcard" hidden>
    <div class="lbl mb-2.5">Delegated runs
     <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
    </div>
@@ -1004,21 +1049,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        style="max-height:clamp(160px,22vh,300px);overflow-y:auto;padding-right:4px"></div>
     </div>
    </div>
-  </div>
-  <div class="card p-4 mb-3">
-   <div class="lbl mb-2.5">Success rate by model</div>
-   <div id="healthgrid" class="flex flex-col gap-1.5"></div>
-  </div>
-  <div class="card p-4">
-   <div class="lbl mb-2.5">Recent failures
-    <button id="tolog" class="chip" style="float:right;font-size:10px;text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
-   </div>
-   <!-- Filter chips are built from the data, so a kind only appears when it
-        actually occurred; counts make a burst obvious before you read a row. -->
-   <div id="failfilters" class="flex gap-1.5 flex-wrap mb-2.5"></div>
-   <div id="faillist" class="flex flex-col gap-1.5"
-     style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
-   <div id="failcount" class="muted text-[10px] mt-2"></div>
   </div>
  </div>
 
@@ -2292,6 +2322,7 @@ function renderDeleg(){
 function renderHealth(){
   const p = DATA.profiles[current] || {};
   const H = (p.health||[]).filter(h => h.total > 0);
+  renderHealthSummary(H, p.failures_recent || []);
   const box = $('healthgrid');
   if(!box) return;
   if(!H.length){ box.innerHTML='<div class="muted text-[12px]">No calls recorded.</div>'; }
@@ -2299,20 +2330,27 @@ function renderHealth(){
     box.innerHTML = H.slice(0,14).map(h=>{
       const r = h.rate;
       const col = rateColor(r);
+      // A 0% on one call and a 0% on a thousand are different claims; fade
+      // the thin ones so they do not read as outages.
+      const thin = h.total < 5;
       // stacked bar: green success, then one segment per failure kind
       const segs = Object.entries(h.kinds||{}).map(([k,v])=>
         `<div title="${fk(k).t}: ${v}" style="width:${(v/h.total*100).toFixed(2)}%;background:${fk(k).c}"></div>`).join('');
       const okPct = (h.ok/h.total*100).toFixed(2);
       const chips = Object.entries(h.kinds||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)
         .map(([k,v])=>`<span class="text-[9px] px-1 rounded" style="background:${fk(k).c}22;color:${fk(k).c}">${fk(k).t} ${v}</span>`).join(' ');
-      return `<div class="flex items-center gap-2.5">
+      // "236 ok / 27" read as "236 out of 27". Say what each number is.
+      const count = h.fail
+        ? `${h.ok.toLocaleString()} of ${h.total.toLocaleString()} · <span style="color:${col}">${h.fail.toLocaleString()} failed</span>`
+        : `${h.ok.toLocaleString()} of ${h.total.toLocaleString()}`;
+      return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
         <div class="text-[14px] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
         <div class="flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
           <div style="width:${okPct}%;background:#22c55e"></div>${segs}
         </div>
         <div class="text-[11px] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
-        <div class="text-[9px] muted text-right" style="width:96px">${h.ok.toLocaleString()} ok / ${h.fail}</div>
-        <div class="flex gap-1 shrink-0" style="width:150px">${chips}</div>
+        <div class="text-[10px] muted text-right hcount" style="width:150px">${count}</div>
+        <div class="flex gap-1 shrink-0 flex-wrap" style="width:170px">${chips}</div>
       </div>`;
     }).join('');
   }
@@ -2321,6 +2359,50 @@ function renderHealth(){
   // filter state lives outside renderHealth so a data refresh does not reset
   // the view the user is currently reading.
   renderFailures(p.failures_recent || []);
+}
+
+// Headline strip: the three numbers that answer "is anything wrong" before
+// any chart is read. Computed from the same rows the grid shows.
+function renderHealthSummary(H, F){
+  const el = $('hsummary'); if (!el) return;
+  const tot = H.reduce((a,h)=>a+h.total,0), ok = H.reduce((a,h)=>a+h.ok,0);
+  const rate = tot ? +(ok/tot*100).toFixed(1) : null;
+  const failing = H.filter(h => h.fail > 0);
+  // "Worst" needs enough calls to mean something; otherwise one 0/1 wins.
+  const judged = failing.filter(h => h.total >= 5).sort((a,b)=>(a.rate??101)-(b.rate??101));
+  const worst = judged[0];
+  const card = (v, l, col, sub) => `<div class="card hsumc"><div class="hsumv" style="${col?`color:${col}`:''}">${v}</div>
+    <div class="hsuml">${l}</div>${sub?`<div class="muted hsums">${sub}</div>`:''}</div>`;
+  el.innerHTML =
+    card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`) +
+    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#ef4444':'#22c55e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded') +
+    card(`${failing.length} <span class="muted" style="font-size:13px">of ${H.length}</span>`, 'Models with failures', '', '') +
+    card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : '',
+      worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%');
+}
+
+// Same model + kind + message (with run-specific ids stripped) is one
+// problem, not N. Raw rows repeated the same 524 seven times.
+function failMsgClean(m){
+  m = String(m||'');
+  // Cloudflare error pages arrive as a JSON blob; the title is the message.
+  const t = m.match(/"title"\s*:\s*"([^"]+)"/);
+  const code = m.match(/^HTTP (\d{3})/);
+  if (t) return (code ? `HTTP ${code[1]} · ` : '') + t[1];
+  return m.replace(/\bthread=\S+/g, '')
+          .replace(/\bprompt-turn-[\w:.-]+/g, '')
+          .replace(/\s{2,}/g, ' ').trim();
+}
+function groupFailures(F){
+  const g = new Map();
+  F.forEach(f => {
+    const msg = failMsgClean(f.msg);
+    const key = short(f.model) + '|' + f.kind + '|' + msg;
+    const e = g.get(key);
+    if (e) { e.n++; if ((f.when||'') > e.last) e.last = f.when||''; if ((f.when||'') < e.first) e.first = f.when||''; }
+    else g.set(key, {model:f.model, kind:f.kind, msg, raw:f.msg||'', n:1, first:f.when||'', last:f.when||''});
+  });
+  return [...g.values()].sort((a,b)=> b.last.localeCompare(a.last));
 }
 
 let failKind = 'all', failModel = 'all';
@@ -2341,18 +2423,21 @@ function renderFailures(F){
 
   if (ff){
     const kc = Object.entries(kinds).sort((a,b)=>b[1]-a[1]);
-    const mc = Object.entries(models).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const mc = Object.entries(models).sort((a,b)=>b[1]-a[1]).slice(0,8);
     const chip = (act, val, label, col, n) =>
       `<button class="fchip${act?' on':''}" data-${val}="${label}"
         style="${act&&col?`border-color:${col};color:${col}`:''}">${label}${
         n!==undefined?` <span class="muted">${n}</span>`:''}</button>`;
+    // Two labelled rows: kind and model were one run-on line of chips with
+    // only a hairline between them.
     ff.innerHTML =
-      chip(failKind==='all','fk','all',AC,F.length) +
-      kc.map(([k,n])=>chip(failKind===k,'fk',k,fk(k).c,n)).join('') +
+      `<div class="ffrow"><span class="fflbl">Kind</span>` +
+        chip(failKind==='all','fk','all',AC,F.length) +
+        kc.map(([k,n])=>chip(failKind===k,'fk',k,fk(k).c,n)).join('') + `</div>` +
       (mc.length > 1
-        ? `<span style="width:1px;background:${BD};margin:0 3px"></span>` +
+        ? `<div class="ffrow"><span class="fflbl">Model</span>` +
           chip(failModel==='all','fm','all models') +
-          mc.map(([m,n])=>chip(failModel===m,'fm',m,colorOf(m),n)).join('')
+          mc.map(([m,n])=>chip(failModel===m,'fm',m,colorOf(m),n)).join('') + `</div>`
         : '');
     ff.querySelectorAll('[data-fk]').forEach(b => b.onclick = () => {
       failKind = b.dataset.fk; renderFailures(F);
@@ -2366,21 +2451,24 @@ function renderFailures(F){
   const rows = F.filter(f =>
     (failKind === 'all' || f.kind === failKind) &&
     (failModel === 'all' || short(f.model) === failModel));
+  const groups = groupFailures(rows);
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
-  fl.innerHTML = !rows.length
+  fl.innerHTML = !groups.length
     ? `<div class="muted text-[12px]">${F.length
         ? 'No failures match this filter.'
         : 'No failures recorded in the last 7 days.'}</div>`
-    : rows.map(f=>`<div class="flex items-start gap-2 text-[11px] py-0.5">
-        <span class="text-[9px] px-1 rounded shrink-0" style="background:${fk(f.kind).c}22;color:${fk(f.kind).c}">${fk(f.kind).t}</span>
-        <span class="shrink-0 text-[13px] font-semibold" style="color:${colorOf(short(f.model))}">${short(f.model)}</span>
-        <span class="muted shrink-0 text-[10px]">${(f.when||'').slice(5,16)}</span>
-        <span class="muted truncate text-[10px]" title="${(f.msg||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${(f.msg||'').replace(/</g,'&lt;')}</span>
+    : groups.map(g=>`<div class="flex items-start gap-2 text-[11px] py-0.5 frow" data-n="${g.n}">
+        <span class="text-[9px] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
+        <span class="shrink-0 text-[13px] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
+        <span class="muted shrink-0 text-[10px] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
+        <span class="truncate text-[10.5px] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
+        <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
       </div>`).join('');
 
   if (fc) fc.textContent = rows.length === F.length
-    ? `${F.length} failures · last 7 days`
-    : `${rows.length} of ${F.length} failures`;
+    ? `${F.length} failures in ${groups.length} groups · last 7 days`
+    : `${rows.length} of ${F.length} failures (${groups.length} groups)`;
 }
 
 // ---- Ollama fleet panel -------------------------------------------------

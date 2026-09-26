@@ -124,6 +124,10 @@ def main():
         for r in sp.get("rows", []):
             if "profile" in r:
                 r["profile"] = PROFILE_MAP[n]
+        # Jitter scaled ok/fail/total independently; re-derive total and rate
+        # so a health row never claims more successes than calls.
+        from fix_sample_health import fix_health
+        fix_health(sp)
         out_profiles[PROFILE_MAP[n]] = sp
 
     data = {
