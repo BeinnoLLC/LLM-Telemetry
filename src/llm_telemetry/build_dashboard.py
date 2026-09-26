@@ -105,6 +105,55 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
  /* Canvases and long strings would otherwise set the track's min-content width
     and blow the grid out sideways. */
+/* Left nav drawer (#3). Fixed rail, content shifts right. Mobile behaviour
+   (off-canvas + scrim) is ticket #4; this keeps it simply hidden below the
+   tablet breakpoint so the page never loses its nav mid-refactor. */
+#navdrawer{
+  position:fixed; top:0; left:0; bottom:0; width:232px; z-index:40;
+  background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto; padding:14px 10px;
+}
+#navdrawer .navbrand{
+  display:flex; align-items:center; gap:8px; padding:4px 8px 12px;
+  font-weight:650; letter-spacing:-.02em;
+}
+.navitem{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:8px 10px; margin-bottom:2px; border-radius:8px;
+  border:0; background:none; cursor:pointer; text-align:left;
+  color:var(--muted); font-size:13px; line-height:1.2;
+  border-left:2px solid transparent; text-decoration:none;
+}
+.navitem:hover{ background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--fg); }
+.navitem:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+/* Active item: accent bar plus accent text, so it reads as "you are here"
+   without relying on colour alone. */
+.navitem[aria-current="page"]{
+  color:var(--accent); border-left-color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 14%, transparent);
+  font-weight:600;
+}
+.navitem .nvico{ width:16px; text-align:center; flex:0 0 16px; font-size:13px; }
+.navitem .nvlabel{ flex:1 1 auto; min-width:0; }
+/* Counts ride on the right; hidden when zero so the rail stays quiet. */
+.navitem .nvbadge{
+  flex:0 0 auto; font-size:10px; padding:1px 6px; border-radius:999px;
+  background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
+}
+#navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
+/* Content clears the fixed rail. The chip strip is redundant once the rail is
+   showing, so it hides on desktop only — below the breakpoint the rail is gone
+   and the chips are the nav, until #4 lands the off-canvas sheet. */
+@media (min-width:1025px){
+  body.hasnav .page{ margin-left:232px; }
+  body.hasnav #views{ display:none; }
+}
+/* Below the tablet breakpoint the rail is hidden and the chip strip returns,
+   so navigation never disappears. #4 replaces this with an off-canvas sheet. */
+@media (max-width:1024px){
+  #navdrawer{ display:none; }
+  body.hasnav .page{ margin-left:0; }
+}
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
  /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
@@ -570,6 +619,13 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
+<nav id="navdrawer" aria-label="Sections">
+ <div class="navbrand"><span style="color:var(--accent)">◈</span> LLM Telemetry</div>
+ <div id="navlist"></div>
+ <div class="navsep"></div>
+ <a class="navitem" href="costs.html"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Rates</span></a>
+ <button class="navitem" type="button" id="navlogs"><span class="nvico" aria-hidden="true">☰</span><span class="nvlabel">Logs</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+</nav>
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
   <div class="flex items-center gap-2">
@@ -2535,6 +2591,62 @@ function setCrumb(v){
   if (el) el.textContent = v || '';
 }
 
+// ---- Left nav drawer (#3) -------------------------------------------------
+// The rail is the primary section nav on desktop. It renders from the same
+// view list as the chip strip, so the two can never disagree about which
+// sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
+// behave, with a click handler for in-page routing.
+const NAV_ICONS = {
+  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Usage:'\u2211',
+  Cost:'$', Health:'\u2713', Detail:'\u2261'
+};
+
+function navViews(){
+  return [...document.querySelectorAll('.view')].map(el => el.dataset.view);
+}
+
+function renderNav(){
+  const box = document.getElementById('navlist');
+  if (!box) return;
+  box.innerHTML = navViews().map(v => `
+    <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}">
+      <span class="nvico" aria-hidden="true">${NAV_ICONS[v] || '\u2022'}</span>
+      <span class="nvlabel">${v}</span>
+      <span class="nvbadge" data-navbadge="${v}" hidden></span>
+    </a>`).join('');
+  box.querySelectorAll('[data-nav]').forEach(a => {
+    a.addEventListener('click', e => {
+      // Let modified clicks (new tab, new window) behave natively.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      pickView(a.dataset.nav);
+    });
+  });
+  navSync();
+}
+
+// Active state + counts. Called on every view change and every live poll, so
+// the rail never disagrees with the page.
+function navSync(){
+  document.querySelectorAll('[data-nav]').forEach(a => {
+    const on = a.dataset.nav === view;
+    if (on) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+  const p = (typeof DATA !== 'undefined' && DATA.profiles) ? (DATA.profiles[current] || {}) : {};
+  const counts = {
+    Live: (p.live || []).length,
+    // Failures are the number worth surfacing on Health; 0 stays hidden so the
+    // rail does not shout when nothing is wrong.
+    Health: ((DATA && DATA.errors) || []).length
+  };
+  Object.entries(counts).forEach(([v, n]) => {
+    const b = document.querySelector(`[data-navbadge="${v}"]`);
+    if (!b) return;
+    b.textContent = n;
+    b.hidden = !n;
+  });
+}
 function views(){
   $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
@@ -2549,6 +2661,7 @@ function pickView(v){
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
   setCrumb(v);
+  navSync();
   render();
   // Re-render the graph AFTER the view is unhidden: the force layout needs the
   // real wrapper size, and while the tab was hidden it measured 0 — which
@@ -2561,6 +2674,8 @@ function pickView(v){
   });
 }
 views();
+renderNav();
+document.body.classList.add('hasnav');
 
 // Prepend the merged "All" view so it is the default tab. Done before `current`
 // is chosen so the page opens on the overview.
@@ -2747,6 +2862,7 @@ function drawerOpen(on){
 function installDrawer(){
   $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
+  $('navlogs')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('dclose')?.addEventListener('click', () => drawerOpen(false));
   $('scrim')?.addEventListener('click', () => drawerOpen(false));
   // The Health tab's failure panel is a summary; the drawer is the full feed.
@@ -2796,6 +2912,7 @@ async function pollLive(){
     // switching back showed a jump rather than a live feed. renderLive writes
     // into hidden nodes cheaply, so there is no reason to gate it on the view.
     renderLive();
+    navSync();
     // Update only the "In progress" KPI in place — the other cards depend on
     // date-filtered aggregates the live feed does not carry, so a full KPI
     // rebuild here would show wrong numbers.
