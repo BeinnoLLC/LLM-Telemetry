@@ -134,6 +134,8 @@ ALIASES = {
     "claude-opus-4-6": "anthropic/claude-opus-4.6",
     "claude-opus-4-8": "anthropic/claude-opus-4.8",
     "claude-opus-5-5": "anthropic/claude-opus-5.5",
+    "claude-fable-5": "anthropic/claude-fable-5",
+    "claude-fable-5-1": "anthropic/claude-fable-5.1",
     "claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
     "glm-5.3": "z-ai/glm-5.3",
     "glm-5.3-flash": "z-ai/glm-5.3-flash",
@@ -178,6 +180,35 @@ def is_local(model):
     return any(h in m for h in LOCAL_HINTS)
 
 
+def _resolve_catalog_id(model, catalog):
+    """Find the OpenRouter id for a model name the ALIASES table does not pin.
+
+    Hermes records Anthropic models with dashed versions ("claude-fable-5-1")
+    while OpenRouter lists them dotted ("anthropic/claude-fable-5.1"). Before
+    this, every new Anthropic release silently priced at $0.00 until someone
+    hand-added an alias — opus-5-5 and fable-5-1 both shipped that way. Try
+    the exact basename first, then the dashed->dotted form, and never match a
+    ":batch"/":thinking" variant by accident.
+    """
+    base = (model or "").split("/")[-1].lower()
+    if not base:
+        return None
+    cands = [base]
+    # claude-fable-5-1 -> claude-fable-5.1; claude-opus-4-5-20251101 keeps
+    # the date suffix as-is (that form is pinned in ALIASES anyway).
+    import re
+    dotted = re.sub(r"-(\d+)-(\d+)$", r"-\1.\2", base)
+    if dotted != base:
+        cands.append(dotted)
+    for cand in cands:
+        for cid in catalog:
+            if ":" in cid.split("/")[-1]:
+                continue
+            if cid.split("/")[-1].lower() == cand:
+                return cid
+    return None
+
+
 def rates_for(model, catalog):
     """-> (prompt, completion, cache_read) USD per token, or None.
 
@@ -192,11 +223,7 @@ def rates_for(model, catalog):
         return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
     oid = ALIASES.get(model)
     if not oid:
-        base = (model or "").split("/")[-1].lower()
-        for cid in catalog:
-            if cid.split("/")[-1].lower() == base:
-                oid = cid
-                break
+        oid = _resolve_catalog_id(model, catalog)
     p = catalog.get(oid or "")
     if not p:
         return None
