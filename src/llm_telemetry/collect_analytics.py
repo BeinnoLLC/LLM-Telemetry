@@ -219,13 +219,53 @@ def classify(phase, tools):
             return name
     return "Idle" if not tl else "Working"
 
+
+def _tilde(path):
+    home = os.path.expanduser("~")
+    path = str(path)
+    return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
+
+
+def unreadable(db):
+    """Why a profile's state.db cannot be read, or None if it can (P5-04).
+
+    Opens read-only and touches the one table every query here depends on, so
+    a corrupt file, a permissions problem or an older schema is caught up
+    front and reported, instead of crashing the collector for every profile.
+    """
+    try:
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            con.execute("select 1 from session_model_usage limit 1").fetchall()
+        finally:
+            con.close()
+    except (sqlite3.Error, OSError) as e:
+        return f"{type(e).__name__}: {e}"
+    return None
+
 def build():
     out = {"generated": datetime.datetime.now().isoformat(timespec="seconds"), "profiles": {}}
     catalog, catsrc = pricing.fetch_catalog()
     out["pricing_source"] = catsrc
     out["pricing_models"] = len(catalog)
+    # Resolution report (P5-04): how the profile list was arrived at, plus any
+    # profile whose database could not be read. Rendered in the header so a
+    # missing profile is a visible warning, never a silent omission.
+    res = dict(getattr(CFG, "resolution", {}) or {})
+    res["failed"] = list(res.get("failed", []))
+    # Paths go out with the home directory contracted to ~: the payload is
+    # rendered into a page, and the page has no business naming the user.
+    for k in ("agent_home", "config_file"):
+        if res.get(k):
+            res[k] = _tilde(res[k])
+    out["resolution"] = res
     for name, db in PROFILES.items():
         if not os.path.exists(db):
+            continue
+        why = unreadable(db)
+        if why:
+            res["failed"].append({"name": name, "path": _tilde(str(db)),
+                                  "reason": why.replace(os.path.expanduser("~"), "~")})
             continue
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:

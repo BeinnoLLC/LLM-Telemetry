@@ -393,6 +393,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwlive .bwarrow.bwdown{animation-delay:.55s}
  @media(prefers-reduced-motion:reduce){.bwlive .bwarrow{animation:none}}
  /* Preloader */
+ /* Profile resolution (P5-04, #53) */
+ .resinfo{position:relative;margin-left:6px}
+ .resbtn{font:inherit;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:9px;padding:0 7px;cursor:pointer}
+ .resbtn:hover{color:var(--fg);border-color:var(--accent)}
+ .resbtn.warn{color:#f59e0b;border-color:#f59e0b88;border-style:solid}
+ .resbad{color:#f59e0b}
+ .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+ .respop code{font-size:11px}
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
        transition:opacity .35s ease}
@@ -895,6 +903,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
     <div class="muted text-[11px] mt-0.5 flex items-center gap-1.5">
      <span class="dot"></span><span id="meta"></span>
+     <span id="resinfo" class="resinfo"></span>
      <span aria-hidden="true" class="opacity-40">/</span>
      <span id="crumb" aria-live="polite" class="font-medium" style="color:var(--fg)"></span>
     </div>
@@ -1252,6 +1261,60 @@ function showSchemaError(msg){
     if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
     throw new Error('schema mismatch: ' + bad);   // stop this script: nothing below may render
   }
+}
+// ---- Profile resolution (P5-04, #53) -------------------------------------
+// Zero profiles is an actionable state, not a blank page: say which agent
+// home was searched and how to point the tool elsewhere.
+{
+  const res = DATA.resolution || {};
+  if (!DATA.profiles || !Object.keys(DATA.profiles).length) {
+    const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const why = res.mode === 'explicit-empty'
+      ? `The config file${res.config_file ? ` (${esc(res.config_file)})` : ''} sets <code>"profiles": []</code>, which means read no profiles.`
+      : `No profile with a state.db was found under <code>${esc(res.agent_home || '~/.hermes')}</code>.`;
+    const failed = (res.failed || []).map(f =>
+      `<li><b>${esc(f.name)}</b>: ${esc(f.reason)}</li>`).join('');
+    const go = () => {
+      const el = document.createElement('div');
+      el.id = 'noprofiles';
+      el.className = 'card';
+      el.style.cssText = 'max-width:640px;margin:15vh auto;padding:24px;line-height:1.55';
+      el.innerHTML = `<div style="font-size:16px;font-weight:650;margin-bottom:8px">No profiles to show</div>
+        <div class="muted" style="font-size:13px">${why}</div>
+        ${failed ? `<div style="margin-top:10px;font-size:13px">Unreadable:<ul style="margin:4px 0 0 18px;list-style:disc">${failed}</ul></div>` : ''}
+        <div class="muted" style="font-size:12px;margin-top:12px">Point the tool at your agent with
+        <code>LLM_TELEMETRY_AGENT_HOME=/path</code> or <code>"agent_home"</code> in the config, then re-run
+        <code>llm-telemetry dashboard</code>.</div>`;
+      document.body.appendChild(el);
+      const b = document.getElementById('boot'); if (b) b.remove();
+    };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+    throw new Error('no profiles');   // nothing below can render without one
+  }
+}
+// Header summary: "3 profiles · 1 excluded · 1 unreadable", detail on click.
+function renderResolution(){
+  const el = $('resinfo'); if (!el) return;
+  const res = DATA.resolution || {};
+  const n = Object.keys(DATA.profiles).filter(k => k !== 'All').length;
+  const ex = res.excluded || [], bad = res.failed || [];
+  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const bits = [`${n} profile${n === 1 ? '' : 's'}`];
+  if (ex.length) bits.push(`${ex.length} excluded`);
+  if (bad.length) bits.push(`<span class="resbad">${bad.length} unreadable</span>`);
+  el.innerHTML = `<button type="button" id="resbtn" class="resbtn${bad.length ? ' warn' : ''}"
+      aria-expanded="false" title="How the profile list was built">${bad.length ? '&#9888; ' : ''}${bits.join(' · ')}</button>
+    <div id="respop" class="respop card" hidden>
+      <div class="lbl mb-1">Profiles</div>
+      <div class="muted text-[11px] mb-2">Agent home <code>${esc(res.agent_home || '—')}</code>${res.mode ? ` · ${esc(res.mode)}` : ''}</div>
+      ${(res.discovered || []).length ? `<div class="text-[12px]"><b>Discovered:</b> ${res.discovered.map(esc).join(', ')}</div>` : ''}
+      ${(res.configured || []).length ? `<div class="text-[12px]"><b>From config:</b> ${res.configured.map(esc).join(', ')}</div>` : ''}
+      ${ex.length ? `<div class="text-[12px]"><b>Excluded:</b> ${ex.map(e => `${esc(e.name)} <span class="muted">(${esc(e.reason)})</span>`).join(', ')}</div>` : ''}
+      ${bad.length ? `<div class="text-[12px] resbad mt-1"><b>Unreadable:</b><ul style="margin:2px 0 0 16px;list-style:disc">${bad.map(f => `<li>${esc(f.name)}: ${esc(f.reason)}</li>`).join('')}</ul></div>` : ''}
+    </div>`;
+  const btn = $('resbtn'), pop = $('respop');
+  btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
+  document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim() || '#888';
 let AC, MU, BD, FG;
@@ -3846,6 +3909,7 @@ COLORS = buildColors(allModelNames());
 TOOLCOLORS = buildToolColors(allToolNames());
 current = Object.keys(DATA.profiles)[0];
 tabs();
+renderResolution();
 $('from').onchange=render; $('to').onchange=render;
 
 const saved = localStorage.getItem('hermes-dash-theme');
@@ -3893,6 +3957,7 @@ async function doRefresh(silent){
     COLORS = buildColors(allModelNames());
     TOOLCOLORS = buildToolColors(allToolNames());
     tabs();
+    renderResolution();
     pick(DATA.profiles[keepProfile] ? keepProfile : Object.keys(DATA.profiles)[0]);
     // restore the range the user was looking at, when it is still in bounds
     if (keepFrom) $('from').value = keepFrom;

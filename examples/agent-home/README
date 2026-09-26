@@ -1,0 +1,2 @@
+Empty on purpose. The sample build points LLM_TELEMETRY_AGENT_HOME here so it
+can never read a real agent home; see tests/test_sample_isolation.py.

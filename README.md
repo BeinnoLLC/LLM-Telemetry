@@ -97,9 +97,50 @@ shows as stale instead of silently serving a confident old snapshot.
 
 ```bash
 python3 examples/make_sample_data.py   # synthetic payloads
-node tests/run-all.js                  # 213 checks, 16 suites
+node tests/run-all.js                  # DOM suites (jsdom)
+for t in tests/test_*.py; do python3 "$t"; done   # Python suites
 python3 examples/check_no_leaks.py     # nothing identifying in samples
 ```
+
+### Rendering the samples without touching your real data
+
+The committed dashboard under `examples/reports/` is rendered from committed
+fixture payloads only. Build it like this, on any machine, whether or not you
+have a real agent home:
+
+```bash
+LLM_TELEMETRY_NO_COLLECT=1 \
+LLM_TELEMETRY_CONFIG=examples/sample-config.json \
+LLM_TELEMETRY_AGENT_HOME=examples/agent-home \
+python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
+```
+
+- `LLM_TELEMETRY_NO_COLLECT=1` renders from the JSON already on disk; no
+  collector runs.
+- `examples/sample-config.json` sets `"profiles": []`, which now means **no
+  profiles** (it used to mean "discover everything").
+- `LLM_TELEMETRY_AGENT_HOME` points at an empty fixture directory, so nothing
+  can be discovered even if a collector did run.
+
+`tests/test_sample_isolation.py` enforces this: it builds the sample twice,
+against an empty home and against a home holding a decoy profile, and fails
+unless the two outputs are byte-identical.
+
+### Choosing which profiles are read
+
+Profiles are discovered under the agent home (`$LLM_TELEMETRY_AGENT_HOME`, else
+`agent_home` in the config, else `~/.hermes`). The config narrows or extends
+that list, never silently replaces it:
+
+| config | result |
+|---|---|
+| no `profiles` key | every discovered profile |
+| `"profiles": []` | none |
+| `"profiles": [{"name": "x", "home": "..."}]` | `x` from config, plus every other discovered profile |
+| `"exclude": ["scratch"]` | drops `scratch`; the only way to omit one |
+
+The header shows `N profiles · M excluded · K unreadable`; click it for the
+full list. An unreadable `state.db` is shown as a warning, not dropped.
 
 Tests run the real built HTML in jsdom and assert on the rendered DOM — colour
 distinctness, bar geometry, tooltip contents, tree structure. They exist

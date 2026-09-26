@@ -23,6 +23,9 @@ jobs:
         env:
           LLM_TELEMETRY_NO_COLLECT: '1'
           LLM_TELEMETRY_CONFIG: examples/sample-config.json
+          # Explicit fixture home: the sample must not depend on whether the
+          # runner happens to have a real agent home (P5-06, #55).
+          LLM_TELEMETRY_AGENT_HOME: examples/agent-home
         run: python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 
       - name: DOM suites
@@ -30,3 +33,6 @@ jobs:
           LLM_TELEMETRY_REPORTS: examples/reports
           NODE_PATH: node_modules
         run: node tests/run-all.js
+
+      - name: Python suites
+        run: for t in tests/test_*.py; do python3 "$t" || exit 1; done

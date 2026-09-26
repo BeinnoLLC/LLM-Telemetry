@@ -93,6 +93,14 @@ class Config:
     # can be compared against metered APIs on the same axis.
     electricity_rate_kwh: float = 0.047
     currency: str = "$"
+    # Where the agent keeps its profiles (P5-03). Resolved in load():
+    # $LLM_TELEMETRY_AGENT_HOME > this key > ~/.hermes.
+    agent_home: str = ""
+    # Profile names to leave out even though they exist on disk (P5-02).
+    exclude: list[str] = field(default_factory=list)
+    # How the profile list was arrived at (P5-04): discovered, configured,
+    # excluded and unreadable, each with a reason. Filled by load().
+    resolution: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # Path, not str: collectors compose report paths as `reports_dir / x`,
@@ -154,29 +162,103 @@ def autodiscover_profiles(agent_home: str = "~/.hermes") -> list[Profile]:
     return found
 
 
-def load(path: str | None = None) -> Config:
-    """Load config from disk, falling back to autodiscovery."""
+def resolve_agent_home(configured=None):
+    """Where the agent keeps its profiles (P5-03, #52).
+
+    Precedence: $LLM_TELEMETRY_AGENT_HOME, then config agent_home, then
+    ~/.hermes. Relative paths resolve against the current directory and ~ is
+    expanded, so the same value means the same place wherever it is read.
+    """
+    env = os.environ.get("LLM_TELEMETRY_AGENT_HOME")
+    if env:
+        return _expand(env)
+    if configured:
+        return _expand(configured)
+    return _expand("~/.hermes")
+
+
+def resolve_profiles(configured, agent_home, exclude=()):
+    """Merge configured profiles with discovered ones (P5-01/02, #50 #51).
+
+    configured is None when the config file has no "profiles" key: pure
+    autodiscovery. An empty list is an explicit request for zero profiles and
+    is honoured (the old truthiness check turned [] into "discover
+    everything", which is how the sample build read the real ~/.hermes).
+
+    A non-empty list is a MODIFIER on discovery, not a replacement: configured
+    entries win on a name collision, discovered profiles not named are
+    appended, and exclude is the only way to drop one. The tool never
+    silently omits a profile that exists on disk.
+
+    Returns (profiles, report); the report is what P5-04 renders.
+    """
+    report = {"agent_home": agent_home, "discovered": [], "configured": [],
+              "excluded": [], "failed": [], "mode": ""}
+    exclude = set(exclude or ())
+
+    if configured is not None and len(configured) == 0:
+        report["mode"] = "explicit-empty"
+        return [], report
+
+    discovered = autodiscover_profiles(agent_home)
+    report["discovered"] = [p.name for p in discovered]
+
+    if configured is None:
+        report["mode"] = "discovered"
+        merged = list(discovered)
+    else:
+        report["mode"] = "merged"
+        conf = [p if isinstance(p, Profile) else Profile(**p) for p in configured]
+        report["configured"] = [p.name for p in conf]
+        names = {p.name for p in conf}
+        merged = conf + [p for p in discovered if p.name not in names]
+
+    out = []
+    for p in merged:
+        if p.name in exclude:
+            report["excluded"].append({"name": p.name, "reason": "listed in config exclude"})
+            continue
+        out.append(p)
+    return out, report
+
+
+def load(path=None):
+    """Load config from disk; profiles come from resolve_profiles()."""
     paths = [_expand(path)] if path else _candidate_paths()
+    raw = {}
+    src = None
     for p in paths:
         if os.path.exists(p):
             with open(p) as f:
                 raw = json.load(f)
-            # Drop comment keys and unknown fields rather than crashing with a
-            # bare TypeError. A config file is hand-edited: users add "_comment"
-            # notes, and a stale key from an older version must not make the
-            # whole tool unstartable. Unknown keys are reported, not silently
-            # swallowed, so a typo'd option is still discoverable.
-            known = {f.name for f in fields(Config)}
-            unknown = [k for k in raw if k not in known]
-            if unknown:
-                print(f"config: ignoring unknown key(s) in {p}: "
-                      f"{', '.join(sorted(unknown))}", file=sys.stderr)
-            cfg = Config(**{k: v for k, v in raw.items() if k in known})
-            if not cfg.profiles:
-                cfg.profiles = autodiscover_profiles()
-            return cfg
-    cfg = Config()
-    cfg.profiles = autodiscover_profiles()
+            src = p
+            break
+    # Drop comment keys and unknown fields rather than crashing with a bare
+    # TypeError. A config file is hand-edited: users add "_comment" notes, and
+    # a stale key from an older version must not make the whole tool
+    # unstartable. Unknown keys are reported so a typo is still discoverable.
+    known = {f.name for f in fields(Config)}
+    unknown = [k for k in raw if k not in known]
+    if unknown:
+        print(f"config: ignoring unknown key(s) in {src}: "
+              f"{', '.join(sorted(unknown))}", file=sys.stderr)
+    # "profiles" absent -> None (discover); present -> honoured, even if [].
+    configured = raw.get("profiles") if "profiles" in raw else None
+    kwargs = {k: v for k, v in raw.items() if k in known and k != "profiles"}
+    cfg = Config(**kwargs)
+    cfg.agent_home = resolve_agent_home(raw.get("agent_home"))
+    if not os.path.isdir(cfg.agent_home) and configured != []:
+        # An explicit error naming the path, not an empty profile list that
+        # looks like "no usage yet".
+        print(f"config: agent home not found: {cfg.agent_home} "
+              f"(set LLM_TELEMETRY_AGENT_HOME or agent_home in the config)",
+              file=sys.stderr)
+    cfg.profiles, cfg.resolution = resolve_profiles(
+        configured, cfg.agent_home, raw.get("exclude"))
+    cfg.resolution["config_file"] = src
+    if configured == []:
+        print(f"config: {src} sets \"profiles\": [] -- no profiles will be read",
+              file=sys.stderr)
     return cfg
 
 
