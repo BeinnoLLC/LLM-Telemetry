@@ -33,6 +33,7 @@ import urllib.error
 import urllib.request
 
 from .config import get as _cfg
+from .schema import stamp
 
 CFG = _cfg()
 
@@ -363,8 +364,8 @@ def main():
         if is_local and load:
             h["load"] = load
 
-    data = {"ts": int(time.time()), "hosts": hosts,
-            "endpoints": len(eps), "physical": len(hosts)}
+    data = stamp({"ts": int(time.time()), "hosts": hosts,
+                  "endpoints": len(eps), "physical": len(hosts)})
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     tmp = OUT + ".tmp"
     with open(tmp, "w") as f:

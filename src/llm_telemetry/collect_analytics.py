@@ -7,6 +7,7 @@ range entirely client-side without re-querying.
 import sqlite3, json, os, datetime, argparse, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
+from .schema import stamp
 from . import failures
 from . import bandwidth
 from . import delegations
@@ -308,7 +309,7 @@ def build():
                                  "delegations": deleg,
                                  "min_date": dates[0] if dates else None,
                                  "max_date": dates[-1] if dates else None}
-    return out
+    return stamp(out)
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

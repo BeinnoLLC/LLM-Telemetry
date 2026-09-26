@@ -7,6 +7,7 @@ mirrors collect_logs.collect() exactly, including the capped-slice disclosure,
 so the tests exercise the real rendering path.
 """
 import json
+from llm_telemetry.schema import SCHEMA_VERSION
 import os
 import random
 import sys
@@ -95,6 +96,7 @@ data = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         # Marks the payload as fixture data; check_no_leaks.py requires it so a
         # real export can never be mistaken for a sample and committed.
         "sample": True,
+        "schema_version": SCHEMA_VERSION,
         "profiles": {"work": build(), "personal": build()}}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, "w") as f:

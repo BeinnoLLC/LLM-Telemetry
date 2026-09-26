@@ -15,6 +15,7 @@ value with synthetic equivalents:
 Run:  python3 examples/make_sample_data.py [source.json]
 """
 import json
+from llm_telemetry.schema import SCHEMA_VERSION
 import os
 import random
 import re
@@ -136,6 +137,7 @@ def main():
         "pricing_source": "sample",
         "pricing_models": real.get("pricing_models", 0),
         "sample": True,
+        "schema_version": SCHEMA_VERSION,
     }
     os.makedirs(OUT, exist_ok=True)
     with open(f"{OUT}/analytics-data.json", "w") as f:
@@ -149,7 +151,7 @@ def main():
             rr = json.load(f)
         rp = {PROFILE_MAP.get(k, k): scrub(v) for k, v in rr.get("profiles", {}).items()}
         with open(f"{OUT}/router-data.json", "w") as f:
-            json.dump({"profiles": rp, "sample": True}, f)
+            json.dump({"profiles": rp, "sample": True, "schema_version": SCHEMA_VERSION}, f)
         print(f"{OUT}/router-data.json  ({len(rp)} profiles, sample)")
 
     # Live + host payloads. The DOM suites read these directly, so without
@@ -164,6 +166,7 @@ def main():
         if key and isinstance(payload.get(key), dict):
             payload[key] = {PROFILE_MAP.get(k, k): v for k, v in payload[key].items()}
         payload["sample"] = True
+        payload["schema_version"] = SCHEMA_VERSION
         with open(f"{OUT}/{fname}", "w") as f:
             json.dump(payload, f)
         print(f"{OUT}/{fname}  (sample)")

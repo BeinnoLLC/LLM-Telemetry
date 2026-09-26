@@ -22,8 +22,25 @@ else:
     # help page cannot drift from the config the agent actually loads.
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router",
                     str(CFG.reports_dir / "router-data.json")], check=True)
-data = json.load(open(DATA))
-data["router"] = json.load(open(CFG.reports_dir / "router-data.json"))["profiles"]
+from .schema import SCHEMA_VERSION
+
+
+def _load_versioned(path):
+    """Load a payload and refuse a shape this build does not understand (#23).
+
+    Failing the build is the loud version of the blank-dashboard bug: better a
+    clear message here than a page that renders nothing.
+    """
+    d = json.load(open(path))
+    got = d.get("schema_version")
+    if got != SCHEMA_VERSION:
+        sys.exit(f"{path}: schema_version {got!r}, expected {SCHEMA_VERSION} "
+                 f"(stale payload — re-run the collector)")
+    return d
+
+
+data = _load_versioned(DATA)
+data["router"] = _load_versioned(CFG.reports_dir / "router-data.json")["profiles"]
 
 HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1164,6 +1181,44 @@ let DATA = __DATA__;
 // Injected from config.local_host_patterns so provOf() classifies self-hosted
 // endpoints correctly on any network, not just the author's LAN.
 const LOCAL_HOSTS = __LOCAL_HOSTS__;
+// ---- Payload contract (P1-01, #23) ---------------------------------------
+// Every payload carries schema_version. A missing or different version means
+// the page and the collector disagree about the shape; rendering anyway is how
+// "wrong data" used to show up as a silently empty dashboard. Refuse, loudly.
+const SCHEMA_VERSION = __SCHEMA_VERSION__;
+function schemaProblem(payload, name){
+  if (!payload || typeof payload !== 'object') return `${name}: not a JSON object`;
+  if (!('schema_version' in payload))
+    return `${name} is a stale payload (no schema_version) — re-run \`llm-telemetry dashboard\``;
+  if (payload.schema_version !== SCHEMA_VERSION)
+    return `${name} has schema_version ${JSON.stringify(payload.schema_version)}, this page expects ${SCHEMA_VERSION} — re-run \`llm-telemetry dashboard\``;
+  return '';
+}
+function showSchemaError(msg){
+  let el = document.getElementById('schemaerr');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'schemaerr';
+    el.setAttribute('role', 'alert');
+    el.style.cssText = 'position:fixed;inset:0;z-index:100;display:flex;align-items:center;'
+      + 'justify-content:center;background:var(--bg);padding:24px';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '<div class="card" style="max-width:640px;padding:24px;border-color:#ef4444">'
+    + '<div style="color:#ef4444;font-weight:600;font-size:16px;margin-bottom:8px">Payload version mismatch</div>'
+    + '<div class="schemamsg" style="font-size:13px;line-height:1.5"></div>'
+    + '<div class="muted" style="font-size:11px;margin-top:12px">The dashboard refused to render rather than show '
+    + 'numbers it cannot interpret.</div></div>';
+  el.querySelector('.schemamsg').textContent = msg;
+}
+{
+  const bad = schemaProblem(DATA, 'analytics-data.json');
+  if (bad) {
+    const go = () => { showSchemaError(bad); const b = document.getElementById('boot'); if (b) b.remove(); };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+    throw new Error('schema mismatch: ' + bad);   // stop this script: nothing below may render
+  }
+}
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim() || '#888';
 let AC, MU, BD, FG;
 function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
@@ -3358,7 +3413,10 @@ async function loadLogs(){
   try {
     const r = await fetch('logs-data.json?t=' + Date.now(), {cache:'no-store'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    LOGS = await r.json();
+    const fresh = await r.json();
+    const bad = schemaProblem(fresh, 'logs-data.json');
+    if (bad) throw new Error(bad);
+    LOGS = fresh;
   } catch (e) {
     // file:// and a missing collector both land here. Say which, rather than
     // showing an empty list that looks like "no logs".
@@ -3677,6 +3735,8 @@ async function doRefresh(silent){
     const r = await fetch('analytics-data.json?t=' + Date.now(), {cache:'no-store'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const fresh = await r.json();
+    const bad = schemaProblem(fresh, 'analytics-data.json');
+    if (bad) { showSchemaError(bad); throw new Error(bad); }
     if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
     const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
     DATA = fresh;
@@ -3949,6 +4009,9 @@ async function pollLive(){
     const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const fresh = await r.json();
+    // Version check is NOT a transient miss: say so on the first poll, not the third.
+    const bad = schemaProblem(fresh, 'live-data.json');
+    if (bad) { liveFails = 2; throw new Error(bad); }
     if (!fresh.profiles) throw new Error('empty payload');
     // Diff for completions BEFORE merging into DATA -- once merged there is
     // no "previous" state left to compare against. First call ever is a
@@ -4017,7 +4080,8 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) doRef
 """
 
 html = (HEAD + JS.replace("__DATA__", json.dumps(data, default=str))
-        .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns)))
+        .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))
+        .replace("__SCHEMA_VERSION__", str(SCHEMA_VERSION)))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 open(OUT, "w").write(html)
 print(f"{OUT}  ({len(html):,} bytes)")

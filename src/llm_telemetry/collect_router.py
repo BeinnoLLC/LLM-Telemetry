@@ -12,6 +12,7 @@ except ImportError:
     sys.exit("pyyaml required")
 
 from .config import get as _cfg
+from .schema import stamp
 
 CFG = _cfg()
 PROFILES = {p.name: p.config for p in CFG.live_profiles()}
@@ -124,7 +125,7 @@ def build():
                             "enabled": bool(comp.get("enabled"))},
             "endpoints": {k: (v or {}).get("api", "") for k, v in providers.items()},
         }
-    return out
+    return stamp(out)
 
 
 if __name__ == "__main__":

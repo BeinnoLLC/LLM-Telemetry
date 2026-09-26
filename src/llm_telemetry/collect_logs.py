@@ -25,6 +25,7 @@ import sqlite3
 import time
 
 from . import failures as F
+from .schema import stamp
 
 # A preview long enough to recognise a line, short enough that 5k of them stay
 # under a megabyte. Measured: 120 chars -> ~0.83 MB at the default cap.
@@ -166,7 +167,7 @@ def build():
             con.close()
         if payload:
             out["profiles"][prof.name] = payload
-    return out
+    return stamp(out)
 
 
 if __name__ == "__main__":

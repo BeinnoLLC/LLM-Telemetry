@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Plain import now that the module is `collect_analytics`, not the old
 # hyphenated `export-analytics.py` that needed a spec-from-file workaround.
 from . import collect_analytics as EA
+from .schema import stamp
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
 
 CFG = EA.CFG
@@ -296,7 +297,7 @@ def build_live():
             "recent_ended": recent_ended,
             "recent_delegations": recent_delegations,
         }
-    return out
+    return stamp(out)
 
 
 if __name__ == "__main__":
