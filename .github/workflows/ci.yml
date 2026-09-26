@@ -9,12 +9,14 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: actions/setup-node@v4
-        with: {node-version: '20'}
+        # jsdom 30 (pinned in tests/package-lock.json) needs Node ^22.22.2,
+        # ^24.15 or >=26; on Node 20 several suites crashed, so CI was red.
+        with: {node-version: '24'}
 
       - name: Install
         run: |
           pip install -e .
-          npm install --no-save jsdom
+          npm ci --prefix tests          # the pinned jsdom, not whatever is latest
 
       - name: Leak gate (samples must carry nothing identifying)
         run: python3 examples/check_no_leaks.py
@@ -31,7 +33,7 @@ jobs:
       - name: DOM suites
         env:
           LLM_TELEMETRY_REPORTS: examples/reports
-          NODE_PATH: node_modules
+          NODE_PATH: tests/node_modules
         run: node tests/run-all.js
 
       - name: Python suites

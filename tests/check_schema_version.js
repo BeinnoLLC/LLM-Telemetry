@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const {JSDOM} = require('jsdom');
 const {execFileSync} = require('child_process');
+// The repo venv when present (dev), else whatever python3 CI installed into.
+const PY = process.env.PYTHON
+  || (fs.existsSync(path.join(__dirname, '..', '.venv/bin/python'))
+      ? path.join(__dirname, '..', '.venv/bin/python') : 'python3');
 
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
   || path.join(require('os').homedir(), '.local/share/llm-telemetry/reports');
@@ -76,7 +80,7 @@ boot(d => {}, (d) => {
       fs.writeFileSync(`${tmp}/analytics-data.json`, JSON.stringify(a));
       let out = '', code = 0;
       try {
-        execFileSync(path.join(ROOT, '.venv/bin/python'), ['-m', 'llm_telemetry.build_dashboard', `${tmp}/dashboard.html`],
+        execFileSync(PY, ['-m', 'llm_telemetry.build_dashboard', `${tmp}/dashboard.html`],
           {cwd: ROOT, encoding: 'utf8', stdio: 'pipe',
            env: {...process.env, LLM_TELEMETRY_NO_COLLECT: '1', LLM_TELEMETRY_REPORTS_DIR: tmp,
                  LLM_TELEMETRY_CONFIG: writeCfg(tmp)}});

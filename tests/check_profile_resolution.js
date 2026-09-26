@@ -9,7 +9,8 @@ const {JSDOM} = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
   || path.join(os.homedir(), '.local/share/llm-telemetry/reports');
 const ROOT = path.join(__dirname, '..');
-const PY = path.join(ROOT, '.venv/bin/python');
+const PY = process.env.PYTHON
+  || (fs.existsSync(path.join(ROOT, '.venv/bin/python')) ? path.join(ROOT, '.venv/bin/python') : 'python3');
 
 let p = 0, f = 0;
 const chk = (ok, l, x) => { console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${l}${x ? '  ' + x : ''}`); ok ? p++ : f++; };
