@@ -73,9 +73,9 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .page{width:100%;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;gap:var(--gap)}
  .card{background:var(--card);border:1px solid var(--border);border-radius:8px}
  .muted{color:var(--muted)}
- .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
+ .tabon{background:var(--accent);border:1px solid var(--accent);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
- .taboff:hover{color:var(--fg);border-color:var(--accent)}
+ .taboff:hover{color:var(--fg);border-color:var(--accent);background:var(--card)}
  [hidden]{display:none !important}
  .rounded-md{border-radius:4px !important}
  .chip{border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:13px;
@@ -980,40 +980,40 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  </div>
 
  <div class="view" data-view="Health">
-  <div class="card p-4 mb-3" id="delegcard" hidden>
-   <div class="lbl mb-2.5">Delegated runs
+  <div class="card p-5 mb-4" id="delegcard" hidden>
+   <div class="lbl mb-3">Delegated runs
     <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
    </div>
-   <div id="delegkpi" class="dkpis mb-3"></div>
-   <div class="grid-2 gap-4">
+   <div id="delegkpi" class="dkpis mb-4"></div>
+   <div class="grid-2 gap-5">
     <div>
-     <div class="lbl mb-2">Completion rate by model</div>
+     <div class="lbl mb-2.5">Completion rate by model</div>
      <div id="delegmodels" class="flex flex-col gap-1.5"></div>
-     <div class="lbl mb-2 mt-3">Why runs ended early</div>
+     <div class="lbl mb-2.5 mt-4">Why runs ended early</div>
      <div id="delegreasons" class="flex gap-1.5 flex-wrap"></div>
     </div>
     <div>
      <!-- These rates are MEASURED per call by the runtime, unlike the
           text-inferred tool failures shown elsewhere. Saying so is the point. -->
-     <div class="lbl mb-2">Tool success inside runs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— measured</span></div>
+     <div class="lbl mb-2.5">Tool success inside runs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— measured</span></div>
      <div id="delegtools" class="flex flex-col gap-1.5"></div>
-     <div class="lbl mb-2 mt-3">Recent runs</div>
+     <div class="lbl mb-2.5 mt-4">Recent runs</div>
      <div id="deleglist" class="flex flex-col gap-1"
        style="max-height:clamp(160px,22vh,300px);overflow-y:auto;padding-right:4px"></div>
     </div>
    </div>
   </div>
-  <div class="card p-4 mb-3">
-   <div class="lbl mb-2.5">Success rate by model</div>
+  <div class="card p-5 mb-4">
+   <div class="lbl mb-3">Success rate by model</div>
    <div id="healthgrid" class="flex flex-col gap-1.5"></div>
   </div>
-  <div class="card p-4">
-   <div class="lbl mb-2.5">Recent failures
+  <div class="card p-5">
+   <div class="lbl mb-3">Recent failures
     <button id="tolog" class="chip" style="float:right;font-size:10px;text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
    </div>
    <!-- Filter chips are built from the data, so a kind only appears when it
         actually occurred; counts make a burst obvious before you read a row. -->
-   <div id="failfilters" class="flex gap-1.5 flex-wrap mb-2.5"></div>
+   <div id="failfilters" class="flex gap-1.5 flex-wrap mb-3"></div>
    <div id="faillist" class="flex flex-col gap-1.5"
      style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
    <div id="failcount" class="muted text-[10px] mt-2"></div>
@@ -1655,6 +1655,14 @@ const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.round(s/360
 // rate when two polls are far enough apart to divide safely. `bwlive` animates
 // the arrows only while the session is genuinely transferring, so a stalled row
 // does not look busy.
+// Inline bandwidth for IN PROGRESS status badge - compact form
+function bwInline(L){
+  const up = (+L.up_bytes||0) + (+L.lan_up_bytes||0);
+  const down = (+L.down_bytes||0) + (+L.lan_down_bytes||0);
+  if (!up && !down) return '';
+  return ` · ${fmtB(up)}&uarr; ${fmtB(down)}&darr;`;
+}
+
 function bwRow(L){
   const up = +L.up_bytes || 0, down = +L.down_bytes || 0;
   const lup = +L.lan_up_bytes || 0, ldown = +L.lan_down_bytes || 0;
@@ -1669,18 +1677,14 @@ function bwRow(L){
     downR = Math.max(0, (down + ldown) - prev.down) / dt;
   }
   const moving = (upR > 0 || downR > 0);
-  // LAN is shown separately, never folded into the metered number: a session
-  // can run a local and a hosted model at once (all 7 live sessions did), so
-  // one combined figure would misstate what crossed the paid link.
-  const lan = (lup || ldown)
-    ? ` <span class="muted" title="Stayed on the LAN — not metered">· LAN ${fmtB(lup)}&uarr;</span>`
-    : '';
+  // LAN traffic removed from per-row display per user request.
+  // Bandwidth shown inline with session status instead.
   const rate = moving ? `<span class="muted bwrate">${fmtRate(upR + downR)}</span>` : '';
   return `<div class="bw mt-1 text-[10px]${moving ? ' bwlive' : ''}"
       title="Estimated from token counts (${(DATA.bytes_per_token || 4.68)} bytes/token) — not measured">
     <span class="bwleg"><span class="bwarrow bwup">&uarr;</span><span>${fmtB(up)}</span></span>
     <span class="bwleg"><span class="bwarrow bwdown">&darr;</span><span>${fmtB(down)}</span></span>
-    ${rate}${lan}
+    ${rate}
   </div>`;
 }
 
@@ -1936,6 +1940,7 @@ function renderLive(){
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[11px] font-semibold" style="color:${c.c}">${L.category}</span>
             <span class="text-[12px] truncate">${L.title}</span>
+            <span class="chip text-[9px] px-1.5 py-0.5 ml-auto" style="background:var(--accent);color:var(--background);white-space:nowrap">IN PROGRESS NOW${bwInline(L)}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
             ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:${BD};color:${MU}">${L.profile}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[9px] muted">↳ subagent</span>':''}
@@ -1949,7 +1954,7 @@ function renderLive(){
           ${modelsBadge(L)}
           <div class="muted text-[10px]">${ago(L.idle_s)} ago</div>
         </div>
-        <div class="loecol">${loeIcon(L)}${bwRow(L)}</div>
+        <div class="loecol">${loeIcon(L)}</div>
       </div>${modelsPanel(L)}`;
     }).join('');
   }
@@ -3089,6 +3094,8 @@ function setHash(v){
 function viewFromHash(){
   const raw = (location.hash || '').replace(/^#\/?/, '').trim();
   if (!raw) return null;
+  // Map 'home' to 'Live' - #/home loads the live sessions view
+  if (slugOf(raw) === 'home') return 'Live';
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
 }
@@ -3477,8 +3484,8 @@ function navInstall(){
   navSetOpen(false);
 }
 function views(){
-  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs']
-    .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
+  $('views').innerHTML=['Live','Flow','Usage','Cost','Health','Detail','Logs']
+    .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1.5 rounded-md text-[12px] font-medium transition-all taboff">${v}</button>`).join('');
 }
 function pickView(v){
   view=v;
