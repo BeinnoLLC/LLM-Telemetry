@@ -109,9 +109,11 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    (off-canvas + scrim) is ticket #4; this keeps it simply hidden below the
    tablet breakpoint so the page never loses its nav mid-refactor. */
 #navdrawer{
-  position:fixed; top:0; left:0; bottom:0; width:232px; z-index:40;
+  position:fixed; top:0; left:0; bottom:0; z-index:40;
+  width:var(--rail-now);
   background:var(--card); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; overflow-y:auto; padding:14px 10px;
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+  padding:14px 10px; transition:width .18s ease, transform .2s ease;
 }
 #navdrawer .navbrand{
   display:flex; align-items:center; gap:8px; padding:4px 8px 12px;
@@ -165,67 +167,82 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
 }
 #navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
-/* Content clears the fixed rail. The chip strip is redundant once the rail is
-   showing, so it hides on desktop only — below the breakpoint the rail is gone
-   and the chips are the nav, until #4 lands the off-canvas sheet. */
-@media (min-width:1200px){ body.hasnav .page{ margin-left:232px; } }
+
 /* The rail is the nav at every width now (#4), so the chip strip is redundant
    everywhere rather than only on desktop. */
 body.hasnav #views{ display:none; }
-/* ---- Nav drawer responsive modes (#4) ------------------------------------
-   Three modes: expanded >=1200, icon rail 641-1199, off-canvas <=640.
-   The rail is the same element in all three; only width and offset change. */
-
-/* Icon rail: labels out of flow, icons centred. Hovering expands it over the
-   content rather than reflowing the page, so the layout never jumps. */
-@media (min-width:641px) and (max-width:1199px){
-  #navdrawer{ width:60px; }
-  #navdrawer .nvlabel, #navdrawer .navbrand span:not(:first-child){ display:none; }
-  #navdrawer .navitem{ justify-content:center; padding:9px 0; }
-  #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
-  #navdrawer .navitem{ position:relative; }
-  body.hasnav .page{ margin-left:60px; }
-  /* Hover/focus expands over content, not pushing it. */
-  #navdrawer:hover, #navdrawer:focus-within{
-    width:232px; box-shadow:0 8px 28px rgba(0,0,0,.28);
-  }
-  #navdrawer:hover .nvlabel, #navdrawer:focus-within .nvlabel{ display:block; }
-  #navdrawer:hover .navitem, #navdrawer:focus-within .navitem{
-    justify-content:flex-start; padding:8px 10px;
-  }
-  #navdrawer:hover .nvbadge, #navdrawer:focus-within .nvbadge{
-    position:static; transform:none;
-  }
+/* ---- Nav rail: collapsible, collapsed by default (#102) -------------------
+   One element, one width variable. `body.navcollapsed` drives --rail-now, and
+   .page reads the SAME variable for its offset, so the content can never
+   disagree with the rail about how wide it is. The old code hard-coded 232px
+   in one place and 60px in another, which is how .page ended up 232px wider
+   than the viewport (width:100% + margin-left) and clipped the right edge. */
+#navdrawer{
+  position:fixed; top:0; left:0; bottom:0; z-index:40;
+  width:var(--rail-now);
+  background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+  padding:14px 10px; transition:width .18s ease, transform .2s ease;
 }
-
-/* Off-canvas: hidden by default, slides in over a scrim. The rail keeps its
-   full width here — on a phone a 60px icon strip is harder to hit than a
-   proper panel. */
+/* Collapsed (DEFAULT): icons only. */
+body.navcollapsed{ --rail-now:var(--rail-w); }
+body.navcollapsed #navdrawer .nvlabel,
+body.navcollapsed #navdrawer .navbrand .brandword{ display:none; }
+body.navcollapsed #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
+body.navcollapsed #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
+body.navcollapsed #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
+/* Expanded: labels visible. */
+body:not(.navcollapsed){ --rail-now:var(--nav-w); }
+/* THE LAYOUT FIX: width:100% + margin-left overflowed the viewport by exactly
+   the rail width. Reserve the space with padding on a full-width box instead,
+   so box-sizing:border-box actually contains it. */
+body.hasnav .page{ margin-left:0; padding-left:calc(var(--rail-now) + var(--pad)); }
+/* Collapse toggle sits in the rail header. */
+#navcollapse{
+  margin-left:auto; border:0; background:none; cursor:pointer;
+  color:var(--muted); font-size:14px; line-height:1; padding:4px 6px;
+  border-radius:6px; flex:0 0 auto;
+}
+#navcollapse:hover{ background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--fg); }
+#navcollapse:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+body.navcollapsed #navcollapse{ margin:6px auto 0; }
+/* Collapsed labels become tooltips so icons stay identifiable. */
+body.navcollapsed #navdrawer .navitem::after{
+  content:attr(data-tip); position:absolute; left:calc(100% + 8px); top:50%;
+  transform:translateY(-50%); white-space:nowrap; background:var(--card);
+  border:1px solid var(--border); border-radius:6px; padding:4px 8px;
+  font-size:11px; color:var(--fg); opacity:0; pointer-events:none;
+  transition:opacity .12s ease; z-index:41;
+}
+body.navcollapsed #navdrawer .navitem:hover::after,
+body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
+/* Off-canvas (<=640): the rail slides over the content and reserves nothing.
+   Full width here — a 60px strip is harder to hit than a real panel. */
 @media (max-width:640px){
-  #navdrawer{
-    display:flex; width:264px; transform:translateX(-100%);
-    transition:transform .2s ease; box-shadow:0 8px 28px rgba(0,0,0,.35);
-  }
+  #navdrawer{ width:264px; transform:translateX(-100%); box-shadow:0 8px 28px rgba(0,0,0,.35); }
   body.navopen #navdrawer{ transform:translateX(0); }
-  body.hasnav .page{ margin-left:0; }
-  /* Scrim matches #helpscrim so the two overlays feel like one system. */
+  /* Mobile shows labels regardless of the desktop collapse state. */
+  body.navcollapsed #navdrawer .nvlabel,
+  body.navcollapsed #navdrawer .navbrand .brandword{ display:inline; }
+  body.navcollapsed #navdrawer .navitem{ justify-content:flex-start; padding:8px 10px; }
+  body.navcollapsed #navdrawer .nvbadge{ position:static; transform:none; }
+  body.navcollapsed #navdrawer .navbrand{ justify-content:flex-start; padding:4px 8px 12px; }
+  body.navcollapsed #navdrawer .navitem::after{ display:none; }
+  body.hasnav .page{ padding-left:var(--pad); }
+  #navcollapse{ display:none; }
   #navscrim{
     position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.55);
     backdrop-filter:blur(2px); opacity:0; pointer-events:none;
-    transition:opacity .2s ease;
+    transition:opacity .2s ease; display:block;
   }
   body.navopen #navscrim{ opacity:1; pointer-events:auto; }
-  /* Scroll lock while the panel is open, released on close. */
   body.navopen{ overflow:hidden; }
   #navtoggle{ display:inline-flex; }
-  #navscrim{ display:block; }
 }
-/* The hamburger and scrim only exist in off-canvas mode. */
 #navtoggle{ display:none; }
 #navscrim{ display:none; }
+@media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
 
-@media (prefers-reduced-motion:reduce){
-  #navdrawer, #navscrim{ transition:none; }
 }
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
@@ -694,11 +711,11 @@ body.hasnav #views{ display:none; }
   <div class="lbl">loading analytics</div></div>
 <div id="navscrim"></div>
 <nav id="navdrawer" aria-label="Sections">
- <div class="navbrand"><span style="color:var(--accent)">◈</span> LLM Telemetry</div>
+ <div class="navbrand"><span style="color:var(--accent)">◈</span><span class="brandword"> LLM Telemetry</span><button id="navcollapse" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Expand navigation">&#187;</button></div>
  <div id="navlist"></div>
  <div class="navsep"></div>
- <a class="navitem" href="costs.html"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Rates</span></a>
- <button class="navitem" type="button" id="navlogs"><span class="nvico" aria-hidden="true">☰</span><span class="nvlabel">Logs</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+ <a class="navitem" href="costs.html" data-tip="Rates"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Rates</span></a>
+ <button class="navitem" type="button" id="navlogs" data-tip="Logs"><span class="nvico" aria-hidden="true">☰</span><span class="nvlabel">Logs</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3">
@@ -1147,6 +1164,13 @@ function tintTicks(axis){
 }
 
 function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
+  // Chart.js refuses to bind a second chart to a canvas that still has one
+  // ("Canvas is already in use"). charts[] is emptied on every render, but a
+  // chart created outside that cycle — the live poll repaints cLiveCat every
+  // few seconds — is not in the array and survives, so the next render throws
+  // and the whole live feed stalls. Ask Chart.js itself what owns the canvas.
+  const prev = (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+  if (prev) { try { prev.destroy(); } catch(_){} }
   // Don't skip hidden views — Chart.js handles zero-size canvases fine, and
   // skipping them means Cost/Detail charts never get per-model colors.
   const o = {responsive:true,maintainAspectRatio:false,...opts};
@@ -2891,7 +2915,7 @@ function renderNav(){
   const box = document.getElementById('navlist');
   if (!box) return;
   box.innerHTML = navViews().map(v => `
-    <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}">
+    <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}">
       <span class="nvico" aria-hidden="true">${NAV_ICONS[v] || '\u2022'}</span>
       <span class="nvlabel">${v}</span>
       <span class="nvbadge" data-navbadge="${v}" hidden></span>
@@ -2982,9 +3006,36 @@ function navSetOpen(on){
   }
 }
 
+// Collapse state (#102). Collapsed is the DEFAULT: the rail is navigation, not
+// content, and 232px of chrome on every page load is a poor trade when the
+// icons carry the same information. The choice persists once the user makes it.
+const NAVKEY = 'hermes-dash-navcollapsed';
+function navCollapsed(){
+  const v = localStorage.getItem(NAVKEY);
+  return v === null ? true : v === '1';   // default collapsed
+}
+function navApplyCollapsed(on){
+  document.body.classList.toggle('navcollapsed', on);
+  const b = document.getElementById('navcollapse');
+  if (b){
+    b.setAttribute('aria-expanded', String(!on));
+    b.setAttribute('aria-label', on ? 'Expand navigation' : 'Collapse navigation');
+    b.textContent = on ? '\u00BB' : '\u00AB';
+  }
+  // Charts are responsive:true but only react to window resize; the rail
+  // changing width resizes their container without one, so they must be told.
+  requestAnimationFrame(() => charts.forEach(c => { try { c.resize(); } catch(_){} }));
+}
+function navSetCollapsed(on){
+  localStorage.setItem(NAVKEY, on ? '1' : '0');
+  navApplyCollapsed(on);
+}
+
 // Wiring. Every close path the ticket names: scrim, Esc, nav activation, and
 // crossing the breakpoint.
 function navInstall(){
+  document.getElementById('navcollapse')
+    ?.addEventListener('click', () => navSetCollapsed(!document.body.classList.contains('navcollapsed')));
   document.getElementById('navtoggle')
     ?.addEventListener('click', () => navSetOpen(!navOpen));
   document.getElementById('navscrim')
@@ -3037,6 +3088,7 @@ views();
 renderNav();
 navInstall();
 document.body.classList.add('hasnav');
+navApplyCollapsed(navCollapsed());
 
 // Prepend the merged "All" view so it is the default tab. Done before `current`
 // is chosen so the page opens on the overview.
