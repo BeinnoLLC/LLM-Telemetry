@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
 from . import failures
 from . import bandwidth
+from . import delegations
 
 from .config import get as _cfg
 
@@ -265,6 +266,8 @@ def build():
                                      and L["model"] != L["init_model"])
             tools_recent = [{"tool": t, "calls": n} for t, n in con.execute(RECENT_TOOLS)]
             recent_sessions = [dict(zip(RECENT_SESSIONS_COLS, r)) for r in con.execute(RECENT_SESSIONS)]
+            # Must run BEFORE the finally below closes the connection.
+            deleg = delegations.collect(con)
         finally:
             con.close()
         dates = sorted({r["date"] for r in rows if r["date"]})
@@ -302,6 +305,7 @@ def build():
                                  "heatmap": heatmap,
                                  "node_sessions": node_sessions,
                                  "failures_recent": fail_recent,
+                                 "delegations": deleg,
                                  "min_date": dates[0] if dates else None,
                                  "max_date": dates[-1] if dates else None}
     return out

@@ -128,6 +128,30 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 .navitem:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
 /* Active item: accent bar plus accent text, so it reads as "you are here"
    without relying on colour alone. */
+.dkpis{display:flex;gap:18px;flex-wrap:wrap}
+.dkpi{display:flex;flex-direction:column;gap:2px}
+.dkpi-n{font-size:17px;font-weight:600}
+.dkpi-n.ok{color:var(--z-ok-fg)}
+.dkpi-n.bad{color:var(--z-bad-fg)}
+.drow{display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(60px,2fr) 42px minmax(90px,1fr);
+  align-items:center;gap:8px;font-size:11px}
+.dname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}
+.dbar span{display:block;height:100%;border-radius:3px}
+.dbar span.ok{background:var(--z-ok)}
+.dbar span.bad{background:var(--z-bad)}
+.dpct{text-align:right;font-variant-numeric:tabular-nums}
+.dpct.ok{color:var(--z-ok-fg)}
+.dpct.bad{color:var(--z-bad-fg)}
+.dmeta{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ditem{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;
+  padding:3px 0;border-bottom:1px solid var(--border)}
+.ditem:last-child{border-bottom:0}
+.ddot{width:6px;height:6px;border-radius:50%}
+.ddot.ok{background:var(--z-ok)}
+.ddot.bad{background:var(--z-bad)}
+.dgoal{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:720px){.drow{grid-template-columns:minmax(80px,1fr) 1fr 40px}.dmeta{display:none}}
 .navitem[aria-current="page"]{
   color:var(--accent); border-left-color:var(--accent);
   background:color-mix(in srgb, var(--accent) 14%, transparent);
@@ -797,6 +821,29 @@ body.hasnav #views{ display:none; }
  </div>
 
  <div class="view" data-view="Health">
+  <div class="card p-4 mb-3" id="delegcard" hidden>
+   <div class="lbl mb-2.5">Delegated runs
+    <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
+   </div>
+   <div id="delegkpi" class="dkpis mb-3"></div>
+   <div class="grid-2 gap-4">
+    <div>
+     <div class="lbl mb-2">Completion rate by model</div>
+     <div id="delegmodels" class="flex flex-col gap-1.5"></div>
+     <div class="lbl mb-2 mt-3">Why runs ended early</div>
+     <div id="delegreasons" class="flex gap-1.5 flex-wrap"></div>
+    </div>
+    <div>
+     <!-- These rates are MEASURED per call by the runtime, unlike the
+          text-inferred tool failures shown elsewhere. Saying so is the point. -->
+     <div class="lbl mb-2">Tool success inside runs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— measured</span></div>
+     <div id="delegtools" class="flex flex-col gap-1.5"></div>
+     <div class="lbl mb-2 mt-3">Recent runs</div>
+     <div id="deleglist" class="flex flex-col gap-1"
+       style="max-height:clamp(160px,22vh,300px);overflow-y:auto;padding-right:4px"></div>
+    </div>
+   </div>
+  </div>
   <div class="card p-4 mb-3">
    <div class="lbl mb-2.5">Success rate by model</div>
    <div id="healthgrid" class="flex flex-col gap-1.5"></div>
@@ -1048,6 +1095,8 @@ const fmtRate = bps => (bps==null||!isFinite(bps)||bps<=0) ? '' : fmtB(bps)+'/s'
 let bwPrev = {}, bwPrevAt = 0;
 const money = v => v ? '$'+(+v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
 const short = m => String(m).split('/').pop();
+const esc = s => String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const $ = id => document.getElementById(id);
 
 let charts = [], current = null;
@@ -1266,6 +1315,7 @@ function render(){
   // return, so an empty range never blanks the Live tab.
   renderLive();
   renderHealth();
+  renderDeleg();
   renderHome(inR);
   renderXfer(rows);
   renderHeatmap(p.heatmap);
@@ -1746,6 +1796,68 @@ function loeIcon(L){
     </svg></span>`;
 }
 
+// Merge delegation payloads across profiles for the synthetic "All" tab.
+//
+// Rates CANNOT be averaged — a profile with 2 children at 50% and one with 100
+// children at 99% do not average to 74.5%. Every rate here is recomputed from
+// summed counters, the same way the Python collector derives it per profile.
+function mergeDelegations(list){
+  const parts = (list || []).filter(Boolean);
+  if (!parts.length) return null;
+  if (parts.length === 1) return parts[0];
+
+  const M = {}, T = {}, reasons = {}, exits = {};
+  let children = 0, ok = 0, wasted = 0, cost = 0, recent = [];
+
+  parts.forEach(g => {
+    children += g.children || 0;
+    ok += g.ok || 0;
+    wasted += g.wasted_hours || 0;
+    cost += g.cost_usd || 0;
+    (g.by_model || []).forEach(m => {
+      const o = M[m.model] || (M[m.model] = {model:m.model, n:0, ok:0,
+        cost_usd:0, tokens:0, hours:0, wasted_hours:0});
+      o.n += m.n; o.ok += m.ok; o.cost_usd += m.cost_usd || 0;
+      o.tokens += m.tokens || 0; o.hours += m.hours || 0;
+      o.wasted_hours += m.wasted_hours || 0;
+    });
+    (g.tools || []).forEach(t => {
+      const o = T[t.tool] || (T[t.tool] = {tool:t.tool, calls:0, fail:0});
+      o.calls += t.calls; o.fail += t.fail;
+    });
+    Object.entries(g.reasons || {}).forEach(([k,v]) => reasons[k] = (reasons[k]||0) + v);
+    Object.entries(g.exits || {}).forEach(([k,v]) => exits[k] = (exits[k]||0) + v);
+    recent = recent.concat(g.recent || []);
+  });
+
+  const by_model = Object.values(M).map(m => ({
+    ...m,
+    rate: m.n ? Math.round(1000*m.ok/m.n)/10 : 0,
+    cost_usd: Math.round(m.cost_usd*1e4)/1e4,
+    hours: Math.round(m.hours*100)/100,
+    wasted_hours: Math.round(m.wasted_hours*100)/100,
+  })).sort((a,b) => (b.n - a.n) || a.model.localeCompare(b.model));
+
+  const tools = Object.values(T).map(t => ({
+    ...t, rate: t.calls ? Math.round(1000*(t.calls-t.fail)/t.calls)/10 : 0,
+  })).sort((a,b) => b.calls - a.calls);
+
+  recent.sort((a,b) => (b.at||0) - (a.at||0));
+
+  return {
+    children, ok, failed: children - ok,
+    rate: children ? Math.round(1000*ok/children)/10 : 0,
+    wasted_hours: Math.round(wasted*100)/100,
+    cost_usd: Math.round(cost*1e4)/1e4,
+    by_model,
+    reasons: Object.fromEntries(Object.entries(reasons).sort((a,b) => b[1]-a[1])),
+    exits: Object.fromEntries(Object.entries(exits).sort((a,b) => b[1]-a[1])),
+    tools,
+    tools_measured: parts.every(g => g.tools_measured === true),
+    recent: recent.slice(0, 40),
+  };
+}
+
 // Synthetic "All" profile: every real profile merged, so the first tab answers
 // "what is my whole setup doing / costing" without switching back and forth.
 // Built client-side from DATA so it always matches what the tabs show.
@@ -1807,6 +1919,11 @@ function buildAll(profiles){
   });
   return {rows, hours, sessions:sess, live, active, health, recent_sessions, heatmap,
           node_sessions: NS,
+          // Delegation outcomes merge like health does: per-child counters add
+          // up across profiles. Omitting this left the DEFAULT tab with an
+          // empty panel while each real profile had data — the panel looked
+          // broken rather than empty.
+          delegations: mergeDelegations(names.map(n => profiles[n].delegations)),
           // Match the per-profile cap: 14 would silently re-collapse the
           // failure list that the Health panel now pages through.
           failures_recent: fails.slice(0,60),
@@ -1859,6 +1976,73 @@ const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 const FAILTRACK = 'rgba(239,68,68,.22)';
 // Green above 95%, amber 80-95, red below: matches how you would triage it.
 const rateColor = r => r===null ? MU : r>=95 ? '#22c55e' : r>=80 ? '#f59e0b' : '#ef4444';
+
+// Delegation outcomes (#90). Two sources of truth live side by side here and
+// must never merge: the per-child rates are MEASURED by the runtime, while the
+// tool failure rates elsewhere in this dashboard are inferred from message
+// text. The panel says "measured" out loud for that reason.
+function renderDeleg(){
+  const card = $('delegcard');
+  if (!card) return;
+  const p = DATA.profiles[current] || {};
+  const g = p.delegations || null;
+  if (!g || !g.children){ card.hidden = true; return; }
+  card.hidden = false;
+
+  // Headline: the three numbers that change a decision — how many children
+  // ran, what share came back clean, and how much wall-clock the rest burned.
+  const bad = g.children - g.ok;
+  $('delegkpi').innerHTML = `
+    <div class="dkpi"><span class="dkpi-n">${g.children}</span><span class="lbl">children</span></div>
+    <div class="dkpi"><span class="dkpi-n ${g.rate >= 95 ? 'ok' : 'bad'}">${g.rate}%</span><span class="lbl">completed</span></div>
+    <div class="dkpi"><span class="dkpi-n ${bad ? 'bad' : ''}">${g.wasted_hours}h</span><span class="lbl">burned on failures</span></div>
+    <div class="dkpi"><span class="dkpi-n">${money(g.cost_usd)}</span><span class="lbl">child spend</span></div>`;
+
+  // Per model: this is the routing decision. A model that finishes 56% of the
+  // work it is handed is not cheaper than one that finishes 100%, whatever its
+  // per-token price says.
+  const rows = (g.by_model || []).map(m => {
+    const w = Math.max(0, Math.min(100, m.rate));
+    return `<div class="drow">
+      <div class="dname" title="${esc(m.model)}">${esc(short(m.model))}</div>
+      <div class="dbar"><span style="width:${w}%" class="${m.rate >= 95 ? 'ok' : 'bad'}"></span></div>
+      <div class="dpct ${m.rate >= 95 ? 'ok' : 'bad'}">${m.rate}%</div>
+      <div class="dmeta muted">${m.n} run${m.n === 1 ? '' : 's'}${m.wasted_hours ? ` · ${m.wasted_hours}h lost` : ''}</div>
+    </div>`;
+  }).join('');
+  $('delegmodels').innerHTML = rows || '<div class="muted text-[11px]">No child runs.</div>';
+
+  // Why they failed. Counts only — the reasons come from the runtime's own
+  // failure_reason field, so no guessing about what "rate_limit" means.
+  const rs = Object.entries(g.reasons || {});
+  $('delegreasons').innerHTML = rs.length
+    ? rs.map(([k, v]) => `<span class="chip" style="text-transform:none">${esc(k)} <b>${v}</b></span>`).join('')
+    : '<span class="muted text-[11px]">No failures in range.</span>';
+
+  // Measured tool outcomes from inside delegated runs.
+  const tl = (g.tools || []).slice(0, 8);
+  $('delegtools').innerHTML = tl.length
+    ? tl.map(t => `<div class="drow">
+        <div class="dname">${esc(t.tool)}</div>
+        <div class="dbar"><span style="width:${Math.max(0, Math.min(100, t.rate))}%" class="${t.rate >= 95 ? 'ok' : 'bad'}"></span></div>
+        <div class="dpct ${t.rate >= 95 ? 'ok' : 'bad'}">${t.rate}%</div>
+        <div class="dmeta muted">${t.calls} call${t.calls === 1 ? '' : 's'}${t.fail ? ` · ${t.fail} failed` : ''}</div>
+      </div>`).join('')
+    : '<div class="muted text-[11px]">No tool calls recorded.</div>';
+
+  // Recent runs, newest first. Goal text is set with textContent by esc() —
+  // it is model-authored and must never be interpolated as markup.
+  const rec = (g.recent || []).slice(0, 12);
+  $('deleglist').innerHTML = rec.map(r => {
+    const okc = r.status === 'completed';
+    const why = r.failure_reason || r.exit_reason || r.status;
+    return `<div class="ditem">
+      <span class="ddot ${okc ? 'ok' : 'bad'}"></span>
+      <div class="dgoal" title="${esc(r.goal || '')}">${esc(r.goal || '(no goal recorded)')}</div>
+      <div class="muted text-[10px]">${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
+    </div>`;
+  }).join('') || '<div class="muted text-[11px]">Nothing yet.</div>';
+}
 
 function renderHealth(){
   const p = DATA.profiles[current] || {};
@@ -2960,8 +3144,6 @@ let dFilter = 'all', dSeen = 0, dOpen = false;
 
 // Log lines are raw provider output — they can contain angle brackets and
 // quotes, so they must never be interpolated into innerHTML unescaped.
-const esc = s => String(s == null ? '' : s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 function drawerEvents(){
   const ev = [];
