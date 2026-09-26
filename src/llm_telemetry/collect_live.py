@@ -22,31 +22,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Plain import now that the module is `collect_analytics`, not the old
 # hyphenated `export-analytics.py` that needed a spec-from-file workaround.
 from . import collect_analytics as EA
-
+from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
 
 CFG = EA.CFG
-
-# Bytes per token on the wire. The agent DB records tokens, not bytes, so every
-# bandwidth figure in this tool is DERIVED through this constant — it is an
-# estimate and must always be labelled as one. Re-derive it against a real DB
-# with examples/recalibrate_bytes_per_token.py; it drifts slightly as the corpus
-# grows (4.62 -> 4.68 inside a single working day), which is why the constant is
-# emitted into the payload rather than assumed by the reader.
-BYTES_PER_TOKEN = 4.68
-
-
-def _is_lan(url: str) -> bool:
-    """True when this endpoint is self-hosted, so its traffic never leaves the LAN.
-
-    Uses config.local_host_patterns — the same list the rest of the tool uses to
-    classify hosts, so a user who adds their own hostname gets correct bandwidth
-    attribution for free. Note this is decided per ENDPOINT, not per session: a
-    session that ran both a local and a hosted model has traffic in both buckets.
-    """
-    u = (url or "").lower()
-    if not u:
-        return False
-    return any(h in u for h in CFG.local_host_patterns)
 
 # The full export's RECENT_TOOLS scans all 317k messages (157 ms on the 1.2 GB
 # default profile DB) — far too slow to poll every few seconds. Scoping it to currently
@@ -207,8 +185,8 @@ def build_live():
                 if L is None:
                     continue
                 lan = _is_lan(url)
-                up = int((up_tok or 0) * BYTES_PER_TOKEN)
-                down = int((down_tok or 0) * BYTES_PER_TOKEN)
+                up = estimate_bytes(up_tok)
+                down = estimate_bytes(down_tok)
                 if lan:
                     L["lan_up_bytes"] += up
                     L["lan_down_bytes"] += down

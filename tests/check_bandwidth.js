@@ -7,6 +7,7 @@ const fs = require('fs'), { JSDOM } = require('jsdom');
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');
 const html = raw.replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
 const live = JSON.parse(fs.readFileSync(REPORTS + '/live-data.json', 'utf8'));
+const analytics = JSON.parse(fs.readFileSync(REPORTS + '/analytics-data.json', 'utf8'));
 
 const dom = new JSDOM(html, {
   runScripts: 'dangerously', pretendToBeVisual: true,
@@ -15,7 +16,12 @@ const dom = new JSDOM(html, {
     w.Chart = function () { return { destroy() {}, update() {} }; };
     w.Chart.defaults = { color: '', borderColor: '', font: {} };
     w.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {} });
-    w.fetch = () => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(live) });
+    // Serve the file the page actually asked for. Returning live-data for every
+    // request left the analytics-driven tables empty and silently passed.
+    w.fetch = (u) => Promise.resolve({
+      ok: true, status: 200,
+      json: () => Promise.resolve(String(u).includes('live-data') ? live : analytics)
+    });
   }
 });
 const w = dom.window, d = w.document;
@@ -107,6 +113,42 @@ setTimeout(() => {
   const noteTxt = d.getElementById('bwnote').textContent;
   chk(/LAN/.test(noteTxt), 'card discloses LAN traffic separately');
   chk(/not metered/i.test(noteTxt), 'card says LAN is not metered');
+
+  // ---- #71: bandwidth columns in the model and provider tables ------------
+  // A derived number rendered beside measured ones must say it is derived, or
+  // a reader reasonably assumes the tool counted real bytes.
+  for (const [id, label] of [['tbl', 'model table'], ['tblProv', 'provider table']]) {
+    const t = d.getElementById(id);
+    if (!t) { console.log(`  --   ${label} absent, skipping`); continue; }
+    const heads = [...t.querySelectorAll('th')].map(h => h.textContent.trim());
+    const up = heads.find(h => /Up/.test(h));
+    const down = heads.find(h => /Down/.test(h));
+    chk(!!up, `${label} has an upload column`, up);
+    chk(!!down, `${label} has a download column`, down);
+    chk(!!up && /est/i.test(up), `${label} upload header says "est"`);
+    chk(!!down && /est/i.test(down), `${label} download header says "est"`);
+
+    const th = [...t.querySelectorAll('th')].find(h => /Up/.test(h.textContent));
+    chk(th && /not measured|Derived/i.test(th.getAttribute('title') || ''),
+        `${label} upload column explains it is derived`);
+
+    // Values must be byte-formatted, not raw integers or token counts.
+    const idx = heads.findIndex(h => /Up/.test(h));
+    const firstRow = t.querySelectorAll('tr')[1];
+    if (firstRow && idx >= 0) {
+      const cell = firstRow.querySelectorAll('td')[idx];
+      const txt = cell ? cell.textContent.trim() : '';
+      chk(/^(0|[\d.]+\s*(B|KB|MB|GB|TB))$/.test(txt),
+          `${label} upload cell is byte-formatted`, `(${txt})`);
+      chk(cell && /bwup/.test(cell.className),
+          `${label} upload cell carries the shared up colour`);
+    }
+  }
+
+  // The colour classes must actually exist in CSS, or the cells render unstyled.
+  chk(/\.bwup\{color:/.test(html), '.bwup colour is defined in CSS');
+  chk(/\.bwdown\{color:/.test(html), '.bwdown colour is defined in CSS');
+  chk(!/var\(--blue\)/.test(html), 'no reference to the undefined --blue var');
 
   console.log(`\n${f===0?'ALL PASS':'FAILED'}  (${p} passed, ${f} failed)`);
   process.exit(f===0?0:1);

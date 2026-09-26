@@ -57,3 +57,33 @@ with open(LIVE, "w") as f:
 
 print(f"added bandwidth fields to {n} live sessions in {LIVE}")
 print(f"bytes_per_token = {BYTES_PER_TOKEN}")
+
+# --- analytics rows (#71: bandwidth columns in the model/provider tables) ---
+# Same treatment for the historical rows the tables render. Derived from the
+# row's own token counts so the columns stay internally consistent with the
+# Tokens column beside them, instead of being unrelated random numbers.
+ANALYTICS = os.path.join(HERE, "reports", "analytics-data.json")
+with open(ANALYTICS) as f:
+    a = json.load(f)
+
+rows_done = 0
+for prof in a.get("profiles", {}).values():
+    for r in prof.get("rows", []):
+        url = (r.get("base_url") or "").lower()
+        model = (r.get("model") or "").lower()
+        lan = any(h in model for h in LOCAL_HINTS) or any(
+            h in url for h in ("127.0.0.1", "localhost", "192.168.", "10.", ".internal")
+        )
+        # Upload carries input + cache reads: prefix caching re-sends the prompt.
+        up = int(((r.get("inp") or 0) + (r.get("cread") or 0)) * BYTES_PER_TOKEN)
+        down = int((r.get("outp") or 0) * BYTES_PER_TOKEN)
+        r["up_bytes"] = 0 if lan else up
+        r["down_bytes"] = 0 if lan else down
+        r["lan_up_bytes"] = up if lan else 0
+        r["lan_down_bytes"] = down if lan else 0
+        rows_done += 1
+
+with open(ANALYTICS, "w") as f:
+    json.dump(a, f, separators=(",", ":"))
+
+print(f"added bandwidth fields to {rows_done} analytics rows in {ANALYTICS}")

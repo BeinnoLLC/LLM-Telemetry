@@ -1209,14 +1209,21 @@ function render(){
     const pCost={};
     rows.forEach(r=>{
       const k=provOf(r.provider,r.model,r.base_url);
-      const o=pCost[k]||(pCost[k]={calls:0,tok:0,inp:0,outp:0,mkt:0,models:new Set()});
+      const o=pCost[k]||(pCost[k]={calls:0,tok:0,inp:0,outp:0,mkt:0,up:0,down:0,models:new Set()});
       o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;
       o.mkt+=(r.market_value_usd||0);o.models.add(short(r.model));
+      // LAN and metered bytes are summed together here: this column answers
+      // 'how much did this provider move', not 'what did it cost'.
+      o.up+=(r.up_bytes||0)+(r.lan_up_bytes||0);
+      o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);
     });
     const pmx=Math.max(...Object.values(pCost).map(v=>v.mkt),0.01);
     ptbl.innerHTML=`<tr class="muted text-[10px] uppercase tracking-wide">
       <th class="text-left py-1.5">Provider</th><th class="text-right">Calls</th>
-      <th class="text-right">Tokens</th><th class="text-right">Est. cost</th>
+      <th class="text-right">Tokens</th>
+      <th class="text-right" title="Estimated bytes sent to this provider. Derived from tokens, not measured.">&#8593; Up (est)</th>
+      <th class="text-right" title="Estimated bytes received from this provider. Derived from tokens, not measured.">&#8595; Down (est)</th>
+      <th class="text-right">Est. cost</th>
       <th class="text-right">Models</th><th class="text-left pl-3">Breakdown</th></tr>`+
     Object.entries(pCost).sort((a,b)=>b[1].mkt-a[1].mkt).map(([pr,v])=>{
       const s=PROV[pr]||{icon:'○',fg:MU};
@@ -1225,6 +1232,8 @@ function render(){
         <td class="py-1.5">${provBadge(pr)}</td>
         <td class="text-right text-[11px]">${v.calls.toLocaleString()}</td>
         <td class="text-right text-[11px]">${fmt(v.tok)}</td>
+        <td class="text-right text-[11px] bwup">${fmtB(v.up)}</td>
+        <td class="text-right text-[11px] bwdown">${fmtB(v.down)}</td>
         <td class="text-right text-[11px] font-semibold" style="color:${s.fg}">$${v.mkt.toFixed(2)}</td>
         <td class="text-right text-[11px]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
@@ -1233,19 +1242,25 @@ function render(){
 
   const t={};
   rows.forEach(r=>{const k=short(r.model)+'|'+provOf(r.provider,r.model,r.base_url);
-    const o=t[k]||(t[k]={calls:0,tok:0,inp:0,outp:0,cache:0,cost:0,mkt:0,free:true,tasks:new Set()});
-    o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;o.cache+=r.cread;o.cost+=(r.billed_usd||0);o.mkt+=(r.market_value_usd||0);if(r.cost_class!=='free')o.free=false;o.tasks.add(r.task);});
+    const o=t[k]||(t[k]={calls:0,tok:0,inp:0,outp:0,cache:0,cost:0,mkt:0,up:0,down:0,free:true,tasks:new Set()});
+    o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;o.cache+=r.cread;o.cost+=(r.billed_usd||0);o.mkt+=(r.market_value_usd||0);o.up+=(r.up_bytes||0)+(r.lan_up_bytes||0);o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);if(r.cost_class!=='free')o.free=false;o.tasks.add(r.task);});
   const mx=Math.max(...Object.values(t).map(r=>r.calls),1);
   $('tbl').innerHTML=`<tr class="muted text-[10px] uppercase tracking-wide">
     <th class="text-left py-1.5">Model</th><th class="text-left">Provider</th>
     <th class="text-right">Calls</th><th class="text-right">In</th><th class="text-right">Out</th>
-    <th class="text-right">Cache</th><th class="text-right">Est. cost</th>
+    <th class="text-right">Cache</th>
+    <th class="text-right" title="Estimated bytes uploaded. Tokens x 4.68, not measured. Includes cache reads: prefix caching re-sends the prompt.">&#8593; Up (est)</th>
+    <th class="text-right" title="Estimated bytes downloaded. Tokens x 4.68, not measured.">&#8595; Down (est)</th>
+    <th class="text-right">Est. cost</th>
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
       return `<tr style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[14px] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
         <td>${provBadge(pr)}</td>
         <td class="text-right">${v.calls.toLocaleString()}</td><td class="text-right">${fmt(v.inp)}</td><td class="text-right">${fmt(v.outp)}</td>
-        <td class="text-right">${fmt(v.cache)}</td><td class="text-right">$${(+v.mkt).toFixed(2)}</td>
+        <td class="text-right">${fmt(v.cache)}</td>
+        <td class="text-right bwup">${fmtB(v.up)}</td>
+        <td class="text-right bwdown">${fmtB(v.down)}</td>
+        <td class="text-right">$${(+v.mkt).toFixed(2)}</td>
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[10px] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
 }

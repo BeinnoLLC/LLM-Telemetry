@@ -8,6 +8,7 @@ import sqlite3, json, os, datetime, argparse, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
 from . import failures
+from . import bandwidth
 
 from .config import get as _cfg
 
@@ -232,6 +233,15 @@ def build():
                      "base_url": r.get("base_url"),
                      "input_tokens": r["inp"], "output_tokens": r["outp"],
                      "cache_read": r["cread"]}, catalog))
+                # Estimated wire bytes for this row, bucketed by destination.
+                # Same helper the live collector uses, so the tables and the
+                # live view can never disagree about what a token costs to send.
+                up, down, lan_up, lan_down = bandwidth.split_row(
+                    r.get("base_url"), r["inp"], r["outp"], r["cread"], r.get("cwrite"))
+                r["up_bytes"] = up
+                r["down_bytes"] = down
+                r["lan_up_bytes"] = lan_up
+                r["lan_down_bytes"] = lan_down
             hours = [{"date": d, "hour": h, "calls": c} for d, h, c in con.execute(HOURS)]
             heatmap = [{"d": d, "p": p, "url": url, "m": m, "v": c}
                        for d, p, url, m, c in con.execute(HEATMAP)]
