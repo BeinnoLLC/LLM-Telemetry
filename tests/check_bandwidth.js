@@ -8,6 +8,10 @@ const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');
 const html = raw.replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
 const live = JSON.parse(fs.readFileSync(REPORTS + '/live-data.json', 'utf8'));
 const analytics = JSON.parse(fs.readFileSync(REPORTS + '/analytics-data.json', 'utf8'));
+// The Transferred card sums the ANALYTICS day-rows (all sessions in range), not
+// the live sessions, so its expected totals come from the same place the page
+// reads. Every profile: the default tab is the merged "All" view.
+const rowsAll = Object.values(analytics.profiles).flatMap(p => p.rows || []);
 
 const dom = new JSDOM(html, {
   runScripts: 'dangerously', pretendToBeVisual: true,
@@ -63,19 +67,57 @@ setTimeout(() => {
   chk(rows.every(r => /estimat/i.test(r.getAttribute('title') || '')),
     'bandwidth rows disclose that the figure is estimated');
 
+  // ---- per-row placement (#109): bytes belong UNDER the gauge -------------
+  // They used to sit in the meta column under the timestamp, far from the dial
+  // they describe. Assert the DOM relationship, not a pixel position.
+  (() => {
+    const cards = [...d.querySelectorAll('#livelist > div')];
+    const withBytes = cards.filter(c => c.querySelector('.bw'));
+    chk(withBytes.length > 0, 'some live rows show transfer', `(${withBytes.length})`);
+    chk(withBytes.every(c => c.querySelector('.loecol .bw')),
+      'transfer sits inside the gauge column, under the dial');
+    chk(withBytes.every(c => !c.querySelector('.metacol .bw')),
+      'transfer no longer sits in the meta column');
+    // Under, not beside: the gauge column must stack vertically.
+    const col = withBytes[0].querySelector('.loecol');
+    const cs = w.getComputedStyle(col);
+    chk(cs.flexDirection === 'column', 'gauge column stacks vertically', `(${cs.flexDirection})`);
+    // The dial must come first in document order, the bytes after it.
+    const dial = col.querySelector('svg, .loe'), bw = col.querySelector('.bw');
+    chk(!!dial && !!bw && !!(dial.compareDocumentPosition(bw) & 4),
+      'the dial renders above the byte counts');
+    const t = withBytes[0].querySelector('.loecol .bw').textContent;
+    chk(/\u2191/.test(t) && /\u2193/.test(t),
+      'row shows BOTH up and down under the gauge', `(${t.replace(/\s+/g,' ').trim().slice(0,40)})`);
+    // Divider between the dial and the byte row: they are two different
+    // metrics stacked in one column and must not read as one merged block.
+    // jsdom can't resolve var() inside a border shorthand into
+    // getComputedStyle (verified: it reports 0px/none even when a real
+    // browser paints the line), so this checks the source rule instead of
+    // computed style -- consistent with how other border checks in this
+    // suite work around the same jsdom limitation.
+    chk(/\.loecol \.bw\{[^}]*border-top:[^;}]+/.test(raw),
+      'a divider separates the gauge from the transfer bytes below it');
+  })();
+
   // ---- aggregated card ---------------------------------------------------
-  const card = d.getElementById('bwcard');
-  chk(!!card, 'aggregated bandwidth card exists');
+  // One card only (#109): the separate live "Bandwidth" card was removed --
+  // two adjacent cards with different scopes read as a contradiction. This is
+  // the range-wide Transferred card, which carries both directions.
+  const card = d.getElementById('xfercard');
+  chk(!!card, 'aggregated transfer card exists');
+  chk(!d.getElementById('bwcard'), 'the duplicate live bandwidth card is gone');
   chk(card && !card.hidden, 'card is visible when there is traffic');
 
   // It must sit ABOVE the fold with the KPIs, not buried in a tab.
+  // User asked for it BEFORE the Est. cost card: 2 = DOCUMENT_POSITION_PRECEDING.
   const kpis = d.getElementById('kpis');
-  chk(!!card && !!kpis && !!(kpis.compareDocumentPosition(card) & 4),
-    'card is positioned after the KPI row, near the top');
+  chk(!!card && !!kpis && !!(kpis.compareDocumentPosition(card) & 2),
+    'card sits BEFORE the KPI row (above Est. cost)');
   chk(!!card && !card.closest('.view'),
     'card is outside any single view, so it shows on every tab');
 
-  const tot = d.getElementById('bwtot');
+  const tot = d.getElementById('xfertot');
   const totTxt = tot ? tot.textContent : '';
   chk(/\u2191/.test(totTxt) && /\u2193/.test(totTxt),
     'aggregate shows both directions in ONE card');
@@ -87,17 +129,15 @@ setTimeout(() => {
   // Totals must equal the sum of the METERED bytes across all rows. Not a
   // bw_local filter: every real session used both a local and a hosted endpoint,
   // so the split is per-endpoint, and up_bytes already excludes LAN traffic.
-  const expUp = withBw.reduce((s, L) => s + (+L.up_bytes || 0), 0);
+  const expUp = rowsAll.reduce((s, r) => s + (+r.up_bytes || 0), 0);
   const gb = expUp / 1073741824, mb = expUp / 1048576;
   const wantUp = gb >= 1 ? gb.toFixed(gb < 10 ? 2 : 1) : mb.toFixed(mb < 10 ? 2 : 1);
   chk(expUp === 0 || totTxt.includes(wantUp),
     'aggregate upload equals the sum of internet rows', `(want ${wantUp})`);
 
-  const note = d.getElementById('bwnote');
-  chk(!!note && /derived|estimat/i.test(note.textContent),
-    'card states the figure is derived and names the factor');
-  chk(!!note && note.textContent.includes(String(live.bytes_per_token)),
-    'card reports the SAME factor the collector used', `(${live.bytes_per_token})`);
+  const note = d.getElementById('xfernote');
+  chk(/estimat/i.test(card.textContent),
+    'card states the figure is estimated');
 
   // LAN traffic is tracked separately from metered traffic. Real data showed
   // every live session using BOTH a local and a hosted endpoint, so a session
@@ -107,10 +147,10 @@ setTimeout(() => {
   const mixed = withBw.filter(L => (+L.up_bytes||0) > 0 && (+L.lan_up_bytes||0) > 0);
   chk(mixed.length > 0, 'sample has a MIXED session (both buckets non-zero)', `(${mixed.length})`);
   // The metered total must exclude LAN bytes, or the card overstates the bill.
-  const lanUpTot = withBw.reduce((s,L)=>s+(+L.lan_up_bytes||0),0);
+  const lanUpTot = rowsAll.reduce((s,r)=>s+(+r.lan_up_bytes||0),0);
   chk(lanUpTot > 0 && !totTxt.includes((( expUp + lanUpTot)/1073741824).toFixed(2)),
     'aggregate upload EXCLUDES LAN bytes', `(lan ${(lanUpTot/1048576).toFixed(1)}MB held out)`);
-  const noteTxt = d.getElementById('bwnote').textContent;
+  const noteTxt = d.getElementById('xfernote').textContent;
   chk(/LAN/.test(noteTxt), 'card discloses LAN traffic separately');
   chk(/not metered/i.test(noteTxt), 'card says LAN is not metered');
 

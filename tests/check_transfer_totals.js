@@ -48,8 +48,6 @@ setTimeout(() => {
   chk(card && !card.hidden, 'card is visible when the range has traffic');
 
   // It must be a DIFFERENT number from the live card, or it is just a copy.
-  const bwcard = d.getElementById('bwcard');
-  chk(!!bwcard, 'live bandwidth card still exists (both questions kept)');
 
   const tot = d.getElementById('xfertot');
   const txt = (tot && tot.textContent || '').replace(/\s+/g, ' ').trim();
@@ -100,22 +98,24 @@ setTimeout(() => {
 // They sat adjacent showing 23.8 GB and 12.1 GB, both labelled "estimated",
 // with nothing saying one covers every session in the date range and the other
 // covers only sessions open right now (whose lifetime totals ignore the range).
+// One card now (#109): the pair showed 23.8 GB and 12.1 GB side by side, both
+// labelled "estimated", with nothing saying one covers every session in the
+// date range and the other only sessions open right now. Merged into one.
 (() => {
   const xfer = dom.window.document.getElementById('xfercard');
-  const bw = dom.window.document.getElementById('bwcard');
-  if (!xfer || !bw) { chk(false, 'both transfer cards exist'); return; }
+  if (!xfer) { chk(false, 'the Transferred card exists'); return; }
+  chk(true, 'the Transferred card exists');
+  chk(!dom.window.document.getElementById('bwcard'),
+      'the second, differently-scoped card is gone');
   const xt = xfer.textContent.toLowerCase();
-  const bt = bw.textContent.toLowerCase();
   chk(/all sessions/.test(xt) && /date range/.test(xt),
-      'Transferred names its scope (all sessions, date range)');
-  chk(/open sessions/.test(bt), 'Bandwidth names its scope (open sessions only)');
-  chk(/lifetime/.test(bt), 'Bandwidth says its totals are lifetime, not range-bound');
-  // The distinguishing words must actually differ between the two cards.
-  const scopeOf = el => (el.querySelector('.lbl span') || {}).textContent || '';
-  chk(scopeOf(xfer).trim() !== scopeOf(bw).trim(),
-      'the two scope captions are not identical');
-  chk(!!(bw.querySelector('[title]') || {}).title,
-      'Bandwidth carries a tooltip explaining it is not a subset of Transferred');
+      'the surviving card still names its scope');
+  chk(/\u2191/.test(xt), 'shows upload');
+  chk(/\u2193/.test(xt), 'shows download in the SAME card');
+  // Placement: before the KPI row, i.e. above Est. cost (2 = PRECEDING).
+  const kpis = dom.window.document.getElementById('kpis');
+  chk(!!kpis && !!(kpis.compareDocumentPosition(xfer) & 2),
+      'the card sits before the Est. cost KPI row');
 })();
 
   console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);

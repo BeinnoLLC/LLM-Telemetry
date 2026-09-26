@@ -27,8 +27,14 @@ for prof in d["profiles"].values():
         picks = SAMPLE[:max(n, 1)] if n > 1 else [s for s in SAMPLE if s[0] == L.get("model")][:1]
         if not picks:
             picks = [(L.get("model") or "", ["main"], 12, True, "https://api.anthropic.com", 30)]
-        L["models"] = [{"model": m, "tasks": t, "calls": c, "in_tok": c * 9000,
-                        "out_tok": c * 150, "last": NOW - age, "base_url": u, "main": mn}
-                       for m, t, c, mn, u, age in picks]
+        # Tokens deliberately NOT proportional to calls: in real sessions a
+        # model with few calls can dominate token spend (150M tokens over 1,003
+        # calls vs 341k over 26). A fixture where both metrics agree would let a
+        # broken metric toggle pass its test.
+        W = (12.0, 0.3, 3.5, 0.05, 1.0)
+        L["models"] = [{"model": m, "tasks": t, "calls": c,
+                        "in_tok": int(c * 9000 * w), "out_tok": int(c * 150 * w),
+                        "last": NOW - age, "base_url": u, "main": mn}
+                       for (m, t, c, mn, u, age), w in zip(picks, W)]
 json.dump(d, open(P, "w"), separators=(",", ":"))
 print(P, "models added")

@@ -45,6 +45,48 @@ setTimeout(() => {
   chk(!!panel(), 'panel stays open across a live re-render');
   d.querySelector(`[data-lm="${L.id}"]`).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   chk(!panel(), 'clicking again closes it');
+
+  // --- the visualisation (#108) -------------------------------------------
+  d.querySelector(`[data-lm="${L.id}"]`).dispatchEvent(new w.MouseEvent('click', {bubbles:true}));
+  const pan = () => d.querySelector(`[data-lmp="${L.id}"]`);
+  const bar = () => pan() && pan().querySelector('.lmbar');
+  chk(!!bar(), 'the panel draws a proportional share bar');
+  const segs = () => [...pan().querySelectorAll('.lmseg')];
+  const used = L.models.filter(m => (+m.in_tok||0) + (+m.out_tok||0) > 0);
+  chk(segs().length === used.length,
+      `one segment per model with usage (${segs().length} of ${L.models.length})`);
+  const pctOf = el => parseFloat((el.getAttribute('style').match(/width:([\d.]+)%/)||[])[1]);
+  const sum = segs().reduce((a, e) => a + pctOf(e), 0);
+  chk(Math.abs(sum - 100) < 0.5, 'segment widths sum to 100%', `(${sum.toFixed(2)}%)`);
+  // Widths must track the DATA, not just exist.
+  const tot = used.reduce((a,m)=>a+(+m.in_tok||0)+(+m.out_tok||0), 0);
+  const want = used.map(m => ((+m.in_tok||0)+(+m.out_tok||0))/tot*100);
+  chk(segs().every((e,i) => Math.abs(pctOf(e) - want[i]) < 0.05),
+      'each width matches that model\u2019s token share');
+  chk(segs().every(e => (e.getAttribute('title')||'').includes('%')),
+      'every segment names its model and share on hover');
+  const legend = [...pan().querySelectorAll('.lmkey')];
+  chk(legend.length === L.models.length, 'legend lists every model');
+  chk(legend.some(k => (k.className||'').includes('cur')), 'legend marks the current model');
+  chk(pan().querySelectorAll('.lmrowbar').length === L.models.length,
+      'each table row carries its own share bar');
+
+  // Metric toggle: calls and tokens disagree, so the picture must change.
+  const btnFor = k => pan().querySelector(`[data-lmmet="${k}"]`);
+  chk(!!btnFor('calls') && !!btnFor('tokens'), 'metric toggle offers calls and tokens');
+  chk(btnFor('tokens').className.includes('on'), 'tokens is the default metric');
+  const before = segs().map(pctOf);
+  btnFor('calls').dispatchEvent(new w.MouseEvent('click', {bubbles:true}));
+  const after = segs().map(pctOf);
+  chk(btnFor('calls').className.includes('on'), 'clicking switches the active metric');
+  chk(JSON.stringify(before) !== JSON.stringify(after),
+      'switching to calls redraws the bar with different proportions');
+  const ctot = L.models.reduce((a,m)=>a+(+m.calls||0),0);
+  const cwant = L.models.filter(m=>(+m.calls||0)>0).map(m => (+m.calls||0)/ctot*100);
+  chk(after.every((v,i) => Math.abs(v - cwant[i]) < 0.05), 'call-share widths match the data');
+  btnFor('tokens').dispatchEvent(new w.MouseEvent('click', {bubbles:true}));
+  chk(pan().querySelector('[data-lmmet="tokens"]').className.includes('on'), 'toggle switches back');
+
   console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);
   process.exit(f === 0 ? 0 : 1);
 }, 1400);

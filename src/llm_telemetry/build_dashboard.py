@@ -172,10 +172,32 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    everywhere rather than only on desktop. */
 body.hasnav #views{ display:none; }
 /* ---- Live row: models used (#107) ---- */
+.lmhead{display:flex;align-items:center;gap:6px;font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:5px}
+.lmmet{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;
+  border-radius:999px;padding:1px 7px;font:inherit;font-size:9.5px;text-transform:uppercase}
+.lmmet.on{border-color:var(--accent);color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.lmbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--bg);
+  border:1px solid var(--border)}
+.lmseg{display:block;height:100%;min-width:2px}
+.lmseg:hover{filter:brightness(1.25)}
+.lmlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:5px 0 7px;font-size:10px}
+.lmkey{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.lmkey.cur{font-weight:600}
+.lmdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.lmcell{width:88px;min-width:88px}
+.lmrowbar{display:block;height:6px;border-radius:3px;min-width:2px}
 .lmbtn{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;font:inherit}
 .lmbtn:hover{color:var(--fg)}
 .lmpanel{margin:-4px 0 4px 26px;padding:6px 8px;border:1px solid var(--border);border-top:0;
-  border-radius:0 0 6px 6px;overflow-x:auto}
+  border-radius:0 0 6px 6px;
+  /* #livelist is a flex COLUMN with overflow-y:auto, so every child is a flex
+     item that shrinks by default. A shrunk panel clipped its own content to
+     nothing -- and because overflow-x:auto forces overflow-y from visible to
+     auto, the clipped content was invisible rather than spilling. Never shrink,
+     and scroll only on the axis that needs it. */
+  flex:0 0 auto; min-height:max-content; overflow-x:auto; overflow-y:visible}
 .lmpanel table{width:100%;border-collapse:collapse;font-size:11px}
 .lmpanel th{text-align:left;font-weight:500;color:var(--muted);font-size:9.5px;
   text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
@@ -453,8 +475,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     top-aligned next to the taller gauge. */
  .metacol{width:150px;text-align:right;min-width:0;align-self:stretch;
    display:flex;flex-direction:column;justify-content:center;gap:1px}
- .loecol{width:66px;display:flex;align-items:center;justify-content:flex-end;
-   align-self:stretch;margin-left:2px}
+ /* Dial on top, this session's transfer directly beneath it. Column, not
+    row, so the bytes read as a caption to the gauge they belong to. A hairline
+    divider marks the seam between the two different metrics (load vs. bytes)
+    stacked in the same column, so they don't read as one merged block. */
+ .loecol{width:78px;display:flex;flex-direction:column;align-items:center;
+   justify-content:center;gap:2px;align-self:stretch;margin-left:2px}
+ .loecol .bw{justify-content:center;flex-wrap:wrap;gap:2px 6px;margin-top:0;
+   padding-top:4px;border-top:1px solid var(--border);width:100%}
  .loe .needle{transform-origin:32px 34px;
    animation:needle-tremor var(--spd) ease-in-out infinite}
  .loe{display:inline-flex;align-items:center;line-height:0}
@@ -804,14 +832,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  <div class="flex gap-1.5" id="views"></div>
 
- <div class="grid-kpi" id="kpis"></div>
-
- <!-- Aggregated bandwidth. One card holding BOTH directions, because the
-      interesting fact is the ratio between them (upload dominates ~278:1: a
-      whole conversation is re-sent to receive one paragraph), and two separate
-      cards would hide exactly that. Sits above the fold with the KPIs since it
-      is a headline number, not a drill-down. -->
- <div class="card p-3" id="xfercard" hidden>
+ <!-- Transferred: ONE card holding both directions, because the interesting
+      fact is the ratio between them (upload dominates ~255:1 -- a whole
+      conversation is re-sent to receive one paragraph) and splitting the
+      directions across cards would hide exactly that. Sits BEFORE the KPI row:
+      it is a headline number, not a drill-down. -->
+ <div class="card p-3 mb-3" id="xfercard" hidden>
   <div class="flex items-center gap-3 flex-wrap">
    <div class="lbl">Transferred
     <span class="muted normal-case tracking-normal text-[10px] ml-1"
@@ -821,16 +847,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div class="muted text-[10px] ml-auto" id="xfernote"></div>
   </div>
  </div>
- <div class="card p-3" id="bwcard" hidden>
-  <div class="flex items-center gap-3 flex-wrap">
-   <div class="lbl">Bandwidth
-    <span class="muted normal-case tracking-normal text-[10px] ml-1"
-      title="Lifetime totals for sessions still open and active in the last 10 minutes. Not a subset of Transferred: it ignores the date range and counts each open session's whole history.">open sessions only &middot; lifetime totals &middot; estimated</span>
-   </div>
-   <div id="bwtot" class="bw"></div>
-   <div class="muted text-[10px] ml-auto" id="bwnote"></div>
-  </div>
- </div>
+
+ <div class="grid-kpi" id="kpis"></div>
+
+
 
  <!-- Home: the landing surface. Opening the tool used to drop you straight
       into Live with no explanation of what the other sections hold. Cards carry
@@ -1667,36 +1687,6 @@ function renderXfer(rows){
   bits.push(`${R.length} row${R.length === 1 ? '' : 's'}`);
   $('xfernote').textContent = bits.join(' \u00b7 ');
 }
-function renderBwCard(){
-  const card = $('bwcard'); if (!card) return;
-  const p = DATA.profiles[current] || {};
-  const seen = new Set();
-  const live = (p.live || []).filter(L => { if(seen.has(L.id)) return false; seen.add(L.id); return true; });
-  let up=0, down=0, lanUp=0, lanDown=0;
-  live.forEach(L => {
-    up += +L.up_bytes||0; down += +L.down_bytes||0;
-    lanUp += +L.lan_up_bytes||0; lanDown += +L.lan_down_bytes||0;
-  });
-  if (!up && !down && !lanUp && !lanDown) { card.hidden = true; return; }
-  card.hidden = false;
-  // Ratio is the headline: it is why upload dwarfs download here.
-  const ratio = down > 0 ? (up/down) : null;
-  $('bwtot').innerHTML =
-    `<span class="bwleg"><span class="bwarrow bwup">&uarr;</span>
-       <span class="text-[17px] font-semibold">${fmtB(up)}</span>
-       <span class="muted text-[10px] uppercase tracking-wide">up</span></span>
-     <span class="bwleg"><span class="bwarrow bwdown">&darr;</span>
-       <span class="text-[17px] font-semibold">${fmtB(down)}</span>
-       <span class="muted text-[10px] uppercase tracking-wide">down</span></span>`
-    + (ratio ? `<span class="muted text-[10px]">${ratio.toFixed(0)}:1</span>` : '');
-  const bits = [];
-  if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp)}&uarr; ${fmtB(lanDown)}&darr; (not metered)`);
-  // Say how many sessions this covers. Without it the card looks like a smaller
-  // version of Transferred rather than a different question entirely.
-  bits.push(`${live.length} open session${live.length === 1 ? '' : 's'}`);
-  bits.push(`derived: tokens &times; ${(DATA.bytes_per_token || 4.68)} bytes`);
-  $('bwnote').innerHTML = bits.join(' · ');
-}
 
 // Home cards. Each stat is DERIVED from the loaded payload — a hardcoded
 // number on a landing page is a lie with a long shelf life. Cards are anchors
@@ -1804,26 +1794,80 @@ function modelsBadge(L){
     + (main < ms.length ? ` (${main} main, ${ms.length - main} helper)` : '')
     + ` ${open ? '\u25B4' : '\u25BE'}</button>`;
 }
+// Which metric the share bar divides up. Tokens is the default because one
+// call is not one unit of work: in a real session claude-opus-5 had 1,003 calls
+// but 150M tokens, while a helper had 26 calls and 341k. Calls alone would make
+// those look comparable.
+let lmMetric = 'tokens';
+const LM_METRIC = {
+  tokens: {label: 'tokens', of: m => (+m.in_tok||0) + (+m.out_tok||0), fmt: v => fmt(v)},
+  calls:  {label: 'calls',  of: m => (+m.calls||0),                     fmt: v => fmt(v)},
+};
+
+// Proportional share of the session, one segment per model, coloured with the
+// same palette as the model name so the bar and the row read as one thing.
+function modelsShare(ms, cur){
+  const M = LM_METRIC[lmMetric] || LM_METRIC.tokens;
+  const vals = ms.map(M.of);
+  const tot = vals.reduce((a, b) => a + b, 0);
+  if (!tot) return '';
+  const segs = ms.map((m, i) => {
+    const pct = vals[i] / tot * 100;
+    if (pct <= 0) return '';
+    const nm = short(m.model);
+    // A model with real usage must stay visible even at 0.2%: min-width keeps
+    // a sliver on screen rather than silently dropping it from the picture.
+    return `<span class="lmseg" style="width:${pct.toFixed(3)}%;background:${colorOf(nm)}"
+       title="${esc(nm)} — ${M.fmt(vals[i])} ${M.label} (${pct.toFixed(1)}%)"></span>`;
+  }).join('');
+  const legend = ms.map((m, i) => {
+    const nm = short(m.model), pct = vals[i] / tot * 100;
+    return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
+      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${esc(nm)}`
+      + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
+  }).join('');
+  return `<div class="lmbar" role="img"
+      aria-label="share of ${M.label} per model">${segs}</div>
+    <div class="lmlegend">${legend}</div>`;
+}
+
 function modelsPanel(L){
   const ms = modelsOf(L);
   if (ms.length < 2 || !liveModelsOpen.has(L.id)) return '';
   const cur = short(L.model);
-  const rows = ms.map(m => {
+  const M = LM_METRIC[lmMetric] || LM_METRIC.tokens;
+  const vals = ms.map(M.of);
+  const max = Math.max(...vals, 1);
+  const rows = ms.map((m, i) => {
     const nm = short(m.model);
+    // Per-row bar scaled to the BIGGEST model, not to the total: it answers
+    // "how does this one compare with the heaviest", which is what the eye is
+    // doing when it scans a column of numbers.
+    const w = vals[i] / max * 100;
     return `<tr><td><span style="color:${colorOf(nm)}">\u25CF</span> ${esc(nm)}`
       + (nm === cur ? ' <span class="muted">(now)</span>' : '') + `</td>`
       + `<td>${provBadge(provOf('', m.model, m.base_url))}</td>`
       + `<td class="muted">${m.tasks.map(esc).join(', ')}</td>`
+      + `<td class="lmcell"><span class="lmrowbar" style="width:${w.toFixed(2)}%;`
+      + `background:${colorOf(nm)}"></span></td>`
       + `<td class="num">${fmt(m.calls)}</td>`
       + `<td class="num">${fmt(m.in_tok)} / ${fmt(m.out_tok)}</td>`
       + `<td class="num muted">${m.last ? ago(Math.max(0, Date.now()/1000 - m.last)) + ' ago' : ''}</td></tr>`;
   }).join('');
-  return `<div class="lmpanel" data-lmp="${esc(L.id)}"><table>
-    <thead><tr><th>Model</th><th>Provider</th><th>Used for</th><th class="num">Calls</th>
+  const toggle = Object.keys(LM_METRIC).map(k =>
+    `<button type="button" class="lmmet${k === lmMetric ? ' on' : ''}" data-lmmet="${k}">`
+    + `${LM_METRIC[k].label}</button>`).join('');
+  return `<div class="lmpanel" data-lmp="${esc(L.id)}">
+    <div class="lmhead"><span class="muted">share of</span>${toggle}</div>
+    ${modelsShare(ms, cur)}
+    <table>
+    <thead><tr><th>Model</th><th>Provider</th><th>Used for</th><th>Share</th><th class="num">Calls</th>
     <th class="num">Tokens in / out</th><th class="num">Last used</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 document.addEventListener('click', e => {
+  const mt = e.target.closest && e.target.closest('[data-lmmet]');
+  if (mt) { lmMetric = mt.dataset.lmmet; renderLive(); return; }
   const b = e.target.closest && e.target.closest('[data-lm]');
   if (!b) return;
   const id = b.dataset.lm;
@@ -1866,9 +1910,8 @@ function renderLive(){
           ${L.switched ? `<div class="text-[9px] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
           ${modelsBadge(L)}
           <div class="muted text-[10px]">${ago(L.idle_s)} ago</div>
-          ${bwRow(L)}
         </div>
-        <div class="loecol">${loeIcon(L)}</div>
+        <div class="loecol">${loeIcon(L)}${bwRow(L)}</div>
       </div>${modelsPanel(L)}`;
     }).join('');
   }
@@ -1879,7 +1922,6 @@ function renderLive(){
     up:(+L.up_bytes||0)+(+L.lan_up_bytes||0),
     down:(+L.down_bytes||0)+(+L.lan_down_bytes||0)}; });
   bwPrevAt = Date.now();
-  renderBwCard();
 
   const cats = agg(live, L=>L.category, ()=>1);
   mk('cLiveCat','doughnut',cats.map(x=>x[0]),
