@@ -62,7 +62,7 @@ def build():
     # covers exactly the models actually in use — not a catalogue dump.
     seen = collections.defaultdict(lambda: {
         "calls": 0, "inp": 0, "outp": 0, "cache": 0, "cost": 0.0,
-        "providers": set(), "profiles": set(),
+        "providers": set(), "profiles": set(), "local": False,
     })
     for pname, prof in data.get("profiles", {}).items():
         for r in prof.get("rows", []):
@@ -75,11 +75,16 @@ def build():
             e["cost"] += r.get("market_value_usd") or 0.0
             if r.get("provider"):
                 e["providers"].add(r["provider"])
+            # The collector already classed the row by its endpoint (a LAN host
+            # is local whatever the model is called), so the sheet agrees with
+            # the dashboard instead of re-deriving it from the name alone.
+            if r.get("cost_class") == "local":
+                e["local"] = True
             e["profiles"].add(pname)
 
     models = []
     for model, agg in seen.items():
-        source = rate_source(model, catalog)
+        source = "local" if agg["local"] else rate_source(model, catalog)
         tps = None
         if source == "local":
             (ri, ro, rc), tps = local_rates(model)
@@ -118,6 +123,7 @@ def build():
         "models": models,
         "catalog_size": len(catalog),
         "catalog_source": src,
+        "freshness": P.catalog_freshness(src),
         "generated": datetime.datetime.now().isoformat(timespec="seconds"),
         "kwh": KWH_PRICE_USD,
         "watts": GPU_DRAW_W + HOST_OVERHEAD_W,
@@ -159,6 +165,11 @@ tbody td:first-child,tbody td.l{text-align:left}
 tbody tr:hover{background:rgba(99,102,241,.06)}
 tbody tr:last-child td{border-bottom:none}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.warnbox{border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:#fca5a5;
+  border-radius:8px;padding:10px 12px;margin:12px 0;font-size:12.5px;line-height:1.55}
+.warnbox b{color:#fecaca}
+.okbox{border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.07);color:#86efac;
+  border-radius:8px;padding:8px 12px;margin:12px 0;font-size:12.5px}
 .tag{display:inline-block;padding:1.5px 7px;border-radius:4px;font-size:9.5px;
   font-weight:650;letter-spacing:.03em;text-transform:uppercase}
 .t-vendor{background:rgba(34,197,94,.15);color:#4ade80}
@@ -220,10 +231,11 @@ tbody tr:last-child td{border-bottom:none}
 </svg>Model price sheet</h1>
 <div class="sub">Exactly how every cost number on the dashboard is produced &mdash;
   per-million-token rates, their source, and the observed spend at those rates.
-  <br>Generated __GEN__ &middot; OpenRouter catalogue: __CATSIZE__ models (__CATSRC__)
-  &middot; refreshed by cron with the dashboard.</div>
+  <br>Generated __GEN__ &middot; __FRESHLINE__</div>
+__FRESHBOX__
 
 __KPIS__
+__UNPRICED__
 
 <div class="card">
   <div class="lbl">Price a job</div>
@@ -257,7 +269,7 @@ cost = <b>(input_tokens &times; input_rate)</b> + <b>(output_tokens &times; outp
 <br><span class="muted"># rates are resolved in this order, first hit wins:</span>
 <br>1. <b>local</b> &nbsp;&nbsp;&nbsp;&nbsp;&rarr; electricity model below (your tariff &times; the box's draw)
 <br>2. <b>vendor</b> &nbsp;&nbsp;&nbsp;&rarr; official pricing page, hardcoded in <b>pricing.py WEB_RATES</b>
-<br>3. <b>openrouter</b> &rarr; live OpenRouter catalogue, cached 6h, refreshed by cron
+<br>3. <b>openrouter</b> &rarr; live OpenRouter catalogue, cached __TTL__, refreshed by cron
 <br>4. <b>unpriced</b> &nbsp;&rarr; no rate found; contributes <b>$0</b> and is flagged red above
   </div>
 </div>
@@ -426,6 +438,53 @@ LABEL = {
 }
 
 
+def freshness_html(f, catalog_size):
+    """Catalogue freshness line (P6-02, #60). Stale and unavailable are warnings."""
+    age = f" &middot; fetched {f['age']} ago" if f.get("age") else ""
+    ttl = f"cache refreshes every {f['ttl']}"
+    why = f" ({f['detail']})" if f.get("detail") else ""
+    if f["state"] == "unavailable" and not catalog_size:
+        return ('<div class="warnbox" id="catfresh" data-state="unavailable">'
+                '<b>Catalogue prices are missing.</b> The OpenRouter catalogue could not be '
+                f'fetched{why} and there is no cached copy, so every model that relies on it '
+                'is unpriced below. Vendor rates and local electricity rates still apply. '
+                'Check network access and rebuild.</div>')
+    if f["state"] in ("stale", "unavailable"):
+        return ('<div class="warnbox" id="catfresh" data-state="stale">'
+                f'<b>Prices are stale</b>{age}. The latest fetch failed{why}, so an older '
+                f'cached catalogue ({catalog_size:,} models) is in use; {ttl}.</div>')
+    word = "fetched live" if f["state"] == "live" else "from cache"
+    return (f'<span id="catfresh" data-state="{f["state"]}">OpenRouter catalogue: '
+            f'{catalog_size:,} models, {word}{age}; {ttl}</span>')
+
+
+def unpriced_html(models):
+    """Unpriced models, split by whether they carry traffic (P6-03, #61)."""
+    un = [m for m in models if m["source"] == "unpriced"]
+    used = [m for m in un if m.get("calls")]
+    idle = [m for m in un if not m.get("calls")]
+    if not used:
+        tail = (f' {len(idle)} unused model{"s" if len(idle) != 1 else ""} have no rate, '
+                'which costs nothing.') if idle else ''
+        return ('<div class="okbox" id="unpriced" data-used="0">'
+                f'<b>Every model with traffic is priced.</b>{tail}</div>')
+    calls = sum(m["calls"] for m in used)
+    toks = sum(m.get("inp", 0) + m.get("outp", 0) for m in used)
+    names = ", ".join(f'<span class="mono">{m["short"]}</span>' for m in used)
+    idle_note = (f' Another {len(idle)} unpriced model{"s" if len(idle) != 1 else ""} '
+                 'had no traffic, which is harmless.') if idle else ''
+    return ('<div class="warnbox" id="unpriced" data-used="%d">' % len(used)
+            + f'<b>{len(un)} model{"s" if len(un) != 1 else ""} unpriced, {len(used)} of them '
+            f'with recorded traffic</b>: {names}.'
+            + f' <b>Spend is understated:</b> {calls:,} calls and {toks:,} tokens are '
+            'counted at $0 because no rate exists. How much is missing is unknown, so it '
+            'is excluded rather than guessed.'
+            + ' <b>Fix:</b> add the model to <span class="mono">WEB_RATES</span> '
+            '(official vendor price) or map its name to an OpenRouter id in '
+            '<span class="mono">ALIASES</span>, both in <span class="mono">pricing.py</span>.'
+            + idle_note + '</div>')
+
+
 def render(d):
     rows = []
     for m in d["models"]:
@@ -467,6 +526,12 @@ def render(d):
     median = (sorted(m["out_1m"] for m in metered)[len(metered) // 2]
               if metered else None)
 
+    f = d.get("freshness") or P.catalog_freshness(d.get("catalog_source"))
+    fb = freshness_html(f, d["catalog_size"])
+    # A plain state goes inline in the header; a warning gets its own box.
+    fresh_line, fresh_box = (fb, "") if fb.startswith("<span") else (
+        f'OpenRouter catalogue: {d["catalog_size"]:,} models', fb)
+
     # A reference sheet answers "what does a model cost", not "what did I spend".
     kpis = f'''<div class="grid">
   <div class="kpi"><div class="lbl" style="margin:0">Models on sheet</div>
@@ -504,6 +569,10 @@ def render(d):
             .replace("__GEN__", d["generated"].replace("T", " "))
             .replace("__CATSIZE__", f'{d["catalog_size"]:,}')
             .replace("__CATSRC__", d["catalog_source"])
+            .replace("__FRESHLINE__", fresh_line)
+            .replace("__FRESHBOX__", fresh_box)
+            .replace("__TTL__", P.ttl_label())
+            .replace("__UNPRICED__", unpriced_html(d["models"]))
             .replace("__KPIS__", kpis)
             .replace("__TABLE__", table)
             .replace("__CALCDATA__", calc_json)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """OpenRouter pricing catalog -> per-model rates for Hermes usage rows.
 
-Refreshed every 6h (cache TTL 6h). Classifies every billing provider so we never
+Refreshed on the cache TTL (see TTL / ttl_label()). Classifies every billing provider so we never
 invent a per-token cost for flat-fee or local traffic:
 
   metered      real pay-per-token spend  (fireworks, openrouter, deepseek direct)
@@ -152,6 +152,60 @@ ALIASES = {
 }
 
 
+def ttl_label(seconds=None):
+    """Human form of the catalogue TTL ("<n>h" style), derived from TTL (P6-02).
+
+    Pages that state how often prices refresh interpolate this, so the text
+    cannot drift from the constant again.
+    """
+    s = TTL if seconds is None else seconds
+    if s % 86400 == 0:
+        return f"{s // 86400}d"
+    if s % 3600 == 0:
+        return f"{s // 3600}h"
+    return f"{s // 60}m"
+
+
+def age_label(seconds):
+    """Compact age: "12m", "2h", "3d"."""
+    if seconds is None:
+        return ""
+    s = max(0, int(seconds))
+    if s < 3600:
+        return f"{s // 60}m"
+    if s < 86400:
+        return f"{s // 3600}h"
+    return f"{s // 86400}d"
+
+
+def catalog_freshness(source, now=None):
+    """How fresh the OpenRouter prices are (P6-02, #60).
+
+    Returns {state, age_s, age, ttl, detail}. state is one of:
+      live         fetched during this build
+      cache        read from a cache younger than TTL
+      stale        fetch failed and an older cache was used
+      unavailable  fetch failed and there is no cache: no catalogue prices
+    """
+    now = time.time() if now is None else now
+    age = None
+    if os.path.exists(CACHE):
+        try:
+            age = now - float(json.load(open(CACHE)).get("fetched") or os.path.getmtime(CACHE))
+        except Exception:
+            age = now - os.path.getmtime(CACHE)
+    src = (source or "").strip()
+    state = src.split(" ", 1)[0] or "unavailable"
+    if state not in ("live", "cache", "stale", "unavailable"):
+        state = "cache"
+    # An old cache is stale even when no fetch was attempted.
+    if state == "cache" and age is not None and age > TTL:
+        state = "stale"
+    detail = src[len(state):].strip(" ()") if src.startswith(state) else ""
+    return {"state": state, "age_s": age, "age": age_label(age),
+            "ttl": ttl_label(), "detail": detail}
+
+
 def fetch_catalog(force=False):
     """Return {openrouter_id: pricing_dict}, cached for TTL seconds."""
     if not force and os.path.exists(CACHE):
@@ -275,6 +329,12 @@ def price_row(row, catalog):
         # than reporting a well-known model as untracked.
         cls = class_from_model(model) or "unknown"
     r = rates_for(model, catalog)
+    if cls == "local" and not is_local(model):
+        # Classed local by its endpoint (a LAN host) but not by name: still
+        # electricity, never a catalogue price and never $0 (P7-01).
+        from . import energy as E
+        (ri, ro, rc), _tps = E.local_rates(model)
+        r = (ri / 1e6, ro / 1e6, rc / 1e6)
     value = 0.0
     if r:
         pin, pout, pcache = r

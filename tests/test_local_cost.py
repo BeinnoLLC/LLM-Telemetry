@@ -75,6 +75,14 @@ cat = {"qwen/qwen3-coder": {"prompt": "0.001", "completion": "0.002", "input_cac
 chk(P.rates_for("qwen3-coder:30b", cat) == (ri / 1e6, ro / 1e6, rc / 1e6),
     "local model uses the electricity rate even when a cloud price exists")
 
+# A row sent to a LAN host is local even when its name is not in LOCAL_HINTS
+# (found on real data: qwen2.5-coder:14b priced $0).
+lan = P.price_row({"model": "some-new-model:14b", "provider": "custom",
+                   "base_url": "http://192.168.1.12:11434/v1",
+                   "input_tokens": 1_000_000, "output_tokens": 100_000, "cache_read": 0}, {})
+chk(lan["cost_class"] == "local" and lan["energy_usd"] > 0,
+    "a LAN-endpoint model outside LOCAL_HINTS still costs electricity", lan)
+
 # --- the tariff is config, not a constant (P7-02) --------------------------------
 (ri2, ro2, _), _ = E.local_rates("qwen3-coder:30b", cfg(electricity_rate_kwh=0.094))
 chk(abs(ro2 - 2 * ro) < 1e-12, "doubling electricity_rate_kwh doubles the cost", (ro, ro2))
