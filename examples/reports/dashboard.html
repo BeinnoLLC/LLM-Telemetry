@@ -700,6 +700,15 @@ body.hasnav #views{ display:none; }
       whole conversation is re-sent to receive one paragraph), and two separate
       cards would hide exactly that. Sits above the fold with the KPIs since it
       is a headline number, not a drill-down. -->
+ <div class="card p-3" id="xfercard" hidden>
+  <div class="flex items-center gap-3 flex-wrap">
+   <div class="lbl">Transferred
+    <span class="muted normal-case tracking-normal text-[10px] ml-1">estimated, selected range</span>
+   </div>
+   <div id="xfertot" class="bw"></div>
+   <div class="muted text-[10px] ml-auto" id="xfernote"></div>
+  </div>
+ </div>
  <div class="card p-3" id="bwcard" hidden>
   <div class="flex items-center gap-3 flex-wrap">
    <div class="lbl">Bandwidth
@@ -1229,6 +1238,7 @@ function render(){
   renderLive();
   renderHealth();
   renderHome(inR);
+  renderXfer(rows);
   renderHeatmap(p.heatmap);
   // Flow graph before the empty-rows early return below, so switching to an
   // empty date range clears the graph instead of leaving a stale one on screen.
@@ -1432,6 +1442,43 @@ function bwRow(L){
 // directions in one card. Internet and LAN are summed separately: LAN traffic is
 // real load but costs nothing on a metered link, so blending them would overstate
 // what the connection is carrying.
+// Aggregated transfer for the SELECTED RANGE (#86). Distinct from the live
+// card above it: that one sums sessions in flight, this sums every row in the
+// date filter. The live card answers "what is moving now", this one answers
+// "how much have I moved" — the number that was previously impossible to see.
+function renderXfer(rows){
+  const card = $('xfercard'); if (!card) return;
+  const R = rows || [];
+  let up = 0, down = 0, lanUp = 0, lanDown = 0;
+  R.forEach(r => {
+    up += +r.up_bytes || 0;
+    down += +r.down_bytes || 0;
+    lanUp += +r.lan_up_bytes || 0;
+    lanDown += +r.lan_down_bytes || 0;
+  });
+  if (!up && !down && !lanUp && !lanDown){ card.hidden = true; return; }
+  card.hidden = false;
+
+  // Ratio is the headline finding: upload dwarfs download because prompts are
+  // re-sent in full on every call while completions are small.
+  const ratio = down > 0 ? (up / down) : null;
+  $('xfertot').innerHTML =
+    `<span class="bwleg"><span class="bwarrow bwup">&uarr;</span>
+       <span class="text-[17px] font-semibold">${fmtB(up)}</span>
+       <span class="muted text-[10px] uppercase tracking-wide">up</span></span>
+     <span class="bwleg"><span class="bwarrow bwdown">&darr;</span>
+       <span class="text-[17px] font-semibold">${fmtB(down)}</span>
+       <span class="muted text-[10px] uppercase tracking-wide">down</span></span>`
+    + (ratio ? `<span class="muted text-[10px]">${ratio.toFixed(0)}:1</span>` : '');
+
+  // LAN disclosed separately and never folded into the metered total: bytes to
+  // a box on your own network cost nothing, so mixing them would overstate
+  // what you actually paid to move.
+  const bits = [];
+  if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp + lanDown)} (not metered)`);
+  bits.push(`${R.length} row${R.length === 1 ? '' : 's'}`);
+  $('xfernote').textContent = bits.join(' \u00b7 ');
+}
 function renderBwCard(){
   const card = $('bwcard'); if (!card) return;
   const p = DATA.profiles[current] || {};
