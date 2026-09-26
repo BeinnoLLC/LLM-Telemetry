@@ -144,6 +144,16 @@
 /* The rail is the nav at every width now (#4), so the chip strip is redundant
    everywhere rather than only on desktop. */
 body.hasnav #views{ display:none; }
+/* ---- Live row: models used (#107) ---- */
+.lmbtn{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;font:inherit}
+.lmbtn:hover{color:var(--fg)}
+.lmpanel{margin:-4px 0 4px 26px;padding:6px 8px;border:1px solid var(--border);border-top:0;
+  border-radius:0 0 6px 6px;overflow-x:auto}
+.lmpanel table{width:100%;border-collapse:collapse;font-size:11px}
+.lmpanel th{text-align:left;font-weight:500;color:var(--muted);font-size:9.5px;
+  text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
+.lmpanel td{padding:3px 8px 3px 0;white-space:nowrap;border-top:1px solid var(--border)}
+.lmpanel .num{text-align:right;font-variant-numeric:tabular-nums}
 /* ---- Logs page (#104) ------------------------------------------------- */
 .lgfacets{display:flex;flex-direction:column;gap:6px}
 .lgrow{display:flex;align-items:flex-start;gap:10px}
@@ -1748,6 +1758,50 @@ function renderHome(inR){
   });
 }
 
+// Which models a live session used (#107). The row used to say "4 models used"
+// with no names, and that count ignored helper tasks (compression, approval,
+// title generation) that also spend tokens. L.models comes from collect_live.
+const liveModelsOpen = new Set();   // survives the 5s re-render
+function modelsOf(L){ return Array.isArray(L.models) ? L.models : []; }
+function modelsBadge(L){
+  const ms = modelsOf(L);
+  if (ms.length < 2) return (L.nmodels||0) > 1
+    ? `<div class="muted text-[9px]">${L.nmodels} models used</div>` : '';
+  const main = ms.filter(m => m.main).length;
+  const tip = ms.map(m => `${short(m.model)} (${m.tasks.join(', ')})`).join('\n');
+  const open = liveModelsOpen.has(L.id);
+  return `<button type="button" class="lmbtn muted text-[9px]" data-lm="${esc(L.id)}"
+     aria-expanded="${open}" title="${esc(tip)}">${ms.length} models used`
+    + (main < ms.length ? ` (${main} main, ${ms.length - main} helper)` : '')
+    + ` ${open ? '\u25B4' : '\u25BE'}</button>`;
+}
+function modelsPanel(L){
+  const ms = modelsOf(L);
+  if (ms.length < 2 || !liveModelsOpen.has(L.id)) return '';
+  const cur = short(L.model);
+  const rows = ms.map(m => {
+    const nm = short(m.model);
+    return `<tr><td><span style="color:${colorOf(nm)}">\u25CF</span> ${esc(nm)}`
+      + (nm === cur ? ' <span class="muted">(now)</span>' : '') + `</td>`
+      + `<td>${provBadge(provOf('', m.model, m.base_url))}</td>`
+      + `<td class="muted">${m.tasks.map(esc).join(', ')}</td>`
+      + `<td class="num">${fmt(m.calls)}</td>`
+      + `<td class="num">${fmt(m.in_tok)} / ${fmt(m.out_tok)}</td>`
+      + `<td class="num muted">${m.last ? ago(Math.max(0, Date.now()/1000 - m.last)) + ' ago' : ''}</td></tr>`;
+  }).join('');
+  return `<div class="lmpanel" data-lmp="${esc(L.id)}"><table>
+    <thead><tr><th>Model</th><th>Provider</th><th>Used for</th><th class="num">Calls</th>
+    <th class="num">Tokens in / out</th><th class="num">Last used</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-lm]');
+  if (!b) return;
+  const id = b.dataset.lm;
+  liveModelsOpen.has(id) ? liveModelsOpen.delete(id) : liveModelsOpen.add(id);
+  renderLive();
+});
+
 function renderLive(){
   const p = DATA.profiles[current] || {};
   renderOllama(DATA.ollama);
@@ -1781,12 +1835,12 @@ function renderLive(){
         <div class="metacol shrink-0">
           <div class="text-[15px] font-semibold truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
           ${L.switched ? `<div class="text-[9px] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
-          ${(L.nmodels||0) > 1 ? `<div class="muted text-[9px]">${L.nmodels} models used</div>` : ''}
+          ${modelsBadge(L)}
           <div class="muted text-[10px]">${ago(L.idle_s)} ago</div>
           ${bwRow(L)}
         </div>
         <div class="loecol">${loeIcon(L)}</div>
-      </div>`;
+      </div>${modelsPanel(L)}`;
     }).join('');
   }
 

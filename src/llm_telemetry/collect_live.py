@@ -44,6 +44,48 @@ group by m.tool_name order by 2 desc limit 14
 
 # Live log tail — recent tool calls + assistant messages across all active sessions,
 # for the log drawer. Indexed on session_id so it stays fast even on the 1.2 GB DB.
+# Every model a live session has touched, per task. The row used to show only
+# "N models used" -- a count with no names, and one that silently ignored helper
+# tasks (compression, approval, title generation...) which also burn tokens.
+LIVE_MODELS = """
+select u.session_id, u.model, coalesce(nullif(u.task,''),'main'),
+       coalesce(sum(u.api_call_count),0),
+       coalesce(sum(u.input_tokens + u.cache_read_tokens),0),
+       coalesce(sum(u.output_tokens),0),
+       max(u.last_seen), max(coalesce(u.billing_base_url,''))
+from session_model_usage u join sessions s on s.id = u.session_id
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+group by u.session_id, u.model, 3
+"""
+
+
+def fold_models(rows):
+    """[(sid, model, task, calls, in, out, last, url)] -> {sid: [model dicts]}.
+
+    One entry per model, tasks folded in. 'main' models first (the ones that
+    actually answered the conversation), then helpers; newest first within each.
+    """
+    out = {}
+    for sid, model, task, calls, tin, tout, last, url in rows:
+        if not model:
+            continue
+        per = out.setdefault(sid, {})
+        m = per.setdefault(model, {"model": model, "tasks": [], "calls": 0,
+                                   "in_tok": 0, "out_tok": 0, "last": 0,
+                                   "base_url": "", "main": False})
+        m["tasks"].append(task)
+        m["calls"] += int(calls or 0)
+        m["in_tok"] += int(tin or 0)
+        m["out_tok"] += int(tout or 0)
+        if (last or 0) >= m["last"]:
+            m["last"] = float(last or 0)
+            m["base_url"] = url or m["base_url"]
+        m["main"] = m["main"] or task == "main"
+    return {sid: sorted(per.values(), key=lambda m: (not m["main"], -m["last"]))
+            for sid, per in out.items()}
+
+
 LIVE_LOGS = """
 select m.timestamp, s.title, m.role, coalesce(m.tool_name,'') tool,
        substr(coalesce(m.content,''),1,200) preview
@@ -198,6 +240,9 @@ def build_live():
                 # is never labelled "not metered".
                 L["bw_local"] = (L["up_bytes"] + L["down_bytes"]) == 0 and (
                     L["lan_up_bytes"] + L["lan_down_bytes"]) > 0
+            models = fold_models(con.execute(LIVE_MODELS).fetchall())
+            for L in live:
+                L["models"] = models.get(L["id"], [])
             tools_recent = [
                 {"tool": t, "calls": n} for t, n in con.execute(LIVE_TOOLS)
             ]
