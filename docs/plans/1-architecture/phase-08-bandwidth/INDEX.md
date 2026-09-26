@@ -3,7 +3,7 @@
 **Goal:** estimate upload/download for every session and model, render it in the
 tables, and keep tracking it over time.
 
-**Status:** in progress · 5/6 tickets · est ~20h
+**Status:** done · 6/6 tickets
 
 ---
 

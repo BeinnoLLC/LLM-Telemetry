@@ -850,6 +850,20 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media(min-width:1600px){
    :root{--fs:16px;--gap:20px;--pad:28px}
  }
+ /* Bandwidth panel (P8-05, #72) */
+ #bwpanel[hidden]{display:none}
+ .bwpkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+ .bwpt{border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+ .bwpv{font-size:22px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+ .bwpl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .bwps{font-size:10.5px;margin-top:2px}
+ .bwrrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px 52px;align-items:center;gap:8px;font-size:12px}
+ .bwrm{font-weight:600}
+ .bwrbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+ .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+ .bwrrow.hot .bwrbar i{background:#ef4444}
+ .bwrx{text-align:right;font-variant-numeric:tabular-nums}
+ .bwrflag{font-size:10px;color:#ef4444;white-space:nowrap}
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
@@ -1084,6 +1098,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="grid-2">
    <div class="card p-4"><div class="lbl mb-2.5">Daily activity</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cDaily"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Hourly distribution</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cHours"></canvas></div></div>
+  </div>
+  <!-- Row 4: Bandwidth (P8-05, #72). Reads the PERSISTED series
+       (bandwidth_daily), never the live day rows, so a recalibrated constant
+       cannot quietly redraw history. -->
+  <div class="card p-4 mt-4" id="bwpanel">
+   <div class="lbl mb-2.5">Bandwidth
+    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="bwpsub"></span>
+   </div>
+   <div id="bwpkpi" class="bwpkpi mb-3"></div>
+   <div class="grid-2">
+    <div>
+     <div class="lbl mb-2">Daily transfer <span class="muted normal-case tracking-normal">— internet up / down, LAN separate</span></div>
+     <div style="height:clamp(200px,20vw,280px)"><canvas id="cBwTrend"></canvas></div>
+    </div>
+    <div>
+     <div class="lbl mb-2">Context re-send by model <span class="muted normal-case tracking-normal">— prompt tokens sent per fresh token</span></div>
+     <div id="bwresend" class="flex flex-col gap-1"></div>
+    </div>
+   </div>
+   <div class="muted text-[10px] mt-3" id="bwpnote"></div>
   </div>
  </div>
 
@@ -1520,6 +1554,112 @@ function provIcon(sm){
 // Prefix a provider glyph to a model label for chart axes/legends.
 function ic(sm){ return provIcon(sm) + ' ' + sm; }
 
+// ---- Bandwidth panel (P8-05, #72) ------------------------------------------
+// Source: p.bandwidth_daily, the frozen per-day ledger (P8-04). Deliberately
+// not p.rows: rows are recomputed with today's bytes_per_token on every build,
+// the ledger is not, and this panel is the one that claims to show history.
+//
+// Re-send factor = prompt tokens sent / fresh prompt tokens
+//                = (input + cache_read + cache_write) / (input + cache_write).
+// cache_write is fresh text too: Anthropic reports it OUTSIDE input_tokens, so
+// the naive cache_read/input form gives 64,000x for claude-opus-5 where the
+// honest figure is ~15x. Hand-checked against state.db for #72.
+function resendOf(r){
+  const fresh = (+r.input_tokens||0) + (+r.cache_write_tokens||0);
+  const sent  = fresh + (+r.cache_read_tokens||0);
+  return {fresh, sent, x: fresh ? sent / fresh : null};
+}
+function renderBandwidthPanel(p, inR){
+  const card = $('bwpanel'); if (!card) return;
+  const all = (p.bandwidth_daily || []);
+  const S = all.filter(r => inR(r.date));
+  if (!S.length){
+    card.hidden = !all.length ? true : false;
+    if (!all.length) return;
+    $('bwpkpi').innerHTML = '<span class="muted text-[12px]">No bandwidth recorded in this range.</span>';
+    $('bwresend').innerHTML = ''; $('bwpsub').textContent = ''; $('bwpnote').textContent = '';
+    return;
+  }
+  card.hidden = false;
+  const days = [...new Set(S.map(r => r.date))].sort();
+  const sum = (k, rs=S) => rs.reduce((a, r) => a + (+r[k]||0), 0);
+  const up = sum('up_bytes'), down = sum('down_bytes');
+  const lan = sum('lan_up_bytes') + sum('lan_down_bytes');
+  const tot = resendOf({input_tokens:sum('input_tokens'), cache_read_tokens:sum('cache_read_tokens'),
+                        cache_write_tokens:sum('cache_write_tokens')});
+  const ratio = down ? up / down : null;
+  const frozen = S.filter(r => r.frozen).length;
+  const bpts = [...new Set(S.map(r => r.bytes_per_token))].sort();
+
+  $('bwpsub').textContent = `${days.length} day${days.length===1?'':'s'} · estimated, not measured`;
+  const tile = (v, l, sub) => `<div class="bwpt"><div class="bwpv">${v}</div><div class="bwpl">${l}</div>${sub?`<div class="muted bwps">${sub}</div>`:''}</div>`;
+  $('bwpkpi').innerHTML = [
+    tile(tot.x == null ? '—' : `${tot.x.toFixed(1)}&times;`, 'context re-send',
+         'each fresh prompt token is sent this many times'),
+    tile(ratio == null ? '—' : `${Math.round(ratio).toLocaleString()}:1`, 'upload : download',
+         'a whole conversation goes up to get a reply back'),
+    tile(`&uarr; ${fmtB(up)}`, 'internet upload', `&darr; ${fmtB(down)} download`),
+    tile(fmtB(lan), 'LAN', 'local models · not metered'),
+  ].join('');
+
+  // Daily trend: internet up/down on the left axis, LAN as its own line so a
+  // local-heavy day cannot inflate the metered picture.
+  const by = d => S.filter(r => r.date === d);
+  // Upload dwarfs download ~190:1, so on one axis download is an invisible
+  // sliver. Upload gets the bars and the left axis; download and LAN get lines
+  // on their own right axis, so each is legible and none is misread as zero.
+  mk('cBwTrend', 'bar', days.map(d => d.slice(5)), [
+    {label:'upload', data:days.map(d => sum('up_bytes', by(d))), backgroundColor:'#f59e0b',
+     borderRadius:2, yAxisID:'y', order:2},
+    {label:'download', type:'line', data:days.map(d => sum('down_bytes', by(d))),
+     borderColor:'#38bdf8', backgroundColor:'#38bdf8', pointRadius:3, tension:.3, yAxisID:'y1', order:1},
+    {label:'LAN', type:'line', data:days.map(d => sum('lan_up_bytes', by(d)) + sum('lan_down_bytes', by(d))),
+     borderColor:MU, backgroundColor:MU, borderDash:[4,3], pointRadius:2, tension:.3, yAxisID:'y1', order:1},
+  ], {plugins:{legend:{labels:{boxWidth:8}},
+       tooltip:{callbacks:{title:c => days[c[0].dataIndex],
+                           label:c => `${c.dataset.label}: ${fmtB(c.parsed.y)}`}}},
+      scales:{x:{grid:{display:false}},
+              y:{position:'left', grid:{color:BD}, title:{display:true, text:'upload', color:'#f59e0b', font:{size:10}},
+                 ticks:{maxTicksLimit:5, callback:v => fmtB(v)}},
+              y1:{position:'right', grid:{display:false}, title:{display:true, text:'download · LAN', color:'#38bdf8', font:{size:10}},
+                  ticks:{maxTicksLimit:5, callback:v => fmtB(v)}}}});
+
+  // Re-send per model, worst first. Flag anything well above the fleet median:
+  // those are the candidates for shorter contexts or earlier compaction.
+  const M = {};
+  S.forEach(r => {
+    const o = M[r.model] || (M[r.model] = {model:r.model, input_tokens:0, cache_read_tokens:0,
+                                          cache_write_tokens:0, up:0, calls:0});
+    o.input_tokens += +r.input_tokens||0; o.cache_read_tokens += +r.cache_read_tokens||0;
+    o.cache_write_tokens += +r.cache_write_tokens||0; o.up += +r.up_bytes||0; o.calls += +r.calls||0;
+  });
+  const rows = Object.values(M).map(o => ({...o, ...resendOf(o)}))
+    .filter(o => o.x != null && o.sent > 0).sort((a, b) => b.x - a.x);
+  const xs = rows.map(o => o.x).sort((a, b) => a - b);
+  const med = xs.length ? (xs.length % 2 ? xs[(xs.length-1)/2] : (xs[xs.length/2-1] + xs[xs.length/2]) / 2) : 0;
+  const max = rows.length ? rows[0].x : 1;
+  const TOP = 12;
+  $('bwresend').innerHTML = !rows.length
+    ? '<div class="muted text-[12px]">No prompt tokens in range.</div>'
+    : rows.slice(0, TOP).map(o => {
+        const hot = med && o.x >= 2 * med;
+        return `<div class="bwrrow${hot ? ' hot' : ''}" data-model="${short(o.model)}" data-x="${o.x.toFixed(2)}"
+                  title="${o.sent.toLocaleString()} prompt tokens sent · ${o.fresh.toLocaleString()} fresh · ${o.calls.toLocaleString()} calls">
+          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${short(o.model)}</span>
+          <span class="bwrbar"><i style="width:${Math.max(2, 100 * o.x / max).toFixed(1)}%"></i></span>
+          <span class="bwrx">${o.x.toFixed(1)}&times;</span>
+          ${hot ? '<span class="bwrflag" title="At least 2x the fleet median">&#9650; high</span>' : '<span class="bwrflag"></span>'}
+        </div>`;
+      }).join('')
+      + `<div class="muted text-[10px] mt-1">fleet median ${med.toFixed(1)}&times;${rows.length > TOP ? ` · top ${TOP} of ${rows.length} models` : ''}</div>`;
+
+  $('bwpnote').textContent =
+    `Estimated from token counts × ${bpts.map(b => (+b).toFixed(2)).join(' / ')} bytes/token, ` +
+    `not measured on the wire. ${frozen} of ${S.length} rows are frozen history: each keeps the ` +
+    `constant it was computed with, so recalibrating never restates past days. ` +
+    `Re-send = (input + cache read + cache write) ÷ (input + cache write).`;
+}
+
 function render(){
   const p = DATA.profiles[current];
   const from = $('from').value, to = $('to').value;
@@ -1577,6 +1717,10 @@ function render(){
   // empty date range clears the graph instead of leaving a stale one on screen.
   flowControls();
   if (view === 'Flow') renderFlow(rows);
+
+  // Before the empty-range return: a range with no ledger rows must say so,
+  // not keep showing the previous range's numbers.
+  renderBandwidthPanel(p, inR);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -1637,7 +1781,6 @@ function render(){
   mk('cHours','bar',Array.from({length:24},(_,h)=>String(h).padStart(2,'0')),
     [{data:hv,backgroundColor:PAL[4],borderRadius:2}],
     {...noLeg,scales:{x:{grid:{display:false}},y:{grid:{color:BD}}}});
-
   const bp=agg(rows,r=>provOf(r.provider,r.model,r.base_url),r=>r.calls);
   mk('cProv','doughnut',bp.map(x=>x[0]),[{data:bp.map(x=>x[1]),
       backgroundColor:bp.map(x=>(PROV[x[0]]||{fg:MU}).fg),borderWidth:0}],
@@ -2254,6 +2397,10 @@ function buildAll(profiles){
           // empty panel while each real profile had data — the panel looked
           // broken rather than empty.
           delegations: mergeDelegations(names.map(n => profiles[n].delegations)),
+          // Ledger rows concatenate: each is already keyed by provider/model/day,
+          // and the panel aggregates. Summing them into new rows would lose the
+          // per-row bytes_per_token the panel reports.
+          bandwidth_daily: names.flatMap(n => profiles[n].bandwidth_daily || []),
           // Match the per-profile cap: 14 would silently re-collapse the
           // failure list that the Health panel now pages through.
           failures_recent: fails.slice(0,60),

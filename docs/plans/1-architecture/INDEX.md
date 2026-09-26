@@ -281,7 +281,7 @@ upload figure 3.65x — P8-06 settles it before the views are built.
 - [x] **P8-04 · Persist bandwidth per day** 🟡 ⏱ 3h ·
       [`P8-04`](./phase-08-bandwidth/tickets/P8-04.md) — shipped (#76): ledger
       `bandwidth-history.json`, closed days frozen with their `bytes_per_token`.
-- [ ] **P8-05 · Bandwidth trend and context re-send panel** 🟡 ⏱ 3h ·
+- [x] **P8-05 · Bandwidth trend and context re-send panel** 🟡 ⏱ 3h ·
       [`P8-05`](./phase-08-bandwidth/tickets/P8-05.md)
 - [x] **P8-06 · Settle request-body gzip** 🟢 ⏱ 2h ·
       [`P8-06`](./phase-08-bandwidth/tickets/P8-06.md) — shipped `ad578ea` (#73):

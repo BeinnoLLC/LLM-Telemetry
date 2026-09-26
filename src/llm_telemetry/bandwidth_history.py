@@ -10,8 +10,8 @@ Ledger: ``<reports_dir>/bandwidth-history.json``::
     {"schema_version": 1,
      "rows": [{"profile", "date", "provider", "model",
                "up_bytes", "down_bytes", "lan_up_bytes", "lan_down_bytes",
-               "input_tokens", "cache_read_tokens", "calls",
-               "bytes_per_token", "frozen"}]}
+               "input_tokens", "cache_read_tokens", "cache_write_tokens",
+               "output_tokens", "calls", "bytes_per_token", "frozen"}]}
 
 Rules:
 - A day before today is CLOSED. The first time a closed day is seen it is
@@ -38,6 +38,7 @@ from .schema import SCHEMA_VERSION
 
 LEDGER_NAME = "bandwidth-history.json"
 KEY = ("profile", "date", "provider", "model")
+TOKEN_KEYS = ("input_tokens", "cache_read_tokens", "cache_write_tokens", "output_tokens", "calls")
 
 
 def _key(r):
@@ -58,7 +59,8 @@ def rollup(profile: str, rows: list[dict]) -> list[dict]:
         if o is None:
             o = agg[k] = {"profile": k[0], "date": k[1], "provider": k[2], "model": k[3],
                           "up_bytes": 0, "down_bytes": 0, "lan_up_bytes": 0, "lan_down_bytes": 0,
-                          "input_tokens": 0, "cache_read_tokens": 0, "output_tokens": 0,
+                          "input_tokens": 0, "cache_read_tokens": 0, "cache_write_tokens": 0,
+                          "output_tokens": 0,
                           "calls": 0}
         o["up_bytes"] += int(r.get("up_bytes") or 0)
         o["down_bytes"] += int(r.get("down_bytes") or 0)
@@ -66,6 +68,7 @@ def rollup(profile: str, rows: list[dict]) -> list[dict]:
         o["lan_down_bytes"] += int(r.get("lan_down_bytes") or 0)
         o["input_tokens"] += int(r.get("inp") or 0)
         o["cache_read_tokens"] += int(r.get("cread") or 0)
+        o["cache_write_tokens"] += int(r.get("cwrite") or 0)
         o["output_tokens"] += int(r.get("outp") or 0)
         o["calls"] += int(r.get("calls") or 0)
     return [agg[k] for k in sorted(agg)]
@@ -96,7 +99,13 @@ def merge(existing: list[dict], fresh: list[dict], today: str,
         k = _key(r)
         old = out.get(k)
         if old is not None and old.get("frozen"):
-            continue                      # history is not restated
+            # History is not restated: bytes and the constant stay as written.
+            # Token counts do not depend on the constant, so a token column
+            # added in a later version may be backfilled into a frozen row.
+            for tk in TOKEN_KEYS:
+                if tk not in old and tk in r:
+                    old[tk] = r[tk]
+            continue
         row = dict(r, bytes_per_token=bpt, frozen=r["date"] < today)
         out[k] = row
     # An open row from an earlier run that the DB no longer reports for today

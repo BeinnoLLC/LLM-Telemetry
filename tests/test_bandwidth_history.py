@@ -96,6 +96,19 @@ with tempfile.TemporaryDirectory() as tmp:
     rows4 = bh.update(d, {"work": day_rows()[2:]}, today="2026-09-27")["work"]
     chk(any(r["date"] == "2026-09-20" for r in rows4), "history survives the source forgetting it")
 
+    # A token column added later is backfilled into frozen rows; bytes are not.
+    led = json.load(open(ledger))
+    for r in led["rows"]:
+        r.pop("cache_write_tokens", None)
+        if r["date"] == "2026-09-20":
+            r["up_bytes"] = 1234          # sentinel: must survive the backfill
+    json.dump(led, open(ledger, "w"))
+    rows6 = bh.update(d, {"work": [dict(x, cwrite=77) for x in day_rows()]}, today="2026-09-27")["work"]
+    o = next(r for r in rows6 if r["date"] == "2026-09-20")
+    chk(o.get("cache_write_tokens") == 154 and o["up_bytes"] == 1234,
+        "new token column backfills a frozen row without touching its bytes",
+        f"(cw={o.get('cache_write_tokens')} up={o['up_bytes']})")
+
     # A ledger in a different schema is set aside, not reinterpreted.
     json.dump({"schema_version": 999, "rows": [{"junk": 1}]}, open(ledger, "w"))
     rows5 = bh.update(d, {"work": day_rows()}, today=TODAY)["work"]
