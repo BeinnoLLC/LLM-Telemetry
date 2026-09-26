@@ -43,35 +43,78 @@ setTimeout(() => {
     'payload carries bytes_per_token', `(${live.bytes_per_token})`);
   chk(withBw.length > 0, 'sample has live sessions with byte counts', `(${withBw.length})`);
 
-  // ---- per-session bandwidth moved to status badge (user request) ----------
-  // Bandwidth removed from .loecol column and moved inline with "IN PROGRESS NOW"
-  // status badge on the title row (far right). LAN display removed entirely.
-  const statusBadges = [...d.querySelectorAll('#livelist .chip')].filter(b =>
-    b.textContent.includes('IN PROGRESS NOW'));
-  
-  // Check sessions with bandwidth have it in their status badge
-  const badgesWithBw = statusBadges.filter(b => /\u2191.*\u2193|\u2193.*\u2191/.test(b.textContent));
-  chk(badgesWithBw.length > 0, 'IN PROGRESS badges show bandwidth inline', `(${badgesWithBw.length})`);
-  
-  // Badge should show both up and down in compact form
-  if (badgesWithBw.length > 0) {
-    const txt = badgesWithBw[0].textContent;
-    chk(/\u2191/.test(txt) && /\u2193/.test(txt),
-      'status badge shows BOTH up and down arrows', `(${txt.replace(/\s+/g,' ').trim().slice(0,60)})`);
-    chk(/(B|KB|MB|GB|TB)/.test(txt),
-      'status badge shows byte-formatted values');
-  }
-  
-  // LAN display removed per user request - verify it's gone from live rows
-  const liveSection = raw.slice(raw.indexOf('data-view="Live"'), raw.indexOf('data-view="Live"') + 8000);
-  chk(!/LAN \d+/.test(liveSection), 'LAN per-row bandwidth display removed');
-  
-  // Gauge column should still exist but without bandwidth row
-  const cards = [...d.querySelectorAll('#livelist > div')];
-  const gaugeCols = cards.map(c => c.querySelector('.loecol')).filter(Boolean);
-  chk(gaugeCols.length > 0, 'gauge columns still present', `(${gaugeCols.length})`);
-  chk(gaugeCols.every(col => !col.querySelector('.bw')),
-    'bandwidth removed from gauge column (moved to status badge)');
+  // ---- per-session arrows ------------------------------------------------
+  const rows = [...d.querySelectorAll('#livelist .bw')];
+  chk(rows.length === withBw.length,
+    'every live session with bytes renders a bandwidth row', `(${rows.length}/${withBw.length})`);
+
+  const ups = [...d.querySelectorAll('#livelist .bw .bwup')];
+  const downs = [...d.querySelectorAll('#livelist .bw .bwdown')];
+  chk(ups.length === rows.length && downs.length === rows.length,
+    'each row has BOTH an up and a down arrow', `(${ups.length}up/${downs.length}down)`);
+
+  // The arrows must be actual glyphs, not empty spans relying on CSS content.
+  chk(ups.every(e => e.textContent.trim() === '\u2191'), 'up arrow renders ↑');
+  chk(downs.every(e => e.textContent.trim() === '\u2193'), 'down arrow renders ↓');
+
+  // Direction must be visually distinguishable, or the arrows are decoration.
+  const upCol = ups.length ? w.getComputedStyle(ups[0]).color : '';
+  const downCol = downs.length ? w.getComputedStyle(downs[0]).color : '';
+  chk(!!upCol && !!downCol && upCol !== downCol,
+    'up and down are different colours', `(${upCol} vs ${downCol})`);
+
+  // Honesty: a derived number must say so on hover, not only in a doc.
+  chk(rows.every(r => /estimat/i.test(r.getAttribute('title') || '')),
+    'bandwidth rows disclose that the figure is estimated');
+
+  // ---- per-row placement (#109): bytes belong UNDER the gauge -------------
+  // They used to sit in the meta column under the timestamp, far from the dial
+  // they describe. Assert the DOM relationship, not a pixel position.
+  (() => {
+    const cards = [...d.querySelectorAll('#livelist > div')];
+    const withBytes = cards.filter(c => c.querySelector('.bw'));
+    chk(withBytes.length > 0, 'some live rows show transfer', `(${withBytes.length})`);
+    chk(withBytes.every(c => c.querySelector('.loecol .bw')),
+      'transfer sits inside the gauge column, under the dial');
+    chk(withBytes.every(c => !c.querySelector('.metacol .bw')),
+      'transfer no longer sits in the meta column');
+    // Under, not beside: the gauge column must stack vertically.
+    const col = withBytes[0].querySelector('.loecol');
+    const cs = w.getComputedStyle(col);
+    chk(cs.flexDirection === 'column', 'gauge column stacks vertically', `(${cs.flexDirection})`);
+    // The dial must come first in document order, the bytes after it.
+    const dial = col.querySelector('svg, .loe'), bw = col.querySelector('.bw');
+    chk(!!dial && !!bw && !!(dial.compareDocumentPosition(bw) & 4),
+      'the dial renders above the byte counts');
+    const t = withBytes[0].querySelector('.loecol .bw').textContent;
+    chk(/\u2191/.test(t) && /\u2193/.test(t),
+      'row shows BOTH up and down under the gauge', `(${t.replace(/\s+/g,' ').trim().slice(0,40)})`);
+    // Divider between the dial and the byte row: they are two different
+    // metrics stacked in one column and must not read as one merged block.
+    // jsdom can't resolve var() inside a border shorthand into
+    // getComputedStyle (verified: it reports 0px/none even when a real
+    // browser paints the line), so this checks the source rule instead of
+    // computed style -- consistent with how other border checks in this
+    // suite work around the same jsdom limitation.
+    chk(/\.loecol \.bw\{[^}]*border-top:[^;}]+/.test(raw),
+      'a divider separates the gauge from the transfer bytes below it');
+  })();
+  // ---- #109: no per-row LAN label; open-session total on the heading --------
+  (() => {
+    const rowsTxt = [...d.querySelectorAll('#livelist > div')].map(r => r.textContent).join(' ');
+    chk(!/LAN\s/.test(rowsTxt), 'live rows carry no "LAN x MB" label');
+    const hb = d.getElementById('livebw');
+    chk(!!hb, 'bandwidth total sits on the "In progress now" heading');
+    const hdr = hb && hb.parentElement;
+    chk(!!hdr && /In progress now/i.test(hdr.textContent), 'total is on the same line as the heading text');
+    chk(/\.livebw\{[^}]*margin-left:auto/.test(raw), 'total is pushed to the far right');
+    const uniq = [...new Map(sessions.map(L => [L.id, L])).values()];
+    const want = uniq.reduce((a,L)=>a+(+L.up_bytes||0)+(+L.lan_up_bytes||0),0);
+    const wantTxt = w.eval(`fmtB(${want})`);
+    const txt = hb ? hb.textContent : '';
+    chk(/\u2191/.test(txt) && /\u2193/.test(txt), 'heading total shows both directions', `(${txt.trim()})`);
+    chk(!!wantTxt && txt.includes(wantTxt), 'heading upload equals the sum over open sessions', `(want ${wantTxt}, got ${txt.trim()})`);
+  })();
 
   // ---- aggregated card ---------------------------------------------------
   // One card only (#109): the separate live "Bandwidth" card was removed --
