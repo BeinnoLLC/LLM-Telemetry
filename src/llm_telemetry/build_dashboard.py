@@ -614,14 +614,6 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   </div>
  </div>
 
- <!-- Activity heatmap: a full-width calendar band under the KPIs. It answers
-      "when has this thing been busy?" at a glance, which no other chart does —
-      the daily bar chart is filtered to the selected range, this is not. -->
- <div class="card p-4" id="heatcard">
-  <div class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[10px] ml-1" id="heatsub"></span></div>
-  <div id="heatmap"></div>
- </div>
-
  <div class="view" data-view="Live">
   <!-- Two columns that END TOGETHER. The session list is unbounded (it grows
        with concurrency) while the charts are fixed-content, so the right column
@@ -718,9 +710,18 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   </div>
  </div>
 
- <div class="card p-4 view" data-view="Detail" hidden>
-  <div class="lbl mb-2.5">Per-model detail</div>
-  <div class="overflow-x-auto"><table class="w-full text-[12px]" id="tbl"></table></div>
+ <div class="view" data-view="Detail" hidden>
+  <!-- Activity heatmap lives here rather than as a global band: it is a
+       drill-down question ("when was this busy?"), not a headline number, and
+       as a band it rendered on every tab including ones it said nothing about. -->
+  <div class="card p-4 mb-4" id="heatcard">
+   <div class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[10px] ml-1" id="heatsub"></span></div>
+   <div id="heatmap"></div>
+  </div>
+  <div class="card p-4">
+   <div class="lbl mb-2.5">Per-model detail</div>
+   <div class="overflow-x-auto"><table class="w-full text-[12px]" id="tbl"></table></div>
+  </div>
  </div>
 
  <div class="text-[11px] muted border-l-2 pl-3" style="border-color:var(--accent)">

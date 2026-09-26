@@ -23,7 +23,8 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field, asdict
+import sys
+from dataclasses import dataclass, field, asdict, fields
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +80,13 @@ class Config:
         "172.2", "172.30.", "172.31.", ".local", ".internal", ".lan",
     ])
     reports_dir: str = "~/.local/share/llm-telemetry/reports"
+    # Hostnames that resolve publicly but actually front a LAN box. A reverse
+    # proxy on a real domain is still LAN traffic: the bytes never leave the
+    # house, so counting them as metered overstates internet usage. Maps a host
+    # to the LAN endpoint it fronts, which also merges the two into one row
+    # instead of reporting the same machine twice under different names.
+    # Keys are matched against the URL's hostname, exactly.
+    endpoint_aliases: dict[str, str] = field(default_factory=dict)
     port: int = 8477
     bind: str = "0.0.0.0"
     # Used to turn local GPU wattage into a cost figure so self-hosted models
@@ -153,7 +161,17 @@ def load(path: str | None = None) -> Config:
         if os.path.exists(p):
             with open(p) as f:
                 raw = json.load(f)
-            cfg = Config(**raw)
+            # Drop comment keys and unknown fields rather than crashing with a
+            # bare TypeError. A config file is hand-edited: users add "_comment"
+            # notes, and a stale key from an older version must not make the
+            # whole tool unstartable. Unknown keys are reported, not silently
+            # swallowed, so a typo'd option is still discoverable.
+            known = {f.name for f in fields(Config)}
+            unknown = [k for k in raw if k not in known]
+            if unknown:
+                print(f"config: ignoring unknown key(s) in {p}: "
+                      f"{', '.join(sorted(unknown))}", file=sys.stderr)
+            cfg = Config(**{k: v for k, v in raw.items() if k in known})
             if not cfg.profiles:
                 cfg.profiles = autodiscover_profiles()
             return cfg

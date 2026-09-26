@@ -57,12 +57,32 @@ def upload_tokens(input_tokens, cache_read, cache_write=None) -> int:
     return int(total)
 
 
+def canonical_endpoint(base_url: str | None) -> str | None:
+    """Resolve a URL through config.endpoint_aliases to its real endpoint.
+
+    A publicly-resolving hostname can front a LAN box via a reverse proxy. The
+    bytes never leave the LAN, so the traffic must not be billed as internet,
+    and the two names must collapse into one row rather than double-reporting
+    the same machine.
+    """
+    if not base_url:
+        return base_url
+    host = urlsplit(base_url if "//" in base_url else "//" + base_url).hostname
+    if not host:
+        return base_url
+    alias = _get_config().endpoint_aliases.get(host.lower())
+    return alias or base_url
+
+
 def is_lan(base_url: str | None) -> bool:
     """True when an endpoint is self-hosted, so its traffic never leaves the LAN.
 
     Classification is per ENDPOINT, not per session. Measured on the live DB,
     all 7 active sessions used both a local and a hosted endpoint, so a
     per-session flag misattributed 4.6 GB of metered traffic as free LAN bytes.
+
+    Aliases are resolved first, so a reverse-proxied hostname on a real domain
+    is correctly treated as LAN.
 
     Matching is against the parsed HOSTNAME, never the raw URL. The configured
     patterns are host fragments like "10." and ".local"; substring-matching them
@@ -73,7 +93,8 @@ def is_lan(base_url: str | None) -> bool:
     """
     if not base_url:
         return False
-    host = urlsplit(base_url if "//" in base_url else "//" + base_url).hostname
+    resolved = canonical_endpoint(base_url) or base_url
+    host = urlsplit(resolved if "//" in resolved else "//" + resolved).hostname
     if not host:
         return False
     host = host.lower()
