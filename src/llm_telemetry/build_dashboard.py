@@ -107,6 +107,18 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     and blow the grid out sideways. */
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
+ /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
+    tablet and 1-up on mobile needs no extra media query. */
+ .grid-home{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ .grid-home > *{min-width:0}
+ .homecard{display:block;text-decoration:none;color:inherit;transition:
+   transform .12s ease,border-color .12s ease}
+ .homecard:hover{transform:translateY(-2px);border-color:var(--accent)}
+ .homecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+ .homecard .hc-ico{font-size:20px;line-height:1}
+ .homecard .hc-stat{font-size:19px;font-weight:650;letter-spacing:-.02em}
+ @media(prefers-reduced-motion:reduce){.homecard:hover{transform:none}}
  .grid-2 > *,.grid-auto > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
@@ -612,6 +624,14 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    <div id="bwtot" class="bw"></div>
    <div class="muted text-[10px] ml-auto" id="bwnote"></div>
   </div>
+ </div>
+
+ <!-- Home: the landing surface. Opening the tool used to drop you straight
+      into Live with no explanation of what the other sections hold. Cards carry
+      a real stat from the loaded payload, so this answers "what is going on"
+      instead of being a menu. -->
+ <div class="view" data-view="Home">
+  <div class="grid-home" id="homecards"></div>
  </div>
 
  <div class="view" data-view="Live">
@@ -1126,6 +1146,7 @@ function render(){
   // return, so an empty range never blanks the Live tab.
   renderLive();
   renderHealth();
+  renderHome(inR);
   renderHeatmap(p.heatmap);
   // Flow graph before the empty-rows early return below, so switching to an
   // empty date range clears the graph instead of leaving a stale one on screen.
@@ -1355,6 +1376,95 @@ function renderBwCard(){
   if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp)}&uarr; ${fmtB(lanDown)}&darr; (not metered)`);
   bits.push(`derived from tokens x ${(DATA.bytes_per_token || 4.68)} bytes`);
   $('bwnote').innerHTML = bits.join(' · ');
+}
+
+// Home cards. Each stat is DERIVED from the loaded payload — a hardcoded
+// number on a landing page is a lie with a long shelf life. Cards are anchors
+// so middle-click and keyboard both work; the click handler routes in-page.
+function renderHome(inR){
+  const box = $('homecards'); if (!box) return;
+  const p = DATA.profiles[current] || {};
+  // inR is render()'s date-range predicate, passed in rather than reached for:
+  // it is a local of render(), so calling it from here failed with a
+  // ReferenceError and silently left the card grid empty.
+  const pass = typeof inR === 'function' ? inR : () => true;
+  const rows = (p.rows || []).filter(r => pass(r.date));
+  const live = p.live || [];
+
+  const sum = (f) => rows.reduce((a, r) => a + (+f(r) || 0), 0);
+  const models = new Set(rows.map(r => short(r.model)));
+  const cost = sum(r => r.market_value_usd);
+  const calls = sum(r => r.calls);
+  const upB = sum(r => (+r.up_bytes || 0) + (+r.lan_up_bytes || 0));
+  const downB = sum(r => (+r.down_bytes || 0) + (+r.lan_down_bytes || 0));
+
+  // Health: the payload carries a list of per-day entries, so derive the rate
+  // rather than assuming a precomputed field exists.
+  const hl = Array.isArray(p.health) ? p.health : [];
+  const hOk = hl.reduce((a, h) => a + (+h.ok || 0), 0);
+  const hTot = hl.reduce((a, h) => a + (+h.ok || 0) + (+h.fail || 0), 0);
+  const okPct = hTot ? (hOk / hTot * 100).toFixed(1) + '%' : '\u2014';
+  const fails = (p.failures_recent || []).length;
+
+  const cards = [
+    ['Live', '\u25C9', 'Sessions in flight right now',
+      live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
+    ['Flow', '\u21C4', 'Provider \u2192 model \u2192 task routing',
+      models.size + (models.size === 1 ? ' model' : ' models')],
+    ['Usage', '\u25A4', 'Calls and tokens over time', fmt(calls) + ' calls'],
+    ['Cost', '\u0024', 'What the traffic is worth at public rates',
+      '$' + cost.toFixed(2)],
+    ['Health', '\u2713', 'Success rate and recent failures',
+      okPct + (fails ? ' \u00b7 ' + fails + ' recent' : '')],
+    ['Detail', '\u2261', 'Per-model table and the activity calendar',
+      rows.length + ' rows'],
+  ];
+
+  let html = cards.map(([view, ico, desc, stat]) => `
+    <a class="card p-4 homecard" href="#/${view.toLowerCase()}" data-gohome="${view}">
+      <div class="flex items-center justify-between mb-2">
+        <span class="hc-ico" style="color:var(--accent)">${ico}</span>
+        <span class="muted text-[10px] uppercase tracking-wide">${view}</span>
+      </div>
+      <div class="hc-stat">${stat}</div>
+      <div class="muted text-[11px] mt-1">${desc}</div>
+    </a>`).join('');
+
+  // Bandwidth card: both directions together, because the ratio is the point.
+  // Labelled "est." on the card itself — a derived number that looks measured
+  // is the failure this project keeps guarding against.
+  html += `
+    <a class="card p-4 homecard" href="#/usage" data-gohome="Usage">
+      <div class="flex items-center justify-between mb-2">
+        <span class="hc-ico" style="color:var(--accent)">\u21C5</span>
+        <span class="muted text-[10px] uppercase tracking-wide">Bandwidth (est.)</span>
+      </div>
+      <div class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
+        <span class="muted" style="font-weight:400"> / </span>
+        <span class="bwdown">\u2193 ${fmtB(downB)}</span></div>
+      <div class="muted text-[11px] mt-1">Estimated from tokens, not measured</div>
+    </a>`;
+
+  // Rates is a separate page, so it stays a real external link.
+  html += `
+    <a class="card p-4 homecard" href="costs.html">
+      <div class="flex items-center justify-between mb-2">
+        <span class="hc-ico" style="color:var(--accent)">\u2696</span>
+        <span class="muted text-[10px] uppercase tracking-wide">Rates</span>
+      </div>
+      <div class="hc-stat">Price sheet</div>
+      <div class="muted text-[11px] mt-1">Current per-million-token rates</div>
+    </a>`;
+
+  box.innerHTML = html;
+  // Route in-page instead of relying on the hash alone, so a card works even
+  // before the router has attached.
+  box.querySelectorAll('[data-gohome]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      pickView(a.dataset.gohome);
+    });
+  });
 }
 
 function renderLive(){
@@ -2382,7 +2492,7 @@ function renderHeatmap(hm){
 }
 
 function views(){
-  $('views').innerHTML=['Live','Flow','Usage','Cost','Health','Detail']
+  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
 }
 function pickView(v){
