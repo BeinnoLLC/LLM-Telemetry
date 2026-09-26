@@ -97,13 +97,37 @@ setTimeout(async () => {
   const toolName = $('lgf-tool').querySelector('.lgchip').dataset.val;
   chipFor('lgf-tool', toolName).click();
   await new Promise(r => setTimeout(r, 30));
-  const n1 = rows().length;
-  chk(n1 < n0, `selecting tool="${toolName}" narrows ${n0} -> ${n1}`);
-  // Re-query: the chip list is re-rendered, so the clicked node is detached.
+  const n1pre = rows().length;
+  chk(n1pre < n0, `selecting tool="${toolName}" narrows ${n0} -> ${n1pre}`);
   chk(chipFor('lgf-tool', toolName).classList.contains('on'),
       'the selected chip is marked active');
   const tags = [...rows()].map(r => r.querySelector('.lgtag').textContent);
   chk(tags.every(t => t === toolName), 'every surviving row matches the chosen tool');
+
+  // --- active-filter summary strip (#108 redesign) --------------------------
+  const active = $('lgactive');
+  chk(!!active, 'the active-filter summary bar exists');
+  chk(active.classList.contains('show'), 'it becomes visible once a filter is applied');
+  const activeChips = [...active.querySelectorAll('.lgactivechip')];
+  chk(activeChips.length === 1, `it shows exactly one active chip (${activeChips.length})`);
+  chk(activeChips[0].textContent.includes(toolName),
+      'the active chip names the applied tool filter');
+  const badge = $('lgcountbadge');
+  chk(!!badge && !badge.hidden, 'the filter-count badge shows while a filter is on');
+  chk(/1 filter/.test(badge.textContent), `badge reads the count (${badge.textContent})`);
+  // Removing via the summary strip has the same effect as un-clicking the
+  // source chip -- the whole point is reaching it without scrolling to Tool.
+  activeChips[0].click();
+  await new Promise(r => setTimeout(r, 30));
+  chk(rows().length === n0, 'clicking the active chip removes that filter');
+  chk(!active.classList.contains('show'), 'the strip hides again once empty');
+  chk(badge.hidden, 'the badge hides again once no filters are active');
+
+  // Re-select the same filter to prove removal was real, not a re-render
+  // that happened to look the same, then leave clean for the next block.
+  chipFor('lgf-tool', toolName).click();
+  await new Promise(r => setTimeout(r, 30));
+  chk(rows().length === n1pre, 're-selecting the tool filter narrows the same way again');
   chipFor('lgf-tool', toolName).click();
   await new Promise(r => setTimeout(r, 30));
   chk(rows().length === n0, 'deselecting restores the full list');

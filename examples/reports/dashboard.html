@@ -176,19 +176,50 @@ body.hasnav #views{ display:none; }
   text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
 .lmpanel td{padding:3px 8px 3px 0;white-space:nowrap;border-top:1px solid var(--border)}
 .lmpanel .num{text-align:right;font-variant-numeric:tabular-nums}
-/* ---- Logs page (#104) ------------------------------------------------- */
-.lgfacets{display:flex;flex-direction:column;gap:6px}
-.lgrow{display:flex;align-items:flex-start;gap:10px}
-.lglbl{flex:0 0 62px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
-  color:var(--muted);padding-top:4px}
-.lgchips{display:flex;gap:5px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
+/* ---- Logs page (#104, redesigned #108) ---------------------------------
+   Old layout: six facet rows of identical pill chips stacked with almost no
+   air between them (6px gap) and no feedback about which filters were
+   active — you had to scan every row for a highlighted chip. Redesign:
+   - the search row gains a live "N filters active" readout and a visible
+     active-filter strip (removable chips) so state is legible at a glance;
+   - facet rows get real spacing, a hover affordance and alternating
+     backgrounds so six rows read as a list, not a wall of pills;
+   - the Window control is a time range, not a data facet, so it is visually
+     separated (divider) instead of sitting in the same rhythm as Level/Role/
+     Tool/Model/Session. */
+.lgfacets{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.lgrow{display:flex;align-items:flex-start;gap:12px;padding:7px 8px;border-radius:7px}
+.lgrow:hover{background:color-mix(in srgb,var(--fg) 4%,transparent)}
+.lglbl{flex:0 0 64px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);padding-top:5px;font-weight:600}
+.lgchips{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
 .lgchip{border:1px solid var(--border);background:var(--bg);color:var(--muted);
-  border-radius:999px;padding:2px 9px;font-size:11px;cursor:pointer;line-height:1.6;
-  white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+  border-radius:999px;padding:3px 10px;font-size:11px;cursor:pointer;line-height:1.6;
+  white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;
+  transition:border-color .12s,color .12s,background .12s}
 .lgchip:hover{border-color:var(--accent);color:var(--fg)}
 .lgchip.on{background:color-mix(in srgb,var(--accent) 18%,transparent);
   border-color:var(--accent);color:var(--accent);font-weight:600}
 .lgchip .n{opacity:.65;margin-left:5px;font-variant-numeric:tabular-nums}
+/* Window is a time range, not a category — a divider and looser gap mark it
+   as a different kind of control from the facets above it. */
+.lgrow-window{border-top:1px solid var(--border);margin-top:5px;padding-top:11px}
+/* Active-filter strip: every currently-applied facet as a removable chip, so
+   "why am I seeing this" never requires re-scanning six rows of pills. Empty
+   (hidden) when nothing is selected — it must not be a second copy of the
+   facets, only a summary of what's ON. */
+#lgactive{display:none;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:8px 0 2px;margin-bottom:2px;border-bottom:1px solid var(--border)}
+#lgactive.show{display:flex}
+#lgactive .lbl{flex:0 0 auto;margin:0}
+.lgactivechip{display:inline-flex;align-items:center;gap:5px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border:1px solid var(--accent);color:var(--accent);border-radius:999px;
+  padding:2px 6px 2px 10px;font-size:11px;font-weight:600;cursor:pointer}
+.lgactivechip:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+.lgactivechip .x{opacity:.75;font-weight:700}
+#lgcountbadge{background:var(--accent);color:#fff;border-radius:999px;
+  font-size:10px;font-weight:700;padding:1px 7px;line-height:1.5}
 /* Event rows: monospace timestamps so they form a readable column. */
 .lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
   padding:4px 0;border-bottom:1px solid var(--border);font-size:11.5px}
@@ -880,6 +911,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div class="flex items-center gap-2 flex-wrap mb-3">
     <div class="lbl">Log events</div>
     <span class="muted text-[10px]" id="lgscope">—</span>
+    <span id="lgcountbadge" hidden></span>
     <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
      <input id="lgq" type="search" placeholder="Search text, tool, session…"
        style="background:var(--bg);border:1px solid var(--border);border-radius:7px;
@@ -887,6 +919,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      <button id="lgclear" class="chip" type="button">Clear</button>
     </span>
    </div>
+   <!-- Active-filter summary: every applied facet as a removable chip, so the
+        current filter state is legible without scanning six rows below. -->
+   <div id="lgactive"><span class="lbl muted text-[9px]">Active</span></div>
    <!-- Facet rows. Each chip carries the count over the WHOLE window, not the
         capped slice, so the numbers stay true when events are truncated. -->
    <div class="lgfacets">
@@ -896,7 +931,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <div class="lgrow"><span class="lglbl">Model</span><span id="lgf-model" class="lgchips"></span></div>
     <div class="lgrow"><span class="lglbl">Session</span><span id="lgf-session" class="lgchips"></span></div>
     <div class="lgrow" id="lgrow-kind"><span class="lglbl">Failure</span><span id="lgf-kind" class="lgchips"></span></div>
-    <div class="lgrow"><span class="lglbl">Window</span><span class="lgchips">
+    <div class="lgrow lgrow-window"><span class="lglbl">Window</span><span class="lgchips">
       <button class="lgchip" data-win="1">1h</button>
       <button class="lgchip" data-win="6">6h</button>
       <button class="lgchip on" data-win="24">24h</button>
@@ -3241,6 +3276,35 @@ function lgChips(boxId, key, items, labelOf){
   }).join('');
 }
 
+// Human labels for the active-filter strip. Facet chip labels already apply
+// short()/session-label truncation inside lgChips; duplicate the same rule
+// here so a removable chip in the summary reads identically to its source.
+function lgActiveLabel(key, v){
+  if (key === 'model') return short(v);
+  if (key === 'session'){
+    const p = lgProfile();
+    const hit = p && p.facets.session && p.facets.session.find(s => s.v === v);
+    return (hit && hit.label) || v.slice(0, 8);
+  }
+  return v;
+}
+const LG_FACET_NAMES = {level:'Level', role:'Role', tool:'Tool', model:'Model',
+                         session:'Session', kind:'Failure'};
+
+function renderLgActive(){
+  const bar = $('lgactive');
+  if (!bar) return;
+  const chips = [];
+  for (const key of Object.keys(lgSel)){
+    for (const v of lgSel[key]){
+      chips.push(`<button type="button" class="lgactivechip" data-unfacet="${key}" data-val="${esc(v)}">`
+        + `${esc(LG_FACET_NAMES[key] || key)}: ${esc(lgActiveLabel(key, v))}<span class="x">×</span></button>`);
+    }
+  }
+  bar.classList.toggle('show', chips.length > 0);
+  bar.innerHTML = '<span class="lbl muted text-[9px]">Active</span>' + chips.join('');
+}
+
 function renderLogs(){
   const list = $('lglist');
   if (!list) return;
@@ -3265,9 +3329,16 @@ function renderLogs(){
   const kindRow = $('lgrow-kind');
   if (kindRow) kindRow.hidden = !(p.facets.kind && p.facets.kind.length);
   if (p.facets.kind) lgChips('lgf-kind', 'kind', p.facets.kind);
+  renderLgActive();
 
   const rows = p.events.filter(e => lgMatch(e, p));
   $('lgcount').textContent = `${fmt(rows.length)} shown`;
+  const badge = $('lgcountbadge');
+  if (badge){
+    const nActive = Object.values(lgSel).reduce((s, set) => s + set.size, 0);
+    badge.hidden = nActive === 0;
+    badge.textContent = `${nActive} filter${nActive === 1 ? '' : 's'} active`;
+  }
   const cap = $('lgcap');
   if (cap){
     // The cap is disclosed, never hidden: the facet counts are computed over
@@ -3303,6 +3374,13 @@ function logsInstall(){
     if (chip){
       const k = chip.dataset.facet, v = chip.dataset.val;
       lgSel[k].has(v) ? lgSel[k].delete(v) : lgSel[k].add(v);
+      renderLogs(); return;
+    }
+    // Removing from the active-filter summary strip does the same thing as
+    // un-clicking the source chip, just reachable without scrolling to it.
+    const unchip = e.target.closest('[data-unfacet]');
+    if (unchip){
+      lgSel[unchip.dataset.unfacet].delete(unchip.dataset.val);
       renderLogs(); return;
     }
     const win = e.target.closest('[data-win]');
