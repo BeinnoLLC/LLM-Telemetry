@@ -560,7 +560,11 @@
    </svg>
    <div>
     <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
-    <div class="muted text-[11px] mt-0.5"><span class="dot"></span><span id="meta"></span></div>
+    <div class="muted text-[11px] mt-0.5 flex items-center gap-1.5">
+     <span class="dot"></span><span id="meta"></span>
+     <span aria-hidden="true" class="opacity-40">/</span>
+     <span id="crumb" aria-live="polite" class="font-medium" style="color:var(--fg)"></span>
+    </div>
    </div>
   </div>
   <div class="flex gap-2 items-center flex-wrap">
@@ -902,7 +906,7 @@ const short = m => String(m).split('/').pop();
 const $ = id => document.getElementById(id);
 
 let charts = [], current = null;
-let view = localStorage.getItem('hermes-dash-view') || 'Live';
+let view = localStorage.getItem('hermes-dash-view') || 'Home';
 Chart.defaults.font.size = 10; readTheme();
 const noLeg = {plugins:{legend:{display:false}}};
 
@@ -2462,6 +2466,46 @@ function renderHeatmap(hm){
     (busiest ? ` · busiest ${busiest[0]} (${busiest[1].v.toLocaleString()})` : '');
 }
 
+// ---- Hash routing (#5) --------------------------------------------------
+// The hash is the single source of truth for which view is showing, so a
+// deep link, a refresh, and the back button all agree. Without this the tab
+// lived only in localStorage: a shared URL always opened on someone else's
+// last-used tab.
+function slugOf(v){ return String(v).toLowerCase(); }
+
+// Written by pickView. No timing flag: compare the hash to the view that is
+// already showing. A timer-based guard raced with jsdom's async hashchange and
+// let a redundant re-render wipe the live list mid-update.
+function setHash(v){
+  const want = '#/' + slugOf(v);
+  if (location.hash !== want) location.hash = want;
+}
+
+// Resolve a hash to a real view name, case-insensitively, falling back to the
+// stored view then Home. An unknown slug must not blank the page.
+function viewFromHash(){
+  const raw = (location.hash || '').replace(/^#\/?/, '').trim();
+  if (!raw) return null;
+  const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
+  return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
+}
+
+window.addEventListener('hashchange', () => {
+  const v = viewFromHash();
+  // Back/forward land here, and so does pickView's own hash write. Comparing
+  // against the visible view makes the self-write a no-op, so a view change
+  // renders exactly once.
+  if (v && v !== view) pickView(v);
+});
+
+// ---- Breadcrumb (#6) ------------------------------------------------------
+// Reflects the current section in the header, so the page says where you are
+// rather than leaving the active tab chip as the only cue.
+function setCrumb(v){
+  const el = document.getElementById('crumb');
+  if (el) el.textContent = v || '';
+}
+
 function views(){
   $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
@@ -2474,6 +2518,8 @@ function pickView(v){
     b.className='px-3 py-1 rounded-md border text-[12px] '+(on?'tabon':'taboff');
   });
   localStorage.setItem('hermes-dash-view', v);
+  setHash(v);
+  setCrumb(v);
   render();
   // Re-render the graph AFTER the view is unhidden: the force layout needs the
   // real wrapper size, and while the tab was hidden it measured 0 — which
@@ -2530,7 +2576,7 @@ $('theme').onclick = () => {
   localStorage.setItem('hermes-dash-theme', light?'dark':'light');
   readTheme(); render();
 };
-pickView(view);
+pickView(viewFromHash() || view);
 pick(current);
 
 // Hide the preloader once the first render has actually painted. The rAF pair
@@ -2715,7 +2761,12 @@ async function pollLive(){
     DATA.ollama = fresh.ollama || DATA.ollama;
     installAll();
     drawerSync();
-    if (view === 'Live') renderLive();
+    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
+    // left the live list and the bandwidth card holding the first payload
+    // whenever any other tab was open — the numbers silently went stale, and
+    // switching back showed a jump rather than a live feed. renderLive writes
+    // into hidden nodes cheaply, so there is no reason to gate it on the view.
+    renderLive();
     // Update only the "In progress" KPI in place — the other cards depend on
     // date-filtered aggregates the live feed does not carry, so a full KPI
     // rebuild here would show wrong numbers.
