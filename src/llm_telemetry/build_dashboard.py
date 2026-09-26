@@ -789,6 +789,24 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .kpisub{font-size:10px;font-weight:500;margin-top:1px;color:var(--muted)}
  .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
    color:var(--accent2);display:inline-block}
+ /* Settings (P7-03, #67) */
+ .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:10px}
+ .setl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+ .setin{display:flex;align-items:center;gap:6px;font-size:14px}
+ .setin input{width:100%;min-width:0;max-width:140px;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font:inherit}
+ .setin input:focus{outline:2px solid var(--accent);outline-offset:1px}
+ .setin input:invalid{border-color:#ef4444}
+ .seth{font-size:11px;color:var(--muted)}
+ .setderiv{margin-top:12px;font-size:12px;overflow-wrap:anywhere}
+ .setderiv code{font-size:11px}
+ .setbad{color:#ef4444}
+ .setok{color:#22c55e}
+ .setfacts2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+ .setfacts2 td,.setfacts2 th{padding:2px 6px}
+ .setlist{list-style:disc;padding-left:16px;display:flex;flex-direction:column;gap:6px}
+ #setsave:disabled{opacity:.45;cursor:not-allowed}
+ @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
 
  /* ---- Logs drawer -------------------------------------------------------
     Fixed to the right edge, above everything, and translated off-screen when
@@ -1001,6 +1019,57 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="flowctl" id="flowctl"></span>
    </div>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
+  </div>
+ </div>
+
+ <!-- Settings (P7-03, #67). The power model that prices local inference.
+      Explains each number, recomputes live, and saves to the SAME config file
+      the collectors read via the serve process (POST /api/settings). -->
+ <div class="view" data-view="Settings" hidden>
+  <div class="card p-4 mb-3" id="setcard">
+   <div class="flex items-center gap-2 flex-wrap mb-1">
+    <div class="lbl">Electricity &amp; hardware</div>
+    <span class="muted text-[10px]" id="setsrc">—</span>
+   </div>
+   <p class="text-[12px] mb-3" id="setnotbill"><b>Local cost is electricity, not billing.</b>
+    Nobody invoices you for a local run; the power is paid to your utility. These
+    numbers turn a second of inference into dollars so a local model is never read
+    as free, and so it can be set beside an API bill <i>knowing</i> they are
+    different kinds of money.</p>
+   <div class="setgrid">
+    <label class="setf" for="set_kwh">
+     <span class="setl">Electricity rate</span>
+     <span class="setin"><span class="muted">$</span><input id="set_kwh" data-key="electricity_rate_kwh" type="number" step="any" min="0.0001" max="10" inputmode="decimal"><span class="muted">/ kWh</span></span>
+     <span class="seth">What your utility charges. Scales every local cost linearly.</span>
+    </label>
+    <label class="setf" for="set_gpu">
+     <span class="setl">GPU draw under load</span>
+     <span class="setin"><input id="set_gpu" data-key="gpu_draw_watts" type="number" step="any" min="1" max="5000" inputmode="numeric"><span class="muted">W</span></span>
+     <span class="seth">Sustained draw of the inference box while generating.</span>
+    </label>
+    <label class="setf" for="set_host">
+     <span class="setl">Host overhead</span>
+     <span class="setin"><input id="set_host" data-key="host_overhead_watts" type="number" step="any" min="0" max="5000" inputmode="numeric"><span class="muted">W</span></span>
+     <span class="seth">CPU, RAM, fans and PSU loss while a job runs.</span>
+    </label>
+    <div class="setf">
+     <span class="setl">Currency</span>
+     <span class="setin"><b>USD ($)</b></span>
+     <span class="seth">Display only. Every rate on this dashboard is USD; nothing is converted.</span>
+    </div>
+   </div>
+   <div class="setderiv" id="setderiv" aria-live="polite"></div>
+   <div class="flex items-center gap-2 flex-wrap mt-3">
+    <button id="setsave" class="px-3 py-1 rounded-md border text-[12px] tabon" type="button">Save to config</button>
+    <button id="setreset" class="px-3 py-1 rounded-md border text-[12px] taboff" type="button">Defaults</button>
+    <span class="text-[11px]" id="setmsg" role="status"></span>
+   </div>
+  </div>
+  <div class="card p-4 mb-3">
+   <div class="lbl mb-1">How a local token is priced</div>
+   <p class="muted text-[11px] mb-2">Read-only: measured on this hardware and fixed in
+    <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
+   <div id="setfacts"></div>
   </div>
  </div>
 
@@ -2071,6 +2140,8 @@ function renderHome(inR){
       okPct + (fails ? ' \u00b7 ' + fails + ' recent' : '')],
     ['Detail', '\u2261', 'Per-model table and the activity calendar',
       rows.length + ' rows'],
+    ['Settings', '\u2699', 'Electricity tariff and hardware behind local cost',
+      '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
   let html = cards.map(([view, ico, desc, stat]) => `
@@ -3479,6 +3550,152 @@ window.addEventListener('hashchange', () => {
   if (v && v !== view) pickView(v);
 });
 
+// ---- Settings (P7-03, #67) -------------------------------------------------
+// POWER is embedded at build time from energy.py (tariff as configured when
+// the page was built, plus the read-only measured facts). The live values
+// come from GET /api/settings when the serve process is present, so the page
+// shows what is in effect *now*, not what it was built with.
+const POWER = __POWER__;
+const SET_DEFAULTS = POWER.defaults;
+let setState = {values: {...POWER.tariff}, writable: false, api: false, file: POWER.config_file || ''};
+
+function usdPerSec(v){
+  return ((+v.gpu_draw_watts || 0) + (+v.host_overhead_watts || 0)) / 1000
+    * (+v.electricity_rate_kwh || 0) / 3600;
+}
+function outPer1M(v, tps){ return usdPerSec(v) * 1e6 / tps; }
+
+function setRead(){
+  const v = {};
+  document.querySelectorAll('#setcard input[data-key]').forEach(i => { v[i.dataset.key] = +i.value; });
+  return v;
+}
+function setWrite(v){
+  document.querySelectorAll('#setcard input[data-key]').forEach(i => {
+    if (v[i.dataset.key] != null) i.value = v[i.dataset.key];
+  });
+}
+function setInvalid(){
+  return [...document.querySelectorAll('#setcard input[data-key]')]
+    .filter(i => i.value === '' || !i.checkValidity()).map(i => i.dataset.key);
+}
+
+function renderSetDeriv(){
+  const box = document.getElementById('setderiv'); if (!box) return;
+  const v = setRead(), bad = setInvalid();
+  if (bad.length){
+    box.innerHTML = `<span class="setbad">Check ${bad.map(esc).join(', ')}: out of range or empty.</span>`;
+  } else {
+    const w = (+v.gpu_draw_watts) + (+v.host_overhead_watts);
+    const s = usdPerSec(v);
+    const o30 = outPer1M(v, 30);
+    box.innerHTML =
+      `<code>(${+v.gpu_draw_watts} W + ${+v.host_overhead_watts} W) / 1000 \u00d7 $${+v.electricity_rate_kwh} / 3600</code>` +
+      ` = <b id="setusdsec">$${s.toPrecision(2)}</b> per second of inference` +
+      `<div class="muted text-[11px] mt-1">A 30B model at 30 tok/s \u2192 <b>$${o30.toFixed(4)}</b> per 1M output tokens,` +
+      ` $${(o30 / POWER.prefill).toFixed(4)} per 1M input, $${(o30 / POWER.cachex).toFixed(4)} per 1M cached.` +
+      ` Total draw ${w} W.</div>`;
+  }
+  const changed = Object.keys(SET_DEFAULTS).some(k => +v[k] !== +setState.values[k]);
+  const save = document.getElementById('setsave');
+  if (save) save.disabled = !setState.writable || !changed || bad.length > 0;
+}
+
+function renderSetFacts(){
+  const box = document.getElementById('setfacts'); if (!box) return;
+  const v = setRead();
+  const rows = POWER.tps.map(([band, tps]) =>
+    `<tr><td>${esc(band)}</td><td class="text-right">${tps}</td>` +
+    `<td class="text-right">$${outPer1M(v, tps).toFixed(4)}</td></tr>`).join('');
+  box.innerHTML =
+    `<div class="setfacts2"><table class="w-full text-[11px]"><thead><tr class="muted text-left">` +
+    `<th>Size band</th><th class="text-right">tok/s</th><th class="text-right">$/1M out</th></tr></thead>` +
+    `<tbody>${rows}<tr><td class="muted">unknown size</td><td class="text-right">${POWER.tps_default}</td>` +
+    `<td class="text-right">$${outPer1M(v, POWER.tps_default).toFixed(4)}</td></tr></tbody></table>` +
+    `<ul class="text-[11px] setlist">` +
+    `<li><b>Prefill \u00d7${POWER.prefill}</b> cheaper than generating: the prompt is one batched forward pass.</li>` +
+    `<li><b>Cache read \u00d7${POWER.cachex}</b> cheaper: no matmuls, but KV tensors still stream out of VRAM with the GPU powered.</li>` +
+    `<li>Throughput is measured per model size on the local inference box; a model is matched to the first band in its name.</li>` +
+    `</ul></div>`;
+}
+
+function setMsg(text, kind){
+  const m = document.getElementById('setmsg'); if (!m) return;
+  m.textContent = text || '';
+  m.className = 'text-[11px] ' + (kind === 'err' ? 'setbad' : kind === 'ok' ? 'setok' : 'muted');
+}
+
+function renderSettings(){
+  const src = document.getElementById('setsrc');
+  if (src){
+    src.textContent = setState.api
+      ? (setState.file ? 'config: ' + setState.file : '')
+      : 'read-only: values as built' + (setState.file ? ' from ' + setState.file : '');
+  }
+  if (!setState.api){
+    setMsg('Saving needs the dashboard served by `llm-telemetry serve`. Edit the config file directly, or paste: '
+      + JSON.stringify(setRead()), 'info');
+  } else if (!setState.writable){
+    setMsg('Settings can only be changed from the machine running the dashboard.', 'info');
+  }
+  renderSetDeriv();
+  renderSetFacts();
+}
+
+async function loadSettings(){
+  setWrite(setState.values);
+  try {
+    const r = await fetch('api/settings', {cache: 'no-store'});
+    if (r.ok){
+      const j = await r.json();
+      // Only a well-formed settings reply counts: a static host or a stub
+      // that answers every URL with some other JSON must leave the page on
+      // its embedded, read-only values rather than crash it.
+      const ok = j && j.values && Object.keys(SET_DEFAULTS).every(k => Number.isFinite(+j.values[k]));
+      if (ok){
+        setState = {values: j.values, writable: !!j.writable, api: true, file: j.config_file || setState.file};
+        setWrite(setState.values);
+      }
+    }
+  } catch (e) { /* static hosting: stay read-only */ }
+  renderSettings();
+}
+
+async function saveSettings(){
+  const bad = setInvalid();
+  if (bad.length) return setMsg('Fix ' + bad.join(', ') + ' first.', 'err');
+  const v = setRead();
+  const body = {};
+  Object.keys(SET_DEFAULTS).forEach(k => { if (+v[k] !== +setState.values[k]) body[k] = +v[k]; });
+  if (!Object.keys(body).length) return setMsg('Nothing changed.', 'info');
+  setMsg('Saving\u2026', 'info');
+  try {
+    const r = await fetch('api/settings', {method: 'POST', cache: 'no-store',
+      headers: {'Content-Type': 'application/json', 'X-LLM-Telemetry': '1'}, body: JSON.stringify(body)});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return setMsg(j.error || ('Save failed (' + r.status + ')'), 'err');
+    setState.values = j.values; setState.file = j.config_file || setState.file;
+    setWrite(setState.values);
+    setMsg('Saved to ' + setState.file + '. Costs update on the next refresh (about a minute).', 'ok');
+    renderSetDeriv();
+  } catch (e) {
+    setMsg('Save failed: ' + e.message, 'err');
+  }
+}
+
+function settingsInstall(){
+  const card = document.getElementById('setcard'); if (!card) return;
+  card.querySelectorAll('input[data-key]').forEach(i => i.addEventListener('input', () => {
+    renderSetDeriv(); renderSetFacts();
+  }));
+  document.getElementById('setsave')?.addEventListener('click', saveSettings);
+  document.getElementById('setreset')?.addEventListener('click', () => {
+    setWrite(SET_DEFAULTS); renderSetDeriv(); renderSetFacts();
+    setMsg('Defaults filled in; not saved yet.', 'info');
+  });
+  loadSettings();
+}
+
 // ---- Breadcrumb (#6) ------------------------------------------------------
 // Reflects the current section in the header, so the page says where you are
 // rather than leaving the active tab chip as the only cue.
@@ -3494,7 +3711,7 @@ function setCrumb(v){
 // behave, with a click handler for in-page routing.
 const NAV_ICONS = {
   Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Usage:'\u2211',
-  Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630'
+  Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
 };
 
 function navViews(){
@@ -3858,7 +4075,7 @@ function navInstall(){
   navSetOpen(false);
 }
 function views(){
-  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs']
+  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
 }
 function pickView(v){
@@ -4296,6 +4513,7 @@ async function pollLive(){
 setInterval(pollLive, LIVE_MS);
 installDrawer();
 soundToggleInstall();
+settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick
 document.addEventListener('visibilitychange', () => { if(!document.hidden) pollLive(); });
 
@@ -4307,7 +4525,37 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) doRef
 </script></body></html>
 """
 
+from . import energy as _E
+
+
+def _shown_path(f):
+    """A path fit to embed in a page: relative to the working directory when
+    inside it (the sample build), else with the home directory as ~. An
+    absolute home path must never reach the HTML."""
+    if not f:
+        return ""
+    f = os.path.abspath(f)
+    cwd = os.getcwd()
+    if f.startswith(cwd + os.sep):
+        return os.path.relpath(f, cwd)
+    home = os.path.expanduser("~")
+    return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
+
+
+_kwh, _gw, _hw = _E.tariff(CFG)
+# Defaults come from the Config dataclass itself, so the page's "Defaults"
+# button can never disagree with what an unconfigured install uses.
+from .config import Config as _Config
+_d = _Config()
+POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_overhead_watts": _hw},
+         "defaults": {"electricity_rate_kwh": _d.electricity_rate_kwh,
+                      "gpu_draw_watts": _d.gpu_draw_watts,
+                      "host_overhead_watts": _d.host_overhead_watts},
+         "tps": _E.LOCAL_TPS, "tps_default": _E.LOCAL_TPS_DEFAULT,
+         "prefill": _E.PREFILL_SPEEDUP, "cachex": _E.CACHE_SPEEDUP,
+         "config_file": _shown_path((CFG.resolution or {}).get("config_file", ""))}
 html = (HEAD + JS.replace("__DATA__", json.dumps(data, default=str))
+        .replace("__POWER__", json.dumps(POWER))
         .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))
         .replace("__SCHEMA_VERSION__", str(SCHEMA_VERSION)))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
