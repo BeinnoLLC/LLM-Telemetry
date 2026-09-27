@@ -30,6 +30,19 @@ jobs:
           LLM_TELEMETRY_AGENT_HOME: examples/agent-home
         run: python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 
+      - name: Render price sheet from committed sample data
+        # Pinned sample catalogue: no network, and the committed sheet is
+        # reproducible (P6-05, #63). The DOM suite checks this build.
+        env:
+          LLM_TELEMETRY_NO_COLLECT: '1'
+          LLM_TELEMETRY_CONFIG: examples/sample-config.json
+          LLM_TELEMETRY_AGENT_HOME: examples/agent-home
+          LLM_TELEMETRY_CATALOG: examples/reports/sample-catalog.json
+        run: python3 -m llm_telemetry.build_costs examples/reports/costs.html
+
+      - name: Leak gate on the rendered pages
+        run: python3 examples/check_no_leaks.py
+
       - name: DOM suites
         env:
           LLM_TELEMETRY_REPORTS: examples/reports

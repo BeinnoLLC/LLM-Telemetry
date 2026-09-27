@@ -117,6 +117,21 @@ LLM_TELEMETRY_AGENT_HOME=examples/agent-home \
 python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 ```
 
+The price sheet builds the same way, from a pinned sample catalogue so it
+needs no network and does not churn when OpenRouter's prices move:
+
+```bash
+LLM_TELEMETRY_NO_COLLECT=1 \
+LLM_TELEMETRY_CONFIG=examples/sample-config.json \
+LLM_TELEMETRY_AGENT_HOME=examples/agent-home \
+LLM_TELEMETRY_CATALOG=examples/reports/sample-catalog.json \
+python3 -m llm_telemetry.build_costs examples/reports/costs.html
+```
+
+`examples/make_sample_catalog.py` regenerates that catalogue from a real
+cache: the aliased models, one `:batch` SKU and every `-1` router sentinel,
+so the edge cases stay covered.
+
 - `LLM_TELEMETRY_NO_COLLECT=1` renders from the JSON already on disk; no
   collector runs.
 - `examples/sample-config.json` sets `"profiles": []`, which now means **no

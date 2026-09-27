@@ -196,6 +196,10 @@ def catalog_freshness(source, now=None):
             age = now - os.path.getmtime(CACHE)
     src = (source or "").strip()
     state = src.split(" ", 1)[0] or "unavailable"
+    if state == "pinned":
+        # A fixed catalogue file (the committed sample): never refreshed, so
+        # age and TTL do not apply.
+        return {"state": "pinned", "age_s": None, "age": "", "ttl": ttl_label(), "detail": ""}
     if state not in ("live", "cache", "stale", "unavailable"):
         state = "cache"
     # An old cache is stale even when no fetch was attempted.
@@ -207,7 +211,14 @@ def catalog_freshness(source, now=None):
 
 
 def fetch_catalog(force=False):
-    """Return {openrouter_id: pricing_dict}, cached for TTL seconds."""
+    """Return {openrouter_id: pricing_dict}, cached for TTL seconds.
+
+    LLM_TELEMETRY_CATALOG pins a catalogue file (the committed sample one),
+    read as-is: no network, no refresh, so a sample build is reproducible.
+    """
+    pinned = os.environ.get("LLM_TELEMETRY_CATALOG")
+    if pinned:
+        return json.load(open(pinned))["models"], "pinned"
     if not force and os.path.exists(CACHE):
         age = time.time() - os.path.getmtime(CACHE)
         if age < TTL:
@@ -231,7 +242,14 @@ def fetch_catalog(force=False):
 
 
 def is_local(model):
+    """Local by NAME. A vendor-qualified id ("openai/gpt-oss-120b",
+    "qwen/qwen3-coder") is a hosted catalogue model and never local here:
+    the hints are substrings, and "gpt-oss"/"qwen3-coder"/"nemotron" also
+    name cloud SKUs. Ollama tags have no vendor prefix. A row sent to a LAN
+    host is still classed local by its endpoint in price_row()."""
     m = (model or "").lower()
+    if "/" in m:
+        return False
     return any(h in m for h in LOCAL_HINTS)
 
 
@@ -282,16 +300,24 @@ def rates_for(model, catalog):
         return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
     oid = ALIASES.get(model)
     if not oid:
-        oid = _resolve_catalog_id(model, catalog)
+        # An exact catalogue id is its own price ("openai/gpt-5:batch" is a
+        # real SKU); only a fuzzy name match must avoid the ":" variants.
+        oid = model if model in catalog else _resolve_catalog_id(model, catalog)
     p = catalog.get(oid or "")
     if not p:
         return None
     try:
-        return (float(p.get("prompt") or 0),
-                float(p.get("completion") or 0),
-                float(p.get("input_cache_read") or 0))
+        r = (float(p.get("prompt") or 0),
+             float(p.get("completion") or 0),
+             float(p.get("input_cache_read") or 0))
     except (TypeError, ValueError):
         return None
+    # OpenRouter marks router pseudo-models ("openrouter/auto") with -1: a
+    # sentinel for "depends on the model it routes to", not a price. Taking it
+    # literally would price a call at minus a dollar per token.
+    if any(x < 0 for x in r):
+        return None
+    return r
 
 
 def price_row(row, catalog):

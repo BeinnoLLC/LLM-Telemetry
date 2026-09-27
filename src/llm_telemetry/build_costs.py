@@ -11,6 +11,7 @@ own figure (energy_usd), never folded into billed spend, and priced here from
 measured throughput and the machine's draw at the configured tariff.
 """
 import json, os, sys, subprocess, datetime, collections
+import html as _html
 
 from .config import get as _cfg
 
@@ -53,21 +54,25 @@ def rate_source(model, catalog):
     return "unpriced"
 
 
-def build():
-    subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
-    data = json.load(open(DATA))
-    catalog, src = P.fetch_catalog()
+def installed_local_models(ollama):
+    """Model names installed on any probed local host (ollama-data.json)."""
+    out = set()
+    for h in (ollama or {}).get("hosts", []) or []:
+        for c in h.get("catalog", []) or []:
+            if c.get("name"):
+                out.add(c["name"])
+    return out
 
-    # Aggregate observed traffic per model across every profile, so the sheet
-    # covers exactly the models actually in use — not a catalogue dump.
+
+def observed_traffic(data):
+    """Observed traffic per model across every profile."""
     seen = collections.defaultdict(lambda: {
         "calls": 0, "inp": 0, "outp": 0, "cache": 0, "cost": 0.0,
         "providers": set(), "profiles": set(), "local": False,
     })
-    for pname, prof in data.get("profiles", {}).items():
+    for pname, prof in (data or {}).get("profiles", {}).items():
         for r in prof.get("rows", []):
-            model = r.get("model") or ""
-            e = seen[model]
+            e = seen[r.get("model") or ""]
             e["calls"] += r.get("calls", 0)
             e["inp"] += r.get("inp", 0)
             e["outp"] += r.get("outp", 0)
@@ -75,49 +80,94 @@ def build():
             e["cost"] += r.get("market_value_usd") or 0.0
             if r.get("provider"):
                 e["providers"].add(r["provider"])
-            # The collector already classed the row by its endpoint (a LAN host
-            # is local whatever the model is called), so the sheet agrees with
-            # the dashboard instead of re-deriving it from the name alone.
+            # The collector already classed the row by its endpoint (a LAN
+            # host is local whatever the model is called), so the sheet
+            # agrees with the dashboard instead of re-deriving from the name.
             if r.get("cost_class") == "local":
                 e["local"] = True
             e["profiles"].add(pname)
+    return seen
+
+
+def assemble(data, catalog, installed=()):
+    """Every model in the resolved price universe (P6-01, #59).
+
+    Universe = OpenRouter catalogue + WEB_RATES vendor overrides + local
+    models (installed on a probed host or seen in traffic) + any model with
+    recorded traffic. Traffic columns annotate a row; `used` tells an unused
+    model apart from one with zero calls. Pure: no I/O, so tests call it.
+    """
+    seen = observed_traffic(data)
+    local_names = set(installed) | {m for m, a in seen.items() if a["local"]}
+    universe = set(catalog) | set(P.WEB_RATES) | local_names | set(seen)
+    # A traffic model that resolves to a catalogue id is ONE model, shown
+    # under the name the agent used: drop the bare catalogue duplicate.
+    for m in seen:
+        if m in local_names:
+            continue
+        oid = P.ALIASES.get(m) or P._resolve_catalog_id(m, catalog)
+        if oid and oid != m:
+            universe.discard(oid)
+    for w in P.WEB_RATES:
+        oid = P.ALIASES.get(w)
+        if oid and oid != w:
+            universe.discard(oid)
+    universe.discard("")
 
     models = []
-    for model, agg in seen.items():
-        source = "local" if agg["local"] else rate_source(model, catalog)
-        tps = None
+    for model in universe:
+        agg = seen.get(model)
+        used = bool(agg and agg["calls"])
+        local = model in local_names or P.is_local(model)
+        source = "local" if local else rate_source(model, catalog)
+        tps = energy = None
         if source == "local":
             (ri, ro, rc), tps = local_rates(model)
-            # Electricity cost of the traffic actually observed.
-            energy = (agg["inp"] * ri + agg["outp"] * ro) / 1e6
+            if agg:
+                energy = (agg["inp"] * ri + agg["outp"] * ro) / 1e6
         elif source == "free-tier":
             ri = ro = rc = 0.0
-            energy = None
         else:
             rt = P.rates_for(model, catalog)
-            if rt:
-                ri, ro, rc = rt[0] * 1e6, rt[1] * 1e6, rt[2] * 1e6
-            else:
-                ri = ro = rc = None
-            energy = None
+            ri, ro, rc = (rt[0] * 1e6, rt[1] * 1e6, rt[2] * 1e6) if rt else (None, None, None)
+            if rt is None:
+                source = "unpriced"
+        a = agg or {"calls": 0, "inp": 0, "outp": 0, "cache": 0, "cost": 0.0,
+                    "providers": set(), "profiles": set()}
         models.append({
-            "model": model,
-            "short": model.split("/")[-1],
+            "model": model, "short": model.split("/")[-1],
+            # The catalogue id this row prices from, when it differs from
+            # the name the agent used (Ctrl+F on either finds the row).
+            "oid": ("" if local else (P.ALIASES.get(model) or P._resolve_catalog_id(model, catalog) or "")),
             "in_1m": ri, "out_1m": ro, "cache_1m": rc,
-            "source": source,
-            "tps": tps,
-            "calls": agg["calls"],
-            "inp": agg["inp"], "outp": agg["outp"], "cache": agg["cache"],
-            "cost": agg["cost"],
-            "energy": energy,
-            "providers": sorted(agg["providers"]),
-            "served_by": ", ".join(sorted(agg["providers"])) or "—",
-            "profiles": sorted(agg["profiles"]),
+            "source": source, "tps": tps, "used": used,
+            "calls": a["calls"], "inp": a["inp"], "outp": a["outp"],
+            "cache": a["cache"], "cost": a["cost"], "energy": energy,
+            "providers": sorted(a["providers"]),
+            "served_by": ", ".join(sorted(a["providers"])) or "—",
+            "profiles": sorted(a["profiles"]),
         })
+    # Most expensive per output token first, unpriced last; name breaks ties
+    # so the order is stable across builds.
+    models.sort(key=lambda m: (m["out_1m"] is None, -(m["out_1m"] or 0), m["model"]))
+    return models
 
-    # Priced models first (most expensive per output token), unpriced last —
-    # an unpriced model is a gap to fix, so it should be visible, not buried.
-    models.sort(key=lambda m: (m["out_1m"] is None, -(m["out_1m"] or 0)))
+
+def build():
+    # The sample build (CI, fresh clone) renders from the committed payloads:
+    # no collector run and no network. Same switch the dashboard uses.
+    if not os.environ.get("LLM_TELEMETRY_NO_COLLECT"):
+        subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
+    data = json.load(open(DATA))
+    catalog, src = P.fetch_catalog()
+    ollama = {}
+    op = str(CFG.reports_dir / "ollama-data.json")
+    if os.path.exists(op):
+        try:
+            ollama = json.load(open(op))
+        except (OSError, ValueError):
+            ollama = {}
+    models = assemble(data, catalog, installed_local_models(ollama))
 
     return {
         "models": models,
@@ -196,6 +246,15 @@ tbody tr:last-child td{border-bottom:none}
 .back{display:inline-block;margin-bottom:16px;color:var(--accent);text-decoration:none;
   font-size:12.5px}
 .back:hover{text-decoration:underline}
+/* Unused catalogue rows (P6-01): present with rates, visibly not yours. */
+tr.unused td{opacity:.62}
+tr.unused:hover td{opacity:1}
+td.used{text-align:right;font-variant-numeric:tabular-nums}
+/* Catalogue ids run to 50 chars; only the name cell may wrap, so the
+   numbers stay on one line and the table fits without scrolling. */
+tbody td:first-child{white-space:normal;max-width:300px}
+td .mname{overflow-wrap:anywhere}
+td .oid{font-size:10.5px;margin:2px 0 0 14px;overflow-wrap:anywhere}
 @media(max-width:700px){
   thead th,tbody td{padding-left:6px;padding-right:6px;font-size:11.5px}
   .hide-s{display:none}
@@ -327,11 +386,36 @@ cost = <b>(input_tokens &times; input_rate)</b> + <b>(output_tokens &times; outp
 const M = __CALCDATA__;
 const $ = id => document.getElementById(id);
 const sel = $('cm');
-M.sort((a,b)=>a.n.localeCompare(b.n)).forEach((m,i)=>{
-  const o = document.createElement('option');
-  o.value = i; o.textContent = m.n + (m.s === 'local' ? '  (local)' : '');
-  sel.appendChild(o);
+// Every model on the sheet, grouped by what its number means (P6-04, #62):
+// local = your electricity, metered = a vendor's per-token price, free tier
+// = genuinely $0, unpriced = no rate exists. Models you have used come first
+// inside each group, so the common case is not buried in 470 names.
+const KIND = m => m.s === 'local' ? 'local'
+  : m.s === 'unpriced' ? 'unpriced'
+  : m.s === 'free-tier' ? 'free' : 'metered';
+const GROUPS = [['local', 'Local (electricity)'], ['metered', 'Metered (billed per token)'],
+                ['free', 'Free tier ($0)'], ['unpriced', 'Unpriced (no rate)']];
+GROUPS.forEach(([k, label]) => {
+  const ms = M.map((m, i) => [m, i]).filter(([m]) => KIND(m) === k)
+    .sort(([a], [b]) => (b.u - a.u) || a.n.localeCompare(b.n));
+  if (!ms.length) return;
+  const g = document.createElement('optgroup');
+  g.label = label + ' \u00b7 ' + ms.length;
+  g.dataset.kind = k;
+  ms.forEach(([m, i]) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = m.n + (m.u ? '  \u2022 used' : '');
+    g.appendChild(o);
+  });
+  sel.appendChild(g);
 });
+// Start on the dearest model you actually use: a realistic first answer.
+{
+  const used = M.map((m, i) => [m, i]).filter(([m]) => m.u && KIND(m) === 'metered')
+    .sort(([a], [b]) => b.o - a.o);
+  if (used.length) sel.value = String(used[0][1]);
+}
 
 // Accept "100,000", "100k", "1.5m" — nobody wants to count zeros.
 function parseTokens(s){
@@ -347,16 +431,28 @@ const money = v => v >= 1 ? '$' + v.toFixed(2)
 
 function calc(){
   const m = M[sel.value]; if(!m) return;
+  const k = KIND(m);
+  $('ctot').dataset.kind = k;
+  if (k === 'unpriced'){
+    // Never $0 for a model with no rate: that is the silent-zero bug.
+    $('ctot').textContent = 'no rate available';
+    $('ctot').style.color = '#f87171';
+    $('cbrk').innerHTML = 'This model has no price in the catalogue or WEB_RATES, '
+      + 'so a job on it cannot be costed.';
+    return;
+  }
   const i = parseTokens($('ci').value), o = parseTokens($('co').value);
   const runs = Math.max(1, Math.round(parseTokens($('cr').value) || 1));
   const cin = i / 1e6 * m.i, cout = o / 1e6 * m.o;
   const total = (cin + cout) * runs;
-  $('ctot').textContent = money(total);
-  $('ctot').style.color = m.s === 'local' ? '#fbbf24' : 'inherit';
+  const what = k === 'local' ? 'electricity' : k === 'free' ? 'free tier' : 'billed';
+  $('ctot').textContent = (k === 'local' ? '\u2248 ' : '') + money(total) + ' ' + what;
+  $('ctot').style.color = k === 'local' ? '#fbbf24' : 'inherit';
   const per = runs > 1 ? ` &times; ${runs} runs` : '';
   $('cbrk').innerHTML =
     `in ${money(cin)} + out ${money(cout)}${per}` +
-    (m.s === 'local' ? '<br>power cost, not billed' : '');
+    (k === 'local' ? '<br>your power cost, not billed by anyone'
+     : k === 'free' ? '<br>OpenRouter free tier: $0 per token' : '');
 }
 ['cm','ci','co','cr'].forEach(id => {
   $(id).addEventListener('input', calc);
@@ -453,6 +549,9 @@ def freshness_html(f, catalog_size):
         return ('<div class="warnbox" id="catfresh" data-state="stale">'
                 f'<b>Prices are stale</b>{age}. The latest fetch failed{why}, so an older '
                 f'cached catalogue ({catalog_size:,} models) is in use; {ttl}.</div>')
+    if f["state"] == "pinned":
+        return (f'<span id="catfresh" data-state="pinned">Pinned catalogue: '
+                f'{catalog_size:,} models from a fixed file (sample build, never refreshed)</span>')
     word = "fetched live" if f["state"] == "live" else "from cache"
     return (f'<span id="catfresh" data-state="{f["state"]}">OpenRouter catalogue: '
             f'{catalog_size:,} models, {word}{age}; {ttl}</span>')
@@ -496,10 +595,18 @@ def render(d):
                  else f'{m["out_1m"]/m["in_1m"]:.0f}&times;')
         badges = " ".join(prov_badge(p) for p in m["providers"]) or \
             '<span class="muted">&mdash;</span>'
+        used = m.get("used", bool(m.get("calls")))
+        use_cell = (f'{fmt_n(m["calls"])}' if used
+                    else '<span class="muted" title="No recorded traffic">&mdash;</span>')
         rows.append(
-            f'<tr>'
+            f'<tr data-model="{_html.escape(m["model"], quote=True)}" data-oid="{_html.escape(m.get("oid") or "", quote=True)}" data-source="{src}"'
+            f' data-used="{1 if used else 0}"{"" if used else " class=\"unused\""}>'
             f'<td class="l"><span class="dot" style="background:{colour(m["model"])}"></span>'
-            f'<span class="mono mname" style="color:{colour(m["model"])}">{m["short"]}</span></td>'
+            f'<span class="mono mname" style="color:{colour(m["model"])}"'
+            f' title="{_html.escape(m["model"], quote=True)}">{_html.escape(m["model"])}</span>'
+            + (f'<div class="oid muted mono">priced as {_html.escape(m["oid"])}</div>'
+               if m.get("oid") and m["oid"] != m["model"] else '')
+            + '</td>'
             f'<td class="l"><span class="tag t-{src}">{LABEL.get(src, src)}</span></td>'
             f'<td class="l hide-s">{badges}</td>'
             f'<td class="rate">{fmt_money_1m(m["in_1m"])}</td>'
@@ -507,6 +614,7 @@ def render(d):
             f'<td class="hide-s">{fmt_money_1m(m["cache_1m"])}</td>'
             f'<td class="hide-s muted">{ratio}</td>'
             f'<td class="hide-s muted">{tps}</td>'
+            f'<td class="used">{use_cell}</td>'
             f'</tr>')
 
     table = (
@@ -515,12 +623,14 @@ def render(d):
         '<th class="l hide-s">Served by</th>'
         '<th>Input /1M</th><th>Output /1M</th><th class="hide-s">Cache /1M</th>'
         '<th class="hide-s">Out&divide;In</th><th class="hide-s">Throughput</th>'
+        '<th title="Calls you have recorded on this model">Your calls</th>'
         '</tr></thead><tbody>' + "".join(rows) + '</tbody></table>')
 
     priced = [m for m in d["models"] if m["out_1m"] is not None and m["source"] != "local"]
     local = [m for m in d["models"] if m["source"] == "local"]
     unpriced = [m for m in d["models"] if m["source"] == "unpriced"]
     metered = [m for m in priced if m["out_1m"]]
+    n_used = sum(1 for m in d["models"] if m.get("used", bool(m.get("calls"))))
     dearest = max(priced, key=lambda m: m["out_1m"], default=None)
     cheapest = min(metered, key=lambda m: m["out_1m"], default=None)
     median = (sorted(m["out_1m"] for m in metered)[len(metered) // 2]
@@ -536,7 +646,7 @@ def render(d):
     kpis = f'''<div class="grid">
   <div class="kpi"><div class="lbl" style="margin:0">Models on sheet</div>
     <div class="v">{len(d["models"])}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px">{len(unpriced)} unpriced</div></div>
+    <div class="muted" style="font-size:11px;margin-top:2px" id="usedcount">{n_used} used by you &middot; {len(unpriced)} unpriced</div></div>
   <div class="kpi"><div class="lbl" style="margin:0">Dearest output</div>
     <div class="v">{fmt_money_1m(dearest["out_1m"]) if dearest else "&mdash;"}</div>
     <div class="muted" style="font-size:11px;margin-top:2px">{dearest["short"] if dearest else ""}</div></div>
@@ -559,11 +669,11 @@ def render(d):
 
     # Live calculator: the point of knowing a rate is pricing a hypothetical
     # job, so let the sheet do that arithmetic instead of the reader.
-    calc_models = [m for m in d["models"] if m["out_1m"] is not None]
     calc_json = json.dumps([
-        {"n": m["short"], "i": m["in_1m"], "o": m["out_1m"], "s": m["source"]}
-        for m in calc_models
-    ])
+        {"n": m["model"], "i": m["in_1m"], "o": m["out_1m"], "s": m["source"],
+         "u": 1 if m.get("used", bool(m.get("calls"))) else 0}
+        for m in d["models"]
+    ]).replace("</", "<\\/")
 
     html = (PAGE
             .replace("__GEN__", d["generated"].replace("T", " "))
