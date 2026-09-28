@@ -2461,9 +2461,162 @@ document.addEventListener('click', e => {
   renderLive();
 });
 
+// ---- Task queue visualization (#120) ---------------------------------------
+// Two lanes fed only by data that already exists — no fabricated queue:
+//   queued  : per-host queue depth from the Ollama poller (h.queue). This is
+//             the real number of requests Hermes has dispatched that the box
+//             has not started yet.
+//   running : the live session list already powering the grid above.
+// A chip's identity is host+slot for queued items (there is no per-request id
+// in the payload) and session id for running ones, so the transition
+// animation can tell "same task, now running" from "different task".
+const Q_SEEN = new Map();   // chip key -> {lane, chip} so we animate the move
+
+function qChip(kind, key, label, meta, profileColor){
+  const el = document.createElement('div');
+  el.className = 'qchip';
+  el.dataset.key = key;
+  el.dataset.lane = kind;
+  const h = profileColor == null ? null : profileColor;
+  el.innerHTML =
+    `<span class="qdotwrap"${h != null ? ` style="background:hsl(${h} 62% 45%)"` : ''}></span>`
+    + `<span class="qmodel">${esc(label)}</span>`
+    + (meta ? `<span class="qprof">${esc(meta)}</span>` : '');
+  return el;
+}
+
+function renderQueue(){
+  const qBox = $('qitems-queued'), rBox = $('qitems-running');
+  if (!qBox || !rBox) return;
+  const p = DATA.profiles[current] || {};
+  const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
+
+  // --- queued: expand each host's real depth into depth-many chips ---------
+  const queued = [];
+  hosts.forEach(h => {
+    const depth = Math.max(0, (+h.queue || 0));
+    for (let i = 0; i < depth; i++) {
+      queued.push({
+        key: `q:${h.label}:${i}`,
+        label: h.label,
+        meta: 'waiting',
+      });
+    }
+  });
+
+  // --- running: the same live sessions the grid shows ----------------------
+  const running = ((p.live || [])).map(L => ({
+    key: `r:${L.id}`,
+    label: short(L.model) || L.title || 'session',
+    meta: L.profile || '',
+    hue: hashHue(L.profile || ''),
+    idle: L.idle_s,
+  }));
+
+  // --- diff against what is on screen and animate the differences ----------
+  // Promotion (queued -> running) is detected by COUNT, not by identity: the
+  // payload carries no request id linking a waiting slot to the session it
+  // becomes (queued items are only "host X has N waiting"), so claiming an
+  // exact task-to-task match would be inventing data. What is observable is
+  // that the queue shrank while new sessions appeared in the same poll, which
+  // is exactly when a waiting task started — so the newly appeared running
+  // chips animate as promoted. The count of promoted chips is capped at the
+  // number of slots that left the queue, so an unrelated new session does not
+  // get a promotion animation it did not earn.
+  const queuedBefore = [...Q_SEEN.values()].filter(v => v.lane === 'queued').length;
+  const runningBefore = new Set(
+    [...Q_SEEN.entries()].filter(([, v]) => v.lane === 'running').map(([k]) => k));
+  const queuedAfter = queued.length;
+  // slots that left the queue this render, and are not simply gone for good
+  // (we cannot tell "started" from "abandoned" — the cap is what we can see)
+  let promoteBudget = Math.max(0, queuedBefore - queuedAfter);
+
+  const next = new Map();
+  const want = [
+    ...queued.map(q => ({...q, lane:'queued', hue:null})),
+    ...running.map(r => ({...r, lane:'running'})),
+  ];
+  want.forEach(w => {
+    const prev = Q_SEEN.get(w.key);
+    if (prev && prev.lane === w.lane && prev.chip.isConnected){
+      // same chip, same lane: reuse it so CSS does not replay the entry
+      // animation on every 5s poll (that would read as a flicker, the very
+      // thing #114 fixed elsewhere).
+      w.chip = prev.chip;
+      const m = w.chip.querySelector('.qmodel');
+      if (m && m.textContent !== w.label) m.textContent = w.label;
+    } else {
+      w.chip = qChip(w.lane, w.key, w.label, w.meta, w.hue);
+      // a running chip that was not running last render, while the queue was
+      // draining, is the visible signal that a waiting task started.
+      const isNewRunning = w.lane === 'running' && !runningBefore.has(w.key);
+      if (isNewRunning && promoteBudget > 0){
+        promoteBudget--;
+        w.chip.classList.add('promoting');
+        setTimeout(() => w.chip.classList.remove('promoting'), 400);
+      }
+    }
+    next.set(w.key, w);
+  });
+  // chips that vanished: play the exit animation, then drop them
+  Q_SEEN.forEach((prev, key) => {
+    if (next.has(key)) return;
+    if (!prev.chip.isConnected) return;
+    prev.chip.classList.add('leaving');
+    const chip = prev.chip;
+    setTimeout(() => chip.remove(), 240);
+  });
+  Q_SEEN.clear();
+  next.forEach((v, k) => Q_SEEN.set(k, v));
+
+  // --- paint: reuse existing nodes where possible so only real changes move
+  const paint = (box, items) => {
+    items.forEach(it => { if (it.chip.parentNode !== box) box.appendChild(it.chip); });
+    [...box.children].forEach(c => {
+      if (!items.some(i => i.chip === c) && !c.classList.contains('leaving')) c.remove();
+    });
+  };
+  paint(qBox, want.filter(w => w.lane === 'queued'));
+  paint(rBox, want.filter(w => w.lane === 'running'));
+
+  // --- empty states: calm, not blank --------------------------------------
+  if (!queued.length){
+    if (!qBox.querySelector('.qempty')){
+      const e = document.createElement('div');
+      e.className = 'qempty';
+      e.innerHTML = '<span class="qdot"></span>queue clear — nothing waiting';
+      qBox.appendChild(e);
+    }
+  } else {
+    const e = qBox.querySelector('.qempty'); if (e) e.remove();
+  }
+  if (!running.length){
+    if (!rBox.querySelector('.qempty')){
+      const e = document.createElement('div');
+      e.className = 'qempty muted';
+      e.innerHTML = '<span class="muted">idle — nothing running</span>';
+      rBox.appendChild(e);
+    }
+  } else {
+    const e = rBox.querySelector('.qempty'); if (e) e.remove();
+  }
+
+  // --- counts + subtitle ----------------------------------------------------
+  const cq = $('qcount-queued'), cr = $('qcount-running'), sub = $('qsub');
+  if (cq) cq.textContent = String(queued.length);
+  if (cr) cr.textContent = String(running.length);
+  if (sub){
+    const busy = hosts.filter(h => (+h.queue || 0) > 0).map(h => h.label);
+    sub.textContent = busy.length
+      ? `backed up on ${busy.join(', ')}`
+      : (hosts.length ? `fleet clear · ${hosts.length} host${hosts.length===1?'':'s'}` : '');
+  }
+}
+
 function renderLive(){
   const p = DATA.profiles[current] || {};
   renderOllama(DATA.ollama);
+  renderQueue();
   // Deduplicate live sessions by ID — the All tab can merge the same session from
   // two profiles, and the 5s poll can occasionally return duplicates mid-refresh.
   const seen = new Set();
