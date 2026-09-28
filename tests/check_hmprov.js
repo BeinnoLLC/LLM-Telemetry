@@ -48,7 +48,15 @@ w.addEventListener('load', () => {
       `provOf(${JSON.stringify(p||'')},${JSON.stringify(m||'')},${JSON.stringify(url||'')})`);
     ok(!!DATA && typeof provOf('anthropic','claude','') === 'string', 'DATA + provOf reachable');
 
-    const prof = Object.values(DATA.profiles)[0];
+    // Read the profile the DOM was actually rendered from. Since #121 the
+    // default view is the MERGE of every ON profile (the old "All" tab's
+    // contents), so profiles[0] is the wrong source: it holds one profile's
+    // 3 providers while the rendered cells carry the merge's 5, and every
+    // expectation below would be computed against the wrong payload.
+    const cur = w.eval('typeof current!=="undefined"?current:null');
+    const prof = (DATA.profiles && (DATA.profiles[cur] || Object.values(DATA.profiles)[0]))
+              || {};
+    ok(!!prof && Array.isArray(prof.heatmap), `heatmap read from the rendered view (${cur})`);
     const day = {};
     (prof.heatmap || []).forEach(x => {
       const k = provOf(x.p, x.m, x.url);

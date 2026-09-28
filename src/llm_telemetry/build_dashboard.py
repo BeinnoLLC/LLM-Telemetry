@@ -667,6 +667,48 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .flowtip .ft-h{font-weight:600;font-size:12px;margin-bottom:3px}
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
+ /* #120 task queue: two lanes, animated chip lifecycle. Kept CSS-driven
+    (transform/opacity transitions + one keyframe animation) rather than a
+    JS render loop, so the idle shimmer costs nothing on low-power devices. */
+ /* Two lanes on desktop, one on narrow screens. Deliberately NOT
+    `1fr 1fr`: that fixed pair is exactly what check_responsive_grid.js
+    forbids (it squashes canvases and overflows), and it is also the wrong
+    tool here — auto-fit lets the lanes collapse to a single column on a
+    phone without a media query doing the same job twice. */
+ .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+ .qlane{min-height:64px}
+ .qlanehdr{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+   color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+ .qcount{background:var(--card);border:1px solid var(--border);border-radius:999px;
+   padding:0 6px;font-size:10px;line-height:16px;min-width:16px;text-align:center}
+ .qitems{display:flex;flex-direction:column;gap:6px}
+ .qempty{font-size:11px;color:var(--muted);padding:10px 0;
+   display:flex;align-items:center;gap:6px}
+ .qempty .qdot{width:6px;height:6px;border-radius:999px;background:#22c55e;
+   box-shadow:0 0 0 rgba(34,197,94,.5);animation:qpulse-ok 2.2s ease-out infinite}
+ @keyframes qpulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}
+   70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+ /* one chip per task; enters via qin, sits with an idle shimmer while
+    queued, promotes into the running lane via qpromote, leaves via qout. */
+ .qchip{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
+   border:1px solid var(--border);background:var(--card);font-size:11px;
+   animation:qin .28s cubic-bezier(.2,.8,.2,1) both;
+   transition:transform .25s ease,opacity .25s ease,border-color .25s ease}
+ .qchip.leaving{animation:qout .22s ease-in forwards}
+ .qchip.promoting{animation:qpromote .38s cubic-bezier(.3,.9,.3,1) forwards}
+ @keyframes qin{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
+ @keyframes qout{to{opacity:0;transform:translateX(10px) scale(.96)}}
+ @keyframes qpromote{0%{transform:translateX(0)}45%{transform:translateX(14px) scale(1.03)}
+   100%{transform:translateX(0) scale(1)}}
+ .qchip .qdotwrap{width:7px;height:7px;border-radius:999px;flex:none}
+ .qlane[data-lane="queued"] .qchip .qdotwrap{background:#f59e0b;
+   animation:qshimmer 1.6s ease-in-out infinite}
+ .qlane[data-lane="running"] .qchip .qdotwrap{background:#22c55e}
+ @keyframes qshimmer{0%,100%{opacity:.4}50%{opacity:1}}
+ .qchip .qmodel{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+ .qchip .qprof{color:var(--muted);font-size:9.5px;
+   padding:0 5px;border:1px solid var(--border);border-radius:999px}
+ .qchip .qwait{margin-left:auto;font-size:9.5px;color:var(--muted);white-space:nowrap}
  .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:10px;text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);
@@ -945,7 +987,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </div>
   </div>
   <div class="flex gap-2 items-center flex-wrap">
-   <div class="flex gap-1.5 flex-wrap" id="tabs"></div>
+   <div class="flex gap-1.5 flex-wrap items-center" id="tabs"></div>
+   <span class="muted text-[11px] whitespace-nowrap" id="tabsub"></span>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="false"
@@ -1021,6 +1064,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="muted normal-case tracking-normal text-[10px] ml-1" id="olsub"></span>
    </div>
    <div id="ollama" class="olgrid"></div>
+  </div>
+  <!-- #120: task queue visualization. Two lanes fed by data already collected
+       elsewhere — no fabricated queue, no new backend dependency:
+       "queued" = real per-host queue depth from the Ollama poller (h.queue),
+       "running" = the live session list already powering the grid above.
+       Placed after both sources so it reads as "what's about to run" after
+       you've seen what IS running. -->
+  <div class="card p-4 mt-3" id="qcard">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="qsub"></span>
+   </div>
+   <div id="qlanes" class="qlanes">
+    <div class="qlane" data-lane="queued">
+     <div class="qlanehdr">Queued<span class="qcount" id="qcount-queued">0</span></div>
+     <div class="qitems" id="qitems-queued"></div>
+    </div>
+    <div class="qlane" data-lane="running">
+     <div class="qlanehdr">Running<span class="qcount" id="qcount-running">0</span></div>
+     <div class="qitems" id="qitems-running"></div>
+    </div>
+   </div>
   </div>
  </div>
 
@@ -2455,7 +2519,7 @@ function renderLive(){
             <span class="text-[11px] font-semibold" style="color:${c.c}">${L.category}</span>
             <span class="text-[12px] truncate">${L.title}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
-            ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:${BD};color:${MU}">${L.profile}</span>` : ''}
+            ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:hsl(${hashHue(L.profile)} 62% 30%);color:hsl(${hashHue(L.profile)} 80% 78%);border:1px solid hsl(${hashHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[9px] muted">↳ subagent</span>':''}
           </div>
           <div class="muted text-[10.5px] truncate">${L.phase||'—'}</div>
@@ -4272,18 +4336,17 @@ navApplyCollapsed(navCollapsed());
 // Prepend the merged "All" view so it is the default tab. Done before `current`
 // is chosen so the page opens on the overview.
 function installAll(){
-  const all = buildAll(DATA.profiles);
-  if (!all) return;
-  const merged = {All: all};
-  Object.keys(DATA.profiles).forEach(n => { if (n !== 'All') merged[n] = DATA.profiles[n]; });
-  DATA.profiles = merged;
+  // #121: there is no synthetic "All" profile any more. The visible set is
+  // the merge — pvFilter() builds it directly. Kept as a no-op alias because
+  // three call sites (boot, doRefresh, pollLive) already invoke it; the
+  // refresh/live paths re-filter through pvFilter() below.
 }
-
-// ---- Per-profile tab visibility (#119) -------------------------------------
-// A profile can be switched off: its tab disappears and its rows leave the
-// merged "All". The choice is per-browser UI state (localStorage), not data —
-// the profile is still collected regardless of visibility. Kept in one place
-// so the boot path, the merged view and the tab strip all consult it.
+// ---- Per-profile toggles (#121) --------------------------------------------
+// Every profile tab is an on/off toggle chip. There is NO separate "All"
+// tab: when every profile is on, the merge IS what "All" used to show. The
+// choice is per-browser UI state (localStorage), not data — the profile is
+// still collected regardless of visibility. Kept in one place so the boot
+// path, the merge and the tab strip all consult it.
 const PV_OFF = {};
 function pvKey(n){ return 'llmtelemetry.profileVisibility.' + n; }
 function pvOff(n){
@@ -4304,46 +4367,65 @@ function pvOnProfiles(){
 // profile can come back without refetching (DATA.profiles is the filtered set).
 let PV_ALL = null;
 function pvFilter(keep){
-  // keep: null = everything on (boot). Rebuilds DATA.profiles from PV_ALL,
-  // re-merging "All" from the visible set only. All shows at 2+ profiles.
+  // keep: null = everything on (boot). Rebuilds DATA.profiles from PV_ALL.
+  // With 2+ profiles on the merged view is materialised as the 'All' DATA KEY
+  // (the same merge the old "All" tab showed) and is what `current` points at
+  // by default. That key is an implementation detail of the DATA shape — 19
+  // call sites read DATA.profiles[current] — and is NOT rendered as a tab:
+  // the tab strip shows only real profiles, as on/off chips (#121).
+  // With exactly 1 profile on there is nothing to merge, so that profile's
+  // own data is the view and no 'All' key exists.
   const on = Object.keys(PV_ALL).filter(n => !pvOff(n));
   const merged = {};
+  on.forEach(n => { merged[n] = PV_ALL[n]; });
   if (on.length >= 2){
     const all = buildAll(Object.fromEntries(on.map(n => [n, PV_ALL[n]])));
     if (all) merged['All'] = all;
   }
-  on.forEach(n => { merged[n] = PV_ALL[n]; });
   return merged;
 }
-// Toggle a profile's visibility from the tab strip (context menu entry).
-// The last enabled profile cannot be turned off, and the current tab always
-// stays valid: an off toggled current profile falls back to the first visible.
+// The view is DERIVED from the on-set, never picked independently (#121):
+// 2+ profiles on -> the merged view (what "all on means all" promises);
+// exactly 1 on -> that profile. There is no "look at one profile while
+// others are on" state, because that is what the toggles are for.
+function pvSyncCurrent(){
+  current = ('All' in DATA.profiles) ? 'All'
+          : (pvOnProfiles()[0] || Object.keys(DATA.profiles)[0]);
+  return current;
+}
+// Toggle a profile on/off from its chip (left click) or its context menu.
+// The last enabled profile cannot be turned off; the view then re-derives.
 function pvToggle(n){
   if (pvOff(n)) { pvSet(n, false); }
   else if (pvOnProfiles().length <= 1){
     flash('At least one profile must stay visible.');
     return;
   } else { pvSet(n, true); }
-  const wasCurrent = current === n;
   DATA.profiles = pvFilter();
-  if (wasCurrent || !(current in DATA.profiles)){
-    current = pvOnProfiles()[0] || Object.keys(DATA.profiles)[0];
-  }
+  pvSyncCurrent();
   tabs(); pick(current);
 }
 function tabs(){
-  $('tabs').innerHTML=Object.keys(DATA.profiles)
+  // #121: toggle chips. Each profile is ALWAYS rendered (you can see every
+  // profile and its state), coloured by its stable hashHue — ON is filled,
+  // OFF is a dimmed outline of the same hue. No "All" chip: the merge is
+  // what you see when everything is on, and the view always shows the
+  // on-set's merge, so there is nothing for a separate tab to select.
+  $('tabs').innerHTML=Object.keys(PV_ALL)
     .map(n=>{
-      // Profile badge colour is derived, not hardcoded: any profile name gets a
-      // stable hue from the same hash the model palette uses, so a third
-      // profile is styled automatically instead of falling back to grey.
-      if (n === 'All') {
-        return `<button data-tab="${n}" onclick="pick('${n}')" class="px-5 py-3 rounded-md border text-[16px] taboff">${n}</button>`;
-      }
       const h = hashHue(n);
-      return `<button data-tab="${n}" onclick="pick('${n}')" oncontextmenu="pvMenu(event,'${esc(n)}')" class="px-5 py-3 rounded-md border text-[16px] taboff" `
-           + `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)">${n}</button>`;
+      const off = pvOff(n);
+      const st = off
+        ? `style="background:transparent;color:hsl(${h} 45% 62%);border-color:hsl(${h} 40% 34%);opacity:.62"`
+        : `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)"`;
+      return `<button data-tab="${n}" data-off="${off?1:0}" onclick="pvToggle('${n}')"`
+           + ` oncontextmenu="pvMenu(event,'${esc(n)}')" title="${off?'Off — click to turn on':'On — click to turn off'}"`
+           + ` class="px-5 py-3 rounded-md border text-[16px] taboff" ${st}>${n}</button>`;
     }).join('');
+  // a compact "N/M on" readout so the merge's extent is stated, not implied
+  const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
+  const sub = $('tabsub');
+  if (sub) sub.textContent = on === tot ? `all ${tot} shown` : `${on}/${tot} on`;
 }
 // Right-click a profile tab to toggle it (#119). A tiny menu explains what
 // will happen and keeps the accidental-disabled-profile footgun Behind a
@@ -4359,10 +4441,10 @@ function pvMenu(ev, n){
   pvToggle(n);
 }
 installAll();
-// Visibility filter (#119): PV_ALL captures the full set BEFORE removal, so
-// toggling a profile back on restores its data without a refetch. All is
-// re-merged from the visible profiles only — an All whose rows include a
-// switched-off profile would be a lie.
+// Visibility filter (#121): PV_ALL captures the full set BEFORE removal, so
+// toggling a profile back on restores its data without a refetch. The view is
+// always the merge of the ON profiles — with everything on that merge is
+// exactly what the old "All" tab used to show, so there is no All tab.
 PV_ALL = Object.fromEntries(Object.entries(DATA.profiles).filter(([n]) => n !== 'All'));
 DATA.profiles = pvFilter();
 // Build the palette ONCE, from every model in every profile. Charts then look
@@ -4370,7 +4452,10 @@ DATA.profiles = pvFilter();
 // every tab, in every date range and on both profiles.
 COLORS = buildColors(allModelNames());
 TOOLCOLORS = buildToolColors(allToolNames());
-current = Object.keys(DATA.profiles)[0];
+// Default to the merged view when it exists (all profiles on): that is the
+// overview, and it is what "all on means all" promises. With a single profile
+// on at boot there is no merge, so the profile itself is the view.
+current = ('All' in DATA.profiles) ? 'All' : Object.keys(DATA.profiles)[0];
 tabs();
 renderResolution();
 $('from').onchange=render; $('to').onchange=render;
@@ -4414,14 +4499,21 @@ async function doRefresh(silent){
     if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
     const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
     DATA = fresh;
-    installAll();   // the merged tab must be rebuilt from the fresh payload
+    // #121: re-filter through the ON set (this also rebuilds the merge).
+    // installAll() alone would put the raw profile map back and lose the
+    // toggles; pvFilter() reads PV_ALL, which the capture below refreshes.
+    PV_ALL = Object.fromEntries(Object.entries(DATA.profiles).filter(([n]) => n !== 'All'));
+    DATA.profiles = pvFilter();
     // A model can appear for the first time in a refresh; recompute the global
     // palette so it gets a stable shade instead of the grey fallback.
     COLORS = buildColors(allModelNames());
     TOOLCOLORS = buildToolColors(allToolNames());
     tabs();
     renderResolution();
-    pick(DATA.profiles[keepProfile] ? keepProfile : Object.keys(DATA.profiles)[0]);
+    // keep the user where they were: the same profile if it is still shown,
+    // else the merge, else whatever is left.
+    pick(DATA.profiles[keepProfile] ? keepProfile
+       : ('All' in DATA.profiles ? 'All' : Object.keys(DATA.profiles)[0]));
     // restore the range the user was looking at, when it is still in bounds
     if (keepFrom) $('from').value = keepFrom;
     if (keepTo) $('to').value = keepTo;
@@ -4712,7 +4804,13 @@ async function pollLive(){
     // Fleet telemetry is global (not per-profile): both profiles share the
     // same two GPU boxes, so it hangs off DATA, not DATA.profiles[n].
     DATA.ollama = fresh.ollama || DATA.ollama;
-    installAll();
+    // #121: re-apply the ON set. The live slice was merged INTO PV_ALL's
+    // profiles above, so re-filtering keeps the toggles honoured while the
+    // merge picks up the fresh live rows.
+    PV_ALL = Object.fromEntries(
+      Object.entries(PV_ALL).map(([n, p]) => [n, DATA.profiles[n] || p]));
+    DATA.profiles = pvFilter();
+    tabs();
     drawerSync();
     // Repaint unconditionally. This used to be `if (view === 'Live')`, which
     // left the live list and the bandwidth card holding the first payload
