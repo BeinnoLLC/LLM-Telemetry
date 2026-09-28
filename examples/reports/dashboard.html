@@ -2152,6 +2152,8 @@ function bwRow(L){
 // card above it: that one sums sessions in flight, this sums every row in the
 // date filter. The live card answers "what is moving now", this one answers
 // "how much have I moved" — the number that was previously impossible to see.
+// #114: sticky-after-first-sighting latch for the bandwidth card.
+let XF_SEEN = false;
 function renderXfer(rows){
   const card = $('xfercard'); if (!card) return;
   const R = rows || [];
@@ -2162,7 +2164,15 @@ function renderXfer(rows){
     lanUp += +r.lan_up_bytes || 0;
     lanDown += +r.lan_down_bytes || 0;
   });
-  if (!up && !down && !lanUp && !lanDown){ card.hidden = true; return; }
+  // #114 (same class as the host card): a refresh that momentarily carries no
+  // byte rows must not blank this card — the numbers from the previous round
+  // are still true. Only hide it while nothing has EVER been seen; keep the
+  // totals on screen through a transient empty payload.
+  if (!(up + down + lanUp + lanDown)){
+    if (!XF_SEEN){ card.hidden = true; }
+    return;
+  }
+  XF_SEEN = true;
   card.hidden = false;
 
   // Ratio is the headline finding: upload dwarfs download because prompts are
@@ -2935,11 +2945,24 @@ function olBar(pct, lbl, val, invert){
 }
 const GB = n => (n/1e9).toFixed(1) + 'G';
 
+// #114: the section is STICKY once discovery has shown it. A refresh that
+// momentarily carries no ollama payload (the export timer and the poll are
+// not in lockstep) used to hide the card, then the next poll brought it back —
+// which read as the whole panel blinking in and out. Once seen, it stays:
+// an empty refresh keeps the last known hosts instead of blanking the card.
+let OL_SEEN = false;
 function renderOllama(ol){
   const wrap = $('ollama'), card = $('olcard'), sub = $('olsub');
   if (!wrap || !card) return;
   const hosts = (ol && ol.hosts) || [];
-  if (!hosts.length){ card.hidden = true; return; }
+  if (!hosts.length){
+    // No data this round. Before the first sighting, stay hidden (nothing to
+    // show). After it, keep the existing card and content: a transient gap in
+    // the payload is not news, and blanking it is the blink this fixes.
+    if (!OL_SEEN){ card.hidden = true; }
+    return;
+  }
+  OL_SEEN = true;
   card.hidden = false;
 
   wrap.innerHTML = hosts.map(h => {
