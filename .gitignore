@@ -26,4 +26,3 @@ tests/node_modules
 !docs/*.png
 examples/reports/_*.html
 
-deploy/deploy.conf
