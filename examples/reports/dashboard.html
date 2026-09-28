@@ -1608,6 +1608,7 @@ const PROV = {
   'local':       {icon:'▣', bg:'hsl(213 90% 60% / .14)', fg:'hsl(213 90% 62%)'},
   'moa':         {icon:'⬡', bg:'rgba(244,114,182,.16)',  fg:'#f472b6'},
   'cloud':       {icon:'☁', bg:'hsl(205 80% 55% / .16)', fg:'hsl(205 80% 58%)'},
+  'ollama-cloud':{icon:'☁', bg:'hsl(199 90% 52% / .16)', fg:'hsl(199 90% 55%)'},
   'nous':        {icon:'◆', bg:'rgba(234,179,8,.16)',    fg:'#eab308'}
 };
 // Provider resolution order, strongest evidence first:
@@ -1618,6 +1619,11 @@ const PROV = {
 // Guessing from the model name alone mislabelled Fireworks kimi-k3 as local,
 // because it was routed through a custom-named slot.
 const LOCAL_RE = /^(qwen|gpt-oss|deepseek-r1|nemotron|llama|mistral|phi|gemma)/i;
+// Ollama Cloud tags carry an explicit cloud marker ("kimi-k3:cloud",
+// "qwen3-coder:480b-cloud", "gpt-oss:120b-cloud"). The marker is authoritative
+// and must be tested BEFORE LOCAL_RE, because those same names match local hints
+// and were rendering a LOCAL badge on hosted traffic.
+const CLOUD_SUFFIX = /(:|-|\.)cloud$/i;
 function provOf(p, model, url){
   const u=(url||'').toLowerCase();
   if(u){
@@ -1627,6 +1633,9 @@ function provOf(p, model, url){
     if(u.includes('openai.com')||u.includes('chatgpt.com')) return 'openai-codex';
     if(u.includes('openrouter.ai'))     return 'openrouter';
     if(u.includes('nousresearch'))      return 'nous';
+    // Ollama Cloud (https://ollama.com/v1) is hosted, not LAN: match it before
+    // the local patterns so it can never be mistaken for a self-hosted host.
+    if(u.includes('ollama.com'))        return 'ollama-cloud';
     // LOCAL_HOSTS is injected from config.local_host_patterns, so self-hosted
     // URLs are recognised on any LAN instead of only the author's.
     if(LOCAL_HOSTS.some(h => u.includes(h))) return 'local';
@@ -1635,6 +1644,7 @@ function provOf(p, model, url){
   if(key && key!=='custom') return key;
   const m=(model||'').toLowerCase();
   if(m.includes('fireworks')) return 'fireworks';
+  if(CLOUD_SUFFIX.test(m)) return 'ollama-cloud';
   const isSlug = m.includes('/');
   if(!isSlug && LOCAL_RE.test(m)) return 'local';
   if(m.includes('claude')) return 'anthropic';
@@ -1644,8 +1654,9 @@ function provOf(p, model, url){
   if(m.startsWith('stepfun/')||m.startsWith('step-')||m.includes('hermes-')) return 'nous';
   if(m.startsWith('gpt-')) return 'openai-codex';
   if(key==='custom') return 'local';
-  if(isSlug) return 'cloud';
-  return 'local';
+  // Nothing identified it, so it is remote — not local hardware. Defaulting to
+  // 'local' here is what put a LOCAL badge on every unrecognised hosted model.
+  return 'cloud';
 }
 function provBadge(p){
   const key=(p||'').toLowerCase().trim();
