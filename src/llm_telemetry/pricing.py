@@ -113,7 +113,8 @@ def metered_by_model(model):
 #   (input, output, cache_read)
 # Used for models OpenRouter does not carry, and checked BEFORE the catalog.
 # Sources: developers.openai.com/api/docs/pricing (gpt-6-astra, gpt-5.6-luna,
-# gpt-5.3-codex), docs.fireworks.ai/serverless/pricing (DeepSeek SKUs).
+# gpt-5.3-codex), docs.fireworks.ai/serverless/pricing (DeepSeek SKUs),
+# ollama.com/pricing (Ollama Cloud SKUs, standard non-peak rates).
 WEB_RATES = {
     # OpenAI / Codex — absent from OpenRouter
     "gpt-6-astra":     (10.00, 50.00, 1.00),
@@ -124,6 +125,25 @@ WEB_RATES = {
     # Fireworks serverless SKUs
     "accounts/fireworks/models/deepseek-v4-flash-0731":      (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
+    # Ollama Cloud (issue #118) — models OpenRouter does not list at all.
+    # Keyed by the tagged name so ":cloud" rows price; _resolve_catalog_id and
+    # rates_for both try the bare basename too, so either spelling works.
+    "deepseek-v4.1-flash":    (0.15,  0.60,  0.003),
+    "deepseek-v4-flash":      (0.22,  0.66,  0.007),
+    "deepseek-v4-pro":        (0.66,  1.98,  0.022),
+    "gemma4":                 (0.14,  0.40,  0.05),
+    "glm-5.3":                (1.40,  4.40,  0.26),
+    "glm-5.3-flash":          (0.15,  0.50,  0.03),
+    "gpt-oss:120b":           (0.15,  0.60,  0.014),
+    "gpt-oss:20b":            (0.07,  0.30,  0.035),
+    "kimi-k3":                (3.00, 15.00,  0.30),
+    "kimi-k2.7-code":         (0.95,  4.00,  0.19),
+    "kimi-k2.6":              (0.95,  4.00,  0.16),
+    "minimax-m3":             (0.60,  2.40,  0.12),
+    "nemotron-3-nano":        (0.06,  0.24,  0.0),
+    "nemotron-3-super":       (0.015, 0.60,  0.015),
+    "nemotron-3-ultra":       (0.10,  3.00,  0.10),
+    "qwen3.5:397b":           (0.60,  3.60,  0.0),
 }
 
 ALIASES = {
@@ -322,7 +342,17 @@ def rates_for(model, catalog):
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)
         return (ri / 1e6, ro / 1e6, rc / 1e6)
-    w = WEB_RATES.get(model) or WEB_RATES.get((model or "").split("/")[-1])
+    # WEB_RATES is keyed on the bare model name, so try the raw name, the
+    # vendor-stripped basename, and finally the cloud-marker-stripped form —
+    # a ":cloud" request for "gpt-oss:120b-cloud" must find "gpt-oss:120b".
+    base = (model or "").split("/")[-1].lower()
+    bare = re.sub(r"(:|-)cloud$", "", base)
+    w = (WEB_RATES.get(model) or WEB_RATES.get(base)
+         or WEB_RATES.get(bare))
+    # A ":batch"/":thinking" variant bills at its base SKU when the variant
+    # itself has no published rate (see _resolve_catalog_id).
+    if not w and ":" in bare:
+        w = WEB_RATES.get(bare.rsplit(":", 1)[0])
     if w:
         return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
     oid = ALIASES.get(model)

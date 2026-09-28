@@ -60,6 +60,32 @@ chk("ollama.com -> metered", r["cost_class"], "metered")
 r = cls("whatever", "custom", "http://192.168.1.11:11434/v1")
 chk("LAN -> local", r["cost_class"], "local")
 
+# --- Ollama Cloud WEB_RATES table (#118) --------------------------------------
+# Models OpenRouter does not list must price from the published rate card,
+# whether the row carries the ":cloud" marker or the bare name. Assert the
+# RATE, not a dollar figure: the helper sends 100 in / 50 out tokens, and a
+# hardcoded total silently encodes today's token counts instead of the price.
+from llm_telemetry import pricing as P  # noqa: E402  (already imported above)
+CLOUD_CASES = [
+    ("kimi-k3:cloud",          "ollama-cloud", "kimi-k3"),
+    ("gpt-oss:120b-cloud",     "custom",       "gpt-oss:120b"),
+    ("nemotron-3-ultra:cloud", "ollama-cloud", "nemotron-3-ultra"),
+    ("minimax-m3:cloud",       "ollama-cloud", "minimax-m3"),
+]
+for model, prov, card_key in CLOUD_CASES:
+    r = cls(model, prov, "https://ollama.com/v1")
+    chk(f"{model} classed metered", r["cost_class"], "metered")
+    chk(f"{model} priced from the rate card", r["priced"], True)
+    want = (100 * P.WEB_RATES[card_key][0] / 1e6
+            + 50 * P.WEB_RATES[card_key][1] / 1e6)
+    chk(f"{model} bills at the published rate", round(r["billed_usd"], 9), round(want, 9))
+
+# a bare (unmarked) cloud name must price too — same SKU, no marker
+r = cls("kimi-k3", "ollama-cloud", "https://ollama.com/v1")
+chk("bare kimi-k3 priced", r["priced"], True)
+r = cls("deepseek-v4.1-flash", "ollama-cloud", "https://ollama.com/v1")
+chk("deepseek-v4.1-flash priced from card", r["billed_usd"] > 0, True)
+
 if FAIL:
     print(f"test_cloud_pricing.py  {len(FAIL)} FAILED")
     for f in FAIL:
