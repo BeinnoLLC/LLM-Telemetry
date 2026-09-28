@@ -58,6 +58,21 @@ setTimeout(() => {
     chk(!!d.getElementById('qcard'), 'queue card exists');
     chk(!!d.getElementById('qsub'), 'queue subtitle exists');
 
+    // ---- #120 follow-up: the queue must sit ABOVE the in-progress grid ----
+    // "What is about to run" is asked before "what is running", and the queued
+    // lane is the earliest saturation warning. Assert DOM order, not CSS.
+    const qcard = d.getElementById('qcard');
+    const liveGrid = d.getElementById('live-grid');
+    const FOLLOWING = w.Node.DOCUMENT_POSITION_FOLLOWING;
+    chk(!!liveGrid, 'live grid exists');
+    chk(!!qcard && !!liveGrid
+        && (qcard.compareDocumentPosition(liveGrid) & FOLLOWING) !== 0,
+        'task queue renders BEFORE the in-progress grid');
+    const inProg = [...d.querySelectorAll('.lbl')].find(el => /In progress now/i.test(el.textContent));
+    chk(!!inProg && !!qcard
+        && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
+        'task queue renders before the "In progress now" heading');
+
     // ---- CSS: the animations the ticket asked for are really defined ------
     chk(/@keyframes qin/.test(html), 'entry animation defined');
     chk(/@keyframes qout/.test(html), 'exit animation defined');

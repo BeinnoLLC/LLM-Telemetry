@@ -1059,6 +1059,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       onto their own row at half width (leaving ~465px dead), and at 640px the
       track list collapsed to `589px 0px` — a zero-width column with the list
       overflowing it. Fixed tracks + a media query remove both failure modes. -->
+  <!-- #120: task queue visualization, ABOVE the in-progress grid (user request):
+       "what is about to run" is the question you ask before "what is running",
+       and the queued lane is the earliest warning that the fleet is saturated.
+       Two lanes fed by data already collected elsewhere — no fabricated queue,
+       no new backend dependency: "queued" = real per-host queue depth from the
+       Ollama poller (h.queue), "running" = the live session list below it. -->
+  <div class="card p-4 mb-3" id="qcard">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="qsub"></span>
+   </div>
+   <div id="qlanes" class="qlanes">
+    <div class="qlane" data-lane="queued">
+     <div class="qlanehdr">Queued<span class="qcount" id="qcount-queued">0</span></div>
+     <div class="qitems" id="qitems-queued"></div>
+    </div>
+    <div class="qlane" data-lane="running">
+     <div class="qlanehdr">Running<span class="qcount" id="qcount-running">0</span></div>
+     <div class="qitems" id="qitems-running"></div>
+    </div>
+   </div>
+  </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
     <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="muted text-[9px] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
@@ -1076,27 +1097,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="muted normal-case tracking-normal text-[10px] ml-1" id="olsub"></span>
    </div>
    <div id="ollama" class="olgrid"></div>
-  </div>
-  <!-- #120: task queue visualization. Two lanes fed by data already collected
-       elsewhere — no fabricated queue, no new backend dependency:
-       "queued" = real per-host queue depth from the Ollama poller (h.queue),
-       "running" = the live session list already powering the grid above.
-       Placed after both sources so it reads as "what's about to run" after
-       you've seen what IS running. -->
-  <div class="card p-4 mt-3" id="qcard">
-   <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="qsub"></span>
-   </div>
-   <div id="qlanes" class="qlanes">
-    <div class="qlane" data-lane="queued">
-     <div class="qlanehdr">Queued<span class="qcount" id="qcount-queued">0</span></div>
-     <div class="qitems" id="qitems-queued"></div>
-    </div>
-    <div class="qlane" data-lane="running">
-     <div class="qlanehdr">Running<span class="qcount" id="qcount-running">0</span></div>
-     <div class="qitems" id="qitems-running"></div>
-    </div>
-   </div>
   </div>
  </div>
 
