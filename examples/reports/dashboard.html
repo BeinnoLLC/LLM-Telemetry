@@ -142,6 +142,14 @@
   background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
 }
 #navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
+/* Grouped nav (#122): a small uppercase label over each cluster. Muted and
+   non-selectable so it reads as a heading, not a nav item. */
+#navdrawer .navgroup{ display:flex; flex-direction:column; }
+#navdrawer .navgroup-h{
+  font-size:9.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); opacity:.75; padding:6px 10px 3px;
+  user-select:none; pointer-events:none;
+}
 
 /* The rail is the nav at every width now (#4), so the chip strip is redundant
    everywhere rather than only on desktop. */
@@ -259,6 +267,10 @@ body.hasnav #views{ display:none; }
 body.navcollapsed{ --rail-now:var(--rail-w); }
 body.navcollapsed #navdrawer .nvlabel,
 body.navcollapsed #navdrawer .navbrand .brandword{ display:none; }
+/* Collapsed rail is icon-only, and an icon-only rail has no room for a text
+   heading: hide the group labels but KEEP the separators, so the grouping is
+   still visible as rhythm without trying to spell it out. */
+body.navcollapsed #navdrawer .navgroup-h{ display:none; }
 body.navcollapsed #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
 body.navcollapsed #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
 body.navcollapsed #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
@@ -3891,19 +3903,53 @@ const NAV_ICONS = {
   Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
 };
 
+// Grouped sections (#122). The rail is grouped by what a view is FOR, so the
+// list stays scannable as it grows. The order here is the display order.
+// A view with no entry falls into the trailing "More" group rather than
+// disappearing — a new view must never be silently missing from the nav.
+const NAV_GROUPS = [
+  {name:'Overview',  views:['Home', 'Live', 'Flow']},
+  {name:'Analysis',  views:['Usage', 'Cost', 'Health']},
+  {name:'System',    views:['Detail', 'Logs', 'Settings']},
+];
+const NAV_FALLBACK_GROUP = 'More';
+
 function navViews(){
   return [...document.querySelectorAll('.view')].map(el => el.dataset.view);
+}
+
+// -> [{name, views:[...]}] covering EVERY view exactly once, in NAV_GROUPS
+// order, with anything unlisted appended to the fallback group.
+function navGroups(){
+  const all = navViews();
+  const seen = new Set();
+  const out = [];
+  NAV_GROUPS.forEach(g => {
+    const views = g.views.filter(v => all.includes(v));
+    views.forEach(v => seen.add(v));
+    if (views.length) out.push({name:g.name, views});
+  });
+  const rest = all.filter(v => !seen.has(v));
+  if (rest.length) out.push({name:NAV_FALLBACK_GROUP, views:rest});
+  return out;
 }
 
 function renderNav(){
   const box = document.getElementById('navlist');
   if (!box) return;
-  box.innerHTML = navViews().map(v => `
+  const groups = navGroups();
+  const item = v => `
     <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}">
       <span class="nvico" aria-hidden="true">${NAV_ICONS[v] || '\u2022'}</span>
       <span class="nvlabel">${v}</span>
       <span class="nvbadge" data-navbadge="${v}" hidden></span>
-    </a>`).join('');
+    </a>`;
+  box.innerHTML = groups.map((g, i) => `
+    ${i ? '<div class="navsep"></div>' : ''}
+    <div class="navgroup" data-navgroup="${g.name}">
+      <div class="navgroup-h">${g.name}</div>
+      ${g.views.map(item).join('')}
+    </div>`).join('');
   box.querySelectorAll('[data-nav]').forEach(a => {
     a.addEventListener('click', e => {
       // Let modified clicks (new tab, new window) behave natively.
