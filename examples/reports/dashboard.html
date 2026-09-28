@@ -902,8 +902,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
   <div class="flex gap-2 items-center flex-wrap">
    <div class="flex gap-1.5 flex-wrap" id="tabs"></div>
-   <button id="logbtn2" class="chip" title="Open live logs (L)" style="border-color:var(--accent);color:var(--accent)">&#9776; Logs <span class="n2" id="logn2" hidden>0</span></button>
-   <a href="costs.html" class="chip" title="Per-million-token price sheet &mdash; how costs are calculated">&#36; Rates</a>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="false"
@@ -1320,6 +1318,25 @@ function showSchemaError(msg){
 // ---- Profile resolution (P5-04, #53) -------------------------------------
 // Zero profiles is an actionable state, not a blank page: say which agent
 // home was searched and how to point the tool elsewhere.
+// flash(): one-line transient notice for guarded actions (#119 uses it when
+// the last visible profile is protected from being switched off).
+function flash(msg){
+  let f = document.getElementById('flash');
+  if (!f){
+    f = document.createElement('div');
+    f.id = 'flash';
+    f.setAttribute('role', 'status');
+    f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
+      + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
+      + 'background:var(--card);color:var(--fg);font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.25);'
+      + 'opacity:0;transition:opacity .2s';
+    document.body.appendChild(f);
+  }
+  f.textContent = msg;
+  requestAnimationFrame(() => { f.style.opacity = '1'; });
+  clearTimeout(flash._t);
+  flash._t = setTimeout(() => { f.style.opacity = '0'; }, 2600);
+}
 {
   const res = DATA.resolution || {};
   if (!DATA.profiles || !Object.keys(DATA.profiles).length) {
@@ -4193,6 +4210,58 @@ function installAll(){
   DATA.profiles = merged;
 }
 
+// ---- Per-profile tab visibility (#119) -------------------------------------
+// A profile can be switched off: its tab disappears and its rows leave the
+// merged "All". The choice is per-browser UI state (localStorage), not data —
+// the profile is still collected regardless of visibility. Kept in one place
+// so the boot path, the merged view and the tab strip all consult it.
+const PV_OFF = {};
+function pvKey(n){ return 'llmtelemetry.profileVisibility.' + n; }
+function pvOff(n){
+  if (n in PV_OFF) return PV_OFF[n];
+  let v = null;
+  try { v = localStorage.getItem(pvKey(n)); } catch(e){}
+  PV_OFF[n] = (v === 'off');
+  return PV_OFF[n];
+}
+function pvSet(n, off){
+  PV_OFF[n] = !!off;
+  try { localStorage.setItem(pvKey(n), off ? 'off' : 'on'); } catch(e){}
+}
+function pvOnProfiles(){
+  return Object.keys(PV_ALL).filter(n => !pvOff(n));
+}
+// Full, unfiltered profile map — captured once at boot so a toggled-off
+// profile can come back without refetching (DATA.profiles is the filtered set).
+let PV_ALL = null;
+function pvFilter(keep){
+  // keep: null = everything on (boot). Rebuilds DATA.profiles from PV_ALL,
+  // re-merging "All" from the visible set only. All shows at 2+ profiles.
+  const on = Object.keys(PV_ALL).filter(n => !pvOff(n));
+  const merged = {};
+  if (on.length >= 2){
+    const all = buildAll(Object.fromEntries(on.map(n => [n, PV_ALL[n]])));
+    if (all) merged['All'] = all;
+  }
+  on.forEach(n => { merged[n] = PV_ALL[n]; });
+  return merged;
+}
+// Toggle a profile's visibility from the tab strip (context menu entry).
+// The last enabled profile cannot be turned off, and the current tab always
+// stays valid: an off toggled current profile falls back to the first visible.
+function pvToggle(n){
+  if (pvOff(n)) { pvSet(n, false); }
+  else if (pvOnProfiles().length <= 1){
+    flash('At least one profile must stay visible.');
+    return;
+  } else { pvSet(n, true); }
+  const wasCurrent = current === n;
+  DATA.profiles = pvFilter();
+  if (wasCurrent || !(current in DATA.profiles)){
+    current = pvOnProfiles()[0] || Object.keys(DATA.profiles)[0];
+  }
+  tabs(); pick(current);
+}
 function tabs(){
   $('tabs').innerHTML=Object.keys(DATA.profiles)
     .map(n=>{
@@ -4203,11 +4272,30 @@ function tabs(){
         return `<button data-tab="${n}" onclick="pick('${n}')" class="px-5 py-3 rounded-md border text-[16px] taboff">${n}</button>`;
       }
       const h = hashHue(n);
-      return `<button data-tab="${n}" onclick="pick('${n}')" class="px-5 py-3 rounded-md border text-[16px] taboff" `
+      return `<button data-tab="${n}" onclick="pick('${n}')" oncontextmenu="pvMenu(event,'${esc(n)}')" class="px-5 py-3 rounded-md border text-[16px] taboff" `
            + `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)">${n}</button>`;
     }).join('');
 }
+// Right-click a profile tab to toggle it (#119). A tiny menu explains what
+// will happen and keeps the accidental-disabled-profile footgun Behind a
+// deliberate click.
+function pvMenu(ev, n){
+  ev.preventDefault();
+  const off = pvOff(n);
+  const others = pvOnProfiles().length;
+  if (!off && others <= 1 && pvOnProfiles()[0] === n){
+    flash('At least one profile must stay visible.');
+    return;
+  }
+  pvToggle(n);
+}
 installAll();
+// Visibility filter (#119): PV_ALL captures the full set BEFORE removal, so
+// toggling a profile back on restores its data without a refetch. All is
+// re-merged from the visible profiles only — an All whose rows include a
+// switched-off profile would be a lie.
+PV_ALL = Object.fromEntries(Object.entries(DATA.profiles).filter(([n]) => n !== 'All'));
+DATA.profiles = pvFilter();
 // Build the palette ONCE, from every model in every profile. Charts then look
 // their colour up rather than deriving it, so a model keeps the same shade on
 // every tab, in every date range and on both profiles.
@@ -4491,6 +4579,9 @@ function drawerOpen(on){
 
 function installDrawer(){
   $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
+  // The header "Logs" chip was removed (#116): the floating edge tab and the
+  // nav drawer button are the entry points. Optional-chained handlers, so the
+  // markup stays the single source of truth for which controls exist.
   $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   // The drawer's "All logs" link hands off to the full view: close the panel,
