@@ -12,7 +12,7 @@ For subscription+free rows we still compute a MARKET-EQUIVALENT value: what the
 same tokens would have cost at public API rates. That answers "is the
 subscription worth it" without ever pretending it is money spent.
 """
-import json, os, time, urllib.request
+import json, os, re, time, urllib.request
 
 from .config import get as _cfg
 
@@ -42,6 +42,10 @@ PROVIDER_CLASS = {
     "openai-codex": "subscription",
     "copilot": "subscription",
     "nous": "subscription",
+    # Ollama Cloud (https://ollama.com/v1) is consumption-billed: plan credits
+    # drawn per request, not a flat monthly fee. Real rows exist with the
+    # provider slot "ollama-cloud" (issue #118).
+    "ollama-cloud": "metered",
     # Local inference is "local", never "free": it costs electricity (P7-01).
     "custom": "local",
     "local": "local",
@@ -149,6 +153,15 @@ ALIASES = {
     "gpt-5.6-luna": "openai/gpt-5.6-luna",
     "gpt-5.3-codex": "openai/gpt-5.3-codex",
     "gpt-6-astra": "openai/gpt-6-astra",
+    # Hermes/portal names without the vendor prefix (issue #117: 21 real calls
+    # at $0 because no alias existed). Each maps to the OpenRouter SKU the
+    # provider actually serves.
+    "qwen3.8-max": "qwen/qwen3.8-max-0902",
+    "qwen3.8-max-prime": "qwen/qwen3.8-max-prime",
+    "qwen3.8-flash": "qwen/qwen3.8-flash",
+    "kimi-k2.7-code": "moonshotai/kimi-k2.7-code",
+    "kimi-k2.6": "moonshotai/kimi-k2.6",
+    "kimi-k2.5": "moonshotai/kimi-k2.5",
 }
 
 
@@ -250,6 +263,11 @@ def is_local(model):
     m = (model or "").lower()
     if "/" in m:
         return False
+    # An explicit cloud marker means hosted, whatever the name says: Ollama
+    # Cloud tags are "kimi-k3:cloud", "qwen3-coder:480b-cloud", etc., and the
+    # bare name inside the tag would otherwise match LOCAL_HINTS (issue #118).
+    if m.endswith(":cloud") or m.endswith("-cloud"):
+        return False
     return any(h in m for h in LOCAL_HINTS)
 
 
@@ -266,10 +284,19 @@ def _resolve_catalog_id(model, catalog):
     base = (model or "").split("/")[-1].lower()
     if not base:
         return None
+    # An Ollama Cloud tag ("kimi-k3:cloud", "qwen3-coder:480b-cloud") names a
+    # hosted SKU the catalogue carries without the marker: strip it before
+    # matching, or every :cloud request lands "unpriced" (issue #118).
+    base = re.sub(r"(:|-)cloud$", "", base)
+    # Batch/thinking variants bill at the base SKU (OpenRouter lists :batch as
+    # its own id only where it exists; most carry no entry at all, so a
+    # ":batch" request would otherwise land unpriced).
+    variant = None
+    if ":" in base:
+        base, variant = base.rsplit(":", 1)
     cands = [base]
     # claude-fable-5-1 -> claude-fable-5.1; claude-opus-4-5-20251101 keeps
     # the date suffix as-is (that form is pinned in ALIASES anyway).
-    import re
     dotted = re.sub(r"-(\d+)-(\d+)$", r"-\1.\2", base)
     if dotted != base:
         cands.append(dotted)
@@ -333,6 +360,10 @@ def price_row(row, catalog):
             prov = "opencode-go"
         elif "api.anthropic.com" in url:
             prov = "anthropic"
+        elif "ollama.com" in url:
+            # Ollama Cloud is hosted and metered, never a LAN host: it must be
+            # matched BEFORE the local patterns (issue #118).
+            prov = "ollama-cloud"
         elif any(h in url for h in _local_patterns()):
             prov = "local"
     cls = PROVIDER_CLASS.get(prov, "unknown")
@@ -346,6 +377,12 @@ def price_row(row, catalog):
         cls = "free"
     elif is_local(model):
         cls = "local"
+    elif (model or "").lower().endswith((":cloud", "-cloud")):
+        # An explicit cloud marker on the model name outranks the provider
+        # slot the row was recorded under: a ":cloud" request routed through
+        # a "custom" slot is hosted metered traffic, never the electricity
+        # model (issue #118).
+        cls = "metered"
     elif metered_by_model(model):
         # The model name proves pay-per-token, so it outranks the provider slot
         # (Fireworks/OpenRouter traffic is often recorded under "custom").

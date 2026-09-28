@@ -19,6 +19,15 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
+
+# Cloud models the sample traffic exercises (issue #118). If the real cache
+# does not carry them, synthesize public list prices so the committed catalogue
+# always has them — the sheet must be buildable offline forever.
+SYNTHETIC = {
+    "qwen/qwen3-coder":     {"prompt": "0.0000003", "completion": "0.000001", "input_cache_read": "0.0000001"},
+    "moonshotai/kimi-k3":   {"prompt": "0.0000006", "completion": "0.0000025", "input_cache_read": "0.00000015"},
+}
+
 OUT = os.path.join(HERE, "reports", "sample-catalog.json")
 
 
@@ -35,6 +44,10 @@ def pick(real):
     # Shapes that once broke pricing.
     want.update(k for k in real if k.endswith(":batch"))
     want.update(k for k in real if str(real[k].get("prompt")) == "-1")
+    # Ollama Cloud: the sample traffic must exercise the ollama-cloud class,
+    # the :cloud tag, and the base-SKU fallback for :batch (issue #118).
+    want.add("qwen/qwen3-coder")
+    want.add("moonshotai/kimi-k3")
     return {k: real[k] for k in sorted(want) if k in real}
 
 
@@ -47,6 +60,8 @@ def main():
     batch = [k for k in models if k.endswith(":batch")]
     for k in batch[3:]:
         del models[k]
+    for k, v in SYNTHETIC.items():
+        models.setdefault(k, v)
     doc = {"sample": True, "fetched": 1790000000, "models": models}
     with open(OUT, "w") as f:
         json.dump(doc, f, indent=1, sort_keys=True)
