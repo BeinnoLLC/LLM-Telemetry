@@ -2,7 +2,7 @@
 
 **GitHub is the single source of truth.** Every phase is a milestone and every ticket is an issue carrying a type, priority, milestone, assignee and exactly one project. These pages hold progress and links only — no ticket detail.
 
-**Overall:** `███████████░░░░░░░░░░░░░` 53/118  ·  53 closed, 65 open, 118 tickets
+**Overall:** `████████████░░░░░░░░░░░░` 55/118  ·  55 closed, 63 open, 118 tickets
 
 | Phase | Progress | Issues | Local page | Milestone |
 |---|---|---|---|---|
@@ -15,7 +15,7 @@
 | Phase 7 — Local models are not free | `██████████████████` 6/6 | 6 | [page](phase-07-local-cost-and-settings/INDEX.md) | [milestone 7](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/7) |
 | Phase 8 — Bandwidth estimation | `██████████████████` 14/14 | 14 | [page](phase-08-bandwidth/INDEX.md) | [milestone 8](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/8) |
 | Phase 9 — Agent & section observability | `████████░░░░░░░░░░` 4/9 | 9 | [page](phase-09-insights/INDEX.md) | [milestone 9](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/9) |
-| Phase 10 — Agent & session observability | `████░░░░░░░░░░░░░░` 4/17 | 17 | — | [milestone 10](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/10) |
+| Phase 10 — Agent & session observability | `██████░░░░░░░░░░░░` 6/17 | 17 | — | [milestone 10](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/10) |
 | Phase 11 — Settings & customization | `░░░░░░░░░░░░░░░░░░` 0/2 | 2 | — | [milestone 11](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/11) |
 | Phase 12 — Market data: OpenRouter rankings | `░░░░░░░░░░░░░░░░░░` 0/1 | 1 | — | [milestone 12](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/12) |
 | Phase 13 — Provider quota tab | `░░░░░░░░░░░░░░░░░░` 0/1 | 1 | — | [milestone 13](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/13) |
