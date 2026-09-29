@@ -883,6 +883,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
+ .kdelta{font-weight:600;white-space:nowrap;margin-left:.35em}
 
 /* #11: radial KPI rings — compact, no-needle variant of the gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the
@@ -1323,6 +1324,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <button type="button" id="rangetoggle" class="chip" style="display:none" aria-expanded="false" aria-controls="rangebar"></button>
   <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
   <span class="flex gap-1.5 ml-1" id="presets"></span>
+  <!-- P10-11 (#99): Compare mode. Splits the current selection into "this
+       period" vs "the previous period of equal length". KPI cards, tables,
+       and charts read compareDelta()/COMPARE_ON, never a second query. -->
+  <label class="chip flex items-center gap-1.5" style="cursor:pointer" title="Compare this period to the equal-length period immediately before it">
+   <input type="checkbox" id="comparetoggle" style="margin:0">Compare
+  </label>
   <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
  </div>
 
@@ -2265,6 +2272,7 @@ const emptyHTML = (icon, msg, hint) =>
 
 let charts = [], current = null;
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
+let COMPARE_ON = false;
 Chart.defaults.font.size = 10; readTheme();
 const noLeg = {plugins:{legend:{display:false}}};
 
@@ -2675,6 +2683,55 @@ function renderAlerts(alerts){
     </div>`).join('');
 }
 
+// P10-11 (#99): Compare mode. Pure delta math, zero DOM — testable in
+// isolation and reused by KPI cards, tables, and chart overlays alike.
+// `good` says which DIRECTION is an improvement for this metric: 'up'
+// for calls/sessions/cache-hit-rate/success-rate, 'down' for cost/
+// failures/bandwidth. It is a property of the metric, defined once here,
+// never re-decided per call site.
+const METRIC_GOOD = {
+  calls: 'up', tokens: 'up', sessions: 'up', cache_rate: 'up', success_rate: 'up',
+  cost: 'down', failures: 'down', bandwidth: 'down', wasted_hours: 'down',
+};
+
+function compareDelta(curr, prev, metricKey){
+  // Negative control the ticket asks for by name: an empty/zero previous
+  // period must render "n/a", never Infinity% or NaN.
+  if (prev === null || prev === undefined || !isFinite(prev) || prev === 0
+      || curr === null || curr === undefined || !isFinite(curr)) {
+    return { abs: null, pct: null, dir: null, good: null, na: true };
+  }
+  const abs = curr - prev;
+  const pct = (abs / Math.abs(prev)) * 100;
+  const dir = abs > 0 ? 'up' : abs < 0 ? 'down' : 'flat';
+  const goodDir = METRIC_GOOD[metricKey] || 'up';
+  // 'flat' (abs===0) is never colored good or bad -- it's simply unchanged.
+  const good = dir === 'flat' ? null : (dir === goodDir);
+  return { abs, pct, dir, good, na: false };
+}
+
+function deltaHtml(delta){
+  if (!delta || delta.na) return '<span class="muted kdelta">n/a</span>';
+  if (delta.dir === 'flat') return '<span class="muted kdelta">&#8212; 0%</span>';
+  const arrow = delta.dir === 'up' ? '&#9650;' : '&#9660;';
+  const color = delta.good === null ? 'var(--muted-foreground)' : (delta.good ? '#22c55e' : '#ef4444');
+  const pctStr = isFinite(delta.pct) ? Math.abs(delta.pct).toFixed(1) : '?';
+  return `<span class="kdelta" style="color:${color}">${arrow} ${pctStr}%</span>`;
+}
+
+// Given a from/to range (YYYY-MM-DD strings), returns the immediately
+// preceding range of EQUAL length in days (inclusive on both ends, same
+// convention as the date inputs themselves).
+function previousPeriod(from, to){
+  if (!from || !to) return null;
+  const f = new Date(from + 'T00:00:00Z'), t = new Date(to + 'T00:00:00Z');
+  const spanDays = Math.round((t - f) / 86400000) + 1;
+  const prevTo = new Date(f.getTime() - 86400000);
+  const prevFrom = new Date(prevTo.getTime() - (spanDays - 1) * 86400000);
+  const iso = d => d.toISOString().slice(0, 10);
+  return { from: iso(prevFrom), to: iso(prevTo) };
+}
+
 function render(){
   const p = DATA.profiles[current];
   renderAlerts(p.alerts);
@@ -2692,6 +2749,21 @@ function render(){
     : dateRows;
   const hours = p.hours.filter(h=>inR(h.date));
   const sess  = p.sessions.filter(s=>inR(s.date));
+  // P10-11 (#99): Compare mode reads the SAME already-shipped `p.rows` —
+  // no payload change, just a second client-side filter over the equal-
+  // length period immediately before the current selection.
+  let prevRows = [], prevSess = [], prevHealth = [];
+  if (COMPARE_ON){
+    const prevRange = previousPeriod(from, to);
+    if (prevRange){
+      const prevInR = d => d && d >= prevRange.from && d <= prevRange.to;
+      const prevDateRows = p.rows.filter(r => prevInR(r.date));
+      prevRows = PROJECT_FILTER
+        ? prevDateRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER)
+        : prevDateRows;
+      prevSess = p.sessions.filter(s => prevInR(s.date));
+    }
+  }
   charts.forEach(c=>c.destroy()); charts=[];
   // Profile chip styling (size, hue) is owned entirely by tabs() (#121) — it
   // sets the on/off style inline per-profile. Re-styling [data-tab] here with
@@ -2737,18 +2809,18 @@ function render(){
   const tokSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0));
 
   $('kpis').innerHTML=[
-    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC)],
-    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1])],
+    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC),null,COMPARE_ON?compareDelta(calls, prevRows.reduce((s,r)=>s+r.calls,0), 'calls'):null],
+    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1]),null,COMPARE_ON?compareDelta(tok, prevRows.reduce((s,r)=>s+r.inp+r.outp,0), 'tokens'):null],
     ['Cache hit rate',null,null,radialRing(cacheRate,{label:'Cache hit rate',warnAt:60,badAt:30})],
-    ['Sessions',nsess.toLocaleString()],
+    ['Sessions',nsess.toLocaleString(),null,null,COMPARE_ON?compareDelta(nsess, prevSess.reduce((s,r)=>s+r.sessions,0), 'sessions'):null],
     ['Success rate',null,null,radialRing(srate,{label:'Success rate',warnAt:95,badAt:80})],
     ['In progress',liveDot],
-    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':'')]]
-    .map(([l,v,spark,ring])=>{
+    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),null,null,COMPARE_ON?compareDelta(market, prevRows.reduce((s,r)=>s+(r.market_value_usd||0),0), 'cost'):null]]
+    .map(([l,v,spark,ring,delta])=>{
       if (ring) return `<div class="card p-2.5 kpi-ring"><div class="kringwrap">${ring}</div>
         <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`;
       return `<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`;
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}${delta?` ${deltaHtml(delta)}`:''}</div></div>`;
     }).join('');
 
   // Live data is independent of the date filter — render it before the early
@@ -7165,6 +7237,14 @@ async function doRefresh(silent){
   }
 }
 $('refresh').onclick = () => doRefresh(false);
+
+// P10-11 (#99): Compare mode toggle -- checked state persists across a
+// session (not across reloads; a stale compare-on with a fresh page load
+// reading old data would be confusing), same as $('theme').
+$('comparetoggle').onclick = () => {
+  COMPARE_ON = $('comparetoggle').checked;
+  render();
+};
 
 // ---- fast live polling -------------------------------------------------
 // Live data is the one thing that is genuinely "now", so it gets its own tiny
