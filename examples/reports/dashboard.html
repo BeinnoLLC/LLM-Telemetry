@@ -1645,6 +1645,24 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <div id="projdistlegend" class="flex flex-wrap gap-1.5 mt-2"></div>
     <div id="projdistempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
    </div>
+
+   <!-- P4-10 (#47): project burn trend, beneath distribution. Same card
+        family; one series per project over the selected range, driven by
+        the P4-08 weighting so it agrees with the matrix/provider charts
+        about its unit. -->
+   <div id="projtrendcard" class="mt-4 pt-4" style="border-top:1px solid var(--border)">
+    <div class="lbl mb-2.5 flex items-center justify-between">
+     <span>Project trend
+      <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— burn over time</span>
+     </span>
+     <label class="inline-flex items-center gap-1.5 text-[length:var(--fs-xs)] muted normal-case tracking-normal">
+      <input type="checkbox" id="projtrendstack"> stacked share of total
+     </label>
+    </div>
+    <div style="height:clamp(200px, 32vw, 420px)"><canvas id="cProjTrend"></canvas></div>
+    <div id="projtrendlegend" class="flex flex-wrap gap-1.5 mt-2"></div>
+    <div id="projtrendempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+   </div>
   </div>
  </div>
 
@@ -2515,6 +2533,7 @@ function render(){
   renderProjects(dateRows, null, null);
   renderProjectMatrix(dateRows);
   renderProjectDistribution(dateRows);
+  renderProjectTrend(dateRows);
   if ($('projweightnote')){
     const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
     $('projweightnote').textContent = `Showing ${wl.axis.toLowerCase()}. `
@@ -3669,6 +3688,127 @@ function renderProjDistLegend(datasets){
   el.querySelectorAll('.proj-legend-item').forEach(btn => {
     btn.onclick = () => {
       const chart = Chart.getChart($('cProjDist'));
+      if (!chart) return;
+      const idx = +btn.dataset.idx;
+      chart.setDatasetVisibility(idx, !chart.isDatasetVisible(idx));
+      chart.update();
+      btn.setAttribute('aria-pressed', String(chart.isDatasetVisible(idx)));
+    };
+    btn.setAttribute('aria-pressed', 'true');
+  });
+}
+
+// P4-10 (#47): one line/area series per project over the selected range,
+// driven by the SAME weightValue() as the matrix (P4-05) and provider bars
+// (P4-06) via PROJ_WEIGHT (P4-08) — the trend can't disagree with the
+// other two charts about its unit because it calls the identical function.
+const PROJ_TREND_TOP_N = 6;
+let projTrendStacked = false;
+
+function renderProjectTrend(rows){
+  const card = $('projtrendcard'), empty = $('projtrendempty');
+  if (!card) return;
+  if (!rows || !rows.length){
+    const el = $('cProjTrend');
+    const prev = el && (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+    if (prev) { try { prev.destroy(); } catch(_){} }
+    if ($('projtrendlegend')) $('projtrendlegend').innerHTML = '';
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
+
+  // date -> project -> [rows]. No hardcoded project/date list; both axes
+  // come entirely from the row set, same discipline as the matrix.
+  const days = [...new Set(rows.map(r => r.date))].sort();
+  const byProjDate = new Map();
+  const projTotals = new Map();
+  rows.forEach(r => {
+    const proj = r.project || 'Unattributed';
+    if (!byProjDate.has(proj)) byProjDate.set(proj, new Map());
+    const byDate = byProjDate.get(proj);
+    if (!byDate.has(r.date)) byDate.set(r.date, []);
+    byDate.get(r.date).push(r);
+  });
+  byProjDate.forEach((byDate, proj) => {
+    projTotals.set(proj, weightValue([...byDate.values()].flat()));
+  });
+
+  // Top-N cap by TOTAL weight over the range, rest folded into an explicit
+  // "Other" series rather than silently dropped — 12+ series is an
+  // unreadable chart (the ticket's own explicit reasoning), but every
+  // project must still be represented somewhere in the total.
+  const allProjects = [...byProjDate.keys()].sort((a, b) => {
+    if (a === 'Unattributed') return 1;
+    if (b === 'Unattributed') return -1;
+    return projTotals.get(b) - projTotals.get(a);
+  });
+  const shown = allProjects.slice(0, PROJ_TREND_TOP_N);
+  const rest = allProjects.slice(PROJ_TREND_TOP_N);
+
+  function seriesFor(proj){
+    return days.map(d => weightValue(byProjDate.get(proj).get(d) || []));
+  }
+
+  // colorOf() is keyed for MODEL names elsewhere in the dashboard; reusing
+  // it here for project names still yields a stable, distinct hue per
+  // label (it hashes the string), which is all a project-trend legend
+  // needs — no second color system invented.
+  const colorForProject = proj => proj === 'Unattributed' ? MU : colorOf(proj);
+
+  const rawSeries = shown.map(proj => ({ label: proj, data: seriesFor(proj), color: colorForProject(proj) }));
+  if (rest.length){
+    const restData = days.map(d => weightValue(rest.flatMap(p => byProjDate.get(p).get(d) || [])));
+    rawSeries.push({ label: `Other (+${rest.length})`, data: restData, color: MU });
+  }
+
+  // Stacked mode: each day's series becomes a % share of that day's total
+  // across ALL shown+Other series (not the global grand total), so a
+  // sparse early day still reads as "100% of what happened that day".
+  const dayTotals = days.map((_, i) => rawSeries.reduce((s, ser) => s + ser.data[i], 0));
+  const datasets = rawSeries.map(ser => ({
+    label: ser.label,
+    data: projTrendStacked
+      ? ser.data.map((v, i) => dayTotals[i] > 0 ? (100 * v / dayTotals[i]) : 0)
+      : ser.data,
+    borderColor: ser.color,
+    backgroundColor: ser.color + (projTrendStacked ? '' : '33'),
+    fill: projTrendStacked ? true : 'origin',
+    stack: projTrendStacked ? 'proj' : undefined,
+    tension: 0.25,
+    pointRadius: 0,
+    borderWidth: 1.5,
+  }));
+
+  mk('cProjTrend', 'line', days, datasets, {
+    plugins: {
+      legend: { display: false }, // custom keyboard-operable legend below, same pattern as P4-06
+    },
+    scales: {
+      x: {stacked: projTrendStacked, grid: {display: false}},
+      y: {stacked: projTrendStacked, grid: {color: BD}, beginAtZero: true,
+          max: projTrendStacked ? 100 : undefined,
+          title: {display: true, text: projTrendStacked ? '% of day total' : wl.axis, color: MU, font: {size: 10}}},
+    },
+  });
+
+  renderProjTrendLegend(datasets);
+}
+
+function renderProjTrendLegend(datasets){
+  const el = $('projtrendlegend');
+  if (!el) return;
+  el.innerHTML = datasets.map((d, i) =>
+    `<button type="button" class="proj-legend-item inline-flex items-center gap-1.5 px-2 py-1 rounded text-[length:var(--fs-xs)]"
+       data-idx="${i}" style="border:1px solid ${BD}">
+      <span style="width:8px;height:8px;border-radius:2px;background:${d.borderColor};display:inline-block"></span>
+      ${esc(d.label)}
+     </button>`).join('');
+  el.querySelectorAll('.proj-legend-item').forEach(btn => {
+    btn.onclick = () => {
+      const chart = Chart.getChart($('cProjTrend'));
       if (!chart) return;
       const idx = +btn.dataset.idx;
       chart.setDatasetVisibility(idx, !chart.isDatasetVisible(idx));
@@ -6322,6 +6462,10 @@ if ($('projexclude')) $('projexclude').onchange = render;
 // chart via the shared module-scope flag + a full render().
 if ($('projdistnorm')) $('projdistnorm').onchange = function(){
   projDistNormalized = this.checked;
+  render();
+};
+if ($('projtrendstack')) $('projtrendstack').onchange = function(){
+  projTrendStacked = this.checked;
   render();
 };
 
