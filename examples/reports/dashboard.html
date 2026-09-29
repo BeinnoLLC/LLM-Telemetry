@@ -940,7 +940,55 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    :root{--fs:14px;--gap:12px;--pad:12px}
    .hide-mobile{display:none}
    .page-title{font-size:var(--fs-lg) !important}
+
+   /* #13: header collapses to one row — hamburger, title, overflow controls
+      wrap onto their own line only if the viewport is truly too narrow for
+      all of refresh/theme/sound/help, instead of the desktop's baseline-
+      aligned two-block layout fighting for the same row. */
+   .page > .flex.items-end.justify-between{align-items:center}
+   .page > .flex.items-end.justify-between > .flex.items-center.gap-2{min-width:0;flex:1 1 auto}
+   .page-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+   .page > .flex.items-end.justify-between > div > .muted.flex{flex-wrap:wrap}
+
+   /* Every chip/button is a tap target: 44x44 minimum (#13). */
+   .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
+     display:inline-flex;align-items:center;justify-content:center}
+   #navtoggle{padding:0;width:44px}
+   #theme,#soundtoggle,#helpbtn{padding:0}
+
+   /* Date range collapses to a single active-preset chip; tapping it reveals
+      the two date inputs + full preset row beneath instead of all of them
+      fighting for one line (avoids the desktop row overflowing at 360px). */
+   #rangebar{flex-direction:column;align-items:stretch !important}
+   #rangebar > .lbl{display:none}
+   #rangebar input[type=date]{flex:1;min-width:0}
+   #rangebar:not(.rangeopen) input[type=date],
+   #rangebar:not(.rangeopen) > span.muted:not(#rangeinfo){display:none}
+   #rangebar #presets{flex-wrap:wrap;width:100%}
+   #rangebar:not(.rangeopen) #presets{display:none}
+   #rangebar #rangeinfo{margin-left:0;width:100%;order:-1}
+   #rangetoggle{display:flex !important}
+
+   /* KPI strip: 2 columns, 1 below 400px (separate query further down). */
+   .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+   /* Live session rows: stack meta under the title instead of a side-by-side
+      row that has no room left once the gauge and tool chips are in it. */
+   .livegrid{grid-template-columns:minmax(0,1fr)}
+   #livelist .liverow{flex-direction:column;align-items:flex-start;gap:6px}
+   #livelist .liverow .metacol{width:100%}
+   #livelist .liverow .loecol{align-self:flex-end}
+
+   /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
+      310px plus card padding overflows a 360px viewport (#13). */
+   .olgrid{grid-template-columns:1fr}
  }
+ @media(max-width:400px){
+   /* KPI strip: down to a single column once 2-up gets too cramped for the
+      ring/sparkline cards to stay legible. */
+   .grid-kpi{grid-template-columns:1fr}
+ }
+
  /* Tablet */
  @media(min-width:641px) and (max-width:1024px){
    :root{--fs:14px;--gap:14px;--pad:16px}
@@ -1011,8 +1059,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
  </div>
 
- <div class="card p-3 flex items-center gap-2 flex-wrap">
+ <div class="card p-3 flex items-center gap-2 flex-wrap" id="rangebar">
   <span class="lbl">Range</span>
+  <!-- #13: on mobile this chip is the only thing visible until tapped; it
+       shows the active preset so the collapsed state still says something,
+       then reveals the date inputs + preset row beneath it. Desktop ignores
+       it entirely (display:none outside the mobile media query). -->
+  <button type="button" id="rangetoggle" class="chip" style="display:none" aria-expanded="false" aria-controls="rangebar"></button>
   <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
   <span class="flex gap-1.5 ml-1" id="presets"></span>
   <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
@@ -1679,7 +1732,23 @@ const bounds = p => {
   const ds = [...new Set(p.rows.map(r=>r.date).filter(Boolean))].sort();
   return [ds[0]||'', ds[ds.length-1]||''];
 };
-function setRange(from,to){ $('from').value=from; $('to').value=to; render(); }
+function setRange(from,to){ $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
+
+// #13: mobile-only collapsed range chip. Desktop never toggles .rangeopen
+// (the toggle button stays display:none outside the mobile media query), so
+// this is a no-op cost on every other viewport.
+function updateRangeToggleLabel(){
+  const rt = $('rangetoggle'); if (!rt) return;
+  const from = $('from').value, to = $('to').value;
+  rt.textContent = from && to ? (from === to ? from : `${from} → ${to}`) : 'Range';
+}
+(function initRangeToggle(){
+  const rt = $('rangetoggle'), rb = $('rangebar'); if (!rt || !rb) return;
+  rt.onclick = () => {
+    const open = rb.classList.toggle('rangeopen');
+    rt.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+})();
 
 function presets(p){
   const [lo,hi] = bounds(p);
@@ -1689,6 +1758,7 @@ function presets(p){
   $('presets').innerHTML = defs.map(([l],i)=>`<span class="chip" data-p="${i}">${l}</span>`).join('');
   $('presets').querySelectorAll('[data-p]').forEach((el,i)=>
     el.onclick = () => { const [a,b]=defs[i][1](); setRange(a,b); });
+  updateRangeToggleLabel();
 }
 
 // Shared chart factory: used by render() and renderLive(), so it must live at
@@ -2825,7 +2895,7 @@ function renderLive(){
       const mcol = colorOf(short(L.model));
       const tools = (L.tools||[]).slice(0,5).map(t=>
         `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
-      return `<div class="flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
+      return `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
         <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${esc(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
