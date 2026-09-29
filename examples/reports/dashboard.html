@@ -917,6 +917,54 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    border:1px solid var(--border);color:var(--muted);background:transparent}
  .dtab:hover{color:var(--fg);border-color:var(--accent)}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
+   (this is one session's whole conversation, not a cross-session tail). */
+#tscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#tscrim.open{opacity:1;pointer-events:auto}
+#tmodal{position:fixed;top:50%;left:50%;z-index:80;
+  width:min(760px,94vw);max-height:min(82vh,720px);
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
+  transition:transform .16s ease,opacity .16s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#tmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.thead{display:flex;align-items:center;gap:8px;padding:12px 15px;
+  border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
+.thead #ttitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#tbody{overflow-y:auto;flex:1;padding:12px 15px;display:flex;flex-direction:column;gap:9px}
+/* Roles read as distinct shapes/colours, not just a label — matters most on
+   a long scroll where you're pattern-matching, not reading every label. */
+.tmsg{display:flex;flex-direction:column;gap:3px;max-width:88%;
+  padding:8px 11px;border-radius:9px;font-size:var(--fs-sm);line-height:1.5;
+  word-break:break-word;white-space:pre-wrap}
+.tmsg .trole{font-size:var(--fs-xs);font-weight:650;opacity:.75;text-transform:uppercase;
+  letter-spacing:.03em}
+.tmsg.role-user{align-self:flex-end;background:color-mix(in srgb,var(--accent) 20%,var(--card));
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.tmsg.role-assistant{align-self:flex-start;background:var(--bg);border:1px solid var(--border)}
+.tmsg.role-tool{align-self:flex-start;max-width:96%;background:transparent;
+  border:1px dashed var(--border);color:var(--muted)}
+.tmsg pre{margin:4px 0 0;padding:8px 10px;background:color-mix(in srgb,var(--fg) 6%,transparent);
+  border-radius:6px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:var(--fs-xs);white-space:pre}
+.tmsg img.timg{max-width:100%;max-height:280px;border-radius:6px;margin-top:4px;display:block}
+.tmsg img.timg.tbroken{display:none}
+.tmsg a{color:var(--accent);text-decoration:underline}
+.tmsg .ttoolcall{font-size:var(--fs-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  opacity:.85;margin-top:2px}
+#tempty{padding:var(--sp-6) var(--sp-4)}
+.ttitlebtn{background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;
+  cursor:pointer;text-align:left;text-decoration:none}
+.ttitlebtn:hover{text-decoration:underline;color:var(--accent)}
+@media(max-width:640px){
+  #tmodal{width:100vw;max-height:100vh;height:100vh;max-height:100dvh;height:100dvh;top:0;left:0;border-radius:0;
+    transform:translate(0,8px) scale(1)}
+  #tmodal.open{transform:translate(0,0) scale(1)}
+  .tmsg{max-width:96%}
+}
  /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
     comfortable on a 1440px screen but eats half a portrait tablet. */
  @media(min-width:641px) and (max-width:1024px){
@@ -1540,6 +1588,21 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <span class="muted" id="dcount">—</span>
   <span class="muted">summary · refreshes every 5s</span>
  </div>
+</div>
+
+<!-- #79/P9-02: read-only transcript preview modal. Deliberately NOT the
+     drawer above — that is a cross-session tail of recent events, this is
+     one session's own conversation, opened from that session's own title.
+     No inputs anywhere; the whole point is that it cannot be mistaken for
+     a live chat interface. -->
+<div id="tscrim"></div>
+<div id="tmodal" role="dialog" aria-modal="true" aria-label="Session transcript" aria-hidden="true">
+ <div class="thead">
+  <b id="ttitle" style="font-size:var(--fs-md)"></b>
+  <span class="muted" id="tsub" style="font-size:var(--fs-xs)"></span>
+  <button id="tclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+ </div>
+ <div id="tbody" tabindex="-1"></div>
 </div>
 
 <button id="logbtn" title="Open live logs (L)">
@@ -2974,7 +3037,7 @@ function renderLive(){
         <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${esc(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${esc(L.title)}">${esc(L.title)}</span>
+            <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${esc(L.id)}" data-tprofile="${esc(L.profile||'')}" title="${esc(L.title)} — open transcript">${esc(L.title)}</button>
             <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${L.category}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
             ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
@@ -5749,8 +5812,142 @@ async function pollLive(){
     liveBusy = false;
   }
 }
+// #79/P9-02: read-only transcript preview. Content is untrusted DB text —
+// everything is escaped first, then specific safe affordances (links, code
+// fences, data:image URIs) are opted into on the escaped string. Nothing
+// here ever does innerHTML on raw model output.
+let tOpen = false, tFocusReturn = null;
+const TCACHE = {}; // profile -> {sessionId: [messages]}, refetched per open
+
+function tEscape(s){ return esc(String(s == null ? '' : s)); }
+
+// Fenced code blocks first (so their contents are never re-processed by the
+// link/image passes below), then bare http(s) links, then a bare
+// data:image URI on its own line becomes an <img> with error->placeholder
+// fallback. Everything is operating on ALREADY-ESCAPED text, so a literal
+// `<script>` in the source can only ever read as text, never execute.
+function tRenderContent(raw){
+  const text = tEscape(raw);
+  const parts = text.split(/```([\s\S]*?)```/g);
+  let out = '';
+  parts.forEach((part, i) => {
+    if (i % 2 === 1){
+      out += `<pre>${part}</pre>`;
+      return;
+    }
+    let seg = part
+      .replace(/(https?:\/\/[^\s<]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/(data:image\/[a-zA-Z+]+;base64,[A-Za-z0-9+/=]+)/g,
+        '<img class="timg" src="$1" alt="attached image" ' +
+        'onerror="this.classList.add(\'tbroken\');this.insertAdjacentHTML(' +
+        '\'afterend\',\'&lt;broken image&gt;\')">');
+    out += seg;
+  });
+  return out;
+}
+
+function tRenderMsg(m){
+  const role = ['user','assistant','tool'].includes(m.role) ? m.role : 'assistant';
+  const when = m.ts ? new Date(m.ts * 1000).toLocaleTimeString() : '';
+  let body = tRenderContent(m.content);
+  if (m.tool_calls){
+    const names = (Array.isArray(m.tool_calls) ? m.tool_calls : [])
+      .map(c => c && (c.name || (c.function && c.function.name))).filter(Boolean);
+    // tool_calls carries ~550-byte JSON with empty content — without this,
+    // that message renders as a blank bubble with nothing in it.
+    body += `<div class="ttoolcall">&#8594; ${tEscape(names.length ? names.join(', ') : (m.tool_name || 'tool call'))}</div>`;
+  } else if (!m.content && m.tool_name){
+    body = `<div class="ttoolcall">&#8594; ${tEscape(m.tool_name)} result</div>`;
+  }
+  return `<div class="tmsg role-${role}"><span class="trole">${role}${when ? ' · ' + when : ''}</span>${body}</div>`;
+}
+
+async function tOpenModal(sessionId, profile, titleText){
+  const scrim = $('tscrim'), modal = $('tmodal'), body = $('tbody');
+  const ttitle = $('ttitle'), tsub = $('tsub');
+  if (!scrim || !modal || !body) return;
+  tFocusReturn = document.activeElement;
+  ttitle.textContent = titleText || sessionId;
+  tsub.textContent = 'loading…';
+  body.innerHTML = '';
+  scrim.classList.add('open'); modal.classList.add('open');
+  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
+  tOpen = true;
+  document.addEventListener('keydown', tKeydown, true);
+  try {
+    if (!TCACHE[profile]) TCACHE[profile] = {};
+    // Fetched on demand, once per open — NOT folded into the 5s live poll,
+    // so a 200-message render never blocks that poll's own cadence.
+    const r = await fetch('transcripts.json?t=' + Date.now(), {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const fresh = await r.json();
+    const msgs = (fresh.profiles && fresh.profiles[profile] && fresh.profiles[profile][sessionId]) || [];
+    if (!msgs.length){
+      body.innerHTML = emptyHTML('○', 'No recent messages captured for this session yet.',
+        'The transcript window refreshes with the collector cycle.');
+      tsub.textContent = '';
+    } else {
+      // Render nodes are capped at the collector's own WINDOW (currently
+      // 200) — the payload itself is already bounded, so no extra
+      // virtualisation is needed to keep this from freezing the page.
+      body.innerHTML = msgs.map(tRenderMsg).join('');
+      tsub.textContent = `${msgs.length} messages · most recent tail`;
+      body.scrollTop = body.scrollHeight;
+    }
+  } catch (e){
+    body.innerHTML = emptyHTML('!', 'Could not load this transcript.', e.message);
+    tsub.textContent = '';
+  }
+  modal.focus();
+}
+
+function tCloseModal(){
+  if (!tOpen) return;
+  tOpen = false;
+  $('tscrim')?.classList.remove('open');
+  $('tmodal')?.classList.remove('open');
+  $('tscrim')?.setAttribute('aria-hidden','true');
+  $('tmodal')?.setAttribute('aria-hidden','true');
+  document.removeEventListener('keydown', tKeydown, true);
+  // Focus goes back to the title button that opened it, not lost to <body>.
+  tFocusReturn?.focus?.();
+  tFocusReturn = null;
+}
+
+function tKeydown(e){
+  if (e.key === 'Escape'){ e.preventDefault(); tCloseModal(); return; }
+  // Trap focus inside the modal while open — Tab/Shift+Tab never escape to
+  // the page behind the scrim.
+  if (e.key === 'Tab'){
+    const modal = $('tmodal');
+    if (!modal) return;
+    const focusables = [...modal.querySelectorAll('a[href],button')]
+      .filter(el => el.offsetParent !== null);
+    if (!focusables.length) return;
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  }
+}
+
+function installTranscriptModal(){
+  document.addEventListener('click', e => {
+    const btn = e.target.closest?.('.ttitlebtn');
+    if (btn){
+      tOpenModal(btn.dataset.tsession, btn.dataset.tprofile, btn.textContent.trim());
+    }
+  });
+  $('tclose')?.addEventListener('click', tCloseModal);
+  $('tscrim')?.addEventListener('click', tCloseModal);
+}
+
 setInterval(pollLive, LIVE_MS);
 installDrawer();
+installTranscriptModal();
 soundToggleInstall();
 settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick

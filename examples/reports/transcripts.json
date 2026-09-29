@@ -1,0 +1,22 @@
+{
+  "sample": true,
+  "generated": "2026-09-25T13:51:09",
+  "window": 200,
+  "profiles": {
+    "work": {
+      "sess_36533392": [
+        {"id": 1, "role": "user", "content": "Can you look at the billing parser? It's throwing on negative amounts.", "ts": 1758800000},
+        {"id": 2, "role": "assistant", "content": "Sure — checking `parse_line_item` for a sign-handling bug. See https://github.com/example/repo/blob/main/billing.py for context.", "ts": 1758800005},
+        {"id": 3, "role": "tool", "content": "", "tool_name": "grep", "ts": 1758800006},
+        {"id": 4, "role": "assistant", "content": "Found it:\n```\nif amount < 0:\n    raise ValueError\n```\nThat's rejecting legitimate refund lines. Removing the guard and adding a signed-amount test instead.", "ts": 1758800012},
+        {"id": 5, "role": "tool", "content": "", "tool_calls": [{"name": "patch"}], "ts": 1758800013},
+        {"id": 6, "role": "user", "content": "Good catch, go ahead.", "ts": 1758800030}
+      ],
+      "sess_2175908": [
+        {"id": 1, "role": "user", "content": "Mobile client is dropping the auth token on background/foreground. Reproduce and fix.", "ts": 1758800100},
+        {"id": 2, "role": "assistant", "content": "Reproduced — the token is held in memory only, so a background suspend clears it. Moving it to secure storage.", "ts": 1758800110},
+        {"id": 3, "role": "tool", "content": "", "tool_name": "execute_code", "ts": 1758800115}
+      ]
+    }
+  }
+}

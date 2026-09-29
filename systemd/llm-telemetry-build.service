@@ -5,3 +5,4 @@ Description=Rebuild the LLM telemetry dashboard
 Type=oneshot
 ExecStart=%h/.local/bin/llm-telemetry dashboard
 ExecStart=%h/.local/bin/llm-telemetry costs
+ExecStart=%h/.local/bin/llm-telemetry transcripts

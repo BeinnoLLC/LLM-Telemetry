@@ -74,6 +74,7 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 |---|---|
 | `llm-telemetry collect` | Write `analytics-data.json` from the agent DBs |
 | `llm-telemetry live` | Write `live-data.json` (fast, for polling) |
+| `llm-telemetry transcripts` | Write `transcripts.json` — windowed per-session chat for the transcript modal (#79) |
 | `llm-telemetry probe` | Probe inference hosts → `ollama-data.json` |
 | `llm-telemetry dashboard` | Collect + render `dashboard.html` |
 | `llm-telemetry costs` | Render the per-1M rate reference page |

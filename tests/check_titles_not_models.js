@@ -92,7 +92,7 @@ setTimeout(() => {
     const rows = [...d.querySelectorAll('#livelist > div')];
     const row1 = rows.find(r => r.textContent.includes('Refactor the billing parser'));
     chk(!!row1, '"In progress now" row shows the session title');
-    const titleEl = [...row1.querySelectorAll('span')].find(s => s.textContent === 'Refactor the billing parser');
+    const titleEl = [...row1.querySelectorAll('span,button')].find(s => s.textContent === 'Refactor the billing parser');
     chk(!!titleEl, 'the title text is its own element (not buried in a combined string)');
     chk(/text-\[length:var\(--fs-md\)\]/.test(titleEl.className) && /font-semibold/.test(titleEl.className),
         'title is styled as the prominent element', titleEl.className);
