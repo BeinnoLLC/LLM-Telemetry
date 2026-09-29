@@ -4154,6 +4154,12 @@ function renderFlow(rows){
     applyView();
   }
   svg._flowFit = fitView; // exposed for the #flowctl "Fit" button
+  // #111: keyboard-reachable zoom, centred on the SVG's own midpoint (no
+  // cursor/finger position to anchor on from a button click).
+  svg._flowZoom = factor => {
+    const b = svg.getBoundingClientRect();
+    zoomAt(b.left + b.width / 2, b.top + b.height / 2, factor);
+  };
 
   svg.addEventListener('pointerdown', ev => {
     if (drag) return; // a node drag owns this pointer
@@ -4297,9 +4303,12 @@ function flowControls(){
   box.dataset.wired = '1';
   box.innerHTML = [[2,'provider → model'],[3,'+ task']]
     .map(([d,l])=>`<button data-fd="${d}">${l}</button>`).join('') +
-    // #18: reset control for the pinch/pan/drag state — the graph's own
+    // #18/#111: reset control for the pinch/pan/drag state — the graph's own
     // fitView() is stashed on the <svg> element by renderFlow each time it
-    // rebuilds, so this button always calls whatever is current.
+    // rebuilds, so this button always calls whatever is current. +/- give
+    // an accessible, keyboard-reachable equivalent to wheel/pinch zoom.
+    `<button data-flowzoom="out" title="Zoom out">&minus;</button>` +
+    `<button data-flowzoom="in" title="Zoom in">+</button>` +
     `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
   box.querySelectorAll('[data-fd]').forEach(b => {
     b.addEventListener('click', () => {
@@ -4313,6 +4322,11 @@ function flowControls(){
     x.classList.toggle('on', +x.dataset.fd === flowDepth));
   box.querySelector('[data-flowfit]')?.addEventListener('click', () => {
     $('flow')?._flowFit?.();
+  });
+  box.querySelectorAll('[data-flowzoom]').forEach(b => {
+    b.addEventListener('click', () => {
+      $('flow')?._flowZoom?.(b.dataset.flowzoom === 'in' ? 1.4 : 1/1.4);
+    });
   });
 }
 

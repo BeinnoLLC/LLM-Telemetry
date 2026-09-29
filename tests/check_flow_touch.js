@@ -25,6 +25,8 @@ chk(/svg\._flowFit = fitView/.test(html),
     'fitView is exposed on the svg element so the Fit control and double-tap can both call the SAME reset logic');
 chk(/data-flowfit title="Reset pan\/zoom to fit">Fit</.test(html),
     '#flowctl gets a "Fit" button (the ticket\'s explicit requirement)');
+chk(/data-flowzoom="out" title="Zoom out"/.test(html) && /data-flowzoom="in" title="Zoom in"/.test(html),
+    '#111: explicit +/- zoom buttons exist for keyboard/accessibility use, not just wheel/pinch');
 chk(/svg\.addEventListener\('dblclick', \(\) => fitView\(\)\)/.test(html),
     'double-click/double-tap resets to the fitted view');
 chk(/new ResizeObserver\(\(\) => \{/.test(html) && /typeof ResizeObserver !== 'undefined'/.test(html),
@@ -95,6 +97,13 @@ setTimeout(() => {
     // A hit-area circle exists per node, distinct from the visible circle.
     const hitAreas = svg.querySelectorAll('.hitarea');
     chk(hitAreas.length > 0, 'hit-area circles are actually present in the rendered graph', hitAreas.length);
+
+    // #111: the +/- buttons actually change the viewBox too, not just wheel.
+    svg.setAttribute('viewBox', before); // known-good baseline before the click
+    const zoomInBtn = d.querySelector('[data-flowzoom="in"]');
+    chk(!!zoomInBtn, 'the zoom-in button exists in the rendered #flowctl');
+    zoomInBtn.click();
+    chk(svg.getAttribute('viewBox') !== before, 'clicking the zoom-in button changes the viewBox');
   } catch (e) {
     chk(false, 'checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 6).join('\n'));
