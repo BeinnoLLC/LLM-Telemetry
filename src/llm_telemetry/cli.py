@@ -32,6 +32,7 @@ def main():
     sub.add_parser("costs", help="build costs.html (per-1M rate reference)")
     sub.add_parser("live", help="write live-data.json (fast poll feed)")
     sub.add_parser("transcripts", help="write transcripts.json (windowed live-session chat, #79)")
+    sub.add_parser("session-timeline", help="write sessions/<profile>/<id>.json (per-session timeline, #94)")
     sub.add_parser("logs", help="write logs-data.json (full Logs page)")
     sub.add_parser("probe", help="probe inference hosts -> ollama-data.json")
     sub.add_parser("analytics", help="write analytics-data.json only")
@@ -53,6 +54,7 @@ def main():
         "costs": "build_costs",
         "live": "collect_live",
         "transcripts": "collect_transcripts",
+        "session-timeline": "collect_session_timeline",
         "logs": "collect_logs",
         "probe": "probe_hosts",
         "analytics": "collect_analytics",

@@ -964,6 +964,35 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     transform:translate(0,8px) scale(1)}
   #tmodal.open{transform:translate(0,0) scale(1)}
 
+/* P10-06 (#94): session timeline modal. Same scrim/open-class/focus-trap
+   pattern as #tmodal, wider on desktop (needs a horizontal time axis).
+   Opened from a dedicated button, never the SAME click target as the
+   transcript modal — the two answer different questions ("what happened"
+   vs "what was said") and must stay independently reachable. */
+}
+#lnscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#lnscrim.open{opacity:1;pointer-events:auto}
+#lnmodal{position:fixed;top:50%;left:50%;z-index:80;
+  width:min(920px,96vw);max-height:min(82vh,720px);
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
+  transition:transform .16s ease,opacity .16s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+#lnbody{overflow:auto;flex:1;padding:12px 15px}
+.lnlane{display:flex;align-items:center;gap:8px;height:22px;position:relative;margin-bottom:2px}
+.lnlanename{width:88px;flex-shrink:0;font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.lntrack{flex:1;position:relative;height:14px;background:var(--bg);border-radius:3px}
+.lnspan{position:absolute;top:0;height:14px;border-radius:2px;cursor:pointer;min-width:2px}
+.lnspan.lnfail{outline:2px solid #ef4444;outline-offset:-1px}
+.lnspan.lntick{width:3px!important;border-radius:1px}
+#lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
+#lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
+  border-radius:6px;padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own
    360px-viewport acceptance criterion) — same breakpoint convention as
@@ -1842,10 +1871,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="thead">
   <b id="ttitle" style="font-size:var(--fs-md)"></b>
   <span class="muted" id="tsub" style="font-size:var(--fs-xs)"></span>
-  <button id="tclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+  <button id="ttimelinebtn" class="chip lntimelinebtn" style="margin-left:auto" title="View this session's timeline"
+    data-tsession="" data-tprofile="" data-title="">Timeline</button>
+  <button id="tclose" class="chip" title="Close (Esc)">&times;</button>
  </div>
  <div id="tbody" tabindex="-1"></div>
 </div>
+
+<!-- P10-06 (#94): session timeline modal. -->
+<div id="lnscrim"></div>
+<div id="lnmodal" role="dialog" aria-modal="true" aria-label="Session timeline" aria-hidden="true">
+ <div id="lnhdr">
+  <div class="flex items-center gap-2">
+   <b id="lntitle" style="font-size:var(--fs-md)"></b>
+   <span class="muted" id="lnsub"></span>
+   <button id="lnclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+  </div>
+  <div id="lnmeta" class="muted mt-1"></div>
+ </div>
+ <div id="lnbody" tabindex="-1"></div>
+</div>
+<div id="lntip"></div>
 
 <button id="logbtn" title="Open live logs (L)">
  <span style="color:var(--accent)">&#9776;</span> Logs
@@ -4170,6 +4216,7 @@ function renderLive(){
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
             <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${esc(L.id)}" data-tprofile="${esc(L.profile||'')}" title="${esc(L.title)} — open transcript">${esc(L.title)}</button>
+            <button type="button" class="chip lntimelinebtn text-[length:var(--fs-xs)]" data-tsession="${esc(L.id)}" data-tprofile="${esc(L.profile||'')}" data-title="${esc(L.title)}" title="${esc(L.title)} — view timeline">Timeline</button>
             <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${L.category}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
             ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
@@ -4802,7 +4849,7 @@ function renderOutcomes(outcomes){
     ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Ended silently — ${silentN} session(s)</div>` +
       (o.silent || []).slice(0,20).map(s =>
         `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
-          <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
+          <button type="button" class="chip lntimelinebtn truncate flex-1" style="text-align:left" data-tsession="${esc(s.id)}" data-tprofile="${esc(current)}" data-title="${esc(s.title)}" title="${esc(s.title)} — view timeline">${esc(s.title)}</button>
           <span class="muted">${esc(s.source)} \u00b7 ${esc(s.model || '')}</span>
         </div>`).join('')
     : '';
@@ -5737,6 +5784,7 @@ function sesstreeNode(node, depth){
     <span class="muted sesstree-tok">${fmt(node.tok)} tok</span>
     <span class="sesstree-cost">$${(+node.cost || 0).toFixed(4)}${node.cost_is_actual === false ? ' <span class="muted" style="font-size:var(--fs-xs)">(est.)</span>' : ''}${rollup}</span>
     <span class="chip sesstree-endreason${failing ? ' sesstree-endreason-failed' : ''}">${esc(node.end_reason || '(none)')}</span>
+    <button type="button" class="chip lntimelinebtn" data-tsession="${esc(node.id)}" data-tprofile="${esc(current)}" data-title="${esc(node.title)}" title="${esc(node.title)} — view timeline">Timeline</button>
   </div>`;
   if (hasKids && !collapsed) {
     html += `<div class="sesstree-children">` + node.children.map(c => sesstreeNode(c, depth + 1)).join('') + `</div>`;
@@ -7285,6 +7333,8 @@ async function tOpenModal(sessionId, profile, titleText){
   ttitle.textContent = titleText || sessionId;
   tsub.textContent = 'loading…';
   body.innerHTML = '';
+  const tlBtn = $('ttimelinebtn');
+  if (tlBtn){ tlBtn.dataset.tsession = sessionId; tlBtn.dataset.tprofile = profile; tlBtn.dataset.title = titleText || sessionId; }
   scrim.classList.add('open'); modal.classList.add('open');
   scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
   tOpen = true;
@@ -7359,9 +7409,169 @@ function installTranscriptModal(){
   $('tscrim')?.addEventListener('click', tCloseModal);
 }
 
+// P10-06 (#94): session timeline. Fetched on demand from a per-session
+// static file (sessions/<profile>/<id>.json — ADR 0001, same decision
+// #79's windowed transcripts.json already made: a 589-message session is
+// fine to fetch, a 72k-message one would not be, so the collector caps
+// exports and a missing file means "not exported", not an error state
+// the user has to puzzle over).
+const LN_LANES = ['model', 'tool', 'delegation', 'compaction', 'user'];
+const LN_LANE_LABELS = { model: 'Model', tool: 'Tool', delegation: 'Delegation', compaction: 'Compaction', user: 'User' };
+let lnOpen = false, lnFocusReturn = null, lnSpansFlat = [], lnFocusIdx = -1;
+let lnOpenAt = null;   // {session, profile, title} — what Enter hands to the transcript modal
+
+async function lnOpenModal(sessionId, profile, titleText){
+  const scrim = $('lnscrim'), modal = $('lnmodal'), body = $('lnbody');
+  if (!scrim || !modal || !body) return;
+  lnFocusReturn = document.activeElement;
+  $('lntitle').textContent = titleText || sessionId;
+  $('lnsub').textContent = 'loading\u2026';
+  $('lnmeta').textContent = '';
+  body.innerHTML = '';
+  scrim.classList.add('open'); modal.classList.add('open');
+  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
+  lnOpen = true;
+  lnOpenAt = { session: sessionId, profile, title: titleText || sessionId };
+  document.addEventListener('keydown', lnKeydown, true);
+  try {
+    const r = await fetch(`sessions/${encodeURIComponent(profile)}/${encodeURIComponent(sessionId)}.json?t=` + Date.now(), {cache:'no-store'});
+    if (r.status === 404){
+      body.innerHTML = emptyHTML('○', 'This session was not exported.',
+        'Only the most recent sessions in range get a timeline file — older ones say so rather than silently showing nothing.');
+      $('lnsub').textContent = '';
+      modal.focus();
+      return;
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const tl = await r.json();
+    lnRenderTimeline(tl);
+  } catch (e){
+    body.innerHTML = emptyHTML('!', 'Could not load this session timeline.', e.message);
+    $('lnsub').textContent = '';
+  }
+  modal.focus();
+}
+
+function lnRenderTimeline(tl){
+  const body = $('lnbody');
+  $('lntitle').textContent = tl.title || tl.id;
+  $('lnsub').textContent = tl.running ? 'running' : (tl.end_reason || '');
+  const durS = Math.max(1, (tl.axis_end || 0) - (tl.axis_start || 0));
+  $('lnmeta').textContent =
+    `${(tl.models||[]).join(', ') || '(unknown model)'} \u00b7 ` +
+    `${(tl.input_tokens||0).toLocaleString()} in / ${(tl.output_tokens||0).toLocaleString()} out \u00b7 ` +
+    `$${(tl.actual_cost_usd || tl.estimated_cost_usd || 0).toFixed(4)}` +
+    (tl.running ? ' \u00b7 still running' : '');
+
+  const spans = tl.spans || [];
+  lnSpansFlat = spans;
+  lnFocusIdx = -1;
+
+  body.innerHTML = LN_LANES.map(lane => {
+    const laneSpans = spans.filter(s => s.lane === lane);
+    const pxSpans = laneSpans.map((s, i) => {
+      const leftPct = ((s.start - tl.axis_start) / durS) * 100;
+      const widthPct = Math.max(0.3, ((s.end - s.start) / durS) * 100);
+      const isTick = s.start === s.end;
+      const idx = spans.indexOf(s);
+      return `<div class="lnspan${s.failed ? ' lnfail' : ''}${isTick ? ' lntick' : ''}"
+        style="left:${leftPct}%;width:${widthPct}%;background:${lnColorOf(s.color_key)}"
+        data-lnidx="${idx}" data-lnlabel="${esc(s.label)}" data-lnmeta="${esc(JSON.stringify(s.meta||{}))}"
+        tabindex="-1"></div>`;
+    }).join('');
+    return `<div class="lnlane">
+      <div class="lnlanename">${esc(LN_LANE_LABELS[lane])}</div>
+      <div class="lntrack">${pxSpans}</div>
+    </div>`;
+  }).join('');
+}
+
+function lnCloseModal(){
+  if (!lnOpen) return;
+  lnOpen = false;
+  $('lnscrim')?.classList.remove('open');
+  $('lnmodal')?.classList.remove('open');
+  $('lnscrim')?.setAttribute('aria-hidden','true');
+  $('lnmodal')?.setAttribute('aria-hidden','true');
+  $('lntip').style.display = 'none';
+  document.removeEventListener('keydown', lnKeydown, true);
+  lnFocusReturn?.focus?.();
+  lnFocusReturn = null;
+  lnOpenAt = null;
+}
+
+function lnKeydown(e){
+  if (e.key === 'Escape'){ e.preventDefault(); lnCloseModal(); return; }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+    if (!lnSpansFlat.length) return;
+    e.preventDefault();
+    lnFocusIdx = e.key === 'ArrowRight'
+      ? Math.min(lnSpansFlat.length - 1, lnFocusIdx + 1)
+      : Math.max(0, lnFocusIdx - 1);
+    const el = document.querySelector(`#lnbody [data-lnidx="${lnFocusIdx}"]`);
+    el?.focus?.();
+    el?.scrollIntoView?.({block:'nearest', inline:'nearest'});
+  }
+  if (e.key === 'Enter'){
+    // Ticket: Enter opens the transcript modal for this session (#79 has
+    // landed). Opens at the top of that session's transcript — mapping a
+    // span to an exact message index is not reliable (spans aggregate
+    // message runs), so the transcript's own scroll does the finding.
+    if (lnOpenAt && lnOpenAt.session){
+      e.preventDefault();
+      lnCloseModal();
+      tOpenModal(lnOpenAt.session, lnOpenAt.profile || '', lnOpenAt.title || lnOpenAt.session);
+    }
+  }
+}
+
+// Any lane's color_key may be a model name, a tool name, or a delegation
+// child id / "compaction" / "user" sentinel — try the model palette, then
+// the tool palette, then fall back to a stable hash colour so an unknown
+// future value still renders something distinct rather than one flat grey.
+function lnColorOf(key){
+  if (COLORS[key]) return COLORS[key];
+  if (TOOLCOLORS[key]) return TOOLCOLORS[key];
+  if (key === 'compaction') return '#f59e0b';
+  if (key === 'user') return '#64748b';
+  return `hsl(${hashHue(key||'')} 52% 58%)`;
+}
+
+function installTimelineModal(){
+  document.addEventListener('click', e => {
+    const btn = e.target.closest?.('.lntimelinebtn');
+    if (btn){
+      lnOpenModal(btn.dataset.tsession, btn.dataset.tprofile, btn.dataset.title || btn.dataset.tsession);
+      return;
+    }
+    const span = e.target.closest?.('.lnspan');
+    if (span){
+      $('lntip').style.display = 'none';
+      return;
+    }
+  });
+  document.addEventListener('mouseover', e => {
+    const span = e.target.closest?.('.lnspan');
+    const tip = $('lntip');
+    if (!span || !tip) return;
+    const label = span.dataset.lnlabel || '';
+    tip.textContent = label.slice(0, 80);
+    const r = span.getBoundingClientRect();
+    tip.style.left = r.left + 'px';
+    tip.style.top = (r.top - 32) + 'px';
+    tip.style.display = 'block';
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest?.('.lnspan')) $('lntip').style.display = 'none';
+  });
+  $('lnclose')?.addEventListener('click', lnCloseModal);
+  $('lnscrim')?.addEventListener('click', lnCloseModal);
+}
+
 setInterval(pollLive, LIVE_MS);
 installDrawer();
 installTranscriptModal();
+installTimelineModal();
 installProjectDrilldown();
 installProjWeight();
 installProjFilter();
