@@ -625,7 +625,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     so a small velocity-Verlet loop is cheaper than shipping a library. */
  #flowwrap{position:relative;width:100%;height:calc(100vh - 250px);
    height:calc(100dvh - 250px);min-height:460px}
- #flow{width:100%;height:100%;display:block;cursor:grab}
+ #flow{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
  #flow.drag{cursor:grabbing}
  /* Work-proportional glow. --heat (0..1) is sqrt(calls/maxCalls), set per node
     in renderFlow, so the busiest node burns brightest and idle ones stay flat.
@@ -660,6 +660,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     help following one provider's branch. */
  #flow.focus .nd,#flow.focus .lnk{opacity:.13}
  #flow.focus .nd.on,#flow.focus .lnk.on{opacity:1}
+ /* #18: zoomed further out than the initial fit — the graph is now a tangle
+    of overlapping labels, so hide the small/task labels (the tooltip on tap
+    still gives the name) and dim links to cut noise. Model/provider/root
+    labels stay: they carry the graph's structure, not its detail. */
+ #flow.zoomedout .nd.task text{display:none}
+ #flow.zoomedout .lnk{stroke-opacity:.22}
  .flowtip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;
    background:var(--card);border:1px solid var(--border);border-radius:6px;
    padding:7px 10px;font-size:var(--fs-sm);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;
@@ -3701,6 +3707,7 @@ function renderOllama(ol){
 // Colours are NOT new: providers use PROV[], models use colorOf() — the same
 // palette as every other widget, so a model is one colour dashboard-wide.
 let FLOWSIM = null;      // running animation handle, so tab switches can stop it
+let FLOWROWS = null;     // last rows rendered, so a resize can re-render without refetching
 let flowDepth = 3;       // 2 = provider>model, 3 = provider>model>task
 
 function flowData(rows){
@@ -4012,6 +4019,16 @@ function renderFlow(rows){
     c.setAttribute('stroke-width','1.5');
     g.appendChild(c);
 
+    // #18: an invisible hit-area circle padded out to >=24px radius — the
+    // visible circle for a small task node can be a few px, which is too
+    // small to reliably hit with a finger even though a mouse cursor is
+    // precise enough not to need it.
+    const hit = document.createElementNS(NS,'circle');
+    hit.setAttribute('r', Math.max(R(n), 12).toFixed(1));
+    hit.setAttribute('fill', 'transparent');
+    hit.setAttribute('class', 'hitarea');
+    g.appendChild(hit);
+
     // Glow intensity = how much work this node did, as a share of the busiest
     // node. sqrt matches the radius scale, so glow and size tell the same
     // story; a linear ramp would leave everything but the top node dark.
@@ -4100,6 +4117,128 @@ function renderFlow(rows){
   }
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);
+
+  // #18: pan + pinch-zoom via viewBox, independent of node-drag (drag only
+  // starts from a node's own pointerdown, so background pointerdowns are
+  // always free for panning). Two active pointers = pinch; one = pan.
+  const view = { x: 0, y: 0, w: W, h: H }; // current viewBox rect, in SVG units
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+  const active = new Map(); // pointerId -> last client {x,y}
+  let panStart = null, pinchStart = null;
+
+  function applyView(){
+    svg.setAttribute('viewBox', `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}`);
+    // Below ~60% of the fitted scale, the graph is more zoomed-out than its
+    // initial fit — thin the labels so it doesn't turn into a tangle.
+    svg.classList.toggle('zoomedout', view.w > W * 1.4);
+  }
+  function clampView(){
+    // Zoom out capped at 3x the fitted size (nothing new to see past that),
+    // zoom in capped so a pinch cannot shrink the viewBox to nothing.
+    view.w = Math.max(W * 0.15, Math.min(W * 3, view.w));
+    view.h = Math.max(H * 0.15, Math.min(H * 3, view.h));
+  }
+  function zoomAt(clientX, clientY, factor){
+    const b = svg.getBoundingClientRect();
+    // The point under the cursor/pinch-centre, in viewBox units, stays fixed.
+    const px = view.x + (clientX - b.left) / b.width  * view.w;
+    const py = view.y + (clientY - b.top)  / b.height * view.h;
+    view.w /= factor; view.h /= factor;
+    clampView();
+    view.x = px - (clientX - b.left) / b.width  * view.w;
+    view.y = py - (clientY - b.top)  / b.height * view.h;
+    applyView();
+  }
+  function fitView(){
+    view.x = 0; view.y = 0; view.w = W; view.h = H;
+    applyView();
+  }
+  svg._flowFit = fitView; // exposed for the #flowctl "Fit" button
+
+  svg.addEventListener('pointerdown', ev => {
+    if (drag) return; // a node drag owns this pointer
+    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (active.size === 1){
+      panStart = { view: { ...view }, p: { x: ev.clientX, y: ev.clientY } };
+    } else if (active.size === 2){
+      const pts = [...active.values()];
+      pinchStart = {
+        view: { ...view },
+        d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2,
+      };
+      panStart = null;
+    }
+  });
+  svg.addEventListener('pointermove', ev => {
+    if (drag || !active.has(ev.pointerId)) return;
+    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const b = svg.getBoundingClientRect();
+    if (active.size === 2 && pinchStart){
+      const pts = [...active.values()];
+      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      const factor = d / (pinchStart.d || 1);
+      view.w = pinchStart.view.w / factor;
+      view.h = pinchStart.view.h / factor;
+      clampView();
+      const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+      // Two-finger pan happens naturally alongside the pinch: keep the
+      // midpoint under the fingers, not just the zoom centred on itself.
+      const px = pinchStart.view.x + (pinchStart.cx - b.left) / b.width  * pinchStart.view.w;
+      const py = pinchStart.view.y + (pinchStart.cy - b.top)  / b.height * pinchStart.view.h;
+      view.x = px - (cx - b.left) / b.width  * view.w;
+      view.y = py - (cy - b.top)  / b.height * view.h;
+      applyView();
+    } else if (active.size === 1 && panStart){
+      const dx = (ev.clientX - panStart.p.x) / b.width  * panStart.view.w;
+      const dy = (ev.clientY - panStart.p.y) / b.height * panStart.view.h;
+      view.x = panStart.view.x - dx;
+      view.y = panStart.view.y - dy;
+      applyView();
+    }
+  });
+  function endPointer(ev){
+    active.delete(ev.pointerId);
+    if (active.size < 2) pinchStart = null;
+    if (active.size === 1){
+      const [p] = active.values();
+      panStart = { view: { ...view }, p };
+    } else if (active.size === 0) panStart = null;
+  }
+  svg.addEventListener('pointerup', endPointer);
+  svg.addEventListener('pointercancel', endPointer);
+  svg.addEventListener('pointerleave', endPointer);
+
+  // Trackpad pinch and mouse-wheel zoom (desktop): ctrlKey is how browsers
+  // report a trackpad pinch gesture via wheel events.
+  svg.addEventListener('wheel', ev => {
+    ev.preventDefault();
+    const factor = Math.exp(-ev.deltaY * 0.0035);
+    zoomAt(ev.clientX, ev.clientY, factor);
+  }, { passive: false });
+
+  // Double-tap/double-click resets to the fitted view.
+  svg.addEventListener('dblclick', () => fitView());
+
+  // #18: responsive viewBox — a rotation or a window resize changes W/H, and
+  // the old fixed viewBox from the initial render would then either crop the
+  // graph or leave dead space. Re-run the whole layout (debounced) whenever
+  // the wrapper's own size actually changes, but only while the Flow tab is
+  // the one on screen (recomputing a force layout you cannot see is wasted
+  // work and would also un-pin nodes the user placed on a hidden tab).
+  if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){
+    wrap._flowResizeWired = true;
+    let t = null;
+    new ResizeObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if ($('views')?.querySelector('[data-vtab="Flow"].tabon') && FLOWROWS)
+          renderFlow(FLOWROWS);
+      }, 200);
+    }).observe(wrap);
+  }
+  FLOWROWS = rows;
+
   const kids = new Map();          // node -> descendant set (computed once)
   function descend(n, set){ (n.kids||[]).forEach(k => { set.add(k); descend(k, set); }); return set; }
   nodes.forEach(n => kids.set(n, descend(n, new Set())));
@@ -4157,7 +4296,11 @@ function flowControls(){
   if (!box || box.dataset.wired) return;
   box.dataset.wired = '1';
   box.innerHTML = [[2,'provider → model'],[3,'+ task']]
-    .map(([d,l])=>`<button data-fd="${d}">${l}</button>`).join('');
+    .map(([d,l])=>`<button data-fd="${d}">${l}</button>`).join('') +
+    // #18: reset control for the pinch/pan/drag state — the graph's own
+    // fitView() is stashed on the <svg> element by renderFlow each time it
+    // rebuilds, so this button always calls whatever is current.
+    `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
   box.querySelectorAll('[data-fd]').forEach(b => {
     b.addEventListener('click', () => {
       flowDepth = +b.dataset.fd;
@@ -4168,6 +4311,9 @@ function flowControls(){
   });
   box.querySelectorAll('[data-fd]').forEach(x =>
     x.classList.toggle('on', +x.dataset.fd === flowDepth));
+  box.querySelector('[data-flowfit]')?.addEventListener('click', () => {
+    $('flow')?._flowFit?.();
+  });
 }
 
 // Activity heatmap — a GitHub-style calendar. Weeks are columns, weekdays are
