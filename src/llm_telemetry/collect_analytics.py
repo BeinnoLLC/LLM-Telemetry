@@ -13,6 +13,7 @@ from . import failures
 from . import bandwidth
 from . import bandwidth_history
 from . import delegations
+from . import collect_repo_branch as repo_branch
 from .projects import project_of, project_of_session
 
 from .config import get as _cfg
@@ -43,7 +44,7 @@ order by d
 # All sessions' identity fields, for project resolution (P4-01/P4-03) and
 # cost attribution (P10-07, #95): one query, loaded once per profile into a
 # dict, so walking parent_session_id never re-hits the database per hop.
-SESSION_IDENTITY = "select id, title, cwd, parent_session_id, source, display_name from sessions"
+SESSION_IDENTITY = "select id, title, cwd, parent_session_id, source, display_name, git_branch from sessions"
 # Context re-send per session (P9-03, #80). One row per (session, model) over
 # the last 30 days. Sessions under RESEND_MIN_CALLS calls are dropped: a
 # 3-call session has no meaningful average context.
@@ -700,7 +701,7 @@ def fetch_rows(con):
     """
     sessions_by_id = {
         row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3],
-                 "source": row[4], "display_name": row[5]}
+                 "source": row[4], "display_name": row[5], "git_branch": row[6]}
         for row in con.execute(SESSION_IDENTITY)
     }
     rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
@@ -779,6 +780,12 @@ def build():
                 r["lan_up_bytes"] = lan_up
                 r["lan_down_bytes"] = lan_down
             hours = [{"date": d, "hour": h, "calls": c} for d, h, c in con.execute(HOURS)]
+            # P4-05 (#101), part 2: repo & branch attribution, over the SAME
+            # per-row grain fetch_rows() already resolved.
+            sessions_for_repo = {
+                row[0]: {"cwd": row[2], "git_branch": row[6]} for row in con.execute(SESSION_IDENTITY)
+            }
+            p_repo_branch = repo_branch.build_repo_branch(rows, sessions_for_repo)
             heatmap = [{"d": d, "p": p, "url": url, "m": m, "v": c}
                        for d, p, url, m, c in con.execute(HEATMAP)]
             # Keyed "model\ttask" so the Flow graph can look a node up directly
@@ -901,6 +908,7 @@ def build():
                                  "node_sessions": node_sessions,
                                  "failures_recent": fail_recent,
                                  "delegations": deleg,
+                                 "repo_branch": p_repo_branch,
                                  "min_date": dates[0] if dates else None,
                                  "max_date": dates[-1] if dates else None}
     # P8-04: persist the per-day bandwidth series. Closed days are frozen with

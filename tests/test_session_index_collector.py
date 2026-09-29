@@ -34,12 +34,12 @@ with tempfile.TemporaryDirectory() as root:
     con.execute("""insert into sessions(id, source, started_at, ended_at, title, model,
         git_branch, cwd, end_reason, actual_cost_usd)
         values('s_opus_patch', 'desktop', ?, ?, 'Refactor the router', 'claude-opus-5',
-        'feature/router', '/home/user/workspace/nowinv', 'user_close', 2.4500)""",
+        'feature/router', '/srv/workspace/nowinv', 'user_close', 2.4500)""",
         (now - 3600, now - 1800))
     con.execute("""insert into sessions(id, source, started_at, ended_at, title, model,
         git_branch, cwd, end_reason, estimated_cost_usd)
         values('s_glm_terminal', 'subagent', ?, ?, 'Fix the flaky test', 'glm-5.3',
-        'main', '/home/user/workspace/ahwa', 'startup_orphan_reap', 0.0800)""",
+        'main', '/srv/workspace/ahwa', 'startup_orphan_reap', 0.0800)""",
         (now - 7200, now - 6800))
     con.execute("""insert into sessions(id, source, started_at, ended_at, title, model)
         values('s_no_tools', 'desktop', ?, ?, 'Just chatting', 'claude-opus-5')""",

@@ -1787,6 +1787,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div style="height:clamp(220px,22vw,320px)"><canvas id="cProjects"></canvas></div>
    <div id="projempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
   </div>
+
+  <!-- P4-05 (#101), part 2: repo & branch cost attribution. Sessions,
+       tokens, cost per repo, then per branch within it -- a branch that
+       consumed a large share of the week's tokens is exactly what this
+       makes visible. Sorted by cost; Unattributed is its own always-
+       visible bucket (#41's own rule, applied one level down for branch
+       too). Part 1's finding: session git metadata was never populated
+       on this box due to a missing runtime dependency (now fixed) --
+       repo is derived from cwd via the SAME resolver project_of() uses,
+       per the ticket's own accepted fallback; branch is real once a
+       session records it going forward. -->
+  <div class="card p-4 mt-4" id="repocard">
+   <div class="lbl mb-2.5 flex items-center justify-between">
+    <span>Repo &amp; branch
+     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— sessions, tokens, cost, sorted by cost; click a repo to expand its branches</span>
+    </span>
+   </div>
+   <div id="repolist"></div>
+   <div id="repoempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+  </div>
  </div>
 
  <!-- P4-05 (#42): project × model matrix. A project's cost/calls/token mix
@@ -2939,6 +2959,7 @@ function render(){
   renderLatency(p.latency);
   renderAttribution(p.attribution);
   renderProjects(dateRows, null, null);
+  renderRepoBranch(p.repo_branch);
   renderProjectMatrix(dateRows);
   renderProjectDistribution(dateRows);
   renderProjectTrend(dateRows);
@@ -3656,6 +3677,40 @@ function renderAttribution(attrib){
     'Cost here comes from this dashboard\u2019s own OpenRouter-rate pricing, not from Hermes\u2019s own cost_status (which is unknown on a large share of sessions).';
 }
 
+
+// P4-05 (#101), part 2: repo & branch cost card. Expandable rows: click a
+// repo row to reveal/hide its own branch rows, indented underneath.
+let REPO_EXPANDED = new Set();
+
+function renderRepoBranch(data){
+  const list = $('repolist'), empty = $('repoempty');
+  if (!list) return;
+  const repos = (data && data.repos) || [];
+  if (!repos.length){
+    list.innerHTML = '';
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+  const fmtN = n => n.toLocaleString();
+  const rowHtml = (name, sessions, calls, tokens, cost, indent, isRepo, key) => `
+    <div class="flex items-center gap-2 py-1.5${indent?' pl-6':''}${isRepo?' cursor-pointer':''}" style="border-bottom:1px solid var(--border)"
+         ${isRepo ? `data-repokey="${esc(key)}"` : ''}>
+     ${isRepo ? `<span class="muted" style="width:1em;display:inline-block">${REPO_EXPANDED.has(key)?'&#9662;':'&#9656;'}</span>` : ''}
+     <span class="flex-1 truncate${name==='Unattributed'?' muted':''}">${esc(name)}</span>
+     <span class="muted text-[length:var(--fs-xs)]" style="width:70px;text-align:right">${fmtN(sessions)} sess</span>
+     <span class="muted text-[length:var(--fs-xs)]" style="width:80px;text-align:right">${fmtN(calls)} calls</span>
+     <span class="muted text-[length:var(--fs-xs)]" style="width:80px;text-align:right">${fmt(tokens)} tok</span>
+     <span class="font-semibold text-[length:var(--fs-sm)]" style="width:80px;text-align:right">$${cost.toFixed(2)}</span>
+    </div>`;
+  list.innerHTML = repos.map(r => {
+    const repoRow = rowHtml(r.repo, r.sessions, r.calls, r.tokens, r.cost, false, true, r.repo);
+    const branchRows = REPO_EXPANDED.has(r.repo)
+      ? r.branches.map(b => rowHtml(b.branch, b.sessions, b.calls, b.tokens, b.cost, true, false, null)).join('')
+      : '';
+    return repoRow + branchRows;
+  }).join('');
+}
 
 function renderProjects(rows, fromDate, toDate){
   const card = $('projcard'), empty = $('projempty'), hdr = $('projhdr');
@@ -8113,6 +8168,14 @@ setInterval(pollLive, LIVE_MS);
 installDrawer();
 installTranscriptModal();
 installSessionFinder();
+// P4-05 (#101), part 2: click a repo row to expand/collapse its branches.
+$('repolist')?.addEventListener('click', e => {
+  const row = e.target.closest?.('[data-repokey]');
+  if (!row) return;
+  const key = row.dataset.repokey;
+  if (REPO_EXPANDED.has(key)) REPO_EXPANDED.delete(key); else REPO_EXPANDED.add(key);
+  renderRepoBranch(DATA.profiles[current]?.repo_branch);
+});
 installTimelineModal();
 installProjectDrilldown();
 installProjWeight();
