@@ -555,6 +555,47 @@ def _terminal_command_hint(content):
     return "(unknown)"
 
 
+# P10-05 (#93): latency. `messages` has no per-row model column, so each
+# assistant turn is attributed to the model/base_url that was MOST RECENTLY
+# active for that session as of the turn's own timestamp — the same
+# last-seen-subquery pattern RECENT_SESSIONS already uses, just bounded by
+# `u.last_seen <= m.timestamp` so a session that later switched models does
+# not retroactively relabel its earlier turns.
+ASSISTANT_TURNS = """
+select m.session_id, m.timestamp,
+       coalesce(
+         (select u.model from session_model_usage u
+           where u.session_id=m.session_id and u.last_seen <= m.timestamp
+           order by u.last_seen desc limit 1),
+         s.model) as model,
+       (select u.billing_base_url from session_model_usage u
+         where u.session_id=m.session_id and u.last_seen <= m.timestamp
+         order by u.last_seen desc limit 1) as base_url,
+       m.token_count
+from messages m
+join sessions s on s.id = m.session_id
+where m.role = 'assistant'
+  and m.timestamp > strftime('%s','now') - 604800
+order by m.session_id, m.timestamp
+"""
+
+
+def build_latency(con):
+    """P10-05 (#93): p50/p90/p99 of assistant-turn gaps, per model and per
+    endpoint, idle excluded. Delegates the actual math to latency.py
+    (compute_gaps/build_latency) which is independently unit-tested; this
+    function is just the SQL-to-payload glue, kept thin on purpose."""
+    from . import latency as _latency
+    from .bandwidth import canonical_endpoint
+
+    rows = con.execute(ASSISTANT_TURNS).fetchall()
+    gaps, idle_gaps = _latency.compute_gaps(rows)
+    result = _latency.build_latency(gaps, endpoint_of=canonical_endpoint)
+    result["idle_threshold_s"] = _latency.DEFAULT_IDLE_THRESHOLD_S
+    result["idle_n"] = len(idle_gaps)
+    return result
+
+
 COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 
 # Work categories. Order matters: the live phase text is checked first for
@@ -767,6 +808,7 @@ def build():
             end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
             outcomes = build_outcomes(con)
             tool_rel = build_tool_reliability(con)
+            latency = build_latency(con)
             sessions_tree = build_sessions_tree(con)
             compression_pressure = [
                 {"id": sid, "title": title, "fallback_streak": fb,
@@ -822,6 +864,7 @@ def build():
                                  "tools": tool_rel["tools"],
                                  "tool_fail_samples": tool_rel["tool_fail_samples"],
                                  "terminal_top_fail_commands": tool_rel["terminal_top_fail_commands"],
+                                 "latency": latency,
                                  "sessions_tree": sessions_tree,
                                  "compression_pressure": compression_pressure,
                                  "concurrency": concurrency,

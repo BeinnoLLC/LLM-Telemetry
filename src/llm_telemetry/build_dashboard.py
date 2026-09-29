@@ -1625,6 +1625,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div class="card p-4"><div class="lbl mb-2.5">Daily activity</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cDaily"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Hourly distribution</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cHours"></canvas></div></div>
   </div>
+  <!-- P10-05 (#93): latency — model-response time as the user experiences
+       it, distinct from idle_s in the Live view (which is the opposite
+       question: how long has NOBODY been waiting). Hidden entirely when
+       there is no data in range. -->
+  <div class="card p-4 mt-4" id="latcard" hidden>
+   <div class="lbl mb-2.5 hhdr">Latency
+    <span class="muted hsub">assistant-turn response time, idle excluded · last 7 days</span>
+   </div>
+   <div class="grid-2 mb-3">
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1">By model</div>
+     <div id="latbymodel" class="flex flex-col gap-1"></div>
+    </div>
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1">By endpoint</div>
+     <div id="latbyendpoint" class="flex flex-col gap-1"></div>
+    </div>
+   </div>
+   <div id="latslowest"></div>
+  </div>
   <!-- Row 4: Bandwidth (P8-05, #72). Reads the PERSISTED series
        (bandwidth_daily), never the live day rows, so a recalibrated constant
        cannot quietly redraw history. -->
@@ -2626,6 +2646,7 @@ function render(){
   renderBandwidthPanel(p, inR);
   renderResend(p, inR);
   renderConcurrency(p.concurrency, from, to);
+  renderLatency(p.latency);
   renderProjects(dateRows, null, null);
   renderProjectMatrix(dateRows);
   renderProjectDistribution(dateRows);
@@ -3247,6 +3268,45 @@ function unattrPattern(){
 }
 
 const UNATTR_LABEL = 'Unattributed';
+
+// P10-05 (#93): latency — model-response time as the user experiences it.
+// Renders the payload the collector already computed (percentiles are
+// computed server-side in latency.py, independently unit-tested there);
+// this function is presentation only.
+function renderLatency(lat){
+  const card = $('latcard');
+  if (!card) return;
+  const byModel = (lat && lat.by_model) || {};
+  const byEndpoint = (lat && lat.by_endpoint) || {};
+  if (!Object.keys(byModel).length){ card.hidden = true; return; }
+  card.hidden = false;
+
+  const row = (name, b) => {
+    const tokS = b.tok_s != null ? `${b.tok_s.toFixed(1)} tok/s` : '';
+    return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+      <span class="font-semibold flex-1 truncate" title="${esc(name)}">${esc(name)}</span>
+      <span class="muted" title="sample size">n=${b.n}</span>
+      <span title="p50 / p90 / p99 seconds">${b.p50}s / ${b.p90}s / ${b.p99}s</span>
+      <span class="muted" style="min-width:5.5rem;text-align:right">${tokS}</span>
+    </div>`;
+  };
+
+  $('latbymodel').innerHTML = Object.entries(byModel)
+    .sort((a, b) => b[1].p90 - a[1].p90)
+    .map(([name, b]) => row(name, b)).join('');
+  $('latbyendpoint').innerHTML = Object.entries(byEndpoint)
+    .sort((a, b) => b[1].p90 - a[1].p90)
+    .map(([name, b]) => row(name, b)).join('');
+
+  const slowest = (lat && lat.slowest) || [];
+  $('latslowest').innerHTML = slowest.length
+    ? `<div class="muted text-[length:var(--fs-xs)] mb-1 mt-1">Slowest turns</div>` +
+      slowest.map(s => `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
+        <button type="button" class="chip ttitlebtn" data-tsession="${esc(s.session)}" data-tprofile="${esc(current)}">${esc(s.model || '(unknown)')}</button>
+        <span class="muted">${s.s}s</span>
+      </div>`).join('')
+    : '';
+}
 
 function renderProjects(rows, fromDate, toDate){
   const card = $('projcard'), empty = $('projempty'), hdr = $('projhdr');
