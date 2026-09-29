@@ -92,7 +92,7 @@ setTimeout(() => {
 
     // ---- no regression on desktop: the mobile rules must live INSIDE the
     // max-width:640px block, not leak out unconditionally. -----------------
-    const mobileBlockMatch = html.match(/@media\(max-width:640px\)\{([\s\S]*?)\n \}\n @media\(max-width:400px\)/);
+    const mobileBlockMatch = html.match(/@media\(max-width:640px\)\{([\s\S]*?)\n\s*\}\n @media\(max-width:400px\)/);
     chk(!!mobileBlockMatch, 'the mobile rules are scoped inside a single @media(max-width:640px) block');
     if (mobileBlockMatch) {
       const block = mobileBlockMatch[1];

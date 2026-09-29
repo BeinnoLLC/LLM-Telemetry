@@ -1028,7 +1028,24 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */
    .olgrid{grid-template-columns:1fr}
- }
+
+   /* #19: health rows and the failure list switch from fixed-width flex
+      columns (built for a wide screen) to a stacked card-per-row layout.
+      Long identifiers get overflow-wrap so a model/provider name that is
+      still too long to fit never forces the row wider than the viewport. */
+   .hrow{flex-wrap:wrap;align-items:flex-start !important;gap:4px 8px !important;
+     padding:8px 0;border-bottom:1px solid var(--border)}
+   .hrow .hname{width:auto !important;flex:1 1 100%;overflow-wrap:anywhere;white-space:normal}
+   .hrow .hbar{flex:1 1 100%;order:3}
+   .hrow .hrate{width:auto !important;order:2}
+   .hrow .hcount{width:auto !important;order:2;margin-left:auto}
+   .hrow .hchips{width:auto !important;order:4;flex:1 1 100%}
+
+   .frow{flex-wrap:wrap;gap:3px 6px !important;padding:6px 0}
+   .frow .fmodel{width:auto !important;overflow-wrap:anywhere;white-space:normal;max-width:70%}
+   .frow .fwhen{margin-left:auto}
+   .frow .fmsg{flex:1 1 100%;white-space:normal;overflow-wrap:anywhere}
+   }
  @media(max-width:400px){
    /* KPI strip: down to a single column once 2-up gets too cramped for the
       ring/sparkline cards to stay legible. */
@@ -3459,13 +3476,13 @@ function renderHealth(){
         ? `${h.ok.toLocaleString()} of ${h.total.toLocaleString()} · <span style="color:${col}">${h.fail.toLocaleString()} failed</span>`
         : `${h.ok.toLocaleString()} of ${h.total.toLocaleString()}`;
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
-        <div class="text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
-        <div class="flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
+        <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
+        <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
           <div style="width:${okPct}%;background:#22c55e"></div>${segs}
         </div>
-        <div class="text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
-        <div class="text-[length:var(--fs-xs)] muted text-right hcount" style="width:150px">${count}</div>
-        <div class="flex gap-1 shrink-0 flex-wrap" style="width:170px">${chips}</div>
+        <div class="hrate text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
+        <div class="hcount text-[length:var(--fs-xs)] muted text-right" style="width:150px">${count}</div>
+        <div class="hchips flex gap-1 shrink-0 flex-wrap" style="width:170px">${chips}</div>
       </div>`;
     }).join('');
   }

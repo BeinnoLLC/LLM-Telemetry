@@ -214,6 +214,17 @@ tbody td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right
 tbody td:first-child,tbody td.l{text-align:left}
 tbody tr:hover{background:rgba(99,102,241,.06)}
 tbody tr:last-child td{border-bottom:none}
+/* #19: sticky first column (the model identity, the one thing you always
+   need visible while scrolling a wide table sideways) plus a fading right
+   edge on the scroll wrapper that signals there is more to the right. The
+   sticky cell needs its own opaque background — without one the scrolling
+   columns behind it show through. */
+.tblwrap{position:relative;overflow-x:auto}
+.tblwrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:28px;
+  background:linear-gradient(to right,transparent,var(--card));pointer-events:none}
+thead th:first-child,tbody td:first-child{position:sticky;left:0;z-index:1;background:var(--card)}
+thead th:first-child{z-index:3}
+tbody tr:hover td:first-child{background:var(--card)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 .warnbox{border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:#fca5a5;
   border-radius:8px;padding:10px 12px;margin:12px 0;font-size:12.5px;line-height:1.55}
@@ -317,7 +328,7 @@ __UNPRICED__
 
 <div class="card">
   <div class="lbl">Rates per 1M tokens &mdash; every model with recorded traffic</div>
-  <div style="overflow-x:auto">__TABLE__</div>
+  <div class="tblwrap">__TABLE__</div>
 </div>
 
 <div class="card">
