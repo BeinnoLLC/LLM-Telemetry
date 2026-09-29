@@ -1597,6 +1597,22 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <table id="projmatrix" class="w-full text-[length:var(--fs-sm)]" style="border-collapse:collapse"></table>
    </div>
    <div id="projmatrixempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+
+   <!-- P4-06 (#43): project x provider distribution, beneath the matrix,
+        same view/card family as the matrix above it. -->
+   <div id="projdistcard" class="mt-4 pt-4" style="border-top:1px solid var(--border)">
+    <div class="lbl mb-2.5 flex items-center justify-between">
+     <span>Project × provider
+      <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— vendor exposure per project</span>
+     </span>
+     <label class="inline-flex items-center gap-1.5 text-[length:var(--fs-xs)] muted normal-case tracking-normal">
+      <input type="checkbox" id="projdistnorm"> normalise to 100%
+     </label>
+    </div>
+    <div style="height:clamp(200px, 32vw, 420px)"><canvas id="cProjDist"></canvas></div>
+    <div id="projdistlegend" class="flex flex-wrap gap-1.5 mt-2"></div>
+    <div id="projdistempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+   </div>
   </div>
  </div>
 
@@ -2449,6 +2465,7 @@ function render(){
   renderConcurrency(p.concurrency, from, to);
   renderProjects(rows, null, null);
   renderProjectMatrix(rows);
+  renderProjectDistribution(rows);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -3206,6 +3223,129 @@ function renderProjectMatrix(rows){
 // eslint-disable-next-line no-unused-vars -- called from the onclick above;
 // intentionally does nothing until P4-07 (project drill-down panel) lands.
 function projectDrillStub(_project, _model){}
+
+// P4-06 (#43): project × provider distribution — a stacked horizontal bar
+// per project. Reuses PROV/provOf/provIcon exactly as every other view
+// does; introduces no second provider palette (explicit acceptance
+// criterion).
+let projDistNormalized = false;
+
+function renderProjectDistribution(rows){
+  const card = $('projdistcard'), empty = $('projdistempty');
+  if (!card) return;
+  if (!rows || !rows.length){
+    const el = $('cProjDist');
+    const prev = el && (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+    if (prev) { try { prev.destroy(); } catch(_){} }
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  // project -> provider -> cost. Both axes entirely derived from the row
+  // set, same discipline as renderProjectMatrix — no hardcoded project or
+  // provider list.
+  const byProject = new Map();
+  const providersSeen = new Set();
+  rows.forEach(r => {
+    const proj = r.project || 'Unattributed';
+    const prov = provOf(r.provider, r.model, r.base_url);
+    const cost = +r.act || +r.est || 0;
+    if (!byProject.has(proj)) byProject.set(proj, new Map());
+    const provs = byProject.get(proj);
+    provs.set(prov, (provs.get(prov) || 0) + cost);
+    providersSeen.add(prov);
+  });
+
+  const projectTotal = proj => [...byProject.get(proj).values()].reduce((s, v) => s + v, 0);
+  const projects = [...byProject.keys()].sort((a, b) => {
+    if (a === 'Unattributed') return 1;
+    if (b === 'Unattributed') return -1;
+    return projectTotal(b) - projectTotal(a);
+  });
+
+  // Provider stacking order: by GLOBAL provider total descending, so the
+  // segment order is consistent across every project's bar.
+  const provTotals = new Map();
+  providersSeen.forEach(p => provTotals.set(p,
+    projects.reduce((s, proj) => s + (byProject.get(proj).get(p) || 0), 0)));
+  const providers = [...providersSeen].sort((a, b) => provTotals.get(b) - provTotals.get(a));
+
+  const datasets = providers.map(p => {
+    const s = PROV[p] || {icon: '\u25CB', bg: 'rgba(148,163,184,.14)', fg: MU};
+    return {
+      label: `${s.icon} ${p}`,
+      data: projects.map(proj => {
+        const raw = byProject.get(proj).get(p) || 0;
+        if (!projDistNormalized) return raw;
+        const total = projectTotal(proj);
+        // Normalised mode: every bar becomes exactly 100 wide — the
+        // ticket's own acceptance criterion, asserted by the test as
+        // "every bar sums to 100 (within floating-point tolerance)".
+        return total > 0 ? (100 * raw / total) : 0;
+      }),
+      backgroundColor: s.fg,
+      stack: 'proj',
+    };
+  });
+
+  mk('cProjDist', 'bar', projects, datasets, {
+    indexAxis: 'y',
+    plugins: {
+      legend: {
+        labels: {boxWidth: 8},
+        // Chart.js's default legend markers are canvas-drawn and not
+        // individually keyboard-focusable. This dashboard already treats
+        // "no keyboard access to a legend" as a defect (see the
+        // #focus-visible convention on other interactive controls) — the
+        // acceptance criterion here is a REAL <ul> legend the browser's
+        // own tab order and :focus-visible ring handle for free, laid out
+        // to look like the chart legend. generateLegend() below builds it;
+        // this onClick still supports mouse/pointer toggling for parity.
+        onClick: (e, item, legend) => {
+          const ci = legend.chart;
+          const idx = item.datasetIndex;
+          ci.setDatasetVisibility(idx, !ci.isDatasetVisible(idx));
+          ci.update();
+        },
+      },
+      tooltip: {mode: 'index', intersect: true},
+    },
+    scales: {
+      x: {stacked: true, grid: {color: BD}, beginAtZero: true,
+          max: projDistNormalized ? 100 : undefined},
+      y: {stacked: true, grid: {display: false}},
+    },
+  });
+
+  renderProjDistLegend(datasets);
+}
+
+// A real, keyboard-reachable <ul> legend (see the comment above). Built as
+// actual focusable <button> elements with a visible :focus-visible ring
+// from the shared stylesheet, rather than relying on Chart.js's
+// canvas-drawn (mouse-only) legend.
+function renderProjDistLegend(datasets){
+  const el = $('projdistlegend');
+  if (!el) return;
+  el.innerHTML = datasets.map((d, i) =>
+    `<button type="button" class="proj-legend-item inline-flex items-center gap-1.5 px-2 py-1 rounded text-[length:var(--fs-xs)]"
+       data-idx="${i}" style="border:1px solid ${BD}">
+      <span style="width:8px;height:8px;border-radius:2px;background:${d.backgroundColor};display:inline-block"></span>
+      ${esc(d.label)}
+     </button>`).join('');
+  el.querySelectorAll('.proj-legend-item').forEach(btn => {
+    btn.onclick = () => {
+      const chart = Chart.getChart($('cProjDist'));
+      if (!chart) return;
+      const idx = +btn.dataset.idx;
+      chart.setDatasetVisibility(idx, !chart.isDatasetVisible(idx));
+      chart.update();
+      btn.setAttribute('aria-pressed', String(chart.isDatasetVisible(idx)));
+    };
+    btn.setAttribute('aria-pressed', 'true');
+  });
+}
 
 function renderQueue(){
   const qBox = $('qitems-queued'), rBox = $('qitems-running'), dBox = $('qitems-done');
@@ -5807,6 +5947,12 @@ $('from').onchange=render; $('to').onchange=render;
 // projects card (via a full render() — simplest correct option since
 // render() is idempotent and cheap enough to run on a checkbox click).
 if ($('projexclude')) $('projexclude').onchange = render;
+// P4-06 (#43): the normalise-to-100% toggle re-renders the distribution
+// chart via the shared module-scope flag + a full render().
+if ($('projdistnorm')) $('projdistnorm').onchange = function(){
+  projDistNormalized = this.checked;
+  render();
+};
 
 const saved = localStorage.getItem('hermes-dash-theme');
 if(saved==='light') document.documentElement.setAttribute('data-theme','light');
