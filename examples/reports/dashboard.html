@@ -2818,12 +2818,32 @@ function renderHome(inR){
   const okPct = hTot ? (hOk / hTot * 100).toFixed(1) + '%' : '\u2014';
   const fails = (p.failures_recent || []).length;
 
+  // P4-11 (#48): top project by spend + unattributed share, both derived
+  // from the SAME date-scoped rows every other home card uses — no
+  // hardcoded project name.
+  const projSpend = new Map();
+  rows.forEach(r => {
+    const proj = r.project || 'Unattributed';
+    projSpend.set(proj, (projSpend.get(proj) || 0) + (+r.act || +r.est || 0));
+  });
+  const totalSpend = [...projSpend.values()].reduce((a, b) => a + b, 0);
+  const unattrSpend = projSpend.get('Unattributed') || 0;
+  const topProject = [...projSpend.entries()]
+    .filter(([k]) => k !== 'Unattributed')
+    .sort((a, b) => b[1] - a[1])[0];
+  const unattrPct = totalSpend > 0 ? (100 * unattrSpend / totalSpend).toFixed(0) + '%' : '\u2014';
+  const projStat = topProject
+    ? `${esc(topProject[0])} \u00b7 ${unattrPct} unattributed`
+    : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
+
   const cards = [
     ['Live', '\u25C9', 'Sessions in flight right now',
       live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
     ['Flow', '\u21C4', 'Provider \u2192 model \u2192 task routing',
       models.size + (models.size === 1 ? ' model' : ' models')],
     ['Usage', '\u25A4', 'Calls and tokens over time', fmt(calls) + ' calls'],
+    ['Projects', '\u25A6', 'Spend and calls broken down by project',
+      projStat],
     ['Cost', '\u0024', 'What the traffic is worth at public rates',
       '$' + cost.toFixed(2)],
     ['Health', '\u2713', 'Success rate and recent failures',
