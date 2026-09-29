@@ -1269,6 +1269,25 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  <div class="flex gap-1.5" id="views"></div>
 
+ <!-- P4-09 (#46): project cross-filter. Sits beside the range/profile
+      filters so the three read as one filter set. "All projects" is the
+      default; the choice composes with (never overrides) the date range
+      and profile tabs because it is applied as one more row-filter step
+      after those two, not a separate query. -->
+ <div class="card p-3 mb-3 flex items-center gap-2 flex-wrap" id="projfilterbar">
+  <span class="lbl">Project</span>
+  <select id="projfiltersel" class="chip" style="text-transform:none;letter-spacing:0">
+   <option value="">All projects</option>
+  </select>
+  <!-- Visible on every view this filter actually affects (Usage/Cost/Flow/
+       Health) — a silent global filter is how a wrong number gets quoted
+       in a meeting. Hidden on views the filter doesn't touch. -->
+  <span id="projfilterchip" class="chip" style="display:none;text-transform:none;letter-spacing:0" hidden>
+   Filtering: <b id="projfilterchipname"></b>
+   <button type="button" id="projfilterclear" title="Clear project filter" style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 4px;font:inherit">&times;</button>
+  </span>
+ </div>
+
  <!-- Transferred: ONE card holding both directions, because the interesting
       fact is the ratio between them (upload dominates ~255:1 -- a whole
       conversation is re-sent to receive one paragraph) and splitting the
@@ -2448,9 +2467,18 @@ function renderResend(p, inR){
 
 function render(){
   const p = DATA.profiles[current];
+  populateProjFilterSelect();
+  syncProjFilterUI();
   const from = $('from').value, to = $('to').value;
   const inR = d => d && (!from || d>=from) && (!to || d<=to);
-  const rows  = p.rows.filter(r=>inR(r.date));
+  // P4-09 (#46): the project filter composes with — never overrides — the
+  // date range and profile tabs, because it is applied as one MORE
+  // row-filter step chained after those two, not a second query against a
+  // different data source.
+  const dateRows = p.rows.filter(r=>inR(r.date));
+  const rows = PROJECT_FILTER
+    ? dateRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER)
+    : dateRows;
   const hours = p.hours.filter(h=>inR(h.date));
   const sess  = p.sessions.filter(s=>inR(s.date));
   charts.forEach(c=>c.destroy()); charts=[];
@@ -2515,7 +2543,7 @@ function render(){
   // Live data is independent of the date filter — render it before the early
   // return, so an empty range never blanks the Live tab.
   renderLive();
-  renderHealth();
+  renderHealth(rows);
   renderDeleg();
   renderHome(inR);
   renderXfer(rows);
@@ -2530,9 +2558,9 @@ function render(){
   renderBandwidthPanel(p, inR);
   renderResend(p, inR);
   renderConcurrency(p.concurrency, from, to);
-  renderProjects(rows, null, null);
-  renderProjectMatrix(rows);
-  renderProjectDistribution(rows);
+  renderProjects(dateRows, null, null);
+  renderProjectMatrix(dateRows);
+  renderProjectDistribution(dateRows);
   if ($('projweightnote')){
     const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
     $('projweightnote').textContent = `Showing ${wl.axis.toLowerCase()}. `
@@ -2541,7 +2569,15 @@ function render(){
         : '');
   }
 
-  if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
+  if(!rows.length){
+    // P4-09 (#46): an explicit empty state when the filtered PROJECT has no
+    // rows in range — not the same generic "no data" a truly empty date
+    // range shows, so it's obvious the filter (not the range) is why.
+    $('tbl').innerHTML = PROJECT_FILTER
+      ? `<tr><td class="muted py-3">No data for "${esc(PROJECT_FILTER)}" in this range.</td></tr>`
+      : '<tr><td class="muted py-3">No data in this range.</td></tr>';
+    return;
+  }
 
   buildModelProv(rows);
 
@@ -3509,6 +3545,60 @@ function installProjWeight(){
   });
 }
 
+// P4-09 (#46): project cross-filter. Populates the <select> from whatever
+// projects actually exist in the CURRENT profile's rows (no hardcoded
+// list — same discipline as the matrix's axes), syncs the visible chip on
+// every view the filter affects, and drives the hash so the filter is
+// deep-linkable and survives reload.
+const PROJ_FILTER_VIEWS = new Set(['Usage', 'Cost', 'Flow', 'Health']);
+
+function populateProjFilterSelect(){
+  const sel = $('projfiltersel');
+  if (!sel) return;
+  const p = DATA.profiles[current];
+  if (!p) return;
+  const projects = [...new Set(p.rows.map(r => r.project || 'Unattributed'))]
+    .sort((a, b) => a === 'Unattributed' ? 1 : b === 'Unattributed' ? -1 : a.localeCompare(b));
+  const prevValue = sel.value;
+  sel.innerHTML = '<option value="">All projects</option>' +
+    projects.map(pr => `<option value="${esc(pr)}">${esc(pr)}</option>`).join('');
+  // Keep the current filter selected across a profile switch when that
+  // project also exists in the new profile; otherwise fall back cleanly to
+  // "All projects" rather than pointing at an option that no longer exists.
+  sel.value = projects.includes(PROJECT_FILTER) ? PROJECT_FILTER : (projects.includes(prevValue) ? prevValue : '');
+  if (sel.value !== PROJECT_FILTER) PROJECT_FILTER = sel.value;
+}
+
+// Reflects PROJECT_FILTER into the select + chip on every affected view,
+// and hides the chip everywhere else — a silent filter is exactly the bug
+// this ticket exists to prevent.
+function syncProjFilterUI(){
+  const sel = $('projfiltersel'), chip = $('projfilterchip'), name = $('projfilterchipname');
+  if (sel && sel.value !== PROJECT_FILTER) sel.value = PROJECT_FILTER;
+  if (!chip || !name) return;
+  const showChip = !!PROJECT_FILTER && PROJ_FILTER_VIEWS.has(view);
+  chip.hidden = !showChip;
+  chip.style.display = showChip ? 'inline-flex' : 'none';
+  if (showChip) name.textContent = PROJECT_FILTER;
+}
+
+function installProjFilter(){
+  const sel = $('projfiltersel');
+  if (sel) sel.addEventListener('change', () => {
+    PROJECT_FILTER = sel.value;
+    setHash(view);
+    syncProjFilterUI();
+    render();
+  });
+  $('projfilterclear')?.addEventListener('click', () => {
+    PROJECT_FILTER = '';
+    if (sel) sel.value = '';
+    setHash(view);
+    syncProjFilterUI();
+    render();
+  });
+}
+
 // P4-06 (#43): project × provider distribution — a stacked horizontal bar
 // per project. Reuses PROV/provOf/provIcon exactly as every other view
 // does; introduces no second provider palette (explicit acceptance
@@ -4319,13 +4409,27 @@ function renderDeleg(){
   }).join('') || '<div class="muted text-[length:var(--fs-xs)]">Nothing yet.</div>';
 }
 
-function renderHealth(){
+function renderHealth(rows){
   const p = DATA.profiles[current] || {};
-  const H = (p.health||[]).filter(h => h.total > 0);
+  let H = (p.health||[]).filter(h => h.total > 0);
+  // P4-09 (#46): the project filter narrows Health to the MODELS the
+  // filtered project actually used. Per-model success/failure RATES stay
+  // global (failures.py's errors.log has no project dimension to slice by
+  // — inventing a per-project failure count from data that doesn't carry
+  // it would be a worse lie than not filtering at all), but which rows
+  // appear is honestly scoped to "models this project touched".
+  if (PROJECT_FILTER && rows){
+    const modelsUsed = new Set(rows.map(r => r.model));
+    H = H.filter(h => modelsUsed.has(h.model));
+  }
   renderHealthSummary(H, p.failures_recent || []);
   const box = $('healthgrid');
   if(!box) return;
-  if(!H.length){ box.innerHTML='<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>'; }
+  if(!H.length){
+    box.innerHTML = PROJECT_FILTER
+      ? `<div class="muted text-[length:var(--fs-sm)]">No calls recorded for "${esc(PROJECT_FILTER)}" in this range.</div>`
+      : '<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>';
+  }
   else {
     box.innerHTML = H.slice(0,14).map(h=>{
       const r = h.rate;
@@ -5388,29 +5492,51 @@ function renderHeatmap(hm){
 // last-used tab.
 function slugOf(v){ return String(v).toLowerCase(); }
 
+// P4-09 (#46): the project filter lives in the SAME hash as the view
+// (#/usage?project=Nowinv), not a second piece of state, so a filtered
+// view is one shareable/reloadable URL rather than "the right tab plus a
+// setting you have to also remember to set".
+let PROJECT_FILTER = '';
+
 // Written by pickView. No timing flag: compare the hash to the view that is
 // already showing. A timer-based guard raced with jsdom's async hashchange and
 // let a redundant re-render wipe the live list mid-update.
 function setHash(v){
-  const want = '#/' + slugOf(v);
+  const q = PROJECT_FILTER ? ('?project=' + encodeURIComponent(PROJECT_FILTER)) : '';
+  const want = '#/' + slugOf(v) + q;
   if (location.hash !== want) location.hash = want;
 }
 
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 function viewFromHash(){
-  const raw = (location.hash || '').replace(/^#\/?/, '').trim();
+  const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
   if (!raw) return null;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
 }
 
+// P4-09 (#46): pulls ?project=… out of the hash's query part. Deep-linking
+// a filter is the whole point — a URL someone pastes into chat should
+// restore exactly the view they were looking at, filter included.
+function projectFromHash(){
+  const raw = location.hash || '';
+  const qIdx = raw.indexOf('?');
+  if (qIdx === -1) return '';
+  try {
+    return new URLSearchParams(raw.slice(qIdx + 1)).get('project') || '';
+  } catch (e) { return ''; }
+}
+
 window.addEventListener('hashchange', () => {
   const v = viewFromHash();
+  PROJECT_FILTER = projectFromHash();
+  syncProjFilterUI();
   // Back/forward land here, and so does pickView's own hash write. Comparing
   // against the visible view makes the self-write a no-op, so a view change
   // renders exactly once.
   if (v && v !== view) pickView(v);
+  else render();
 });
 
 // ---- Settings (P7-03, #67) -------------------------------------------------
@@ -6053,6 +6179,7 @@ function pickView(v){
   setHash(v);
   setCrumb(v);
   navSync();
+  syncProjFilterUI();
   render();
   // The logs payload is ~1.3 MB and most visits never open this view, so it
   // is fetched on first navigation rather than with the page.
@@ -6064,7 +6191,9 @@ function pickView(v){
     const p = DATA.profiles[current];
     const from = $('from').value, to = $('to').value;
     const inR = d => d && (!from || d>=from) && (!to || d<=to);
-    renderFlow(p.rows.filter(r=>inR(r.date)));
+    let flowRows = p.rows.filter(r=>inR(r.date));
+    if (PROJECT_FILTER) flowRows = flowRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER);
+    renderFlow(flowRows);
   });
 }
 views();
@@ -6251,6 +6380,7 @@ $('theme').onclick = () => {
   localStorage.setItem('hermes-dash-theme', light?'dark':'light');
   readTheme(); render();
 };
+PROJECT_FILTER = projectFromHash();
 pickView(viewFromHash() || view);
 pick(current);
 
@@ -6821,6 +6951,7 @@ installDrawer();
 installTranscriptModal();
 installProjectDrilldown();
 installProjWeight();
+installProjFilter();
 soundToggleInstall();
 settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick
