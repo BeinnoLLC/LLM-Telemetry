@@ -56,7 +56,13 @@ setTimeout(()=>{
  click(d.getElementById('logbtn'));
  const dm=[...d.querySelectorAll('#dbody .evm')];
  chk(dm.length>0,'drawer model names',`(${dm.length})`);
- chk(dm.every(e=>size(e)>=12.5),'drawer names >= 12.5px',`(${size(dm[0])}px)`);
+ // jsdom does not resolve CSS custom properties in computed style (var(--fs-md)
+ // reads back as '' -> NaN), so check the SOURCE rule's token against the
+ // fluid scale's floor instead of trusting getComputedStyle for this one.
+ const evmRule = (html.match(/\.evm\{font-size:var\(--fs-(xs|sm|md|lg|xl)\)/) || [])[1];
+ const floors = {xs:11, sm:12, md:13, lg:15, xl:17};
+ chk(!!evmRule && floors[evmRule] >= 12.5, 'drawer names >= 12.5px (floor of its fluid token)',
+     `(--fs-${evmRule} floor ${floors[evmRule]}px)`);
  chk(dm.every(e=>!grey(col(e))),'drawer names coloured',`(${col(dm[0])})`);
 
  // 6. same model => same colour across ALL surfaces

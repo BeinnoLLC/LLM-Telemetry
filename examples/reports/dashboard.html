@@ -50,20 +50,20 @@
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
  .livehdr{display:flex;align-items:baseline;gap:4px}
- .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:11px;font-weight:500;color:var(--fg)}
+ .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:var(--fs-sm);font-weight:500;color:var(--fg)}
  [hidden]{display:none !important}
  .rounded-md{border-radius:4px !important}
- .chip{border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:13px;
+ .chip{border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:var(--fs-md);
        cursor:pointer;color:var(--muted);user-select:none;white-space:nowrap}
  .chip:hover{color:var(--fg);border-color:var(--accent)}
  input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:4px;
-   padding:6px 10px;font-size:13px;color:var(--fg);color-scheme:dark}
+   padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:dark}
  [data-theme=light] input[type=date]{color-scheme:light}
  canvas{width:100% !important;max-height:280px}
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
- .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .lbl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
@@ -98,7 +98,7 @@
   display:flex; align-items:center; gap:10px; width:100%;
   padding:8px 10px; margin-bottom:2px; border-radius:8px;
   border:0; background:none; cursor:pointer; text-align:left;
-  color:var(--muted); font-size:13px; line-height:1.2;
+  color:var(--muted); font-size:var(--fs-md); line-height:1.2;
   border-left:2px solid transparent; text-decoration:none;
 }
 .navitem:hover{ background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--fg); }
@@ -107,11 +107,11 @@
    without relying on colour alone. */
 .dkpis{display:flex;gap:18px;flex-wrap:wrap}
 .dkpi{display:flex;flex-direction:column;gap:2px}
-.dkpi-n{font-size:17px;font-weight:600}
+.dkpi-n{font-size:var(--fs-lg);font-weight:600}
 .dkpi-n.ok{color:var(--z-ok-fg)}
 .dkpi-n.bad{color:var(--z-bad-fg)}
 .drow{display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(60px,2fr) 42px minmax(90px,1fr);
-  align-items:center;gap:8px;font-size:11px}
+  align-items:center;gap:8px;font-size:var(--fs-sm)}
 .dname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dbar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}
 .dbar span{display:block;height:100%;border-radius:3px}
@@ -120,25 +120,25 @@
 .dpct{text-align:right;font-variant-numeric:tabular-nums}
 .dpct.ok{color:var(--z-ok-fg)}
 .dpct.bad{color:var(--z-bad-fg)}
-.dmeta{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dmeta{font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ditem{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;
   padding:3px 0;border-bottom:1px solid var(--border)}
 .ditem:last-child{border-bottom:0}
 .ddot{width:6px;height:6px;border-radius:50%}
 .ddot.ok{background:var(--z-ok)}
 .ddot.bad{background:var(--z-bad)}
-.dgoal{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dgoal{font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:720px){.drow{grid-template-columns:minmax(80px,1fr) 1fr 40px}.dmeta{display:none}}
 .navitem[aria-current="page"]{
   color:var(--accent); border-left-color:var(--accent);
   background:color-mix(in srgb, var(--accent) 14%, transparent);
   font-weight:600;
 }
-.navitem .nvico{ width:16px; text-align:center; flex:0 0 16px; font-size:13px; }
+.navitem .nvico{ width:16px; text-align:center; flex:0 0 16px; font-size:var(--fs-md); }
 .navitem .nvlabel{ flex:1 1 auto; min-width:0; }
 /* Counts ride on the right; hidden when zero so the rail stays quiet. */
 .navitem .nvbadge{
-  flex:0 0 auto; font-size:10px; padding:1px 6px; border-radius:999px;
+  flex:0 0 auto; font-size:var(--fs-xs); padding:1px 6px; border-radius:999px;
   background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
 }
 #navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
@@ -146,7 +146,7 @@
    non-selectable so it reads as a heading, not a nav item. */
 #navdrawer .navgroup{ display:flex; flex-direction:column; }
 #navdrawer .navgroup-h{
-  font-size:9.5px; text-transform:uppercase; letter-spacing:.08em;
+  font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.08em;
   color:var(--muted); opacity:.75; padding:6px 10px 3px;
   user-select:none; pointer-events:none;
 }
@@ -155,17 +155,17 @@
    everywhere rather than only on desktop. */
 body.hasnav #views{ display:none; }
 /* ---- Live row: models used (#107) ---- */
-.lmhead{display:flex;align-items:center;gap:6px;font-size:9.5px;text-transform:uppercase;
+.lmhead{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
   letter-spacing:.04em;margin-bottom:5px}
 .lmmet{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;
-  border-radius:999px;padding:1px 7px;font:inherit;font-size:9.5px;text-transform:uppercase}
+  border-radius:999px;padding:1px 7px;font:inherit;font-size:var(--fs-xs);text-transform:uppercase}
 .lmmet.on{border-color:var(--accent);color:var(--accent);
   background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .lmbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--bg);
   border:1px solid var(--border)}
 .lmseg{display:block;height:100%;min-width:2px}
 .lmseg:hover{filter:brightness(1.25)}
-.lmlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:5px 0 7px;font-size:10px}
+.lmlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:5px 0 7px;font-size:var(--fs-xs)}
 .lmkey{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .lmkey.cur{font-weight:600}
 .lmdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
@@ -181,8 +181,8 @@ body.hasnav #views{ display:none; }
      auto, the clipped content was invisible rather than spilling. Never shrink,
      and scroll only on the axis that needs it. */
   flex:0 0 auto; min-height:max-content; overflow-x:auto; overflow-y:visible}
-.lmpanel table{width:100%;border-collapse:collapse;font-size:11px}
-.lmpanel th{text-align:left;font-weight:500;color:var(--muted);font-size:9.5px;
+.lmpanel table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+.lmpanel th{text-align:left;font-weight:500;color:var(--muted);font-size:var(--fs-xs);
   text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
 .lmpanel td{padding:3px 8px 3px 0;white-space:nowrap;border-top:1px solid var(--border)}
 .lmpanel .num{text-align:right;font-variant-numeric:tabular-nums}
@@ -200,11 +200,11 @@ body.hasnav #views{ display:none; }
 .lgfacets{display:flex;flex-direction:column;gap:2px;margin-top:2px}
 .lgrow{display:flex;align-items:flex-start;gap:12px;padding:7px 8px;border-radius:7px}
 .lgrow:hover{background:color-mix(in srgb,var(--fg) 4%,transparent)}
-.lglbl{flex:0 0 64px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+.lglbl{flex:0 0 64px;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;
   color:var(--muted);padding-top:5px;font-weight:600}
 .lgchips{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
 .lgchip{border:1px solid var(--border);background:var(--bg);color:var(--muted);
-  border-radius:999px;padding:3px 10px;font-size:11px;cursor:pointer;line-height:1.6;
+  border-radius:999px;padding:3px 10px;font-size:var(--fs-sm);cursor:pointer;line-height:1.6;
   white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;
   transition:border-color .12s,color .12s,background .12s}
 .lgchip:hover{border-color:var(--accent);color:var(--fg)}
@@ -225,17 +225,17 @@ body.hasnav #views{ display:none; }
 .lgactivechip{display:inline-flex;align-items:center;gap:5px;
   background:color-mix(in srgb,var(--accent) 14%,transparent);
   border:1px solid var(--accent);color:var(--accent);border-radius:999px;
-  padding:2px 6px 2px 10px;font-size:11px;font-weight:600;cursor:pointer}
+  padding:2px 6px 2px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer}
 .lgactivechip:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .lgactivechip .x{opacity:.75;font-weight:700}
 #lgcountbadge{background:var(--accent);color:#fff;border-radius:999px;
-  font-size:10px;font-weight:700;padding:1px 7px;line-height:1.5}
+  font-size:var(--fs-xs);font-weight:700;padding:1px 7px;line-height:1.5}
 /* Event rows: monospace timestamps so they form a readable column. */
 .lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
-  padding:4px 0;border-bottom:1px solid var(--border);font-size:11.5px}
+  padding:4px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
 .lgev:last-child{border-bottom:0}
-.lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px}
-.lgtag{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;
+.lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-xs)}
+.lgtag{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lgtag.error{color:var(--z-bad-fg);font-weight:700}
 .lgtag.tool{color:var(--accent)}
@@ -243,7 +243,7 @@ body.hasnav #views{ display:none; }
 .lgtag.user{color:var(--muted)}
 .lgmsg{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lgev.open .lgmsg{white-space:pre-wrap;word-break:break-word}
-.lgmeta{color:var(--muted);font-size:10px;margin-left:6px}
+.lgmeta{color:var(--muted);font-size:var(--fs-xs);margin-left:6px}
 @media (max-width:640px){
   .lgev{grid-template-columns:58px 1fr}
   .lgev .lgtag{grid-column:2}
@@ -283,7 +283,7 @@ body.hasnav .page{ margin-left:0; padding-left:calc(var(--rail-now) + var(--pad)
 /* Collapse toggle sits in the rail header. */
 #navcollapse{
   margin-left:auto; border:0; background:none; cursor:pointer;
-  color:var(--muted); font-size:14px; line-height:1; padding:4px 6px;
+  color:var(--muted); font-size:var(--fs-md); line-height:1; padding:4px 6px;
   border-radius:6px; flex:0 0 auto;
 }
 #navcollapse:hover{ background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--fg); }
@@ -294,7 +294,7 @@ body.navcollapsed #navdrawer .navitem::after{
   content:attr(data-tip); position:absolute; left:calc(100% + 8px); top:50%;
   transform:translateY(-50%); white-space:nowrap; background:var(--card);
   border:1px solid var(--border); border-radius:6px; padding:4px 8px;
-  font-size:11px; color:var(--fg); opacity:0; pointer-events:none;
+  font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
   transition:opacity .12s ease; z-index:41;
 }
 body.navcollapsed #navdrawer .navitem:hover::after,
@@ -348,10 +348,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     carry the direction so the numbers read without a legend. */
  .bw{display:flex;align-items:center;gap:14px}
  .bwleg{display:flex;align-items:baseline;gap:5px}
- .bwarrow{font-size:13px;line-height:1;font-weight:700}
+ .bwarrow{font-size:var(--fs-md);line-height:1;font-weight:700}
  .bwup{color:#f59e0b}      /* upload: the dominant direction here */
  .bwdown{color:#38bdf8}
- .bwrate{font-size:9px;letter-spacing:.02em}
+ .bwrate{font-size:var(--fs-xs);letter-spacing:.02em}
  /* A running worker gets a moving arrow, so "is it transferring right now"
     is answerable without reading numbers. Paused when the OS asks for less
     motion — a permanently pulsing row is an accessibility problem. */
@@ -368,7 +368,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resbtn.warn{color:#f59e0b;border-color:#f59e0b88;border-style:solid}
  .resbad{color:#f59e0b}
  .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
- .respop code{font-size:11px}
+ .respop code{font-size:var(--fs-sm)}
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
        transition:opacity .35s ease}
@@ -407,7 +407,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    font-weight:700;font-size:var(--fs-sm);letter-spacing:-.01em;flex:none;
    border-bottom:1px solid var(--border)}
  .navbrand svg{flex:none}
- .navsec{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+ .navsec{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;
    color:var(--muted);padding:12px 14px 4px;flex:none}
  .navlist{display:flex;flex-direction:column;gap:2px;padding:6px 8px}
  /* Real anchors, so middle-click and ⌘-click open a section in a new tab. */
@@ -418,17 +418,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .navitem:hover{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--fg)}
  .navitem.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
    border-left-color:var(--accent);font-weight:600}
- .navico{width:20px;flex:none;text-align:center;font-size:14px;line-height:1}
+ .navico{width:20px;flex:none;text-align:center;font-size:var(--fs-md);line-height:1}
  .navlbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .navbadge{margin-left:auto;font-size:9px;font-weight:700;padding:1px 6px;
+ .navbadge{margin-left:auto;font-size:var(--fs-xs);font-weight:700;padding:1px 6px;
    border-radius:999px;background:var(--border);color:var(--fg);flex:none;
    font-variant-numeric:tabular-nums}
  .navbadge.alert{background:#ef4444;color:#fff}
  .navbadge[hidden]{display:none}
  .navsep{height:1px;background:var(--border);margin:8px 12px;flex:none}
- .navfoot{margin-top:auto;padding:10px 12px;font-size:9.5px;color:var(--muted)}
+ .navfoot{margin-top:auto;padding:10px 12px;font-size:var(--fs-xs);color:var(--muted)}
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
-   cursor:pointer;font-size:13px;line-height:1;padding:2px 4px}
+   cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
  #navpin:hover{color:var(--accent)}
  #navscrim{position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
    backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
@@ -451,7 +451,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .baractions{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2)}
  #hamburger{display:none;background:none;border:1px solid var(--border);
    color:var(--fg);border-radius:6px;width:38px;height:38px;cursor:pointer;
-   font-size:16px;line-height:1;flex:none}
+   font-size:var(--fs-lg);line-height:1;flex:none}
  #hamburger:hover{border-color:var(--accent);color:var(--accent)}
  /* Below ~480px the secondary actions collapse behind a ⋯ menu. */
  #barmore{display:none;position:relative}
@@ -473,7 +473,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    box-shadow:0 10px 26px rgba(0,0,0,.28)}
  .homecard .hc-top{display:flex;align-items:center;gap:9px}
  .homecard .hc-ico{width:34px;height:34px;border-radius:9px;flex:none;
-   display:flex;align-items:center;justify-content:center;font-size:16px;
+   display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);
    background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
  .homecard .hc-name{font-size:var(--fs-md);font-weight:650}
  .homecard .hc-desc{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
@@ -560,7 +560,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     of being fixed at 13px and leaving dead space on a wide screen. */
  .hm-scroll{padding-bottom:3px;width:100%}
  .hm-months{display:flex;gap:3px;margin-bottom:3px;padding-left:1px;width:100%}
- .hm-mon{flex:1 1 0;min-width:0;font-size:9px;color:var(--muted);letter-spacing:.02em}
+ .hm-mon{flex:1 1 0;min-width:0;font-size:var(--fs-xs);color:var(--muted);letter-spacing:.02em}
  .hm-grid{display:flex;gap:3px;width:100%}
  .hm-w{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
  .hm-d{width:100%;aspect-ratio:1;border-radius:2px;display:block;
@@ -573,7 +573,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .hm-d.l3{background:color-mix(in srgb,var(--accent) 68%,var(--border))}
  .hm-d.l4{background:color-mix(in srgb,var(--accent) 85%,var(--border))}
  .hm-d.l5{background:var(--accent)}
- .hm-key{display:flex;align-items:center;gap:3px;margin-top:7px;font-size:9px;flex-wrap:wrap}
+ .hm-key{display:flex;align-items:center;gap:3px;margin-top:7px;font-size:var(--fs-xs);flex-wrap:wrap}
  /* Key swatches must NOT stretch like the calendar cells. */
  .hm-key .hm-d{width:11px;height:11px;flex:none;aspect-ratio:auto}
  .hm-lg{display:inline-flex;align-items:center;gap:3px;margin-right:7px}
@@ -585,7 +585,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     provider names keep their palette colour here too, so a name learnt in a
     chart is recognisable in the explanation. */
  #helpbtn{cursor:pointer;border:1px solid var(--border);background:var(--card);
-   color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:13px;
+   color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:var(--fs-md);
    font-weight:700;line-height:1;display:inline-flex;align-items:center;
    justify-content:center;transition:all .15s ease;flex:none}
  #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
@@ -596,25 +596,25 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
    border:1px solid var(--border);border-radius:12px;padding:22px 26px;
    box-shadow:0 24px 60px rgba(0,0,0,.5)}
- .hpt{font-size:16px;font-weight:700;margin-bottom:3px}
- .hpsub{font-size:11px;color:var(--muted);margin-bottom:16px}
- .hsec{margin:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;
+ .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
+ .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px}
+ .hsec{margin:16px 0 8px;font-size:var(--fs-sm);font-weight:700;text-transform:uppercase;
    letter-spacing:.06em;color:var(--muted)}
- .hnote{font-size:11.5px;color:var(--muted);margin:5px 0 9px;line-height:1.55}
+ .hnote{font-size:var(--fs-sm);color:var(--muted);margin:5px 0 9px;line-height:1.55}
  /* Each hop is a numbered row so the ORDER is unmistakable. */
  .hhop{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;
-   border:1px solid var(--border);margin-bottom:5px;font-size:12px;background:var(--bg)}
+   border:1px solid var(--border);margin-bottom:5px;font-size:var(--fs-sm);background:var(--bg)}
  .hnum{width:19px;height:19px;border-radius:50%;flex:none;display:flex;
-   align-items:center;justify-content:center;font-size:9.5px;font-weight:700;
+   align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;
    background:var(--border);color:var(--muted)}
  .hhop.primary .hnum{background:hsl(142 65% 45%);color:#04140a}
- .hmodel{font-size:13px;font-weight:600}
- .hurl{font-size:9.5px;color:var(--muted);margin-left:auto;font-family:ui-monospace,monospace}
- .harrow{color:var(--muted);font-size:13px;text-align:center;margin:1px 0}
+ .hmodel{font-size:var(--fs-md);font-weight:600}
+ .hurl{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;font-family:ui-monospace,monospace}
+ .harrow{color:var(--muted);font-size:var(--fs-md);text-align:center;margin:1px 0}
  .htask{display:flex;align-items:baseline;gap:8px;padding:5px 0;
-   border-bottom:1px dashed var(--border);font-size:12px}
- .htn{width:132px;flex:none;font-weight:600;font-size:11.5px}
- .htd{color:var(--muted);font-size:10.5px;flex:1}
+   border-bottom:1px dashed var(--border);font-size:var(--fs-sm)}
+ .htn{width:132px;flex:none;font-weight:600;font-size:var(--fs-sm)}
+ .htd{color:var(--muted);font-size:var(--fs-xs);flex:1}
  #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
    font-size:19px;line-height:1;background:none;border:none}
  #helpclose:hover{color:var(--fg)}
@@ -652,20 +652,20 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #flow .nd{cursor:grab}
  #flow .nd.dragging{cursor:grabbing}
  #flow .nd circle{transition:stroke-width .12s ease}
- #flow .nd text{font-size:9px;fill:var(--muted);pointer-events:none;
+ #flow .nd text{font-size:var(--fs-xs);fill:var(--muted);pointer-events:none;
    text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:2.5px}
- #flow .nd.root text,#flow .nd.prov text{font-size:11px;font-weight:600;fill:var(--fg)}
- #flow .nd.model text{font-size:10px;font-weight:600}
+ #flow .nd.root text,#flow .nd.prov text{font-size:var(--fs-sm);font-weight:600;fill:var(--fg)}
+ #flow .nd.model text{font-size:var(--fs-xs);font-weight:600}
  /* Dim everything except the hovered subtree — with ~100 nodes the eye needs
     help following one provider's branch. */
  #flow.focus .nd,#flow.focus .lnk{opacity:.13}
  #flow.focus .nd.on,#flow.focus .lnk.on{opacity:1}
  .flowtip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;
    background:var(--card);border:1px solid var(--border);border-radius:6px;
-   padding:7px 10px;font-size:11px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;
+   padding:7px 10px;font-size:var(--fs-sm);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;
    max-width:260px}
  .flowtip.on{opacity:1}
- .flowtip .ft-h{font-weight:600;font-size:12px;margin-bottom:3px}
+ .flowtip .ft-h{font-weight:600;font-size:var(--fs-sm);margin-bottom:3px}
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
  /* #120 task queue: two lanes, animated chip lifecycle. Kept CSS-driven
@@ -678,12 +678,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     narrower screen without a media query doing the same job twice. */
  .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
  .qlane{min-height:64px;min-width:0}
- .qlanehdr{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+ .qlanehdr{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
    color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
  .qcount{background:var(--card);border:1px solid var(--border);border-radius:999px;
-   padding:0 6px;font-size:10px;line-height:16px;min-width:16px;text-align:center}
+   padding:0 6px;font-size:var(--fs-xs);line-height:16px;min-width:16px;text-align:center}
  .qitems{display:flex;flex-direction:column;gap:6px;min-height:2px}
- .qempty{font-size:11px;color:var(--muted);padding:10px 0;
+ .qempty{font-size:var(--fs-sm);color:var(--muted);padding:10px 0;
    display:flex;align-items:center;gap:6px}
  .qempty .qdot{width:6px;height:6px;border-radius:999px;background:#22c55e;
    box-shadow:0 0 0 rgba(34,197,94,.5);animation:qpulse-ok 2.2s ease-out infinite}
@@ -693,7 +693,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     TRAVELS to the next lane via a FLIP transform (queued->running->done),
     leaves for good via qout once its lane fills past 10 and it ages out. */
  .qchip{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
-   border:1px solid var(--border);background:var(--card);font-size:11px;
+   border:1px solid var(--border);background:var(--card);font-size:var(--fs-sm);
    animation:qin .28s cubic-bezier(.2,.8,.2,1) both;
    transition:transform .32s cubic-bezier(.3,.85,.35,1),opacity .25s ease,border-color .25s ease}
  .qchip.leaving{animation:qout .22s ease-in forwards}
@@ -710,11 +710,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .qlane[data-lane="done"] .qchip{opacity:.82}
  @keyframes qshimmer{0%,100%{opacity:.4}50%{opacity:1}}
  .qchip .qmodel{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
- .qchip .qprof{color:var(--muted);font-size:9.5px;
+ .qchip .qprof{color:var(--muted);font-size:var(--fs-xs);
    padding:0 5px;border:1px solid var(--border);border-radius:999px}
- .qchip .qwait{margin-left:auto;font-size:9.5px;color:var(--muted);white-space:nowrap}
+ .qchip .qwait{margin-left:auto;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
  .flowctl{float:right;display:flex;gap:4px;align-items:center}
- .flowctl button{font-size:10px;text-transform:none;letter-spacing:0;
+ .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);
    background:transparent;color:var(--muted);cursor:pointer}
  .flowctl button.on{border-color:var(--accent);color:var(--accent)}
@@ -728,21 +728,21 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    background:color-mix(in srgb,var(--card) 70%,transparent)}
  .olcard.down{opacity:.62;border-style:dashed}
  .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
- .olname{font-size:14px;font-weight:600}
+ .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
     width/height are ignored (the dot only looked right because of its ring). */
  .oldot{display:block;width:8px;height:8px;border-radius:50%;flex:none}
  .oldot.up{background:hsl(142 70% 45%);box-shadow:0 0 0 3px hsl(142 70% 45% / .18)}
  .oldot.down{background:hsl(0 72% 55%);box-shadow:0 0 0 3px hsl(0 72% 55% / .18)}
  /* "local" badge: same glyph + tint as the local provider badge elsewhere. */
- .olbadge{font-size:9.5px;padding:1px 6px;border-radius:4px;font-weight:600;
+ .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;font-weight:600;
    background:hsl(196 88% 55% / .16);color:hsl(196 88% 60%);flex:none}
- .olver{font-size:9.5px;color:var(--muted);margin-left:auto;flex:none}
- .olurls{font-size:9.5px;color:var(--muted);margin:-4px 0 8px 0;word-break:break-all}
+ .olver{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;flex:none}
+ .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 8px 0;word-break:break-all}
  /* Load bars. Colour is a judgement (green/amber/red), not decoration: it is
     the only thing that reads at a glance from across the room. */
- .olrow{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:11px}
- .ollbl{width:74px;flex:none;color:var(--muted);font-size:10px}
+ .olrow{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:var(--fs-sm)}
+ .ollbl{width:74px;flex:none;color:var(--muted);font-size:var(--fs-xs)}
  .olbar{flex:1;height:7px;border-radius:4px;background:var(--border);overflow:hidden;min-width:40px}
  /* display:block is REQUIRED: <i> defaults to display:inline, and inline
     non-replaced elements ignore width/height entirely — the fill rendered as a
@@ -751,7 +751,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olfill.good{background:hsl(142 65% 45%)}
  .olfill.warn{background:hsl(38 92% 52%)}
  .olfill.bad{background:hsl(0 72% 55%)}
- .olval{width:62px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-size:10.5px}
+ .olval{width:62px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-size:var(--fs-xs)}
  /* The numeric readout carries the same traffic-light colour as its bar, so
     the value is legible as good/warn/bad without measuring the bar by eye. */
  .olval.good{color:hsl(142 55% 52%)}
@@ -760,34 +760,34 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Per-GPU chips: only rendered for the local box, which is the only host that
     can report real device telemetry. */
  .olgpus{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 2px}
- .olgpu{font-size:9.5px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);
+ .olgpu{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;border:1px solid var(--border);
    color:var(--muted);font-variant-numeric:tabular-nums}
  .olmod{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0 3px}
- .olmn{font-size:13px;font-weight:600}
+ .olmn{font-size:var(--fs-md);font-weight:600}
  /* Capability pills — what this box can actually do (tools/vision/thinking). */
- .olcap{font-size:9px;padding:1px 5px;border-radius:3px;border:1px solid var(--border);
+ .olcap{font-size:var(--fs-xs);padding:1px 5px;border-radius:3px;border:1px solid var(--border);
    color:var(--muted-foreground,var(--muted))}
  .olcap.tools{border-color:hsl(262 80% 60% / .5);color:hsl(262 80% 70%)}
  .olcap.vision{border-color:hsl(320 85% 60% / .5);color:hsl(320 85% 70%)}
  .olcap.thinking{border-color:hsl(38 92% 52% / .5);color:hsl(38 92% 60%)}
- .olidle{font-size:11px;color:var(--muted);padding:4px 0}
- .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);
+ .olidle{font-size:var(--fs-sm);color:var(--muted);padding:4px 0}
+ .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
    margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
  #soundtoggle.on{border-color:var(--accent);color:var(--accent)}
  .olwork b{color:var(--foreground);font-weight:600;font-variant-numeric:tabular-nums}
- .olstale{font-size:10px;color:hsl(38 92% 60%)}
+ .olstale{font-size:var(--fs-xs);color:hsl(38 92% 60%)}
 
 
  /* Model name inside a drawer log line — bigger than the surrounding text so
     the eye lands on "which model" before reading the message. */
- .evm{font-size:12.5px;font-weight:600}
+ .evm{font-size:var(--fs-md);font-weight:600}
  /* Tool name in a drawer line — same weight as the model name so the eye can
     scan either column, coloured from the tool palette. */
- .evt{font-size:12.5px;font-weight:600}
+ .evt{font-size:var(--fs-sm);font-weight:600}
 
  /* Failure filter chips — same visual language as the drawer's filter tabs. */
  .fchip{padding:2px 8px;border-radius:4px;border:1px solid var(--border);
-   background:transparent;color:var(--muted);cursor:pointer;font-size:10px;
+   background:transparent;color:var(--muted);cursor:pointer;font-size:var(--fs-xs);
    line-height:1.7;white-space:nowrap}
  .fchip:hover{border-color:var(--accent)}
  .fchip.on{background:var(--card);font-weight:600}
@@ -796,19 +796,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:900px){.hsum{grid-template-columns:repeat(2,minmax(0,1fr))}}
  .hsumc{padding:12px 14px;min-width:0}
  .hsumv{font-size:22px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .hsuml{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
- .hsums{font-size:10.5px;margin-top:2px}
+ .hsuml{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .hsums{font-size:var(--fs-xs);margin-top:2px}
  .hhdr{display:flex;align-items:baseline;gap:8px}
- .hsub{text-transform:none;letter-spacing:0;font-weight:400;font-size:10.5px}
+ .hsub{text-transform:none;letter-spacing:0;font-weight:400;font-size:var(--fs-xs)}
  .hrow.hthin{opacity:.5}
  .ffwrap{display:flex;flex-direction:column;gap:6px}
  .ffrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
- .fflbl{width:48px;flex:none;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .fflbl{width:48px;flex:none;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
  .frow{padding:4px 6px;border-radius:4px}
  .frow:hover{background:var(--card)}
  .fwhen{min-width:74px;font-variant-numeric:tabular-nums}
  .fmsg{flex:1;min-width:0;color:var(--fg)}
- .fcnt{min-width:36px;text-align:center;font-size:10px;font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
+ .fcnt{min-width:36px;text-align:center;font-size:var(--fs-xs);font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
  .fkind{width:72px;text-align:center}
  .fmodel{width:150px}
  .fwhen{width:92px}
@@ -830,17 +830,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     without shouting — opacity only, no layout shift. */
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  /* Local electricity cost (P7-04, #68): distinct from billed spend. */
- .elecmark{font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
- .kpisub{font-size:10px;font-weight:500;margin-top:1px;color:var(--muted)}
+ .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
  /* Unpriced / free-tier cost states (P9-05, #82) */
- .unpriced{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.14);color:#f87171}
  .freetier{color:var(--muted)}
- .ftmark{font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .ftmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:0 4px;border-radius:3px;background:rgba(168,85,247,.15);color:#c084fc;vertical-align:1px}
- .unpricedbanner{margin:8px 0 2px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.5;
+ .unpricedbanner{margin:8px 0 2px;padding:8px 12px;border-radius:8px;font-size:var(--fs-sm);line-height:1.5;
    border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.07)}
  .unpricedbanner[hidden]{display:none}
  .unpricedbanner a{color:var(--accent);text-decoration:underline}
@@ -851,14 +851,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Settings (P7-03, #67) */
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:10px}
- .setl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
- .setin{display:flex;align-items:center;gap:6px;font-size:14px}
+ .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+ .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
  .setin input{width:100%;min-width:0;max-width:140px;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font:inherit}
  .setin input:focus{outline:2px solid var(--accent);outline-offset:1px}
  .setin input:invalid{border-color:#ef4444}
- .seth{font-size:11px;color:var(--muted)}
- .setderiv{margin-top:12px;font-size:12px;overflow-wrap:anywhere}
- .setderiv code{font-size:11px}
+ .seth{font-size:var(--fs-sm);color:var(--muted)}
+ .setderiv{margin-top:12px;font-size:var(--fs-sm);overflow-wrap:anywhere}
+ .setderiv code{font-size:var(--fs-sm)}
  .setbad{color:#ef4444}
  .setok{color:#22c55e}
  .setfacts2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
@@ -873,17 +873,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
    display:flex;align-items:center;gap:7px;padding:13px 10px;
    border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
-   background:var(--card);color:var(--fg);cursor:pointer;font-size:12px;
+   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
    font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
    box-shadow:-4px 0 18px rgba(0,0,0,.35);transition:padding .15s ease}
  #logbtn:hover{border-color:var(--accent);padding-right:14px}
  /* Hide the tab itself while the drawer is open — it would sit under the panel. */
  #logbtn.hidden{opacity:0;pointer-events:none}
  #logbtn .n{background:#ef4444;color:#fff;border-radius:999px;padding:1px 6px;
-   font-size:10px;font-weight:600;line-height:1.5}
+   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
  #logbtn .n[hidden]{display:none}
  .n2{background:#ef4444;color:#fff;border-radius:999px;padding:0 5px;
-   font-size:9px;font-weight:700;margin-left:3px}
+   font-size:var(--fs-xs);font-weight:700;margin-left:3px}
  .n2[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
@@ -897,22 +897,22 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    border-bottom:1px solid var(--border);flex-shrink:0}
  .dtabs{display:flex;gap:5px;padding:9px 15px;border-bottom:1px solid var(--border);
    flex-shrink:0;flex-wrap:wrap}
- .dtab{font-size:10.5px;padding:3px 9px;border-radius:3px;cursor:pointer;
+ .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
    border:1px solid var(--border);color:var(--muted);background:transparent}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
  #dbody{overflow-y:auto;flex:1;padding:4px 0;font-family:ui-monospace,SFMono-Regular,
-   Menlo,monospace;font-size:11px;line-height:1.45}
+   Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
  .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
  .ev:hover{background:rgba(127,127,127,.06)}
  .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
  .ev .b{min-width:0;flex:1;word-break:break-word}
- .ev .k{display:inline-block;padding:0 5px;border-radius:2px;font-size:9.5px;
+ .ev .k{display:inline-block;padding:0 5px;border-radius:2px;font-size:var(--fs-xs);
    margin-right:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
  /* .k-* chip colours are generated at boot from FKIND (installKindCSS) so the
     drawer, the health bars and the failure filters can never disagree. */
  .ev.err .b{color:#fca5a5}
  #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
-   display:flex;align-items:center;justify-content:space-between;font-size:10px}
+   display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
     because auto-fit + a fixed `span 2` disagree about the column count and
     leave dead space or a 0px track. Below 1000px the charts go under the list
@@ -929,7 +929,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
    .hide-mobile{display:none}
-   .page-title{font-size:16px !important}
+   .page-title{font-size:var(--fs-lg) !important}
  }
  /* Tablet */
  @media(min-width:641px) and (max-width:1024px){
@@ -944,15 +944,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwpkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
  .bwpt{border:1px solid var(--border);border-radius:6px;padding:10px 12px}
  .bwpv{font-size:22px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
- .bwpl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
- .bwps{font-size:10.5px;margin-top:2px}
- .bwrrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px 52px;align-items:center;gap:8px;font-size:12px}
+ .bwpl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .bwps{font-size:var(--fs-xs);margin-top:2px}
+ .bwrrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px 52px;align-items:center;gap:8px;font-size:var(--fs-sm)}
  .bwrm{font-weight:600}
  .bwrbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
  .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
  .bwrrow.hot .bwrbar i{background:#ef4444}
  .bwrx{text-align:right;font-variant-numeric:tabular-nums}
- .bwrflag{font-size:10px;color:#ef4444;white-space:nowrap}
+ .bwrflag{font-size:var(--fs-xs);color:#ef4444;white-space:nowrap}
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
@@ -1195,7 +1195,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
      <input id="lgq" type="search" placeholder="Search text, tool, session…"
        style="background:var(--bg);border:1px solid var(--border);border-radius:7px;
-              padding:5px 9px;font-size:12px;color:var(--fg);min-width:min(260px,52vw)">
+              padding:5px 9px;font-size:var(--fs-sm);color:var(--fg);min-width:min(260px,52vw)">
      <button id="lgclear" class="chip" type="button">Clear</button>
     </span>
    </div>
@@ -1244,7 +1244,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4 mb-3">
    <div class="lbl mb-2.5 hhdr">Recent failures
     <span class="muted hsub">identical errors grouped</span>
-    <button id="tolog" class="chip" style="margin-left:auto;font-size:10px;text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
+    <button id="tolog" class="chip" style="margin-left:auto;font-size:var(--fs-xs);text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
    </div>
    <!-- Filter chips are built from the data, so a kind only appears when it
         actually occurred; counts make a burst obvious before you read a row. -->
@@ -1391,9 +1391,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 <div id="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
  <div class="dhead">
   <span class="dot"></span>
-  <b style="font-size:13px">Live tail</b>
-  <span class="muted" id="dstamp" style="font-size:10px">live</span>
-  <a href="#/logs" id="dfull" class="chip" style="font-size:10px;text-transform:none;letter-spacing:0">All logs &rarr;</a>
+  <b style="font-size:var(--fs-md)">Live tail</b>
+  <span class="muted" id="dstamp" style="font-size:var(--fs-xs)">live</span>
+  <a href="#/logs" id="dfull" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">All logs &rarr;</a>
   <button id="dclose" class="chip" style="margin-left:auto" title="Close">&times;</button>
  </div>
  <div class="dtabs">
@@ -1402,7 +1402,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <button class="dtab" data-f="tool">Tools</button>
   <span style="margin-left:auto;display:flex;align-items:center;gap:5px">
    <input type="checkbox" id="dauto" checked style="accent-color:var(--accent)">
-   <label for="dauto" class="muted" style="font-size:10px;cursor:pointer">follow</label>
+   <label for="dauto" class="muted" style="font-size:var(--fs-xs);cursor:pointer">follow</label>
   </span>
  </div>
  <div id="dbody"></div>
@@ -1446,9 +1446,9 @@ function showSchemaError(msg){
     document.body.appendChild(el);
   }
   el.innerHTML = '<div class="card" style="max-width:640px;padding:24px;border-color:#ef4444">'
-    + '<div style="color:#ef4444;font-weight:600;font-size:16px;margin-bottom:8px">Payload version mismatch</div>'
-    + '<div class="schemamsg" style="font-size:13px;line-height:1.5"></div>'
-    + '<div class="muted" style="font-size:11px;margin-top:12px">The dashboard refused to render rather than show '
+    + '<div style="color:#ef4444;font-weight:600;font-size:var(--fs-lg);margin-bottom:8px">Payload version mismatch</div>'
+    + '<div class="schemamsg" style="font-size:var(--fs-md);line-height:1.5"></div>'
+    + '<div class="muted" style="font-size:var(--fs-xs);margin-top:12px">The dashboard refused to render rather than show '
     + 'numbers it cannot interpret.</div></div>';
   el.querySelector('.schemamsg').textContent = msg;
 }
@@ -1473,7 +1473,7 @@ function flash(msg){
     f.setAttribute('role', 'status');
     f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
       + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
-      + 'background:var(--card);color:var(--fg);font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.25);'
+      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:0 4px 14px rgba(0,0,0,.25);'
       + 'opacity:0;transition:opacity .2s';
     document.body.appendChild(f);
   }
@@ -1496,10 +1496,10 @@ function flash(msg){
       el.id = 'noprofiles';
       el.className = 'card';
       el.style.cssText = 'max-width:640px;margin:15vh auto;padding:24px;line-height:1.55';
-      el.innerHTML = `<div style="font-size:16px;font-weight:650;margin-bottom:8px">No profiles to show</div>
-        <div class="muted" style="font-size:13px">${why}</div>
-        ${failed ? `<div style="margin-top:10px;font-size:13px">Unreadable:<ul style="margin:4px 0 0 18px;list-style:disc">${failed}</ul></div>` : ''}
-        <div class="muted" style="font-size:12px;margin-top:12px">Point the tool at your agent with
+      el.innerHTML = `<div style="font-size:var(--fs-lg);font-weight:650;margin-bottom:8px">No profiles to show</div>
+        <div class="muted" style="font-size:var(--fs-md)">${why}</div>
+        ${failed ? `<div style="margin-top:10px;font-size:var(--fs-md)">Unreadable:<ul style="margin:4px 0 0 18px;list-style:disc">${failed}</ul></div>` : ''}
+        <div class="muted" style="font-size:var(--fs-sm);margin-top:12px">Point the tool at your agent with
         <code>LLM_TELEMETRY_AGENT_HOME=/path</code> or <code>"agent_home"</code> in the config, then re-run
         <code>llm-telemetry dashboard</code>.</div>`;
       document.body.appendChild(el);
@@ -1825,7 +1825,7 @@ function provBadge(p){
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
-    <span style="font-size:9px">${s.icon}</span>${key}</span>`;
+    <span style="font-size:var(--fs-xs)">${s.icon}</span>${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
 // glyph prefixed to the model name: "◆ step-3.7-flash". rowsForModel lets a
@@ -2799,7 +2799,7 @@ function renderLive(){
       const tools = (L.tools||[]).slice(0,5).map(t=>
         `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
       return `<div class="flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
-        <div style="color:${c.c};font-size:15px;line-height:1.1" title="${esc(L.category)}">${c.i}</div>
+        <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${esc(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${esc(L.title)}">${esc(L.title)}</span>
@@ -3268,7 +3268,7 @@ function renderHealthSummary(H, F){
   el.innerHTML =
     card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`) +
     card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#ef4444':'#22c55e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded') +
-    card(`${failing.length} <span class="muted" style="font-size:13px">of ${H.length}</span>`, 'Models with failures', '', '') +
+    card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', '', '') +
     card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : '',
       worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%');
 }
