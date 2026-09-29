@@ -1534,6 +1534,28 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
  </div>
 
+ <!-- P4-05 (#42): project × model matrix. A project's cost/calls/token mix
+      broken down PER MODEL — the question "which models does each project
+      actually use" that the global Usage view can't answer, because it
+      only ever shows model mix aggregated across everything. -->
+ <div class="view" data-view="Projects" hidden>
+  <div class="card p-4">
+   <div class="lbl mb-2.5 flex items-center justify-between">
+    <span>Project × model
+     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— cost weighting, sorted by project total</span>
+    </span>
+   </div>
+   <!-- Horizontal scroll affordance at narrow widths (#21's own acceptance
+        criterion for this ticket): the table scrolls inside this wrapper
+        rather than overflowing the page, and a visible scrollbar/edge
+        fade signals there's more to see instead of silently clipping. -->
+   <div id="projmatrixwrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table id="projmatrix" class="w-full text-[length:var(--fs-sm)]" style="border-collapse:collapse"></table>
+   </div>
+   <div id="projmatrixempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+  </div>
+ </div>
+
  <div class="view" data-view="Cost" hidden>
   <!-- Row 1: Cost by category + Calls by task -->
   <div class="grid-2 mb-4">
@@ -2380,6 +2402,7 @@ function render(){
   renderResend(p, inR);
   renderConcurrency(p.concurrency, from, to);
   renderProjects(rows, null, null);
+  renderProjectMatrix(rows);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -3035,6 +3058,108 @@ function renderProjects(rows, fromDate, toDate){
     scales: {x: {grid: {display: false}}, y: {grid: {color: BD}, beginAtZero: true}},
   });
 }
+
+// P4-05 (#42): project × model matrix — reuses the SAME colorOf() every
+// other view uses for a model's color, so a model never gets a second,
+// disagreeing shade here (an explicit acceptance criterion). Cap on how
+// many model columns render before folding the tail into "+N more" — a
+// deployment with 15 distinct models would otherwise produce unreadably
+// thin columns.
+const PROJ_MATRIX_MAX_COLS = 8;
+
+function renderProjectMatrix(rows){
+  const wrap = $('projmatrixwrap'), table = $('projmatrix'), empty = $('projmatrixempty');
+  if (!table) return;
+  if (!rows || !rows.length){
+    table.innerHTML = '';
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  // project -> model -> cost. No hardcoded project or model list anywhere
+  // in this function — both axes come entirely from what's in `rows`.
+  const byProject = new Map();
+  const modelTotals = new Map();
+  rows.forEach(r => {
+    const proj = r.project || 'Unattributed';
+    const cost = +r.act || +r.est || 0;
+    if (!byProject.has(proj)) byProject.set(proj, new Map());
+    const models = byProject.get(proj);
+    models.set(r.model, (models.get(r.model) || 0) + cost);
+    modelTotals.set(r.model, (modelTotals.get(r.model) || 0) + cost);
+  });
+
+  // Row order: by project total descending, Unattributed always last (same
+  // convention as the Cost-by-project card, #41) so it never competes for
+  // rank against a real project.
+  const projectTotal = proj => [...byProject.get(proj).values()].reduce((s, v) => s + v, 0);
+  const projects = [...byProject.keys()].sort((a, b) => {
+    if (a === 'Unattributed') return 1;
+    if (b === 'Unattributed') return -1;
+    return projectTotal(b) - projectTotal(a);
+  });
+
+  // Column order: by GLOBAL model total descending, capped, tail folded.
+  const allModels = [...modelTotals.keys()].sort((a, b) => modelTotals.get(b) - modelTotals.get(a));
+  const shownModels = allModels.slice(0, PROJ_MATRIX_MAX_COLS);
+  const restModels = allModels.slice(PROJ_MATRIX_MAX_COLS);
+  const restTotal = restModels.reduce((s, m) => s + modelTotals.get(m), 0);
+
+  const grandTotal = [...modelTotals.values()].reduce((s, v) => s + v, 0);
+
+  const headCells = shownModels.map(m =>
+    `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${esc(short(m))}</th>`).join('');
+  const restHeadCell = restModels.length
+    ? `<th class="text-right px-2 py-1.5 muted" title="${esc(restModels.map(short).join(', '))}">+${restModels.length} more</th>`
+    : '';
+
+  const bodyRows = projects.map(proj => {
+    const models = byProject.get(proj);
+    const cells = shownModels.map(m => {
+      const v = models.get(m);
+      // Empty cell != zero cell (explicit acceptance criterion): a project
+      // that never touched a model renders blank, not "$0.00".
+      if (v === undefined) return '<td class="text-right px-2 py-1.5 muted">—</td>';
+      return `<td class="text-right px-2 py-1.5 proj-cell" data-project="${esc(proj)}" data-model="${esc(m)}" ` +
+        `style="cursor:pointer" title="${esc(proj)} × ${esc(short(m))}: $${v.toFixed(2)}">$${v.toFixed(2)}</td>`;
+    }).join('');
+    let restCell = '';
+    if (restModels.length){
+      const restV = restModels.reduce((s, m) => s + (models.get(m) || 0), 0);
+      restCell = restV > 0
+        ? `<td class="text-right px-2 py-1.5 muted">$${restV.toFixed(2)}</td>`
+        : '<td class="text-right px-2 py-1.5 muted">—</td>';
+    }
+    const rowTotal = projectTotal(proj);
+    return `<tr><td class="px-2 py-1.5 font-medium">${esc(proj)}</td>${cells}${restCell}` +
+      `<td class="text-right px-2 py-1.5 font-semibold">$${rowTotal.toFixed(2)}</td></tr>`;
+  }).join('');
+
+  const colTotalCells = shownModels.map(m =>
+    `<td class="text-right px-2 py-1.5 font-semibold">$${modelTotals.get(m).toFixed(2)}</td>`).join('');
+  const restColTotal = restModels.length
+    ? `<td class="text-right px-2 py-1.5 font-semibold muted">$${restTotal.toFixed(2)}</td>` : '';
+
+  table.innerHTML =
+    `<thead><tr><th class="text-left px-2 py-1.5">Project</th>${headCells}${restHeadCell}` +
+    `<th class="text-right px-2 py-1.5">Total</th></tr></thead>` +
+    `<tbody>${bodyRows}</tbody>` +
+    `<tfoot><tr class="border-t" style="border-color:var(--border)"><td class="px-2 py-1.5 muted">Total</td>` +
+    `${colTotalCells}${restColTotal}<td class="text-right px-2 py-1.5 font-semibold">$${grandTotal.toFixed(2)}</td></tr></tfoot>`;
+
+  // Click targets -> P4-07 drill-down (not yet built). Wired as a no-op
+  // stub now so the cells are genuinely clickable per this ticket's own
+  // acceptance criterion, without inventing drill-down behavior that
+  // belongs to a different, undelivered ticket.
+  table.querySelectorAll('.proj-cell').forEach(td => {
+    td.onclick = () => projectDrillStub(td.dataset.project, td.dataset.model);
+  });
+}
+
+// eslint-disable-next-line no-unused-vars -- called from the onclick above;
+// intentionally does nothing until P4-07 (project drill-down panel) lands.
+function projectDrillStub(_project, _model){}
 
 function renderQueue(){
   const qBox = $('qitems-queued'), rBox = $('qitems-running'), dBox = $('qitems-done');
@@ -5041,7 +5166,7 @@ function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 const NAV_ICONS = {
-  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Usage:'\u2211',
+  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Usage:'\u2211', Projects:'\u25A6',
   Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
 };
 
@@ -5051,7 +5176,7 @@ const NAV_ICONS = {
 // disappearing — a new view must never be silently missing from the nav.
 const NAV_GROUPS = [
   {name:'Overview',  views:['Home', 'Live', 'Flow']},
-  {name:'Analysis',  views:['Usage', 'Cost', 'Health']},
+  {name:'Analysis',  views:['Usage', 'Projects', 'Cost', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
 const NAV_FALLBACK_GROUP = 'More';
@@ -5440,7 +5565,7 @@ function navInstall(){
   navSetOpen(false);
 }
 function views(){
-  $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs','Settings']
+  $('views').innerHTML=['Home','Live','Flow','Usage','Projects','Cost','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 function pickView(v){
