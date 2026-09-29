@@ -7,6 +7,7 @@ range entirely client-side without re-querying.
 import sqlite3, json, os, datetime, argparse, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
+from . import cost_attribution
 from .schema import stamp
 from . import failures
 from . import bandwidth
@@ -39,10 +40,10 @@ group by d, u.model, u.billing_provider, task, u.session_id
 order by d
 """
 
-# All sessions' identity fields, for project resolution (P4-01/P4-03): one
-# query, loaded once per profile into a dict, so walking parent_session_id
-# never re-hits the database per hop.
-SESSION_IDENTITY = "select id, title, cwd, parent_session_id from sessions"
+# All sessions' identity fields, for project resolution (P4-01/P4-03) and
+# cost attribution (P10-07, #95): one query, loaded once per profile into a
+# dict, so walking parent_session_id never re-hits the database per hop.
+SESSION_IDENTITY = "select id, title, cwd, parent_session_id, source, display_name from sessions"
 # Context re-send per session (P9-03, #80). One row per (session, model) over
 # the last 30 days. Sessions under RESEND_MIN_CALLS calls are dropped: a
 # 3-call session has no meaningful average context.
@@ -428,6 +429,14 @@ where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 """
+# P10-07 (#95): tokens consumed by tool RESULTS, for cost-by-tool
+# attribution — 30 days, same window as ROWS/the rest of the Cost view.
+TOOL_TOKEN_ROWS = """
+select tool_name, session_id, coalesce(token_count, 0)
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 2592000
+"""
 # P10-04 (#92): tool reliability. Two windows so the panel can show a
 # trend arrow — current 30 days vs the SAME-LENGTH 30 days immediately
 # before it, not "vs all history" which would bury a recent regression
@@ -690,7 +699,8 @@ def fetch_rows(con):
     happen in exactly one place, called from both build() and the tests.
     """
     sessions_by_id = {
-        row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3]}
+        row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3],
+                 "source": row[4], "display_name": row[5]}
         for row in con.execute(SESSION_IDENTITY)
     }
     rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
@@ -702,6 +712,10 @@ def fetch_rows(con):
         # newly expose anything by keeping it (RESEND, a separate
         # per-session payload section, already exposes session_id).
         r["project"] = project_of_session(r["session_id"], sessions_by_id)
+        # P10-07 (#95): cost attribution needs the session's source
+        # (desktop/subagent/cron/...) on every row — joined in here, once,
+        # rather than re-joined by every consumer.
+        r["source"] = (sessions_by_id.get(r["session_id"]) or {}).get("source")
     return rows
 
 
@@ -809,6 +823,20 @@ def build():
             outcomes = build_outcomes(con)
             tool_rel = build_tool_reliability(con)
             latency = build_latency(con)
+            # P10-07 (#95): cost attribution — reuses the SAME already-priced
+            # `rows` this profile just built (market_value_usd from
+            # pricing.price_row(), never recomputed) and the same
+            # SESSION_IDENTITY sessions_by_id dict fetch_rows() built for
+            # project resolution, so the tree and cost-by-root can never
+            # disagree about parentage.
+            sessions_by_id = {
+                row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3],
+                         "source": row[4], "display_name": row[5]}
+                for row in con.execute(SESSION_IDENTITY)
+            }
+            tool_token_rows = [{"tool_name": t, "session_id": sid, "tokens": tok}
+                                for t, sid, tok in con.execute(TOOL_TOKEN_ROWS)]
+            attribution = cost_attribution.build_attribution(rows, sessions_by_id, tool_token_rows)
             sessions_tree = build_sessions_tree(con)
             compression_pressure = [
                 {"id": sid, "title": title, "fallback_streak": fb,
@@ -865,6 +893,7 @@ def build():
                                  "tool_fail_samples": tool_rel["tool_fail_samples"],
                                  "terminal_top_fail_commands": tool_rel["terminal_top_fail_commands"],
                                  "latency": latency,
+                                 "attribution": attribution,
                                  "sessions_tree": sessions_tree,
                                  "compression_pressure": compression_pressure,
                                  "concurrency": concurrency,

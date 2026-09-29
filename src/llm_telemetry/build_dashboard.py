@@ -1830,6 +1830,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span id="resendmin"></span> calls are left out: a short session has no meaningful average.</div>
    <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="resendtbl"></table></div>
   </div>
+  <!-- P10-07 (#95): cost attribution — who spent it, not just how much. -->
+  <div class="card p-4 mt-4" id="attribcard">
+   <div class="lbl mb-2.5">Cost attribution <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">by source, root session, cron job and tool</span></div>
+   <div class="grid-2 mb-3">
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1">By source</div>
+     <div id="attribsource"></div>
+    </div>
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1">By tool (result tokens)</div>
+     <div id="attribtool"></div>
+    </div>
+   </div>
+   <div class="muted text-[length:var(--fs-xs)] mb-1">By root session (own + descendants)</div>
+   <div id="attribroot" class="mb-3"></div>
+   <div id="attribcronwrap">
+    <div class="muted text-[length:var(--fs-xs)] mb-1">By cron job <span class="normal-case" title="A naive projection from this 30-day window, not a real cron-schedule forecast">(30-day avg &times; runs, projected)</span></div>
+    <div id="attribcron"></div>
+   </div>
+   <div class="muted text-[length:var(--fs-xs)] mt-3" id="attribfooter"></div>
+  </div>
  </div>
 
  <div class="view" data-view="Detail" hidden>
@@ -2693,6 +2714,7 @@ function render(){
   renderResend(p, inR);
   renderConcurrency(p.concurrency, from, to);
   renderLatency(p.latency);
+  renderAttribution(p.attribution);
   renderProjects(dateRows, null, null);
   renderProjectMatrix(dateRows);
   renderProjectDistribution(dateRows);
@@ -3353,6 +3375,64 @@ function renderLatency(lat){
       </div>`).join('')
     : '';
 }
+
+// P10-07 (#95): cost attribution — who spent it, not just how much.
+// Renders the collector's own already-priced aggregates; never recomputes
+// a dollar figure client-side.
+function renderAttribution(attrib){
+  const card = $('attribcard');
+  if (!card) return;
+  const bySource = (attrib && attrib.by_source) || [];
+  const byRoot = (attrib && attrib.by_root) || [];
+  const byCron = (attrib && attrib.by_cron) || [];
+  const byTool = (attrib && attrib.by_tool) || [];
+  if (!bySource.length){ card.hidden = true; return; }
+  card.hidden = false;
+
+  const money = v => `$${(v || 0).toFixed(4)}`;
+
+  $('attribsource').innerHTML = bySource.map(b => `
+    <div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+      <span class="font-semibold flex-1 truncate">${esc(b.source)}</span>
+      <span class="muted">${b.sessions} sess</span>
+      <span style="min-width:5.5rem;text-align:right">${money(b.cost)}</span>
+    </div>`).join('');
+
+  $('attribtool').innerHTML = byTool.length
+    ? byTool.map(b => `
+      <div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+        <span class="font-semibold flex-1 truncate">${esc(b.tool)}</span>
+        <span class="muted">${(b.tokens||0).toLocaleString()} tok</span>
+        <span style="min-width:5.5rem;text-align:right">${money(b.cost)}</span>
+      </div>`).join('')
+    : `<div class="muted text-[length:var(--fs-xs)] py-1">No tool-result tokens in range.</div>`;
+
+  $('attribroot').innerHTML = byRoot.slice(0, 10).map(b => `
+    <div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+      <button type="button" class="chip lntimelinebtn truncate flex-1" style="text-align:left"
+        data-tsession="${esc(b.id)}" data-tprofile="${esc(current)}" data-title="${esc(b.title)}"
+        title="${esc(b.title)} — view timeline">${esc(b.title)}</button>
+      <span class="muted" title="own cost, excluding descendants">own ${money(b.own)}</span>
+      <span class="muted" title="cost of all descendant sessions">+desc ${money(b.descendants)}</span>
+      <span style="min-width:5.5rem;text-align:right">${money(b.total)}</span>
+    </div>`).join('');
+
+  const cronWrap = $('attribcronwrap');
+  if (cronWrap) cronWrap.hidden = !byCron.length;
+  if (byCron.length){
+    $('attribcron').innerHTML = byCron.map(b => `
+      <div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+        <span class="font-semibold flex-1 truncate">${esc(b.name)}</span>
+        <span class="muted">${b.runs} runs</span>
+        <span class="muted" title="average cost per run">avg ${money(b.avg)}</span>
+        <span style="min-width:5.5rem;text-align:right" title="naive 30-day-window projection, not a schedule-derived forecast">~${money(b.monthly_projection)}/mo</span>
+      </div>`).join('');
+  }
+
+  $('attribfooter').textContent =
+    'Cost here comes from this dashboard\u2019s own OpenRouter-rate pricing, not from Hermes\u2019s own cost_status (which is unknown on a large share of sessions).';
+}
+
 
 function renderProjects(rows, fromDate, toDate){
   const card = $('projcard'), empty = $('projempty'), hdr = $('projhdr');

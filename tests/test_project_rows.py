@@ -36,7 +36,7 @@ con = sqlite3.connect(db_path)
 con.execute("""
     create table sessions(
         id text primary key, title text, cwd text, started_at real,
-        parent_session_id text
+        parent_session_id text, source text, display_name text
     )
 """)
 con.execute("""
