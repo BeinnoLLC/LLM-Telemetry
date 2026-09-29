@@ -43,6 +43,11 @@ jobs:
       - name: Leak gate on the rendered pages
         run: python3 examples/check_no_leaks.py
 
+      - name: Golden fixture check (P1-03, #25) — payload shape did not silently drift
+        env:
+          LLM_TELEMETRY_REPORTS: examples/reports
+        run: node tests/bless.js --check
+
       - name: DOM suites
         env:
           LLM_TELEMETRY_REPORTS: examples/reports

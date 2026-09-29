@@ -16,6 +16,10 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
+# P1-03 (#25): golden fixtures are frozen copies of the same scrubbed sample
+# payloads, committed for the same public repo — the leak gate must cover
+# them with the exact same rules, not a separate weaker check.
+GOLDEN = os.path.join(HERE, "..", "tests", "fixtures", "golden")
 
 # Anything that identifies a real person, host or workspace.
 # 127.0.0.1 is explicitly allowed: it is a synthetic dead endpoint used to
@@ -53,14 +57,9 @@ def walk(o, path=""):
         yield path, o
 
 
-def main():
-    if not os.path.isdir(REPORTS):
-        print("no examples/reports/ — nothing to check")
-        return 0
-
-    findings = []
-    for fn in sorted(os.listdir(REPORTS)):
-        full = os.path.join(REPORTS, fn)
+def scan_dir(scan_dir, findings):
+    for fn in sorted(os.listdir(scan_dir)):
+        full = os.path.join(scan_dir, fn)
         if fn.endswith(".json"):
             with open(full) as f:
                 try:
@@ -86,6 +85,17 @@ def main():
                     findings.append((fn, "-", f"{label}: {m.group(0)[:80]}"))
             for ip in sorted(set(bad_ips(text))):
                 findings.append((fn, "-", f"private/LAN IP address: {ip}"))
+
+
+def main():
+    if not os.path.isdir(REPORTS):
+        print("no examples/reports/ — nothing to check")
+        return 0
+
+    findings = []
+    scan_dir(REPORTS, findings)
+    if os.path.isdir(GOLDEN):
+        scan_dir(GOLDEN, findings)
 
     if findings:
         print(f"LEAK CHECK FAILED — {len(findings)} finding(s):\n")
