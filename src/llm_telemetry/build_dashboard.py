@@ -1554,6 +1554,37 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
    <div id="setfacts"></div>
   </div>
+  <!-- P7-05 (#112): refresh intervals. Applies to the running page
+       IMMEDIATELY (the live poll's own setTimeout recursion reads the
+       new value on its very next tick — no reload needed) and, once
+       saved, persists in the config file so a future page load also
+       starts from it. -->
+  <div class="card p-4 mb-3" id="setintervalscard">
+   <div class="flex items-center gap-2 flex-wrap mb-1">
+    <div class="lbl">Refresh intervals</div>
+    <span class="muted text-[length:var(--fs-xs)]" id="setintervalssrc">—</span>
+   </div>
+   <p class="text-[length:var(--fs-sm)] mb-3">How often the page polls live sessions and rebuilds from a
+    fresh analytics snapshot. Applies to this page immediately; Save also makes it the default for the
+    next page load.</p>
+   <div class="setgrid">
+    <label class="setf" for="set_live_poll">
+     <span class="setl">Live poll</span>
+     <span class="setin"><input id="set_live_poll" data-key="live_poll_interval_s" type="number" step="any" min="1" max="60" inputmode="decimal"><span class="muted">s</span></span>
+     <span class="seth">How often the Live view checks for session changes.</span>
+    </label>
+    <label class="setf" for="set_rebuild">
+     <span class="setl">Analytics rebuild</span>
+     <span class="setin"><input id="set_rebuild" data-key="analytics_rebuild_interval_s" type="number" step="any" min="10" max="600" inputmode="decimal"><span class="muted">s</span></span>
+     <span class="seth">How often the page re-fetches the full analytics snapshot.</span>
+    </label>
+   </div>
+   <div class="flex items-center gap-2 flex-wrap mt-3">
+    <button id="setintervalssave" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] tabon" type="button">Save to config</button>
+    <button id="setintervalsreset" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff" type="button">Defaults</button>
+    <span class="text-[length:var(--fs-xs)]" id="setintervalsmsg" role="status"></span>
+   </div>
+  </div>
   <!-- #126: per-profile colour, adjustable from Settings. The stable hashHue()
        derivation stays the default (so an install that never touches this page
        still gets deterministic, collision-avoiding colours) — this is an
@@ -6682,6 +6713,75 @@ async function saveSettings(){
   }
 }
 
+const INTERVAL_DEFAULTS = {
+  live_poll_interval_s: (POWER.interval_defaults && POWER.interval_defaults.live_poll_interval_s) || 5,
+  analytics_rebuild_interval_s: (POWER.interval_defaults && POWER.interval_defaults.analytics_rebuild_interval_s) || 60,
+};
+
+function intervalsRead(){
+  const v = {};
+  document.querySelectorAll('#setintervalscard input[data-key]').forEach(i => { v[i.dataset.key] = +i.value; });
+  return v;
+}
+function intervalsWrite(v){
+  document.querySelectorAll('#setintervalscard input[data-key]').forEach(i => {
+    if (v[i.dataset.key] != null) i.value = v[i.dataset.key];
+  });
+}
+function intervalsInvalid(){
+  return [...document.querySelectorAll('#setintervalscard input[data-key]')]
+    .filter(i => i.value === '' || !i.checkValidity()).map(i => i.dataset.key);
+}
+function intervalsMsg(text, kind){
+  const el = document.getElementById('setintervalsmsg'); if (!el) return;
+  el.textContent = text;
+  el.className = 'text-[length:var(--fs-xs)] ' + (kind === 'err' ? 'setbad' : kind === 'ok' ? 'setok' : 'muted');
+}
+
+function renderIntervals(){
+  intervalsWrite({
+    live_poll_interval_s: LIVE_MS / 1000,
+    analytics_rebuild_interval_s: REBUILD_MS / 1000,
+  });
+  const src = document.getElementById('setintervalssrc');
+  if (src) src.textContent = 'in effect now';
+}
+
+// P7-05 (#112): apply immediately -- the running page's own live-poll and
+// rebuild timers pick up the new value on their NEXT tick (see
+// scheduleLivePoll/scheduleRebuild's own setTimeout recursion), no reload.
+function applyIntervals(v){
+  LIVE_MS = Math.round(v.live_poll_interval_s * 1000);
+  REBUILD_MS = Math.round(v.analytics_rebuild_interval_s * 1000);
+}
+
+async function saveIntervals(){
+  const bad = intervalsInvalid();
+  if (bad.length) return intervalsMsg('Fix ' + bad.join(', ') + ' first.', 'err');
+  const v = intervalsRead();
+  applyIntervals(v);  // apply to THIS page regardless of whether the save round-trip succeeds
+  intervalsMsg('Applied to this page. Saving\u2026', 'info');
+  try {
+    const r = await fetch('api/settings', {method: 'POST', cache: 'no-store',
+      headers: {'Content-Type': 'application/json', 'X-LLM-Telemetry': '1'}, body: JSON.stringify(v)});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return intervalsMsg('Applied here, but not saved: ' + (j.error || r.status), 'err');
+    intervalsMsg('Applied and saved -- future page loads start from this too.', 'ok');
+  } catch (e) {
+    intervalsMsg('Applied here, but not saved: ' + e.message, 'err');
+  }
+}
+
+function intervalsInstall(){
+  const card = document.getElementById('setintervalscard'); if (!card) return;
+  renderIntervals();
+  document.getElementById('setintervalssave')?.addEventListener('click', saveIntervals);
+  document.getElementById('setintervalsreset')?.addEventListener('click', () => {
+    intervalsWrite(INTERVAL_DEFAULTS);
+    intervalsMsg('Defaults filled in; not applied or saved yet.', 'info');
+  });
+}
+
 function settingsInstall(){
   const card = document.getElementById('setcard'); if (!card) return;
   card.querySelectorAll('input[data-key]').forEach(i => i.addEventListener('input', () => {
@@ -7399,7 +7499,12 @@ $('comparetoggle').onclick = () => {
 // endpoint (~2 KB, 56 ms to build) polled every 5s, independent of the 60s
 // full refresh. Only the Live view's data is swapped, so cost/usage charts are
 // never rebuilt by a live tick.
-const LIVE_MS = 5000;
+const LIVE_MS_DEFAULT = 5000;
+// P7-05 (#112): live poll cadence, live-adjustable. A let (not const) so
+// changing it in the Advanced settings card takes effect on the very next
+// setInterval tick without a page reload.
+let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
+  ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 let liveBusy = false, liveFails = 0;
 
 // ---- Completion sound (#105) -----------------------------------------------
@@ -8164,7 +8269,16 @@ function installTimelineModal(){
   $('lnscrim')?.addEventListener('click', lnCloseModal);
 }
 
-setInterval(pollLive, LIVE_MS);
+// P7-05 (#112): re-schedule from a self-recursing setTimeout rather than a
+// fixed setInterval, so changing LIVE_MS/REBUILD_MS_LIVE in the Advanced
+// settings card takes effect on the very next tick -- a setInterval's
+// delay is fixed at the moment it is created and would ignore a later
+// change until a page reload.
+function scheduleLivePoll(){
+  liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
+}
+let liveTimer = null;
+scheduleLivePoll();
 installDrawer();
 installTranscriptModal();
 installSessionFinder();
@@ -8188,7 +8302,19 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) pollL
 
 // Poll in place every 60s. A full location.reload() would throw away the
 // selected tab, profile and date range mid-read; this swaps the data only.
-setInterval(() => { if(!document.hidden) doRefresh(true); }, 60000);
+let REBUILD_MS = (POWER.intervals && POWER.intervals.analytics_rebuild_interval_s
+  ? Math.round(POWER.intervals.analytics_rebuild_interval_s * 1000) : 60000);
+function scheduleRebuild(){
+  rebuildTimer = setTimeout(() => {
+    if (!document.hidden) doRefresh(true);
+    scheduleRebuild();
+  }, REBUILD_MS);
+}
+let rebuildTimer = null;
+scheduleRebuild();
+// intervalsInstall() reads LIVE_MS/REBUILD_MS to seed its inputs -- must run
+// after both are declared above, or a page load throws a TDZ ReferenceError.
+intervalsInstall();
 // catch up immediately when the tab comes back to the foreground
 document.addEventListener('visibilitychange', () => { if(!document.hidden) doRefresh(true); });
 </script></body></html>
@@ -8223,7 +8349,19 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
                       "host_overhead_watts": _d.host_overhead_watts},
          "tps": _E.LOCAL_TPS, "tps_default": _E.LOCAL_TPS_DEFAULT,
          "prefill": _E.PREFILL_SPEEDUP, "cachex": _E.CACHE_SPEEDUP,
-         "config_file": _shown_path((CFG.resolution or {}).get("config_file", ""))}
+         "config_file": _shown_path((CFG.resolution or {}).get("config_file", "")),
+         # P7-05 (#112): the interval VALUES IN EFFECT right now (config
+         # override or default), separate from "tariff"/"defaults" (the
+         # power-model Settings card's own SET_DEFAULTS derives from
+         # "defaults" and requires every one of its keys present in a
+         # /api/settings reply -- these live in their own key so they
+         # never widen that card's own required-key set) -- the page reads
+         # these to seed its own live setInterval calls without waiting
+         # on a /api/settings round trip.
+         "intervals": {"live_poll_interval_s": getattr(CFG, "live_poll_interval_s", _d.live_poll_interval_s),
+                       "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
+         "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
+                                "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
 html = (HEAD.replace("__PRICE_TTL__", _ttl_label()) + JS.replace("__DATA__", json.dumps(data, default=str))
         .replace("__POWER__", json.dumps(POWER))
         .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))

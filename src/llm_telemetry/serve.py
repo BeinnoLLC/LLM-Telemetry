@@ -43,6 +43,12 @@ SETTINGS = {
     "electricity_rate_kwh": (0.0001, 10.0),
     "gpu_draw_watts": (1.0, 5000.0),
     "host_overhead_watts": (0.0, 5000.0),
+    # P7-05 (#112): refresh intervals. Seconds, validated min/max so a typo
+    # (e.g. "5" meant as minutes) can't hammer the collector or a live poll
+    # into a busy-loop; the live poll's own floor (1s) still leaves plenty
+    # of headroom below the analytics rebuild's own ~1min cadence.
+    "live_poll_interval_s": (1.0, 60.0),
+    "analytics_rebuild_interval_s": (10.0, 600.0),
 }
 HEADER = "X-LLM-Telemetry"
 

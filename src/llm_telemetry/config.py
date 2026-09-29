@@ -97,6 +97,12 @@ class Config:
     electricity_rate_kwh: float = 0.047
     gpu_draw_watts: float = 350
     host_overhead_watts: float = 90
+    # P7-05 (#112): refresh intervals, seconds. Read into __DATA__ (build_
+    # dashboard.py) so the running page respects a saved override without
+    # a rebuild; JS falls back to its own hardcoded defaults when these
+    # keys are absent (an older build still works against a newer config).
+    live_poll_interval_s: float = 5.0
+    analytics_rebuild_interval_s: float = 60.0
     # Where the agent keeps its profiles (P5-03). Resolved in load():
     # $LLM_TELEMETRY_AGENT_HOME > this key > ~/.hermes.
     agent_home: str = ""
