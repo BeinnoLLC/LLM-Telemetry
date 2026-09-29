@@ -125,6 +125,77 @@ where ended_at is not null
 group by 1
 order by count(*) desc
 """
+# P10-03 (#91): session outcomes. `(none)` here means "ended_at is set but
+# end_reason is NULL/empty" — a session that died without saying why. That
+# is DELIBERATELY never folded into an "ok" bucket: the ticket's own words
+# are "the ones that died without saying why", and merging it into ok would
+# hide exactly the signal this ticket exists to surface. `reap` means the
+# collector itself detected an abandoned in-flight session
+# (startup_orphan_reap / ws_orphan_reap) — the agent process died mid-turn
+# with the work unaccounted for, a stronger and separately-tracked signal
+# than a plain silent end.
+OUTCOMES_BY_REASON = """
+select coalesce(nullif(end_reason,''), '(none)'), count(*)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+group by 1
+"""
+OUTCOMES_BY_SOURCE_REASON = """
+select coalesce(nullif(source,''), '(unknown)'), coalesce(nullif(end_reason,''), '(none)'), count(*)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+group by 1, 2
+"""
+OUTCOMES_SILENT = """
+select id, coalesce(nullif(title,''), nullif(display_name,''), '(untitled)'),
+       coalesce(nullif(source,''), '(unknown)'), model, cast(ended_at as integer)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+  and (end_reason is null or end_reason = '')
+order by ended_at desc
+"""
+OUTCOMES_REAPED = """
+select id, coalesce(nullif(source,''), '(unknown)'), model, cast(ended_at as integer)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+  and end_reason in ('startup_orphan_reap', 'ws_orphan_reap')
+order by ended_at desc
+"""
+# Reaps per day for the trend line — same date() convention the rest of the
+# collector uses (localtime, so the trend lines up with the other day-grain
+# charts on the same page).
+OUTCOMES_REAP_TREND = """
+select date(ended_at,'unixepoch','localtime') d, count(*)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+  and end_reason in ('startup_orphan_reap', 'ws_orphan_reap')
+group by 1
+order by 1
+"""
+
+
+def build_outcomes(con):
+    """Assemble the P10-03 outcomes payload. Kept as one function so the four
+    buckets share one clock (all read `ended_at` from the SAME snapshot of
+    the DB — no two queries can disagree about "now" mid-build)."""
+    by_reason = {r: n for r, n in con.execute(OUTCOMES_BY_REASON)}
+    by_source_reason = {}
+    for src, reason, n in con.execute(OUTCOMES_BY_SOURCE_REASON):
+        by_source_reason.setdefault(src, {})[reason] = n
+    silent = [{"id": sid, "title": title, "source": src, "model": model, "when": when}
+              for sid, title, src, model, when in con.execute(OUTCOMES_SILENT)]
+    reaped = [{"id": sid, "source": src, "model": model, "when": when}
+              for sid, src, model, when in con.execute(OUTCOMES_REAPED)]
+    reap_trend = [{"date": d, "n": n} for d, n in con.execute(OUTCOMES_REAP_TREND)]
+    return {"by_reason": by_reason, "by_source_reason": by_source_reason,
+            "silent": silent, "reaped": reaped, "reap_trend": reap_trend}
+
+
 # P10-01 (#89): sessions_tree. Selects EVERY session touched in the last 30
 # days (the same window END_REASONS/RESEND use) whose OWN activity falls in
 # range, OR whose PARENT is recent (a subagent spawned by a long-running
@@ -567,6 +638,7 @@ def build():
             resend.sort(key=lambda x: -x["resend_usd"])
             # P9-04 (#81): lifecycle signals for the Health view.
             end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
+            outcomes = build_outcomes(con)
             sessions_tree = build_sessions_tree(con)
             compression_pressure = [
                 {"id": sid, "title": title, "fallback_streak": fb,
@@ -618,6 +690,7 @@ def build():
                                  "resend": resend,
                                  "health": health,
                                  "end_reasons": end_reasons,
+                                 "outcomes": outcomes,
                                  "sessions_tree": sessions_tree,
                                  "compression_pressure": compression_pressure,
                                  "concurrency": concurrency,

@@ -1,4 +1,6 @@
-// #81/P9-04: session-lifecycle panel in the Health view.
+// #81/P9-04: session-lifecycle panel in the Health view — compression
+// pressure only. end_reason breakdown lives in the separate Outcomes card
+// (#91, check_outcomes.js) since P10-03 moved it out of this panel.
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -14,10 +16,8 @@ function chk(ok, name, got) {
 
 chk(/id="lifecard" hidden>/.test(html),
     'the lifecycle card starts hidden (before any data decides otherwise)');
-chk(/const LIFE_ABNORMAL = new Set\(\['\(none\)', 'startup_orphan_reap', 'ws_orphan_reap'\]\)/.test(html),
-    'abnormal end reasons are the ones the ticket named — orphan reaps and a missing reason on an ended session');
-chk(/function renderLifecycle\(reasons, pressure\)\{/.test(html),
-    'renderLifecycle takes the payload data directly — no hardcoded reason list to render from');
+chk(/function renderLifecycle\(pressure\)\{/.test(html),
+    'renderLifecycle takes the pressure payload directly — no hardcoded list to render from');
 
 function boot() {
   return new JSDOM(html, {
@@ -54,21 +54,14 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     // The real sample data (examples/reports/analytics-data.json) has
-    // end_reasons/compression_pressure on the 'work' profile and a clean
-    // (empty) set on 'personal'. Switch profile and re-render both to
-    // exercise the "hidden when clean" path with REAL data, not a fixture.
+    // compression_pressure on the 'work' profile and none on 'personal'.
     w.eval("current = 'work'; renderHealth();");
     const cardWork = d.getElementById('lifecard');
-    chk(cardWork && cardWork.hidden === false, 'the lifecycle card is shown for a profile with real end_reasons/pressure data');
+    chk(cardWork && cardWork.hidden === false, 'the lifecycle card is shown for a profile with real compression-pressure data');
 
+    // #91 moved the end_reason chips out of this card entirely.
     const reasonChips = [...d.querySelectorAll('#lifereasons span')];
-    chk(reasonChips.length >= 4, `at least the 4 sample end_reasons render as chips, got ${reasonChips.length}`);
-    const abnormalChip = reasonChips.find(c => c.textContent.includes('startup_orphan_reap'));
-    chk(!!abnormalChip && /#ef4444/.test(abnormalChip.getAttribute('style')),
-        'startup_orphan_reap renders in the abnormal (red) style, not the neutral one');
-    const normalChip = reasonChips.find(c => c.textContent.includes('agent_close'));
-    chk(!!normalChip && !/#ef4444/.test(normalChip.getAttribute('style')),
-        'agent_close renders in the neutral style, not flagged as abnormal');
+    chk(reasonChips.length === 0, 'the lifecycle card no longer renders end_reason chips (moved to the Outcomes card)');
 
     const pressureText = d.getElementById('lifepressure').textContent;
     chk(pressureText.includes('Refactor the billing parser'), 'a compression-pressure session shows its title');
@@ -77,26 +70,24 @@ setTimeout(() => {
     w.eval("current = 'personal'; renderHealth();");
     const cardPersonal = d.getElementById('lifecard');
     chk(cardPersonal && cardPersonal.hidden === true,
-        'the lifecycle card is hidden entirely for a profile where every session ended cleanly with no pressure');
+        'the lifecycle card is hidden entirely for a profile with no compression pressure');
 
-    // Targeted check of the hide LOGIC itself (not just today's fixture data
-    // happening to be clean): force an all-agent_close reason set with a
-    // real pressure session, then force pressure to zero too, and confirm
-    // the card only hides on the SECOND state.
+    // Targeted check of the hide LOGIC itself: force a real pressure
+    // session, then force pressure to zero, and confirm the card only
+    // hides on the second state.
     w.eval(`
       current = 'personal';
-      DATA.profiles.personal.end_reasons = [{reason:'agent_close', n:9}];
       DATA.profiles.personal.compression_pressure = [{id:'x', title:'t', fallback_streak:1, ineffective_count:0, error:''}];
       renderHealth();
     `);
     chk(d.getElementById('lifecard').hidden === false,
-        'a clean end_reason set alone does NOT hide the card if a real compression-pressure session exists');
+        'the card is shown as soon as a real compression-pressure session exists');
     w.eval(`
       DATA.profiles.personal.compression_pressure = [];
       renderHealth();
     `);
     chk(d.getElementById('lifecard').hidden === true,
-        "once pressure is also empty, an all-agent_close reason set hides the card (the actual hide condition, not just today's sample data)");
+        "once pressure is empty again, the card hides (the actual hide condition, not just today's sample data)");
   } catch (e) {
     chk(false, 'checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 8).join('\n'));

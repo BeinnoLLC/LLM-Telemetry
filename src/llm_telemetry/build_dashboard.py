@@ -1551,16 +1551,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
    <div id="failcount" class="muted text-[length:var(--fs-xs)] mt-2"></div>
   </div>
-  <!-- P9-04 (#81): session-lifecycle panel — end_reason breakdown and
-       compression-pressure sessions. Hidden entirely (not just empty) when
-       every session in the window ended cleanly with no compression
-       pressure, per the ticket's own acceptance criterion. -->
+  <!-- P9-04 (#81): session-lifecycle panel — compression-pressure sessions
+       only (end_reason breakdown moved to the Outcomes card below, #91).
+       Hidden entirely (not just empty) when no session in the window has
+       compression pressure, per the ticket's own acceptance criterion. -->
   <div class="card p-4 mb-3" id="lifecard" hidden>
    <div class="lbl mb-2.5 hhdr">Session lifecycle
-    <span class="muted hsub">end reasons and compression pressure · last 30 days</span>
+    <span class="muted hsub">compression pressure · last 30 days</span>
    </div>
    <div id="lifereasons" class="flex flex-wrap gap-2 mb-2.5"></div>
    <div id="lifepressure" class="flex flex-col gap-1.5"></div>
+  </div>
+  <!-- P10-03 (#91): session outcomes — end_reason breakdown, source-split,
+       orphan reaps as their own KPI, silent ends never folded into "ok". -->
+  <div class="card p-4 mb-3" id="outcard" hidden>
+   <div class="lbl mb-2.5 hhdr">Session outcomes
+    <span class="muted hsub">how sessions ended · last 30 days</span>
+   </div>
+   <div id="outkpis" class="dkpis mb-3"></div>
+   <div id="outbysource" class="flex flex-col gap-1.5 mb-3"></div>
+   <div id="outreaptrend"></div>
+   <div id="outsilentlist" class="flex flex-col gap-1.5 mt-2"></div>
   </div>
   <div class="card p-4" id="delegcard" hidden>
    <div class="lbl mb-2.5">Delegated runs
@@ -4670,56 +4681,107 @@ function renderHealth(rows){
   // filter state lives outside renderHealth so a data refresh does not reset
   // the view the user is currently reading.
   renderFailures(p.failures_recent || []);
-  renderLifecycle(p.end_reasons || [], p.compression_pressure || []);
+  renderLifecycle(p.compression_pressure || []);
+  renderOutcomes(p.outcomes);
 }
 
-// P9-04 (#81): end_reason breakdown + compression-pressure sessions. The
-// reason list is NOT hardcoded — a build running against a newer agent
-// runtime with a brand-new end_reason string must still render it, just
-// without special-casing, rather than blanking the whole panel.
-const LIFE_ABNORMAL = new Set(['(none)', 'startup_orphan_reap', 'ws_orphan_reap']);
-function renderLifecycle(reasons, pressure){
+// P9-04 (#81): compression-pressure sessions. end_reason breakdown moved to
+// renderOutcomes (#91) — kept as a SEPARATE function/card rather than
+// merged in, since pressure and outcome are independent axes (a session
+// can end cleanly and still have fought its context window the whole
+// time, per the comment that already lived here).
+function renderLifecycle(pressure){
   const card = $('lifecard');
   if (!card) return;
-  // "Ended cleanly" means no ABNORMAL reason occurred — a page of nothing
-  // but agent_close is not new information, so showing it anyway would be
-  // exactly the empty-shell case the ticket calls out. Compression pressure
-  // is checked independently: a session can end cleanly and still have
-  // been fighting its context window the whole time.
-  const hasAbnormal = reasons.some(r => LIFE_ABNORMAL.has(r.reason) && r.n > 0);
   const hasPressure = pressure.length > 0;
-  if (!hasAbnormal && !hasPressure){ card.hidden = true; return; }
+  if (!hasPressure){ card.hidden = true; return; }
   card.hidden = false;
 
-  const total = reasons.reduce((a,r)=>a+r.n,0) || 1;
-  $('lifereasons').innerHTML = reasons.map(r => {
-    const abnormal = LIFE_ABNORMAL.has(r.reason);
-    const pct = (r.n/total*100).toFixed(1);
-    return `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="${
-      abnormal
-        ? 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'
-        : 'background:var(--bg);color:var(--muted);border:1px solid var(--border)'
-    }" title="${esc(r.reason)}: ${r.n} session(s), ${pct}%">${abnormal ? '&#9888; ' : ''}${esc(r.reason)} <b>${r.n}</b></span>`;
+  $('lifereasons').innerHTML = '';
+  $('lifepressure').innerHTML =
+    `<div class="muted text-[length:var(--fs-xs)] mb-1">Compression pressure — ${pressure.length} session(s)</div>` +
+    pressure.slice(0,20).map(s => {
+      const bits = [];
+      if (s.fallback_streak > 0) bits.push(`fallback streak ${s.fallback_streak}`);
+      if (s.ineffective_count > 0) bits.push(`${s.ineffective_count} ineffective`);
+      return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
+        <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
+        <span class="muted">${bits.map(esc).join(' · ')}</span>
+        ${s.error ? `<span style="color:#ef4444" title="${esc(s.error)}">error</span>` : ''}
+      </div>` +
+      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
+    }).join('');
+}
+
+// P10-03 (#91): session outcomes — end_reason breakdown, source-split,
+// orphan reaps as their own KPI, and a "silent" bucket for NULL end_reason
+// sessions that is NEVER folded into an "ok"/normal count (the whole point
+// of the ticket is to surface the ones that died without saying why).
+const OUTCOME_ABNORMAL = new Set(['(none)', 'startup_orphan_reap', 'ws_orphan_reap']);
+const OUTCOME_LABELS = { '(none)': 'Ended silently', 'startup_orphan_reap': 'Reaped (startup)',
+  'ws_orphan_reap': 'Reaped (websocket)' };
+function renderOutcomes(outcomes){
+  const card = $('outcard');
+  if (!card) return;
+  const o = outcomes || {};
+  const byReason = o.by_reason || {};
+  const total = Object.values(byReason).reduce((a,n)=>a+n,0);
+  const reapedN = (o.reaped || []).length;
+  const silentN = (o.silent || []).length;
+  const hasAbnormal = Object.entries(byReason).some(([r,n]) => OUTCOME_ABNORMAL.has(r) && n > 0);
+  if (!total){ card.hidden = true; return; }
+  card.hidden = false;
+
+  const kpi = (v, l, col) => `<div class="dkpi"><div class="dkv" style="${col?`color:${col}`:''}">${v}</div><div class="dkl">${l}</div></div>`;
+  $('outkpis').innerHTML =
+    kpi(total.toLocaleString(), 'Sessions ended · 30d', '') +
+    kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? '#ef4444' : '#22c55e') +
+    kpi(silentN.toLocaleString(), 'Ended silently', silentN ? '#f59e0b' : '#22c55e') +
+    kpi(total ? (100*(total-reapedN-silentN)/total).toFixed(1)+'%' : '\u2014', 'Ended cleanly', '');
+
+  // Source-split: a cron session ending as anything other than
+  // cron_complete is the alarm this ticket exists to surface, so every
+  // source's OWN reason mix is shown, not just a global rollup.
+  const bySource = o.by_source_reason || {};
+  $('outbysource').innerHTML = Object.entries(bySource).map(([src, reasons]) => {
+    const srcTotal = Object.values(reasons).reduce((a,n)=>a+n,0);
+    const chips = Object.entries(reasons).sort((a,b)=>b[1]-a[1]).map(([reason,n]) => {
+      const abnormal = OUTCOME_ABNORMAL.has(reason);
+      const label = OUTCOME_LABELS[reason] || reason;
+      return `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="${
+        abnormal
+          ? 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'
+          : 'background:var(--bg);color:var(--muted);border:1px solid var(--border)'
+      }" title="${esc(reason)}: ${n} session(s)">${abnormal ? '&#9888; ' : ''}${esc(label)} <b>${n}</b></span>`;
+    }).join(' ');
+    return `<div class="flex items-center gap-2 flex-wrap text-[length:var(--fs-xs)]">
+      <span class="font-semibold" style="min-width:5rem">${esc(src)} <span class="muted">(${srcTotal})</span></span>
+      ${chips}
+    </div>`;
   }).join('');
 
-  if (!pressure.length){
-    $('lifepressure').innerHTML = '';
-  } else {
-    $('lifepressure').innerHTML =
-      `<div class="muted text-[length:var(--fs-xs)] mb-1">Compression pressure — ${pressure.length} session(s)</div>` +
-      pressure.slice(0,20).map(s => {
-        const bits = [];
-        if (s.fallback_streak > 0) bits.push(`fallback streak ${s.fallback_streak}`);
-        if (s.ineffective_count > 0) bits.push(`${s.ineffective_count} ineffective`);
-        return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
+  // Orphan-reap trend line: a text sparkline is enough here (no new canvas
+  // chart needed for a card this focused) — a run of days all showing
+  // reaps is the signal, and a plain list makes that visible without
+  // pulling in Chart.js scale machinery for one line.
+  const trend = o.reap_trend || [];
+  $('outreaptrend').innerHTML = trend.length
+    ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Orphan reaps per day</div>` +
+      `<div class="flex flex-wrap gap-1">` + trend.map(t =>
+        `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455" title="${esc(t.date)}">${esc(t.date.slice(5))}: ${t.n}</span>`
+      ).join('') + `</div>`
+    : '';
+
+  $('outsilentlist').innerHTML = silentN
+    ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Ended silently — ${silentN} session(s)</div>` +
+      (o.silent || []).slice(0,20).map(s =>
+        `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
           <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
-          <span class="muted">${bits.map(esc).join(' · ')}</span>
-          ${s.error ? `<span style="color:#ef4444" title="${esc(s.error)}">error</span>` : ''}
-        </div>` +
-        (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
-      }).join('');
-  }
+          <span class="muted">${esc(s.source)} \u00b7 ${esc(s.model || '')}</span>
+        </div>`).join('')
+    : '';
 }
+
 
 // Headline strip: the three numbers that answer "is anything wrong" before
 // any chart is read. Computed from the same rows the grid shows.
