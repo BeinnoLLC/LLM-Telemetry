@@ -1007,6 +1007,44 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   #tmodal{width:100vw;max-height:100vh;height:100vh;max-height:100dvh;height:100dvh;top:0;left:0;border-radius:0;
     transform:translate(0,8px) scale(1)}
   #tmodal.open{transform:translate(0,0) scale(1)}
+
+/* P4-07 (#44): project drill-down panel. A right-anchored side panel on
+   desktop; a full-width bottom sheet below 640px (the ticket's own
+   360px-viewport acceptance criterion) — same breakpoint convention as
+   the transcript modal above, same scrim/open-class/focus-trap pattern,
+   just a different anchor edge so it reads as "detail alongside the
+   matrix" rather than "a whole-screen takeover" on desktop. */
+}
+#pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#pdscrim.open{opacity:1;pointer-events:auto}
+#pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
+  width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(100%);transition:transform .18s ease;
+  box-shadow:-16px 0 40px rgba(0,0,0,.35)}
+#pdrawer.open{transform:translateX(0)}
+.pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
+  border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
+.pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
+#pdbody{overflow-y:auto;flex:1;padding:12px 15px}
+.pdsection{margin-bottom:var(--sp-4)}
+.pdsection .lbl{margin-bottom:6px}
+.pdstat{display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-sm)}
+.pdstat .k{color:var(--muted)}
+/* Estimated vs actual must never look the same — a money bug hides here
+   if the two are visually conflated. Actual gets solid text colour,
+   Estimated gets muted + an explicit "(est.)" suffix, never just a
+   different number with no label. */
+.pdcost-actual{font-weight:600}
+.pdcost-est{color:var(--muted);font-style:italic}
+.pdsessrow{padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
+.pdsessrow:last-child{border-bottom:none}
+@media(max-width:640px){
+  #pdrawer{top:auto;left:0;right:0;bottom:0;width:100vw;max-height:85vh;
+    border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0;
+    transform:translateY(100%)}
+  #pdrawer.open{transform:translateY(0)}
   .tmsg{max-width:96%}
 }
  /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
@@ -1732,6 +1770,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <span style="color:var(--accent)">&#9776;</span> Logs
  <span class="n" id="logn" hidden>0</span>
 </button>
+
+<!-- P4-07 (#44): project drill-down panel. -->
+<div id="pdscrim"></div>
+<div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
+ <div class="pdhead">
+  <b id="pdtitle"></b>
+  <button id="pdclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+ </div>
+ <div id="pdbody" tabindex="-1"></div>
+</div>
 """
 
 JS = r"""
@@ -3211,18 +3259,154 @@ function renderProjectMatrix(rows){
     `<tfoot><tr class="border-t" style="border-color:var(--border)"><td class="px-2 py-1.5 muted">Total</td>` +
     `${colTotalCells}${restColTotal}<td class="text-right px-2 py-1.5 font-semibold">$${grandTotal.toFixed(2)}</td></tr></tfoot>`;
 
-  // Click targets -> P4-07 drill-down (not yet built). Wired as a no-op
-  // stub now so the cells are genuinely clickable per this ticket's own
-  // acceptance criterion, without inventing drill-down behavior that
-  // belongs to a different, undelivered ticket.
+  // Click targets -> P4-07 drill-down panel (#44). Focusable (tabIndex+role)
+  // so "focus returns to the trigger" on close has a real trigger to return
+  // to — a <td> is not focusable by default.
   table.querySelectorAll('.proj-cell').forEach(td => {
-    td.onclick = () => projectDrillStub(td.dataset.project, td.dataset.model);
+    td.tabIndex = 0;
+    td.setAttribute('role', 'button');
+    td.onclick = () => pdOpen(td.dataset.project, rows, td.dataset.model);
+    td.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pdOpen(td.dataset.project, rows, td.dataset.model); } };
+  });
+  // Acceptance: "opens from a matrix cell AND from a project row label."
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const labelCell = tr.firstElementChild;
+    const proj = labelCell.textContent;
+    labelCell.style.cursor = 'pointer';
+    labelCell.tabIndex = 0;
+    labelCell.setAttribute('role', 'button');
+    labelCell.onclick = () => pdOpen(proj, rows, null);
+    labelCell.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pdOpen(proj, rows, null); } };
   });
 }
 
-// eslint-disable-next-line no-unused-vars -- called from the onclick above;
-// intentionally does nothing until P4-07 (project drill-down panel) lands.
-function projectDrillStub(_project, _model){}
+let pdFocusReturn = null;
+let pdOpenState = false;
+
+// P4-07 (#44): project drill-down panel. `rows` is the SAME date-filtered
+// row set the matrix/distribution charts were built from, so panel numbers
+// reconcile with whatever cell opened it by construction — there is no
+// second query or recomputation that could silently disagree.
+function pdOpen(project, rows, highlightModel){
+  const scrim = $('pdscrim'), drawer = $('pdrawer'), body = $('pdbody'), title = $('pdtitle');
+  if (!scrim || !drawer || !body) return;
+  pdFocusReturn = document.activeElement;
+
+  const projRows = (rows || []).filter(r => (r.project || 'Unattributed') === project);
+  title.textContent = project;
+
+  const totalCalls = projRows.reduce((s, r) => s + (+r.calls || 0), 0);
+  const totalInp = projRows.reduce((s, r) => s + (+r.inp || 0), 0);
+  const totalOutp = projRows.reduce((s, r) => s + (+r.outp || 0), 0);
+  const totalCread = projRows.reduce((s, r) => s + (+r.cread || 0), 0);
+  const totalCwrite = projRows.reduce((s, r) => s + (+r.cwrite || 0), 0);
+  const totalEst = projRows.reduce((s, r) => s + (+r.est || 0), 0);
+  const totalAct = projRows.reduce((s, r) => s + (+r.act || 0), 0);
+  // Estimated vs actual are NEVER conflated into one number (explicit
+  // acceptance criterion — cost_status/cost_source exist precisely
+  // because some rows are estimates). Both render, separately labelled.
+  const sessionIds = new Set(projRows.map(r => r.session_id).filter(Boolean));
+  const dates = projRows.map(r => r.date).filter(Boolean).sort();
+  const firstSeen = dates[0] || '\u2014';
+  const lastSeen = dates[dates.length - 1] || '\u2014';
+
+  const byModel = new Map();
+  const byProvider = new Map();
+  const byTask = new Map();
+  projRows.forEach(r => {
+    const cost = +r.act || +r.est || 0;
+    byModel.set(r.model, (byModel.get(r.model) || 0) + cost);
+    const prov = provOf(r.provider, r.model, r.base_url);
+    byProvider.set(prov, (byProvider.get(prov) || 0) + cost);
+    const task = r.task || 'unspecified';
+    byTask.set(task, (byTask.get(task) || 0) + cost);
+  });
+  const topModels = [...byModel.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const topProviders = [...byProvider.entries()].sort((a, b) => b[1] - a[1]);
+  const topTasks = [...byTask.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  const statRow = (k, v) => `<div class="pdstat"><span class="k">${esc(k)}</span><span>${v}</span></div>`;
+  const bar = (label, icon, cost, total) => {
+    const pct = total > 0 ? (100 * cost / total) : 0;
+    return `<div class="pdstat"><span class="k">${esc(icon ? icon + ' ' : '')}${esc(label)}</span>` +
+      `<span>$${cost.toFixed(2)} <span class="muted">(${pct.toFixed(0)}%)</span></span></div>`;
+  };
+
+  body.innerHTML = `
+    <div class="pdsection">
+      <div class="lbl">Totals</div>
+      ${statRow('Sessions', sessionIds.size || '\u2014')}
+      ${statRow('Calls', totalCalls.toLocaleString())}
+      ${statRow('Tokens in / out', `${totalInp.toLocaleString()} / ${totalOutp.toLocaleString()}`)}
+      ${statRow('Cache read / write', `${totalCread.toLocaleString()} / ${totalCwrite.toLocaleString()}`)}
+      <div class="pdstat"><span class="k">Cost — actual</span><span class="pdcost-actual">$${totalAct.toFixed(2)}</span></div>
+      <div class="pdstat"><span class="k">Cost — estimated</span><span class="pdcost-est">$${totalEst.toFixed(2)} (est.)</span></div>
+      ${statRow('First seen', firstSeen)}
+      ${statRow('Last seen', lastSeen)}
+    </div>
+    <div class="pdsection">
+      <div class="lbl">Model breakdown</div>
+      ${topModels.map(([m, c]) => bar(short(m), provIcon(short(m)), c, totalAct || totalEst)).join('')}
+    </div>
+    <div class="pdsection">
+      <div class="lbl">Provider breakdown</div>
+      ${topProviders.map(([p, c]) => bar(p, (PROV[p] || {}).icon || '\u25CB', c, totalAct || totalEst)).join('')}
+    </div>
+    <div class="pdsection">
+      <div class="lbl">Task / tool mix</div>
+      ${topTasks.map(([t, c]) => bar(t, '', c, totalAct || totalEst)).join('')}
+    </div>
+    <div class="pdsection">
+      <div class="lbl">Recent sessions</div>
+      ${[...sessionIds].slice(0, 12).map(sid => {
+        const sr = projRows.find(r => r.session_id === sid);
+        return `<div class="pdsessrow">${esc(sid)}${sr && sr.date ? ` <span class="muted">· ${esc(sr.date)}</span>` : ''}</div>`;
+      }).join('') || '<div class="muted">No individual session ids in this range.</div>'}
+    </div>`;
+
+  scrim.classList.add('open'); drawer.classList.add('open');
+  scrim.setAttribute('aria-hidden', 'false'); drawer.setAttribute('aria-hidden', 'false');
+  pdOpenState = true;
+  document.addEventListener('keydown', pdKeydown, true);
+  drawer.focus();
+}
+
+function pdClose(){
+  if (!pdOpenState) return;
+  pdOpenState = false;
+  $('pdscrim')?.classList.remove('open');
+  $('pdrawer')?.classList.remove('open');
+  $('pdscrim')?.setAttribute('aria-hidden', 'true');
+  $('pdrawer')?.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', pdKeydown, true);
+  // Focus returns to the trigger — the matrix cell or project row label
+  // that opened the panel — not lost to <body> (explicit acceptance
+  // criterion, same discipline as the transcript modal).
+  pdFocusReturn?.focus?.();
+  pdFocusReturn = null;
+}
+
+function pdKeydown(e){
+  if (e.key === 'Escape'){ e.preventDefault(); pdClose(); return; }
+  if (e.key === 'Tab'){
+    const drawer = $('pdrawer');
+    if (!drawer) return;
+    const focusables = [...drawer.querySelectorAll('a[href],button,[tabindex]')]
+      .filter(el => el.offsetParent !== null);
+    if (!focusables.length) return;
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  }
+}
+
+function installProjectDrilldown(){
+  $('pdclose')?.addEventListener('click', pdClose);
+  $('pdscrim')?.addEventListener('click', pdClose);
+}
 
 // P4-06 (#43): project × provider distribution — a stacked horizontal bar
 // per project. Reuses PROV/provOf/provIcon exactly as every other view
@@ -6531,6 +6715,7 @@ function installTranscriptModal(){
 setInterval(pollLive, LIVE_MS);
 installDrawer();
 installTranscriptModal();
+installProjectDrilldown();
 soundToggleInstall();
 settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick
