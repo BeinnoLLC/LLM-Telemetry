@@ -35,9 +35,9 @@ for bad_cwd in ("/opt", "/tmp", "/home", None, "", "/usr", "/var", "/root"):
     chk(r is None, f"cwd={bad_cwd!r} resolves to None, not a fake project name, got {r!r}")
 
 # A real project cwd resolves to its basename.
-chk(project_of(title=None, cwd="/home/hazemhagrass/workspace/nowinv") == "nowinv",
+chk(project_of(title=None, cwd="/srv/workspace/nowinv") == "nowinv",
     "a real project directory's basename is used when there is no title")
-chk(project_of(title=None, cwd="/opt/../home/hazemhagrass/workspace/Nowinv/") == "Nowinv",
+chk(project_of(title=None, cwd="/opt/../srv/workspace/Nowinv/") == "Nowinv",
     "a trailing slash doesn't break basename resolution, and case is preserved")
 
 # Neither title nor usable cwd -> None, never raises.

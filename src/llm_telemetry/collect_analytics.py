@@ -12,6 +12,7 @@ from . import failures
 from . import bandwidth
 from . import bandwidth_history
 from . import delegations
+from .projects import project_of
 
 from .config import get as _cfg
 
@@ -28,9 +29,10 @@ select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        sum(u.cache_read_tokens), sum(u.cache_write_tokens), sum(u.reasoning_tokens),
        sum(u.estimated_cost_usd), sum(u.actual_cost_usd),
        count(distinct u.session_id),
-       max(u.billing_base_url)
+       max(u.billing_base_url),
+       s.title, s.cwd
 from session_model_usage u join sessions s on s.id = u.session_id
-group by d, u.model, u.billing_provider, task
+group by d, u.model, u.billing_provider, task, s.title, s.cwd
 order by d
 """
 # Context re-send per session (P9-03, #80). One row per (session, model) over
@@ -243,7 +245,7 @@ where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 """
-COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url".split()
+COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url title cwd".split()
 
 # Work categories. Order matters: the live phase text is checked first for
 # every category, because it says what the session is doing RIGHT NOW. The tool
@@ -328,6 +330,27 @@ def concurrency_by_hour(intervals, now=None):
     return buckets
 
 
+def fetch_rows(con):
+    """Fetch and resolve the ROWS query for one profile's connection
+    (P4-02, #39). Extracted from build() so it's directly testable against
+    a fixture connection without driving build()'s full profile-resolution
+    plumbing — the SQL, the COLS zip, and the project_of() resolution all
+    happen in exactly one place, called from both build() and the test.
+    """
+    rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
+    for r in rows:
+        # Resolve to the single project_of() key (P4-01, #56) here, once,
+        # so no consumer re-implements the stem rule. Raw title/cwd are
+        # dropped from the row afterward — session titles are
+        # session-identifying detail this aggregated table has never
+        # carried before (RESEND, a separate per-session payload section,
+        # already exposes title — this is not new exposure, but the
+        # day/model/provider/task rows table should carry only the
+        # resolved key, not a second raw copy of the same field).
+        r["project"] = project_of(r.pop("title"), r.pop("cwd"))
+    return rows
+
+
 def unreadable(db):
     """Why a profile's state.db cannot be read, or None if it can (P5-04).
 
@@ -371,7 +394,7 @@ def build():
             continue
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
-            rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
+            rows = fetch_rows(con)
             for r in rows:
                 r.update(pricing.price_row(
                     {"provider": r["provider"], "model": r["model"],

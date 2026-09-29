@@ -31,10 +31,10 @@ import re
 # Directories that can appear as a session's cwd but are never a project
 # name — measured on the live DB (~/.hermes/state.db, 282 sessions): the
 # only 4 distinct cwd values were /opt (101), NULL (176),
-# /home/hazemhagrass/workspace (3), /tmp (1), /home (1). /opt and /home
-# alone would already misattribute 102 sessions to a fake "opt"/"home"
-# project, so the denylist below also covers the other standard Unix roots
-# a session could plausibly have as its cwd.
+# a workspace directory two levels under $HOME (3), /tmp (1), /home (1).
+# /opt and /home alone would already misattribute 102 sessions to a fake
+# "opt"/"home" project, so the denylist below also covers the other
+# standard Unix roots a session could plausibly have as its cwd.
 CWD_DENYLIST = frozenset({"opt", "tmp", "home", "usr", "var", "root", ""})
 
 _WS_RE = re.compile(r"\s+")
