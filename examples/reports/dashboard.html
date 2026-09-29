@@ -982,7 +982,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </svg>
    <div>
     <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
-    <div class="muted text-[11px] mt-0.5 flex items-center gap-1.5">
+    <div class="muted text-[length:var(--fs-xs)] mt-0.5 flex items-center gap-1.5">
      <span class="dot"></span><span id="meta"></span>
      <span id="resinfo" class="resinfo"></span>
      <span aria-hidden="true" class="opacity-40">/</span>
@@ -992,7 +992,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
   <div class="flex gap-2 items-center flex-wrap">
    <div class="flex gap-1.5 flex-wrap items-center" id="tabs"></div>
-   <span class="muted text-[11px] whitespace-nowrap" id="tabsub"></span>
+   <span class="muted text-[length:var(--fs-xs)] whitespace-nowrap" id="tabsub"></span>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="false"
@@ -1003,9 +1003,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  <div class="card p-3 flex items-center gap-2 flex-wrap">
   <span class="lbl">Range</span>
-  <input type="date" id="from"><span class="muted text-[11px]">to</span><input type="date" id="to">
+  <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
   <span class="flex gap-1.5 ml-1" id="presets"></span>
-  <span class="muted text-[11px] ml-auto" id="rangeinfo"></span>
+  <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
  </div>
 
  <div class="flex gap-1.5" id="views"></div>
@@ -1018,11 +1018,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="card p-3 mb-3" id="xfercard" hidden>
   <div class="flex items-center gap-3 flex-wrap">
    <div class="lbl">Transferred
-    <span class="muted normal-case tracking-normal text-[10px] ml-1"
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1"
       title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</span>
    </div>
    <div id="xfertot" class="bw"></div>
-   <div class="muted text-[10px] ml-auto" id="xfernote"></div>
+   <div class="muted text-[length:var(--fs-xs)] ml-auto" id="xfernote"></div>
   </div>
  </div>
 
@@ -1068,7 +1068,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        documented in renderQueue() because a queue slot carries no id. -->
   <div class="card p-4 mb-3" id="qcard">
    <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="qsub"></span>
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
    <div id="qlanes" class="qlanes">
     <div class="qlane" data-lane="queued">
@@ -1087,7 +1087,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
-    <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="muted text-[9px] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
+    <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
    <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
@@ -1099,7 +1099,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        more work", which you ask after seeing what is running, not before. -->
   <div class="card p-4 mt-3" id="olcard" hidden>
    <div class="lbl mb-2.5">Local inference hosts
-    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="olsub"></span>
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
    </div>
    <div id="ollama" class="olgrid"></div>
   </div>
@@ -1108,7 +1108,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="view" data-view="Flow" hidden>
   <div class="card p-4">
    <div class="lbl mb-2.5">Provider → model → task
-    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="flowsub"></span>
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="flowsub"></span>
     <span class="flowctl" id="flowctl"></span>
    </div>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
@@ -1122,9 +1122,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4 mb-3" id="setcard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
     <div class="lbl">Electricity &amp; hardware</div>
-    <span class="muted text-[10px]" id="setsrc">—</span>
+    <span class="muted text-[length:var(--fs-xs)]" id="setsrc">—</span>
    </div>
-   <p class="text-[12px] mb-3" id="setnotbill"><b>Local cost is electricity, not billing.</b>
+   <p class="text-[length:var(--fs-sm)] mb-3" id="setnotbill"><b>Local cost is electricity, not billing.</b>
     Nobody invoices you for a local run; the power is paid to your utility. These
     numbers turn a second of inference into dollars so a local model is never read
     as free, and so it can be set beside an API bill <i>knowing</i> they are
@@ -1153,14 +1153,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </div>
    <div class="setderiv" id="setderiv" aria-live="polite"></div>
    <div class="flex items-center gap-2 flex-wrap mt-3">
-    <button id="setsave" class="px-3 py-1 rounded-md border text-[12px] tabon" type="button">Save to config</button>
-    <button id="setreset" class="px-3 py-1 rounded-md border text-[12px] taboff" type="button">Defaults</button>
-    <span class="text-[11px]" id="setmsg" role="status"></span>
+    <button id="setsave" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] tabon" type="button">Save to config</button>
+    <button id="setreset" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff" type="button">Defaults</button>
+    <span class="text-[length:var(--fs-xs)]" id="setmsg" role="status"></span>
    </div>
   </div>
   <div class="card p-4 mb-3">
    <div class="lbl mb-1">How a local token is priced</div>
-   <p class="muted text-[11px] mb-2">Read-only: measured on this hardware and fixed in
+   <p class="muted text-[length:var(--fs-xs)] mb-2">Read-only: measured on this hardware and fixed in
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
    <div id="setfacts"></div>
   </div>
@@ -1175,13 +1175,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div class="flex items-center gap-2 flex-wrap mb-1">
     <div class="lbl">Profile colours</div>
    </div>
-   <p class="text-[12px] mb-3">Each profile's tab, badges and live-session dots share one
+   <p class="text-[length:var(--fs-sm)] mb-3">Each profile's tab, badges and live-session dots share one
     colour. Defaults are derived from the name so two profiles never collide; override
     any of them here. Stored in this browser only — it never changes what is collected.</p>
    <div class="setgrid" id="setcolorgrid"></div>
    <div class="flex items-center gap-2 flex-wrap mt-3">
-    <button id="setcolorreset" class="px-3 py-1 rounded-md border text-[12px] taboff" type="button">Reset to defaults</button>
-    <span class="text-[11px]" id="setcolormsg" role="status"></span>
+    <button id="setcolorreset" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff" type="button">Reset to defaults</button>
+    <span class="text-[length:var(--fs-xs)]" id="setcolormsg" role="status"></span>
    </div>
   </div>
  </div>
@@ -1190,7 +1190,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4 mb-3">
    <div class="flex items-center gap-2 flex-wrap mb-3">
     <div class="lbl">Log events</div>
-    <span class="muted text-[10px]" id="lgscope">—</span>
+    <span class="muted text-[length:var(--fs-xs)]" id="lgscope">—</span>
     <span id="lgcountbadge" hidden></span>
     <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
      <input id="lgq" type="search" placeholder="Search text, tool, session…"
@@ -1201,7 +1201,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </div>
    <!-- Active-filter summary: every applied facet as a removable chip, so the
         current filter state is legible without scanning six rows below. -->
-   <div id="lgactive"><span class="lbl muted text-[9px]">Active</span></div>
+   <div id="lgactive"><span class="lbl muted text-[length:var(--fs-xs)]">Active</span></div>
    <!-- Facet rows. Each chip carries the count over the WHOLE window, not the
         capped slice, so the numbers stay true when events are truncated. -->
    <div class="lgfacets">
@@ -1221,8 +1221,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
   <div class="card p-4">
    <div class="flex items-center gap-2 mb-2">
-    <span class="muted text-[10px]" id="lgcount">—</span>
-    <span class="muted text-[10px]" id="lgcap" hidden></span>
+    <span class="muted text-[length:var(--fs-xs)]" id="lgcount">—</span>
+    <span class="muted text-[length:var(--fs-xs)]" id="lgcap" hidden></span>
     <button id="lgcsv" class="chip" type="button" style="margin-left:auto">Export CSV</button>
    </div>
    <div id="lglist" style="max-height:clamp(320px,58vh,760px);overflow:auto"></div>
@@ -1251,7 +1251,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div id="failfilters" class="ffwrap mb-2.5"></div>
    <div id="faillist" class="flex flex-col gap-1.5"
      style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
-   <div id="failcount" class="muted text-[10px] mt-2"></div>
+   <div id="failcount" class="muted text-[length:var(--fs-xs)] mt-2"></div>
   </div>
   <div class="card p-4" id="delegcard" hidden>
    <div class="lbl mb-2.5">Delegated runs
@@ -1299,7 +1299,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        cannot quietly redraw history. -->
   <div class="card p-4 mt-4" id="bwpanel">
    <div class="lbl mb-2.5">Bandwidth
-    <span class="muted normal-case tracking-normal text-[10px] ml-1" id="bwpsub"></span>
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="bwpsub"></span>
    </div>
    <div id="bwpkpi" class="bwpkpi mb-3"></div>
    <div class="grid-2">
@@ -1312,7 +1312,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      <div id="bwresend" class="flex flex-col gap-1"></div>
     </div>
    </div>
-   <div class="muted text-[10px] mt-3" id="bwpnote"></div>
+   <div class="muted text-[length:var(--fs-xs)] mt-3" id="bwpnote"></div>
   </div>
  </div>
 
@@ -1330,7 +1330,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <!-- Row 3: Cost by provider table full width -->
   <div class="card p-4">
    <div class="lbl mb-2.5">Cost by provider</div>
-   <div class="overflow-x-auto"><table class="w-full text-[12px]" id="tblProv"></table></div>
+   <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="tblProv"></table></div>
   </div>
   <!-- Context re-send (P9-03, #80). One panel for the fact that the bandwidth
        re-send panel (#72, Usage) shows in bytes: here it is in dollars, per
@@ -1338,12 +1338,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4 mt-4" id="resendpanel">
    <div class="flex items-baseline justify-between flex-wrap gap-2 mb-2">
     <div class="lbl">Context re-sent per session</div>
-    <span class="muted text-[11px]" id="resendsub"></span>
+    <span class="muted text-[length:var(--fs-xs)]" id="resendsub"></span>
    </div>
-   <div class="muted text-[11px] mb-2">Every call re-sends the conversation so far. The cached share is billed at the
+   <div class="muted text-[length:var(--fs-xs)] mb-2">Every call re-sends the conversation so far. The cached share is billed at the
     cache-read rate; this ranks sessions by what that re-sent context is worth. Sessions under
     <span id="resendmin"></span> calls are left out: a short session has no meaningful average.</div>
-   <div class="overflow-x-auto"><table class="w-full text-[12px]" id="resendtbl"></table></div>
+   <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="resendtbl"></table></div>
   </div>
  </div>
 
@@ -1352,16 +1352,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        drill-down question ("when was this busy?"), not a headline number, and
        as a band it rendered on every tab including ones it said nothing about. -->
   <div class="card p-4 mb-4" id="heatcard">
-   <div class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[10px] ml-1" id="heatsub"></span></div>
+   <div class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="heatsub"></span></div>
    <div id="heatmap"></div>
   </div>
   <div class="card p-4">
    <div class="lbl mb-2.5">Per-model detail</div>
-   <div class="overflow-x-auto"><table class="w-full text-[12px]" id="tbl"></table></div>
+   <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="tbl"></table></div>
   </div>
  </div>
 
- <div class="text-[11px] muted border-l-2 pl-3" style="border-color:var(--accent)">
+ <div class="text-[length:var(--fs-xs)] muted border-l-2 pl-3" style="border-color:var(--accent)">
   <b>Est. cost</b> is what every request would cost at public API rates, priced per token (input,
   output and cache-read rated separately) from the OpenRouter catalogue (cached 6h), plus
   official vendor rates for models OpenRouter does not list (Codex/Astra, some Fireworks SKUs).
@@ -1523,11 +1523,11 @@ function renderResolution(){
       aria-expanded="false" title="How the profile list was built">${bad.length ? '&#9888; ' : ''}${bits.join(' · ')}</button>
     <div id="respop" class="respop card" hidden>
       <div class="lbl mb-1">Profiles</div>
-      <div class="muted text-[11px] mb-2">Agent home <code>${esc(res.agent_home || '—')}</code>${res.mode ? ` · ${esc(res.mode)}` : ''}</div>
-      ${(res.discovered || []).length ? `<div class="text-[12px]"><b>Discovered:</b> ${res.discovered.map(esc).join(', ')}</div>` : ''}
-      ${(res.configured || []).length ? `<div class="text-[12px]"><b>From config:</b> ${res.configured.map(esc).join(', ')}</div>` : ''}
-      ${ex.length ? `<div class="text-[12px]"><b>Excluded:</b> ${ex.map(e => `${esc(e.name)} <span class="muted">(${esc(e.reason)})</span>`).join(', ')}</div>` : ''}
-      ${bad.length ? `<div class="text-[12px] resbad mt-1"><b>Unreadable:</b><ul style="margin:2px 0 0 16px;list-style:disc">${bad.map(f => `<li>${esc(f.name)}: ${esc(f.reason)}</li>`).join('')}</ul></div>` : ''}
+      <div class="muted text-[length:var(--fs-xs)] mb-2">Agent home <code>${esc(res.agent_home || '—')}</code>${res.mode ? ` · ${esc(res.mode)}` : ''}</div>
+      ${(res.discovered || []).length ? `<div class="text-[length:var(--fs-sm)]"><b>Discovered:</b> ${res.discovered.map(esc).join(', ')}</div>` : ''}
+      ${(res.configured || []).length ? `<div class="text-[length:var(--fs-sm)]"><b>From config:</b> ${res.configured.map(esc).join(', ')}</div>` : ''}
+      ${ex.length ? `<div class="text-[length:var(--fs-sm)]"><b>Excluded:</b> ${ex.map(e => `${esc(e.name)} <span class="muted">(${esc(e.reason)})</span>`).join(', ')}</div>` : ''}
+      ${bad.length ? `<div class="text-[length:var(--fs-sm)] resbad mt-1"><b>Unreadable:</b><ul style="margin:2px 0 0 16px;list-style:disc">${bad.map(f => `<li>${esc(f.name)}: ${esc(f.reason)}</li>`).join('')}</ul></div>` : ''}
     </div>`;
   const btn = $('resbtn'), pop = $('respop');
   btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
@@ -1823,7 +1823,7 @@ function provOf(p, model, url){
 function provBadge(p){
   const key=(p||'').toLowerCase().trim();
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
-  return `<span class="text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
+  return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
     <span style="font-size:9px">${s.icon}</span>${key}</span>`;
 }
@@ -1867,7 +1867,7 @@ function renderBandwidthPanel(p, inR){
   if (!S.length){
     card.hidden = !all.length ? true : false;
     if (!all.length) return;
-    $('bwpkpi').innerHTML = '<span class="muted text-[12px]">No bandwidth recorded in this range.</span>';
+    $('bwpkpi').innerHTML = '<span class="muted text-[length:var(--fs-sm)]">No bandwidth recorded in this range.</span>';
     $('bwresend').innerHTML = ''; $('bwpsub').textContent = ''; $('bwpnote').textContent = '';
     return;
   }
@@ -1931,7 +1931,7 @@ function renderBandwidthPanel(p, inR){
   const max = rows.length ? rows[0].x : 1;
   const TOP = 12;
   $('bwresend').innerHTML = !rows.length
-    ? '<div class="muted text-[12px]">No prompt tokens in range.</div>'
+    ? '<div class="muted text-[length:var(--fs-sm)]">No prompt tokens in range.</div>'
     : rows.slice(0, TOP).map(o => {
         const hot = med && o.x >= 2 * med;
         return `<div class="bwrrow${hot ? ' hot' : ''}" data-model="${short(o.model)}" data-x="${o.x.toFixed(2)}"
@@ -1942,7 +1942,7 @@ function renderBandwidthPanel(p, inR){
           ${hot ? '<span class="bwrflag" title="At least 2x the fleet median">&#9650; high</span>' : '<span class="bwrflag"></span>'}
         </div>`;
       }).join('')
-      + `<div class="muted text-[10px] mt-1">fleet median ${med.toFixed(1)}&times;${rows.length > TOP ? ` · top ${TOP} of ${rows.length} models` : ''}</div>`;
+      + `<div class="muted text-[length:var(--fs-xs)] mt-1">fleet median ${med.toFixed(1)}&times;${rows.length > TOP ? ` · top ${TOP} of ${rows.length} models` : ''}</div>`;
 
   $('bwpnote').textContent =
     `Estimated from token counts × ${bpts.map(b => (+b).toFixed(2)).join(' / ')} bytes/token, ` +
@@ -2016,7 +2016,7 @@ function renderResend(p, inR){
   const total = rows.reduce((s, r) => s + (r.resend_usd || 0), 0);
   $('resendsub').textContent = `${rows.length} sessions · $${total.toFixed(2)} of re-sent context`;
   const mx = Math.max(...rows.map(r => r.resend_usd || 0), 0.01);
-  const head = `<tr class="muted text-[10px] uppercase tracking-wide">
+  const head = `<tr class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">
     <th class="text-left py-1">Session</th><th class="text-left rsx">Model</th>
     <th class="text-right">Calls</th><th class="text-right rsx" title="Average prompt tokens per call: fresh input + cache write + cache read">Avg context</th>
     <th class="text-right" title="Share of prompt tokens served from cache">Cached</th>
@@ -2083,8 +2083,8 @@ function render(){
     ['Success rate',srVal],
     ['In progress',liveDot],
     ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':'')]]
-    .map(([l,v])=>`<div class="card p-2.5"><div class="text-[17px] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>
-      <div class="muted text-[10px] uppercase tracking-wide">${l}</div></div>`).join('');
+    .map(([l,v])=>`<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`).join('');
 
   // Live data is independent of the date filter — render it before the early
   // return, so an empty range never blanks the Live tab.
@@ -2190,7 +2190,7 @@ function render(){
       o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);
     });
     const pmx=Math.max(...Object.values(pCost).map(v=>v.mkt),0.01);
-    ptbl.innerHTML=`<tr class="muted text-[10px] uppercase tracking-wide">
+    ptbl.innerHTML=`<tr class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">
       <th class="text-left py-1.5">Provider</th><th class="text-right">Calls</th>
       <th class="text-right">Tokens</th>
       <th class="text-right" title="Estimated bytes sent to this provider. Derived from tokens, not measured.">&#8593; Up (est)</th>
@@ -2202,12 +2202,12 @@ function render(){
       const barW=Math.max(2,v.mkt/pmx*100);
       return `<tr style="border-top:1px solid ${BD}">
         <td class="py-1.5">${provBadge(pr)}</td>
-        <td class="text-right text-[11px]">${v.calls.toLocaleString()}</td>
-        <td class="text-right text-[11px]">${fmt(v.tok)}</td>
-        <td class="text-right text-[11px] bwup">${fmtB(v.up)}</td>
-        <td class="text-right text-[11px] bwdown">${fmtB(v.down)}</td>
-        <td class="text-right text-[11px] font-semibold" style="color:${s.fg}">$${v.mkt.toFixed(2)}</td>
-        <td class="text-right text-[11px]">${v.models.size}</td>
+        <td class="text-right text-[length:var(--fs-xs)]">${v.calls.toLocaleString()}</td>
+        <td class="text-right text-[length:var(--fs-xs)]">${fmt(v.tok)}</td>
+        <td class="text-right text-[length:var(--fs-xs)] bwup">${fmtB(v.up)}</td>
+        <td class="text-right text-[length:var(--fs-xs)] bwdown">${fmtB(v.down)}</td>
+        <td class="text-right text-[length:var(--fs-xs)] font-semibold" style="color:${s.fg}">$${v.mkt.toFixed(2)}</td>
+        <td class="text-right text-[length:var(--fs-xs)]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
       </tr>`;}).join('');
   }
@@ -2217,7 +2217,7 @@ function render(){
     const o=t[k]||(t[k]={calls:0,tok:0,inp:0,outp:0,cache:0,cost:0,mkt:0,elec:0,up:0,down:0,local:false,priced:false,freetier:false,tasks:new Set()});
     o.calls+=r.calls;o.tok+=r.inp+r.outp;o.inp+=r.inp;o.outp+=r.outp;o.cache+=r.cread;o.cost+=(r.billed_usd||0);o.mkt+=(r.market_value_usd||0);o.up+=(r.up_bytes||0)+(r.lan_up_bytes||0);o.down+=(r.down_bytes||0)+(r.lan_down_bytes||0);if(r.cost_class==='local'){o.local=true;o.elec+=(r.energy_usd||0);}if(r.priced||r.cost_class==='local'||r.cost_class==='preset')o.priced=true;if(r.cost_class==='free')o.freetier=true;o.tasks.add(r.task);});
   const mx=Math.max(...Object.values(t).map(r=>r.calls),1);
-  $('tbl').innerHTML=`<tr class="muted text-[10px] uppercase tracking-wide">
+  $('tbl').innerHTML=`<tr class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">
     <th class="text-left py-1.5">Model</th><th class="text-left">Provider</th>
     <th class="text-right">Calls</th><th class="text-right">In</th><th class="text-right">Out</th>
     <th class="text-right">Cache</th>
@@ -2226,7 +2226,7 @@ function render(){
     <th class="text-right">Est. cost</th>
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
-      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[14px] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
+      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
         <td>${provBadge(pr)}</td>
         <td class="text-right">${v.calls.toLocaleString()}</td><td class="text-right">${fmt(v.inp)}</td><td class="text-right">${fmt(v.outp)}</td>
         <td class="text-right">${fmt(v.cache)}</td>
@@ -2234,7 +2234,7 @@ function render(){
         <td class="text-right bwdown">${fmtB(v.down)}</td>
         <td class="text-right">${costCell(v.mkt, v.local, v.freetier ? 'freetier' : (!v.priced && !v.local) ? 'unpriced' : '')}</td>
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
-        <span class="text-[10px] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
+        <span class="text-[length:var(--fs-xs)] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
 }
 
 function pick(name){
@@ -2284,7 +2284,7 @@ function bwRow(L){
   // Per-row LAN label removed (#109): it duplicated the metered figure's
   // job and cluttered every row. LAN bytes still count toward the live rate.
   const rate = moving ? `<span class="muted bwrate">${fmtRate(upR + downR)}</span>` : '';
-  return `<div class="bw mt-1 text-[10px]${moving ? ' bwlive' : ''}"
+  return `<div class="bw mt-1 text-[length:var(--fs-xs)]${moving ? ' bwlive' : ''}"
       title="Estimated from token counts (${(DATA.bytes_per_token || 4.68)} bytes/token) — not measured">
     <span class="bwleg"><span class="bwarrow bwup">&uarr;</span><span>${fmtB(up)}</span></span>
     <span class="bwleg"><span class="bwarrow bwdown">&darr;</span><span>${fmtB(down)}</span></span>
@@ -2328,12 +2328,12 @@ function renderXfer(rows){
   const ratio = down > 0 ? (up / down) : null;
   $('xfertot').innerHTML =
     `<span class="bwleg"><span class="bwarrow bwup">&uarr;</span>
-       <span class="text-[17px] font-semibold">${fmtB(up)}</span>
-       <span class="muted text-[10px] uppercase tracking-wide">up</span></span>
+       <span class="text-[length:var(--fs-lg)] font-semibold">${fmtB(up)}</span>
+       <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">up</span></span>
      <span class="bwleg"><span class="bwarrow bwdown">&darr;</span>
-       <span class="text-[17px] font-semibold">${fmtB(down)}</span>
-       <span class="muted text-[10px] uppercase tracking-wide">down</span></span>`
-    + (ratio ? `<span class="muted text-[10px]">${ratio.toFixed(0)}:1</span>` : '');
+       <span class="text-[length:var(--fs-lg)] font-semibold">${fmtB(down)}</span>
+       <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">down</span></span>`
+    + (ratio ? `<span class="muted text-[length:var(--fs-xs)]">${ratio.toFixed(0)}:1</span>` : '');
 
   // LAN disclosed separately and never folded into the metered total: bytes to
   // a box on your own network cost nothing, so mixing them would overstate
@@ -2392,10 +2392,10 @@ function renderHome(inR){
     <a class="card p-4 homecard" href="#/${view.toLowerCase()}" data-gohome="${view}">
       <div class="flex items-center justify-between mb-2">
         <span class="hc-ico" style="color:var(--accent)">${ico}</span>
-        <span class="muted text-[10px] uppercase tracking-wide">${view}</span>
+        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${view}</span>
       </div>
       <div class="hc-stat">${stat}</div>
-      <div class="muted text-[11px] mt-1">${desc}</div>
+      <div class="muted text-[length:var(--fs-xs)] mt-1">${desc}</div>
     </a>`).join('');
 
   // Bandwidth card: both directions together, because the ratio is the point.
@@ -2405,12 +2405,12 @@ function renderHome(inR){
     <a class="card p-4 homecard" href="#/usage" data-gohome="Usage">
       <div class="flex items-center justify-between mb-2">
         <span class="hc-ico" style="color:var(--accent)">\u21C5</span>
-        <span class="muted text-[10px] uppercase tracking-wide">Bandwidth (est.)</span>
+        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Bandwidth (est.)</span>
       </div>
       <div class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
         <span class="muted" style="font-weight:400"> / </span>
         <span class="bwdown">\u2193 ${fmtB(downB)}</span></div>
-      <div class="muted text-[11px] mt-1">Estimated from tokens, not measured</div>
+      <div class="muted text-[length:var(--fs-xs)] mt-1">Estimated from tokens, not measured</div>
     </a>`;
 
   // Rates is a separate page, so it stays a real external link.
@@ -2418,10 +2418,10 @@ function renderHome(inR){
     <a class="card p-4 homecard" href="costs.html">
       <div class="flex items-center justify-between mb-2">
         <span class="hc-ico" style="color:var(--accent)">\u2696</span>
-        <span class="muted text-[10px] uppercase tracking-wide">Rates</span>
+        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Rates</span>
       </div>
       <div class="hc-stat">Price sheet</div>
-      <div class="muted text-[11px] mt-1">Current per-million-token rates</div>
+      <div class="muted text-[length:var(--fs-xs)] mt-1">Current per-million-token rates</div>
     </a>`;
 
   box.innerHTML = html;
@@ -2443,11 +2443,11 @@ function modelsOf(L){ return Array.isArray(L.models) ? L.models : []; }
 function modelsBadge(L){
   const ms = modelsOf(L);
   if (ms.length < 2) return (L.nmodels||0) > 1
-    ? `<div class="muted text-[9px]">${L.nmodels} models used</div>` : '';
+    ? `<div class="muted text-[length:var(--fs-xs)]">${L.nmodels} models used</div>` : '';
   const main = ms.filter(m => m.main).length;
   const tip = ms.map(m => `${short(m.model)} (${m.tasks.join(', ')})`).join('\n');
   const open = liveModelsOpen.has(L.id);
-  return `<button type="button" class="lmbtn muted text-[9px]" data-lm="${esc(L.id)}"
+  return `<button type="button" class="lmbtn muted text-[length:var(--fs-xs)]" data-lm="${esc(L.id)}"
      aria-expanded="${open}" title="${esc(tip)}">${ms.length} models used`
     + (main < ms.length ? ` (${main} main, ${ms.length - main} helper)` : '')
     + ` ${open ? '\u25B4' : '\u25BE'}</button>`;
@@ -2791,31 +2791,31 @@ function renderLive(){
   const box = $('livelist');
   if(!box) return;
   if(!live.length){
-    box.innerHTML = '<div class="muted text-[12px] py-2">Nothing running right now.</div>';
+    box.innerHTML = '<div class="muted text-[length:var(--fs-sm)] py-2">Nothing running right now.</div>';
   } else {
     box.innerHTML = live.map(L=>{
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tools = (L.tools||[]).slice(0,5).map(t=>
-        `<span class="text-[9px] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
+        `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
       return `<div class="flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
         <div style="color:${c.c};font-size:15px;line-height:1.1" title="${esc(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[13px] font-semibold truncate" title="${esc(L.title)}">${esc(L.title)}</span>
-            <span class="text-[10px] font-medium" style="color:${c.c}">${L.category}</span>
+            <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${esc(L.title)}">${esc(L.title)}</span>
+            <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${L.category}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
-            ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
-            ${L.kind==='subagent'?'<span class="text-[9px] muted">↳ subagent</span>':''}
+            ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
+            ${L.kind==='subagent'?'<span class="text-[length:var(--fs-xs)] muted">↳ subagent</span>':''}
           </div>
-          <div class="muted text-[10.5px] truncate">${L.phase||'—'}</div>
+          <div class="muted text-[length:var(--fs-xs)] truncate">${L.phase||'—'}</div>
           <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
         </div>
         <div class="metacol shrink-0">
-          <div class="text-[12.5px] muted truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
-          ${L.switched ? `<div class="text-[9px] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
+          <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
+          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
           ${modelsBadge(L)}
-          <div class="muted text-[10px]">${ago(L.idle_s)} ago</div>
+          <div class="muted text-[length:var(--fs-xs)]">${ago(L.idle_s)} ago</div>
         </div>
         <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
       </div>${modelsPanel(L)}`;
@@ -3177,14 +3177,14 @@ function renderDeleg(){
       <div class="dmeta muted">${m.n} run${m.n === 1 ? '' : 's'}${m.wasted_hours ? ` · ${m.wasted_hours}h lost` : ''}</div>
     </div>`;
   }).join('');
-  $('delegmodels').innerHTML = rows || '<div class="muted text-[11px]">No child runs.</div>';
+  $('delegmodels').innerHTML = rows || '<div class="muted text-[length:var(--fs-xs)]">No child runs.</div>';
 
   // Why they failed. Counts only — the reasons come from the runtime's own
   // failure_reason field, so no guessing about what "rate_limit" means.
   const rs = Object.entries(g.reasons || {});
   $('delegreasons').innerHTML = rs.length
     ? rs.map(([k, v]) => `<span class="chip" style="text-transform:none">${esc(k)} <b>${v}</b></span>`).join('')
-    : '<span class="muted text-[11px]">No failures in range.</span>';
+    : '<span class="muted text-[length:var(--fs-xs)]">No failures in range.</span>';
 
   // Measured tool outcomes from inside delegated runs.
   const tl = (g.tools || []).slice(0, 8);
@@ -3195,7 +3195,7 @@ function renderDeleg(){
         <div class="dpct ${t.rate >= 95 ? 'ok' : 'bad'}">${t.rate}%</div>
         <div class="dmeta muted">${t.calls} call${t.calls === 1 ? '' : 's'}${t.fail ? ` · ${t.fail} failed` : ''}</div>
       </div>`).join('')
-    : '<div class="muted text-[11px]">No tool calls recorded.</div>';
+    : '<div class="muted text-[length:var(--fs-xs)]">No tool calls recorded.</div>';
 
   // Recent runs, newest first. Goal text is set with textContent by esc() —
   // it is model-authored and must never be interpolated as markup.
@@ -3206,9 +3206,9 @@ function renderDeleg(){
     return `<div class="ditem">
       <span class="ddot ${okc ? 'ok' : 'bad'}"></span>
       <div class="dgoal" title="${esc(r.goal || '')}">${esc(r.goal || '(no goal recorded)')}</div>
-      <div class="muted text-[10px]">${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
+      <div class="muted text-[length:var(--fs-xs)]">${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
     </div>`;
-  }).join('') || '<div class="muted text-[11px]">Nothing yet.</div>';
+  }).join('') || '<div class="muted text-[length:var(--fs-xs)]">Nothing yet.</div>';
 }
 
 function renderHealth(){
@@ -3217,7 +3217,7 @@ function renderHealth(){
   renderHealthSummary(H, p.failures_recent || []);
   const box = $('healthgrid');
   if(!box) return;
-  if(!H.length){ box.innerHTML='<div class="muted text-[12px]">No calls recorded.</div>'; }
+  if(!H.length){ box.innerHTML='<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>'; }
   else {
     box.innerHTML = H.slice(0,14).map(h=>{
       const r = h.rate;
@@ -3230,18 +3230,18 @@ function renderHealth(){
         `<div title="${fk(k).t}: ${v}" style="width:${(v/h.total*100).toFixed(2)}%;background:${fk(k).c}"></div>`).join('');
       const okPct = (h.ok/h.total*100).toFixed(2);
       const chips = Object.entries(h.kinds||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)
-        .map(([k,v])=>`<span class="text-[9px] px-1 rounded" style="background:${fk(k).c}22;color:${fk(k).c}">${fk(k).t} ${v}</span>`).join(' ');
+        .map(([k,v])=>`<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:${fk(k).c}22;color:${fk(k).c}">${fk(k).t} ${v}</span>`).join(' ');
       // "236 ok / 27" read as "236 out of 27". Say what each number is.
       const count = h.fail
         ? `${h.ok.toLocaleString()} of ${h.total.toLocaleString()} · <span style="color:${col}">${h.fail.toLocaleString()} failed</span>`
         : `${h.ok.toLocaleString()} of ${h.total.toLocaleString()}`;
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
-        <div class="text-[14px] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
+        <div class="text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
         <div class="flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
           <div style="width:${okPct}%;background:#22c55e"></div>${segs}
         </div>
-        <div class="text-[11px] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
-        <div class="text-[10px] muted text-right hcount" style="width:150px">${count}</div>
+        <div class="text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
+        <div class="text-[length:var(--fs-xs)] muted text-right hcount" style="width:150px">${count}</div>
         <div class="flex gap-1 shrink-0 flex-wrap" style="width:170px">${chips}</div>
       </div>`;
     }).join('');
@@ -3347,14 +3347,14 @@ function renderFailures(F){
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
   fl.innerHTML = !groups.length
-    ? `<div class="muted text-[12px]">${F.length
+    ? `<div class="muted text-[length:var(--fs-sm)]">${F.length
         ? 'No failures match this filter.'
         : 'No failures recorded in the last 7 days.'}</div>`
-    : groups.map(g=>`<div class="flex items-start gap-2 text-[11px] py-0.5 frow" data-n="${g.n}">
-        <span class="text-[9px] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
-        <span class="shrink-0 text-[13px] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
-        <span class="muted shrink-0 text-[10px] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
-        <span class="truncate text-[10.5px] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
+    : groups.map(g=>`<div class="flex items-start gap-2 text-[length:var(--fs-xs)] py-0.5 frow" data-n="${g.n}">
+        <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
+        <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
+        <span class="muted shrink-0 text-[length:var(--fs-xs)] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
+        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
         <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
       </div>`).join('');
 
@@ -4145,7 +4145,7 @@ function renderSetDeriv(){
     box.innerHTML =
       `<code>(${+v.gpu_draw_watts} W + ${+v.host_overhead_watts} W) / 1000 \u00d7 $${+v.electricity_rate_kwh} / 3600</code>` +
       ` = <b id="setusdsec">$${s.toPrecision(2)}</b> per second of inference` +
-      `<div class="muted text-[11px] mt-1">A 30B model at 30 tok/s \u2192 <b>$${o30.toFixed(4)}</b> per 1M output tokens,` +
+      `<div class="muted text-[length:var(--fs-xs)] mt-1">A 30B model at 30 tok/s \u2192 <b>$${o30.toFixed(4)}</b> per 1M output tokens,` +
       ` $${(o30 / POWER.prefill).toFixed(4)} per 1M input, $${(o30 / POWER.cachex).toFixed(4)} per 1M cached.` +
       ` Total draw ${w} W.</div>`;
   }
@@ -4161,11 +4161,11 @@ function renderSetFacts(){
     `<tr><td>${esc(band)}</td><td class="text-right">${tps}</td>` +
     `<td class="text-right">$${outPer1M(v, tps).toFixed(4)}</td></tr>`).join('');
   box.innerHTML =
-    `<div class="setfacts2"><table class="w-full text-[11px]"><thead><tr class="muted text-left">` +
+    `<div class="setfacts2"><table class="w-full text-[length:var(--fs-xs)]"><thead><tr class="muted text-left">` +
     `<th>Size band</th><th class="text-right">tok/s</th><th class="text-right">$/1M out</th></tr></thead>` +
     `<tbody>${rows}<tr><td class="muted">unknown size</td><td class="text-right">${POWER.tps_default}</td>` +
     `<td class="text-right">$${outPer1M(v, POWER.tps_default).toFixed(4)}</td></tr></tbody></table>` +
-    `<ul class="text-[11px] setlist">` +
+    `<ul class="text-[length:var(--fs-xs)] setlist">` +
     `<li><b>Prefill \u00d7${POWER.prefill}</b> cheaper than generating: the prompt is one batched forward pass.</li>` +
     `<li><b>Cache read \u00d7${POWER.cachex}</b> cheaper: no matmuls, but KV tensors still stream out of VRAM with the GPU powered.</li>` +
     `<li>Throughput is measured per model size on the local inference box; a model is matched to the first band in its name.</li>` +
@@ -4175,7 +4175,7 @@ function renderSetFacts(){
 function setMsg(text, kind){
   const m = document.getElementById('setmsg'); if (!m) return;
   m.textContent = text || '';
-  m.className = 'text-[11px] ' + (kind === 'err' ? 'setbad' : kind === 'ok' ? 'setok' : 'muted');
+  m.className = 'text-[length:var(--fs-xs)] ' + (kind === 'err' ? 'setbad' : kind === 'ok' ? 'setok' : 'muted');
 }
 
 function renderSettings(){
@@ -4210,7 +4210,7 @@ function setColorSwatch(n){
     <span class="setin">
       <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
       <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
-      <span class="muted text-[10px]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+      <span class="muted text-[length:var(--fs-xs)]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
     </span>
     <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
   </div>`;
@@ -4223,7 +4223,7 @@ function renderSetColors(){
   const names = Object.keys(PV_ALL);
   const have = [...box.querySelectorAll('[data-scname]')].map(el => el.dataset.scname);
   if (have.length === names.length && have.every(n => names.includes(n))) return;
-  box.innerHTML = names.map(setColorSwatch).join('') || '<div class="muted text-[12px]">No profiles yet.</div>';
+  box.innerHTML = names.map(setColorSwatch).join('') || '<div class="muted text-[length:var(--fs-sm)]">No profiles yet.</div>';
 }
 function setColorsInstall(){
   const box = document.getElementById('setcolorgrid');
@@ -4257,7 +4257,7 @@ function setColorsInstall(){
     renderSetColors();
     tabs(); renderLive();
     const m = document.getElementById('setcolormsg');
-    if (m) { m.textContent = 'Reset to name-derived defaults.'; m.className = 'text-[11px] ok'; }
+    if (m) { m.textContent = 'Reset to name-derived defaults.'; m.className = 'text-[length:var(--fs-xs)] ok'; }
   });
 }
 
@@ -4552,7 +4552,7 @@ function lgMatch(e, p){
 function lgChips(boxId, key, items, labelOf){
   const box = $(boxId);
   if (!box) return;
-  if (!items || !items.length){ box.innerHTML = '<span class="muted text-[10px]">none</span>'; return; }
+  if (!items || !items.length){ box.innerHTML = '<span class="muted text-[length:var(--fs-xs)]">none</span>'; return; }
   box.innerHTML = items.map(it => {
     const v = it.v, on = lgSel[key].has(v) ? ' on' : '';
     return `<button class="lgchip${on}" data-facet="${key}" data-val="${esc(v)}" title="${esc(labelOf ? labelOf(it) : v)}">`
@@ -4586,20 +4586,20 @@ function renderLgActive(){
     }
   }
   bar.classList.toggle('show', chips.length > 0);
-  bar.innerHTML = '<span class="lbl muted text-[9px]">Active</span>' + chips.join('');
+  bar.innerHTML = '<span class="lbl muted text-[length:var(--fs-xs)]">Active</span>' + chips.join('');
 }
 
 function renderLogs(){
   const list = $('lglist');
   if (!list) return;
-  if (logsLoading){ list.innerHTML = '<div class="muted text-[12px]">Loading log events…</div>'; return; }
+  if (logsLoading){ list.innerHTML = '<div class="muted text-[length:var(--fs-sm)]">Loading log events…</div>'; return; }
   if (logsErr){
-    list.innerHTML = `<div class="muted text-[12px]">Could not load logs-data.json (${esc(logsErr)}).`
+    list.innerHTML = `<div class="muted text-[length:var(--fs-sm)]">Could not load logs-data.json (${esc(logsErr)}).`
       + ` Run <code>llm-telemetry logs</code>, and note that fetch is blocked when the page is opened from file://.</div>`;
     return;
   }
   const p = lgProfile();
-  if (!p){ list.innerHTML = '<div class="muted text-[12px]">No log events in this window.</div>'; return; }
+  if (!p){ list.innerHTML = '<div class="muted text-[length:var(--fs-sm)]">No log events in this window.</div>'; return; }
 
   // Level facet is derived: errors come from errors.log, everything else is a
   // message row. Counting them here keeps the chip honest without a second query.
@@ -4644,10 +4644,10 @@ function renderLogs(){
       + `<span class="lgtag ${cls}">${esc(tag)}</span>`
       + `<span class="lgmsg">${esc(e.preview||'')}`
       + (meta ? `<span class="lgmeta">${esc(meta)}</span>` : '') + `</span></div>`;
-  }).join('') || '<div class="muted text-[12px]">Nothing matches these filters.</div>';
+  }).join('') || '<div class="muted text-[length:var(--fs-sm)]">Nothing matches these filters.</div>';
   if (rows.length > 1200){
     list.insertAdjacentHTML('beforeend',
-      `<div class="muted text-[10px]" style="padding-top:6px">Showing the newest 1,200 of ${fmt(rows.length)} matches — narrow the filters to see more.</div>`);
+      `<div class="muted text-[length:var(--fs-xs)]" style="padding-top:6px">Showing the newest 1,200 of ${fmt(rows.length)} matches — narrow the filters to see more.</div>`);
   }
 }
 
@@ -4730,14 +4730,14 @@ function navInstall(){
 }
 function views(){
   $('views').innerHTML=['Home','Live','Flow','Usage','Cost','Health','Detail','Logs','Settings']
-    .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[12px] taboff">${v}</button>`).join('');
+    .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 function pickView(v){
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
   document.querySelectorAll('[data-vtab]').forEach(b=>{
     const on=b.dataset.vtab===v;
-    b.className='px-3 py-1 rounded-md border text-[12px] '+(on?'tabon':'taboff');
+    b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
   });
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
@@ -4882,7 +4882,7 @@ function tabs(){
         : `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)"`;
       return `<button data-tab="${n}" data-off="${off?1:0}" onclick="pvToggle('${n}')"`
            + ` oncontextmenu="pvMenu(event,'${esc(n)}')" title="${off?'Off — click to turn on':'On — click to turn off'}"`
-           + ` class="px-5 py-3 rounded-md border text-[16px] taboff" ${st}>${n}</button>`;
+           + ` class="px-5 py-3 rounded-md border text-[length:var(--fs-lg)] taboff" ${st}>${n}</button>`;
     }).join('');
   // a compact "N/M on" readout so the merge's extent is stated, not implied
   const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;

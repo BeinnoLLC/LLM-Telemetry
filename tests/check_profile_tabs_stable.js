@@ -59,8 +59,8 @@ setTimeout(() => {
 
     // ---- bug: clicking a tab must not change chip size/class -------------
     const before = chips().map(c => ({ tab: c.dataset.tab, cls: c.className, style: c.getAttribute('style') }));
-    chk(before.every(b => /text-\[16px\]/.test(b.cls) && /px-5/.test(b.cls)),
-        'chips start at the real 16px/px-5 size', before.map(b => b.cls).join(' | '));
+    chk(before.every(b => /text-\[length:var\(--fs-lg\)\]/.test(b.cls) && /px-5/.test(b.cls)),
+        'chips start at the real large/px-5 size', before.map(b => b.cls).join(' | '));
 
     // Click a real profile chip via the same handler the page wires up.
     const target = names[0];
@@ -72,8 +72,8 @@ setTimeout(() => {
     const after = chips().map(c => ({ tab: c.dataset.tab, cls: c.className, style: c.getAttribute('style') }));
     chk(after.length === before.length, 'chip count unchanged after interacting');
     after.forEach((a) => {
-      chk(/text-\[16px\]/.test(a.cls) && /px-5/.test(a.cls),
-          `chip "${a.tab}" keeps its 16px/px-5 size after render()`, a.cls);
+      chk(/text-\[length:var\(--fs-lg\)\]/.test(a.cls) && /px-5/.test(a.cls),
+          `chip "${a.tab}" keeps its real large/px-5 size after render()`, a.cls);
       // "taboff" is the chip's REAL base class name (legacy naming from before
       // #121's hue-chip redesign); the actual bug was a full className swap to
       // the flat, differently-sized "px-3 py-1 ... 12px" class — assert that

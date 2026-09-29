@@ -66,7 +66,7 @@ setTimeout(() => {
   const sumDown = merged.reduce((a, r) => a + (+r.down_bytes || 0), 0);
   chk(sumUp > 0, 'sample rows carry upload bytes', `(${(sumUp / 1048576).toFixed(0)} MiB)`);
 
-  const spans = [...tot.querySelectorAll('.text-\\[17px\\]')].map(s => s.textContent.trim());
+  const spans = [...tot.querySelectorAll('.text-\\[length\\:var\\(--fs-lg\\)\\]')].map(s => s.textContent.trim());
   const shownUp = toBytes(spans[0]), shownDown = toBytes(spans[1]);
   // 2% tolerance: fmtB rounds to 1-2 decimals, so exact equality is wrong to
   // demand, but an order-of-magnitude or wrong-source error still fails.

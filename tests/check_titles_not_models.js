@@ -94,12 +94,12 @@ setTimeout(() => {
     chk(!!row1, '"In progress now" row shows the session title');
     const titleEl = [...row1.querySelectorAll('span')].find(s => s.textContent === 'Refactor the billing parser');
     chk(!!titleEl, 'the title text is its own element (not buried in a combined string)');
-    chk(/text-\[13px\]/.test(titleEl.className) && /font-semibold/.test(titleEl.className),
+    chk(/text-\[length:var\(--fs-md\)\]/.test(titleEl.className) && /font-semibold/.test(titleEl.className),
         'title is styled as the prominent element', titleEl.className);
     const modelEl = row1.querySelector('.metacol > div:first-child');
     chk(!!modelEl && modelEl.textContent.trim() === 'claude-opus-5',
         'model name is still shown, in the meta column', modelEl && modelEl.textContent);
-    chk(/text-\[12\.5px\]/.test(modelEl.className) && /muted/.test(modelEl.className),
+    chk(/text-\[length:var\(--fs-sm\)\]/.test(modelEl.className) && /muted/.test(modelEl.className),
         'model name is now the smaller, secondary/muted element', modelEl.className);
   } catch (e) {
     chk(false, 'checks crashed', e.message);
