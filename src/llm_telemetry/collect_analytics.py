@@ -127,6 +127,21 @@ where started_at > strftime('%s','now') - 2592000
 order by compression_ineffective_count desc, compression_fallback_streak desc
 limit 40
 """
+
+# P9-06 (#83): "how many agents were running at once" — the concurrency
+# question neither Live (right now) nor Usage (daily volume) answers.
+# Bucketing overlapping [started_at, ended_at] intervals into hours is
+# awkward in pure SQL (a session spanning several hours needs to count in
+# EACH of them), so this only pulls the raw intervals and does the bucketing
+# in Python (see concurrency_by_hour below) — the SQL stays a plain scan
+# with an index-friendly predicate, and the interval logic is one small,
+# independently testable function instead of a recursive CTE.
+# Scoped to the same 90-day window as HEATMAP.
+CONCURRENCY_INTERVALS = """
+select started_at, ended_at, (parent_session_id is not null)
+from sessions
+where started_at > strftime('%s','now') - 7776000
+"""
 # "In progress" = open session with activity inside the window. A null ended_at
 # alone is not enough: crashed/killed sessions never get one and would inflate
 # this forever (9 open rows here, only 3 genuinely live).
@@ -271,6 +286,48 @@ def _tilde(path):
     return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
 
 
+def concurrency_by_hour(intervals, now=None):
+    """(#83/P9-06) Sessions active per hour, split top-level vs. subagent.
+
+    `intervals` is an iterable of (started_at, ended_at, is_subagent) as
+    returned by CONCURRENCY_INTERVALS — ended_at may be None for a session
+    that is still running (crashed-without-closing counts the same as
+    genuinely still-running here: both were occupying a slot for that hour,
+    which is the only thing this metric claims to measure).
+
+    A session spanning multiple hours is counted in EVERY hour it overlaps,
+    not just the hour it started in — an 8am-11am session is concurrency
+    pressure at 9am and 10am too, and a start-hour-only count would hide
+    that entirely.
+
+    Returns a dict keyed "YYYY-MM-DD HH" (local time, zero-padded hour) ->
+    {"top": n, "sub": n}. Empty input returns an empty dict — the caller
+    decides what an empty range renders as (#83's own "not a broken axis"
+    acceptance criterion), this function makes no chart-shaped assumptions.
+    """
+    import time as _time
+    now = now if now is not None else _time.time()
+    buckets = {}
+    HOUR = 3600
+    for started_at, ended_at, is_subagent in intervals:
+        if started_at is None:
+            continue
+        end = ended_at if ended_at is not None else now
+        if end < started_at:
+            # Clock skew / bad data: a negative-duration session contributes
+            # nothing rather than silently going backwards through hours.
+            continue
+        first_hour = int(started_at // HOUR)
+        last_hour = int(end // HOUR)
+        key_field = "sub" if is_subagent else "top"
+        for h in range(first_hour, last_hour + 1):
+            ts = h * HOUR
+            key = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:00")
+            b = buckets.setdefault(key, {"top": 0, "sub": 0})
+            b[key_field] += 1
+    return buckets
+
+
 def unreadable(db):
     """Why a profile's state.db cannot be read, or None if it can (P5-04).
 
@@ -376,6 +433,14 @@ def build():
                 {"id": sid, "title": title, "fallback_streak": fb,
                  "ineffective_count": ic, "error": err or ""}
                 for sid, title, fb, ic, err in con.execute(COMPRESSION_PRESSURE)]
+            # P9-06 (#83): concurrency-by-hour. concurrency_by_hour does the
+            # interval bucketing in Python (see its own docstring for why);
+            # this just shapes the dict into the flat list the dashboard's
+            # other hour-keyed payloads (HOURS) already use.
+            conc_buckets = concurrency_by_hour(con.execute(CONCURRENCY_INTERVALS))
+            concurrency = [
+                {"hour": k, "top": v["top"], "sub": v["sub"]}
+                for k, v in sorted(conc_buckets.items())]
             # Must run BEFORE the finally below closes the connection.
             deleg = delegations.collect(con)
         finally:
@@ -415,6 +480,7 @@ def build():
                                  "health": health,
                                  "end_reasons": end_reasons,
                                  "compression_pressure": compression_pressure,
+                                 "concurrency": concurrency,
                                  "heatmap": heatmap,
                                  "node_sessions": node_sessions,
                                  "failures_recent": fail_recent,

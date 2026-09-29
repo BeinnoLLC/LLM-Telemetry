@@ -1546,6 +1546,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </div>
    <div class="muted text-[length:var(--fs-xs)] mt-3" id="bwpnote"></div>
   </div>
+  <!-- P9-06 (#83): concurrency band — sessions active per hour, split
+       top-level vs. subagent, with the local-inference queue depth overlaid
+       so saturation and concurrency read together. Hidden entirely (not
+       just an empty axis) when the selected range has no data at all. -->
+  <div class="card p-4 mt-4" id="conccard">
+   <div class="lbl mb-2.5">Concurrency
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— sessions active per hour, top-level vs. subagent</span>
+   </div>
+   <div id="concpeak" class="muted text-[length:var(--fs-xs)] mb-2"></div>
+   <div style="height:clamp(220px,22vw,320px)"><canvas id="cConcurrency"></canvas></div>
+   <div id="concempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+  </div>
  </div>
 
  <div class="view" data-view="Cost" hidden>
@@ -2318,7 +2330,6 @@ function render(){
   const rows  = p.rows.filter(r=>inR(r.date));
   const hours = p.hours.filter(h=>inR(h.date));
   const sess  = p.sessions.filter(s=>inR(s.date));
-
   charts.forEach(c=>c.destroy()); charts=[];
   // Profile chip styling (size, hue) is owned entirely by tabs() (#121) — it
   // sets the on/off style inline per-profile. Re-styling [data-tab] here with
@@ -2395,6 +2406,7 @@ function render(){
   // not keep showing the previous range's numbers.
   renderBandwidthPanel(p, inR);
   renderResend(p, inR);
+  renderConcurrency(p.concurrency, from, to);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -2891,6 +2903,58 @@ function flipMove(el, toContainer){
   }
   el.classList.add('arrived');
   setTimeout(() => { el.classList.remove('travel'); el.classList.remove('arrived'); }, 320);
+}
+
+// P9-06 (#83): concurrency band. `hours` here is DATA.profiles[current]'s
+// hour-keyed concurrency list, already scoped to the selected date range by
+// render() (matching how cDaily/cHours are filtered) — this function does
+// no range filtering of its own.
+function renderConcurrency(concurrency, fromDate, toDate){
+  const card = $('conccard'), empty = $('concempty'), peakEl = $('concpeak');
+  if (!card) return;
+  const inR = h => {
+    const d = h.hour.slice(0, 10);
+    return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+  };
+  const rows = (concurrency || []).filter(inR).sort((a, b) => a.hour < b.hour ? -1 : 1);
+
+  if (!rows.length){
+    // "Empty range renders an empty state, not a broken axis" — destroy any
+    // stale chart bound to the canvas rather than leaving Chart.js holding
+    // axes for zero data points.
+    const el = $('cConcurrency');
+    const prev = el && (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+    if (prev) { try { prev.destroy(); } catch(_){} }
+    empty.hidden = false;
+    peakEl.textContent = '';
+    return;
+  }
+  empty.hidden = true;
+
+  let peak = {total: -1, hour: null, top: 0, sub: 0};
+  rows.forEach(r => {
+    const total = r.top + r.sub;
+    if (total > peak.total) peak = {total, hour: r.hour, top: r.top, sub: r.sub};
+  });
+  peakEl.innerHTML = `Peak: <b>${peak.total}</b> concurrent session${peak.total===1?'':'s'} ` +
+    `(${peak.top} top-level, ${peak.sub} subagent) at <b>${esc(peak.hour)}</b>`;
+
+  // Queue depth has no stored history (the Ollama poller only ever samples
+  // "right now"), so it renders as a single dashed reference line at the
+  // CURRENT total across hosts rather than a fabricated series — labelling
+  // it "now" makes that scope explicit instead of implying a real trend.
+  const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
+  const queueNow = hosts.reduce((s, h) => s + Math.max(0, (+h.queue || 0)), 0);
+
+  mk('cConcurrency', 'bar', rows.map(r => r.hour.slice(5)),
+    [
+      {label: 'top-level', data: rows.map(r => r.top), backgroundColor: AC, stack: 's'},
+      {label: 'subagent', data: rows.map(r => r.sub), backgroundColor: PAL[2], stack: 's'},
+      {label: 'queue depth (now)', data: rows.map(() => queueNow), type: 'line',
+       borderColor: '#ef4444', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
+    ],
+    {plugins: {legend: {labels: {boxWidth: 8}}},
+     scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
 }
 
 function renderQueue(){
