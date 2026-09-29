@@ -41,6 +41,13 @@ llm-telemetry = "llm_telemetry.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+# P2-01 (#26): dashboard.css is read from disk at build time
+# (build_dashboard.py's CSS_PATH), so it must actually ship with the
+# installed package -- setuptools does not include non-.py files under a
+# found package by default.
+llm_telemetry = ["web/css/*.css"]
+
 # ---------------------------------------------------------------------------
 # P3-01 (#31): Ruff + mypy, started NON-STRICT deliberately. The two real
 # bugs that motivated this ticket (a str-vs-Path confusion in config.py, a

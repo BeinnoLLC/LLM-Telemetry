@@ -11,6 +11,12 @@ const path = require('path');
 
 const srcPath = path.join(__dirname, '..', 'src', 'llm_telemetry', 'build_dashboard.py');
 const src = fs.readFileSync(srcPath, 'utf8');
+// P2-01 (#26): the --fs-* clamp() tokens live in the extracted CSS file, not
+// inline in build_dashboard.py anymore -- check those two assertions against
+// cssSrc, everything else (literal text-[Npx] utilities, which are Tailwind
+// classes in markup, not CSS custom properties) stays against the .py source.
+const cssPath = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css', 'dashboard.css');
+const cssSrc = fs.readFileSync(cssPath, 'utf8');
 const html = fs.readFileSync(
   path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
 
@@ -33,12 +39,12 @@ chk(htmlMatches.length === 0, 'no literal text-[Npx] utility survives into the b
 // viewport), not just a renamed constant.
 ['--fs-xs', '--fs-sm', '--fs-md', '--fs-lg', '--fs-xl'].forEach(tok => {
   const re = new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*clamp\\(');
-  chk(re.test(src), `${tok} is defined as a clamp() (scales with viewport)`);
+  chk(re.test(cssSrc), `${tok} is defined as a clamp() (scales with viewport)`);
 });
 
 // The floor: --fs-xs's minimum must be >= 11px (the ticket's explicit
 // "minimum label text 11px" requirement).
-const xsMatch = src.match(/--fs-xs:clamp\((\d+)px/);
+const xsMatch = cssSrc.match(/--fs-xs:clamp\((\d+)px/);
 chk(!!xsMatch && +xsMatch[1] >= 11, '--fs-xs floor is >= 11px', xsMatch && xsMatch[1]);
 
 // Tokens are actually USED (not just declared and ignored) — every text-size

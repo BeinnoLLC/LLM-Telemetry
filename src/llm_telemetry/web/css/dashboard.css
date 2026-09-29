@@ -1,0 +1,1222 @@
+ :root{
+   --bg:#0b0f17; --card:#131822; --fg:#e6edf6; --muted:#8b98ab;
+   --border:#232b39; --accent:#6366f1; --accent2:#22c55e;
+   --fs:15px; --gap:16px; --pad:20px;
+   /* ---- Fluid type + spacing scale ---------------------------------
+      One continuous scale instead of per-breakpoint font rules. Every
+      step is clamp(min, preferred, max) so text grows with the viewport
+      and never drops below a legible floor on a phone: --fs-xs is 11px
+      at 360px, which is the smallest size we allow anywhere. */
+   --fs-xs:clamp(11px,.62vw + 8.8px,12px);
+   --fs-sm:clamp(12px,.70vw + 9.5px,13.5px);
+   --fs-md:clamp(13px,.75vw + 10.3px,15px);
+   --fs-lg:clamp(15px,1.1vw + 11px,18px);
+   --fs-xl:clamp(17px,1.8vw + 11px,24px);
+   --sp-1:4px;  --sp-2:6px;
+   --sp-3:clamp(8px,1vw,10px);
+   --sp-4:clamp(10px,1.4vw,14px);
+   --sp-5:clamp(14px,2vw,20px);
+   --sp-6:clamp(18px,2.8vw,28px);
+   /* Gauge sizing — a single knob drives stroke, ticks and readout. */
+   --gauge-size:84px;
+   /* Gauge severity zones, themeable without touching the SVG code. */
+   --z-ok:hsl(142 65% 45%); --z-warn:hsl(38 92% 52%); --z-bad:hsl(0 72% 55%);
+   --z-ok-fg:hsl(142 55% 52%); --z-warn-fg:hsl(38 88% 58%); --z-bad-fg:hsl(0 70% 64%);
+   --nav-w:232px; --rail-w:60px; --bar-h:52px;
+ }
+ [data-theme=light]{
+   --bg:#f7f8fb; --card:#ffffff; --fg:#111827; --muted:#6b7280;
+   --border:#e5e7eb; --accent:#4f46e5; --accent2:#16a34a;
+   /* Darker zone fills: the dark-theme hues fail 3:1 against a white card. */
+   --z-ok:hsl(142 62% 34%); --z-warn:hsl(32 92% 42%); --z-bad:hsl(0 70% 46%);
+   --z-ok-fg:hsl(142 62% 28%); --z-warn-fg:hsl(28 92% 35%); --z-bad-fg:hsl(0 70% 42%);
+ }
+ *{box-sizing:border-box}
+ html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
+ body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      -webkit-font-smoothing:antialiased}
+ /* Full viewport width — no max-width cap */
+ .page{width:100%;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;gap:var(--gap)}
+ .card{background:var(--card);border:1px solid var(--border);border-radius:8px}
+ .muted{color:var(--muted)}
+ .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
+ .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
+ .taboff:hover{color:var(--fg);border-color:var(--accent)}
+ .livehdr{display:flex;align-items:baseline;gap:4px}
+ .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:var(--fs-sm);font-weight:500;color:var(--fg)}
+ [hidden]{display:none !important}
+ .rounded-md{border-radius:4px !important}
+ .chip{border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-size:var(--fs-md);
+       cursor:pointer;color:var(--muted);user-select:none;white-space:nowrap}
+ .chip:hover{color:var(--fg);border-color:var(--accent)}
+ input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:4px;
+   padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:dark}
+ [data-theme=light] input[type=date]{color-scheme:light}
+ canvas{width:100% !important;max-height:280px}
+ table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
+ tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+ .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
+ .lbl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+      display:inline-block;margin-right:5px;animation:p 2s infinite}
+ @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
+ /* Responsive grid helpers */
+ .grid-auto{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+ .grid-kpi{display:grid;gap:10px;
+   grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))}
+ /* Two-up chart rows. Written as auto-fit rather than `1fr 1fr` so a narrow
+    viewport reflows to one column instead of producing two ~160px tracks that
+    hold a squashed canvas and force horizontal overflow. min() keeps the track
+    from ever exceeding the available width. */
+ .grid-2{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+ /* Canvases and long strings would otherwise set the track's min-content width
+    and blow the grid out sideways. */
+/* Left nav drawer (#3). Fixed rail, content shifts right. Mobile behaviour
+   (off-canvas + scrim) is ticket #4; this keeps it simply hidden below the
+   tablet breakpoint so the page never loses its nav mid-refactor. */
+#navdrawer{
+  position:fixed; top:0; left:0; bottom:0; z-index:40;
+  width:var(--rail-now);
+  background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+  padding:14px 10px; transition:width .18s ease, transform .2s ease;
+}
+#navdrawer .navbrand{
+  display:flex; align-items:center; gap:8px; padding:4px 8px 12px;
+  font-weight:650; letter-spacing:-.02em;
+}
+.navitem{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:8px 10px; margin-bottom:2px; border-radius:8px;
+  border:0; background:none; cursor:pointer; text-align:left;
+  color:var(--muted); font-size:var(--fs-md); line-height:1.2;
+  border-left:2px solid transparent; text-decoration:none;
+}
+.navitem:hover{ background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--fg); }
+.navitem:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+/* Active item: accent bar plus accent text, so it reads as "you are here"
+   without relying on colour alone. */
+.dkpis{display:flex;gap:18px;flex-wrap:wrap}
+.dkpi{display:flex;flex-direction:column;gap:2px}
+.dkpi-n{font-size:var(--fs-lg);font-weight:600}
+.dkpi-n.ok{color:var(--z-ok-fg)}
+.dkpi-n.bad{color:var(--z-bad-fg)}
+.drow{display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(60px,2fr) 42px minmax(90px,1fr);
+  align-items:center;gap:8px;font-size:var(--fs-sm)}
+.dname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}
+.dbar span{display:block;height:100%;border-radius:3px}
+.dbar span.ok{background:var(--z-ok)}
+.dbar span.bad{background:var(--z-bad)}
+.dpct{text-align:right;font-variant-numeric:tabular-nums}
+.dpct.ok{color:var(--z-ok-fg)}
+.dpct.bad{color:var(--z-bad-fg)}
+.dmeta{font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ditem{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;
+  padding:3px 0;border-bottom:1px solid var(--border)}
+.ditem:last-child{border-bottom:0}
+.ddot{width:6px;height:6px;border-radius:50%}
+.ddot.ok{background:var(--z-ok)}
+.ddot.bad{background:var(--z-bad)}
+.dgoal{font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:720px){.drow{grid-template-columns:minmax(80px,1fr) 1fr 40px}.dmeta{display:none}}
+.navitem[aria-current="page"]{
+  color:var(--accent); border-left-color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 14%, transparent);
+  font-weight:600;
+}
+.navitem .nvico{ width:16px; text-align:center; flex:0 0 16px; font-size:var(--fs-md); }
+.navitem .nvlabel{ flex:1 1 auto; min-width:0; }
+/* Counts ride on the right; hidden when zero so the rail stays quiet. */
+.navitem .nvbadge{
+  flex:0 0 auto; font-size:var(--fs-xs); padding:1px 6px; border-radius:999px;
+  background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
+}
+#navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
+/* Grouped nav (#122): a small uppercase label over each cluster. Muted and
+   non-selectable so it reads as a heading, not a nav item. */
+#navdrawer .navgroup{ display:flex; flex-direction:column; }
+#navdrawer .navgroup-h{
+  font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); opacity:.75; padding:6px 10px 3px;
+  user-select:none; pointer-events:none;
+}
+
+/* The rail is the nav at every width now (#4), so the chip strip is redundant
+   everywhere rather than only on desktop. */
+body.hasnav #views{ display:none; }
+/* ---- Live row: models used (#107) ---- */
+.lmhead{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:5px}
+.lmmet{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;
+  border-radius:999px;padding:1px 7px;font:inherit;font-size:var(--fs-xs);text-transform:uppercase}
+.lmmet.on{border-color:var(--accent);color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.lmbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--bg);
+  border:1px solid var(--border)}
+.lmseg{display:block;height:100%;min-width:2px}
+.lmseg:hover{filter:brightness(1.25)}
+.lmlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:5px 0 7px;font-size:var(--fs-xs)}
+.lmkey{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.lmkey.cur{font-weight:600}
+.lmdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.lmcell{width:88px;min-width:88px}
+.lmrowbar{display:block;height:6px;border-radius:3px;min-width:2px}
+.lmbtn{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;font:inherit}
+.lmbtn:hover{color:var(--fg)}
+.lmpanel{margin:-4px 0 4px 26px;padding:6px 8px;border:1px solid var(--border);border-top:0;
+  border-radius:0 0 6px 6px;
+  /* #livelist is a flex COLUMN with overflow-y:auto, so every child is a flex
+     item that shrinks by default. A shrunk panel clipped its own content to
+     nothing -- and because overflow-x:auto forces overflow-y from visible to
+     auto, the clipped content was invisible rather than spilling. Never shrink,
+     and scroll only on the axis that needs it. */
+  flex:0 0 auto; min-height:max-content; overflow-x:auto; overflow-y:visible}
+.lmpanel table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+.lmpanel th{text-align:left;font-weight:500;color:var(--muted);font-size:var(--fs-xs);
+  text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
+.lmpanel td{padding:3px 8px 3px 0;white-space:nowrap;border-top:1px solid var(--border)}
+.lmpanel .num{text-align:right;font-variant-numeric:tabular-nums}
+/* ---- Logs page (#104, redesigned #108) ---------------------------------
+   Old layout: six facet rows of identical pill chips stacked with almost no
+   air between them (6px gap) and no feedback about which filters were
+   active — you had to scan every row for a highlighted chip. Redesign:
+   - the search row gains a live "N filters active" readout and a visible
+     active-filter strip (removable chips) so state is legible at a glance;
+   - facet rows get real spacing, a hover affordance and alternating
+     backgrounds so six rows read as a list, not a wall of pills;
+   - the Window control is a time range, not a data facet, so it is visually
+     separated (divider) instead of sitting in the same rhythm as Level/Role/
+     Tool/Model/Session. */
+.lgfacets{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.lgrow{display:flex;align-items:flex-start;gap:12px;padding:7px 8px;border-radius:7px}
+.lgrow:hover{background:color-mix(in srgb,var(--fg) 4%,transparent)}
+.lglbl{flex:0 0 64px;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);padding-top:5px;font-weight:600}
+.lgchips{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
+.lgchip{border:1px solid var(--border);background:var(--bg);color:var(--muted);
+  border-radius:999px;padding:3px 10px;font-size:var(--fs-sm);cursor:pointer;line-height:1.6;
+  white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;
+  transition:border-color .12s,color .12s,background .12s}
+.lgchip:hover{border-color:var(--accent);color:var(--fg)}
+.lgchip.on{background:color-mix(in srgb,var(--accent) 18%,transparent);
+  border-color:var(--accent);color:var(--accent);font-weight:600}
+.lgchip .n{opacity:.65;margin-left:5px;font-variant-numeric:tabular-nums}
+/* Window is a time range, not a category — a divider and looser gap mark it
+   as a different kind of control from the facets above it. */
+.lgrow-window{border-top:1px solid var(--border);margin-top:5px;padding-top:11px}
+/* Active-filter strip: every currently-applied facet as a removable chip, so
+   "why am I seeing this" never requires re-scanning six rows of pills. Empty
+   (hidden) when nothing is selected — it must not be a second copy of the
+   facets, only a summary of what's ON. */
+#lgactive{display:none;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:8px 0 2px;margin-bottom:2px;border-bottom:1px solid var(--border)}
+#lgactive.show{display:flex}
+#lgactive .lbl{flex:0 0 auto;margin:0}
+.lgactivechip{display:inline-flex;align-items:center;gap:5px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border:1px solid var(--accent);color:var(--accent);border-radius:999px;
+  padding:2px 6px 2px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer}
+.lgactivechip:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+.lgactivechip .x{opacity:.75;font-weight:700}
+#lgcountbadge{background:var(--accent);color:#fff;border-radius:999px;
+  font-size:var(--fs-xs);font-weight:700;padding:1px 7px;line-height:1.5}
+/* Event rows: monospace timestamps so they form a readable column. */
+.lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
+.lgev:last-child{border-bottom:0}
+.lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-xs)}
+.lgtag{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgtag.error{color:var(--z-bad-fg);font-weight:700}
+.lgtag.tool{color:var(--accent)}
+.lgtag.assistant{color:var(--z-ok-fg)}
+.lgtag.user{color:var(--muted)}
+.lgmsg{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgev.open .lgmsg{white-space:pre-wrap;word-break:break-word}
+.lgmeta{color:var(--muted);font-size:var(--fs-xs);margin-left:6px}
+@media (max-width:640px){
+  .lgev{grid-template-columns:58px 1fr}
+  .lgev .lgtag{grid-column:2}
+  .lglbl{flex-basis:52px}
+}
+
+/* ---- Nav rail: collapsible, collapsed by default (#102) -------------------
+   One element, one width variable. `body.navcollapsed` drives --rail-now, and
+   .page reads the SAME variable for its offset, so the content can never
+   disagree with the rail about how wide it is. The old code hard-coded 232px
+   in one place and 60px in another, which is how .page ended up 232px wider
+   than the viewport (width:100% + margin-left) and clipped the right edge. */
+#navdrawer{
+  position:fixed; top:0; left:0; bottom:0; z-index:40;
+  width:var(--rail-now);
+  background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+  padding:14px 10px; transition:width .18s ease, transform .2s ease;
+}
+/* Collapsed (DEFAULT): icons only. */
+body.navcollapsed{ --rail-now:var(--rail-w); }
+body.navcollapsed #navdrawer .nvlabel,
+body.navcollapsed #navdrawer .navbrand .brandword{ display:none; }
+/* Collapsed rail is icon-only, and an icon-only rail has no room for a text
+   heading: hide the group labels but KEEP the separators, so the grouping is
+   still visible as rhythm without trying to spell it out. */
+body.navcollapsed #navdrawer .navgroup-h{ display:none; }
+body.navcollapsed #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
+body.navcollapsed #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
+body.navcollapsed #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
+/* Expanded: labels visible. */
+body:not(.navcollapsed){ --rail-now:var(--nav-w); }
+/* THE LAYOUT FIX: width:100% + margin-left overflowed the viewport by exactly
+   the rail width. Reserve the space with padding on a full-width box instead,
+   so box-sizing:border-box actually contains it. */
+body.hasnav .page{ margin-left:0; padding-left:calc(var(--rail-now) + var(--pad)); }
+/* Collapse toggle sits in the rail header. */
+#navcollapse{
+  margin-left:auto; border:0; background:none; cursor:pointer;
+  color:var(--muted); font-size:var(--fs-md); line-height:1; padding:4px 6px;
+  border-radius:6px; flex:0 0 auto;
+}
+#navcollapse:hover{ background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--fg); }
+#navcollapse:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+body.navcollapsed #navcollapse{ margin:6px auto 0; }
+/* Collapsed labels become tooltips so icons stay identifiable. */
+body.navcollapsed #navdrawer .navitem::after{
+  content:attr(data-tip); position:absolute; left:calc(100% + 8px); top:50%;
+  transform:translateY(-50%); white-space:nowrap; background:var(--card);
+  border:1px solid var(--border); border-radius:6px; padding:4px 8px;
+  font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
+  transition:opacity .12s ease; z-index:41;
+}
+body.navcollapsed #navdrawer .navitem:hover::after,
+body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
+/* Off-canvas (<=640): the rail slides over the content and reserves nothing.
+   Full width here — a 60px strip is harder to hit than a real panel. */
+@media (max-width:640px){
+  #navdrawer{ width:264px; transform:translateX(-100%); box-shadow:0 8px 28px rgba(0,0,0,.35); }
+  body.navopen #navdrawer{ transform:translateX(0); }
+  /* Mobile shows labels regardless of the desktop collapse state. */
+  body.navcollapsed #navdrawer .nvlabel,
+  body.navcollapsed #navdrawer .navbrand .brandword{ display:inline; }
+  body.navcollapsed #navdrawer .navitem{ justify-content:flex-start; padding:8px 10px; }
+  body.navcollapsed #navdrawer .nvbadge{ position:static; transform:none; }
+  body.navcollapsed #navdrawer .navbrand{ justify-content:flex-start; padding:4px 8px 12px; }
+  body.navcollapsed #navdrawer .navitem::after{ display:none; }
+  body.hasnav .page{ padding-left:var(--pad); }
+  #navcollapse{ display:none; }
+  #navscrim{
+    position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.55);
+    backdrop-filter:blur(2px); opacity:0; pointer-events:none;
+    transition:opacity .2s ease; display:block;
+  }
+  body.navopen #navscrim{ opacity:1; pointer-events:auto; }
+  body.navopen{ overflow:hidden; }
+  #navtoggle{ display:inline-flex; }
+}
+#navtoggle{ display:none; }
+#navscrim{ display:none; }
+@media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
+
+}
+ .brandmark{color:var(--accent);flex:0 0 auto}
+ @media(max-width:640px){.brandmark{width:20px;height:20px}}
+ /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
+    tablet and 1-up on mobile needs no extra media query. */
+ .grid-home{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ .grid-home > *{min-width:0}
+ .homecard{display:block;text-decoration:none;color:inherit;transition:
+   transform .12s ease,border-color .12s ease}
+ .homecard:hover{transform:translateY(-2px);border-color:var(--accent)}
+ .homecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+ .homecard .hc-ico{font-size:20px;line-height:1}
+ .homecard .hc-stat{font-size:19px;font-weight:650;letter-spacing:-.02em}
+ @media(prefers-reduced-motion:reduce){.homecard:hover{transform:none}}
+ .grid-2 > *,.grid-auto > *{min-width:0}
+ /* ---- Bandwidth -------------------------------------------------------
+    Up and down are one card, not two: the pair is only meaningful together
+    (a 278:1 ratio is the finding, and two separate cards hide it). Arrows
+    carry the direction so the numbers read without a legend. */
+ .bw{display:flex;align-items:center;gap:14px}
+ .bwleg{display:flex;align-items:baseline;gap:5px}
+ .bwarrow{font-size:var(--fs-md);line-height:1;font-weight:700}
+ .bwup{color:#f59e0b}      /* upload: the dominant direction here */
+ .bwdown{color:#38bdf8}
+ .bwrate{font-size:var(--fs-xs);letter-spacing:.02em}
+ /* A running worker gets a moving arrow, so "is it transferring right now"
+    is answerable without reading numbers. Paused when the OS asks for less
+    motion — a permanently pulsing row is an accessibility problem. */
+ @keyframes bwpulse{0%,100%{opacity:.35;transform:translateY(1px)}
+   50%{opacity:1;transform:translateY(-1px)}}
+ .bwlive .bwarrow{animation:bwpulse 1.1s ease-in-out infinite}
+ .bwlive .bwarrow.bwdown{animation-delay:.55s}
+ @media(prefers-reduced-motion:reduce){.bwlive .bwarrow{animation:none}}
+ /* Preloader */
+ /* Profile resolution (P5-04, #53) */
+ .resinfo{position:relative;margin-left:6px}
+ .resbtn{font:inherit;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:9px;padding:0 7px;cursor:pointer}
+ .resbtn:hover{color:var(--fg);border-color:var(--accent)}
+ .resbtn.warn{color:#f59e0b;border-color:#f59e0b88;border-style:solid}
+ .resbad{color:#f59e0b}
+ .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+ .respop code{font-size:var(--fs-sm)}
+ #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
+       align-items:center;justify-content:center;flex-direction:column;gap:14px;
+       transition:opacity .35s ease}
+ #boot.gone{opacity:0;pointer-events:none}
+ .bars{display:flex;align-items:flex-end;gap:5px;height:34px}
+ .bars i{display:block;width:7px;border-radius:2px;background:var(--accent);
+         animation:bb 1.05s ease-in-out infinite}
+ .bars i:nth-child(1){height:38%;animation-delay:0s}
+ .bars i:nth-child(2){height:66%;animation-delay:.12s;background:hsl(17 66% 55%)}
+ .bars i:nth-child(3){height:100%;animation-delay:.24s;background:hsl(250 85% 66%)}
+ .bars i:nth-child(4){height:54%;animation-delay:.36s;background:hsl(213 90% 60%)}
+ @keyframes bb{0%,100%{transform:scaleY(.45);opacity:.55}50%{transform:scaleY(1);opacity:1}}
+ .bars i{transform-origin:bottom}
+ @media (prefers-reduced-motion:reduce){
+   .bars i,.dot{animation:none}
+   .costpulse{animation:none}
+   .loe .needle{animation:none;transform:rotate(var(--d))}
+ }
+ @keyframes loe-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+ /* ==== App shell: left nav drawer + top app bar ========================
+    Section navigation used to be a wrapping row of chips in the header,
+    competing with Logs/Rates/refresh/theme for the same line. The drawer
+    owns sections now; the bar owns global actions. Three drawer modes,
+    driven purely by width:
+      >=1200px  expanded (icon + label), pinned, content shifted right
+      641-1199  icon rail, labels on hover/tooltip
+      <=640px   off-canvas over a scrim, opened from the hamburger      */
+ #nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav-w);z-index:64;
+   background:var(--card);border-right:1px solid var(--border);
+   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+   transition:transform .2s ease,width .2s ease}
+ #nav::-webkit-scrollbar{width:6px}
+ #nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ .navbrand{display:flex;align-items:center;gap:8px;padding:14px 14px 12px;
+   font-weight:700;font-size:var(--fs-sm);letter-spacing:-.01em;flex:none;
+   border-bottom:1px solid var(--border)}
+ .navbrand svg{flex:none}
+ .navsec{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;
+   color:var(--muted);padding:12px 14px 4px;flex:none}
+ .navlist{display:flex;flex-direction:column;gap:2px;padding:6px 8px}
+ /* Real anchors, so middle-click and ⌘-click open a section in a new tab. */
+ .navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;
+   border-radius:6px;color:var(--muted);text-decoration:none;font-size:var(--fs-sm);
+   position:relative;min-height:40px;cursor:pointer;
+   border-left:2px solid transparent;transition:background .12s ease,color .12s ease}
+ .navitem:hover{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--fg)}
+ .navitem.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
+   border-left-color:var(--accent);font-weight:600}
+ .navico{width:20px;flex:none;text-align:center;font-size:var(--fs-md);line-height:1}
+ .navlbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .navbadge{margin-left:auto;font-size:var(--fs-xs);font-weight:700;padding:1px 6px;
+   border-radius:999px;background:var(--border);color:var(--fg);flex:none;
+   font-variant-numeric:tabular-nums}
+ .navbadge.alert{background:#ef4444;color:#fff}
+ .navbadge[hidden]{display:none}
+ .navsep{height:1px;background:var(--border);margin:8px 12px;flex:none}
+ .navfoot{margin-top:auto;padding:10px 12px;font-size:var(--fs-xs);color:var(--muted)}
+ #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
+   cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
+ #navpin:hover{color:var(--accent)}
+ #navscrim{position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
+   backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
+ #navscrim.open{opacity:1;pointer-events:auto}
+ /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
+ body{--shell-pad:var(--nav-w)}
+ .shell{padding-left:var(--shell-pad);transition:padding-left .2s ease}
+
+ /* Top app bar — slim, sticky, one row at every width. */
+ .appbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;
+   gap:var(--sp-3);min-height:var(--bar-h);padding:var(--sp-2) var(--pad);
+   background:color-mix(in srgb,var(--bg) 88%,transparent);
+   backdrop-filter:blur(8px);border-bottom:1px solid transparent;
+   transition:border-color .15s ease}
+ .appbar.scrolled{border-bottom-color:var(--border)}
+ .appbar .bartitle{font-size:var(--fs-lg);font-weight:650;letter-spacing:-.02em;
+   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .appbar .barmeta{font-size:var(--fs-xs);color:var(--muted);white-space:nowrap;
+   overflow:hidden;text-overflow:ellipsis}
+ .baractions{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2)}
+ #hamburger{display:none;background:none;border:1px solid var(--border);
+   color:var(--fg);border-radius:6px;width:38px;height:38px;cursor:pointer;
+   font-size:var(--fs-lg);line-height:1;flex:none}
+ #hamburger:hover{border-color:var(--accent);color:var(--accent)}
+ /* Below ~480px the secondary actions collapse behind a ⋯ menu. */
+ #barmore{display:none;position:relative}
+ #barmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:45;
+   background:var(--card);border:1px solid var(--border);border-radius:8px;
+   padding:6px;min-width:172px;box-shadow:0 14px 34px rgba(0,0,0,.45);
+   flex-direction:column;gap:2px;display:none}
+ #barmenu.open{display:flex}
+ #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
+
+ /* ---- Home: navigation cards ---------------------------------------- */
+ .homegrid{display:grid;gap:var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ .homecard{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-5);
+   text-decoration:none;color:inherit;border-radius:10px;
+   background:var(--card);border:1px solid var(--border);min-width:0;
+   transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}
+ .homecard:hover{transform:translateY(-2px);border-color:var(--accent);
+   box-shadow:0 10px 26px rgba(0,0,0,.28)}
+ .homecard .hc-top{display:flex;align-items:center;gap:9px}
+ .homecard .hc-ico{width:34px;height:34px;border-radius:9px;flex:none;
+   display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);
+   background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+ .homecard .hc-name{font-size:var(--fs-md);font-weight:650}
+ .homecard .hc-desc{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
+ .homecard .hc-stat{margin-top:auto;padding-top:var(--sp-2);font-size:var(--fs-sm);
+   font-weight:650;font-variant-numeric:tabular-nums}
+
+ /* ---- Empty states --------------------------------------------------- */
+ .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+   gap:6px;padding:var(--sp-6) var(--sp-4);text-align:center;color:var(--muted)}
+ .empty .e-ico{font-size:24px;opacity:.55;line-height:1}
+ .empty .e-msg{font-size:var(--fs-sm)}
+ .empty .e-hint{font-size:var(--fs-xs);opacity:.8}
+
+ /* A focus ring that is actually visible in both themes. Applied globally via
+    :focus-visible so keyboard users never lose their place, while mouse
+    clicks stay ring-free. */
+ :where(a,button,input,select,summary,[tabindex]):focus-visible{
+   outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+ /* Speedometer: LAST column, fixed width, so every gauge lands on the same
+    vertical line no matter how long the title or model name is. The meta
+    column beside it is fixed too — otherwise its width would shift the dial. */
+ /* align-self:stretch makes the column span the full row height, so its
+    justify-content:center actually has room to work. Sized to content it would
+    simply sit wherever the flex row's align-items dropped it, which reads as
+    top-aligned next to the taller gauge. */
+ .metacol{width:150px;text-align:right;min-width:0;align-self:stretch;
+   display:flex;flex-direction:column;justify-content:center;gap:1px}
+ /* Dial on top, this session's transfer directly beneath it. Column, not
+    row, so the bytes read as a caption to the gauge they belong to. A hairline
+    divider marks the seam between the two different metrics (load vs. bytes)
+    stacked in the same column, so they don't read as one merged block. */
+ .loecol{width:78px;display:flex;flex-direction:column;align-items:center;
+   justify-content:center;gap:2px;align-self:stretch;margin-left:2px}
+ .loecol .bw{justify-content:center;flex-wrap:wrap;gap:2px 6px;margin-top:0;
+   padding-top:4px;border-top:1px solid var(--border);width:100%}
+ /* #7/#8/#9/#10/#12 gauge rebuild ----------------------------------------
+    Single component, three size presets driven purely by --gauge-size: the
+    viewBox is a fixed 100x100 square, so scaling the CSS width/height alone
+    scales every stroke width, tick length and font size in lockstep — no
+    separate "spindly at large size" math needed (#10). */
+ .loe{display:inline-flex;align-items:center;line-height:0;
+   --gauge-size:var(--gauge-md,84px)}
+ .loe.sz-sm{--gauge-size:56px}
+ .loe.sz-md{--gauge-size:84px}
+ .loe.sz-lg{--gauge-size:132px}
+ .loe svg{width:var(--gauge-size);height:var(--gauge-size);display:block}
+ /* Dark theme only: a faint glow under the value arc so it reads as an
+    instrument face, not a flat vector (#7). */
+ [data-theme=dark] .loe .gval{filter:drop-shadow(0 0 3px currentColor)}
+ .loe .needle{transform-origin:50% 38%}
+ /* Travel: on first paint and every refresh the needle SWEEPS from its
+    previous angle (--from) to the new one (--d) — refreshes must be visibly
+    alive (#9). animation-fill-mode:both holds the end angle once the travel
+    finishes; the idle tremor (unchanged mechanism, much smaller amplitude
+    now that travel carries the "something changed" signal) starts only
+    after travel completes via its own animation-delay, so the two never
+    fight over the transform mid-sweep. */
+ .loe .needle{
+   animation: needle-travel .6s cubic-bezier(.22,1,.36,1) both,
+              needle-tremor var(--spd) ease-in-out .6s infinite;
+ }
+ @keyframes needle-travel{
+   0%  {transform:rotate(var(--from))}
+   100%{transform:rotate(var(--d))}
+ }
+ @keyframes needle-tremor{
+   0%  {transform:rotate(calc(var(--d) - var(--amp)))}
+   50% {transform:rotate(calc(var(--d) + var(--amp)))}
+   100%{transform:rotate(calc(var(--d) - var(--amp)))}
+ }
+ /* #8: danger state pulses the whole dial, same mechanism as .costpulse,
+    so "this is bad" uses the same visual vocabulary as the rest of the page
+    rather than inventing a second animation for the same meaning. Disabled
+    under prefers-reduced-motion below, same as every other pulse. */
+ .loe.gdanger{animation:cost-pulse 1.3s ease-in-out infinite}
+ @media (prefers-reduced-motion:reduce){
+   .loe.gdanger{animation:none}
+ }
+
+ /* Activity heatmap — GitHub-style calendar. Fixed cell size with horizontal
+    scroll beats squeezing 26 weeks into a phone width. */
+ /* The calendar stretches to consume the full card width: week columns share
+    the space equally (flex:1) and cells stay square via aspect-ratio, instead
+    of being fixed at 13px and leaving dead space on a wide screen. */
+ .hm-scroll{padding-bottom:3px;width:100%}
+ .hm-months{display:flex;gap:3px;margin-bottom:3px;padding-left:1px;width:100%}
+ .hm-mon{flex:1 1 0;min-width:0;font-size:var(--fs-xs);color:var(--muted);letter-spacing:.02em}
+ .hm-grid{display:flex;gap:3px;width:100%}
+ .hm-w{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
+ .hm-d{width:100%;aspect-ratio:1;border-radius:2px;display:block;
+   background:var(--border);transition:transform .1s ease}
+ .hm-d:hover{transform:scale(1.35)}
+ .hm-d.hm-pad{visibility:hidden}
+ .hm-d.l0{background:color-mix(in srgb,var(--border) 55%,transparent)}
+ .hm-d.l1{background:color-mix(in srgb,var(--accent) 22%,var(--border))}
+ .hm-d.l2{background:color-mix(in srgb,var(--accent) 45%,var(--border))}
+ .hm-d.l3{background:color-mix(in srgb,var(--accent) 68%,var(--border))}
+ .hm-d.l4{background:color-mix(in srgb,var(--accent) 85%,var(--border))}
+ .hm-d.l5{background:var(--accent)}
+ .hm-key{display:flex;align-items:center;gap:3px;margin-top:7px;font-size:var(--fs-xs);flex-wrap:wrap}
+ /* Key swatches must NOT stretch like the calendar cells. */
+ .hm-key .hm-d{width:11px;height:11px;flex:none;aspect-ratio:auto}
+ .hm-lg{display:inline-flex;align-items:center;gap:3px;margin-right:7px}
+ .hm-sw{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+ .hm-sep{width:1px;height:11px;background:var(--border);margin:0 6px}
+
+ /* ---- Router help overlay -------------------------------------------
+    Explains what actually runs the work for the CURRENT profile. Model and
+    provider names keep their palette colour here too, so a name learnt in a
+    chart is recognisable in the explanation. */
+ #helpbtn{cursor:pointer;border:1px solid var(--border);background:var(--card);
+   color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:var(--fs-md);
+   font-weight:700;line-height:1;display:inline-flex;align-items:center;
+   justify-content:center;transition:all .15s ease;flex:none}
+ #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
+ #helpwrap{position:fixed;inset:0;z-index:70;display:none}
+ #helpwrap.open{display:block}
+ #helpscrim{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+ #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+   width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
+   border:1px solid var(--border);border-radius:12px;padding:22px 26px;
+   box-shadow:0 24px 60px rgba(0,0,0,.5)}
+ .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
+ .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px}
+ .hsec{margin:16px 0 8px;font-size:var(--fs-sm);font-weight:700;text-transform:uppercase;
+   letter-spacing:.06em;color:var(--muted)}
+ .hnote{font-size:var(--fs-sm);color:var(--muted);margin:5px 0 9px;line-height:1.55}
+ /* Each hop is a numbered row so the ORDER is unmistakable. */
+ .hhop{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;
+   border:1px solid var(--border);margin-bottom:5px;font-size:var(--fs-sm);background:var(--bg)}
+ .hnum{width:19px;height:19px;border-radius:50%;flex:none;display:flex;
+   align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;
+   background:var(--border);color:var(--muted)}
+ .hhop.primary .hnum{background:hsl(142 65% 45%);color:#04140a}
+ .hmodel{font-size:var(--fs-md);font-weight:600}
+ .hurl{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;font-family:ui-monospace,monospace}
+ .harrow{color:var(--muted);font-size:var(--fs-md);text-align:center;margin:1px 0}
+ .htask{display:flex;align-items:baseline;gap:8px;padding:5px 0;
+   border-bottom:1px dashed var(--border);font-size:var(--fs-sm)}
+ .htn{width:132px;flex:none;font-weight:600;font-size:var(--fs-sm)}
+ .htd{color:var(--muted);font-size:var(--fs-xs);flex:1}
+ #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
+   font-size:19px;line-height:1;background:none;border:none}
+ #helpclose:hover{color:var(--fg)}
+ #heatcard[hidden]{display:none}
+
+ /* ---- Flow graph (Provider -> model -> task) -------------------------
+    Force-directed, rendered as plain SVG. No d3: the layout is ~100 nodes,
+    so a small velocity-Verlet loop is cheaper than shipping a library. */
+ #flowwrap{position:relative;width:100%;height:calc(100vh - 250px);
+   height:calc(100dvh - 250px);min-height:460px}
+ #flow{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+ #flow.drag{cursor:grabbing}
+ /* Work-proportional glow. --heat (0..1) is sqrt(calls/maxCalls), set per node
+    in renderFlow, so the busiest node burns brightest and idle ones stay flat.
+    drop-shadow on the GROUP (not the circle) so the label glows with it.
+    Radii are generous (up to 26px): a 9px blur on a 26px node was measurably
+    present but invisible against the dark card. Three stacked shadows — tight
+    core, mid bloom, wide falloff — read as light rather than a flat ring. */
+ .nd{cursor:grab;
+   filter:drop-shadow(0 0 calc(1px + 5px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(95% * var(--heat,0)), transparent))
+          drop-shadow(0 0 calc(2px + 13px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(75% * var(--heat,0)), transparent))
+          drop-shadow(0 0 calc(3px + 26px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(45% * var(--heat,0)), transparent));
+   transition:filter .18s ease}
+ /* Dragging overrides the heat ramp: while held, a node is always legible. */
+ .nd.dragging{cursor:grabbing;
+   filter:drop-shadow(0 0 8px color-mix(in srgb, var(--glow,#fff) 95%, transparent))
+          drop-shadow(0 0 22px color-mix(in srgb, var(--glow,#fff) 70%, transparent))}
+ .nd.dragging circle{stroke-width:2.5}
+ /* A node the user placed keeps a thin ring, so deliberate layout survives
+    visually even after the pointer leaves. */
+ .nd.pinned circle{stroke-dasharray:2 2}
+ #flow .lnk{stroke:var(--border);stroke-opacity:.55;fill:none}
+ /* grab, not pointer: these nodes are draggable. Higher specificity than the
+    .nd base rule, so it must carry the drag cursor too. */
+ #flow .nd{cursor:grab}
+ #flow .nd.dragging{cursor:grabbing}
+ #flow .nd circle{transition:stroke-width .12s ease}
+ #flow .nd text{font-size:var(--fs-xs);fill:var(--muted);pointer-events:none;
+   text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:2.5px}
+ #flow .nd.root text,#flow .nd.prov text{font-size:var(--fs-sm);font-weight:600;fill:var(--fg)}
+ #flow .nd.model text{font-size:var(--fs-xs);font-weight:600}
+ /* Dim everything except the hovered subtree — with ~100 nodes the eye needs
+    help following one provider's branch. */
+ #flow.focus .nd,#flow.focus .lnk{opacity:.13}
+ #flow.focus .nd.on,#flow.focus .lnk.on{opacity:1}
+ /* #18: zoomed further out than the initial fit — the graph is now a tangle
+    of overlapping labels, so hide the small/task labels (the tooltip on tap
+    still gives the name) and dim links to cut noise. Model/provider/root
+    labels stay: they carry the graph's structure, not its detail. */
+ #flow.zoomedout .nd.task text{display:none}
+ #flow.zoomedout .lnk{stroke-opacity:.22}
+ .flowtip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;
+   background:var(--card);border:1px solid var(--border);border-radius:6px;
+   padding:7px 10px;font-size:var(--fs-sm);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;
+   max-width:260px}
+ .flowtip.on{opacity:1}
+ .flowtip .ft-h{font-weight:600;font-size:var(--fs-sm);margin-bottom:3px}
+ .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
+ .flowtip .ft-r b{color:var(--fg);font-weight:600}
+ /* #120 task queue: two lanes, animated chip lifecycle. Kept CSS-driven
+    (transform/opacity transitions + one keyframe animation) rather than a
+    JS render loop, so the idle shimmer costs nothing on low-power devices. */
+ /* Three lanes on desktop, one on narrow screens. Deliberately NOT
+    `1fr 1fr 1fr`: that fixed triple is exactly what check_responsive_grid.js
+    forbids (it squashes canvases and overflows), and it is also the wrong
+    tool here — auto-fit lets the lanes collapse to fewer columns on a
+    narrower screen without a media query doing the same job twice. */
+ .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+ .qlane{min-height:64px;min-width:0}
+ .qlanehdr{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
+   color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+ .qcount{background:var(--card);border:1px solid var(--border);border-radius:999px;
+   padding:0 6px;font-size:var(--fs-xs);line-height:16px;min-width:16px;text-align:center}
+ .qitems{display:flex;flex-direction:column;gap:6px;min-height:2px}
+ .qempty{font-size:var(--fs-sm);color:var(--muted);padding:10px 0;
+   display:flex;align-items:center;gap:6px}
+ .qempty .qdot{width:6px;height:6px;border-radius:999px;background:#22c55e;
+   box-shadow:0 0 0 rgba(34,197,94,.5);animation:qpulse-ok 2.2s ease-out infinite}
+ @keyframes qpulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}
+   70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+ /* One chip per task; enters via qin, sits with an idle shimmer while queued,
+    TRAVELS to the next lane via a FLIP transform (queued->running->done),
+    leaves for good via qout once its lane fills past 10 and it ages out. */
+ .qchip{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
+   border:1px solid var(--border);background:var(--card);font-size:var(--fs-sm);
+   animation:qin .28s cubic-bezier(.2,.8,.2,1) both;
+   transition:transform .32s cubic-bezier(.3,.85,.35,1),opacity .25s ease,border-color .25s ease}
+ .qchip.leaving{animation:qout .22s ease-in forwards}
+ .qchip.travel{will-change:transform}
+ .qchip.arrived{animation:qland .3s cubic-bezier(.3,.9,.3,1) both}
+ @keyframes qin{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
+ @keyframes qout{to{opacity:0;transform:translateX(10px) scale(.96)}}
+ @keyframes qland{0%{transform:scale(1.05)}100%{transform:scale(1)}}
+ .qchip .qdotwrap{width:7px;height:7px;border-radius:999px;flex:none}
+ .qlane[data-lane="queued"] .qchip .qdotwrap{background:#f59e0b;
+   animation:qshimmer 1.6s ease-in-out infinite}
+ .qlane[data-lane="running"] .qchip .qdotwrap{background:#22c55e}
+ .qlane[data-lane="done"] .qchip .qdotwrap{background:#64748b}
+ .qlane[data-lane="done"] .qchip{opacity:.82}
+ @keyframes qshimmer{0%,100%{opacity:.4}50%{opacity:1}}
+ .qchip .qmodel{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+ .qchip .qprof{color:var(--muted);font-size:var(--fs-xs);
+   padding:0 5px;border:1px solid var(--border);border-radius:999px}
+ .qchip .qwait{margin-left:auto;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+ .flowctl{float:right;display:flex;gap:4px;align-items:center}
+ .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
+   padding:2px 8px;border-radius:4px;border:1px solid var(--border);
+   background:transparent;color:var(--muted);cursor:pointer}
+ .flowctl button.on{border-color:var(--accent);color:var(--accent)}
+
+
+ /* ---- Ollama host panel (Live tab) -----------------------------------
+    One card per PHYSICAL box (several URLs can front the same server), because
+    showing four "hosts" when two exist would misreport capacity. */
+ .olgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+ .olcard{border:1px solid var(--border);border-radius:8px;padding:11px 12px;
+   background:color-mix(in srgb,var(--card) 70%,transparent)}
+ .olcard.down{opacity:.62;border-style:dashed}
+ .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+ .olname{font-size:var(--fs-md);font-weight:600}
+ /* Same inline-element trap as .olfill: <i> needs an explicit display or its
+    width/height are ignored (the dot only looked right because of its ring). */
+ .oldot{display:block;width:8px;height:8px;border-radius:50%;flex:none}
+ .oldot.up{background:hsl(142 70% 45%);box-shadow:0 0 0 3px hsl(142 70% 45% / .18)}
+ .oldot.down{background:hsl(0 72% 55%);box-shadow:0 0 0 3px hsl(0 72% 55% / .18)}
+ /* "local" badge: same glyph + tint as the local provider badge elsewhere. */
+ .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;font-weight:600;
+   background:hsl(196 88% 55% / .16);color:hsl(196 88% 60%);flex:none}
+ .olver{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;flex:none}
+ .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 8px 0;word-break:break-all}
+ /* Load bars. Colour is a judgement (green/amber/red), not decoration: it is
+    the only thing that reads at a glance from across the room. */
+ .olrow{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:var(--fs-sm)}
+ .ollbl{width:74px;flex:none;color:var(--muted);font-size:var(--fs-xs)}
+ .olbar{flex:1;height:7px;border-radius:4px;background:var(--border);overflow:hidden;min-width:40px}
+ /* display:block is REQUIRED: <i> defaults to display:inline, and inline
+    non-replaced elements ignore width/height entirely — the fill rendered as a
+    0x0 box, so every bar looked empty no matter what value it carried. */
+ .olfill{display:block;height:100%;border-radius:4px;transition:width .45s ease}
+ .olfill.good{background:hsl(142 65% 45%)}
+ .olfill.warn{background:hsl(38 92% 52%)}
+ .olfill.bad{background:hsl(0 72% 55%)}
+ .olval{width:62px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-size:var(--fs-xs)}
+ /* The numeric readout carries the same traffic-light colour as its bar, so
+    the value is legible as good/warn/bad without measuring the bar by eye. */
+ .olval.good{color:hsl(142 55% 52%)}
+ .olval.warn{color:hsl(38 88% 58%)}
+ .olval.bad{color:hsl(0 70% 64%)}
+ /* Per-GPU chips: only rendered for the local box, which is the only host that
+    can report real device telemetry. */
+ .olgpus{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 2px}
+ .olgpu{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;border:1px solid var(--border);
+   color:var(--muted);font-variant-numeric:tabular-nums}
+ .olmod{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0 3px}
+ .olmn{font-size:var(--fs-md);font-weight:600}
+ /* Capability pills — what this box can actually do (tools/vision/thinking). */
+ .olcap{font-size:var(--fs-xs);padding:1px 5px;border-radius:3px;border:1px solid var(--border);
+   color:var(--muted-foreground,var(--muted))}
+ .olcap.tools{border-color:hsl(262 80% 60% / .5);color:hsl(262 80% 70%)}
+ .olcap.vision{border-color:hsl(320 85% 60% / .5);color:hsl(320 85% 70%)}
+ .olcap.thinking{border-color:hsl(38 92% 52% / .5);color:hsl(38 92% 60%)}
+ .olidle{font-size:var(--fs-sm);color:var(--muted);padding:4px 0}
+ .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
+   margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+ #soundtoggle.on{border-color:var(--accent);color:var(--accent)}
+ .olwork b{color:var(--foreground);font-weight:600;font-variant-numeric:tabular-nums}
+ .olstale{font-size:var(--fs-xs);color:hsl(38 92% 60%)}
+
+
+ /* Model name inside a drawer log line — bigger than the surrounding text so
+    the eye lands on "which model" before reading the message. */
+ .evm{font-size:var(--fs-md);font-weight:600}
+ /* Tool name in a drawer line — same weight as the model name so the eye can
+    scan either column, coloured from the tool palette. */
+ .evt{font-size:var(--fs-sm);font-weight:600}
+
+ /* Failure filter chips — same visual language as the drawer's filter tabs. */
+ .fchip{padding:2px 8px;border-radius:4px;border:1px solid var(--border);
+   background:transparent;color:var(--muted);cursor:pointer;font-size:var(--fs-xs);
+   line-height:1.7;white-space:nowrap}
+ .fchip:hover{border-color:var(--accent)}
+ .fchip.on{background:var(--card);font-weight:600}
+ /* Health page (#110) */
+ .hsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+ @media (max-width:900px){.hsum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ .hsumc{padding:12px 14px;min-width:0}
+ .hsumv{font-size:22px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .hsuml{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .hsums{font-size:var(--fs-xs);margin-top:2px}
+ .hhdr{display:flex;align-items:baseline;gap:8px}
+ .hsub{text-transform:none;letter-spacing:0;font-weight:400;font-size:var(--fs-xs)}
+ .hrow.hthin{opacity:.5}
+ .ffwrap{display:flex;flex-direction:column;gap:6px}
+ .ffrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+ .fflbl{width:48px;flex:none;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .frow{padding:4px 6px;border-radius:4px}
+ .frow:hover{background:var(--card)}
+ .fwhen{min-width:74px;font-variant-numeric:tabular-nums}
+ .fmsg{flex:1;min-width:0;color:var(--fg)}
+ .fcnt{min-width:36px;text-align:center;font-size:var(--fs-xs);font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
+ .fkind{width:72px;text-align:center}
+ .fmodel{width:150px}
+ .fwhen{width:92px}
+ .fmsg{flex:1;min-width:0}
+ #faillist::-webkit-scrollbar{width:7px}
+ #faillist::-webkit-scrollbar-track{background:transparent}
+ #faillist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ #faillist{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+
+ /* Live session list scrolls inside its card; keep the scrollbar unobtrusive
+    so a long list never looks like a broken layout. */
+ #livelist::-webkit-scrollbar{width:7px}
+ #livelist::-webkit-scrollbar-track{background:transparent}
+ #livelist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ #livelist::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+ #livelist{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+
+ /* Est. cost pulses so the number the user cares about most catches the eye
+    without shouting — opacity only, no layout shift. */
+ @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+ /* Local electricity cost (P7-04, #68): distinct from billed spend. */
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+   padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
+ .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
+ .kdelta{font-weight:600;white-space:nowrap;margin-left:.35em}
+
+/* #11: radial KPI rings — compact, no-needle variant of the gauge for
+   bounded 0-100 metrics inside the tight KPI strip; sparklines for the
+   unbounded counters next to it, so both live in the same card recipe. */
+.kpi-ring{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.kringwrap{width:44px;height:44px}
+.kring{display:block;width:100%;height:100%}
+.kring svg{width:100%;height:100%;display:block}
+.kspwrap{display:inline-block;width:64px;height:20px;vertical-align:middle;margin-left:6px}
+.kspark{width:100%;height:100%;display:block}
+
+ /* Unpriced / free-tier cost states (P9-05, #82) */
+ .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+   padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.14);color:#f87171}
+ .freetier{color:var(--muted)}
+ .ftmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+   padding:0 4px;border-radius:3px;background:rgba(168,85,247,.15);color:#c084fc;vertical-align:1px}
+ .unpricedbanner{margin:8px 0 2px;padding:8px 12px;border-radius:8px;font-size:var(--fs-sm);line-height:1.5;
+   border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.07)}
+ .unpricedbanner[hidden]{display:none}
+ .unpricedbanner a{color:var(--accent);text-decoration:underline}
+ .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
+   color:var(--accent2);display:inline-block}
+ .resendname{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
+ /* Settings (P7-03, #67) */
+ .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:10px}
+ .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+ .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
+ .setin input{width:100%;min-width:0;max-width:140px;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font:inherit}
+ .setin input:focus{outline:2px solid var(--accent);outline-offset:1px}
+ .setin input:invalid{border-color:#ef4444}
+ .seth{font-size:var(--fs-sm);color:var(--muted)}
+ .setderiv{margin-top:12px;font-size:var(--fs-sm);overflow-wrap:anywhere}
+ .setderiv code{font-size:var(--fs-sm)}
+ .setbad{color:#ef4444}
+ .setok{color:#22c55e}
+ .setfacts2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+ .setfacts2 td,.setfacts2 th{padding:2px 6px}
+ .setlist{list-style:disc;padding-left:16px;display:flex;flex-direction:column;gap:6px}
+ #setsave:disabled{opacity:.45;cursor:not-allowed}
+ @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
+
+ /* ---- Logs drawer -------------------------------------------------------
+    Fixed to the right edge, above everything, and translated off-screen when
+    closed so it costs nothing until opened. */
+ #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
+   display:flex;align-items:center;gap:7px;padding:13px 10px;
+   border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
+   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
+   font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
+   box-shadow:-4px 0 18px rgba(0,0,0,.35);transition:padding .15s ease}
+ #logbtn:hover{border-color:var(--accent);padding-right:14px}
+ /* Hide the tab itself while the drawer is open — it would sit under the panel. */
+ #logbtn.hidden{opacity:0;pointer-events:none}
+ #logbtn .n{background:#ef4444;color:#fff;border-radius:999px;padding:1px 6px;
+   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
+ #logbtn .n[hidden]{display:none}
+ .n2{background:#ef4444;color:#fff;border-radius:999px;padding:0 5px;
+   font-size:var(--fs-xs);font-weight:700;margin-left:3px}
+ .n2[hidden]{display:none}
+ #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
+   background:var(--card);border-left:1px solid var(--border);display:flex;
+   flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
+   box-shadow:-12px 0 40px rgba(0,0,0,.4)}
+ #drawer.open{transform:translateX(0)}
+ #scrim{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.45);opacity:0;
+   pointer-events:none;transition:opacity .22s ease}
+ #scrim.open{opacity:1;pointer-events:auto}
+ .dhead{display:flex;align-items:center;gap:8px;padding:13px 15px;
+   border-bottom:1px solid var(--border);flex-shrink:0}
+ .dtabs{display:flex;gap:5px;padding:9px 15px;border-bottom:1px solid var(--border);
+   flex-shrink:0;flex-wrap:wrap}
+ .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
+   border:1px solid var(--border);color:var(--muted);background:transparent}
+ .dtab:hover{color:var(--fg);border-color:var(--accent)}
+ .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
+   (this is one session's whole conversation, not a cross-session tail). */
+#tscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#tscrim.open{opacity:1;pointer-events:auto}
+#tmodal{position:fixed;top:50%;left:50%;z-index:80;
+  width:min(760px,94vw);max-height:min(82vh,720px);
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
+  transition:transform .16s ease,opacity .16s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#tmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.thead{display:flex;align-items:center;gap:8px;padding:12px 15px;
+  border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
+.thead #ttitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#tbody{overflow-y:auto;flex:1;padding:12px 15px;display:flex;flex-direction:column;gap:9px}
+/* Roles read as distinct shapes/colours, not just a label — matters most on
+   a long scroll where you're pattern-matching, not reading every label. */
+.tmsg{display:flex;flex-direction:column;gap:3px;max-width:88%;
+  padding:8px 11px;border-radius:9px;font-size:var(--fs-sm);line-height:1.5;
+  word-break:break-word;white-space:pre-wrap}
+.tmsg .trole{font-size:var(--fs-xs);font-weight:650;opacity:.75;text-transform:uppercase;
+  letter-spacing:.03em}
+.tmsg.role-user{align-self:flex-end;background:color-mix(in srgb,var(--accent) 20%,var(--card));
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.tmsg.role-assistant{align-self:flex-start;background:var(--bg);border:1px solid var(--border)}
+.tmsg.role-tool{align-self:flex-start;max-width:96%;background:transparent;
+  border:1px dashed var(--border);color:var(--muted)}
+.tmsg pre{margin:4px 0 0;padding:8px 10px;background:color-mix(in srgb,var(--fg) 6%,transparent);
+  border-radius:6px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:var(--fs-xs);white-space:pre}
+.tmsg img.timg{max-width:100%;max-height:280px;border-radius:6px;margin-top:4px;display:block}
+.tmsg img.timg.tbroken{display:none}
+.tmsg a{color:var(--accent);text-decoration:underline}
+.tmsg .ttoolcall{font-size:var(--fs-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  opacity:.85;margin-top:2px}
+#tempty{padding:var(--sp-6) var(--sp-4)}
+.ttitlebtn{background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;
+  cursor:pointer;text-align:left;text-decoration:none}
+.ttitlebtn:hover{text-decoration:underline;color:var(--accent)}
+@media(max-width:640px){
+  #tmodal{width:100vw;max-height:100vh;height:100vh;max-height:100dvh;height:100dvh;top:0;left:0;border-radius:0;
+    transform:translate(0,8px) scale(1)}
+  #tmodal.open{transform:translate(0,0) scale(1)}
+
+/* P10-06 (#94): session timeline modal. Same scrim/open-class/focus-trap
+   pattern as #tmodal, wider on desktop (needs a horizontal time axis).
+   Opened from a dedicated button, never the SAME click target as the
+   transcript modal — the two answer different questions ("what happened"
+   vs "what was said") and must stay independently reachable. */
+}
+#lnscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#lnscrim.open{opacity:1;pointer-events:auto}
+#lnmodal{position:fixed;top:50%;left:50%;z-index:80;
+  width:min(920px,96vw);max-height:min(82vh,720px);
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
+  transition:transform .16s ease,opacity .16s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+#sfscrim{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .14s ease}
+#sfscrim.open{opacity:1;pointer-events:auto}
+#sfmodal{position:fixed;top:12vh;left:50%;z-index:90;
+  width:min(680px,94vw);max-height:70vh;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;
+  transition:transform .12s ease,opacity .12s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#sfmodal.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.sfrow{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:var(--fs-sm);border-left:2px solid transparent}
+.sfrow:hover,.sfrow.sfactive{background:var(--bg)}
+.sfrow.sfactive{border-left-color:var(--accent)}
+.sfrowtitle mark{background:transparent;color:var(--accent);font-weight:700}
+.sfrowmeta{color:var(--muted);font-size:var(--fs-xs);white-space:nowrap}
+#lnbody{overflow:auto;flex:1;padding:12px 15px}
+.lnlane{display:flex;align-items:center;gap:8px;height:22px;position:relative;margin-bottom:2px}
+.lnlanename{width:88px;flex-shrink:0;font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.lntrack{flex:1;position:relative;height:14px;background:var(--bg);border-radius:3px}
+.lnspan{position:absolute;top:0;height:14px;border-radius:2px;cursor:pointer;min-width:2px}
+.lnspan.lnfail{outline:2px solid #ef4444;outline-offset:-1px}
+.lnspan.lntick{width:3px!important;border-radius:1px}
+#lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
+#lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
+  border-radius:6px;padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+
+/* P4-07 (#44): project drill-down panel. A right-anchored side panel on
+   desktop; a full-width bottom sheet below 640px (the ticket's own
+   360px-viewport acceptance criterion) — same breakpoint convention as
+   the transcript modal above, same scrim/open-class/focus-trap pattern,
+   just a different anchor edge so it reads as "detail alongside the
+   matrix" rather than "a whole-screen takeover" on desktop. */
+}
+#pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .18s ease}
+#pdscrim.open{opacity:1;pointer-events:auto}
+#pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
+  width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(100%);transition:transform .18s ease;
+  box-shadow:-16px 0 40px rgba(0,0,0,.35)}
+#pdrawer.open{transform:translateX(0)}
+.pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
+  border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
+.pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
+#pdbody{overflow-y:auto;flex:1;padding:12px 15px}
+.pdsection{margin-bottom:var(--sp-4)}
+.pdsection .lbl{margin-bottom:6px}
+.pdstat{display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-sm)}
+.pdstat .k{color:var(--muted)}
+/* Estimated vs actual must never look the same — a money bug hides here
+   if the two are visually conflated. Actual gets solid text colour,
+   Estimated gets muted + an explicit "(est.)" suffix, never just a
+   different number with no label. */
+.pdcost-actual{font-weight:600}
+.pdcost-est{color:var(--muted);font-style:italic}
+.pdsessrow{padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
+.pdsessrow:last-child{border-bottom:none}
+@media(max-width:640px){
+  #pdrawer{top:auto;left:0;right:0;bottom:0;width:100vw;max-height:85vh;
+    border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0;
+    transform:translateY(100%)}
+  #pdrawer.open{transform:translateY(0)}
+  .tmsg{max-width:96%}
+}
+ /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
+    comfortable on a 1440px screen but eats half a portrait tablet. */
+ @media(min-width:641px) and (max-width:1024px){
+   #drawer{width:60vw}
+ }
+ /* #17: below 641px the side panel becomes an actual bottom sheet — a side
+    panel this narrow either covers everything or leaves a useless sliver.
+    The drag handle + ~92dvh height + tab strip that scrolls instead of
+    wrapping are the same fixes a native app would ship for this. */
+ @media(max-width:640px){
+   #drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
+     border-left:none;border-top:1px solid var(--border);
+     border-radius:14px 14px 0 0;
+     transform:translateY(100%);box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+   #drawer.open{transform:translateY(0)}
+   #drawer .dhead{padding-top:6px}
+   #draghandle{display:block;width:36px;height:4px;border-radius:2px;
+     background:var(--muted);opacity:.5;margin:0 auto 8px;flex-shrink:0}
+   .dtabs{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;
+     -webkit-overflow-scrolling:touch}
+   .dtab{scroll-snap-align:start;flex-shrink:0}
+ }
+ #draghandle{display:none}
+ #dbody{overflow-y:auto;flex:1;padding:4px 0;font-family:ui-monospace,SFMono-Regular,
+   Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
+ .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
+ .ev:hover{background:rgba(127,127,127,.06)}
+ .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
+ .ev .b{min-width:0;flex:1;word-break:break-word}
+ .ev .k{display:inline-block;padding:0 5px;border-radius:2px;font-size:var(--fs-xs);
+   margin-right:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+ /* .k-* chip colours are generated at boot from FKIND (installKindCSS) so the
+    drawer, the health bars and the failure filters can never disagree. */
+ .ev.err .b{color:#fca5a5}
+ #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
+   display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
+ /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
+    because auto-fit + a fixed `span 2` disagree about the column count and
+    leave dead space or a 0px track. Below 835px (tablet PORTRAIT and down,
+    #14) the charts go under the list full-width rather than squeezing into
+    an unreadable column — an 835-1024px LANDSCAPE tablet has the width to
+    keep them side by side, so it no longer gets force-stacked. */
+ .livegrid{display:grid;gap:var(--gap);align-items:stretch;
+   grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}
+ .livegrid > *{min-width:0}
+ @media(max-width:834px){
+   .livegrid{grid-template-columns:minmax(0,1fr)}
+   /* the list is height-capped for the side-by-side case; unpin it when stacked */
+   .livegrid > .card:first-child{max-height:none !important}
+ }
+ /* Mobile */
+ @media(max-width:640px){
+   :root{--fs:14px;--gap:12px;--pad:12px}
+   .hide-mobile{display:none}
+   .page-title{font-size:var(--fs-lg) !important}
+
+   /* #13: header collapses to one row — hamburger, title, overflow controls
+      wrap onto their own line only if the viewport is truly too narrow for
+      all of refresh/theme/sound/help, instead of the desktop's baseline-
+      aligned two-block layout fighting for the same row. */
+   .page > .flex.items-end.justify-between{align-items:center}
+   .page > .flex.items-end.justify-between > .flex.items-center.gap-2{min-width:0;flex:1 1 auto}
+   .page-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+   .page > .flex.items-end.justify-between > div > .muted.flex{flex-wrap:wrap}
+
+   /* Every chip/button is a tap target: 44x44 minimum (#13). */
+   .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
+     display:inline-flex;align-items:center;justify-content:center}
+   #navtoggle{padding:0;width:44px}
+   #theme,#soundtoggle,#helpbtn{padding:0}
+
+   /* Date range collapses to a single active-preset chip; tapping it reveals
+      the two date inputs + full preset row beneath instead of all of them
+      fighting for one line (avoids the desktop row overflowing at 360px). */
+   #rangebar{flex-direction:column;align-items:stretch !important}
+   #rangebar > .lbl{display:none}
+   #rangebar input[type=date]{flex:1;min-width:0}
+   #rangebar:not(.rangeopen) input[type=date],
+   #rangebar:not(.rangeopen) > span.muted:not(#rangeinfo){display:none}
+   #rangebar #presets{flex-wrap:wrap;width:100%}
+   #rangebar:not(.rangeopen) #presets{display:none}
+   #rangebar #rangeinfo{margin-left:0;width:100%;order:-1}
+   #rangetoggle{display:flex !important}
+
+   /* KPI strip: 2 columns, 1 below 400px (separate query further down). */
+   .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+   /* Live session rows: stack meta under the title instead of a side-by-side
+      row that has no room left once the gauge and tool chips are in it. */
+   .livegrid{grid-template-columns:minmax(0,1fr)}
+   #livelist .liverow{flex-direction:column;align-items:flex-start;gap:6px}
+   #livelist .liverow .metacol{width:100%}
+   #livelist .liverow .loecol{align-self:flex-end}
+
+   /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
+      310px plus card padding overflows a 360px viewport (#13). */
+   .olgrid{grid-template-columns:1fr}
+
+   /* #19: health rows and the failure list switch from fixed-width flex
+      columns (built for a wide screen) to a stacked card-per-row layout.
+      Long identifiers get overflow-wrap so a model/provider name that is
+      still too long to fit never forces the row wider than the viewport. */
+   .hrow{flex-wrap:wrap;align-items:flex-start !important;gap:4px 8px !important;
+     padding:8px 0;border-bottom:1px solid var(--border)}
+   .hrow .hname{width:auto !important;flex:1 1 100%;overflow-wrap:anywhere;white-space:normal}
+   .hrow .hbar{flex:1 1 100%;order:3}
+   .hrow .hrate{width:auto !important;order:2}
+   .hrow .hcount{width:auto !important;order:2;margin-left:auto}
+   .hrow .hchips{width:auto !important;order:4;flex:1 1 100%}
+
+   .frow{flex-wrap:wrap;gap:3px 6px !important;padding:6px 0}
+   .frow .fmodel{width:auto !important;overflow-wrap:anywhere;white-space:normal;max-width:70%}
+   .frow .fwhen{margin-left:auto}
+   .frow .fmsg{flex:1 1 100%;white-space:normal;overflow-wrap:anywhere}
+   }
+ @media(max-width:400px){
+   /* KPI strip: down to a single column once 2-up gets too cramped for the
+      ring/sparkline cards to stay legible. */
+   .grid-kpi{grid-template-columns:1fr}
+ }
+
+ /* Tablet — #14: portrait and landscape get different treatment rather than
+    one 641-1024 band, because a portrait tablet has desktop-narrow WIDTH but
+    plenty of HEIGHT, while landscape has the opposite. */
+ @media(min-width:641px) and (max-width:1024px){
+   :root{--fs:14px;--gap:14px;--pad:16px}
+ }
+ /* Portrait tablet (<=834px, e.g. 768x1024): single-column content, charts
+    full width at a taller aspect ratio so they stay readable without the
+    width a landscape/desktop layout assumes. */
+ @media(min-width:641px) and (max-width:834px) and (orientation:portrait){
+   .grid-2{grid-template-columns:1fr}
+   canvas{max-height:min(46vh,360px) !important}
+ }
+ /* Landscape tablet (835-1024px, e.g. 1024x768): keep chart pairs 2-up (the
+    default .grid-2 auto-fit already does this at this width) and give charts
+    a viewport-height-driven ceiling instead of the desktop's fixed 280px, so
+    a short landscape window does not force scrolling to see a whole chart. */
+ @media(min-width:835px) and (max-width:1024px) and (orientation:landscape){
+   canvas{max-height:min(38vh,300px) !important}
+ }
+
+ /* Large screens get more breathing room */
+ @media(min-width:1600px){
+   :root{--fs:16px;--gap:20px;--pad:28px}
+ }
+ /* Bandwidth panel (P8-05, #72) */
+ #bwpanel[hidden]{display:none}
+ .bwpkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+ .bwpt{border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+ .bwpv{font-size:22px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+ .bwpl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+ .bwps{font-size:var(--fs-xs);margin-top:2px}
+ .bwrrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px 52px;align-items:center;gap:8px;font-size:var(--fs-sm)}
+ .bwrm{font-weight:600}
+ .bwrbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+ .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+ .bwrrow.hot .bwrbar i{background:#ef4444}
+ .bwrx{text-align:right;font-variant-numeric:tabular-nums}
+ .bwrflag{font-size:var(--fs-xs);color:#ef4444;white-space:nowrap}
+
+/* Sessions tree (P10-01, #89) */
+.sesstree-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sesstree-row:last-child{border-bottom:none}
+.sesstree-row-failed{background:color-mix(in srgb, #ef4444 6%, transparent)}
+.sesstree-toggle{width:1.25rem;height:1.25rem;flex:0 0 auto;background:none;border:1px solid var(--border);border-radius:4px;color:var(--foreground);cursor:pointer;line-height:1;font-size:var(--fs-xs)}
+.sesstree-toggle-spacer{width:1.25rem;flex:0 0 auto;display:inline-block}
+.sesstree-title{font-weight:600;flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sesstree-chip{font-size:var(--fs-xs)}
+.sesstree-model{font-size:var(--fs-xs);flex:0 0 auto}
+.sesstree-dur{font-size:var(--fs-xs);flex:0 0 auto;min-width:3rem;text-align:right}
+.sesstree-tok{font-size:var(--fs-xs);flex:0 0 auto;min-width:4.5rem;text-align:right}
+.sesstree-cost{font-variant-numeric:tabular-nums;flex:0 0 auto}
+.sesstree-endreason{font-size:var(--fs-xs);flex:0 0 auto}
+.sesstree-endreason-failed{border-color:#ef4444;color:#ef4444}
+.sesstree-children{margin-left:.25rem;border-left:1px dashed var(--border)}
+.livefanout-chip{font-size:var(--fs-xs);cursor:pointer}
+
