@@ -25,7 +25,11 @@ dependencies = ["PyYAML>=6.0"]
 # never imported by the package and never installed on a deployed box —
 # `dependencies` above stays PyYAML-only.
 [project.optional-dependencies]
-dev = ["playwright>=1.40"]
+# pytest (P3-02, #32): runs the existing script-style test_*.py files as
+# subprocesses (tests/test_pytest_wrapper.py) so `pytest` in CI actually
+# means something, without rewriting 38 existing tests to pytest's own
+# assert/fixture style -- runtime (`dependencies` above) stays PyYAML-only.
+dev = ["playwright>=1.40", "pytest>=7.0"]
 
 [project.urls]
 Homepage = "https://github.com/BeinnoLLC/LLM-Telemetry"

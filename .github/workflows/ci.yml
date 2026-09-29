@@ -16,6 +16,8 @@ jobs:
       - name: Install
         run: |
           pip install -e .
+          # pytest (P3-02, #32): dev-only, never a runtime dependency.
+          pip install "pytest>=7.0"
           npm ci --prefix tests          # the pinned jsdom, not whatever is latest
 
       - name: Leak gate (samples must carry nothing identifying)
@@ -55,7 +57,7 @@ jobs:
         run: node tests/run-all.js
 
       - name: Python suites
-        run: for t in tests/test_*.py; do python3 "$t" || exit 1; done
+        run: python3 -m pytest tests/test_pytest_wrapper.py -v
 
       - name: Breakpoint screenshots (#21) — non-blocking QA artifact
         # Dev-extra tooling: playwright is never a runtime dependency (the

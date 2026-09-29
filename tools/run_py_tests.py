@@ -2,12 +2,11 @@
 """Run every tests/test_*.py and report failures.
 
 Each test file is a standalone script that prints its own summary and exits
-non-zero on failure, so the runner is a subprocess fan-out rather than pytest
-(pytest is deliberately not a dependency of this repo).
-
-Usage:
-  .venv/bin/python tools/run_py_tests.py          # quiet: only failures
-  .venv/bin/python tools/run_py_tests.py -v       # show each file's last line
+non-zero on failure. This is the fast LOCAL loop (no pytest dependency,
+plain subprocess fan-out). CI additionally runs `pytest
+tests/test_pytest_wrapper.py` (P3-02, #32) so `pytest` itself means
+something there without requiring every contributor to have pytest
+installed locally just to run the suite.
 """
 import glob
 import os
@@ -21,6 +20,11 @@ VERBOSE = "-v" in sys.argv
 
 def main():
     files = sorted(glob.glob(os.path.join(ROOT, "tests", "test_*.py")))
+    # test_pytest_wrapper.py is CI's own pytest entrypoint (imports pytest,
+    # itself re-runs every file in this list as a subprocess) -- running it
+    # here too would both double-run every test AND fail locally on any box
+    # without the pytest dev-dependency installed.
+    files = [f for f in files if os.path.basename(f) != "test_pytest_wrapper.py"]
     if not files:
         print("no tests/test_*.py found")
         return 1
