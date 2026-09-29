@@ -878,6 +878,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
+/* #11: radial KPI rings — compact, no-needle variant of the gauge for
+   bounded 0-100 metrics inside the tight KPI strip; sparklines for the
+   unbounded counters next to it, so both live in the same card recipe. */
+.kpi-ring{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.kringwrap{width:44px;height:44px}
+.kring{display:block;width:100%;height:100%}
+.kring svg{width:100%;height:100%;display:block}
+.kspwrap{display:inline-block;width:64px;height:20px;vertical-align:middle;margin-left:6px}
+.kspark{width:100%;height:100%;display:block}
+
  /* Unpriced / free-tier cost states (P9-05, #82) */
  .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.14);color:#f87171}
@@ -2120,17 +2130,34 @@ function render(){
   H.forEach(h=>{ okN+=(h.ok||0); failN+=(h.fail||0); });
   const totCalls = okN+failN;
   const srate = totCalls ? (okN/totCalls*100) : null;
-  const srCol = srate==null ? MU : srate>=95 ? '#22c55e' : srate>=80 ? '#f59e0b' : '#ef4444';
-  const srVal = srate==null ? '—'
-    : `<span style="color:${srCol}">${srate.toFixed(1)}%</span>`;
 
-  $('kpis').innerHTML=[['API calls',calls.toLocaleString()],['Tokens',fmt(tok)],
-    ['Cache read',fmt(cache)],['Sessions',nsess.toLocaleString()],
-    ['Success rate',srVal],
+  // #11: cache hit rate — real data (cache_read vs. total prompt tokens
+  // actually sent), a genuinely bounded 0-100% metric, so it earns a ring
+  // like success rate.
+  const promptIn = rows.reduce((s,r)=>s+r.inp,0);
+  const cacheDenom = promptIn + cache;
+  const cacheRate = cacheDenom ? (cache/cacheDenom*100) : null;
+
+  // #11: 7-day trend for the unbounded counters, computed from the same
+  // rows already loaded for this range (last 7 distinct dates present).
+  const kdays=[...new Set(rows.map(r=>r.date))].sort().slice(-7);
+  const callsSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0));
+  const tokSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0));
+
+  $('kpis').innerHTML=[
+    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC)],
+    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1])],
+    ['Cache hit rate',null,null,radialRing(cacheRate,{label:'Cache hit rate',warnAt:60,badAt:30})],
+    ['Sessions',nsess.toLocaleString()],
+    ['Success rate',null,null,radialRing(srate,{label:'Success rate',warnAt:95,badAt:80})],
     ['In progress',liveDot],
     ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':'')]]
-    .map(([l,v])=>`<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`).join('');
+    .map(([l,v,spark,ring])=>{
+      if (ring) return `<div class="card p-2.5 kpi-ring"><div class="kringwrap">${ring}</div>
+        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`;
+      return `<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`;
+    }).join('');
 
   // Live data is independent of the date filter — render it before the early
   // return, so an empty range never blanks the Live tab.
@@ -2911,6 +2938,67 @@ function renderLive(){
 // viewBox scaled purely by CSS width/height (--gauge-size / .sz-sm|md|lg), so
 // every stroke/tick/font scales together instead of going spindly at 132px.
 const GAUGE_PREV = new Map();   // stable id -> previous needle angle, for travel
+
+// #11: compact radial ring — the gauge's zone colours and geometry style
+// without a needle, for bounded 0-100 metrics living in the tight KPI strip
+// (success rate, cache hit rate). Reuses --z-ok/--z-warn/--z-bad so "green
+// ring" means the same thing as the full instrument dial (#7/#8) everywhere
+// on the page. Deliberately NOT used for every KPI: only genuinely bounded
+// percentages get a ring — unbounded counters (calls, tokens, spend) keep a
+// plain number plus a 7-day sparkline (sparkSvg below), because a 0-100 ring
+// around a number with no ceiling would be a fabricated bound.
+function radialRing(pct, opts){
+  const o = opts || {};
+  const label = o.label || '';
+  const warnAt = o.warnAt != null ? o.warnAt : 80;   // #11 rings read HIGH=good
+  const badAt  = o.badAt  != null ? o.badAt  : 60;   // (success/cache-hit rate), so bands invert vs. loeIcon's load gauge
+  const tier = pct == null ? {c:'var(--muted)', n:'—'}
+             : pct >= warnAt ? {c:'var(--z-ok)', n:'Healthy'}
+             : pct >= badAt  ? {c:'var(--z-warn)', n:'Watch'}
+             :                 {c:'var(--z-bad)', n:'Low'};
+  const R = 15.5, CX = 18, CY = 18;
+  const CIRC = (2*Math.PI*R).toFixed(2);
+  const frac = pct == null ? 0 : Math.max(0, Math.min(1, pct/100));
+  const dash = (CIRC*frac).toFixed(2);
+  const valueText = pct == null ? '—' : `${Math.round(pct)}%`;
+  const ariaText = pct == null ? `${label}: no data` : `${label} ${Math.round(pct)} percent, ${tier.n.toLowerCase()}`;
+  return `<span class="kring" role="meter" aria-valuenow="${pct==null?0:Math.round(pct)}"
+      aria-valuemin="0" aria-valuemax="100" aria-valuetext="${escA(ariaText)}" aria-label="${escA(label)}"
+      title="${escA(ariaText)}">
+    <svg viewBox="0 0 36 36" aria-hidden="true">
+      <title>${escA(ariaText)}</title>
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+        stroke="color-mix(in srgb,var(--border) 60%,transparent)" stroke-width="4"/>
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${tier.c}" stroke-width="4"
+        stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${(CIRC-dash).toFixed(2)}"
+        transform="rotate(-90 ${CX} ${CY})"/>
+      <text x="${CX}" y="${CY+1}" text-anchor="middle" dominant-baseline="middle"
+        fill="${tier.c}" style="font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums">${valueText}</text>
+    </svg></span>`;
+}
+
+// #11: 7-day trend sparkline for the unbounded KPI counters (API calls,
+// tokens) — these have no ceiling, so a ring would imply a fake bound;
+// a trend line answers "is this going up or down" instead.
+function sparkSvg(values, color){
+  const vals = (values||[]).map(v=>+v||0);
+  if (vals.length < 2 || vals.every(v=>v===vals[0])) return '';
+  const W = 64, H = 20, PAD = 2;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = (max-min) || 1;
+  const pts = vals.map((v,i)=>{
+    const x = PAD + (i/(vals.length-1))*(W-2*PAD);
+    const y = H-PAD - ((v-min)/span)*(H-2*PAD);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = pts[pts.length-1].split(',');
+  return `<svg class="kspark" viewBox="0 0 ${W} ${H}" aria-hidden="true" role="img">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.6"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="1.8" fill="${color}"/>
+  </svg>`;
+}
+
 function loeIcon(L, opts){
   const heavy = new Set(['delegate_task','execute_code','terminal','mcp__browser_exec']);
   const light = new Set(['read_file','search_files','web_search']);
