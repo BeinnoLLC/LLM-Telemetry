@@ -99,6 +99,34 @@ SESS = """
 select date(started_at,'unixepoch','localtime') d, coalesce(nullif(source,''),'-') src, count(*)
 from sessions group by d, src
 """
+
+# P9-04 (#81): session-lifecycle signals the Health view otherwise ignores —
+# end_reason breakdown, and compression-pressure sessions. Scoped to the last
+# 30 days, the same window RESEND uses, so it stays a "what's happening
+# lately" signal rather than growing unbounded with the DB's full history.
+# rewind_count is deliberately excluded per the ticket's own note: it is 0
+# everywhere observed, and a panel for an always-zero column is how
+# dashboards accumulate dead space.
+END_REASONS = """
+select coalesce(nullif(end_reason,''), '(none)'), count(*)
+from sessions
+where ended_at is not null
+  and ended_at > strftime('%s','now') - 2592000
+group by 1
+order by count(*) desc
+"""
+COMPRESSION_PRESSURE = """
+select id, coalesce(nullif(title,''), nullif(display_name,''), '(untitled)'),
+       compression_fallback_streak, compression_ineffective_count,
+       compression_failure_error
+from sessions
+where started_at > strftime('%s','now') - 2592000
+  and (compression_fallback_streak > 0
+       or compression_ineffective_count > 0
+       or coalesce(compression_failure_error,'') != '')
+order by compression_ineffective_count desc, compression_fallback_streak desc
+limit 40
+"""
 # "In progress" = open session with activity inside the window. A null ended_at
 # alone is not enough: crashed/killed sessions never get one and would inflate
 # this forever (9 open rows here, only 3 genuinely live).
@@ -342,6 +370,12 @@ def build():
                     "resend_usd": pr["market_value_usd"], "cost_class": pr["cost_class"],
                     "last": last})
             resend.sort(key=lambda x: -x["resend_usd"])
+            # P9-04 (#81): lifecycle signals for the Health view.
+            end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
+            compression_pressure = [
+                {"id": sid, "title": title, "fallback_streak": fb,
+                 "ineffective_count": ic, "error": err or ""}
+                for sid, title, fb, ic, err in con.execute(COMPRESSION_PRESSURE)]
             # Must run BEFORE the finally below closes the connection.
             deleg = delegations.collect(con)
         finally:
@@ -379,6 +413,8 @@ def build():
                                  "recent_sessions": recent_sessions,
                                  "resend": resend,
                                  "health": health,
+                                 "end_reasons": end_reasons,
+                                 "compression_pressure": compression_pressure,
                                  "heatmap": heatmap,
                                  "node_sessions": node_sessions,
                                  "failures_recent": fail_recent,

@@ -1474,6 +1474,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
    <div id="failcount" class="muted text-[length:var(--fs-xs)] mt-2"></div>
   </div>
+  <!-- P9-04 (#81): session-lifecycle panel — end_reason breakdown and
+       compression-pressure sessions. Hidden entirely (not just empty) when
+       every session in the window ended cleanly with no compression
+       pressure, per the ticket's own acceptance criterion. -->
+  <div class="card p-4 mb-3" id="lifecard" hidden>
+   <div class="lbl mb-2.5 hhdr">Session lifecycle
+    <span class="muted hsub">end reasons and compression pressure · last 30 days</span>
+   </div>
+   <div id="lifereasons" class="flex flex-wrap gap-2 mb-2.5"></div>
+   <div id="lifepressure" class="flex flex-col gap-1.5"></div>
+  </div>
   <div class="card p-4" id="delegcard" hidden>
    <div class="lbl mb-2.5">Delegated runs
     <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
@@ -3368,7 +3379,7 @@ function buildAll(profiles){
   const names = Object.keys(profiles).filter(n => n !== 'All');
   if (names.length < 2) return null;
   const rows = [], hours = [], sess = [], live = [], tools = {};
-  const H = {}, fails = [];
+  const H = {}, fails = [], ER = {};
   let active = 0;
   names.forEach(n => {
     const p = profiles[n];
@@ -3389,6 +3400,18 @@ function buildAll(profiles){
     });
     active += (p.active||0);
   });
+  // end_reason counts add up across profiles (a count is a count); the
+  // compression-pressure LIST concatenates and re-ranks, matching how
+  // resend/recent_sessions already merge — a straight sum would lose which
+  // session the pressure belongs to.
+  names.forEach(n => (profiles[n].end_reasons||[]).forEach(r => {
+    ER[r.reason] = (ER[r.reason]||0) + r.n;
+  }));
+  const end_reasons = Object.entries(ER).map(([reason,n])=>({reason,n})).sort((a,b)=>b.n-a.n);
+  const compression_pressure = names.flatMap(n =>
+    (profiles[n].compression_pressure||[]).map(r=>({...r,profile:n})))
+    .sort((a,b)=>(b.ineffective_count-a.ineffective_count)||(b.fallback_streak-a.fallback_streak))
+    .slice(0,40);
   const health = Object.values(H).map(h => ({
     ...h, rate: h.total ? Math.round(1000*h.ok/h.total)/10 : null
   })).sort((a,b) => (b.fail-a.fail) || (b.total-a.total));
@@ -3424,6 +3447,7 @@ function buildAll(profiles){
   });
   return {rows, hours, sessions:sess, live, active, health, recent_sessions, resend, heatmap,
           node_sessions: NS,
+          end_reasons, compression_pressure,
           // Delegation outcomes merge like health does: per-child counters add
           // up across profiles. Omitting this left the DEFAULT tab with an
           // empty panel while each real profile had data — the panel looked
@@ -3593,6 +3617,55 @@ function renderHealth(){
   // filter state lives outside renderHealth so a data refresh does not reset
   // the view the user is currently reading.
   renderFailures(p.failures_recent || []);
+  renderLifecycle(p.end_reasons || [], p.compression_pressure || []);
+}
+
+// P9-04 (#81): end_reason breakdown + compression-pressure sessions. The
+// reason list is NOT hardcoded — a build running against a newer agent
+// runtime with a brand-new end_reason string must still render it, just
+// without special-casing, rather than blanking the whole panel.
+const LIFE_ABNORMAL = new Set(['(none)', 'startup_orphan_reap', 'ws_orphan_reap']);
+function renderLifecycle(reasons, pressure){
+  const card = $('lifecard');
+  if (!card) return;
+  // "Ended cleanly" means no ABNORMAL reason occurred — a page of nothing
+  // but agent_close is not new information, so showing it anyway would be
+  // exactly the empty-shell case the ticket calls out. Compression pressure
+  // is checked independently: a session can end cleanly and still have
+  // been fighting its context window the whole time.
+  const hasAbnormal = reasons.some(r => LIFE_ABNORMAL.has(r.reason) && r.n > 0);
+  const hasPressure = pressure.length > 0;
+  if (!hasAbnormal && !hasPressure){ card.hidden = true; return; }
+  card.hidden = false;
+
+  const total = reasons.reduce((a,r)=>a+r.n,0) || 1;
+  $('lifereasons').innerHTML = reasons.map(r => {
+    const abnormal = LIFE_ABNORMAL.has(r.reason);
+    const pct = (r.n/total*100).toFixed(1);
+    return `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="${
+      abnormal
+        ? 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'
+        : 'background:var(--bg);color:var(--muted);border:1px solid var(--border)'
+    }" title="${esc(r.reason)}: ${r.n} session(s), ${pct}%">${abnormal ? '&#9888; ' : ''}${esc(r.reason)} <b>${r.n}</b></span>`;
+  }).join('');
+
+  if (!pressure.length){
+    $('lifepressure').innerHTML = '';
+  } else {
+    $('lifepressure').innerHTML =
+      `<div class="muted text-[length:var(--fs-xs)] mb-1">Compression pressure — ${pressure.length} session(s)</div>` +
+      pressure.slice(0,20).map(s => {
+        const bits = [];
+        if (s.fallback_streak > 0) bits.push(`fallback streak ${s.fallback_streak}`);
+        if (s.ineffective_count > 0) bits.push(`${s.ineffective_count} ineffective`);
+        return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
+          <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
+          <span class="muted">${bits.map(esc).join(' · ')}</span>
+          ${s.error ? `<span style="color:#ef4444" title="${esc(s.error)}">error</span>` : ''}
+        </div>` +
+        (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
+      }).join('');
+  }
 }
 
 // Headline strip: the three numbers that answer "is anything wrong" before
