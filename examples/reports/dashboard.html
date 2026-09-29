@@ -910,6 +910,29 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
    border:1px solid var(--border);color:var(--muted);background:transparent}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+ /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
+    comfortable on a 1440px screen but eats half a portrait tablet. */
+ @media(min-width:641px) and (max-width:1024px){
+   #drawer{width:60vw}
+ }
+ /* #17: below 641px the side panel becomes an actual bottom sheet — a side
+    panel this narrow either covers everything or leaves a useless sliver.
+    The drag handle + ~92dvh height + tab strip that scrolls instead of
+    wrapping are the same fixes a native app would ship for this. */
+ @media(max-width:640px){
+   #drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
+     border-left:none;border-top:1px solid var(--border);
+     border-radius:14px 14px 0 0;
+     transform:translateY(100%);box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+   #drawer.open{transform:translateY(0)}
+   #drawer .dhead{padding-top:6px}
+   #draghandle{display:block;width:36px;height:4px;border-radius:2px;
+     background:var(--muted);opacity:.5;margin:0 auto 8px;flex-shrink:0}
+   .dtabs{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;
+     -webkit-overflow-scrolling:touch}
+   .dtab{scroll-snap-align:start;flex-shrink:0}
+ }
+ #draghandle{display:none}
  #dbody{overflow-y:auto;flex:1;padding:4px 0;font-family:ui-monospace,SFMono-Regular,
    Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
  .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
@@ -1488,6 +1511,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
 <div id="scrim"></div>
 <div id="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
+ <div id="draghandle"></div>
  <div class="dhead">
   <span class="dot"></span>
   <b style="font-size:var(--fs-md)">Live tail</b>
@@ -5309,7 +5333,7 @@ function soundToggleInstall(){
 // One chronological feed merging two sources: model failures parsed from
 // errors.log, and tool events from the live sessions. Kept out of the tab
 // system on purpose — a log you can only reach by changing tabs is not a log.
-let dFilter = 'all', dSeen = 0, dOpen = false;
+let dFilter = 'all', dSeen = 0, dOpen = false, dScrollY = 0, dHistoryPushed = false;
 
 // Log lines are raw provider output — they can contain angle brackets and
 // quotes, so they must never be interpolated into innerHTML unescaped.
@@ -5388,13 +5412,73 @@ function drawerOpen(on){
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
   $('logbtn')?.classList.toggle('hidden', on);
+  // #17: body scroll locked while the sheet/drawer is open, restored exactly
+  // on close (remembers the real scroll position, not just 0).
+  if (on){
+    dScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${dScrollY}px`;
+    document.body.style.width = '100%';
+  } else if (document.body.style.position === 'fixed') {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, dScrollY);
+  }
+  // #17: push a history state when opening so Android/gesture back closes
+  // the sheet instead of leaving the page; pop it (without re-navigating)
+  // when closing any other way so back/forward stays in sync.
+  if (on && !dHistoryPushed) {
+    history.pushState({ llmtDrawer: true }, '');
+    dHistoryPushed = true;
+  } else if (!on && dHistoryPushed) {
+    dHistoryPushed = false;
+    if (history.state && history.state.llmtDrawer) history.back();
+  }
   if (on){
     dSeen = (DATA.errors || []).length;   // mark failures as read
     drawerSync();
   }
 }
+window.addEventListener('popstate', () => {
+  if (dOpen) drawerOpen(false);
+});
+
+// #17: drag-down-to-close on the handle (and the header, so a stray tap
+// just below the handle still works) — touch AND mouse via Pointer Events.
+function installDrawerDrag(){
+  const sheet = $('drawer'), handle = $('draghandle');
+  if (!sheet || !handle) return;
+  let startY = null, startTransform = 0, dragging = false;
+  const onDown = e => {
+    if (window.innerWidth > 640) return; // only a bottom sheet at mobile width
+    dragging = true; startY = e.clientY; startTransform = 0;
+    sheet.style.transition = 'none';
+    handle.setPointerCapture?.(e.pointerId);
+  };
+  const onMove = e => {
+    if (!dragging || startY === null) return;
+    const dy = Math.max(0, e.clientY - startY);
+    startTransform = dy;
+    sheet.style.transform = `translateY(${dy}px)`;
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    // Past a quarter of the sheet's own height counts as "let go of it".
+    if (startTransform > sheet.offsetHeight * 0.25) drawerOpen(false);
+    startY = null;
+  };
+  handle.addEventListener('pointerdown', onDown);
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onUp);
+  handle.addEventListener('pointercancel', onUp);
+}
 
 function installDrawer(){
+  installDrawerDrag();
   $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   // The header "Logs" chip was removed (#116): the floating edge tab and the
   // nav drawer button are the entry points. Optional-chained handlers, so the
