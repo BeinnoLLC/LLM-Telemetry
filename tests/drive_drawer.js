@@ -126,7 +126,7 @@ setTimeout(() => {
     chk(varsOk, 'needles carry animation vars');
     const angles = needles.map(n =>
       parseFloat((n.getAttribute('style').match(/--d:(-?[\d.]+)deg/) || [])[1]));
-    chk(angles.every(a => a >= -90 && a <= 90), 'needle angles in range',
+    chk(angles.every(a => a >= -135 && a <= 135), 'needle angles in range (270° sweep, #7)',
         `[${Math.min(...angles).toFixed(0)}, ${Math.max(...angles).toFixed(0)}]`);
     chk(cards.every(c => c.className.includes('items-center')),
         'card contents vertically centred');
