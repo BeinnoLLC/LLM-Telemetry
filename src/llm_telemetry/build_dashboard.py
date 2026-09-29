@@ -1558,6 +1558,24 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div style="height:clamp(220px,22vw,320px)"><canvas id="cConcurrency"></canvas></div>
    <div id="concempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
   </div>
+  <!-- P4-04 (#41): cost by project. Unattributed is its own always-visible
+       bucket (never dropped, never silently merged into a real project),
+       hatched via an SVG pattern fill so it reads as distinct without
+       relying on color alone (a11y). A toggle can exclude it from the
+       chart, but the header always states current inclusion state. -->
+  <div class="card p-4 mt-4" id="projcard">
+   <div class="lbl mb-2.5 flex items-center justify-between">
+    <span>Cost by project
+     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— includes Unattributed (sessions with no resolvable project)</span>
+    </span>
+    <label class="muted normal-case tracking-normal text-[length:var(--fs-xs)] flex items-center gap-1.5">
+     <input type="checkbox" id="projexclude"> exclude Unattributed
+    </label>
+   </div>
+   <div id="projhdr" class="muted text-[length:var(--fs-xs)] mb-2"></div>
+   <div style="height:clamp(220px,22vw,320px)"><canvas id="cProjects"></canvas></div>
+   <div id="projempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
+  </div>
  </div>
 
  <div class="view" data-view="Cost" hidden>
@@ -2407,6 +2425,7 @@ function render(){
   renderBandwidthPanel(p, inR);
   renderResend(p, inR);
   renderConcurrency(p.concurrency, from, to);
+  renderProjects(rows, null, null);
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -2955,6 +2974,112 @@ function renderConcurrency(concurrency, fromDate, toDate){
     ],
     {plugins: {legend: {labels: {boxWidth: 8}}},
      scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
+}
+
+// P4-04 (#41): a small diagonal-hatch canvas pattern, used as the
+// Unattributed bar's fill instead of a plain color. This is the a11y
+// requirement from the ticket ("visually distinguishable without relying
+// on colour alone") — a colorblind reader or a grayscale printout still
+// sees the hatch texture even if the color itself is indistinguishable
+// from a real project's bar.
+let _unattrPattern = null;
+function unattrPattern(){
+  if (_unattrPattern) return _unattrPattern;
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const ctx = c.getContext('2d');
+  // jsdom's test environment has no real canvas backend — getContext()
+  // returns null there. Fall back to a flat muted color so tests exercise
+  // the rest of renderProjects() instead of crashing on a null context;
+  // check_projects_card.js still asserts the Unattributed bar uses a
+  // DIFFERENT fill style than any real project's PAL color.
+  if (!ctx) return 'rgba(148,163,184,0.5)';
+  ctx.fillStyle = 'rgba(148,163,184,0.35)';
+  ctx.fillRect(0, 0, 8, 8);
+  ctx.strokeStyle = 'rgba(148,163,184,0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 8); ctx.lineTo(8, 0);
+  ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
+  ctx.moveTo(6, 10); ctx.lineTo(10, 6);
+  ctx.stroke();
+  _unattrPattern = ctx.createPattern(c, 'repeat');
+  return _unattrPattern;
+}
+
+const UNATTR_LABEL = 'Unattributed';
+
+function renderProjects(rows, fromDate, toDate){
+  const card = $('projcard'), empty = $('projempty'), hdr = $('projhdr');
+  if (!card) return;
+  const excludeToggle = $('projexclude');
+  const exclude = !!(excludeToggle && excludeToggle.checked);
+
+  const inR = r => {
+    const d = r.date;
+    return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+  };
+  const inRange = (rows || []).filter(inR);
+
+  if (!inRange.length){
+    const el = $('cProjects');
+    const prev = el && (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+    if (prev) { try { prev.destroy(); } catch(_){} }
+    empty.hidden = false;
+    hdr.textContent = '';
+    return;
+  }
+  empty.hidden = true;
+
+  // Acceptance: "sum of all buckets including Unattributed equals the
+  // ungrouped total" — computed from the SAME inRange array both ways, so
+  // there is no way for the two numbers to silently diverge.
+  const totalCost = inRange.reduce((s, r) => s + (+r.act || +r.est || 0), 0);
+
+  const byProject = new Map();
+  inRange.forEach(r => {
+    const key = r.project || UNATTR_LABEL;
+    const cost = +r.act || +r.est || 0;
+    byProject.set(key, (byProject.get(key) || 0) + cost);
+  });
+
+  const unattrCost = byProject.get(UNATTR_LABEL) || 0;
+  const unattrPct = totalCost > 0 ? (100 * unattrCost / totalCost) : 0;
+
+  let labels = [...byProject.keys()].sort((a, b) => {
+    // Unattributed always sorts last — it's a catch-all bucket, not a
+    // project competing for rank.
+    if (a === UNATTR_LABEL) return 1;
+    if (b === UNATTR_LABEL) return -1;
+    return byProject.get(b) - byProject.get(a);
+  });
+
+  if (exclude) {
+    labels = labels.filter(l => l !== UNATTR_LABEL);
+  }
+
+  hdr.textContent = exclude
+    ? `${unattrPct.toFixed(0)}% of spend is unattributed (excluded from this chart) — $${unattrCost.toFixed(2)} of $${totalCost.toFixed(2)}`
+    : `${unattrPct.toFixed(0)}% of spend unattributed — $${unattrCost.toFixed(2)} of $${totalCost.toFixed(2)}`;
+
+  const colors = labels.map((l, i) => l === UNATTR_LABEL ? unattrPattern() : PAL[i % PAL.length]);
+
+  mk('cProjects', 'bar', labels, [
+    {data: labels.map(l => byProject.get(l) || 0), backgroundColor: colors, borderRadius: 2},
+  ], {
+    plugins: {
+      legend: {display: false},
+      tooltip: {callbacks: {
+        // The ticket's own requirement: a tooltip explaining WHY a session
+        // is unattributed, as the reader's cue that naming a session
+        // improves the report.
+        afterLabel: (ctx) => ctx.label === UNATTR_LABEL
+          ? 'No usable session title, no usable working directory, and no parent session that resolves either.'
+          : '',
+      }},
+    },
+    scales: {x: {grid: {display: false}}, y: {grid: {color: BD}, beginAtZero: true}},
+  });
 }
 
 function renderQueue(){
@@ -5553,6 +5678,10 @@ current = ('All' in DATA.profiles) ? 'All' : Object.keys(DATA.profiles)[0];
 tabs();
 renderResolution();
 $('from').onchange=render; $('to').onchange=render;
+// P4-04 (#41): the exclude-Unattributed toggle re-renders just the
+// projects card (via a full render() — simplest correct option since
+// render() is idempotent and cheap enough to run on a checkbox click).
+if ($('projexclude')) $('projexclude').onchange = render;
 
 const saved = localStorage.getItem('hermes-dash-theme');
 if(saved==='light') document.documentElement.setAttribute('data-theme','light');
