@@ -23,9 +23,11 @@ ok(/\.livegrid > \*\{min-width:0\}/.test(html),'children get min-width:0 (preven
 // the element must actually use the class
 ok(/<div class="livegrid" id="live-grid">/.test(html),'live grid uses .livegrid class');
 
-// stacking breakpoint
-const mq=/@media\(max-width:1000px\)\{([\s\S]{0,400}?)\}\s*\n/.exec(html);
-ok(!!mq,'1000px stacking breakpoint present');
+// stacking breakpoint — #14 lowered this from 1000px to 834px so an
+// 835-1024px LANDSCAPE tablet keeps the list+charts side by side instead of
+// being force-stacked with room to spare.
+const mq=/@media\(max-width:834px\)\{([\s\S]{0,400}?)\}\s*\n/.exec(html);
+ok(!!mq,'834px stacking breakpoint present (#14: portrait tablet and down)');
 if(mq) ok(/grid-template-columns:minmax\(0,1fr\)/.test(mq[1]),'stacks to one column when narrow');
 
 // the original bug: a fixed span against a variable column count

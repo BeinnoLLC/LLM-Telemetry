@@ -969,12 +969,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
     because auto-fit + a fixed `span 2` disagree about the column count and
-    leave dead space or a 0px track. Below 1000px the charts go under the list
-    full-width rather than squeezing into an unreadable column. */
+    leave dead space or a 0px track. Below 835px (tablet PORTRAIT and down,
+    #14) the charts go under the list full-width rather than squeezing into
+    an unreadable column — an 835-1024px LANDSCAPE tablet has the width to
+    keep them side by side, so it no longer gets force-stacked. */
  .livegrid{display:grid;gap:var(--gap);align-items:stretch;
    grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:1000px){
+ @media(max-width:834px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    /* the list is height-capped for the side-by-side case; unpin it when stacked */
    .livegrid > .card:first-child{max-height:none !important}
@@ -1033,10 +1035,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .grid-kpi{grid-template-columns:1fr}
  }
 
- /* Tablet */
+ /* Tablet — #14: portrait and landscape get different treatment rather than
+    one 641-1024 band, because a portrait tablet has desktop-narrow WIDTH but
+    plenty of HEIGHT, while landscape has the opposite. */
  @media(min-width:641px) and (max-width:1024px){
    :root{--fs:14px;--gap:14px;--pad:16px}
  }
+ /* Portrait tablet (<=834px, e.g. 768x1024): single-column content, charts
+    full width at a taller aspect ratio so they stay readable without the
+    width a landscape/desktop layout assumes. */
+ @media(min-width:641px) and (max-width:834px) and (orientation:portrait){
+   .grid-2{grid-template-columns:1fr}
+   canvas{max-height:min(46vh,360px) !important}
+ }
+ /* Landscape tablet (835-1024px, e.g. 1024x768): keep chart pairs 2-up (the
+    default .grid-2 auto-fit already does this at this width) and give charts
+    a viewport-height-driven ceiling instead of the desktop's fixed 280px, so
+    a short landscape window does not force scrolling to see a whole chart. */
+ @media(min-width:835px) and (max-width:1024px) and (orientation:landscape){
+   canvas{max-height:min(38vh,300px) !important}
+ }
+
  /* Large screens get more breathing room */
  @media(min-width:1600px){
    :root{--fs:16px;--gap:20px;--pad:28px}
