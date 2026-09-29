@@ -1621,6 +1621,25 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       actually use" that the global Usage view can't answer, because it
       only ever shows model mix aggregated across everything. -->
  <div class="view" data-view="Projects" hidden>
+  <!-- P4-08 (#45): weighting control. Drives the matrix (P4-05), the
+       provider bars (P4-06) and, once it lands, the trend (P4-10) — ONE
+       shared value so the three charts can never disagree about their
+       unit. Cost is the default: on the dev database, Unattributed is
+       76-84% of SESSIONS but only 15% of COST — same data, opposite
+       verdict, so the choice of default decides whether this whole phase
+       looks broken or useful. -->
+  <div class="card p-4 mb-4">
+   <div class="lbl mb-2.5 flex items-center justify-between">
+    <span>Weight by</span>
+    <div id="projweight" role="radiogroup" aria-label="Weighting" class="flex gap-1.5">
+     <button type="button" data-w="cost" class="chip on" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="true">Cost</button>
+     <button type="button" data-w="calls" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="false">Calls</button>
+     <button type="button" data-w="tokens" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="false">Tokens</button>
+     <button type="button" data-w="sessions" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="false">Sessions</button>
+    </div>
+   </div>
+   <div id="projweightnote" class="muted text-[length:var(--fs-xs)]"></div>
+  </div>
   <div class="card p-4">
    <div class="lbl mb-2.5 flex items-center justify-between">
     <span>Project × model
@@ -2514,6 +2533,13 @@ function render(){
   renderProjects(rows, null, null);
   renderProjectMatrix(rows);
   renderProjectDistribution(rows);
+  if ($('projweightnote')){
+    const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
+    $('projweightnote').textContent = `Showing ${wl.axis.toLowerCase()}. `
+      + (PROJ_WEIGHT === 'sessions'
+        ? 'Sessions weighting is the mode most likely to show a large Unattributed share — that is expected and not hidden.'
+        : '');
+  }
 
   if(!rows.length){ $('tbl').innerHTML='<tr><td class="muted py-3">No data in this range.</td></tr>'; return; }
 
@@ -3178,6 +3204,40 @@ function renderProjects(rows, fromDate, toDate){
 // thin columns.
 const PROJ_MATRIX_MAX_COLS = 8;
 
+// P4-08 (#45): ONE shared weighting value drives the matrix, the provider
+// bars and (once P4-10 lands) the trend — three charts disagreeing about
+// their unit would be worse than no toggle at all. Persisted like theme
+// and view choice (localStorage), so it survives a reload.
+let PROJ_WEIGHT = localStorage.getItem('hermes-dash-projweight') || 'cost';
+if (!['cost', 'calls', 'tokens', 'sessions'].includes(PROJ_WEIGHT)) PROJ_WEIGHT = 'cost';
+
+const PROJ_WEIGHT_LABELS = {
+  cost: {axis: 'Cost ($)', unit: '$', fmt: v => '$' + v.toFixed(2)},
+  calls: {axis: 'Calls', unit: 'calls', fmt: v => Math.round(v).toLocaleString()},
+  tokens: {axis: 'Tokens', unit: 'tokens', fmt: v => Math.round(v).toLocaleString()},
+  sessions: {axis: 'Sessions', unit: 'sessions', fmt: v => Math.round(v).toLocaleString()},
+};
+
+// Aggregates a GROUP of rows into a single weighted number. "sessions"
+// counts distinct session_id (a project/model/provider bucket can span
+// several rows that belong to the SAME session across dates/tasks — a
+// naive per-row sum would double count), everything else is a plain sum.
+function weightValue(rowsGroup){
+  if (PROJ_WEIGHT === 'sessions'){
+    const ids = new Set(rowsGroup.map(r => r.session_id).filter(Boolean));
+    // Rows with no session_id at all still count as one anonymous unit
+    // each, rather than vanishing from the Sessions-weighted view (the
+    // ticket's own "must render sensibly, not hidden" requirement for the
+    // exact mode most likely to expose a missing-attribution problem).
+    const anon = rowsGroup.filter(r => !r.session_id).length;
+    return ids.size + anon;
+  }
+  if (PROJ_WEIGHT === 'calls') return rowsGroup.reduce((s, r) => s + (+r.calls || 0), 0);
+  if (PROJ_WEIGHT === 'tokens') return rowsGroup.reduce((s, r) =>
+    s + (+r.inp || 0) + (+r.outp || 0) + (+r.cread || 0) + (+r.cwrite || 0), 0);
+  return rowsGroup.reduce((s, r) => s + (+r.act || +r.est || 0), 0);
+}
+
 function renderProjectMatrix(rows){
   const wrap = $('projmatrixwrap'), table = $('projmatrix'), empty = $('projmatrixempty');
   if (!table) return;
@@ -3188,36 +3248,44 @@ function renderProjectMatrix(rows){
   }
   empty.hidden = true;
 
-  // project -> model -> cost. No hardcoded project or model list anywhere
-  // in this function — both axes come entirely from what's in `rows`.
+  const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
+
+  // project -> model -> [rows in that bucket]. Grouped by RAW ROWS rather
+  // than a running sum, because "sessions" weighting needs the distinct
+  // session_id count per bucket, not a pre-summed number — no hardcoded
+  // project or model list anywhere in this function; both axes come
+  // entirely from what's in `rows`.
   const byProject = new Map();
-  const modelTotals = new Map();
+  const modelGroups = new Map();
   rows.forEach(r => {
     const proj = r.project || 'Unattributed';
-    const cost = +r.act || +r.est || 0;
     if (!byProject.has(proj)) byProject.set(proj, new Map());
     const models = byProject.get(proj);
-    models.set(r.model, (models.get(r.model) || 0) + cost);
-    modelTotals.set(r.model, (modelTotals.get(r.model) || 0) + cost);
+    if (!models.has(r.model)) models.set(r.model, []);
+    models.get(r.model).push(r);
+    if (!modelGroups.has(r.model)) modelGroups.set(r.model, []);
+    modelGroups.get(r.model).push(r);
   });
 
   // Row order: by project total descending, Unattributed always last (same
   // convention as the Cost-by-project card, #41) so it never competes for
   // rank against a real project.
-  const projectTotal = proj => [...byProject.get(proj).values()].reduce((s, v) => s + v, 0);
+  const projectTotal = proj => weightValue([...byProject.get(proj).values()].flat());
   const projects = [...byProject.keys()].sort((a, b) => {
     if (a === 'Unattributed') return 1;
     if (b === 'Unattributed') return -1;
     return projectTotal(b) - projectTotal(a);
   });
 
-  // Column order: by GLOBAL model total descending, capped, tail folded.
-  const allModels = [...modelTotals.keys()].sort((a, b) => modelTotals.get(b) - modelTotals.get(a));
+  // Column order: by GLOBAL model total descending (in the CURRENT
+  // weighting), capped, tail folded.
+  const modelTotal = m => weightValue(modelGroups.get(m));
+  const allModels = [...modelGroups.keys()].sort((a, b) => modelTotal(b) - modelTotal(a));
   const shownModels = allModels.slice(0, PROJ_MATRIX_MAX_COLS);
   const restModels = allModels.slice(PROJ_MATRIX_MAX_COLS);
-  const restTotal = restModels.reduce((s, m) => s + modelTotals.get(m), 0);
+  const restTotal = weightValue(restModels.flatMap(m => modelGroups.get(m)));
 
-  const grandTotal = [...modelTotals.values()].reduce((s, v) => s + v, 0);
+  const grandTotal = weightValue(rows);
 
   const headCells = shownModels.map(m =>
     `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${esc(short(m))}</th>`).join('');
@@ -3228,36 +3296,41 @@ function renderProjectMatrix(rows){
   const bodyRows = projects.map(proj => {
     const models = byProject.get(proj);
     const cells = shownModels.map(m => {
-      const v = models.get(m);
+      const grp = models.get(m);
       // Empty cell != zero cell (explicit acceptance criterion): a project
-      // that never touched a model renders blank, not "$0.00".
-      if (v === undefined) return '<td class="text-right px-2 py-1.5 muted">—</td>';
+      // that never touched a model renders blank, not a formatted zero.
+      if (grp === undefined) return '<td class="text-right px-2 py-1.5 muted">—</td>';
+      const v = weightValue(grp);
       return `<td class="text-right px-2 py-1.5 proj-cell" data-project="${esc(proj)}" data-model="${esc(m)}" ` +
-        `style="cursor:pointer" title="${esc(proj)} × ${esc(short(m))}: $${v.toFixed(2)}">$${v.toFixed(2)}</td>`;
+        `style="cursor:pointer" title="${esc(proj)} × ${esc(short(m))}: ${wl.fmt(v)} ${wl.unit}">${wl.fmt(v)}</td>`;
     }).join('');
     let restCell = '';
     if (restModels.length){
-      const restV = restModels.reduce((s, m) => s + (models.get(m) || 0), 0);
+      const restGrp = restModels.flatMap(m => models.get(m) || []);
+      const restV = weightValue(restGrp);
       restCell = restV > 0
-        ? `<td class="text-right px-2 py-1.5 muted">$${restV.toFixed(2)}</td>`
+        ? `<td class="text-right px-2 py-1.5 muted">${wl.fmt(restV)}</td>`
         : '<td class="text-right px-2 py-1.5 muted">—</td>';
     }
     const rowTotal = projectTotal(proj);
     return `<tr><td class="px-2 py-1.5 font-medium">${esc(proj)}</td>${cells}${restCell}` +
-      `<td class="text-right px-2 py-1.5 font-semibold">$${rowTotal.toFixed(2)}</td></tr>`;
+      `<td class="text-right px-2 py-1.5 font-semibold">${wl.fmt(rowTotal)}</td></tr>`;
   }).join('');
 
   const colTotalCells = shownModels.map(m =>
-    `<td class="text-right px-2 py-1.5 font-semibold">$${modelTotals.get(m).toFixed(2)}</td>`).join('');
+    `<td class="text-right px-2 py-1.5 font-semibold">${wl.fmt(modelTotal(m))}</td>`).join('');
   const restColTotal = restModels.length
-    ? `<td class="text-right px-2 py-1.5 font-semibold muted">$${restTotal.toFixed(2)}</td>` : '';
+    ? `<td class="text-right px-2 py-1.5 font-semibold muted">${wl.fmt(restTotal)}</td>` : '';
 
+  // Unit is labelled on the header itself (explicit acceptance criterion:
+  // "an unlabelled number that silently switches between dollars and call
+  // counts is a reporting bug") — not just implied by the toggle state.
   table.innerHTML =
-    `<thead><tr><th class="text-left px-2 py-1.5">Project</th>${headCells}${restHeadCell}` +
+    `<thead><tr><th class="text-left px-2 py-1.5">Project <span class="muted normal-case font-normal">(${esc(wl.axis)})</span></th>${headCells}${restHeadCell}` +
     `<th class="text-right px-2 py-1.5">Total</th></tr></thead>` +
     `<tbody>${bodyRows}</tbody>` +
     `<tfoot><tr class="border-t" style="border-color:var(--border)"><td class="px-2 py-1.5 muted">Total</td>` +
-    `${colTotalCells}${restColTotal}<td class="text-right px-2 py-1.5 font-semibold">$${grandTotal.toFixed(2)}</td></tr></tfoot>`;
+    `${colTotalCells}${restColTotal}<td class="text-right px-2 py-1.5 font-semibold">${wl.fmt(grandTotal)}</td></tr></tfoot>`;
 
   // Click targets -> P4-07 drill-down panel (#44). Focusable (tabIndex+role)
   // so "focus returns to the trigger" on close has a real trigger to return
@@ -3408,6 +3481,34 @@ function installProjectDrilldown(){
   $('pdscrim')?.addEventListener('click', pdClose);
 }
 
+// P4-08 (#45): weighting toggle wiring. A real radiogroup of <button>s
+// (native tab order + :focus-visible, same discipline as the P4-06
+// legend) rather than a <select>, so the four options are always visible
+// at once instead of hidden behind a dropdown.
+function installProjWeight(){
+  const group = $('projweight');
+  if (!group) return;
+  group.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      PROJ_WEIGHT = btn.dataset.w;
+      localStorage.setItem('hermes-dash-projweight', PROJ_WEIGHT);
+      group.querySelectorAll('button').forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+      render();
+    });
+  });
+  // Reflect the persisted choice in the UI on load, in case it was
+  // restored from localStorage as something other than the HTML default.
+  group.querySelectorAll('button').forEach(b => {
+    const on = b.dataset.w === PROJ_WEIGHT;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+
 // P4-06 (#43): project × provider distribution — a stacked horizontal bar
 // per project. Reuses PROV/provOf/provIcon exactly as every other view
 // does; introduces no second provider palette (explicit acceptance
@@ -3426,22 +3527,26 @@ function renderProjectDistribution(rows){
   }
   empty.hidden = true;
 
-  // project -> provider -> cost. Both axes entirely derived from the row
-  // set, same discipline as renderProjectMatrix — no hardcoded project or
-  // provider list.
+  const wl = PROJ_WEIGHT_LABELS[PROJ_WEIGHT];
+
+  // project -> provider -> [rows]. Grouped by raw rows (not a running sum)
+  // for the same reason as the matrix: "sessions" weighting needs the
+  // distinct session_id count per bucket. Both axes entirely derived from
+  // the row set, same discipline as renderProjectMatrix — no hardcoded
+  // project or provider list.
   const byProject = new Map();
   const providersSeen = new Set();
   rows.forEach(r => {
     const proj = r.project || 'Unattributed';
     const prov = provOf(r.provider, r.model, r.base_url);
-    const cost = +r.act || +r.est || 0;
     if (!byProject.has(proj)) byProject.set(proj, new Map());
     const provs = byProject.get(proj);
-    provs.set(prov, (provs.get(prov) || 0) + cost);
+    if (!provs.has(prov)) provs.set(prov, []);
+    provs.get(prov).push(r);
     providersSeen.add(prov);
   });
 
-  const projectTotal = proj => [...byProject.get(proj).values()].reduce((s, v) => s + v, 0);
+  const projectTotal = proj => weightValue([...byProject.get(proj).values()].flat());
   const projects = [...byProject.keys()].sort((a, b) => {
     if (a === 'Unattributed') return 1;
     if (b === 'Unattributed') return -1;
@@ -3450,17 +3555,15 @@ function renderProjectDistribution(rows){
 
   // Provider stacking order: by GLOBAL provider total descending, so the
   // segment order is consistent across every project's bar.
-  const provTotals = new Map();
-  providersSeen.forEach(p => provTotals.set(p,
-    projects.reduce((s, proj) => s + (byProject.get(proj).get(p) || 0), 0)));
-  const providers = [...providersSeen].sort((a, b) => provTotals.get(b) - provTotals.get(a));
+  const provTotal = p => weightValue(projects.flatMap(proj => byProject.get(proj).get(p) || []));
+  const providers = [...providersSeen].sort((a, b) => provTotal(b) - provTotal(a));
 
   const datasets = providers.map(p => {
     const s = PROV[p] || {icon: '\u25CB', bg: 'rgba(148,163,184,.14)', fg: MU};
     return {
       label: `${s.icon} ${p}`,
       data: projects.map(proj => {
-        const raw = byProject.get(proj).get(p) || 0;
+        const raw = weightValue(byProject.get(proj).get(p) || []);
         if (!projDistNormalized) return raw;
         const total = projectTotal(proj);
         // Normalised mode: every bar becomes exactly 100 wide — the
@@ -3497,7 +3600,8 @@ function renderProjectDistribution(rows){
     },
     scales: {
       x: {stacked: true, grid: {color: BD}, beginAtZero: true,
-          max: projDistNormalized ? 100 : undefined},
+          max: projDistNormalized ? 100 : undefined,
+          title: {display: true, text: projDistNormalized ? '% of project total' : wl.axis, color: MU, font: {size: 10}}},
       y: {stacked: true, grid: {display: false}},
     },
   });
@@ -6716,6 +6820,7 @@ setInterval(pollLive, LIVE_MS);
 installDrawer();
 installTranscriptModal();
 installProjectDrilldown();
+installProjWeight();
 soundToggleInstall();
 settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick
