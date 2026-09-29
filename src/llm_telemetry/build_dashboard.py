@@ -1207,6 +1207,25 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwrrow.hot .bwrbar i{background:#ef4444}
  .bwrx{text-align:right;font-variant-numeric:tabular-nums}
  .bwrflag{font-size:var(--fs-xs);color:#ef4444;white-space:nowrap}
+
+/* Sessions tree (P10-01, #89) */
+.sesstree-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sesstree-row:last-child{border-bottom:none}
+.sesstree-row-failed{background:color-mix(in srgb, #ef4444 6%, transparent)}
+.sesstree-toggle{width:1.25rem;height:1.25rem;flex:0 0 auto;background:none;border:1px solid var(--border);border-radius:4px;color:var(--foreground);cursor:pointer;line-height:1;font-size:var(--fs-xs)}
+.sesstree-toggle-spacer{width:1.25rem;flex:0 0 auto;display:inline-block}
+.sesstree-title{font-weight:600;flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sesstree-chip{font-size:var(--fs-xs)}
+.sesstree-model{font-size:var(--fs-xs);flex:0 0 auto}
+.sesstree-dur{font-size:var(--fs-xs);flex:0 0 auto;min-width:3rem;text-align:right}
+.sesstree-tok{font-size:var(--fs-xs);flex:0 0 auto;min-width:4.5rem;text-align:right}
+.sesstree-cost{font-variant-numeric:tabular-nums;flex:0 0 auto}
+.sesstree-endreason{font-size:var(--fs-xs);flex:0 0 auto}
+.sesstree-endreason-failed{border-color:#ef4444;color:#ef4444}
+.sesstree-children{margin-left:.25rem;border-left:1px dashed var(--border)}
+.livefanout-chip{font-size:var(--fs-xs);cursor:pointer}
+
+
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
@@ -1366,6 +1385,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
     <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
+    <div id="livefanout" class="flex flex-wrap gap-1.5 mb-2 shrink-0" hidden></div>
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
    <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
@@ -1753,7 +1773,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div class="lbl mb-2.5">Per-model detail</div>
    <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="tbl"></table></div>
   </div>
- </div>
+
+  <!-- P10-01 (#89): parent -> children session tree with cost roll-up. -->
+  <div class="card p-4 mt-4" id="sesstreecard">
+   <div class="lbl mb-2.5">Sessions &rarr; Tree <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="sesstreesub"></span></div>
+   <div id="sesstree"></div>
+   <div class="muted text-[length:var(--fs-sm)] py-2" id="sesstreeempty" hidden>No parent/child sessions in this range.</div>
+  </div>
+  </div>
 
  <div class="text-[length:var(--fs-xs)] muted border-l-2 pl-3" style="border-color:var(--accent)">
   <b>Est. cost</b> is what every request would cost at public API rates, priced per token (input,
@@ -2566,6 +2593,7 @@ function render(){
   renderHome(inR);
   renderXfer(rows);
   renderHeatmap(p.heatmap);
+  renderSessionsTree(p.sessions_tree);
   // Flow graph before the empty-rows early return below, so switching to an
   // empty date range clears the graph instead of leaving a stale one on screen.
   flowControls();
@@ -4074,6 +4102,25 @@ function renderLive(){
   const live = (p.live || []).filter(L => { if(seen.has(L.id)) return false; seen.add(L.id); return true; });
   const box = $('livelist');
   if(!box) return;
+
+  // P10-01 (#89): "a fan-out is visibly a fan-out" — a collapsed strip above
+  // the live list naming any parent with 2+ children currently in flight,
+  // so a burst of subagents reads as ONE event, not N unrelated rows.
+  const fanoutEl = $('livefanout');
+  if (fanoutEl) {
+    const byParent = new Map();
+    live.forEach(L => { if (L.parent) byParent.set(L.parent, (byParent.get(L.parent) || 0) + 1); });
+    const fanouts = [...byParent.entries()].filter(([, n]) => n >= 2);
+    fanoutEl.innerHTML = fanouts.length
+      ? fanouts.map(([pid, n]) => {
+          const parentTitle = live.find(L => L.id === pid)?.title
+            || p.recent_sessions?.find(s => s.id === pid)?.title || pid;
+          return `<button type="button" class="chip livefanout-chip ttitlebtn" data-tsession="${esc(pid)}" data-tprofile="${esc(current)}">${esc(parentTitle)} \u2192 ${n} running</button>`;
+        }).join(' ')
+      : '';
+    fanoutEl.hidden = fanouts.length === 0;
+  }
+
   if(!live.length){
     box.innerHTML = emptyHTML('○', 'Nothing running right now.', 'Start an agent run and it will appear here within a few seconds.');
   } else {
@@ -5530,6 +5577,78 @@ function flowControls(){
 // rows, so seasonality and gaps are obvious. Intensity is bucketed on quartiles
 // of the observed range rather than absolute counts, so the scale stays useful
 // whether a busy day is 200 calls or 20,000.
+// P10-01 (#89): parent -> children session tree, indented, with roll-up
+// costs shown on the parent row (own + every descendant). Rendered from
+// the SAME nested payload shape the collector emits (id/parent/source/
+// model/started/ended/end_reason/msgs/tools/tok/cost/cost_is_actual/
+// children/child_count/failed_child_count) — no re-derivation client side.
+const SRC_BADGE = { desktop: 'Desktop', subagent: 'Subagent', cron: 'Cron',
+  tui: 'TUI', oneshot: 'One-shot', cli: 'CLI', gateway: 'Gateway' };
+let sesstreeCollapsed = new Set(); // node ids explicitly collapsed by the user
+
+function sesstreeNode(node, depth){
+  const hasKids = node.children && node.children.length > 0;
+  const collapsed = sesstreeCollapsed.has(node.id);
+  const dur = (node.started && node.ended) ? ago(Math.max(0, node.ended - node.started)) : (node.started ? 'running' : '\u2014');
+  const srcLabel = SRC_BADGE[node.source] || (node.source ? esc(node.source) : '\u2014');
+  const failing = /error|fail/i.test(node.end_reason || '') && node.end_reason !== '(running)';
+  const rollup = hasKids
+    ? ` <span class="muted" style="font-size:var(--fs-xs)">(own + ${node.child_count} descendant${node.child_count===1?'':'s'}${node.failed_child_count ? `, ${node.failed_child_count} failed` : ''})</span>`
+    : '';
+  const toggle = hasKids
+    ? `<button type="button" class="sesstree-toggle" data-sesstree-toggle="${esc(node.id)}" aria-expanded="${collapsed ? 'false' : 'true'}" aria-label="${collapsed ? 'Expand' : 'Collapse'} children of ${esc(node.title)}">${collapsed ? '\u25B8' : '\u25BE'}</button>`
+    : '<span class="sesstree-toggle-spacer"></span>';
+  let html = `<div class="sesstree-row${failing ? ' sesstree-row-failed' : ''}" style="padding-left:${depth * 1.25}rem">
+    ${toggle}
+    <span class="sesstree-title" title="${esc(node.id)}">${esc(node.title)}</span>
+    <span class="chip sesstree-chip">${srcLabel}</span>
+    <span class="muted sesstree-model">${esc(node.model || '\u2014')}</span>
+    <span class="muted sesstree-dur">${dur}</span>
+    <span class="muted sesstree-tok">${fmt(node.tok)} tok</span>
+    <span class="sesstree-cost">$${(+node.cost || 0).toFixed(4)}${node.cost_is_actual === false ? ' <span class="muted" style="font-size:var(--fs-xs)">(est.)</span>' : ''}${rollup}</span>
+    <span class="chip sesstree-endreason${failing ? ' sesstree-endreason-failed' : ''}">${esc(node.end_reason || '(none)')}</span>
+  </div>`;
+  if (hasKids && !collapsed) {
+    html += `<div class="sesstree-children">` + node.children.map(c => sesstreeNode(c, depth + 1)).join('') + `</div>`;
+  }
+  return html;
+}
+
+function renderSessionsTree(tree){
+  const wrap = $('sesstree'), empty = $('sesstreeempty'), sub = $('sesstreesub');
+  if (!wrap) return;
+  const forest = tree || [];
+  // Only roots that actually have children are interesting here — a root
+  // with zero children is just an ordinary session and belongs in the
+  // per-model table above, not a second copy of the whole session list.
+  const withKids = forest.filter(n => n.children && n.children.length > 0);
+  if (sub) sub.textContent = withKids.length
+    ? `${withKids.length} parent${withKids.length===1?'':'s'} with children`
+    : '';
+  if (!withKids.length) {
+    wrap.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+  wrap.innerHTML = withKids
+    .sort((a, b) => (b.cost || 0) - (a.cost || 0))
+    .map(n => sesstreeNode(n, 0)).join('');
+}
+
+function installSesstree(){
+  const wrap = $('sesstree');
+  if (!wrap) return;
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-sesstree-toggle]');
+    if (!btn) return;
+    const id = btn.dataset.sesstreeToggle;
+    if (sesstreeCollapsed.has(id)) sesstreeCollapsed.delete(id);
+    else sesstreeCollapsed.add(id);
+    render();
+  });
+}
+
 function renderHeatmap(hm){
   const wrap = $('heatmap'), sub = $('heatsub'), card = $('heatcard');
   if (!wrap) return;
@@ -7116,6 +7235,7 @@ installTranscriptModal();
 installProjectDrilldown();
 installProjWeight();
 installProjFilter();
+installSesstree();
 soundToggleInstall();
 settingsInstall();
 pollLive();   // populate the drawer before the first 5s tick

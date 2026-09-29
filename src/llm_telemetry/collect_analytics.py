@@ -125,6 +125,110 @@ where ended_at is not null
 group by 1
 order by count(*) desc
 """
+# P10-01 (#89): sessions_tree. Selects EVERY session touched in the last 30
+# days (the same window END_REASONS/RESEND use) whose OWN activity falls in
+# range, OR whose PARENT is recent (a subagent spawned by a long-running
+# session started outside the window), OR whose CHILD is recent (an old
+# parent whose subagent just ran must still surface so that child isn't
+# orphaned at render time) — a tree built from only the first of these three
+# would silently drop real relationships. Cost comes directly from
+# sessions.estimated_cost_usd/actual_cost_usd — the same fields the
+# Detail/session-level cost figures already read — not a recomputed
+# price_row() call, so the tree can never disagree with the rest of the
+# dashboard about what a session cost.
+SESSIONS_TREE = """
+select s.id, coalesce(s.parent_session_id,''), coalesce(s.source,''),
+       coalesce(nullif(s.title,''), nullif(s.display_name,''), '(untitled)'),
+       s.model,
+       cast(s.started_at as integer),
+       cast(s.ended_at as integer),
+       coalesce(nullif(s.end_reason,''), case when s.ended_at is null then '(running)' else '(none)' end),
+       coalesce(s.message_count,0), coalesce(s.tool_call_count,0),
+       coalesce(s.input_tokens,0) + coalesce(s.output_tokens,0)
+         + coalesce(s.cache_read_tokens,0) + coalesce(s.cache_write_tokens,0),
+       coalesce(s.actual_cost_usd, s.estimated_cost_usd, 0),
+       (s.actual_cost_usd is not null)
+from sessions s
+where (s.started_at > strftime('%s','now') - 2592000
+       or coalesce(s.ended_at, 0) > strftime('%s','now') - 2592000)
+   or s.parent_session_id in (
+        select id from sessions
+        where started_at > strftime('%s','now') - 2592000
+           or coalesce(ended_at, 0) > strftime('%s','now') - 2592000)
+   or s.id in (
+        select parent_session_id from sessions
+        where parent_session_id is not null
+          and (started_at > strftime('%s','now') - 2592000
+               or coalesce(ended_at, 0) > strftime('%s','now') - 2592000))
+"""
+SESSIONS_TREE_COLS = ("id parent source title model started ended end_reason "
+                      "msgs tools tok cost cost_is_actual").split()
+
+
+def build_sessions_tree(con):
+    """Assemble sessions_tree: nodes, each with a roll-up of itself plus every
+    descendant's cost/tokens/child-count/failed-child-count.
+
+    Two passes because a roll-up needs every descendant to already exist:
+    pass 1 builds a flat {id: node} map (own figures only, children:[]);
+    pass 2 links each node under its parent and walks bottom-up (any DB order
+    is possible — a child row can appear before or after its parent) to add
+    descendant totals on top of each node's own figures. depth is not
+    hardcoded to any fixed number: the DB's current data goes one level deep,
+    but nothing here assumes that stays true (P4-03, #40 hit the same trap
+    walking parent_session_id and is not repeated).
+    """
+    rows = [dict(zip(SESSIONS_TREE_COLS, r)) for r in con.execute(SESSIONS_TREE)]
+    nodes = {}
+    for r in rows:
+        nodes[r["id"]] = {
+            "id": r["id"], "parent": r["parent"] or None, "source": r["source"],
+            "title": r["title"], "model": r["model"],
+            "started": r["started"], "ended": r["ended"], "end_reason": r["end_reason"],
+            "msgs": r["msgs"], "tools": r["tools"], "tok": r["tok"],
+            "cost": round(r["cost"] or 0, 6), "cost_is_actual": bool(r["cost_is_actual"]),
+            "own_cost": round(r["cost"] or 0, 6), "own_tok": r["tok"],
+            "children": [], "child_count": 0, "failed_child_count": 0,
+        }
+
+    roots = []
+    for r in rows:
+        n = nodes[r["id"]]
+        parent = nodes.get(r["parent"]) if r["parent"] else None
+        if parent is not None:
+            parent["children"].append(n)
+        else:
+            roots.append(n)
+
+    # Bottom-up roll-up via post-order recursion, cycle-bounded the same way
+    # project_of_session() is (MAX_PARENT_DEPTH-equivalent): a malformed
+    # self-referential parent chain must not hang the collector.
+    def rollup(node, depth=0, visited=None):
+        visited = visited or set()
+        if node["id"] in visited or depth > 20:
+            return
+        visited = visited | {node["id"]}
+        total_cost, total_tok, child_n, failed_n = node["own_cost"], node["own_tok"], 0, 0
+        for child in node["children"]:
+            rollup(child, depth + 1, visited)
+            total_cost += child["cost"]
+            total_tok += child["tok"]
+            child_n += 1 + child["child_count"]
+            failed_n += child["failed_child_count"] + (
+                1 if child["end_reason"] not in ("(none)", "(running)") and
+                     "error" in child["end_reason"].lower() else 0)
+        node["cost"] = round(total_cost, 6)
+        node["tok"] = total_tok
+        node["child_count"] = child_n
+        node["failed_child_count"] = failed_n
+
+    for root in roots:
+        rollup(root)
+    for n in nodes.values():
+        del n["own_cost"], n["own_tok"]
+    return roots
+
+
 COMPRESSION_PRESSURE = """
 select id, coalesce(nullif(title,''), nullif(display_name,''), '(untitled)'),
        compression_fallback_streak, compression_ineffective_count,
@@ -463,6 +567,7 @@ def build():
             resend.sort(key=lambda x: -x["resend_usd"])
             # P9-04 (#81): lifecycle signals for the Health view.
             end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
+            sessions_tree = build_sessions_tree(con)
             compression_pressure = [
                 {"id": sid, "title": title, "fallback_streak": fb,
                  "ineffective_count": ic, "error": err or ""}
@@ -513,6 +618,7 @@ def build():
                                  "resend": resend,
                                  "health": health,
                                  "end_reasons": end_reasons,
+                                 "sessions_tree": sessions_tree,
                                  "compression_pressure": compression_pressure,
                                  "concurrency": concurrency,
                                  "heatmap": heatmap,
