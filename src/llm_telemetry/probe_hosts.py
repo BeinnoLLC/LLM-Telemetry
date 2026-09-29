@@ -42,6 +42,32 @@ def _named_local(url: str) -> bool:
     """A configured local host that is not on the default Ollama port."""
     return any(h in (url or "") for h in CFG.local_host_patterns)
 OUT = str(CFG.reports_dir / "ollama-data.json")
+
+# P3-03 (#33): SQL as named module-level constants, not embedded literals
+# inside a function body -- reviewable in a diff, visible to SQL tooling.
+
+# local_work(): recent per-base-URL task volume from the usage tables --
+# answers "what has actually been done locally", which /api/ps cannot
+# (Ollama keeps no history once a model unloads).
+LOCAL_WORK_SQL = """
+select u.billing_base_url, coalesce(nullif(u.task,''),'main') task, u.model,
+       sum(u.api_call_count), sum(u.input_tokens+u.output_tokens),
+       max(u.last_seen)
+from session_model_usage u
+where u.billing_base_url != '' and u.last_seen > strftime('%s','now') - 86400
+group by u.billing_base_url, task, u.model
+"""
+
+# inflight(): requests currently open (not yet ended) with a recent
+# heartbeat, per host -- the closest thing to a queue-depth signal Ollama
+# itself does not expose (see inflight()'s own docstring).
+INFLIGHT_SQL = """
+select u.billing_base_url, count(*)
+from session_model_usage u join sessions s on s.id = u.session_id
+where s.ended_at is null and u.billing_base_url != ''
+  and u.last_seen > strftime('%s','now') - 90
+group by u.billing_base_url
+"""
 CAPS_CACHE = str(CFG.reports_dir / ".ollama-caps.json")
 TIMEOUT = 6
 CAPS_TTL = 24 * 3600
@@ -209,18 +235,10 @@ def local_work():
     import sqlite3
     out = {}
     dbs = [(str(p.db), p.name) for p in CFG.live_profiles()]
-    q = """
-    select u.billing_base_url, coalesce(nullif(u.task,''),'main') task, u.model,
-           sum(u.api_call_count), sum(u.input_tokens+u.output_tokens),
-           max(u.last_seen)
-    from session_model_usage u
-    where u.billing_base_url != '' and u.last_seen > strftime('%s','now') - 86400
-    group by u.billing_base_url, task, u.model
-    """
     for db, prof in dbs:
         try:
             con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=4)
-            for url, task, model, calls, toks, last in con.execute(q):
+            for url, task, model, calls, toks, last in con.execute(LOCAL_WORK_SQL):
                 host = re.sub(r"/v1/?$", "", (url or "").rstrip("/"))
                 if ":11434" not in host and not _named_local(host):
                     continue
@@ -251,17 +269,10 @@ def inflight():
     import sqlite3
     out = {}
     dbs = [str(p.db) for p in CFG.live_profiles()]
-    q = """
-    select u.billing_base_url, count(*)
-    from session_model_usage u join sessions s on s.id = u.session_id
-    where s.ended_at is null and u.billing_base_url != ''
-      and u.last_seen > strftime('%s','now') - 90
-    group by u.billing_base_url
-    """
     for db in dbs:
         try:
             con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=4)
-            for url, n in con.execute(q):
+            for url, n in con.execute(INFLIGHT_SQL):
                 host = re.sub(r"/v1/?$", "", (url or "").rstrip("/"))
                 out[host] = out.get(host, 0) + (n or 0)
             con.close()
