@@ -1573,6 +1573,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div id="outreaptrend"></div>
    <div id="outsilentlist" class="flex flex-col gap-1.5 mt-2"></div>
   </div>
+  <!-- P10-04 (#92): tool reliability — per-tool fail rate, trend vs the
+       prior 30-day window, cost of failures in wasted tokens, and the
+       actual failing terminal commands (not a substring guess at
+       'error' — see tool_outcomes.py's own module docstring for why). -->
+  <div class="card p-4 mb-3" id="toolcard" hidden>
+   <div class="lbl mb-2.5 hhdr">Tool reliability
+    <span class="muted hsub">fail rate and wasted tokens per tool · last 30 days</span>
+   </div>
+   <div id="toolrows" class="flex flex-col gap-1"></div>
+   <div id="toolcmds" class="mt-3"></div>
+  </div>
   <div class="card p-4" id="delegcard" hidden>
    <div class="lbl mb-2.5">Delegated runs
     <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
@@ -4683,6 +4694,7 @@ function renderHealth(rows){
   renderFailures(p.failures_recent || []);
   renderLifecycle(p.compression_pressure || []);
   renderOutcomes(p.outcomes);
+  renderToolReliability(p.tools, p.terminal_top_fail_commands);
 }
 
 // P9-04 (#81): compression-pressure sessions. end_reason breakdown moved to
@@ -4779,6 +4791,48 @@ function renderOutcomes(outcomes){
           <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
           <span class="muted">${esc(s.source)} \u00b7 ${esc(s.model || '')}</span>
         </div>`).join('')
+    : '';
+}
+
+// P10-04 (#92): tool reliability — fail rate per tool, trend vs the prior
+// 30-day window, cost of failures in wasted tokens, and the actual failing
+// terminal commands. Classification of ok/fail/unknown happens server-side
+// (tool_outcomes.py) from structured signals only; this function only
+// renders the aggregate the collector already computed — it does not
+// re-derive pass/fail from result text.
+function renderToolReliability(tools, cmds){
+  const card = $('toolcard');
+  if (!card) return;
+  const list = tools || [];
+  if (!list.length){ card.hidden = true; return; }
+  card.hidden = false;
+
+  const trendArrow = (t) => {
+    if (t.prev_fail_rate == null || t.fail_rate == null) return '';
+    const delta = t.fail_rate - t.prev_fail_rate;
+    if (Math.abs(delta) < 0.01) return '<span class="muted">\u2192</span>';
+    const up = delta > 0;
+    return `<span style="color:${up ? '#ef4444' : '#22c55e'}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
+  };
+
+  $('toolrows').innerHTML = list.map(t => {
+    const rateText = t.fail_rate == null ? '<span class="muted">no confident calls</span>' : `${(t.fail_rate*100).toFixed(1)}%`;
+    const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? '#ef4444' : t.fail_rate > 0 ? '#f59e0b' : '#22c55e');
+    return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+      <span class="font-semibold flex-1">${esc(t.name)}</span>
+      <span class="muted">${t.calls.toLocaleString()} calls</span>
+      <span style="${rateColor?`color:${rateColor}`:''};min-width:3.5rem;text-align:right">${rateText}</span>
+      ${trendArrow(t)}
+      <span class="muted" title="tokens consumed by failing results" style="min-width:5rem;text-align:right">${t.tok_wasted ? t.tok_wasted.toLocaleString()+' tok wasted' : ''}</span>
+    </div>`;
+  }).join('');
+
+  const cmdList = cmds || [];
+  $('toolcmds').innerHTML = cmdList.length
+    ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Top failing terminal commands</div>` +
+      `<div class="flex flex-wrap gap-1">` + cmdList.map(c =>
+        `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455">${esc(c.cmd)} <b>${c.n}</b></span>`
+      ).join('') + `</div>`
     : '';
 }
 

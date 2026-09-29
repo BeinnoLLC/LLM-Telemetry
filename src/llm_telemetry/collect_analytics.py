@@ -428,6 +428,133 @@ where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 """
+# P10-04 (#92): tool reliability. Two windows so the panel can show a
+# trend arrow — current 30 days vs the SAME-LENGTH 30 days immediately
+# before it, not "vs all history" which would bury a recent regression
+# under months of good data.
+TOOL_RESULTS_CURRENT = """
+select tool_name, session_id, timestamp, content, effect_disposition, finish_reason, token_count
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 2592000
+"""
+TOOL_RESULTS_PREVIOUS = """
+select tool_name, effect_disposition, finish_reason, content
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 5184000
+  and timestamp <= strftime('%s','now') - 2592000
+"""
+
+
+def _pXX(sorted_vals, pct):
+    """Nearest-rank percentile over an already-sorted list. Returns 0 for an
+    empty list rather than raising — a tool with zero results this period
+    is not an error, just uninteresting."""
+    if not sorted_vals:
+        return 0
+    idx = min(len(sorted_vals) - 1, int(round(pct / 100.0 * (len(sorted_vals) - 1))))
+    return sorted_vals[idx]
+
+
+def build_tool_reliability(con):
+    """Per-tool calls/fail-rate/trend/wasted-tokens + top failing terminal
+    commands + recent failing result heads, per P10-04 (#92).
+
+    tool_outcome() classifies each row from structured signals only (see
+    that module's own docstring for why a substring scan is explicitly
+    rejected) and returns 'unknown' rather than guessing — unknown rows
+    still count toward `calls` (they happened) but are excluded from the
+    fail-rate numerator/denominator, exactly like the classifier's own
+    precision test excludes them: an abstention is not a data point about
+    whether the call worked.
+    """
+    from .tool_outcomes import tool_outcome
+
+    by_tool = {}          # name -> {calls, fails, confident, tok_wasted, sizes:[], sessions_seen:set}
+    cmd_fails = {}         # terminal first-token -> fail count
+    fail_samples = {}      # name -> [{session, ts, head}]
+
+    for tool_name, session_id, ts, content, disp, reason, tok in con.execute(TOOL_RESULTS_CURRENT):
+        b = by_tool.setdefault(tool_name, {"calls": 0, "fails": 0, "confident": 0,
+                                            "tok_wasted": 0, "sizes": []})
+        b["calls"] += 1
+        size = len(content or "")
+        b["sizes"].append(size)
+        outcome = tool_outcome({"content": content, "effect_disposition": disp, "finish_reason": reason})
+        if outcome != "unknown":
+            b["confident"] += 1
+            if outcome == "fail":
+                b["fails"] += 1
+                b["tok_wasted"] += int(tok or 0)
+                samples = fail_samples.setdefault(tool_name, [])
+                if len(samples) < 20:
+                    samples.append({"session": session_id, "ts": int(ts) if ts else None,
+                                     "head": (content or "")[:300]})
+                if tool_name == "terminal":
+                    # First token of the command, from the fail sample's own
+                    # head when it looks like a command echo is not
+                    # reliable — the ticket asks for the command, which is
+                    # only in the ASSISTANT tool_calls row, not this result
+                    # row. Falling back to "(unknown)" rather than guessing
+                    # at a command from output text.
+                    cmd = _terminal_command_hint(content)
+                    cmd_fails[cmd] = cmd_fails.get(cmd, 0) + 1
+
+    prev_by_tool = {}
+    for tool_name, disp, reason, content in con.execute(TOOL_RESULTS_PREVIOUS):
+        b = prev_by_tool.setdefault(tool_name, {"confident": 0, "fails": 0})
+        outcome = tool_outcome({"content": content, "effect_disposition": disp, "finish_reason": reason})
+        if outcome != "unknown":
+            b["confident"] += 1
+            if outcome == "fail":
+                b["fails"] += 1
+
+    tools = []
+    for name, b in by_tool.items():
+        sizes = sorted(b["sizes"])
+        fail_rate = (b["fails"] / b["confident"]) if b["confident"] else None
+        prev = prev_by_tool.get(name)
+        prev_fail_rate = (prev["fails"] / prev["confident"]) if prev and prev["confident"] else None
+        tools.append({
+            "name": name, "calls": b["calls"], "fails": b["fails"],
+            "fail_rate": round(fail_rate, 4) if fail_rate is not None else None,
+            "prev_fail_rate": round(prev_fail_rate, 4) if prev_fail_rate is not None else None,
+            "tok_wasted": b["tok_wasted"],
+            "p50_bytes": _pXX(sizes, 50), "p95_bytes": _pXX(sizes, 95),
+        })
+    # Sort by cost of failures (fails * tokens the failed results consumed)
+    # per the ticket's own stated ranking — a tool failing cheaply matters
+    # less than one failing after a 20k-token result.
+    tools.sort(key=lambda t: -t["tok_wasted"])
+
+    top_commands = sorted(cmd_fails.items(), key=lambda kv: -kv[1])[:10]
+    return {
+        "tools": tools,
+        "tool_fail_samples": fail_samples,
+        "terminal_top_fail_commands": [{"cmd": c, "n": n} for c, n in top_commands],
+    }
+
+
+def _terminal_command_hint(content):
+    """Best-effort first token of a failing terminal command, read from the
+    RESULT's own echoed command field when present, else '(unknown)'. Never
+    parses free-text output looking for a command — that is exactly the
+    kind of guess the ticket's own classifier note warns against."""
+    doc = None
+    try:
+        import json as _json
+        parsed = _json.loads(content) if isinstance(content, str) else None
+        doc = parsed if isinstance(parsed, dict) else None
+    except (ValueError, TypeError):
+        doc = None
+    if doc:
+        cmd = doc.get("command")
+        if isinstance(cmd, str) and cmd.strip():
+            return cmd.strip().split()[0]
+    return "(unknown)"
+
+
 COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 
 # Work categories. Order matters: the live phase text is checked first for
@@ -639,6 +766,7 @@ def build():
             # P9-04 (#81): lifecycle signals for the Health view.
             end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
             outcomes = build_outcomes(con)
+            tool_rel = build_tool_reliability(con)
             sessions_tree = build_sessions_tree(con)
             compression_pressure = [
                 {"id": sid, "title": title, "fallback_streak": fb,
@@ -691,6 +819,9 @@ def build():
                                  "health": health,
                                  "end_reasons": end_reasons,
                                  "outcomes": outcomes,
+                                 "tools": tool_rel["tools"],
+                                 "tool_fail_samples": tool_rel["tool_fail_samples"],
+                                 "terminal_top_fail_commands": tool_rel["terminal_top_fail_commands"],
                                  "sessions_tree": sessions_tree,
                                  "compression_pressure": compression_pressure,
                                  "concurrency": concurrency,
