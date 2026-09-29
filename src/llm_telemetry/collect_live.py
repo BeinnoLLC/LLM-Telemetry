@@ -24,8 +24,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import collect_analytics as EA
 from .schema import stamp
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
+from . import agents_alive
 
 CFG = EA.CFG
+
+import socket
+THIS_HOST = socket.gethostname()
+
+# P10-08 (#96): backend heartbeats + mid-turn leases. Simple selects, cheap
+# enough for the 5s poll.
+GATEWAY_HEARTBEATS = "select backend_id, pid, started_at, last_heartbeat, profile, host from gateway_heartbeats"
+SESSION_TURN_LEASES = "select conversation_id, holder, acquired_at, expires_at from session_turn_leases"
 
 # The full export's RECENT_TOOLS scans all 317k messages (157 ms on the 1.2 GB
 # default profile DB) — far too slow to poll every few seconds. Scoping it to currently
@@ -287,6 +296,23 @@ def build_live():
                 if "no such table" not in str(e).lower():
                     raise
                 recent_delegations = []
+            try:
+                heartbeats = [
+                    {"backend_id": bid, "pid": pid, "started_at": started, "last_heartbeat": last,
+                     "profile": prof, "host": host}
+                    for bid, pid, started, last, prof, host in con.execute(GATEWAY_HEARTBEATS)
+                ]
+                leases = [
+                    {"conversation_id": cid, "holder": holder, "acquired_at": acq, "expires_at": exp}
+                    for cid, holder, acq, exp in con.execute(SESSION_TURN_LEASES)
+                ]
+                agents = agents_alive.build_agents(heartbeats, leases, this_host=THIS_HOST)
+            except sqlite3.OperationalError as e:
+                # Older Hermes builds may predate these two tables — absent,
+                # not an error, same convention as async_delegations above.
+                if "no such table" not in str(e).lower():
+                    raise
+                agents = []
         finally:
             con.close()
         out["profiles"][name] = {
@@ -296,6 +322,7 @@ def build_live():
             "logs": logs,
             "recent_ended": recent_ended,
             "recent_delegations": recent_delegations,
+            "agents": agents,
         }
     return stamp(out)
 

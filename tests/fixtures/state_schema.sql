@@ -172,3 +172,20 @@ CREATE TABLE async_delegations (
 , origin_session_id TEXT);
 CREATE INDEX idx_async_delegations_delivery
     ON async_delegations(delivery_state, completed_at);
+
+-- P10-08 (#96): gateway backend heartbeats + mid-turn session leases.
+CREATE TABLE gateway_heartbeats (
+    backend_id TEXT PRIMARY KEY,
+    pid INTEGER NOT NULL,
+    started_at REAL NOT NULL,
+    last_heartbeat REAL NOT NULL,
+    profile TEXT NOT NULL DEFAULT '',
+    host TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE session_turn_leases (
+    conversation_id TEXT PRIMARY KEY,
+    holder TEXT NOT NULL,
+    acquired_at REAL NOT NULL,
+    expires_at REAL NOT NULL
+);
+CREATE INDEX idx_session_turn_leases_expires ON session_turn_leases(expires_at);
