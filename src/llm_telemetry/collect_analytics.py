@@ -12,7 +12,7 @@ from . import failures
 from . import bandwidth
 from . import bandwidth_history
 from . import delegations
-from .projects import project_of
+from .projects import project_of, project_of_session
 
 from .config import get as _cfg
 
@@ -21,7 +21,10 @@ REPORTS = CFG.reports_dir
 # {display name: state.db} for every profile that exists on this machine.
 PROFILES = {p.name: p.db for p in CFG.live_profiles()}
 
-# one row per (day, model, provider, task)
+# one row per (day, model, provider, task, session) — grouped further down
+# to session grain (not just title/cwd) because project resolution can
+# require walking parent_session_id (P4-03, #40), which is a per-session
+# fact, not a per-title one.
 ROWS = """
 select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        u.model, u.billing_provider, coalesce(nullif(u.task,''),'main') task,
@@ -30,11 +33,16 @@ select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        sum(u.estimated_cost_usd), sum(u.actual_cost_usd),
        count(distinct u.session_id),
        max(u.billing_base_url),
-       s.title, s.cwd
+       u.session_id
 from session_model_usage u join sessions s on s.id = u.session_id
-group by d, u.model, u.billing_provider, task, s.title, s.cwd
+group by d, u.model, u.billing_provider, task, u.session_id
 order by d
 """
+
+# All sessions' identity fields, for project resolution (P4-01/P4-03): one
+# query, loaded once per profile into a dict, so walking parent_session_id
+# never re-hits the database per hop.
+SESSION_IDENTITY = "select id, title, cwd, parent_session_id from sessions"
 # Context re-send per session (P9-03, #80). One row per (session, model) over
 # the last 30 days. Sessions under RESEND_MIN_CALLS calls are dropped: a
 # 3-call session has no meaningful average context.
@@ -245,7 +253,7 @@ where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 """
-COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url title cwd".split()
+COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 
 # Work categories. Order matters: the live phase text is checked first for
 # every category, because it says what the session is doing RIGHT NOW. The tool
@@ -332,22 +340,25 @@ def concurrency_by_hour(intervals, now=None):
 
 def fetch_rows(con):
     """Fetch and resolve the ROWS query for one profile's connection
-    (P4-02, #39). Extracted from build() so it's directly testable against
-    a fixture connection without driving build()'s full profile-resolution
-    plumbing — the SQL, the COLS zip, and the project_of() resolution all
-    happen in exactly one place, called from both build() and the test.
+    (P4-02 #39, P4-03 #40). Extracted from build() so it's directly
+    testable against a fixture connection without driving build()'s full
+    profile-resolution plumbing — the SQL, the COLS zip, and the
+    project_of_session() resolution (including the parent-chain walk) all
+    happen in exactly one place, called from both build() and the tests.
     """
+    sessions_by_id = {
+        row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3]}
+        for row in con.execute(SESSION_IDENTITY)
+    }
     rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
     for r in rows:
-        # Resolve to the single project_of() key (P4-01, #56) here, once,
-        # so no consumer re-implements the stem rule. Raw title/cwd are
-        # dropped from the row afterward — session titles are
-        # session-identifying detail this aggregated table has never
-        # carried before (RESEND, a separate per-session payload section,
-        # already exposes title — this is not new exposure, but the
-        # day/model/provider/task rows table should carry only the
-        # resolved key, not a second raw copy of the same field).
-        r["project"] = project_of(r.pop("title"), r.pop("cwd"))
+        # Resolve to the single project resolver (P4-01 #56, P4-03 #40)
+        # here, once, so no consumer re-implements the stem rule or the
+        # parent-chain walk. Raw session_id is kept — every row already had
+        # a real session_id in the fetched grain and the payload does not
+        # newly expose anything by keeping it (RESEND, a separate
+        # per-session payload section, already exposes session_id).
+        r["project"] = project_of_session(r["session_id"], sessions_by_id)
     return rows
 
 

@@ -75,3 +75,40 @@ def project_of(title=None, cwd=None):
 
     # 3. Honest blank.
     return None
+
+
+# Cap on how many parent hops project_of_session() will walk before giving
+# up (P4-03, #40). A real subagent chain is 2-3 deep; this is generous
+# headroom while still bounding a pathological or corrupt chain.
+MAX_PARENT_DEPTH = 20
+
+
+def project_of_session(session_id, sessions_by_id):
+    """Resolve a session's project, walking up parent_session_id when the
+    session itself has no usable title/cwd (P4-03, #40).
+
+    sessions_by_id: {session_id: {"title": ..., "cwd": ...,
+    "parent_session_id": ...}}. A subagent has no title of its own but
+    knows who spawned it — that parent link is a fact in the database, not
+    an inference, so walking it introduces zero guesswork (unlike inferring
+    a project from prompt text, which stays out of scope).
+
+    Bounded by MAX_PARENT_DEPTH and a visited-set: a self-referential or
+    cyclic parent_session_id must not hang the collector — it terminates
+    and returns None (a subagent whose ancestry is broken or whose root is
+    itself unattributed stays unattributed; no fallback invention).
+    """
+    visited = set()
+    sid = session_id
+    depth = 0
+    while sid is not None and sid not in visited and depth <= MAX_PARENT_DEPTH:
+        visited.add(sid)
+        row = sessions_by_id.get(sid)
+        if row is None:
+            return None
+        resolved = project_of(row.get("title"), row.get("cwd"))
+        if resolved:
+            return resolved
+        sid = row.get("parent_session_id")
+        depth += 1
+    return None

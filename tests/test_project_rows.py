@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""collect_analytics: `project` dimension on the ROWS payload (P4-02, #39).
+"""collect_analytics: `project` dimension on the ROWS payload,
+including subagent/cron parent-chain inheritance (P4-02 #39, P4-03 #40).
 
-Exercises the actual ROWS SQL against a temp sqlite fixture (same pattern
-as test_lifecycle_sql.py), then resolves project_of() over the fetched
-rows exactly as build() does, confirming the fragmentation problem the
-ticket names is solved end-to-end: many session_model_usage rows across
-differently-titled sessions collapse into few project buckets.
+Exercises the actual ROWS + SESSION_IDENTITY SQL against a temp sqlite
+fixture (same pattern as test_lifecycle_sql.py) through the real
+fetch_rows() production function — not a reimplementation of it — so a
+negative control against the shipped code is meaningful.
 """
 import os
 import sqlite3
@@ -19,6 +19,7 @@ os.environ.setdefault(
     os.path.join(os.path.dirname(__file__), "..", "examples", "sample-config.json"))
 
 from llm_telemetry.collect_analytics import fetch_rows
+from llm_telemetry.projects import project_of_session, MAX_PARENT_DEPTH
 
 p = f = 0
 
@@ -34,7 +35,8 @@ db_path = os.path.join(tmpdir, "state.db")
 con = sqlite3.connect(db_path)
 con.execute("""
     create table sessions(
-        id text primary key, title text, cwd text, started_at real
+        id text primary key, title text, cwd text, started_at real,
+        parent_session_id text
     )
 """)
 con.execute("""
@@ -50,9 +52,10 @@ con.execute("""
 NOW = time.time()
 
 
-def sess(sid, title=None, cwd=None):
-    con.execute("insert into sessions(id,title,cwd,started_at) values (?,?,?,?)",
-                (sid, title, cwd, NOW - 3600))
+def sess(sid, title=None, cwd=None, parent=None):
+    con.execute(
+        "insert into sessions(id,title,cwd,started_at,parent_session_id) values (?,?,?,?,?)",
+        (sid, title, cwd, NOW - 3600, parent))
 
 
 def usage(sid, model="gpt-x", provider="openai", calls=1):
@@ -76,32 +79,83 @@ for i in range(25):
 sess("s_nowinv", title=None, cwd="/srv/workspace/nowinv")
 usage("s_nowinv", model="gpt-x", provider="openai")
 
-# An unattributed session — no title, denylisted cwd.
+# An unattributed session — no title, denylisted cwd, no parent.
 sess("s_unattr", title=None, cwd="/opt")
 usage("s_unattr", model="gpt-x", provider="openai")
+
+# P4-03: a direct subagent (no title/cwd of its own) inherits its parent's
+# project via parent_session_id.
+sess("s_root", title="Nowinv", cwd=None)
+sess("s_sub1", title=None, cwd=None, parent="s_root")
+usage("s_sub1", model="gpt-x", provider="openai")
+
+# P4-03 acceptance: a 3-deep subagent chain resolves to the root project.
+sess("chain_root", title="ahwa", cwd=None)
+sess("chain_mid", title=None, cwd=None, parent="chain_root")
+sess("chain_leaf", title=None, cwd=None, parent="chain_mid")
+usage("chain_leaf", model="gpt-x", provider="openai")
+
+# P4-03 acceptance: a cyclic parent link terminates and returns None
+# instead of recursing forever.
+sess("cyc_a", title=None, cwd=None, parent="cyc_b")
+sess("cyc_b", title=None, cwd=None, parent="cyc_a")
+usage("cyc_a", model="gpt-x", provider="openai")
+
+# A subagent whose parent is itself unattributed stays unattributed — no
+# fallback invention.
+sess("orphan_parent", title=None, cwd="/tmp")
+sess("orphan_child", title=None, cwd=None, parent="orphan_parent")
+usage("orphan_child", model="gpt-x", provider="openai")
 
 con.commit()
 
 rows = fetch_rows(con)
+by_sid = {r["session_id"]: r for r in rows}
 
-chk(len(rows) >= 25, f"got at least the 25 cron rows plus 2 more, got {len(rows)}")
-chk("title" not in rows[0] and "cwd" not in rows[0],
-    "raw title/cwd are removed from the emitted row — only the resolved key ships")
+chk(len(rows) >= 25, f"got at least the 25 cron rows plus the rest, got {len(rows)}")
 
-cron_projects = {r["project"] for r in rows if r["project"] == "ahwa-health-gate"}
+cron_projects = {r["project"] for r in rows if r["session_id"].startswith("cron")}
 chk(cron_projects == {"ahwa-health-gate"},
-    "all 25 timestamped cron rows resolve to the single 'ahwa-health-gate' project")
-cron_row_count = sum(1 for r in rows if r["project"] == "ahwa-health-gate")
-chk(cron_row_count == 25,
-    f"exactly the 25 cron rows carry that project key, got {cron_row_count}")
+    "all 25 timestamped cron rows still resolve to the single 'ahwa-health-gate' "
+    "project after adding parent-chain resolution (cron sessions need no special "
+    "handling — confirming that still holds, per the ticket's own note)")
 
-nowinv_rows = [r for r in rows if r["project"] == "nowinv"]
-chk(len(nowinv_rows) == 1 and nowinv_rows[0]["sessions"] == 1,
+chk(by_sid["s_nowinv"]["project"] == "nowinv",
     "a cwd-only session resolves to its directory basename as project")
 
-unattr_rows = [r for r in rows if r["project"] is None]
-chk(len(unattr_rows) == 1,
-    f"a session with no title and a denylisted cwd resolves to project=None (unattributed), got {len(unattr_rows)}")
+chk(by_sid["s_unattr"]["project"] is None,
+    "a session with no title, a denylisted cwd, and no parent resolves to "
+    "project=None (unattributed)")
+
+chk(by_sid["s_sub1"]["project"] == "Nowinv",
+    "a direct subagent with no title/cwd of its own inherits its parent's project")
+
+chk(by_sid["chain_leaf"]["project"] == "ahwa",
+    "a 3-deep subagent chain resolves to the root project")
+
+chk(by_sid["cyc_a"]["project"] is None,
+    "a cyclic parent_session_id terminates (does not hang) and resolves to None")
+
+chk(by_sid["orphan_child"]["project"] is None,
+    "a subagent whose parent is itself unattributed stays unattributed, no invented fallback")
+
+# Direct project_of_session() checks (depth cap / missing-row edge cases
+# the row-grain test above can't easily stage).
+sessions_by_id = {
+    "a": {"title": None, "cwd": None, "parent_session_id": "missing"},
+}
+chk(project_of_session("a", sessions_by_id) is None,
+    "a parent_session_id pointing at a row that doesn't exist in the loaded "
+    "map resolves to None instead of raising a KeyError")
+
+deep = {}
+for i in range(MAX_PARENT_DEPTH + 10):
+    deep[f"n{i}"] = {"title": None, "cwd": None,
+                      "parent_session_id": f"n{i+1}" if i < MAX_PARENT_DEPTH + 9 else None}
+deep[f"n{MAX_PARENT_DEPTH + 9}"] = {"title": "TooDeep", "cwd": None, "parent_session_id": None}
+chk(project_of_session("n0", deep) is None,
+    f"a chain longer than MAX_PARENT_DEPTH ({MAX_PARENT_DEPTH}) gives up and "
+    "returns None rather than resolving an out-of-bound ancestor's project")
 
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)
