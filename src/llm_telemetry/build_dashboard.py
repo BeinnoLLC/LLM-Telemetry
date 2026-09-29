@@ -1175,6 +1175,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
    <div id="setfacts"></div>
   </div>
+  <!-- #126: per-profile colour, adjustable from Settings. The stable hashHue()
+       derivation stays the default (so an install that never touches this page
+       still gets deterministic, collision-avoiding colours) — this is an
+       OVERRIDE stored per-browser in localStorage next to the visibility
+       toggles it sits beside conceptually (#121). profileHue() is the one
+       function every chip/badge/lane-dot call site reads, so a change here
+       reaches all of them without hunting down each usage. -->
+  <div class="card p-4 mb-3" id="setcolorcard">
+   <div class="flex items-center gap-2 flex-wrap mb-1">
+    <div class="lbl">Profile colours</div>
+   </div>
+   <p class="text-[12px] mb-3">Each profile's tab, badges and live-session dots share one
+    colour. Defaults are derived from the name so two profiles never collide; override
+    any of them here. Stored in this browser only — it never changes what is collected.</p>
+   <div class="setgrid" id="setcolorgrid"></div>
+   <div class="flex items-center gap-2 flex-wrap mt-3">
+    <button id="setcolorreset" class="px-3 py-1 rounded-md border text-[12px] taboff" type="button">Reset to defaults</button>
+    <span class="text-[11px]" id="setcolormsg" role="status"></span>
+   </div>
+  </div>
  </div>
 
  <div class="view" data-view="Logs" hidden>
@@ -2038,8 +2058,11 @@ function render(){
   const sess  = p.sessions.filter(s=>inR(s.date));
 
   charts.forEach(c=>c.destroy()); charts=[];
-  document.querySelectorAll('[data-tab]').forEach(b =>
-    b.className='px-3 py-1 rounded-md border text-[12px] '+(b.dataset.tab===current?'tabon':'taboff'));
+  // Profile chip styling (size, hue) is owned entirely by tabs() (#121) — it
+  // sets the on/off style inline per-profile. Re-styling [data-tab] here with
+  // a flat tabon/taboff class used to stomp that on every render() call,
+  // which fires on every tab click via pick() — the chip would flash from its
+  // real 16px/hue treatment to a generic 12px on/off pair and back. #126.
 
   const calls=rows.reduce((s,r)=>s+r.calls,0), tok=rows.reduce((s,r)=>s+r.inp+r.outp,0);
   const cache=rows.reduce((s,r)=>s+r.cread,0);
@@ -2619,7 +2642,7 @@ function renderQueue(){
     .map(L => ({
       key: `s:${L.id}`, sid: L.id,
       label: short(L.model) || L.title || 'session',
-      meta: L.profile || '', hue: hashHue(L.profile || ''),
+      meta: L.profile || '', hue: profileHue(L.profile || ''),
     }));
   const running = runningAll.slice(0, CAP);
 
@@ -2795,7 +2818,7 @@ function renderLive(){
             <span class="text-[11px] font-semibold" style="color:${c.c}">${L.category}</span>
             <span class="text-[12px] truncate">${L.title}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
-            ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:hsl(${hashHue(L.profile)} 62% 30%);color:hsl(${hashHue(L.profile)} 80% 78%);border:1px solid hsl(${hashHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
+            ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[9px] muted">↳ subagent</span>':''}
           </div>
           <div class="muted text-[10.5px] truncate">${L.phase||'—'}</div>
@@ -4139,6 +4162,72 @@ function renderSettings(){
   }
   renderSetDeriv();
   renderSetFacts();
+  renderSetColors();
+}
+
+// ---- #126: per-profile colour picker on the Settings page -----------------
+// One swatch+slider row per profile that has ever been seen (PV_ALL, not just
+// the currently-on set, so a toggled-off profile's colour is still editable).
+// The row reflects the CURRENT effective hue (override if set, else the
+// hashHue default) so opening Settings never shows a value that disagrees
+// with what the tab strip is actually drawing right now.
+function setColorSwatch(n){
+  const h = profileHue(n);
+  const overridden = pvHueOverride(n) !== null;
+  return `<div class="setf" data-scname="${escA(n)}">
+    <span class="setl">${esc(n)}</span>
+    <span class="setin">
+      <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
+      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
+      <span class="muted text-[10px]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+    </span>
+    <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
+  </div>`;
+}
+function renderSetColors(){
+  const box = document.getElementById('setcolorgrid');
+  if (!box || !PV_ALL) return;
+  // Rebuild only when the profile SET changed; a slider drag re-renders via
+  // direct DOM writes below so mid-drag input events don't fight a rebuild.
+  const names = Object.keys(PV_ALL);
+  const have = [...box.querySelectorAll('[data-scname]')].map(el => el.dataset.scname);
+  if (have.length === names.length && have.every(n => names.includes(n))) return;
+  box.innerHTML = names.map(setColorSwatch).join('') || '<div class="muted text-[12px]">No profiles yet.</div>';
+}
+function setColorsInstall(){
+  const box = document.getElementById('setcolorgrid');
+  if (!box) return;
+  box.addEventListener('input', e => {
+    const inp = e.target.closest && e.target.closest('[data-schue]');
+    if (!inp) return;
+    const n = inp.dataset.schue;
+    const deg = Number(inp.value);
+    pvHueSet(n, deg);
+    // live-update the swatch and readout without a full rebuild, so dragging
+    // the slider stays smooth instead of re-rendering the whole grid per tick
+    const row = inp.closest('[data-scname]');
+    if (row){
+      const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
+      if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
+      const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
+      if (readout) readout.textContent = deg + '°';
+      const hint = row.querySelector('.seth');
+      if (hint) hint.textContent = 'Custom — used for its tab, badges and live dots.';
+    }
+    // Everywhere else that draws this profile's colour must pick it up
+    // immediately, not just on the next poll — a settings change with no
+    // visible effect elsewhere reads as broken.
+    tabs(); renderLive();
+  });
+  document.getElementById('setcolorreset')?.addEventListener('click', () => {
+    Object.keys(PV_ALL || {}).forEach(n => pvHueSet(n, null));
+    const box2 = document.getElementById('setcolorgrid');
+    if (box2) box2.innerHTML = '';   // force renderSetColors() to rebuild every row
+    renderSetColors();
+    tabs(); renderLive();
+    const m = document.getElementById('setcolormsg');
+    if (m) { m.textContent = 'Reset to name-derived defaults.'; m.className = 'text-[11px] ok'; }
+  });
 }
 
 async function loadSettings(){
@@ -4192,6 +4281,7 @@ function settingsInstall(){
     setWrite(SET_DEFAULTS); renderSetDeriv(); renderSetFacts();
     setMsg('Defaults filled in; not saved yet.', 'info');
   });
+  setColorsInstall();
   loadSettings();
 }
 
@@ -4673,6 +4763,37 @@ function pvSet(n, off){
 function pvOnProfiles(){
   return Object.keys(PV_ALL).filter(n => !pvOff(n));
 }
+// #126: per-profile colour override, settable from the Settings page. Same
+// pattern as pvOff/pvSet above — a per-browser UI preference in localStorage,
+// not server data, because the hue is a display choice and every profile is
+// still collected regardless of what colour it is drawn in. null/absent means
+// "use the deterministic hashHue(name)" (the original, collision-avoiding
+// default), so a user who never opens Settings sees exactly the old colours.
+const PV_HUE = {};
+function pvHueKey(n){ return 'llmtelemetry.profileHue.' + n; }
+function pvHueOverride(n){
+  if (n in PV_HUE) return PV_HUE[n];
+  let v = null;
+  try { v = localStorage.getItem(pvHueKey(n)); } catch(e){}
+  const num = v === null ? null : Number(v);
+  PV_HUE[n] = (num === null || !Number.isFinite(num)) ? null : ((num % 360) + 360) % 360;
+  return PV_HUE[n];
+}
+function pvHueSet(n, deg){
+  const v = (deg === null || deg === undefined) ? null : ((Math.round(deg) % 360) + 360) % 360;
+  PV_HUE[n] = v;
+  try {
+    if (v === null) localStorage.removeItem(pvHueKey(n));
+    else localStorage.setItem(pvHueKey(n), String(v));
+  } catch(e){}
+}
+// The one function every profile-colour call site should use instead of
+// hashHue(name) directly, so a Settings override actually reaches every chip,
+// badge and lane dot that colours itself by profile.
+function profileHue(n){
+  const o = pvHueOverride(n);
+  return o === null ? hashHue(n) : o;
+}
 // Full, unfiltered profile map — captured once at boot so a toggled-off
 // profile can come back without refetching (DATA.profiles is the filtered set).
 let PV_ALL = null;
@@ -4723,7 +4844,7 @@ function tabs(){
   // on-set's merge, so there is nothing for a separate tab to select.
   $('tabs').innerHTML=Object.keys(PV_ALL)
     .map(n=>{
-      const h = hashHue(n);
+      const h = profileHue(n);
       const off = pvOff(n);
       const st = off
         ? `style="background:transparent;color:hsl(${h} 45% 62%);border-color:hsl(${h} 40% 34%);opacity:.62"`

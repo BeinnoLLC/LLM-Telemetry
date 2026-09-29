@@ -64,7 +64,7 @@ boot('local', (w, d, posts, server) => {
   chk(host && +host.value === 90, 'host overhead defaults to 90 W', host && host.value);
   chk(/USD/.test(view.textContent) && /Display only/.test(view.textContent), 'currency shown as display-only USD');
 
-  const fields = [...view.querySelectorAll('.setf')];
+  const fields = [...view.querySelectorAll('#setcard .setf')];
   chk(fields.length === 4 && fields.every(x => (x.querySelector('.seth') || {}).textContent.trim().length > 10),
     'four fields, each with a one-line explanation', `(${fields.length})`);
   chk(/electricity, not billing/i.test(view.textContent), 'page states local cost is electricity, not billing');
