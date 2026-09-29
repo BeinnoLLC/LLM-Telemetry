@@ -1026,6 +1026,22 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   transition:transform .16s ease,opacity .16s ease;
   box-shadow:0 24px 70px rgba(0,0,0,.5)}
 #lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+#sfscrim{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.55);opacity:0;
+  pointer-events:none;transition:opacity .14s ease}
+#sfscrim.open{opacity:1;pointer-events:auto}
+#sfmodal{position:fixed;top:12vh;left:50%;z-index:90;
+  width:min(680px,94vw);max-height:70vh;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;
+  transition:transform .12s ease,opacity .12s ease;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+#sfmodal.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.sfrow{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:var(--fs-sm);border-left:2px solid transparent}
+.sfrow:hover,.sfrow.sfactive{background:var(--bg)}
+.sfrow.sfactive{border-left-color:var(--accent)}
+.sfrowtitle mark{background:transparent;color:var(--accent);font-weight:700}
+.sfrowmeta{color:var(--muted);font-size:var(--fs-xs);white-space:nowrap}
 #lnbody{overflow:auto;flex:1;padding:12px 15px}
 .lnlane{display:flex;align-items:center;gap:8px;height:22px;position:relative;margin-bottom:2px}
 .lnlanename{width:88px;flex-shrink:0;font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
@@ -1313,6 +1329,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <span class="muted text-[length:var(--fs-xs)]" id="alertscount"></span>
   </div>
   <div id="alertslist"></div>
+ </div>
+
+ <!-- P10-12 (#100): Session finder. `/` opens; free text + structured
+      filters (model:/source:/tool:/end:/cost>N/dur>Nh) over session_index;
+      Enter jumps to the session timeline (#94); Esc closes; arrow-navigable
+      with aria-activedescendant maintained. Full-text over message
+      CONTENT is explicitly out of scope -- see the note rendered in the
+      empty state. -->
+ <div id="sfscrim"></div>
+ <div id="sfmodal" role="dialog" aria-modal="true" aria-label="Session finder" aria-hidden="true">
+  <div class="p-3" style="border-bottom:1px solid var(--border)">
+   <input id="sfinput" type="text" autocomplete="off" spellcheck="false"
+     placeholder="Search sessions… try model:opus tool:patch cost&gt;1"
+     style="width:100%;background:none;border:none;outline:none;font-size:var(--fs-md);color:var(--fg)"
+     role="combobox" aria-expanded="true" aria-controls="sflist" aria-autocomplete="list">
+  </div>
+  <div id="sflist" role="listbox" aria-label="Matching sessions" style="max-height:60vh;overflow:auto"></div>
+  <div class="muted text-[length:var(--fs-xs)] p-2" style="border-top:1px solid var(--border)">
+   &uarr;&darr; navigate &middot; Enter open &middot; Esc close &middot; full-text over message content is not covered here — that needs the FTS index this dashboard doesn't query yet
+  </div>
  </div>
 
  <div class="card p-3 flex items-center gap-2 flex-wrap" id="rangebar">
@@ -2730,6 +2766,63 @@ function previousPeriod(from, to){
   const prevFrom = new Date(prevTo.getTime() - (spanDays - 1) * 86400000);
   const iso = d => d.toISOString().slice(0, 10);
   return { from: iso(prevFrom), to: iso(prevTo) };
+}
+
+// P10-12 (#100): Session finder. Pure matching logic (testable without a
+// DOM), then a thin command-palette UI on top. Reads `session_index`
+// exactly as the collector shipped it -- no client-side re-query, no
+// full-text over message content (explicitly out of scope; see the
+// modal's own footer note).
+const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
+
+function sfParseQuery(q){
+  // Splits `model:opus tool:patch cost>1 dur>1h free text` into
+  // {filters: {model:'opus', tool:'patch'}, numeric: [{key:'cost',op:'>',val:1}, ...], text: 'free text'}
+  const filters = {}, numeric = [], words = [];
+  (q || '').trim().split(/\s+/).filter(Boolean).forEach(tok => {
+    let m = tok.match(/^(\w+)([<>])(\d+(?:\.\d+)?)([a-z]*)$/i);
+    if (m){
+      let [, key, op, val, unit] = m;
+      val = parseFloat(val);
+      if (unit === 'h') val *= 3600;  // dur>1h -> seconds, matching session_index's own `dur` unit
+      numeric.push({ key: key.toLowerCase(), op, val });
+      return;
+    }
+    m = tok.match(/^(\w+):(.+)$/);
+    if (m && SF_FILTER_KEYS[m[1].toLowerCase()]){
+      filters[SF_FILTER_KEYS[m[1].toLowerCase()]] = m[2].toLowerCase();
+      return;
+    }
+    words.push(tok);
+  });
+  return { filters, numeric, text: words.join(' ').toLowerCase() };
+}
+
+function sfMatch(session, parsed){
+  for (const [field, needle] of Object.entries(parsed.filters)){
+    const hay = field === 'tools' ? (session.tools || []) : [session[field] || ''];
+    const ok = hay.some(v => String(v).toLowerCase().includes(needle));
+    if (!ok) return false;
+  }
+  for (const { key, op, val } of parsed.numeric){
+    const field = key === 'dur' ? 'dur' : key === 'cost' ? 'cost' : null;
+    if (!field) continue;  // an unknown numeric key matches nothing rather than crashing
+    const actual = session[field];
+    if (actual === undefined || actual === null) return false;
+    if (op === '>' && !(actual > val)) return false;
+    if (op === '<' && !(actual < val)) return false;
+  }
+  if (parsed.text){
+    const hay = [session.title, session.model, session.source, session.branch, session.cwd_tail,
+                 ...(session.tools || [])].join(' ').toLowerCase();
+    if (!hay.includes(parsed.text)) return false;
+  }
+  return true;
+}
+
+function sfSearch(index, query){
+  const parsed = sfParseQuery(query);
+  return (index || []).filter(s => sfMatch(s, parsed));
 }
 
 function render(){
@@ -7757,6 +7850,106 @@ function installTranscriptModal(){
   $('tscrim')?.addEventListener('click', tCloseModal);
 }
 
+// P10-12 (#100): Session finder command palette UI. Pure matching logic
+// (sfParseQuery/sfMatch/sfSearch) lives above render(); this is just
+// DOM plumbing on top of it.
+let sfOpen = false, sfFocusReturn = null, sfResults = [], sfActiveIdx = -1;
+
+function sfRowsHtml(results, query){
+  if (!results.length){
+    const idx = DATA.profiles[current]?.session_index || [];
+    return idx.length
+      ? emptyHTML('○', 'No sessions match.', 'Try a broader query, or drop a structured filter like model:/tool:/source:/end:.')
+      : emptyHTML('○', 'No sessions in range.', 'Nothing has been indexed for this profile yet.');
+  }
+  const words = query.trim().split(/\s+/).filter(w => w && !/[:<>]/.test(w));
+  const hl = s => {
+    if (!words.length) return esc(s);
+    let out = esc(s);
+    words.forEach(w => {
+      const re = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+      out = out.replace(re, '<mark>$1</mark>');
+    });
+    return out;
+  };
+  return results.slice(0, 60).map((s, i) => `
+    <div class="sfrow${i===sfActiveIdx?' sfactive':''}" id="sfrow-${i}" role="option"
+         aria-selected="${i===sfActiveIdx}" data-idx="${i}">
+      <span class="sfrowtitle flex-1 truncate">${hl(s.title || s.id)}</span>
+      <span class="sfrowmeta">${esc(s.model||'')}${s.tools&&s.tools.length?' · '+esc(s.tools.slice(0,3).join(', ')):''}</span>
+      <span class="sfrowmeta">${s.cost?('$'+s.cost.toFixed(2)):''}</span>
+    </div>`).join('');
+}
+
+function sfRender(){
+  const query = $('sfinput').value;
+  const idx = DATA.profiles[current]?.session_index || [];
+  sfResults = sfSearch(idx, query);
+  sfActiveIdx = sfResults.length ? Math.min(sfActiveIdx < 0 ? 0 : sfActiveIdx, sfResults.length - 1) : -1;
+  $('sflist').innerHTML = sfRowsHtml(sfResults, query);
+  $('sfinput').setAttribute('aria-activedescendant', sfActiveIdx >= 0 ? `sfrow-${sfActiveIdx}` : '');
+}
+
+function sfOpenPalette(){
+  const scrim = $('sfscrim'), modal = $('sfmodal');
+  if (!scrim || !modal) return;
+  sfFocusReturn = document.activeElement;
+  sfOpen = true;
+  scrim.classList.add('open'); modal.classList.add('open');
+  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
+  $('sfinput').value = '';
+  sfActiveIdx = -1;
+  sfRender();
+  $('sfinput').focus();
+}
+
+function sfClosePalette(){
+  const scrim = $('sfscrim'), modal = $('sfmodal');
+  if (!scrim || !modal) return;
+  sfOpen = false;
+  scrim.classList.remove('open'); modal.classList.remove('open');
+  scrim.setAttribute('aria-hidden','true'); modal.setAttribute('aria-hidden','true');
+  if (sfFocusReturn && sfFocusReturn.focus) sfFocusReturn.focus();
+}
+
+function sfOpenSelected(){
+  if (sfActiveIdx < 0 || !sfResults[sfActiveIdx]) return;
+  const s = sfResults[sfActiveIdx];
+  sfClosePalette();
+  // P10-06 (#94): jump straight to the session timeline, the ticket's own
+  // named target -- the transcript modal (#79) is the other jump target
+  // it names, reachable from inside the timeline's own title button.
+  lnOpenModal(s.id, current, s.title);
+}
+
+function installSessionFinder(){
+  if (!$('sfinput')) return;
+  document.addEventListener('keydown', e => {
+    if (!sfOpen && e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){
+      e.preventDefault(); sfOpenPalette(); return;
+    }
+    if (!sfOpen) return;
+    if (e.key === 'Escape'){ e.preventDefault(); sfClosePalette(); return; }
+    if (e.key === 'ArrowDown'){ e.preventDefault(); sfActiveIdx = Math.min(sfActiveIdx + 1, sfResults.length - 1); sfRender2(); return; }
+    if (e.key === 'ArrowUp'){ e.preventDefault(); sfActiveIdx = Math.max(sfActiveIdx - 1, 0); sfRender2(); return; }
+    if (e.key === 'Enter'){ e.preventDefault(); sfOpenSelected(); return; }
+  });
+  // Re-render on query change WITHOUT resetting sfActiveIdx to -1 (arrow
+  // navigation calls this too, so it must not re-run the search and lose
+  // the current selection).
+  function sfRender2(){
+    $('sflist').innerHTML = sfRowsHtml(sfResults, $('sfinput').value);
+    $('sfinput').setAttribute('aria-activedescendant', sfActiveIdx >= 0 ? `sfrow-${sfActiveIdx}` : '');
+  }
+  window.sfRender2 = sfRender2;
+  $('sfinput').addEventListener('input', sfRender);
+  $('sfscrim').addEventListener('click', sfClosePalette);
+  $('sflist').addEventListener('click', e => {
+    const row = e.target.closest?.('.sfrow');
+    if (row){ sfActiveIdx = parseInt(row.dataset.idx, 10); sfOpenSelected(); }
+  });
+}
+
 // P10-06 (#94): session timeline. Fetched on demand from a per-session
 // static file (sessions/<profile>/<id>.json — ADR 0001, same decision
 // #79's windowed transcripts.json already made: a 589-message session is
@@ -7919,6 +8112,7 @@ function installTimelineModal(){
 setInterval(pollLive, LIVE_MS);
 installDrawer();
 installTranscriptModal();
+installSessionFinder();
 installTimelineModal();
 installProjectDrilldown();
 installProjWeight();

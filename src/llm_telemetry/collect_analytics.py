@@ -929,6 +929,14 @@ def build():
         p["_now"] = now_ts
         p["alerts"] = ALERTS.build_alerts(p)
         del p["_now"]
+    # P10-12 (#100): Session finder palette -- one small row per session,
+    # no message content (full-text search is explicitly out of scope
+    # for this ticket; the existing-but-unused messages_fts index is the
+    # real follow-up).
+    from . import collect_session_index as SI
+    session_index_by_profile = SI.build_session_index_by_profile()
+    for n, p in out["profiles"].items():
+        p["session_index"] = session_index_by_profile.get(n, [])
     return stamp(out)
 
 if __name__ == "__main__":
