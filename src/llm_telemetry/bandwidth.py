@@ -37,6 +37,14 @@ def estimate_bytes(tokens: float | int | None) -> int:
     return int((tokens or 0) * BYTES_PER_TOKEN)
 
 
+def estimate_tokens(byte_count: float | int | None) -> int:
+    """The inverse: stored message body bytes to an estimated token count.
+    Same constant, same "derived, never measured" caveat — used where the
+    DB has real bytes (message content length) but no real tokens
+    (`messages.token_count` is NULL in every row, see module docstring)."""
+    return int((byte_count or 0) / BYTES_PER_TOKEN)
+
+
 def upload_tokens(input_tokens, cache_read, cache_write=None) -> int:
     """Tokens that cross the wire on the way OUT, per request.
 

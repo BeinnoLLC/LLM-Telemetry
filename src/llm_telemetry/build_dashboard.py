@@ -1881,6 +1881,23 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div id="sesstree"></div>
    <div class="muted text-[length:var(--fs-sm)] py-2" id="sesstreeempty" hidden>No parent/child sessions in this range.</div>
   </div>
+
+  <!-- P10-09 (#97): context & compaction — growth, yield, reasoning share. -->
+  <div class="card p-4 mt-4" id="ctxcard">
+   <div class="lbl mb-2.5">Context &amp; compaction <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">context growth per session, compaction yield, reasoning share</span></div>
+   <div class="grid-2 mb-3">
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1">Reasoning share of output tokens, by model</div>
+     <div id="ctxreasoning"></div>
+    </div>
+    <div>
+     <div class="muted text-[length:var(--fs-xs)] mb-1" id="ctxcooldownlbl">Under compaction-failure cooldown right now</div>
+     <div id="ctxcooldowns"></div>
+    </div>
+   </div>
+   <div class="muted text-[length:var(--fs-xs)] mb-1">Per-session context growth &amp; compaction yield</div>
+   <div id="ctxsessions"></div>
+  </div>
   </div>
 
  <div class="text-[length:var(--fs-xs)] muted border-l-2 pl-3" style="border-color:var(--accent)">
@@ -2712,6 +2729,7 @@ function render(){
   renderXfer(rows);
   renderHeatmap(p.heatmap);
   renderSessionsTree(p.sessions_tree);
+  renderContext(p.context);
   // Flow graph before the empty-rows early return below, so switching to an
   // empty date range clears the graph instead of leaving a stale one on screen.
   flowControls();
@@ -5969,6 +5987,67 @@ function renderSessionsTree(tree){
   wrap.innerHTML = withKids
     .sort((a, b) => (b.cost || 0) - (a.cost || 0))
     .map(n => sesstreeNode(n, 0)).join('');
+}
+
+// P10-09 (#97): context & compaction. Renders the collector's own
+// already-computed series/compactions/reasoning/cooldowns; never
+// recomputes a token estimate client-side.
+function ctxSpark(series, compactions){
+  if (!series || !series.length) return '<span class="muted text-[length:var(--fs-xs)]">no data</span>';
+  const W = 260, H = 40, pad = 2;
+  const xs = series.map(pt => pt[0]), ys = series.map(pt => pt[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs) || 1;
+  const maxY = Math.max(...ys, 1);
+  const xAt = x => pad + (maxX === minX ? 0 : (x - minX) / (maxX - minX)) * (W - 2*pad);
+  const yAt = y => H - pad - (y / maxY) * (H - 2*pad);
+  const pts = series.map(pt => `${xAt(pt[0]).toFixed(1)},${yAt(pt[1]).toFixed(1)}`).join(' ');
+  const markers = (compactions || []).map(c => {
+    const x = xAt(c.ts).toFixed(1);
+    const color = c.ineffective ? '#ef4444' : '#22c55e';
+    return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2,2"><title>${c.ineffective ? 'ineffective' : 'effective'} compaction: -${(c.yield_tok||0).toLocaleString()} tok</title></line>`;
+  }).join('');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">` +
+    `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>` + markers + `</svg>`;
+}
+
+function renderContext(ctx){
+  const card = $('ctxcard');
+  if (!card) return;
+  const sessions = (ctx && ctx.sessions) || [];
+  const reasoning = (ctx && ctx.reasoning_by_model) || [];
+  const cooldowns = (ctx && ctx.cooldowns) || [];
+  if (!sessions.length && !reasoning.length && !cooldowns.length){ card.hidden = true; return; }
+  card.hidden = false;
+
+  $('ctxreasoning').innerHTML = reasoning.length
+    ? reasoning.map(r => `
+      <div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+        <span class="font-semibold flex-1 truncate">${esc(r.model)}</span>
+        <span class="muted">${(r.reasoning_tokens||0).toLocaleString()} tok</span>
+        <span style="min-width:3.5rem;text-align:right">${(r.share*100).toFixed(1)}%</span>
+      </div>`).join('')
+    : `<div class="muted text-[length:var(--fs-xs)] py-1">No reasoning tokens in range.</div>`;
+
+  $('ctxcooldowns').innerHTML = cooldowns.length
+    ? cooldowns.map(c => `
+      <div class="text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
+        <div class="flex items-center gap-2"><span class="font-semibold truncate flex-1">${esc(c.title)}</span></div>
+        <div class="muted truncate" title="${esc(c.error_head)}">${esc(c.error_head)}</div>
+      </div>`).join('')
+    : `<div class="muted text-[length:var(--fs-xs)] py-1">No sessions currently in a compaction-failure cooldown.</div>`;
+
+  $('ctxsessions').innerHTML = sessions.length
+    ? sessions.map(s => {
+        const ineffCount = (s.compactions||[]).filter(c => c.ineffective).length;
+        return `
+      <div class="flex items-center gap-3 text-[length:var(--fs-xs)] py-2" style="border-bottom:1px solid var(--border)">
+        <span class="font-semibold truncate" style="min-width:8rem;max-width:12rem">${esc(s.id)}</span>
+        ${ctxSpark(s.series, s.compactions)}
+        <span class="muted" style="min-width:5rem">${(s.compactions||[]).length} compaction${(s.compactions||[]).length===1?'':'s'}</span>
+        ${ineffCount ? `<span style="color:#ef4444" title="compactions that recovered under 10% of context">${ineffCount} ineffective</span>` : ''}
+      </div>`;
+      }).join('')
+    : `<div class="muted text-[length:var(--fs-xs)] py-1">No session context data in range.</div>`;
 }
 
 function installSesstree(){

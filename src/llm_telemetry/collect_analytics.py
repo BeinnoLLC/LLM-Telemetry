@@ -910,6 +910,15 @@ def build():
         REPORTS, {n: p["rows"] for n, p in out["profiles"].items()})
     for n, p in out["profiles"].items():
         p["bandwidth_daily"] = series.get(n, [])
+    # P10-09 (#97): context & compaction — a separate module walks each
+    # profile's messages once for its own purpose (running context size,
+    # compaction yield); merged in here rather than threaded through the
+    # main per-day loop above, which has nothing to do with per-call
+    # context growth.
+    from . import collect_context_compaction as CX
+    context_by_profile = CX.build_context_payload()
+    for n, p in out["profiles"].items():
+        p["context"] = context_by_profile.get(n, {"sessions": [], "reasoning_by_model": [], "cooldowns": []})
     return stamp(out)
 
 if __name__ == "__main__":
