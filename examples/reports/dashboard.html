@@ -730,7 +730,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     One card per PHYSICAL box (several URLs can front the same server), because
     showing four "hosts" when two exist would misreport capacity. */
  .olgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
- .olcard{border:1px solid var(--border);border-radius:9px;padding:11px 12px;
+ .olcard{border:1px solid var(--border);border-radius:8px;padding:11px 12px;
    background:color-mix(in srgb,var(--card) 70%,transparent)}
  .olcard.down{opacity:.62;border-style:dashed}
  .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
@@ -915,6 +915,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    flex-shrink:0;flex-wrap:wrap}
  .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
    border:1px solid var(--border);color:var(--muted);background:transparent}
+ .dtab:hover{color:var(--fg);border-color:var(--accent)}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
  /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
     comfortable on a 1440px screen but eats half a portrait tablet. */
@@ -1788,6 +1789,14 @@ const short = m => String(m).split('/').pop();
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const $ = id => document.getElementById(id);
+// #22: one shared empty-state builder — icon + one-line explanation + an
+// optional hint for the action that would produce data — so every "there
+// is nothing here" moment reads the same way instead of each view growing
+// its own bare muted-text sentence.
+const emptyHTML = (icon, msg, hint) =>
+  `<div class="empty"><div class="e-ico">${icon}</div>` +
+  `<div class="e-msg">${esc(msg)}</div>` +
+  (hint ? `<div class="e-hint">${esc(hint)}</div>` : '') + `</div>`;
 
 let charts = [], current = null;
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
@@ -2954,7 +2963,7 @@ function renderLive(){
   const box = $('livelist');
   if(!box) return;
   if(!live.length){
-    box.innerHTML = '<div class="muted text-[length:var(--fs-sm)] py-2">Nothing running right now.</div>';
+    box.innerHTML = emptyHTML('○', 'Nothing running right now.', 'Start an agent run and it will appear here within a few seconds.');
   } else {
     box.innerHTML = live.map(L=>{
       const c = catOf(L.category);
@@ -3571,9 +3580,8 @@ function renderFailures(F){
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
   fl.innerHTML = !groups.length
-    ? `<div class="muted text-[length:var(--fs-sm)]">${F.length
-        ? 'No failures match this filter.'
-        : 'No failures recorded in the last 7 days.'}</div>`
+    ? emptyHTML('✓', F.length ? 'No failures match this filter.' : 'No failures recorded in the last 7 days.',
+        F.length ? 'Clear the kind/model filter above to see everything.' : undefined)
     : groups.map(g=>`<div class="flex items-start gap-2 text-[length:var(--fs-xs)] py-0.5 frow" data-n="${g.n}">
         <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
         <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
