@@ -4,7 +4,9 @@
 Reads the same config the agent reads, so the help page cannot drift from
 reality the way hand-written docs do.
 """
-import json, os, sys
+import json
+import os
+import sys
 
 try:
     import yaml
@@ -38,17 +40,25 @@ def prov_of(provider, model, base_url):
     """
     u = (base_url or "").lower()
     if u:
-        if "fireworks.ai" in u: return "fireworks"
-        if "opencode.ai" in u: return "opencode-go"
-        if "api.anthropic.com" in u: return "anthropic"
-        if "openai.com" in u or "chatgpt.com" in u: return "openai-codex"
-        if "openrouter.ai" in u: return "openrouter"
-        if "nousresearch" in u: return "nous"
+        if "fireworks.ai" in u:
+            return "fireworks"
+        if "opencode.ai" in u:
+            return "opencode-go"
+        if "api.anthropic.com" in u:
+            return "anthropic"
+        if "openai.com" in u or "chatgpt.com" in u:
+            return "openai-codex"
+        if "openrouter.ai" in u:
+            return "openrouter"
+        if "nousresearch" in u:
+            return "nous"
         if any(s in u for s in CFG.local_host_patterns):
             return "local"
     key = (provider or "").lower().strip()
-    if key.startswith("ollama"): return "local"
-    if key and key != "custom": return key
+    if key.startswith("ollama"):
+        return "local"
+    if key and key != "custom":
+        return key
     m = (model or "").lower()
     if m.startswith(("qwen", "gpt-oss", "deepseek-r1", "nemotron", "llama", "mistral")):
         return "local"

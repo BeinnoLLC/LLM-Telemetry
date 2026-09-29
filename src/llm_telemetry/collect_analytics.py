@@ -4,7 +4,13 @@
 Rows are emitted at DAY granularity so the dashboard can filter any from/to
 range entirely client-side without re-querying.
 """
-import sqlite3, json, os, datetime, argparse, sys, time
+import sqlite3
+import json
+import os
+import datetime
+import argparse
+import sys
+import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
 from . import cost_attribution
@@ -14,7 +20,7 @@ from . import bandwidth
 from . import bandwidth_history
 from . import delegations
 from . import collect_repo_branch as repo_branch
-from .projects import project_of, project_of_session
+from .projects import project_of_session
 
 from .config import get as _cfg
 

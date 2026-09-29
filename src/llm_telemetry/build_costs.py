@@ -10,7 +10,12 @@ Local models are NOT free — they burn electricity. That cost is shown as its
 own figure (energy_usd), never folded into billed spend, and priced here from
 measured throughput and the machine's draw at the configured tariff.
 """
-import json, os, sys, subprocess, datetime, collections
+import json
+import os
+import sys
+import subprocess
+import datetime
+import collections
 import html as _html
 
 from .config import get as _cfg
@@ -18,7 +23,7 @@ from .config import get as _cfg
 CFG = _cfg()
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-from . import pricing as P
+from . import pricing as P  # noqa: E402 — deliberately after CFG/HERE; see module-level ordering note above
 
 DATA = str(CFG.reports_dir / "analytics-data.json")
 OUT = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "costs.html")
@@ -26,7 +31,7 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "costs.html")
 # ---------------------------------------------------------------- electricity
 # The power model lives in energy.py (P7-01/02): one module, tariff and
 # wattage read from config. This page only displays what it returns.
-from . import energy as E
+from . import energy as E  # noqa: E402 — deliberately after CFG/HERE constants
 
 KWH_PRICE_USD, GPU_DRAW_W, HOST_OVERHEAD_W = E.tariff(CFG)
 PREFILL_SPEEDUP = E.PREFILL_SPEEDUP
@@ -611,7 +616,7 @@ def render(d):
                     else '<span class="muted" title="No recorded traffic">&mdash;</span>')
         rows.append(
             f'<tr data-model="{_html.escape(m["model"], quote=True)}" data-oid="{_html.escape(m.get("oid") or "", quote=True)}" data-source="{src}"'
-            f' data-used="{1 if used else 0}"{"" if used else " class=\"unused\""}>'
+            f' data-used="{1 if used else 0}"' + ("" if used else ' class="unused"') + '>'
             f'<td class="l"><span class="dot" style="background:{colour(m["model"])}"></span>'
             f'<span class="mono mname" style="color:{colour(m["model"])}"'
             f' title="{_html.escape(m["model"], quote=True)}">{_html.escape(m["model"])}</span>'

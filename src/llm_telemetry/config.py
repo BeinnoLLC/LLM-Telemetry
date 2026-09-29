@@ -79,7 +79,16 @@ class Config:
         "192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
         "172.2", "172.30.", "172.31.", ".local", ".internal", ".lan",
     ])
-    reports_dir: str = "~/.local/share/llm-telemetry/reports"
+    # str going in at construction time (from JSON/config: dataclass field
+    # types aren't runtime-enforced, so a plain str still works there), Path
+    # from __post_init__ onward -- every real caller after construction sees
+    # a Path (the collectors compose report paths as `reports_dir / x`).
+    # Annotated as Path (not the construction-time str) so every one of
+    # those `/` call sites type-checks; the original plain-`str` annotation
+    # was exactly the kind of thing a type checker flags for free (P3-01,
+    # #31 -- one of the two bugs that motivated adding mypy in the first
+    # place) since the constructor reassigns it to Path unconditionally.
+    reports_dir: Path = Path("~/.local/share/llm-telemetry/reports")
     # Hostnames that resolve publicly but actually front a LAN box. A reverse
     # proxy on a real domain is still LAN traffic: the bytes never leave the
     # house, so counting them as metered overstates internet usage. Maps a host
@@ -115,7 +124,7 @@ class Config:
     def __post_init__(self) -> None:
         # Path, not str: collectors compose report paths as `reports_dir / x`,
         # and mkdir here means no collector has to guard against a missing dir.
-        self.reports_dir = Path(_expand(self.reports_dir))
+        self.reports_dir = Path(_expand(str(self.reports_dir)))
         self.reports_dir.mkdir(parents=True, exist_ok=True)
         self.profiles = [
             p if isinstance(p, Profile) else Profile(**p) for p in self.profiles

@@ -25,10 +25,10 @@ from . import collect_analytics as EA
 from .schema import stamp
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
 from . import agents_alive
+import socket
 
 CFG = EA.CFG
 
-import socket
 THIS_HOST = socket.gethostname()
 
 # P10-08 (#96): backend heartbeats + mid-turn leases. Simple selects, cheap

@@ -128,8 +128,8 @@ def collect(conn, window_h=DEFAULT_WINDOW_H, cap=DEFAULT_CAP, profile=None):
                          for sid, title, n in conn.execute(SESSION_FACET, (cutoff,))]
     if errs:
         kinds = {}
-        for e in errs:
-            kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
+        for err in errs:
+            kinds[err["kind"]] = kinds.get(err["kind"], 0) + 1
         facets["kind"] = [{"v": k, "n": n}
                           for k, n in sorted(kinds.items(), key=lambda x: -x[1]) if k]
 

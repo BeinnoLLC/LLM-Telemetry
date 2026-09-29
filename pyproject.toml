@@ -29,7 +29,7 @@ dependencies = ["PyYAML>=6.0"]
 # subprocesses (tests/test_pytest_wrapper.py) so `pytest` in CI actually
 # means something, without rewriting 38 existing tests to pytest's own
 # assert/fixture style -- runtime (`dependencies` above) stays PyYAML-only.
-dev = ["playwright>=1.40", "pytest>=7.0"]
+dev = ["playwright>=1.40", "pytest>=7.0", "ruff>=0.6", "mypy>=1.10"]
 
 [project.urls]
 Homepage = "https://github.com/BeinnoLLC/LLM-Telemetry"
@@ -40,3 +40,64 @@ llm-telemetry = "llm_telemetry.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# ---------------------------------------------------------------------------
+# P3-01 (#31): Ruff + mypy, started NON-STRICT deliberately. The two real
+# bugs that motivated this ticket (a str-vs-Path confusion in config.py, a
+# to_dict/dump API mismatch) were both plain type errors a checker catches
+# for free -- but the codebase has 31 modules and ~9k lines with zero prior
+# type discipline, so day one starts loose and ratchets up over time rather
+# than drowning in one giant unreviewable diff.
+#
+# RATCHET PLAN (written down, not implied -- #31's own acceptance item):
+#   Day 1 (this ticket):     mypy non-strict, no disallow_untyped_defs.
+#                            ruff's own default rule set (E, F) + a few
+#                            explicitly chosen ones (see [tool.ruff.lint]).
+#   Next (P3-01b, follow-up): flip disallow_untyped_defs on for NEW modules
+#                            only (per-module override), leaving existing
+#                            code exempted until touched.
+#   Later:                  drop the per-module exemptions one at a time as
+#                            each module gets its own pass; flip
+#                            check_untyped_defs repo-wide once the exemption
+#                            list is empty.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# Deliberately narrow for day one: pyflakes (F) + a slice of pycodestyle (E)
+# catches real bugs (unused imports, undefined names, obvious style rot)
+# without ratcheting in the full E/W surface (whitespace nits) that would
+# turn a lint pass into an unreviewable reformat of every file at once.
+select = ["E4", "E7", "E9", "F"]
+ignore = [
+  # F841 (unused local) fires on this codebase's `_` = pattern for a value
+  # read purely for its side effect (e.g. discarding a cursor.fetchone()
+  # count) -- noisy without being a real bug; revisit once ratcheted.
+  "F841",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# build_dashboard.py / build_costs.py embed the entire dashboard as Python
+# multi-line string constants (the JS payload) -- long lines inside a
+# string literal are not a line-length violation to fix, they're the file
+# format itself (#37/#27 track extracting this to real .js files someday).
+"src/llm_telemetry/build_dashboard.py" = ["E501"]
+"src/llm_telemetry/build_costs.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+# Non-strict start (#31's own named acceptance: "no disallow_untyped_defs
+# on day one"). ignore_missing_imports because PyYAML's stub coverage on
+# whatever mypy version CI happens to pin is not this ticket's problem.
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[tool.pytest.ini_options]
+# Anchors test_pytest_wrapper.py's own collection root (P3-02, #32) so a
+# `pytest` invocation from any cwd resolves tests/ the same way.
+testpaths = ["tests"]

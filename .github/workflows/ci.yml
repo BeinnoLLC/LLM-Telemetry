@@ -16,9 +16,15 @@ jobs:
       - name: Install
         run: |
           pip install -e .
-          # pytest (P3-02, #32): dev-only, never a runtime dependency.
-          pip install "pytest>=7.0"
+          # pytest (P3-02, #32), ruff + mypy (P3-01, #31): all dev-only,
+          # never runtime dependencies.
+          pip install "pytest>=7.0" "ruff>=0.6" "mypy>=1.10"
           npm ci --prefix tests          # the pinned jsdom, not whatever is latest
+
+      - name: Lint (Ruff) + types (mypy) — P3-01, #31
+        run: |
+          ruff check src/
+          mypy src/
 
       - name: Leak gate (samples must carry nothing identifying)
         run: python3 examples/check_no_leaks.py

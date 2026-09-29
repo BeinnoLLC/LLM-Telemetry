@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Render analytics JSON into a Tailwind + Chart.js dashboard with date filtering."""
-import json, os, sys, subprocess
+import json
+import os
+import sys
+import subprocess
 
 from .config import get as _cfg
 
@@ -22,7 +25,7 @@ else:
     # help page cannot drift from the config the agent actually loads.
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router",
                     str(CFG.reports_dir / "router-data.json")], check=True)
-from .schema import SCHEMA_VERSION
+from .schema import SCHEMA_VERSION  # noqa: E402 — after module-level build-time subprocess calls
 
 
 def _load_versioned(path):
@@ -8320,7 +8323,7 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) doRef
 </script></body></html>
 """
 
-from . import energy as _E
+from . import energy as _E  # noqa: E402 — after the embedded-HTML string constant
 
 
 def _shown_path(f):
@@ -8337,11 +8340,11 @@ def _shown_path(f):
     return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
 
 
-from .pricing import ttl_label as _ttl_label
+from .pricing import ttl_label as _ttl_label  # noqa: E402 — after helper function def above
 _kwh, _gw, _hw = _E.tariff(CFG)
 # Defaults come from the Config dataclass itself, so the page's "Defaults"
 # button can never disagree with what an unconfigured install uses.
-from .config import Config as _Config
+from .config import Config as _Config  # noqa: E402 — after tariff computation above
 _d = _Config()
 POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_overhead_watts": _hw},
          "defaults": {"electricity_rate_kwh": _d.electricity_rate_kwh,
