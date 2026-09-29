@@ -682,40 +682,43 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* #120 task queue: two lanes, animated chip lifecycle. Kept CSS-driven
     (transform/opacity transitions + one keyframe animation) rather than a
     JS render loop, so the idle shimmer costs nothing on low-power devices. */
- /* Two lanes on desktop, one on narrow screens. Deliberately NOT
-    `1fr 1fr`: that fixed pair is exactly what check_responsive_grid.js
+ /* Three lanes on desktop, one on narrow screens. Deliberately NOT
+    `1fr 1fr 1fr`: that fixed triple is exactly what check_responsive_grid.js
     forbids (it squashes canvases and overflows), and it is also the wrong
-    tool here — auto-fit lets the lanes collapse to a single column on a
-    phone without a media query doing the same job twice. */
- .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
- .qlane{min-height:64px}
+    tool here — auto-fit lets the lanes collapse to fewer columns on a
+    narrower screen without a media query doing the same job twice. */
+ .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+ .qlane{min-height:64px;min-width:0}
  .qlanehdr{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
    color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
  .qcount{background:var(--card);border:1px solid var(--border);border-radius:999px;
    padding:0 6px;font-size:10px;line-height:16px;min-width:16px;text-align:center}
- .qitems{display:flex;flex-direction:column;gap:6px}
+ .qitems{display:flex;flex-direction:column;gap:6px;min-height:2px}
  .qempty{font-size:11px;color:var(--muted);padding:10px 0;
    display:flex;align-items:center;gap:6px}
  .qempty .qdot{width:6px;height:6px;border-radius:999px;background:#22c55e;
    box-shadow:0 0 0 rgba(34,197,94,.5);animation:qpulse-ok 2.2s ease-out infinite}
  @keyframes qpulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}
    70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
- /* one chip per task; enters via qin, sits with an idle shimmer while
-    queued, promotes into the running lane via qpromote, leaves via qout. */
+ /* One chip per task; enters via qin, sits with an idle shimmer while queued,
+    TRAVELS to the next lane via a FLIP transform (queued->running->done),
+    leaves for good via qout once its lane fills past 10 and it ages out. */
  .qchip{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
    border:1px solid var(--border);background:var(--card);font-size:11px;
    animation:qin .28s cubic-bezier(.2,.8,.2,1) both;
-   transition:transform .25s ease,opacity .25s ease,border-color .25s ease}
+   transition:transform .32s cubic-bezier(.3,.85,.35,1),opacity .25s ease,border-color .25s ease}
  .qchip.leaving{animation:qout .22s ease-in forwards}
- .qchip.promoting{animation:qpromote .38s cubic-bezier(.3,.9,.3,1) forwards}
+ .qchip.travel{will-change:transform}
+ .qchip.arrived{animation:qland .3s cubic-bezier(.3,.9,.3,1) both}
  @keyframes qin{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
  @keyframes qout{to{opacity:0;transform:translateX(10px) scale(.96)}}
- @keyframes qpromote{0%{transform:translateX(0)}45%{transform:translateX(14px) scale(1.03)}
-   100%{transform:translateX(0) scale(1)}}
+ @keyframes qland{0%{transform:scale(1.05)}100%{transform:scale(1)}}
  .qchip .qdotwrap{width:7px;height:7px;border-radius:999px;flex:none}
  .qlane[data-lane="queued"] .qchip .qdotwrap{background:#f59e0b;
    animation:qshimmer 1.6s ease-in-out infinite}
  .qlane[data-lane="running"] .qchip .qdotwrap{background:#22c55e}
+ .qlane[data-lane="done"] .qchip .qdotwrap{background:#64748b}
+ .qlane[data-lane="done"] .qchip{opacity:.82}
  @keyframes qshimmer{0%,100%{opacity:.4}50%{opacity:1}}
  .qchip .qmodel{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
  .qchip .qprof{color:var(--muted);font-size:9.5px;
@@ -1059,12 +1062,21 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       onto their own row at half width (leaving ~465px dead), and at 640px the
       track list collapsed to `589px 0px` — a zero-width column with the list
       overflowing it. Fixed tracks + a media query remove both failure modes. -->
-  <!-- #120: task queue visualization, ABOVE the in-progress grid (user request):
+  <!-- #120/#125: task queue visualization, ABOVE the in-progress grid:
        "what is about to run" is the question you ask before "what is running",
        and the queued lane is the earliest warning that the fleet is saturated.
-       Two lanes fed by data already collected elsewhere — no fabricated queue,
-       no new backend dependency: "queued" = real per-host queue depth from the
-       Ollama poller (h.queue), "running" = the live session list below it. -->
+       Three lanes, each capped to the 10 most recent workers (user request) so
+       the panel never grows without bound:
+         Queued  — real per-host waiting depth from the Ollama poller (h.queue)
+         Running — the live session list below it
+         Done    — sessions that actually ended, from the same recent_sessions
+                   feed the Analytics page uses; not a synthetic "completed"
+                   event invented for this panel.
+       A chip TRAVELS between lanes (FLIP-animated DOM move) rather than fading
+       out in one and back in in another, so the same task visibly crosses the
+       gap. Running -> Done is an exact identity match (same session id, from
+       two feeds that agree); Queued -> Running stays the count-based estimate
+       documented in renderQueue() because a queue slot carries no id. -->
   <div class="card p-4 mb-3" id="qcard">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[10px] ml-1" id="qsub"></span>
@@ -1077,6 +1089,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <div class="qlane" data-lane="running">
      <div class="qlanehdr">Running<span class="qcount" id="qcount-running">0</span></div>
      <div class="qitems" id="qitems-running"></div>
+    </div>
+    <div class="qlane" data-lane="done">
+     <div class="qlanehdr">Done<span class="qcount" id="qcount-done">0</span></div>
+     <div class="qitems" id="qitems-done"></div>
     </div>
    </div>
   </div>
@@ -2507,20 +2523,32 @@ document.addEventListener('click', e => {
   renderLive();
 });
 
-// ---- Task queue visualization (#120) ---------------------------------------
-// Two lanes fed only by data that already exists — no fabricated queue:
+// ---- Task queue visualization (#120/#125) ----------------------------------
+// Three lanes fed only by data that already exists — no fabricated queue:
 //   queued  : per-host queue depth from the Ollama poller (h.queue). This is
 //             the real number of requests Hermes has dispatched that the box
 //             has not started yet.
 //   running : the live session list already powering the grid above.
+//   done    : sessions that actually ended, from the same recent_sessions feed
+//             the Analytics page uses — not a synthetic "completed" event
+//             invented for this panel.
+// Each lane is capped to the 10 most recent workers so the panel never grows
+// without bound; the count badge always shows the real total, with a "+N
+// more" footer when the lane is truncated, so capping the DISPLAY never hides
+// the true number from anyone glancing at the header.
+//
 // A chip's identity is host+slot for queued items (there is no per-request id
-// in the payload) and session id for running ones, so the transition
-// animation can tell "same task, now running" from "different task".
-const Q_SEEN = new Map();   // chip key -> {lane, chip} so we animate the move
+// in the payload) and session id for running/done ones. Running and done
+// share the SAME dom key (`s:${id}`), so when a session ends the reconciler
+// below sees "same key, different lane" and TRAVELS the existing chip element
+// into the done lane via a FLIP transform, instead of fading it out in one
+// lane and faking a fresh one into the other — the same task visibly crosses
+// the gap. Queued->running has no such identity (a queue slot carries no id),
+// so that edge stays the count-based estimate from #120: the queue shrank
+// while new running chips appeared in the same poll.
+const Q_SEEN = new Map();   // dom key -> {lane, chip} so we can detect travel
 
-function qChip(kind, key, label, meta, profileColor){
-  const el = document.createElement('div');
-  el.className = 'qchip';
+function fillChip(el, kind, key, label, meta, profileColor){
   el.dataset.key = key;
   el.dataset.lane = kind;
   const h = profileColor == null ? null : profileColor;
@@ -2528,72 +2556,125 @@ function qChip(kind, key, label, meta, profileColor){
     `<span class="qdotwrap"${h != null ? ` style="background:hsl(${h} 62% 45%)"` : ''}></span>`
     + `<span class="qmodel">${esc(label)}</span>`
     + (meta ? `<span class="qprof">${esc(meta)}</span>` : '');
+}
+
+function qChip(kind, key, label, meta, profileColor){
+  const el = document.createElement('div');
+  el.className = 'qchip';
+  fillChip(el, kind, key, label, meta, profileColor);
   return el;
 }
 
+// Slide an existing chip from its current screen position to wherever it
+// lands after a DOM move, so a lane change reads as travel rather than a
+// teleport. FLIP: measure First, move it, measure Last, Invert with a
+// transform, then let the CSS transition Play it back to zero.
+// In an environment with no real layout (a jsdom test) every rect is 0x0, so
+// this degrades to a no-op transform — harmless, and the important thing a
+// test CAN verify (the DOM node's identity persisting across lanes) still
+// holds regardless of layout.
+function flipMove(el, toContainer){
+  const first = el.getBoundingClientRect();
+  toContainer.appendChild(el);
+  const last = el.getBoundingClientRect();
+  const dx = first.left - last.left, dy = first.top - last.top;
+  if (dx || dy){
+    el.classList.add('travel');
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px,${dy}px)`;
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetHeight; // force reflow so the next line animates FROM here
+    el.style.transition = '';
+    el.style.transform = '';
+  }
+  el.classList.add('arrived');
+  setTimeout(() => { el.classList.remove('travel'); el.classList.remove('arrived'); }, 320);
+}
+
 function renderQueue(){
-  const qBox = $('qitems-queued'), rBox = $('qitems-running');
-  if (!qBox || !rBox) return;
+  const qBox = $('qitems-queued'), rBox = $('qitems-running'), dBox = $('qitems-done');
+  if (!qBox || !rBox || !dBox) return;
   const p = DATA.profiles[current] || {};
   const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
+  const CAP = 10;
 
   // --- queued: expand each host's real depth into depth-many chips ---------
-  const queued = [];
+  const queuedAll = [];
   hosts.forEach(h => {
     const depth = Math.max(0, (+h.queue || 0));
     for (let i = 0; i < depth; i++) {
-      queued.push({
-        key: `q:${h.label}:${i}`,
-        label: h.label,
-        meta: 'waiting',
-      });
+      queuedAll.push({ key: `q:${h.label}:${i}`, label: h.label, meta: 'waiting' });
     }
   });
+  const queued = queuedAll.slice(0, CAP);
 
-  // --- running: the same live sessions the grid shows ----------------------
-  const running = ((p.live || [])).map(L => ({
-    key: `r:${L.id}`,
-    label: short(L.model) || L.title || 'session',
-    meta: L.profile || '',
-    hue: hashHue(L.profile || ''),
-    idle: L.idle_s,
-  }));
+  // --- running: the same live sessions the grid shows, most active first ---
+  const seenLive = new Set();
+  const liveDedup = (p.live || []).filter(L => {
+    if (seenLive.has(L.id)) return false; seenLive.add(L.id); return true;
+  });
+  const runningAll = liveDedup
+    .slice()
+    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active first
+    .map(L => ({
+      key: `s:${L.id}`, sid: L.id,
+      label: short(L.model) || L.title || 'session',
+      meta: L.profile || '', hue: hashHue(L.profile || ''),
+    }));
+  const running = runningAll.slice(0, CAP);
 
-  // --- diff against what is on screen and animate the differences ----------
-  // Promotion (queued -> running) is detected by COUNT, not by identity: the
-  // payload carries no request id linking a waiting slot to the session it
-  // becomes (queued items are only "host X has N waiting"), so claiming an
-  // exact task-to-task match would be inventing data. What is observable is
-  // that the queue shrank while new sessions appeared in the same poll, which
-  // is exactly when a waiting task started — so the newly appeared running
-  // chips animate as promoted. The count of promoted chips is capped at the
-  // number of slots that left the queue, so an unrelated new session does not
-  // get a promotion animation it did not earn.
+  // --- done: sessions that actually ended, newest first --------------------
+  const doneAll = (p.recent_sessions || [])
+    .slice()
+    .sort((a, b) => (+b.last_ts || 0) - (+a.last_ts || 0))
+    .map(s => ({
+      key: `s:${s.id}`, sid: s.id,
+      label: short(s.last_model || s.model) || 'session',
+      meta: s.dur_s != null ? `${ago(Math.max(0, +s.dur_s))} run` : '',
+      hue: null,
+    }));
+  const done = doneAll.slice(0, CAP);
+
+  // --- reconcile against what is on screen ----------------------------------
+  // Promotion (queued -> running) is detected by COUNT, not identity: a queue
+  // slot carries no request id (queued items are only "host X has N
+  // waiting"), so claiming an exact task-to-task match there would be
+  // inventing data. Running -> done DOES have identity (the same session id
+  // in both feeds), so that edge travels the real chip instead of guessing.
   const queuedBefore = [...Q_SEEN.values()].filter(v => v.lane === 'queued').length;
   const runningBefore = new Set(
     [...Q_SEEN.entries()].filter(([, v]) => v.lane === 'running').map(([k]) => k));
-  const queuedAfter = queued.length;
-  // slots that left the queue this render, and are not simply gone for good
-  // (we cannot tell "started" from "abandoned" — the cap is what we can see)
-  let promoteBudget = Math.max(0, queuedBefore - queuedAfter);
+  let promoteBudget = Math.max(0, queuedBefore - queued.length);
 
   const next = new Map();
   const want = [
-    ...queued.map(q => ({...q, lane:'queued', hue:null})),
-    ...running.map(r => ({...r, lane:'running'})),
+    ...queued.map(q => ({ ...q, lane: 'queued', hue: null })),
+    ...running.map(r => ({ ...r, lane: 'running' })),
+    ...done.map(d => ({ ...d, lane: 'done' })),
   ];
+  const laneBox = { queued: qBox, running: rBox, done: dBox };
   want.forEach(w => {
     const prev = Q_SEEN.get(w.key);
-    if (prev && prev.lane === w.lane && prev.chip.isConnected){
+    if (prev && prev.chip.isConnected && prev.lane === w.lane){
       // same chip, same lane: reuse it so CSS does not replay the entry
       // animation on every 5s poll (that would read as a flicker, the very
       // thing #114 fixed elsewhere).
       w.chip = prev.chip;
       const m = w.chip.querySelector('.qmodel');
       if (m && m.textContent !== w.label) m.textContent = w.label;
+      const pr = w.chip.querySelector('.qprof');
+      if (pr && w.meta && pr.textContent !== w.meta) pr.textContent = w.meta;
+    } else if (prev && prev.chip.isConnected && prev.lane !== w.lane){
+      // same key, different lane: this task TRAVELED (today only reachable
+      // via running -> done, since queued/running/done keys only collide
+      // when they share a real session id). Reuse the element and animate
+      // its move instead of destroying and recreating it.
+      w.chip = prev.chip;
+      fillChip(w.chip, w.lane, w.key, w.label, w.meta, w.hue);
+      flipMove(w.chip, laneBox[w.lane]);
     } else {
       w.chip = qChip(w.lane, w.key, w.label, w.meta, w.hue);
-      // a running chip that was not running last render, while the queue was
+      // A running chip that was not running last render, while the queue was
       // draining, is the visible signal that a waiting task started.
       const isNewRunning = w.lane === 'running' && !runningBefore.has(w.key);
       if (isNewRunning && promoteBudget > 0){
@@ -2604,7 +2685,9 @@ function renderQueue(){
     }
     next.set(w.key, w);
   });
-  // chips that vanished: play the exit animation, then drop them
+  // chips that vanished entirely (not present in ANY lane this render): play
+  // the exit animation, then drop them. This is also how a done chip finally
+  // leaves once it ages out past the 10-item cap.
   Q_SEEN.forEach((prev, key) => {
     if (next.has(key)) return;
     if (!prev.chip.isConnected) return;
@@ -2619,11 +2702,26 @@ function renderQueue(){
   const paint = (box, items) => {
     items.forEach(it => { if (it.chip.parentNode !== box) box.appendChild(it.chip); });
     [...box.children].forEach(c => {
+      if (c.classList.contains('qmore')) { c.remove(); return; }
       if (!items.some(i => i.chip === c) && !c.classList.contains('leaving')) c.remove();
     });
   };
   paint(qBox, want.filter(w => w.lane === 'queued'));
   paint(rBox, want.filter(w => w.lane === 'running'));
+  paint(dBox, want.filter(w => w.lane === 'done'));
+
+  // --- overflow footers: the cap limits what's SHOWN, never what's counted --
+  const overflow = (box, all, shown) => {
+    if (all.length > shown.length){
+      const m = document.createElement('div');
+      m.className = 'qmore muted';
+      m.textContent = `+${all.length - shown.length} more`;
+      box.appendChild(m);
+    }
+  };
+  overflow(qBox, queuedAll, queued);
+  overflow(rBox, runningAll, running);
+  overflow(dBox, doneAll, done);
 
   // --- empty states: calm, not blank --------------------------------------
   if (!queued.length){
@@ -2631,7 +2729,7 @@ function renderQueue(){
       const e = document.createElement('div');
       e.className = 'qempty';
       e.innerHTML = '<span class="qdot"></span>queue clear — nothing waiting';
-      qBox.appendChild(e);
+      qBox.insertBefore(e, qBox.firstChild);
     }
   } else {
     const e = qBox.querySelector('.qempty'); if (e) e.remove();
@@ -2641,16 +2739,29 @@ function renderQueue(){
       const e = document.createElement('div');
       e.className = 'qempty muted';
       e.innerHTML = '<span class="muted">idle — nothing running</span>';
-      rBox.appendChild(e);
+      rBox.insertBefore(e, rBox.firstChild);
     }
   } else {
     const e = rBox.querySelector('.qempty'); if (e) e.remove();
   }
+  if (!done.length){
+    if (!dBox.querySelector('.qempty')){
+      const e = document.createElement('div');
+      e.className = 'qempty muted';
+      e.innerHTML = '<span class="muted">nothing finished yet</span>';
+      dBox.insertBefore(e, dBox.firstChild);
+    }
+  } else {
+    const e = dBox.querySelector('.qempty'); if (e) e.remove();
+  }
 
   // --- counts + subtitle ----------------------------------------------------
-  const cq = $('qcount-queued'), cr = $('qcount-running'), sub = $('qsub');
-  if (cq) cq.textContent = String(queued.length);
-  if (cr) cr.textContent = String(running.length);
+  // Counts show the REAL total, even when the lane is capped to 10 chips —
+  // capping the display must never quietly change what the number means.
+  const cq = $('qcount-queued'), cr = $('qcount-running'), cd = $('qcount-done'), sub = $('qsub');
+  if (cq) cq.textContent = String(queuedAll.length);
+  if (cr) cr.textContent = String(runningAll.length);
+  if (cd) cd.textContent = String(doneAll.length);
   if (sub){
     const busy = hosts.filter(h => (+h.queue || 0) > 0).map(h => h.label);
     sub.textContent = busy.length
