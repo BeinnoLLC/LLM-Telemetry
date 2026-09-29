@@ -51,3 +51,25 @@ jobs:
 
       - name: Python suites
         run: for t in tests/test_*.py; do python3 "$t" || exit 1; done
+
+      - name: Breakpoint screenshots (#21) — non-blocking QA artifact
+        # Dev-extra tooling: playwright is never a runtime dependency (the
+        # package itself stays PyYAML-only). Uses the runner's preinstalled
+        # google-chrome-stable rather than downloading Playwright's own
+        # Chromium. continue-on-error so a screenshot-tooling hiccup never
+        # blocks a merge — this step exists to attach reviewable images to
+        # the PR, not to gate it.
+        continue-on-error: true
+        run: |
+          pip install playwright
+          python3 tools/breakpoint_shots.py --out breakpoint-shots --file examples/reports/dashboard.html --chrome "$(which google-chrome-stable || which google-chrome)"
+          python3 tools/breakpoint_shots.py --out breakpoint-shots --file examples/reports/costs.html --chrome "$(which google-chrome-stable || which google-chrome)"
+
+      - name: Upload breakpoint screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: breakpoint-shots
+          path: breakpoint-shots/
+          if-no-files-found: ignore
+          retention-days: 14

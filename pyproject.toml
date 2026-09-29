@@ -21,6 +21,12 @@ classifiers = [
 # so this runs on a bare box with no build toolchain.
 dependencies = ["PyYAML>=6.0"]
 
+# Dev-only: breakpoint QA screenshots (#21, tools/breakpoint_shots.py) are
+# never imported by the package and never installed on a deployed box —
+# `dependencies` above stays PyYAML-only.
+[project.optional-dependencies]
+dev = ["playwright>=1.40"]
+
 [project.urls]
 Homepage = "https://github.com/BeinnoLLC/LLM-Telemetry"
 Issues = "https://github.com/BeinnoLLC/LLM-Telemetry/issues"
