@@ -1303,6 +1303,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
  </div>
 
+ <!-- P10-10 (#98): Attention card -- every alerts.RULES rule that tripped,
+      in one place, above every view so it's never missed. Populated by
+      renderAlerts(); hidden entirely when nothing tripped. -->
+ <div class="card p-3 mb-3" id="alertscard" hidden>
+  <div class="flex items-center gap-2 mb-2">
+   <span class="lbl">Attention</span>
+   <span class="muted text-[length:var(--fs-xs)]" id="alertscount"></span>
+  </div>
+  <div id="alertslist"></div>
+ </div>
+
  <div class="card p-3 flex items-center gap-2 flex-wrap" id="rangebar">
   <span class="lbl">Range</span>
   <!-- #13: on mobile this chip is the only thing visible until tapped; it
@@ -2645,8 +2656,28 @@ function renderResend(p, inR){
   }).join('');
 }
 
+const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
+const ALERT_COLOR = { critical: '#ef4444', warning: '#eab308', info: 'var(--accent)' };
+
+// P10-10 (#98): renders exactly what the collector's alerts.build_alerts()
+// already evaluated -- never recomputes a threshold client-side, so the
+// card can't drift from the Python rule table.
+function renderAlerts(alerts){
+  const card = $('alertscard');
+  if (!alerts || !alerts.length){ card.hidden = true; return; }
+  card.hidden = false;
+  $('alertscount').textContent = `${alerts.length} item${alerts.length===1?'':'s'} need attention`;
+  $('alertslist').innerHTML = alerts.map(a => `
+    <div class="flex items-start gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
+      <span style="color:${ALERT_COLOR[a.severity]||'var(--fg)'};flex:none" title="${esc(a.severity)}">${ALERT_ICON[a.severity]||'&#8226;'}</span>
+      <span class="flex-1" title="${esc(a.why||'')}">${esc(a.message)}</span>
+      ${a.target_view ? `<button class="chip" style="flex:none" onclick="pickView('${a.target_view}')">${esc(a.target_view)} &rarr;</button>` : ''}
+    </div>`).join('');
+}
+
 function render(){
   const p = DATA.profiles[current];
+  renderAlerts(p.alerts);
   populateProjFilterSelect();
   syncProjFilterUI();
   const from = $('from').value, to = $('to').value;

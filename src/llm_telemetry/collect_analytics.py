@@ -4,7 +4,7 @@
 Rows are emitted at DAY granularity so the dashboard can filter any from/to
 range entirely client-side without re-querying.
 """
-import sqlite3, json, os, datetime, argparse, sys
+import sqlite3, json, os, datetime, argparse, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
 from . import cost_attribution
@@ -919,6 +919,16 @@ def build():
     context_by_profile = CX.build_context_payload()
     for n, p in out["profiles"].items():
         p["context"] = context_by_profile.get(n, {"sessions": [], "reasoning_by_model": [], "cooldowns": []})
+    # P10-10 (#98): Attention card — every rule in alerts.RULES evaluated
+    # against this SAME finished profile payload, after every other field
+    # above is already populated, so a rule can read anything (bandwidth,
+    # delegations, context, agents) the rest of the payload already built.
+    from . import alerts as ALERTS
+    now_ts = time.time()
+    for n, p in out["profiles"].items():
+        p["_now"] = now_ts
+        p["alerts"] = ALERTS.build_alerts(p)
+        del p["_now"]
     return stamp(out)
 
 if __name__ == "__main__":
