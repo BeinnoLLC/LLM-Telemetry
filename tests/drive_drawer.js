@@ -132,8 +132,8 @@ setTimeout(() => {
         'card contents vertically centred');
     const meta = cards.map(c => c.querySelector('.metacol')).filter(Boolean);
     chk(meta.length === cards.length, 'every card has a fixed meta column');
-    chk(meta.every(m => (m.firstElementChild.className || '').includes('text-[15px]')),
-        'model name uses the larger size');
+    chk(meta.every(m => (m.firstElementChild.className || '').includes('text-[12.5px]')),
+        'model name uses the smaller, secondary size (title is now primary, #127)');
   }
 
   console.log(`\n${fail === 0 ? 'ALL PASS' : 'FAILED'}  (${pass} passed, ${fail} failed)`);

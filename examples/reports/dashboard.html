@@ -2595,8 +2595,8 @@ function renderQueue(){
     .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active first
     .map(L => ({
       key: `s:${L.id}`, sid: L.id,
-      label: short(L.model) || L.title || 'session',
-      meta: L.profile || '', hue: profileHue(L.profile || ''),
+      label: (L.title && L.title !== '(untitled)') ? L.title : (short(L.model) || 'session'),
+      meta: short(L.model) || '', hue: profileHue(L.profile || ''),
     }));
   const running = runningAll.slice(0, CAP);
 
@@ -2606,7 +2606,7 @@ function renderQueue(){
     .sort((a, b) => (+b.last_ts || 0) - (+a.last_ts || 0))
     .map(s => ({
       key: `s:${s.id}`, sid: s.id,
-      label: short(s.last_model || s.model) || 'session',
+      label: (s.title && s.title !== '(untitled)') ? s.title : (short(s.last_model || s.model) || 'session'),
       meta: s.dur_s != null ? `${ago(Math.max(0, +s.dur_s))} run` : '',
       hue: null,
     }));
@@ -2766,11 +2766,11 @@ function renderLive(){
       const tools = (L.tools||[]).slice(0,5).map(t=>
         `<span class="text-[9px] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
       return `<div class="flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
-        <div style="color:${c.c};font-size:15px;line-height:1.1">${c.i}</div>
+        <div style="color:${c.c};font-size:15px;line-height:1.1" title="${esc(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[11px] font-semibold" style="color:${c.c}">${L.category}</span>
-            <span class="text-[12px] truncate">${L.title}</span>
+            <span class="text-[13px] font-semibold truncate" title="${esc(L.title)}">${esc(L.title)}</span>
+            <span class="text-[10px] font-medium" style="color:${c.c}">${L.category}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
             ${L.profile ? `<span class="text-[9px] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[9px] muted">↳ subagent</span>':''}
@@ -2779,7 +2779,7 @@ function renderLive(){
           <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
         </div>
         <div class="metacol shrink-0">
-          <div class="text-[15px] font-semibold truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
+          <div class="text-[12.5px] muted truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
           ${L.switched ? `<div class="text-[9px] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
           ${modelsBadge(L)}
           <div class="muted text-[10px]">${ago(L.idle_s)} ago</div>
