@@ -2561,6 +2561,13 @@ function provBadge(p){
 // glyph prefixed to the model name: "◆ step-3.7-flash". rowsForModel lets a
 // short model name resolve back to the provider that served it.
 let MODEL_PROV = {};
+// P10-11 (#99): previous-period aggregates for the Δ columns in the
+// provider/model tables, keyed the same way as their current-period
+// counterparts (pCost/t below). Populated once per render() call, from
+// the SAME prevRows compare-mode already computes for the KPI deltas — no
+// extra query, no second payload shape.
+let PREV_PROV_COST = {};
+let PREV_MODEL_COST = {};
 function buildModelProv(rows){
   MODEL_PROV = {};
   (rows||[]).forEach(r=>{
@@ -3053,6 +3060,19 @@ function render(){
   }
 
   buildModelProv(rows);
+  // Previous-period aggregates for table Δ columns (#99) — same grouping
+  // key as pCost/t below, computed once here so both tables can look it up
+  // without re-deriving prevRows themselves.
+  PREV_PROV_COST = {};
+  PREV_MODEL_COST = {};
+  if (COMPARE_ON && prevRows.length){
+    prevRows.forEach(r=>{
+      const pk = provOf(r.provider, r.model, r.base_url);
+      PREV_PROV_COST[pk] = (PREV_PROV_COST[pk]||0) + (r.market_value_usd||0);
+      const mk_ = short(r.model)+'|'+pk;
+      PREV_MODEL_COST[mk_] = (PREV_MODEL_COST[mk_]||0) + (r.market_value_usd||0);
+    });
+  }
 
   const byM=agg(rows,r=>short(r.model),r=>r.calls).slice(0,10);
   mk('cModels','bar',byM.map(x=>ic(x[0])),[{data:byM.map(x=>x[1]),backgroundColor:byM.map(x=>colorOf(x[0])),borderRadius:3}],
@@ -3063,11 +3083,22 @@ function render(){
     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:6}}},cutout:'55%'});
 
   const days=[...new Set(rows.map(r=>r.date))].sort();
+  // Compare mode (#99): overlay the previous period as a dashed series,
+  // aligned by DAY INDEX (day 1 of prev period under day 1 of current), not
+  // by calendar date -- the two periods never share real dates. previousPeriod()
+  // always returns an equal-length range, so index alignment lines up cleanly;
+  // a shorter/mismatched prevRows just leaves trailing points undefined
+  // (Chart.js draws a gap, never a fabricated zero).
+  const prevDaysSorted = COMPARE_ON ? [...new Set(prevRows.map(r=>r.date))].sort() : [];
+  const prevCallsByIdx = prevDaysSorted.map(d=>prevRows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0));
   mk('cDaily','line',days,[
     {label:'calls',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0)),
      borderColor:AC,backgroundColor:AC+'22',fill:true,tension:.3,yAxisID:'y'},
     {label:'tokens',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0)),
-     borderColor:PAL[1],tension:.3,yAxisID:'y1'}],
+     borderColor:PAL[1],tension:.3,yAxisID:'y1'},
+    ...(COMPARE_ON && prevCallsByIdx.length ? [{label:'calls (previous period)',
+     data:days.map((_,i)=>prevCallsByIdx[i]), borderColor:AC, borderDash:[5,4],
+     backgroundColor:'transparent', pointRadius:0, tension:.3, yAxisID:'y'}] : [])],
     {plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
      y1:{position:'right',grid:{display:false},ticks:{callback:v=>fmt(v)}}}});
 
@@ -3142,6 +3173,7 @@ function render(){
       <th class="text-right" title="Estimated bytes sent to this provider. Derived from tokens, not measured.">&#8593; Up (est)</th>
       <th class="text-right" title="Estimated bytes received from this provider. Derived from tokens, not measured.">&#8595; Down (est)</th>
       <th class="text-right">Est. cost</th>
+      ${COMPARE_ON?'<th class="text-right" title="Change vs the previous period of equal length">&#916;</th>':''}
       <th class="text-right">Models</th><th class="text-left pl-3">Breakdown</th></tr>`+
     Object.entries(pCost).sort((a,b)=>b[1].mkt-a[1].mkt).map(([pr,v])=>{
       const s=PROV[pr]||{icon:'○',fg:MU};
@@ -3153,6 +3185,7 @@ function render(){
         <td class="text-right text-[length:var(--fs-xs)] bwup">${fmtB(v.up)}</td>
         <td class="text-right text-[length:var(--fs-xs)] bwdown">${fmtB(v.down)}</td>
         <td class="text-right text-[length:var(--fs-xs)] font-semibold" style="color:${s.fg}">$${v.mkt.toFixed(2)}</td>
+        ${COMPARE_ON?`<td class="text-right text-[length:var(--fs-xs)]">${deltaHtml(compareDelta(v.mkt, PREV_PROV_COST[pr], 'cost'))}</td>`:''}
         <td class="text-right text-[length:var(--fs-xs)]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
       </tr>`;}).join('');
@@ -3170,6 +3203,7 @@ function render(){
     <th class="text-right" title="Estimated bytes uploaded. Tokens x 4.68, not measured. Includes cache reads: prefix caching re-sends the prompt.">&#8593; Up (est)</th>
     <th class="text-right" title="Estimated bytes downloaded. Tokens x 4.68, not measured.">&#8595; Down (est)</th>
     <th class="text-right">Est. cost</th>
+    ${COMPARE_ON?'<th class="text-right" title="Change vs the previous period of equal length">&#916;</th>':''}
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
       return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
@@ -3179,6 +3213,7 @@ function render(){
         <td class="text-right bwup">${fmtB(v.up)}</td>
         <td class="text-right bwdown">${fmtB(v.down)}</td>
         <td class="text-right">${costCell(v.mkt, v.local, v.freetier ? 'freetier' : (!v.priced && !v.local) ? 'unpriced' : '')}</td>
+        ${COMPARE_ON?`<td class="text-right">${deltaHtml(compareDelta(v.mkt, PREV_MODEL_COST[k], 'cost'))}</td>`:''}
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[length:var(--fs-xs)] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
 }

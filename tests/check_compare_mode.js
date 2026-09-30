@@ -95,6 +95,64 @@ setTimeout(() => {
     const deltaChips = d.querySelectorAll('.kdelta');
     chk(deltaChips.length > 0, 'Compare ON: delta chips render on the KPI cards', deltaChips.length);
 
+    // ---- table Δ columns (the ticket's own acceptance line: "Tables gain
+    // a Δ column on the sortable numeric fields") ----------------------------
+    // The full-range selection IS the whole fixture (7 days, no data before
+    // it) — previousPeriod() correctly has nothing to compare against there.
+    // Narrow the range to the LAST 4 days so the first 3 days become a real,
+    // non-empty previous period; this is exactly what exercises a genuine
+    // delta rather than every cell trivially rendering "n/a".
+    w.eval("COMPARE_ON = false; render();");
+    const provHeadOff = d.querySelector('#tblProv').innerHTML;
+    const modelHeadOff = d.querySelector('#tbl').innerHTML;
+    chk(!/&#916;|Δ/.test(provHeadOff), 'Compare OFF: provider table has no Δ column');
+    chk(!/&#916;|Δ/.test(modelHeadOff), 'Compare OFF: model table has no Δ column');
+
+    const narrowed = w.eval(`
+      const p = DATA.profiles[current];
+      const dates = [...new Set(p.rows.map(r=>r.date))].sort();
+      $('from').value = dates[dates.length - 4];
+      $('to').value = dates[dates.length - 1];
+      COMPARE_ON = true;
+      render();
+      ({from: $('from').value, to: $('to').value})
+    `);
+    chk(!!narrowed.from && !!narrowed.to,
+        'narrowed the range to the last 4 days so a real (non-empty) previous period exists', narrowed);
+
+    const provHeadOn = d.querySelector('#tblProv').innerHTML;
+    const modelHeadOn = d.querySelector('#tbl').innerHTML;
+    chk(/Δ/.test(provHeadOn), 'Compare ON: provider table renders a Δ header');
+    chk(/Δ/.test(modelHeadOn), 'Compare ON: model table renders a Δ header');
+    const provDeltaCells = [...d.querySelectorAll('#tblProv tr')].slice(1)
+      .map(r => r.children[6] && r.children[6].textContent).filter(Boolean);
+    chk(provDeltaCells.length > 0 && provDeltaCells.some(t => /%|n\/a/.test(t)),
+        'provider table Δ cells render either a real percent or n/a (never blank)', provDeltaCells);
+    chk(provDeltaCells.some(t => /%/.test(t)),
+        'with a real non-empty previous period, at least one Δ cell shows an actual percent (not just n/a everywhere)', provDeltaCells);
+
+    // ---- chart overlay (the ticket's own acceptance line: "Charts overlay
+    // the previous period as a dashed series") -------------------------------
+    w.eval("COMPARE_ON = false; render();");
+    const noOverlay = w.eval(`
+      const c = charts.find(c => c.config && c.config.data &&
+        (c.config.data.datasets||[]).some(ds => /previous period/.test(ds.label||'')));
+      !!c
+    `);
+    chk(!noOverlay, 'Compare OFF: cDaily has no "previous period" dataset');
+
+    w.eval("COMPARE_ON = true; render();");
+    const overlayDs = w.eval(`
+      const c = charts.find(c => c.config && c.config.data &&
+        (c.config.data.datasets||[]).some(ds => /previous period/.test(ds.label||'')));
+      c ? c.config.data.datasets.find(ds => /previous period/.test(ds.label||'')) : null
+    `);
+    chk(!!overlayDs, 'Compare ON: cDaily gains a "previous period" dataset');
+    chk(!!overlayDs && Array.isArray(overlayDs.borderDash) && overlayDs.borderDash.length === 2,
+        'the previous-period overlay is a DASHED series (borderDash set), not a solid line', overlayDs && overlayDs.borderDash);
+    chk(!!overlayDs && overlayDs.data.some(v => v !== undefined && v !== null),
+        'the overlay series actually carries real (non-fabricated) previous-period values', overlayDs && overlayDs.data);
+
     console.log(`\ncheck_compare_mode.js  ${pass} passed, ${fail} failed`);
     process.exit(fail ? 1 : 0);
   } catch (e) {
