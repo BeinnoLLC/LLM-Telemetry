@@ -1754,12 +1754,19 @@ function render(){
   const sessSeries = kdays.map(d=>sess.filter(r=>r.date===d).reduce((s,r)=>s+r.sessions,0));
   const costSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+(r.market_value_usd||0),0));
 
-  // One glyph per KPI card so the strip reads at a glance, same idea as the
-  // provider badges (PROV) elsewhere on the page — never load-bearing on its
-  // own, just a faster visual anchor next to the label.
-  const KPI_ICON = {
-    'API calls':'⇄', 'Tokens':'▥', 'Cache hit rate':'⧉', 'Sessions':'☰',
-    'Success rate':'✓', 'In progress':'▶', 'Est. cost':'¤'
+  // One glyph + accent colour per KPI card so the strip reads at a glance,
+  // same idea as the provider badges (PROV) elsewhere on the page. Colours
+  // reuse the same series colours the card's own sparkline is drawn in
+  // (AC/PAL[n] below), so the badge is never an arbitrary extra hue — it is
+  // "this card's colour", just also used to tint its icon chip.
+  const KPI_META = {
+    'API calls':      {icon:'⇄', color:AC},
+    'Tokens':         {icon:'▥', color:PAL[1]},
+    'Cache hit rate': {icon:'⧉', color:PAL[5]},
+    'Sessions':       {icon:'☰', color:PAL[2]},
+    'Success rate':   {icon:'✓', color:PAL[6]},
+    'In progress':    {icon:'▶', color:PAL[3]},
+    'Est. cost':      {icon:'¤', color:PAL[4]},
   };
 
   $('kpis').innerHTML=[
@@ -1771,11 +1778,14 @@ function render(){
     ['In progress',liveDot],
     ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4])]]
     .map(([l,v,spark,ring])=>{
-      const icon = KPI_ICON[l] ? `<span class="kpi-icon" aria-hidden="true">${KPI_ICON[l]}</span>` : '';
-      if (ring) return `<div class="card p-2.5 kpi-ring"><div class="kringwrap">${ring}</div>
-        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}</div></div>`;
-      return `<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}</div></div>`;
+      const meta = KPI_META[l] || {icon:'', color:MU};
+      const icon = meta.icon ? `<span class="kpi-icon" aria-hidden="true">${meta.icon}</span>` : '';
+      const badge = `<div class="kpi-badge" style="background:color-mix(in srgb,${meta.color} 16%,var(--card));color:${meta.color}">${icon}</div>`;
+      if (ring) return `<div class="card p-3 kpi-card kpi-ring">${badge}<div class="kringwrap">${ring}</div>
+        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide kpi-label">${l}</div></div>`;
+      return `<div class="card p-3 kpi-card">${badge}
+      <div class="kpi-num-row"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide kpi-label">${l}</div></div>`;
     }).join('');
 
   // Live data is independent of the date filter — render it before the early

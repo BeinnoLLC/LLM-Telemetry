@@ -855,16 +855,28 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
+/* KPI card redesign (dashboard restyle 2026-09-30): a rounded-square icon
+   chip tinted with the card's own accent colour, sitting above a big bold
+   number with its trend sparkline trailing to the right, then a small
+   muted uppercase label — modelled on a reference analytics-card design
+   the user shared (icon badge top-left / number+trend row / label below,
+   never a native-looking or generic KPI tile). */
+.kpi-card{position:relative;display:flex;flex-direction:column;gap:9px}
+.kpi-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;flex:none}
+.kpi-num-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kpi-label{margin-top:-1px}
+
 /* #11: radial KPI rings — compact, no-needle variant of the gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the
    unbounded counters next to it, so both live in the same card recipe. */
-.kpi-ring{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
-.kringwrap{width:44px;height:44px}
+.kpi-ring{align-items:center;text-align:center}
+.kringwrap{width:44px;height:44px;align-self:center}
 .kring{display:block;width:100%;height:100%}
 .kring svg{width:100%;height:100%;display:block}
-.kspwrap{display:inline-block;width:64px;height:20px;vertical-align:middle;margin-left:6px}
+.kspwrap{display:inline-block;width:60px;height:20px;vertical-align:middle;flex:none}
 .kspark{width:100%;height:100%;display:block}
-.kpi-icon{display:inline-block;margin-right:4px;opacity:.7}
+.kpi-icon{display:block;line-height:1}
 .olspwrap{display:inline-block;width:44px;height:14px;vertical-align:middle;margin-left:6px}
 
  /* Unpriced / free-tier cost states (P9-05, #82) */
