@@ -84,6 +84,21 @@ setTimeout(() => {
     const callsCard = [...kpis.children].find(c => /API calls/.test(c.textContent));
     chk(!!callsCard && /\d/.test(callsCard.querySelector('.font-semibold').textContent),
         'API calls KPI still shows the real number, not just a sparkline');
+
+    // ---- KPI cards each carry an icon (icons + trend sparklines everywhere) --
+    const icons = kpis.querySelectorAll('.kpi-icon');
+    chk(icons.length === 7, 'every one of the 7 KPI cards renders an icon glyph', icons.length);
+
+    // Sessions and Est. cost now get a real 7-day trend too (icons + trend
+    // charts on every card, not just calls/tokens).
+    const sessCard = [...kpis.children].find(c => /Sessions/.test(c.textContent));
+    const costCard = [...kpis.children].find(c => /Est\. cost/.test(c.textContent));
+    chk(!!sessCard && !!sessCard.querySelector('.kspark'), 'Sessions KPI carries a trend sparkline');
+    chk(!!costCard && !!costCard.querySelector('.kspark'), 'Est. cost KPI carries a trend sparkline');
+
+    // ---- sparkSvg accepts a custom size for the local-inference bars -------
+    const smallSpark = w.eval(`sparkSvg([10,20,15,30], '#22c55e', {w:44,h:14,pad:1.5})`);
+    chk(/viewBox="0 0 44 14"/.test(smallSpark), 'sparkSvg honours a custom w/h/pad for compact contexts (olBar)');
   } catch (e) {
     chk(false, 'checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 6).join('\n'));

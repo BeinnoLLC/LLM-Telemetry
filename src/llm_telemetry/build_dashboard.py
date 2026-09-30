@@ -1146,6 +1146,22 @@ const emptyHTML = (icon, msg, hint) =>
 let charts = [], current = null;
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
 let COMPARE_ON = false;
+// #131: sub-day range presets (1h/6h/12h). null = the from/to DATE range
+// applies as before (day grain, p.rows). A number = "last N hours from
+// now", read from p.hour_rows (real hour-grain data, HOUR_WINDOW_S-bounded
+// server-side — see collect_analytics.py). Exclusive with the date pickers:
+// picking a day preset or editing From/To clears this back to null.
+let HOUR_RANGE = null;
+// Chart.js plays a draw-in animation (bars growing, pie slices sweeping) on
+// every (re)creation. That is the right first impression on page load, but
+// mk() destroys and recreates every chart on EVERY render() call — including
+// the 60s auto-refresh poll and the 5s live tick touching cLiveCat — so
+// without this flag the whole page would replay its entrance animation once
+// a minute forever. CHART_ANIM_DONE flips true once, right after the first
+// paint (bootDone()), and mk() then forces animation:false on every chart it
+// builds from that point on: the data still updates, it just snaps instead
+// of re-animating from zero.
+let CHART_ANIM_DONE = false;
 Chart.defaults.font.size = 10; readTheme();
 const noLeg = {plugins:{legend:{display:false}}};
 
@@ -1153,13 +1169,41 @@ const bounds = p => {
   const ds = [...new Set(p.rows.map(r=>r.date).filter(Boolean))].sort();
   return [ds[0]||'', ds[ds.length-1]||''];
 };
-function setRange(from,to){ $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
+function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
+// #131: pick a sub-day preset (hours = 1/6/12). Clears the date pickers'
+// influence for this render — hourRowsFor() below is what render() actually
+// reads while HOUR_RANGE is set.
+function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeToggleLabel(); }
+// Real "last N hours from now" filter over p.hour_rows (server-bounded to
+// HOUR_WINDOW_S = 72h — see collect_analytics.py). Falls back to an empty
+// slice rather than silently widening to the day range: a 1h preset that
+// quietly showed a whole day of data would be worse than showing nothing.
+function hourRowsFor(p, hours){
+  const cutoff = Date.now() - hours*3600*1000;
+  return (p.hour_rows || []).filter(r => {
+    if (!r.date) return false;
+    // r.date/r.hour are LOCAL-time bucket boundaries (see HOUR_ROWS SQL:
+    // date()/strftime('%H',...,'localtime')) — reconstruct as a local Date,
+    // not UTC, or every host west of UTC would drop its most recent hour.
+    // Compare against the bucket's END (start + 1h), not its start: a row
+    // bucketed "14:00" holds calls anywhere from 14:00 to 14:59, and
+    // comparing the bucket START against the cutoff would incorrectly drop
+    // a call from 14:55 under a 1h preset requested at 14:58 (bucket start
+    // 14:00 is already >1h old even though the actual call is 3 minutes
+    // old). Hour grain cannot know the exact within-hour timestamp, so this
+    // errs toward inclusion at the edge rather than dropping real recent data.
+    const d = new Date(r.date + 'T00:00:00');
+    d.setHours((r.hour || 0) + 1);
+    return d.getTime() >= cutoff;
+  });
+}
 
 // #13: mobile-only collapsed range chip. Desktop never toggles .rangeopen
 // (the toggle button stays display:none outside the mobile media query), so
 // this is a no-op cost on every other viewport.
 function updateRangeToggleLabel(){
   const rt = $('rangetoggle'); if (!rt) return;
+  if (HOUR_RANGE){ rt.textContent = `${HOUR_RANGE}h`; return; }
   const from = $('from').value, to = $('to').value;
   rt.textContent = from && to ? (from === to ? from : `${from} → ${to}`) : 'Range';
 }
@@ -1175,8 +1219,17 @@ function presets(p){
   const [lo,hi] = bounds(p);
   const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
     const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
+  // #131: hour presets are separate chips (own data-h attribute) from the
+  // day presets — they set HOUR_RANGE instead of From/To, and read
+  // p.hour_rows (real per-hour data) rather than collapsing to "today" like
+  // reusing the 24h day-preset would.
+  const hourDefs = [1, 6, 12];
   const defs = [['24h',()=>[hi,hi]],['7d',()=>[days(7),hi]],['30d',()=>[days(30),hi]],['All',()=>[lo,hi]]];
-  $('presets').innerHTML = defs.map(([l],i)=>`<span class="chip" data-p="${i}">${l}</span>`).join('');
+  $('presets').innerHTML =
+    hourDefs.map(h=>`<span class="chip" data-h="${h}" title="Last ${h} hour${h===1?'':'s'}, real hourly data">${h}h</span>`).join('') +
+    defs.map(([l],i)=>`<span class="chip" data-p="${i}">${l}</span>`).join('');
+  $('presets').querySelectorAll('[data-h]').forEach(el =>
+    el.onclick = () => setHourRange(+el.dataset.h));
   $('presets').querySelectorAll('[data-p]').forEach((el,i)=>
     el.onclick = () => { const [a,b]=defs[i][1](); setRange(a,b); });
   updateRangeToggleLabel();
@@ -1219,6 +1272,12 @@ function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
   // Don't skip hidden views — Chart.js handles zero-size canvases fine, and
   // skipping them means Cost/Detail charts never get per-model colors.
   const o = {responsive:true,maintainAspectRatio:false,...opts};
+  // After the first paint, every chart (re)build is a data refresh, not a
+  // first impression — snap instead of replaying the entrance animation.
+  // An explicit `opts.animation` from a caller still wins (none of the
+  // current callers set one, but this keeps mk() from ever overriding a
+  // future per-chart choice).
+  if (CHART_ANIM_DONE && !('animation' in opts)) o.animation = false;
 
   // Doughnut/pie/radar have no cartesian axes. Injecting `scales` into them
   // materialises a stray "0" axis next to the ring.
@@ -1669,21 +1728,30 @@ function render(){
   syncProjFilterUI();
   const from = $('from').value, to = $('to').value;
   const inR = d => d && (!from || d>=from) && (!to || d<=to);
-  // P4-09 (#46): the project filter composes with — never overrides — the
-  // date range and profile tabs, because it is applied as one MORE
-  // row-filter step chained after those two, not a second query against a
-  // different data source.
-  const dateRows = p.rows.filter(r=>inR(r.date));
+  // #131: an hour preset (1h/6h/12h) takes over row selection entirely —
+  // real hour-grain data from p.hour_rows, filtered by wall-clock cutoff
+  // rather than the date-string range the day presets use. The project
+  // filter still composes on top, same as the day-range path below.
+  const dateRows = HOUR_RANGE ? hourRowsFor(p, HOUR_RANGE) : p.rows.filter(r=>inR(r.date));
   const rows = PROJECT_FILTER
     ? dateRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER)
     : dateRows;
-  const hours = p.hours.filter(h=>inR(h.date));
-  const sess  = p.sessions.filter(s=>inR(s.date));
+  // p.hours/p.sessions have no hour grain (day-only, like p.rows normally
+  // is) — under an hour preset they're approximated by whichever CALENDAR
+  // DAYS the cutoff touches, so the KPI cards (which read `rows` directly)
+  // stay hour-precise while these secondary widgets stay close rather than
+  // going blank.
+  const hourTouchedDates = HOUR_RANGE ? new Set(dateRows.map(r=>r.date)) : null;
+  const hours = HOUR_RANGE ? p.hours.filter(h=>hourTouchedDates.has(h.date)) : p.hours.filter(h=>inR(h.date));
+  const sess  = HOUR_RANGE ? p.sessions.filter(s=>hourTouchedDates.has(s.date)) : p.sessions.filter(s=>inR(s.date));
   // P10-11 (#99): Compare mode reads the SAME already-shipped `p.rows` —
   // no payload change, just a second client-side filter over the equal-
-  // length period immediately before the current selection.
+  // length period immediately before the current selection. Not meaningful
+  // under an hour preset (no "previous period" concept for "last N hours"),
+  // so it's skipped there — COMPARE_ON stays whatever it was, it just has
+  // nothing to compare against for this render.
   let prevRows = [], prevSess = [], prevHealth = [];
-  if (COMPARE_ON){
+  if (COMPARE_ON && !HOUR_RANGE){
     const prevRange = previousPeriod(from, to);
     if (prevRange){
       const prevInR = d => d && d >= prevRange.from && d <= prevRange.to;
@@ -1710,7 +1778,9 @@ function render(){
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
   $('meta').textContent=`generated ${DATA.generated.replace('T',' ')} · auto-refresh every 1 min`;
-  $('rangeinfo').textContent=`${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
+  $('rangeinfo').textContent = HOUR_RANGE
+    ? `last ${HOUR_RANGE}h · ${rows.length} rows`
+    : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
   // `active` is a live count from the DB, deliberately NOT filtered by the date
   // range — "in progress" means right now, whatever window you are looking at.
   const live = DATA.profiles[current].active || 0;
@@ -1737,20 +1807,34 @@ function render(){
   const kdays=[...new Set(rows.map(r=>r.date))].sort().slice(-7);
   const callsSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0));
   const tokSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0));
+  // Sessions and Est. cost get the same real 7-day trend treatment as
+  // calls/tokens: both are unbounded counters over the same date grain, so
+  // they earn a sparkline for the same reason (a ring would fake a bound).
+  const sessSeries = kdays.map(d=>sess.filter(r=>r.date===d).reduce((s,r)=>s+r.sessions,0));
+  const costSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+(r.market_value_usd||0),0));
+
+  // One glyph per KPI card so the strip reads at a glance, same idea as the
+  // provider badges (PROV) elsewhere on the page — never load-bearing on its
+  // own, just a faster visual anchor next to the label.
+  const KPI_ICON = {
+    'API calls':'⇄', 'Tokens':'▥', 'Cache hit rate':'⧉', 'Sessions':'☰',
+    'Success rate':'✓', 'In progress':'▶', 'Est. cost':'¤'
+  };
 
   $('kpis').innerHTML=[
     ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC),null,COMPARE_ON?compareDelta(calls, prevRows.reduce((s,r)=>s+r.calls,0), 'calls'):null],
     ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1]),null,COMPARE_ON?compareDelta(tok, prevRows.reduce((s,r)=>s+r.inp+r.outp,0), 'tokens'):null],
     ['Cache hit rate',null,null,radialRing(cacheRate,{label:'Cache hit rate',warnAt:60,badAt:30})],
-    ['Sessions',nsess.toLocaleString(),null,null,COMPARE_ON?compareDelta(nsess, prevSess.reduce((s,r)=>s+r.sessions,0), 'sessions'):null],
+    ['Sessions',nsess.toLocaleString(),sparkSvg(sessSeries,PAL[2]),null,COMPARE_ON?compareDelta(nsess, prevSess.reduce((s,r)=>s+r.sessions,0), 'sessions'):null],
     ['Success rate',null,null,radialRing(srate,{label:'Success rate',warnAt:95,badAt:80})],
     ['In progress',liveDot],
-    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),null,null,COMPARE_ON?compareDelta(market, prevRows.reduce((s,r)=>s+(r.market_value_usd||0),0), 'cost'):null]]
+    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4]),null,COMPARE_ON?compareDelta(market, prevRows.reduce((s,r)=>s+(r.market_value_usd||0),0), 'cost'):null]]
     .map(([l,v,spark,ring,delta])=>{
+      const icon = KPI_ICON[l] ? `<span class="kpi-icon" aria-hidden="true">${KPI_ICON[l]}</span>` : '';
       if (ring) return `<div class="card p-2.5 kpi-ring"><div class="kringwrap">${ring}</div>
-        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}</div></div>`;
+        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}</div></div>`;
       return `<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${l}${delta?` ${deltaHtml(delta)}`:''}</div></div>`;
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}${delta?` ${deltaHtml(delta)}`:''}</div></div>`;
     }).join('');
 
   // Live data is independent of the date filter — render it before the early
@@ -3564,10 +3648,11 @@ function radialRing(pct, opts){
 // #11: 7-day trend sparkline for the unbounded KPI counters (API calls,
 // tokens) — these have no ceiling, so a ring would imply a fake bound;
 // a trend line answers "is this going up or down" instead.
-function sparkSvg(values, color){
+function sparkSvg(values, color, opts){
   const vals = (values||[]).map(v=>+v||0);
   if (vals.length < 2 || vals.every(v=>v===vals[0])) return '';
-  const W = 64, H = 20, PAD = 2;
+  const o = opts || {};
+  const W = o.w || 64, H = o.h || 20, PAD = o.pad != null ? o.pad : 2;
   const min = Math.min(...vals), max = Math.max(...vals);
   const span = (max-min) || 1;
   const pts = vals.map((v,i)=>{
@@ -3745,11 +3830,13 @@ function buildAll(profiles){
   if (names.length < 2) return null;
   const rows = [], hours = [], sess = [], live = [], tools = {};
   const H = {}, fails = [], ER = {};
+  const hour_rows = [];
   let active = 0;
   names.forEach(n => {
     const p = profiles[n];
     // tag each row with its origin so the merged view can still attribute work
     (p.rows||[]).forEach(r => rows.push({...r, profile:n}));
+    (p.hour_rows||[]).forEach(r => hour_rows.push({...r, profile:n}));
     (p.hours||[]).forEach(h => hours.push(h));
     (p.sessions||[]).forEach(s => sess.push(s));
     (p.live||[]).forEach(L => live.push({...L, profile:n}));
@@ -3811,6 +3898,7 @@ function buildAll(profiles){
     NS[k].sort((a,b)=>b.calls-a.calls); NS[k] = NS[k].slice(0,5);
   });
   return {rows, hours, sessions:sess, live, active, health, recent_sessions, resend, heatmap,
+          hour_rows,
           node_sessions: NS,
           end_reasons, compression_pressure,
           // Delegation outcomes merge like health does: per-child counters add
@@ -4259,16 +4347,18 @@ function renderFailures(F){
 //               residency is half on CPU and will be ~10x slower; VRAM can
 //               look fine while throughput quietly collapses, so this is the
 //               signal that catches the failure the other two miss.
-function olBar(pct, lbl, val, invert){
+function olBar(pct, lbl, val, invert, spark){
   const p = Math.max(0, Math.min(100, pct||0));
   // invert: for residency HIGH is good; for queue/vram/cpu/gpu HIGH is bad.
   // Load thresholds are tighter than the old 70/90 — a GPU at 85% is already
   // the thing slowing you down, so it must read amber, not green.
   const sev = invert ? (p >= 90 ? 'good' : p >= 60 ? 'warn' : 'bad')
                      : (p >= 85 ? 'bad'  : p >= 60 ? 'warn' : 'good');
+  const sevColor = sev === 'bad' ? 'hsl(0 72% 55%)' : sev === 'warn' ? 'hsl(38 92% 52%)' : 'hsl(142 65% 45%)';
+  const sp = spark ? sparkSvg(spark, sevColor, {w:44,h:14,pad:1.5}) : '';
   return `<div class="olrow"><span class="ollbl">${lbl}</span>` +
          `<span class="olbar"><i class="olfill ${sev}${invert?' inv':''}" style="width:${p}%"></i></span>` +
-         `<span class="olval ${sev}">${val}</span></div>`;
+         `<span class="olval ${sev}">${val}</span>${sp?`<span class="olspwrap">${sp}</span>`:''}</div>`;
 }
 const GB = n => (n/1e9).toFixed(1) + 'G';
 
@@ -4278,6 +4368,24 @@ const GB = n => (n/1e9).toFixed(1) + 'G';
 // which read as the whole panel blinking in and out. Once seen, it stays:
 // an empty refresh keeps the last known hosts instead of blanking the card.
 let OL_SEEN = false;
+// Ollama itself keeps no history once a model unloads (see probe_hosts.py),
+// and the payload only ever carries the CURRENT snapshot — so any trend line
+// for cpu/gpu/gpu mem/vram/queue has to be built client-side, from whatever
+// renderOllama() has actually seen this page session. Keyed by
+// "hostLabel\tmetric" so two hosts never share a series. Capped at 20 points
+// (~100s of history at the 5s live-poll cadence) — enough to show direction
+// without the array growing unbounded over a long-open tab.
+const OL_HIST = new Map();
+const OL_HIST_CAP = 20;
+function olTrack(host, metric, val){
+  if (val == null) return null;
+  const key = host + '\t' + metric;
+  const arr = OL_HIST.get(key) || [];
+  arr.push(val);
+  if (arr.length > OL_HIST_CAP) arr.shift();
+  OL_HIST.set(key, arr);
+  return arr;
+}
 function renderOllama(ol){
   const wrap = $('ollama'), card = $('olcard'), sub = $('olsub');
   if (!wrap || !card) return;
@@ -4317,9 +4425,9 @@ function renderOllama(ol){
     // CPU/GPU only exist for the box we run on; a remote Ollama exposes no
     // telemetry, so its bars are omitted rather than shown as a fake zero.
     const loadBars = L ? (
-      (L.cpu != null ? olBar(L.cpu, 'cpu', L.cpu.toFixed(0) + '%') : '') +
-      (L.gpu != null ? olBar(L.gpu, 'gpu', L.gpu.toFixed(0) + '%') : '') +
-      (L.gpu_mem != null ? olBar(L.gpu_mem, 'gpu mem', L.gpu_mem.toFixed(0) + '%') : '')
+      (L.cpu != null ? olBar(L.cpu, 'cpu', L.cpu.toFixed(0) + '%', false, olTrack(h.label,'cpu',L.cpu)) : '') +
+      (L.gpu != null ? olBar(L.gpu, 'gpu', L.gpu.toFixed(0) + '%', false, olTrack(h.label,'gpu',L.gpu)) : '') +
+      (L.gpu_mem != null ? olBar(L.gpu_mem, 'gpu mem', L.gpu_mem.toFixed(0) + '%', false, olTrack(h.label,'gpu_mem',L.gpu_mem)) : '')
     ) : '';
     const gpuNames = L && L.gpus && L.gpus.length
       ? `<div class="olgpus">${L.gpus.map(g =>
@@ -4345,8 +4453,8 @@ function renderOllama(ol){
       `<span class="olbadge">▣ local</span>` +
       `<span class="olver">v${h.version||'?'} · ${h.ms}ms · ${h.installed} models</span></div>` +
       alias +
-      olBar(q ? Math.min(100, q*25) : 0, 'queue', q ? `${q} waiting` : 'clear') +
-      olBar(vramPct, 'vram', GB(vramUsed)) +
+      olBar(q ? Math.min(100, q*25) : 0, 'queue', q ? `${q} waiting` : 'clear', false, olTrack(h.label,'queue',Math.min(100, q*25))) +
+      olBar(vramPct, 'vram', GB(vramUsed), false, olTrack(h.label,'vram',vramPct)) +
       loadBars + gpuNames +
       models +
       `<div class="olwork"><span>24h: <b>${(w.calls||0).toLocaleString()}</b> calls</span>` +
@@ -6189,7 +6297,10 @@ TOOLCOLORS = buildToolColors(allToolNames());
 current = ('All' in DATA.profiles) ? 'All' : Object.keys(DATA.profiles)[0];
 tabs();
 renderResolution();
-$('from').onchange=render; $('to').onchange=render;
+// #131: editing either date input exits hour-preset mode (the two are
+// mutually exclusive — see HOUR_RANGE's own comment).
+const exitHourRange = () => { HOUR_RANGE = null; render(); };
+$('from').onchange=exitHourRange; $('to').onchange=exitHourRange;
 // P4-04 (#41): the exclude-Unattributed toggle re-renders just the
 // projects card (via a full render() — simplest correct option since
 // render() is idempotent and cheap enough to run on a checkbox click).
@@ -6228,6 +6339,10 @@ function bootDone(){
     b.classList.add('gone');
     setTimeout(()=>b.remove(), 400);
   }
+  // First paint is done — every chart build from here on is a refresh, not
+  // an entrance. mk() reads this flag to stop replaying draw-in animations
+  // on the 60s auto-refresh and the 5s live tick.
+  CHART_ANIM_DONE = true;
 }
 requestAnimationFrame(()=>requestAnimationFrame(bootDone));
 setTimeout(bootDone, 4000);

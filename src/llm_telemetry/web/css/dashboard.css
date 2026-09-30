@@ -843,6 +843,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kring svg{width:100%;height:100%;display:block}
 .kspwrap{display:inline-block;width:64px;height:20px;vertical-align:middle;margin-left:6px}
 .kspark{width:100%;height:100%;display:block}
+.kpi-icon{display:inline-block;margin-right:4px;opacity:.7}
+.olspwrap{display:inline-block;width:44px;height:14px;vertical-align:middle;margin-left:6px}
 
  /* Unpriced / free-tier cost states (P9-05, #82) */
  .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;

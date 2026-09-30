@@ -128,6 +128,35 @@ setTimeout(()=>{
  // staleness
  chk(typeof ol.age==='number','telemetry carries an age',`(${ol.age}s)`);
 
+ // ---- trend sparklines on local-inference bars (icons + trend charts -------
+ // everywhere, incl. cpu/gpu/queue — user request) ---------------------------
+ // olTrack()/OL_HIST build history client-side across renderOllama() calls
+ // (Ollama itself keeps no history — see build_dashboard.py's own comment).
+ // One call alone can never produce a sparkline (sparkSvg needs 2+ distinct
+ // points); render the SAME host twice with a different metric value so a
+ // real trend exists, then confirm the bar actually grew a .olspwrap/.kspark.
+ {
+   const selfHost = od.hosts.find(h => h.is_self) || od.hosts[0];
+   const base = { label: selfHost.label, up: true, loaded: [], urls: [], queue: 1,
+                  load: { cpu: 10, gpu: 5, gpu_mem: 5 } };
+   w.eval(`OL_HIST.clear()`);
+   w.eval(`renderOllama({hosts: [${JSON.stringify({...base, queue: 1})}]})`);
+   w.eval(`renderOllama({hosts: [${JSON.stringify({...base, queue: 3})}]})`);
+   const queueRow = [...d.querySelectorAll('#ollama .olrow')]
+     .find(r => /queue/.test(r.querySelector('.ollbl')?.textContent || ''));
+   chk(!!queueRow && !!queueRow.querySelector('.olspwrap'),
+       'a queue bar with 2+ distinct real samples grows a trend sparkline');
+
+   // Negative control: a SINGLE sample can never fabricate a trend — clearing
+   // history and rendering once must NOT show a sparkline on that bar.
+   w.eval(`OL_HIST.clear()`);
+   w.eval(`renderOllama({hosts: [${JSON.stringify(base)}]})`);
+   const queueRowOnce = [...d.querySelectorAll('#ollama .olrow')]
+     .find(r => /queue/.test(r.querySelector('.ollbl')?.textContent || ''));
+   chk(!!queueRowOnce && !queueRowOnce.querySelector('.olspwrap'),
+       'a single sample renders no sparkline (no fake trend from one data point)');
+ }
+
  console.log(`\n${p} passed, ${f} failed`);
  process.exit(f?1:0);
-},900);
+ },900);

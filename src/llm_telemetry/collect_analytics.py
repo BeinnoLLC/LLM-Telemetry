@@ -47,6 +47,31 @@ group by d, u.model, u.billing_provider, task, u.session_id
 order by d
 """
 
+# Hour-granularity twin of ROWS, for the dashboard's sub-day range presets
+# (1h/6h/12h — #131). ROWS is DAY grain on purpose (the from/to range filter
+# used to be date-only, so day grain kept the payload small); this adds an
+# hour column on the SAME underlying table so an hour preset can filter rows
+# by real clock time instead of collapsing to "today". Scoped to the last 72
+# hours only — anything older is already covered by ROWS at day grain, and an
+# unbounded hour-grain export would balloon the payload for no UI benefit
+# (no preset needs hour precision past a couple of days back).
+HOUR_WINDOW_S = 259200  # 72h
+HOUR_ROWS = """
+select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
+       cast(strftime('%H', coalesce(u.last_seen, s.started_at),'unixepoch','localtime') as int) h,
+       u.model, u.billing_provider, coalesce(nullif(u.task,''),'main') task,
+       sum(u.api_call_count), sum(u.input_tokens), sum(u.output_tokens),
+       sum(u.cache_read_tokens), sum(u.cache_write_tokens), sum(u.reasoning_tokens),
+       sum(u.estimated_cost_usd), sum(u.actual_cost_usd),
+       count(distinct u.session_id),
+       max(u.billing_base_url),
+       u.session_id
+from session_model_usage u join sessions s on s.id = u.session_id
+where coalesce(u.last_seen, s.started_at) > strftime('%s','now') - {window}
+group by d, h, u.model, u.billing_provider, task, u.session_id
+order by d, h
+""".format(window=HOUR_WINDOW_S)
+
 # All sessions' identity fields, for project resolution (P4-01/P4-03) and
 # cost attribution (P10-07, #95): one query, loaded once per profile into a
 # dict, so walking parent_session_id never re-hits the database per hop.
@@ -613,6 +638,7 @@ def build_latency(con):
 
 
 COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
+HOUR_COLS = "date hour model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 
 # Work categories. Order matters: the live phase text is checked first for
 # every category, because it says what the session is doing RIGHT NOW. The tool
@@ -726,6 +752,47 @@ def fetch_rows(con):
     return rows
 
 
+def fetch_hour_rows(con):
+    """Hour-grain twin of fetch_rows (#131): same resolution (project,
+    source) applied to HOUR_ROWS/HOUR_COLS instead of ROWS/COLS, so the
+    dashboard's hour range presets (1h/6h/12h) filter real per-hour data
+    instead of collapsing to a whole day. Scoped to HOUR_WINDOW_S — see the
+    query's own docstring for why that bound exists.
+    """
+    sessions_by_id = {
+        row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3],
+                 "source": row[4], "display_name": row[5], "git_branch": row[6]}
+        for row in con.execute(SESSION_IDENTITY)
+    }
+    rows = [dict(zip(HOUR_COLS, r)) for r in con.execute(HOUR_ROWS)]
+    for r in rows:
+        r["project"] = project_of_session(r["session_id"], sessions_by_id)
+        r["source"] = (sessions_by_id.get(r["session_id"]) or {}).get("source")
+    return rows
+
+
+def _enrich_rows(rows, catalog):
+    """Price + bandwidth-enrich rows in place. Shared by the day-grain
+    (fetch_rows) and hour-grain (fetch_hour_rows, #131) paths so the two can
+    never compute a different cost or wire-byte estimate for the same call.
+    """
+    for r in rows:
+        r.update(pricing.price_row(
+            {"provider": r["provider"], "model": r["model"],
+             "base_url": r.get("base_url"),
+             "input_tokens": r["inp"], "output_tokens": r["outp"],
+             "cache_read": r["cread"]}, catalog))
+        # Estimated wire bytes for this row, bucketed by destination.
+        # Same helper the live collector uses, so the tables and the
+        # live view can never disagree about what a token costs to send.
+        up, down, lan_up, lan_down = bandwidth.split_row(
+            r.get("base_url"), r["inp"], r["outp"], r["cread"], r.get("cwrite"))
+        r["up_bytes"] = up
+        r["down_bytes"] = down
+        r["lan_up_bytes"] = lan_up
+        r["lan_down_bytes"] = lan_down
+
+
 def unreadable(db):
     """Why a profile's state.db cannot be read, or None if it can (P5-04).
 
@@ -770,21 +837,13 @@ def build():
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
             rows = fetch_rows(con)
-            for r in rows:
-                r.update(pricing.price_row(
-                    {"provider": r["provider"], "model": r["model"],
-                     "base_url": r.get("base_url"),
-                     "input_tokens": r["inp"], "output_tokens": r["outp"],
-                     "cache_read": r["cread"]}, catalog))
-                # Estimated wire bytes for this row, bucketed by destination.
-                # Same helper the live collector uses, so the tables and the
-                # live view can never disagree about what a token costs to send.
-                up, down, lan_up, lan_down = bandwidth.split_row(
-                    r.get("base_url"), r["inp"], r["outp"], r["cread"], r.get("cwrite"))
-                r["up_bytes"] = up
-                r["down_bytes"] = down
-                r["lan_up_bytes"] = lan_up
-                r["lan_down_bytes"] = lan_down
+            _enrich_rows(rows, catalog)
+            # #131: hour-grain rows for the dashboard's sub-day range
+            # presets, enriched with the SAME pricing/bandwidth helper as
+            # the day-grain rows so the two can never disagree about what a
+            # call cost or weighed on the wire.
+            hour_rows = fetch_hour_rows(con)
+            _enrich_rows(hour_rows, catalog)
             hours = [{"date": d, "hour": h, "calls": c} for d, h, c in con.execute(HOURS)]
             # P4-05 (#101), part 2: repo & branch attribution, over the SAME
             # per-row grain fetch_rows() already resolved.
@@ -894,6 +953,7 @@ def build():
             })
         health.sort(key=lambda h: (-h["fail"], -h["total"]))
         out["profiles"][name] = {"rows": rows, "hours": hours, "sessions": sess,
+                                 "hour_rows": hour_rows,
                                  "active": active,
                                  "live": live,
                                  "tools_recent": tools_recent,
