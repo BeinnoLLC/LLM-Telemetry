@@ -1563,6 +1563,20 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="text-[length:var(--fs-xs)]" id="setcolormsg" role="status"></span>
    </div>
   </div>
+  <!-- #128: per-profile logo, same storage pattern as #126's colours above —
+       a browser-local data: URI override, so this stays a single self-
+       contained HTML file with no upload endpoint to build or secure.
+       profileIconHtml() is the one call site every tab/badge reads, so a
+       change here reaches all of them without hunting down each usage. -->
+  <div class="card p-4 mb-3" id="setlogocard">
+   <div class="flex items-center gap-2 flex-wrap mb-1">
+    <div class="lbl">Profile logos</div>
+   </div>
+   <p class="text-[length:var(--fs-sm)] mb-3">Upload a small square image per profile — shown in its tab. Falls
+    back to a colour-matched initial when unset. Stored in this browser only, up to 200KB per image; it
+    never changes what is collected.</p>
+   <div class="setgrid" id="setlogogrid"></div>
+  </div>
  </div>
 
  <div class="view" data-view="Logs" hidden>
@@ -6704,6 +6718,7 @@ function renderSettings(){
   renderSetDeriv();
   renderSetFacts();
   renderSetColors();
+  renderSetLogos();
 }
 
 // ---- #126: per-profile colour picker on the Settings page -----------------
@@ -6768,6 +6783,72 @@ function setColorsInstall(){
     tabs(); renderLive();
     const m = document.getElementById('setcolormsg');
     if (m) { m.textContent = 'Reset to name-derived defaults.'; m.className = 'text-[length:var(--fs-xs)] ok'; }
+  });
+}
+
+// ---- #128: per-profile logo uploader on the Settings page -----------------
+// One row per profile that has ever been seen (PV_ALL) — a file picker plus
+// a live preview using the exact same profileIconHtml() the tabs render, so
+// the preview can never drift from what actually shows up in the strip.
+function setLogoRow(n){
+  const logo = profileLogo(n);
+  return `<div class="setf" data-slname="${escA(n)}">
+    <span class="setl">${esc(n)}</span>
+    <span class="setin" style="gap:8px">
+      ${profileIconHtml(n, 28)}
+      <input type="file" accept="image/*" data-slfile="${escA(n)}" style="flex:1;min-width:0;font-size:var(--fs-xs)">
+      ${logo ? `<button type="button" data-slclear="${escA(n)}" class="chip" style="padding:2px 8px">Clear</button>` : ''}
+    </span>
+    <span class="seth" data-slmsg="${escA(n)}">${logo ? 'Custom logo set.' : 'No logo — showing the name-derived initial.'}</span>
+  </div>`;
+}
+function renderSetLogos(){
+  const box = document.getElementById('setlogogrid');
+  if (!box || !PV_ALL) return;
+  const names = Object.keys(PV_ALL);
+  // Logos change via file picker (not a live-dragging slider), so this can
+  // safely rebuild every time — no drag-smoothness concern like colours.
+  box.innerHTML = names.map(setLogoRow).join('') || '<div class="muted text-[length:var(--fs-sm)]">No profiles yet.</div>';
+}
+function setLogosInstall(){
+  const box = document.getElementById('setlogogrid');
+  if (!box) return;
+  const setRowMsg = (n, text, kind) => {
+    const row = box.querySelector(`[data-slname="${CSS.escape(n)}"]`);
+    if (!row) return;
+    const msg = row.querySelector('.seth');
+    if (msg) { msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : ''); }
+  };
+  box.addEventListener('change', e => {
+    const inp = e.target.closest && e.target.closest('[data-slfile]');
+    if (!inp) return;
+    const n = inp.dataset.slfile;
+    const file = inp.files && inp.files[0];
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      setRowMsg(n, 'Not an image file — ignored.', 'setbad'); inp.value = ''; return;
+    }
+    if (file.size > PROFILE_LOGO_MAX_BYTES) {
+      setRowMsg(n, `Too large (${(file.size/1024).toFixed(0)}KB) — max ${PROFILE_LOGO_MAX_BYTES/1024}KB.`, 'setbad');
+      inp.value = ''; return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      profileLogoSet(n, reader.result);
+      renderSetLogos();  // rebuilds this row's preview + every other row untouched
+      tabs();            // the tab strip must pick it up immediately, same as colours (#126)
+      setRowMsg(n, 'Custom logo set.', 'setok');
+    };
+    reader.onerror = () => setRowMsg(n, 'Could not read that file.', 'setbad');
+    reader.readAsDataURL(file);
+  });
+  box.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('[data-slclear]');
+    if (!btn) return;
+    const n = btn.dataset.slclear;
+    profileLogoSet(n, null);
+    renderSetLogos();
+    tabs();
   });
 }
 
@@ -6892,6 +6973,7 @@ function settingsInstall(){
     setMsg('Defaults filled in; not saved yet.', 'info');
   });
   setColorsInstall();
+  setLogosInstall();
   loadSettings();
 }
 
@@ -7407,6 +7489,41 @@ function profileHue(n){
   const o = pvHueOverride(n);
   return o === null ? hashHue(n) : o;
 }
+// ---- Per-profile logos (#128) -----------------------------------------
+// Same storage pattern as PV_HUE above: a browser-local display preference,
+// not server data, stored as a data: URI so the dashboard stays one
+// self-contained file with no upload endpoint to build or secure. A cap of
+// 200KB raw (BEFORE base64 inflation) keeps a careless PNG from bloating
+// localStorage or the JSON blob a data: URI turns into once stored.
+const PROFILE_LOGO_MAX_BYTES = 200 * 1024;
+const PV_LOGO = {};
+function pvLogoKey(n){ return 'llmtelemetry.profileLogo.' + n; }
+function profileLogo(n){
+  if (n in PV_LOGO) return PV_LOGO[n];
+  let v = null;
+  try { v = localStorage.getItem(pvLogoKey(n)); } catch(e){}
+  PV_LOGO[n] = v || null;
+  return PV_LOGO[n];
+}
+function profileLogoSet(n, dataUri){
+  PV_LOGO[n] = dataUri || null;
+  try {
+    if (dataUri) localStorage.setItem(pvLogoKey(n), dataUri);
+    else localStorage.removeItem(pvLogoKey(n));
+  } catch(e){}
+}
+// One <img> when a logo is set, else a colour-matched initial dot (the
+// "falls back to the default icon when unset" acceptance line) — same hue
+// as the profile's tab/badge colour so the fallback still visually ties
+// back to that profile everywhere else it appears.
+function profileIconHtml(n, px){
+  px = px || 18;
+  const uri = profileLogo(n);
+  if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
+  const h = profileHue(n);
+  const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
+  return `<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
+}
 // Full, unfiltered profile map — captured once at boot so a toggled-off
 // profile can come back without refetching (DATA.profiles is the filtered set).
 let PV_ALL = null;
@@ -7464,7 +7581,7 @@ function tabs(){
         : `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)"`;
       return `<button data-tab="${n}" data-off="${off?1:0}" onclick="pvToggle('${n}')"`
            + ` oncontextmenu="pvMenu(event,'${esc(n)}')" title="${off?'Off — click to turn on':'On — click to turn off'}"`
-           + ` class="px-5 py-3 rounded-md border text-[length:var(--fs-lg)] taboff" ${st}>${n}</button>`;
+           + ` class="px-5 py-3 rounded-md border text-[length:var(--fs-lg)] taboff flex items-center gap-2" ${st}>${profileIconHtml(n,16)}<span>${n}</span></button>`;
     }).join('');
   // a compact "N/M on" readout so the merge's extent is stated, not implied
   const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
