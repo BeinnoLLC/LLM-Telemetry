@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "comment": "Marks web/js/*.js as ES modules so node, ESLint and bundlers read them as ESM (the page itself inlines them at build time — see src/llm_telemetry/webassets.py)."
+}

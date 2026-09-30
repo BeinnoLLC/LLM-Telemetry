@@ -23,9 +23,9 @@ OUT  = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "dashboard.ht
 # string literal), inlined into <style> at build time so the page stays a
 # single self-contained file you can open straight off disk.
 CSS_PATH = os.path.join(HERE, "web", "css", "dashboard.css")
-# P2-03 (#37): the HTML shell is a real .html file for the same reasons the
-# CSS moved out in P2-01: a 7k-line Python string literal is opaque to every
-# HTML tool (syntax highlighting, tag matching, HTML validators).
+# P2-03 (#37) + P2-02 (#27): the page shell is a real .html file and the
+# JavaScript is real ES modules under web/js/ — see webassets for why the
+# modules are inlined back into one file instead of being loaded by the page.
 SHELL_PATH = os.path.join(HERE, "web", "dashboard.html")
 
 # LLM_TELEMETRY_NO_COLLECT renders from whatever JSON is already on disk.
@@ -41,7 +41,8 @@ else:
     # help page cannot drift from the config the agent actually loads.
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router",
                     str(CFG.reports_dir / "router-data.json")], check=True)
-from .schema import SCHEMA_VERSION  # noqa: E402 - after module-level build-time subprocess calls
+from .schema import SCHEMA_VERSION  # noqa: E402
+from .webassets import inline_js, read_css, read_shell  # noqa: E402 - after module-level build-time subprocess calls
 
 
 def _load_versioned(path):
@@ -103,13 +104,15 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
                        "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
          "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
                                 "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
-with open(CSS_PATH, encoding="utf-8") as _f:
-    _DASHBOARD_CSS = _f.read()
-with open(SHELL_PATH, encoding="utf-8") as _f:
-    SHELL = _f.read()
+_DASHBOARD_CSS = read_css()
+SHELL = read_shell()
+
+
+_JS_INLINE = inline_js()
 
 html = (SHELL.replace("__PRICE_TTL__", _ttl_label())
              .replace("__DASHBOARD_CSS__", _DASHBOARD_CSS)
+             .replace("__DASHBOARD_JS__", _JS_INLINE)
              .replace("__DATA__", json.dumps(data, default=str))
              .replace("__POWER__", json.dumps(POWER))
              .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))

@@ -1,0 +1,1611 @@
+{
+ "prelude": "\n",
+ "order": [
+  {
+   "mod": "main",
+   "name": "DATA",
+   "start": 15
+  },
+  {
+   "mod": "main",
+   "name": "LOCAL_HOSTS",
+   "start": 18
+  },
+  {
+   "mod": "main",
+   "name": "SCHEMA_VERSION",
+   "start": 23
+  },
+  {
+   "mod": "views",
+   "name": "schemaProblem",
+   "start": 19
+  },
+  {
+   "mod": "views",
+   "name": "showSchemaError",
+   "start": 27
+  },
+  {
+   "mod": "views",
+   "name": "flash",
+   "start": 57
+  },
+  {
+   "mod": "views",
+   "name": "renderResolution",
+   "start": 102
+  },
+  {
+   "mod": "main",
+   "name": "css",
+   "start": 24
+  },
+  {
+   "mod": "palette",
+   "name": "AC",
+   "start": 11
+  },
+  {
+   "mod": "palette",
+   "name": "readTheme",
+   "start": 12
+  },
+  {
+   "mod": "palette",
+   "name": "PAL",
+   "start": 14
+  },
+  {
+   "mod": "palette",
+   "name": "ICON_SVG",
+   "start": 22
+  },
+  {
+   "mod": "palette",
+   "name": "icon",
+   "start": 42
+  },
+  {
+   "mod": "palette",
+   "name": "fade",
+   "start": 45
+  },
+  {
+   "mod": "palette",
+   "name": "FAMILY",
+   "start": 58
+  },
+  {
+   "mod": "palette",
+   "name": "FAM_OTHER",
+   "start": 69
+  },
+  {
+   "mod": "palette",
+   "name": "hashHue",
+   "start": 70
+  },
+  {
+   "mod": "palette",
+   "name": "famOf",
+   "start": 76
+  },
+  {
+   "mod": "palette",
+   "name": "FAM_HUE_SPREAD",
+   "start": 94
+  },
+  {
+   "mod": "palette",
+   "name": "buildColors",
+   "start": 95
+  },
+  {
+   "mod": "palette",
+   "name": "allModelNames",
+   "start": 121
+  },
+  {
+   "mod": "palette",
+   "name": "COLORS",
+   "start": 137
+  },
+  {
+   "mod": "palette",
+   "name": "colorOf",
+   "start": 142
+  },
+  {
+   "mod": "palette",
+   "name": "fmt",
+   "start": 147
+  },
+  {
+   "mod": "palette",
+   "name": "fmtB",
+   "start": 150
+  },
+  {
+   "mod": "palette",
+   "name": "fmtRate",
+   "start": 155
+  },
+  {
+   "mod": "palette",
+   "name": "bwPrev",
+   "start": 158
+  },
+  {
+   "mod": "palette",
+   "name": "money",
+   "start": 159
+  },
+  {
+   "mod": "palette",
+   "name": "short",
+   "start": 160
+  },
+  {
+   "mod": "palette",
+   "name": "esc",
+   "start": 161
+  },
+  {
+   "mod": "palette",
+   "name": "$",
+   "start": 163
+  },
+  {
+   "mod": "palette",
+   "name": "emptyHTML",
+   "start": 168
+  },
+  {
+   "mod": "charts",
+   "name": "charts",
+   "start": 10
+  },
+  {
+   "mod": "router",
+   "name": "view",
+   "start": 17
+  },
+  {
+   "mod": "router",
+   "name": "HOUR_RANGE",
+   "start": 23
+  },
+  {
+   "mod": "charts",
+   "name": "CHART_ANIM_DONE",
+   "start": 11
+  },
+  {
+   "mod": "charts",
+   "name": "noLeg",
+   "start": 13
+  },
+  {
+   "mod": "charts",
+   "name": "bounds",
+   "start": 15
+  },
+  {
+   "mod": "router",
+   "name": "setRange",
+   "start": 33
+  },
+  {
+   "mod": "router",
+   "name": "setHourRange",
+   "start": 37
+  },
+  {
+   "mod": "router",
+   "name": "hourRowsFor",
+   "start": 42
+  },
+  {
+   "mod": "router",
+   "name": "updateRangeToggleLabel",
+   "start": 65
+  },
+  {
+   "mod": "router",
+   "name": "presets",
+   "start": 79
+  },
+  {
+   "mod": "palette",
+   "name": "labelColor",
+   "start": 173
+  },
+  {
+   "mod": "palette",
+   "name": "LABEL_FONT",
+   "start": 187
+  },
+  {
+   "mod": "charts",
+   "name": "tintTicks",
+   "start": 19
+  },
+  {
+   "mod": "charts",
+   "name": "mk",
+   "start": 24
+  },
+  {
+   "mod": "charts",
+   "name": "agg",
+   "start": 78
+  },
+  {
+   "mod": "views",
+   "name": "PROV",
+   "start": 125
+  },
+  {
+   "mod": "views",
+   "name": "LOCAL_RE",
+   "start": 143
+  },
+  {
+   "mod": "views",
+   "name": "CLOUD_SUFFIX",
+   "start": 148
+  },
+  {
+   "mod": "views",
+   "name": "provOf",
+   "start": 149
+  },
+  {
+   "mod": "views",
+   "name": "provBadge",
+   "start": 183
+  },
+  {
+   "mod": "views",
+   "name": "MODEL_PROV",
+   "start": 193
+  },
+  {
+   "mod": "views",
+   "name": "buildModelProv",
+   "start": 194
+  },
+  {
+   "mod": "views",
+   "name": "provIcon",
+   "start": 201
+  },
+  {
+   "mod": "palette",
+   "name": "ic",
+   "start": 188
+  },
+  {
+   "mod": "views",
+   "name": "resendOf",
+   "start": 206
+  },
+  {
+   "mod": "views",
+   "name": "renderBandwidthPanel",
+   "start": 211
+  },
+  {
+   "mod": "palette",
+   "name": "costCell",
+   "start": 200
+  },
+  {
+   "mod": "views",
+   "name": "unpricedModels",
+   "start": 310
+  },
+  {
+   "mod": "views",
+   "name": "renderUnpriced",
+   "start": 321
+  },
+  {
+   "mod": "views",
+   "name": "RESEND_MIN",
+   "start": 337
+  },
+  {
+   "mod": "palette",
+   "name": "escA",
+   "start": 214
+  },
+  {
+   "mod": "views",
+   "name": "renderResend",
+   "start": 338
+  },
+  {
+   "mod": "views",
+   "name": "ALERT_ICON",
+   "start": 372
+  },
+  {
+   "mod": "views",
+   "name": "ALERT_COLOR",
+   "start": 373
+  },
+  {
+   "mod": "views",
+   "name": "renderAlerts",
+   "start": 378
+  },
+  {
+   "mod": "drawer",
+   "name": "SF_FILTER_KEYS",
+   "start": 13
+  },
+  {
+   "mod": "drawer",
+   "name": "sfParseQuery",
+   "start": 15
+  },
+  {
+   "mod": "drawer",
+   "name": "sfMatch",
+   "start": 38
+  },
+  {
+   "mod": "drawer",
+   "name": "sfSearch",
+   "start": 60
+  },
+  {
+   "mod": "views",
+   "name": "render",
+   "start": 396
+  },
+  {
+   "mod": "palette",
+   "name": "pick",
+   "start": 215
+  },
+  {
+   "mod": "palette",
+   "name": "CAT",
+   "start": 225
+  },
+  {
+   "mod": "palette",
+   "name": "catOf",
+   "start": 238
+  },
+  {
+   "mod": "palette",
+   "name": "ago",
+   "start": 239
+  },
+  {
+   "mod": "charts",
+   "name": "bwRow",
+   "start": 85
+  },
+  {
+   "mod": "views",
+   "name": "XF_SEEN",
+   "start": 683
+  },
+  {
+   "mod": "views",
+   "name": "renderXfer",
+   "start": 684
+  },
+  {
+   "mod": "views",
+   "name": "renderHome",
+   "start": 729
+  },
+  {
+   "mod": "views",
+   "name": "liveModelsOpen",
+   "start": 843
+  },
+  {
+   "mod": "views",
+   "name": "modelsOf",
+   "start": 844
+  },
+  {
+   "mod": "views",
+   "name": "modelsBadge",
+   "start": 845
+  },
+  {
+   "mod": "views",
+   "name": "lmMetric",
+   "start": 861
+  },
+  {
+   "mod": "views",
+   "name": "LM_METRIC",
+   "start": 862
+  },
+  {
+   "mod": "views",
+   "name": "modelsShare",
+   "start": 869
+  },
+  {
+   "mod": "views",
+   "name": "modelsPanel",
+   "start": 894
+  },
+  {
+   "mod": "flow",
+   "name": "Q_SEEN",
+   "start": 11
+  },
+  {
+   "mod": "views",
+   "name": "fillChip",
+   "start": 961
+  },
+  {
+   "mod": "views",
+   "name": "qChip",
+   "start": 971
+  },
+  {
+   "mod": "views",
+   "name": "flipMove",
+   "start": 986
+  },
+  {
+   "mod": "views",
+   "name": "renderConcurrency",
+   "start": 1008
+  },
+  {
+   "mod": "views",
+   "name": "_unattrPattern",
+   "start": 1062
+  },
+  {
+   "mod": "views",
+   "name": "unattrPattern",
+   "start": 1063
+  },
+  {
+   "mod": "views",
+   "name": "UNATTR_LABEL",
+   "start": 1087
+  },
+  {
+   "mod": "views",
+   "name": "renderLatency",
+   "start": 1093
+  },
+  {
+   "mod": "views",
+   "name": "renderAttribution",
+   "start": 1131
+  },
+  {
+   "mod": "views",
+   "name": "REPO_EXPANDED",
+   "start": 1188
+  },
+  {
+   "mod": "views",
+   "name": "renderRepoBranch",
+   "start": 1190
+  },
+  {
+   "mod": "views",
+   "name": "renderProjects",
+   "start": 1220
+  },
+  {
+   "mod": "views",
+   "name": "PROJ_MATRIX_MAX_COLS",
+   "start": 1299
+  },
+  {
+   "mod": "charts",
+   "name": "PROJ_WEIGHT",
+   "start": 119
+  },
+  {
+   "mod": "charts",
+   "name": "PROJ_WEIGHT_LABELS",
+   "start": 122
+  },
+  {
+   "mod": "charts",
+   "name": "weightValue",
+   "start": 133
+  },
+  {
+   "mod": "views",
+   "name": "renderProjectMatrix",
+   "start": 1305
+  },
+  {
+   "mod": "views",
+   "name": "pdFocusReturn",
+   "start": 1420
+  },
+  {
+   "mod": "views",
+   "name": "pdOpenState",
+   "start": 1421
+  },
+  {
+   "mod": "views",
+   "name": "pdOpen",
+   "start": 1427
+  },
+  {
+   "mod": "views",
+   "name": "pdClose",
+   "start": 1511
+  },
+  {
+   "mod": "views",
+   "name": "pdKeydown",
+   "start": 1526
+  },
+  {
+   "mod": "views",
+   "name": "installProjectDrilldown",
+   "start": 1543
+  },
+  {
+   "mod": "views",
+   "name": "installProjWeight",
+   "start": 1552
+  },
+  {
+   "mod": "views",
+   "name": "PROJ_FILTER_VIEWS",
+   "start": 1581
+  },
+  {
+   "mod": "views",
+   "name": "populateProjFilterSelect",
+   "start": 1583
+  },
+  {
+   "mod": "views",
+   "name": "syncProjFilterUI",
+   "start": 1603
+  },
+  {
+   "mod": "views",
+   "name": "installProjFilter",
+   "start": 1613
+  },
+  {
+   "mod": "charts",
+   "name": "projDistNormalized",
+   "start": 149
+  },
+  {
+   "mod": "views",
+   "name": "renderProjectDistribution",
+   "start": 1634
+  },
+  {
+   "mod": "views",
+   "name": "renderProjDistLegend",
+   "start": 1732
+  },
+  {
+   "mod": "views",
+   "name": "PROJ_TREND_TOP_N",
+   "start": 1758
+  },
+  {
+   "mod": "charts",
+   "name": "projTrendStacked",
+   "start": 151
+  },
+  {
+   "mod": "views",
+   "name": "renderProjectTrend",
+   "start": 1759
+  },
+  {
+   "mod": "views",
+   "name": "renderProjTrendLegend",
+   "start": 1851
+  },
+  {
+   "mod": "flow",
+   "name": "renderQueue",
+   "start": 13
+  },
+  {
+   "mod": "flow",
+   "name": "renderAgents",
+   "start": 195
+  },
+  {
+   "mod": "live",
+   "name": "renderLive",
+   "start": 19
+  },
+  {
+   "mod": "charts",
+   "name": "GAUGE_PREV",
+   "start": 153
+  },
+  {
+   "mod": "charts",
+   "name": "radialRing",
+   "start": 163
+  },
+  {
+   "mod": "charts",
+   "name": "sparkSvg",
+   "start": 196
+  },
+  {
+   "mod": "charts",
+   "name": "loeIcon",
+   "start": 216
+  },
+  {
+   "mod": "live",
+   "name": "mergeDelegations",
+   "start": 124
+  },
+  {
+   "mod": "main",
+   "name": "buildAll",
+   "start": 25
+  },
+  {
+   "mod": "views",
+   "name": "FKIND",
+   "start": 1873
+  },
+  {
+   "mod": "views",
+   "name": "installKindCSS",
+   "start": 1888
+  },
+  {
+   "mod": "views",
+   "name": "fk",
+   "start": 1898
+  },
+  {
+   "mod": "views",
+   "name": "FAILTRACK",
+   "start": 1903
+  },
+  {
+   "mod": "views",
+   "name": "rateColor",
+   "start": 1905
+  },
+  {
+   "mod": "views",
+   "name": "renderDeleg",
+   "start": 1911
+  },
+  {
+   "mod": "views",
+   "name": "renderHealth",
+   "start": 1974
+  },
+  {
+   "mod": "views",
+   "name": "renderLifecycle",
+   "start": 2038
+  },
+  {
+   "mod": "views",
+   "name": "OUTCOME_ABNORMAL",
+   "start": 2065
+  },
+  {
+   "mod": "views",
+   "name": "OUTCOME_LABELS",
+   "start": 2066
+  },
+  {
+   "mod": "views",
+   "name": "renderOutcomes",
+   "start": 2068
+  },
+  {
+   "mod": "views",
+   "name": "renderToolReliability",
+   "start": 2136
+  },
+  {
+   "mod": "views",
+   "name": "renderHealthSummary",
+   "start": 2175
+  },
+  {
+   "mod": "views",
+   "name": "failMsgClean",
+   "start": 2196
+  },
+  {
+   "mod": "views",
+   "name": "groupFailures",
+   "start": 2206
+  },
+  {
+   "mod": "views",
+   "name": "failKind",
+   "start": 2218
+  },
+  {
+   "mod": "views",
+   "name": "renderFailures",
+   "start": 2220
+  },
+  {
+   "mod": "charts",
+   "name": "olBar",
+   "start": 311
+  },
+  {
+   "mod": "views",
+   "name": "GB",
+   "start": 2292
+  },
+  {
+   "mod": "views",
+   "name": "OL_SEEN",
+   "start": 2299
+  },
+  {
+   "mod": "views",
+   "name": "OL_HIST",
+   "start": 2307
+  },
+  {
+   "mod": "views",
+   "name": "OL_HIST_CAP",
+   "start": 2308
+  },
+  {
+   "mod": "views",
+   "name": "olTrack",
+   "start": 2309
+  },
+  {
+   "mod": "views",
+   "name": "renderOllama",
+   "start": 2318
+  },
+  {
+   "mod": "flow",
+   "name": "FLOWSIM",
+   "start": 213
+  },
+  {
+   "mod": "flow",
+   "name": "FLOWROWS",
+   "start": 214
+  },
+  {
+   "mod": "flow",
+   "name": "flowDepth",
+   "start": 215
+  },
+  {
+   "mod": "flow",
+   "name": "flowData",
+   "start": 217
+  },
+  {
+   "mod": "flow",
+   "name": "flowFlatten",
+   "start": 252
+  },
+  {
+   "mod": "palette",
+   "name": "TOOL_FAM",
+   "start": 245
+  },
+  {
+   "mod": "palette",
+   "name": "toolFam",
+   "start": 257
+  },
+  {
+   "mod": "palette",
+   "name": "TOOLCOLORS",
+   "start": 261
+  },
+  {
+   "mod": "palette",
+   "name": "TOOL_ROSTER",
+   "start": 269
+  },
+  {
+   "mod": "palette",
+   "name": "allToolNames",
+   "start": 281
+  },
+  {
+   "mod": "palette",
+   "name": "buildToolColors",
+   "start": 291
+  },
+  {
+   "mod": "palette",
+   "name": "toolColor",
+   "start": 316
+  },
+  {
+   "mod": "flow",
+   "name": "flowSessions",
+   "start": 273
+  },
+  {
+   "mod": "flow",
+   "name": "flowColor",
+   "start": 289
+  },
+  {
+   "mod": "flow",
+   "name": "renderFlow",
+   "start": 297
+  },
+  {
+   "mod": "flow",
+   "name": "flowControls",
+   "start": 731
+  },
+  {
+   "mod": "views",
+   "name": "SRC_BADGE",
+   "start": 2409
+  },
+  {
+   "mod": "views",
+   "name": "sesstreeCollapsed",
+   "start": 2411
+  },
+  {
+   "mod": "views",
+   "name": "sesstreeNode",
+   "start": 2413
+  },
+  {
+   "mod": "views",
+   "name": "renderSessionsTree",
+   "start": 2442
+  },
+  {
+   "mod": "charts",
+   "name": "ctxSpark",
+   "start": 324
+  },
+  {
+   "mod": "views",
+   "name": "renderContext",
+   "start": 2467
+  },
+  {
+   "mod": "views",
+   "name": "installSesstree",
+   "start": 2507
+  },
+  {
+   "mod": "views",
+   "name": "renderHeatmap",
+   "start": 2520
+  },
+  {
+   "mod": "palette",
+   "name": "slugOf",
+   "start": 318
+  },
+  {
+   "mod": "router",
+   "name": "PROJECT_FILTER",
+   "start": 105
+  },
+  {
+   "mod": "router",
+   "name": "setHash",
+   "start": 110
+  },
+  {
+   "mod": "router",
+   "name": "viewFromHash",
+   "start": 118
+  },
+  {
+   "mod": "router",
+   "name": "projectFromHash",
+   "start": 128
+  },
+  {
+   "mod": "router",
+   "name": "POWER",
+   "start": 153
+  },
+  {
+   "mod": "router",
+   "name": "SET_DEFAULTS",
+   "start": 154
+  },
+  {
+   "mod": "router",
+   "name": "setState",
+   "start": 155
+  },
+  {
+   "mod": "charts",
+   "name": "usdPerSec",
+   "start": 342
+  },
+  {
+   "mod": "charts",
+   "name": "outPer1M",
+   "start": 346
+  },
+  {
+   "mod": "router",
+   "name": "setRead",
+   "start": 157
+  },
+  {
+   "mod": "router",
+   "name": "setWrite",
+   "start": 162
+  },
+  {
+   "mod": "router",
+   "name": "setInvalid",
+   "start": 167
+  },
+  {
+   "mod": "router",
+   "name": "renderSetDeriv",
+   "start": 172
+  },
+  {
+   "mod": "router",
+   "name": "renderSetFacts",
+   "start": 193
+  },
+  {
+   "mod": "router",
+   "name": "setMsg",
+   "start": 211
+  },
+  {
+   "mod": "router",
+   "name": "renderSettings",
+   "start": 217
+  },
+  {
+   "mod": "router",
+   "name": "setColorSwatch",
+   "start": 242
+  },
+  {
+   "mod": "router",
+   "name": "renderSetColors",
+   "start": 255
+  },
+  {
+   "mod": "router",
+   "name": "setColorsInstall",
+   "start": 265
+  },
+  {
+   "mod": "router",
+   "name": "setLogoRow",
+   "start": 305
+  },
+  {
+   "mod": "router",
+   "name": "renderSetLogos",
+   "start": 317
+  },
+  {
+   "mod": "router",
+   "name": "setLogosInstall",
+   "start": 325
+  },
+  {
+   "mod": "router",
+   "name": "INTERVAL_DEFAULTS",
+   "start": 408
+  },
+  {
+   "mod": "router",
+   "name": "intervalsRead",
+   "start": 413
+  },
+  {
+   "mod": "router",
+   "name": "intervalsWrite",
+   "start": 418
+  },
+  {
+   "mod": "router",
+   "name": "intervalsInvalid",
+   "start": 423
+  },
+  {
+   "mod": "router",
+   "name": "intervalsMsg",
+   "start": 427
+  },
+  {
+   "mod": "router",
+   "name": "renderIntervals",
+   "start": 433
+  },
+  {
+   "mod": "router",
+   "name": "applyIntervals",
+   "start": 445
+  },
+  {
+   "mod": "router",
+   "name": "intervalsInstall",
+   "start": 467
+  },
+  {
+   "mod": "router",
+   "name": "settingsInstall",
+   "start": 477
+  },
+  {
+   "mod": "router",
+   "name": "setCrumb",
+   "start": 495
+  },
+  {
+   "mod": "router",
+   "name": "NAV_ICONS",
+   "start": 505
+  },
+  {
+   "mod": "router",
+   "name": "NAV_GROUPS",
+   "start": 514
+  },
+  {
+   "mod": "router",
+   "name": "NAV_FALLBACK_GROUP",
+   "start": 519
+  },
+  {
+   "mod": "router",
+   "name": "navViews",
+   "start": 521
+  },
+  {
+   "mod": "router",
+   "name": "navGroups",
+   "start": 527
+  },
+  {
+   "mod": "router",
+   "name": "renderNav",
+   "start": 541
+  },
+  {
+   "mod": "router",
+   "name": "navSync",
+   "start": 570
+  },
+  {
+   "mod": "router",
+   "name": "navOpen",
+   "start": 593
+  },
+  {
+   "mod": "router",
+   "name": "isOffCanvas",
+   "start": 595
+  },
+  {
+   "mod": "router",
+   "name": "navFocusables",
+   "start": 602
+  },
+  {
+   "mod": "router",
+   "name": "navTrap",
+   "start": 613
+  },
+  {
+   "mod": "router",
+   "name": "navSetOpen",
+   "start": 622
+  },
+  {
+   "mod": "router",
+   "name": "NAVKEY",
+   "start": 646
+  },
+  {
+   "mod": "router",
+   "name": "navCollapsed",
+   "start": 647
+  },
+  {
+   "mod": "router",
+   "name": "navApplyCollapsed",
+   "start": 651
+  },
+  {
+   "mod": "router",
+   "name": "navSetCollapsed",
+   "start": 663
+  },
+  {
+   "mod": "drawer",
+   "name": "LOGS",
+   "start": 65
+  },
+  {
+   "mod": "drawer",
+   "name": "lgSel",
+   "start": 66
+  },
+  {
+   "mod": "drawer",
+   "name": "lgWindow",
+   "start": 68
+  },
+  {
+   "mod": "drawer",
+   "name": "lgProfile",
+   "start": 91
+  },
+  {
+   "mod": "drawer",
+   "name": "lgMatch",
+   "start": 98
+  },
+  {
+   "mod": "drawer",
+   "name": "lgChips",
+   "start": 116
+  },
+  {
+   "mod": "drawer",
+   "name": "lgActiveLabel",
+   "start": 130
+  },
+  {
+   "mod": "drawer",
+   "name": "LG_FACET_NAMES",
+   "start": 139
+  },
+  {
+   "mod": "drawer",
+   "name": "renderLgActive",
+   "start": 142
+  },
+  {
+   "mod": "drawer",
+   "name": "renderLogs",
+   "start": 156
+  },
+  {
+   "mod": "drawer",
+   "name": "logsInstall",
+   "start": 218
+  },
+  {
+   "mod": "router",
+   "name": "navInstall",
+   "start": 674
+  },
+  {
+   "mod": "router",
+   "name": "views",
+   "start": 699
+  },
+  {
+   "mod": "router",
+   "name": "pickView",
+   "start": 703
+  },
+  {
+   "mod": "main",
+   "name": "installAll",
+   "start": 131
+  },
+  {
+   "mod": "router",
+   "name": "PV_OFF",
+   "start": 740
+  },
+  {
+   "mod": "router",
+   "name": "pvKey",
+   "start": 741
+  },
+  {
+   "mod": "router",
+   "name": "pvOff",
+   "start": 742
+  },
+  {
+   "mod": "router",
+   "name": "pvSet",
+   "start": 749
+  },
+  {
+   "mod": "router",
+   "name": "pvOnProfiles",
+   "start": 753
+  },
+  {
+   "mod": "router",
+   "name": "PV_HUE",
+   "start": 762
+  },
+  {
+   "mod": "router",
+   "name": "pvHueKey",
+   "start": 763
+  },
+  {
+   "mod": "router",
+   "name": "pvHueOverride",
+   "start": 764
+  },
+  {
+   "mod": "router",
+   "name": "pvHueSet",
+   "start": 772
+  },
+  {
+   "mod": "router",
+   "name": "profileHue",
+   "start": 783
+  },
+  {
+   "mod": "router",
+   "name": "PROFILE_LOGO_MAX_BYTES",
+   "start": 793
+  },
+  {
+   "mod": "router",
+   "name": "PV_LOGO",
+   "start": 794
+  },
+  {
+   "mod": "router",
+   "name": "pvLogoKey",
+   "start": 795
+  },
+  {
+   "mod": "router",
+   "name": "profileLogo",
+   "start": 796
+  },
+  {
+   "mod": "router",
+   "name": "profileLogoSet",
+   "start": 803
+  },
+  {
+   "mod": "router",
+   "name": "profileIconHtml",
+   "start": 814
+  },
+  {
+   "mod": "router",
+   "name": "PV_ALL",
+   "start": 824
+  },
+  {
+   "mod": "router",
+   "name": "pvFilter",
+   "start": 825
+  },
+  {
+   "mod": "router",
+   "name": "pvSyncCurrent",
+   "start": 847
+  },
+  {
+   "mod": "router",
+   "name": "pvToggle",
+   "start": 854
+  },
+  {
+   "mod": "router",
+   "name": "tabs",
+   "start": 864
+  },
+  {
+   "mod": "router",
+   "name": "pvMenu",
+   "start": 889
+  },
+  {
+   "mod": "router",
+   "name": "exitHourRange",
+   "start": 919
+  },
+  {
+   "mod": "main",
+   "name": "saved",
+   "start": 143
+  },
+  {
+   "mod": "main",
+   "name": "bootDone",
+   "start": 160
+  },
+  {
+   "mod": "live",
+   "name": "LIVE_MS_DEFAULT",
+   "start": 184
+  },
+  {
+   "mod": "live",
+   "name": "LIVE_MS",
+   "start": 188
+  },
+  {
+   "mod": "live",
+   "name": "liveBusy",
+   "start": 190
+  },
+  {
+   "mod": "live",
+   "name": "soundOn",
+   "start": 198
+  },
+  {
+   "mod": "live",
+   "name": "audioCtx",
+   "start": 199
+  },
+  {
+   "mod": "live",
+   "name": "soundBaseline",
+   "start": 200
+  },
+  {
+   "mod": "live",
+   "name": "seenEnded",
+   "start": 201
+  },
+  {
+   "mod": "live",
+   "name": "seenDeleg",
+   "start": 202
+  },
+  {
+   "mod": "live",
+   "name": "soundDebounceUntil",
+   "start": 203
+  },
+  {
+   "mod": "live",
+   "name": "ensureAudioCtx",
+   "start": 205
+  },
+  {
+   "mod": "live",
+   "name": "playTone",
+   "start": 214
+  },
+  {
+   "mod": "live",
+   "name": "pendingKind",
+   "start": 241
+  },
+  {
+   "mod": "live",
+   "name": "soundTimerPending",
+   "start": 242
+  },
+  {
+   "mod": "live",
+   "name": "scheduleTone",
+   "start": 243
+  },
+  {
+   "mod": "live",
+   "name": "checkCompletions",
+   "start": 260
+  },
+  {
+   "mod": "live",
+   "name": "soundToggleInstall",
+   "start": 282
+  },
+  {
+   "mod": "drawer",
+   "name": "dFilter",
+   "start": 270
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerEvents",
+   "start": 275
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerSync",
+   "start": 306
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerOpen",
+   "start": 343
+  },
+  {
+   "mod": "drawer",
+   "name": "installDrawerDrag",
+   "start": 383
+  },
+  {
+   "mod": "drawer",
+   "name": "installDrawer",
+   "start": 414
+  },
+  {
+   "mod": "drawer",
+   "name": "tOpen",
+   "start": 523
+  },
+  {
+   "mod": "drawer",
+   "name": "TCACHE",
+   "start": 524
+  },
+  {
+   "mod": "drawer",
+   "name": "tEscape",
+   "start": 526
+  },
+  {
+   "mod": "drawer",
+   "name": "tRenderContent",
+   "start": 533
+  },
+  {
+   "mod": "drawer",
+   "name": "tRenderMsg",
+   "start": 554
+  },
+  {
+   "mod": "drawer",
+   "name": "tCloseModal",
+   "start": 611
+  },
+  {
+   "mod": "drawer",
+   "name": "tKeydown",
+   "start": 624
+  },
+  {
+   "mod": "drawer",
+   "name": "installTranscriptModal",
+   "start": 643
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpen",
+   "start": 657
+  },
+  {
+   "mod": "drawer",
+   "name": "sfRowsHtml",
+   "start": 659
+  },
+  {
+   "mod": "drawer",
+   "name": "sfRender",
+   "start": 685
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpenPalette",
+   "start": 694
+  },
+  {
+   "mod": "drawer",
+   "name": "sfClosePalette",
+   "start": 707
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpenSelected",
+   "start": 716
+  },
+  {
+   "mod": "drawer",
+   "name": "installSessionFinder",
+   "start": 726
+  },
+  {
+   "mod": "drawer",
+   "name": "LN_LANES",
+   "start": 760
+  },
+  {
+   "mod": "drawer",
+   "name": "LN_LANE_LABELS",
+   "start": 761
+  },
+  {
+   "mod": "drawer",
+   "name": "lnOpen",
+   "start": 762
+  },
+  {
+   "mod": "drawer",
+   "name": "lnOpenAt",
+   "start": 763
+  },
+  {
+   "mod": "drawer",
+   "name": "lnRenderTimeline",
+   "start": 797
+  },
+  {
+   "mod": "drawer",
+   "name": "lnCloseModal",
+   "start": 831
+  },
+  {
+   "mod": "drawer",
+   "name": "lnKeydown",
+   "start": 845
+  },
+  {
+   "mod": "drawer",
+   "name": "lnColorOf",
+   "start": 874
+  },
+  {
+   "mod": "drawer",
+   "name": "installTimelineModal",
+   "start": 882
+  },
+  {
+   "mod": "live",
+   "name": "scheduleLivePoll",
+   "start": 311
+  },
+  {
+   "mod": "live",
+   "name": "liveTimer",
+   "start": 314
+  },
+  {
+   "mod": "live",
+   "name": "REBUILD_MS",
+   "start": 339
+  },
+  {
+   "mod": "live",
+   "name": "scheduleRebuild",
+   "start": 341
+  },
+  {
+   "mod": "live",
+   "name": "rebuildTimer",
+   "start": 347
+  }
+ ],
+ "header_lines": 0
+}
