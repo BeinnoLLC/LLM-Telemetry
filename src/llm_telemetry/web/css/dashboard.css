@@ -353,7 +353,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    transform .12s ease,border-color .12s ease}
  .homecard:hover{transform:translateY(-2px);border-color:var(--accent)}
  .homecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
- .homecard .hc-ico{font-size:20px;line-height:1}
+ .homecard .hc-ico{display:flex}
+ .homecard .hc-ico svg{width:18px;height:18px}
  .homecard .hc-stat{font-size:19px;font-weight:650;letter-spacing:-.02em}
  @media(prefers-reduced-motion:reduce){.homecard:hover{transform:none}}
  .grid-2 > *,.grid-auto > *{min-width:0}
@@ -476,24 +477,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    flex-direction:column;gap:2px;display:none}
  #barmenu.open{display:flex}
  #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
-
- /* ---- Home: navigation cards ---------------------------------------- */
- .homegrid{display:grid;gap:var(--gap);
-   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
- .homecard{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-5);
-   text-decoration:none;color:inherit;border-radius:10px;
-   background:var(--card);border:1px solid var(--border);min-width:0;
-   transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}
- .homecard:hover{transform:translateY(-2px);border-color:var(--accent);
-   box-shadow:0 10px 26px rgba(0,0,0,.28)}
- .homecard .hc-top{display:flex;align-items:center;gap:9px}
- .homecard .hc-ico{width:34px;height:34px;border-radius:9px;flex:none;
-   display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);
-   background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
- .homecard .hc-name{font-size:var(--fs-md);font-weight:650}
- .homecard .hc-desc{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
- .homecard .hc-stat{margin-top:auto;padding-top:var(--sp-2);font-size:var(--fs-sm);
-   font-weight:650;font-variant-numeric:tabular-nums}
 
  /* ---- Empty states --------------------------------------------------- */
  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -815,7 +798,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Health page (#110) */
  .hsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
  @media (max-width:900px){.hsum{grid-template-columns:repeat(2,minmax(0,1fr))}}
- .hsumc{padding:12px 14px;min-width:0}
+ .hsumc{padding:14px;min-width:0;display:flex;flex-direction:column;gap:8px}
  .hsumv{font-size:22px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .hsuml{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
  .hsums{font-size:var(--fs-xs);margin-top:2px}
@@ -861,9 +844,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    muted uppercase label — modelled on a reference analytics-card design
    the user shared (icon badge top-left / number+trend row / label below,
    never a native-looking or generic KPI tile). */
-.kpi-card{position:relative;display:flex;flex-direction:column;gap:9px}
-.kpi-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;
-  justify-content:center;font-size:14px;flex:none}
+.kpi-card{position:relative;display:flex;flex-direction:column;gap:10px}
+.kpi-badge{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;flex:none}
+.kpi-badge svg{width:16px;height:16px}
 .kpi-num-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .kpi-label{margin-top:-1px}
 
@@ -876,7 +860,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kring svg{width:100%;height:100%;display:block}
 .kspwrap{display:inline-block;width:60px;height:20px;vertical-align:middle;flex:none}
 .kspark{width:100%;height:100%;display:block}
-.kpi-icon{display:block;line-height:1}
+.kpi-icon{display:flex;line-height:1}
 .olspwrap{display:inline-block;width:44px;height:14px;vertical-align:middle;margin-left:6px}
 
  /* Unpriced / free-tier cost states (P9-05, #82) */

@@ -1022,6 +1022,34 @@ let AC, MU, BD, FG;
 function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
   Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
 const PAL = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4','#a855f7','#ec4899','#84cc16','#eab308','#14b8a6'];
+
+// Small line-icon set (Feather-style paths, stroke=currentColor) for KPI/nav
+// badges — real vector glyphs read as considerably more "designed" than a
+// single unicode character at the same 14-16px size, and they scale/align
+// consistently across every font the OS might substitute. One entry per
+// concept, reused anywhere a badge needs that meaning (KPI strip today,
+// nav/home cards next).
+const ICON_SVG = {
+  swap:   '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  zap:    '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  users:  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  check:  '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  pulse:  '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  dollar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  play:   '<polygon points="5 3 19 12 5 21 5 3"/>',
+  clock:  '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  grid:   '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  scale:  '<path d="M12 3v18M5 8l-3 5a4 4 0 0 0 8 0l-3-5M19 8l-3 5a4 4 0 0 0 8 0l-3-5M3 8h6M15 8h6"/>',
+  cog:    '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  updown: '<polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/>',
+  alert:  '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+};
+// icon(name, size): a ready-to-inline <svg> using the badge/link's own
+// `color` via currentColor, so one glyph definition works on every accent.
+const icon = (name, size) => `<svg width="${size||16}" height="${size||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_SVG[name]||''}</svg>`;
 // Fade a hex colour to a translucent rgba(), so a filled series can sit under
 // another without hiding it.
 const fade = (hex, a) => {
@@ -1760,13 +1788,13 @@ function render(){
   // (AC/PAL[n] below), so the badge is never an arbitrary extra hue — it is
   // "this card's colour", just also used to tint its icon chip.
   const KPI_META = {
-    'API calls':      {icon:'⇄', color:AC},
-    'Tokens':         {icon:'▥', color:PAL[1]},
-    'Cache hit rate': {icon:'⧉', color:PAL[5]},
-    'Sessions':       {icon:'☰', color:PAL[2]},
-    'Success rate':   {icon:'✓', color:PAL[6]},
-    'In progress':    {icon:'▶', color:PAL[3]},
-    'Est. cost':      {icon:'¤', color:PAL[4]},
+    'API calls':      {icon:icon('swap'),   color:AC},
+    'Tokens':         {icon:icon('layers'), color:PAL[1]},
+    'Cache hit rate': {icon:icon('zap'),    color:PAL[5]},
+    'Sessions':       {icon:icon('users'),  color:PAL[2]},
+    'Success rate':   {icon:icon('check'),  color:PAL[6]},
+    'In progress':    {icon:icon('pulse'),  color:PAL[3]},
+    'Est. cost':      {icon:icon('dollar'), color:PAL[4]},
   };
 
   $('kpis').innerHTML=[
@@ -1779,8 +1807,8 @@ function render(){
     ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4])]]
     .map(([l,v,spark,ring])=>{
       const meta = KPI_META[l] || {icon:'', color:MU};
-      const icon = meta.icon ? `<span class="kpi-icon" aria-hidden="true">${meta.icon}</span>` : '';
-      const badge = `<div class="kpi-badge" style="background:color-mix(in srgb,${meta.color} 16%,var(--card));color:${meta.color}">${icon}</div>`;
+      const iconEl = meta.icon ? `<span class="kpi-icon" aria-hidden="true">${meta.icon}</span>` : '';
+      const badge = `<div class="kpi-badge" style="background:color-mix(in srgb,${meta.color} 14%,var(--card));color:${meta.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${meta.color} 30%,transparent)">${iconEl}</div>`;
       if (ring) return `<div class="card p-3 kpi-card kpi-ring">${badge}<div class="kringwrap">${ring}</div>
         <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide kpi-label">${l}</div></div>`;
       return `<div class="card p-3 kpi-card">${badge}
@@ -2118,27 +2146,28 @@ function renderHome(inR){
     : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
 
   const cards = [
-    ['Live', '\u25C9', 'Sessions in flight right now',
+    ['Live', icon('play'), PAL[3], 'Sessions in flight right now',
       live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
-    ['Flow', '\u21C4', 'Provider \u2192 model \u2192 task routing',
+    ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
       models.size + (models.size === 1 ? ' model' : ' models')],
-    ['Usage', '\u25A4', 'Calls and tokens over time', fmt(calls) + ' calls'],
-    ['Projects', '\u25A6', 'Spend and calls broken down by project',
+    ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
+    ['Projects', icon('folder'), PAL[5], 'Spend and calls broken down by project',
       projStat],
-    ['Cost', '\u0024', 'What the traffic is worth at public rates',
+    ['Cost', icon('dollar'), PAL[4], 'What the traffic is worth at public rates',
       '$' + cost.toFixed(2)],
-    ['Health', '\u2713', 'Success rate and recent failures',
+    ['Health', icon('check'), PAL[6], 'Success rate and recent failures',
       okPct + (fails ? ' \u00b7 ' + fails + ' recent' : '')],
-    ['Detail', '\u2261', 'Per-model table and the activity calendar',
+    ['Detail', icon('grid'), PAL[2], 'Per-model table and the activity calendar',
       rows.length + ' rows'],
-    ['Settings', '\u2699', 'Electricity tariff and hardware behind local cost',
+    ['Settings', icon('cog'), MU, 'Electricity tariff and hardware behind local cost',
       '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
-  let html = cards.map(([view, ico, desc, stat]) => `
+  let html = cards.map(([view, ico, color, desc, stat]) => `
     <a class="card p-4 homecard" href="#/${view.toLowerCase()}" data-gohome="${view}">
       <div class="flex items-center justify-between mb-2">
-        <span class="hc-ico" style="color:var(--accent)">${ico}</span>
+        <div class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
+          <span class="hc-ico" aria-hidden="true">${ico}</span></div>
         <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${view}</span>
       </div>
       <div class="hc-stat">${stat}</div>
@@ -2151,7 +2180,8 @@ function renderHome(inR){
   html += `
     <a class="card p-4 homecard" href="#/usage" data-gohome="Usage">
       <div class="flex items-center justify-between mb-2">
-        <span class="hc-ico" style="color:var(--accent)">\u21C5</span>
+        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
+          <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></div>
         <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Bandwidth (est.)</span>
       </div>
       <div class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
@@ -2164,7 +2194,8 @@ function renderHome(inR){
   html += `
     <a class="card p-4 homecard" href="costs.html">
       <div class="flex items-center justify-between mb-2">
-        <span class="hc-ico" style="color:var(--accent)">\u2696</span>
+        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
+          <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></div>
         <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Rates</span>
       </div>
       <div class="hc-stat">Price sheet</div>
@@ -4190,14 +4221,15 @@ function renderHealthSummary(H, F){
   // "Worst" needs enough calls to mean something; otherwise one 0/1 wins.
   const judged = failing.filter(h => h.total >= 5).sort((a,b)=>(a.rate??101)-(b.rate??101));
   const worst = judged[0];
-  const card = (v, l, col, sub) => `<div class="card hsumc"><div class="hsumv" style="${col?`color:${col}`:''}">${v}</div>
+  const card = (v, l, col, sub, ico) => `<div class="card hsumc"><div class="kpi-badge" style="background:color-mix(in srgb,${col||MU} 14%,var(--card));color:${col||MU};box-shadow:inset 0 0 0 1px color-mix(in srgb,${col||MU} 30%,transparent)"><span class="kpi-icon" aria-hidden="true">${ico}</span></div>
+    <div class="hsumv" style="${col?`color:${col}`:''}">${v}</div>
     <div class="hsuml">${l}</div>${sub?`<div class="muted hsums">${sub}</div>`:''}</div>`;
   el.innerHTML =
-    card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`) +
-    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#ef4444':'#22c55e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded') +
-    card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', '', '') +
-    card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : '',
-      worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%');
+    card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`, icon('check')) +
+    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#ef4444':'#22c55e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
+    card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', PAL[3], '', icon('layers')) +
+    card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : MU,
+      worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%', icon('target'));
 }
 
 // Same model + kind + message (with run-specific ids stripped) is one
