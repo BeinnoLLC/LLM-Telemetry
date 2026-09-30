@@ -52,6 +52,28 @@
  input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:4px;
    padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:dark}
  [data-theme=light] input[type=date]{color-scheme:light}
+ /* Native <select> elements (currently just the project filter, #46) render
+    with the OS/browser's own light widget chrome by default — jarring next
+    to the dark, chip-styled rest of the page. Strip that chrome and rebuild
+    it from the same theme variables everything else already uses, including
+    a hand-drawn chevron (no icon font dependency) that recolors with theme. */
+ select.chip{
+   appearance:none; -webkit-appearance:none; -moz-appearance:none;
+   background-color:var(--bg); color:var(--fg);
+   padding-right:28px; cursor:pointer; position:relative;
+ }
+ select.chip:hover{color:var(--fg); border-color:var(--accent)}
+ select.chip:focus{outline:2px solid var(--accent); outline-offset:1px}
+ select.chip option{background-color:var(--card); color:var(--fg)}
+ /* Chevron as a masked block (not a hardcoded-color background-image) so it
+    tracks --muted across both themes instead of being baked to one hex. */
+ .selwrap{position:relative; display:inline-flex}
+ .selwrap::after{
+   content:''; position:absolute; right:10px; top:50%; width:10px; height:7px;
+   transform:translateY(-50%); pointer-events:none; background:var(--muted);
+   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+ }
  canvas{width:100% !important;max-height:280px}
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
@@ -832,7 +854,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
- .kdelta{font-weight:600;white-space:nowrap;margin-left:.35em}
 
 /* #11: radial KPI rings — compact, no-needle variant of the gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the

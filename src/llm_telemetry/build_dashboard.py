@@ -146,15 +146,8 @@ __DASHBOARD_CSS__
   <button type="button" id="rangetoggle" class="chip" style="display:none" aria-expanded="false" aria-controls="rangebar"></button>
   <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
   <span class="flex gap-1.5 ml-1" id="presets"></span>
-  <!-- P10-11 (#99): Compare mode. Splits the current selection into "this
-       period" vs "the previous period of equal length". KPI cards, tables,
-       and charts read compareDelta()/COMPARE_ON, never a second query. -->
-  <label class="chip flex items-center gap-1.5" style="cursor:pointer" title="Compare this period to the equal-length period immediately before it">
-   <input type="checkbox" id="comparetoggle" style="margin:0">Compare
-  </label>
   <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
- </div>
-
+</div>
  <div class="flex gap-1.5" id="views"></div>
 
  <!-- P4-09 (#46): project cross-filter. Sits beside the range/profile
@@ -164,9 +157,11 @@ __DASHBOARD_CSS__
       after those two, not a separate query. -->
  <div class="card p-3 mb-3 flex items-center gap-2 flex-wrap" id="projfilterbar">
   <span class="lbl">Project</span>
-  <select id="projfiltersel" class="chip" style="text-transform:none;letter-spacing:0">
-   <option value="">All projects</option>
-  </select>
+  <span class="selwrap">
+   <select id="projfiltersel" class="chip" style="text-transform:none;letter-spacing:0">
+    <option value="">All projects</option>
+   </select>
+  </span>
   <!-- Visible on every view this filter actually affects (Usage/Cost/Flow/
        Health) — a silent global filter is how a wrong number gets quoted
        in a meeting. Hidden on views the filter doesn't touch. -->
@@ -1159,7 +1154,6 @@ const emptyHTML = (icon, msg, hint) =>
 
 let charts = [], current = null;
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
-let COMPARE_ON = false;
 // #129: sub-day range presets (1h/6h/12h). null = the from/to DATE range
 // applies as before (day grain, p.rows). A number = "last N hours from
 // now", read from p.hour_rows (real hour-grain data, HOUR_WINDOW_S-bounded
@@ -1405,13 +1399,6 @@ function provBadge(p){
 // glyph prefixed to the model name: "◆ step-3.7-flash". rowsForModel lets a
 // short model name resolve back to the provider that served it.
 let MODEL_PROV = {};
-// P10-11 (#99): previous-period aggregates for the Δ columns in the
-// provider/model tables, keyed the same way as their current-period
-// counterparts (pCost/t below). Populated once per render() call, from
-// the SAME prevRows compare-mode already computes for the KPI deltas — no
-// extra query, no second payload shape.
-let PREV_PROV_COST = {};
-let PREV_MODEL_COST = {};
 function buildModelProv(rows){
   MODEL_PROV = {};
   (rows||[]).forEach(r=>{
@@ -1636,55 +1623,6 @@ function renderAlerts(alerts){
     </div>`).join('');
 }
 
-// P10-11 (#99): Compare mode. Pure delta math, zero DOM — testable in
-// isolation and reused by KPI cards, tables, and chart overlays alike.
-// `good` says which DIRECTION is an improvement for this metric: 'up'
-// for calls/sessions/cache-hit-rate/success-rate, 'down' for cost/
-// failures/bandwidth. It is a property of the metric, defined once here,
-// never re-decided per call site.
-const METRIC_GOOD = {
-  calls: 'up', tokens: 'up', sessions: 'up', cache_rate: 'up', success_rate: 'up',
-  cost: 'down', failures: 'down', bandwidth: 'down', wasted_hours: 'down',
-};
-
-function compareDelta(curr, prev, metricKey){
-  // Negative control the ticket asks for by name: an empty/zero previous
-  // period must render "n/a", never Infinity% or NaN.
-  if (prev === null || prev === undefined || !isFinite(prev) || prev === 0
-      || curr === null || curr === undefined || !isFinite(curr)) {
-    return { abs: null, pct: null, dir: null, good: null, na: true };
-  }
-  const abs = curr - prev;
-  const pct = (abs / Math.abs(prev)) * 100;
-  const dir = abs > 0 ? 'up' : abs < 0 ? 'down' : 'flat';
-  const goodDir = METRIC_GOOD[metricKey] || 'up';
-  // 'flat' (abs===0) is never colored good or bad -- it's simply unchanged.
-  const good = dir === 'flat' ? null : (dir === goodDir);
-  return { abs, pct, dir, good, na: false };
-}
-
-function deltaHtml(delta){
-  if (!delta || delta.na) return '<span class="muted kdelta">n/a</span>';
-  if (delta.dir === 'flat') return '<span class="muted kdelta">&#8212; 0%</span>';
-  const arrow = delta.dir === 'up' ? '&#9650;' : '&#9660;';
-  const color = delta.good === null ? 'var(--muted-foreground)' : (delta.good ? '#22c55e' : '#ef4444');
-  const pctStr = isFinite(delta.pct) ? Math.abs(delta.pct).toFixed(1) : '?';
-  return `<span class="kdelta" style="color:${color}">${arrow} ${pctStr}%</span>`;
-}
-
-// Given a from/to range (YYYY-MM-DD strings), returns the immediately
-// preceding range of EQUAL length in days (inclusive on both ends, same
-// convention as the date inputs themselves).
-function previousPeriod(from, to){
-  if (!from || !to) return null;
-  const f = new Date(from + 'T00:00:00Z'), t = new Date(to + 'T00:00:00Z');
-  const spanDays = Math.round((t - f) / 86400000) + 1;
-  const prevTo = new Date(f.getTime() - 86400000);
-  const prevFrom = new Date(prevTo.getTime() - (spanDays - 1) * 86400000);
-  const iso = d => d.toISOString().slice(0, 10);
-  return { from: iso(prevFrom), to: iso(prevTo) };
-}
-
 // P10-12 (#100): Session finder. Pure matching logic (testable without a
 // DOM), then a thin command-palette UI on top. Reads `session_index`
 // exactly as the collector shipped it -- no client-side re-query, no
@@ -1765,24 +1703,6 @@ function render(){
   const hourTouchedDates = HOUR_RANGE ? new Set(dateRows.map(r=>r.date)) : null;
   const hours = HOUR_RANGE ? p.hours.filter(h=>hourTouchedDates.has(h.date)) : p.hours.filter(h=>inR(h.date));
   const sess  = HOUR_RANGE ? p.sessions.filter(s=>hourTouchedDates.has(s.date)) : p.sessions.filter(s=>inR(s.date));
-  // P10-11 (#99): Compare mode reads the SAME already-shipped `p.rows` —
-  // no payload change, just a second client-side filter over the equal-
-  // length period immediately before the current selection. Not meaningful
-  // under an hour preset (no "previous period" concept for "last N hours"),
-  // so it's skipped there — COMPARE_ON stays whatever it was, it just has
-  // nothing to compare against for this render.
-  let prevRows = [], prevSess = [], prevHealth = [];
-  if (COMPARE_ON && !HOUR_RANGE){
-    const prevRange = previousPeriod(from, to);
-    if (prevRange){
-      const prevInR = d => d && d >= prevRange.from && d <= prevRange.to;
-      const prevDateRows = p.rows.filter(r => prevInR(r.date));
-      prevRows = PROJECT_FILTER
-        ? prevDateRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER)
-        : prevDateRows;
-      prevSess = p.sessions.filter(s => prevInR(s.date));
-    }
-  }
   charts.forEach(c=>c.destroy()); charts=[];
   // Profile chip styling (size, hue) is owned entirely by tabs() (#121) — it
   // sets the on/off style inline per-profile. Re-styling [data-tab] here with
@@ -1843,19 +1763,19 @@ function render(){
   };
 
   $('kpis').innerHTML=[
-    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC),null,COMPARE_ON?compareDelta(calls, prevRows.reduce((s,r)=>s+r.calls,0), 'calls'):null],
-    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1]),null,COMPARE_ON?compareDelta(tok, prevRows.reduce((s,r)=>s+r.inp+r.outp,0), 'tokens'):null],
+    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC)],
+    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1])],
     ['Cache hit rate',null,null,radialRing(cacheRate,{label:'Cache hit rate',warnAt:60,badAt:30})],
-    ['Sessions',nsess.toLocaleString(),sparkSvg(sessSeries,PAL[2]),null,COMPARE_ON?compareDelta(nsess, prevSess.reduce((s,r)=>s+r.sessions,0), 'sessions'):null],
+    ['Sessions',nsess.toLocaleString(),sparkSvg(sessSeries,PAL[2])],
     ['Success rate',null,null,radialRing(srate,{label:'Success rate',warnAt:95,badAt:80})],
     ['In progress',liveDot],
-    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4]),null,COMPARE_ON?compareDelta(market, prevRows.reduce((s,r)=>s+(r.market_value_usd||0),0), 'cost'):null]]
-    .map(([l,v,spark,ring,delta])=>{
+    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4])]]
+    .map(([l,v,spark,ring])=>{
       const icon = KPI_ICON[l] ? `<span class="kpi-icon" aria-hidden="true">${KPI_ICON[l]}</span>` : '';
       if (ring) return `<div class="card p-2.5 kpi-ring"><div class="kringwrap">${ring}</div>
         <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}</div></div>`;
       return `<div class="card p-2.5"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}${delta?` ${deltaHtml(delta)}`:''}</div></div>`;
+      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${icon}${l}</div></div>`;
     }).join('');
 
   // Live data is independent of the date filter — render it before the early
@@ -1904,19 +1824,6 @@ function render(){
   }
 
   buildModelProv(rows);
-  // Previous-period aggregates for table Δ columns (#99) — same grouping
-  // key as pCost/t below, computed once here so both tables can look it up
-  // without re-deriving prevRows themselves.
-  PREV_PROV_COST = {};
-  PREV_MODEL_COST = {};
-  if (COMPARE_ON && prevRows.length){
-    prevRows.forEach(r=>{
-      const pk = provOf(r.provider, r.model, r.base_url);
-      PREV_PROV_COST[pk] = (PREV_PROV_COST[pk]||0) + (r.market_value_usd||0);
-      const mk_ = short(r.model)+'|'+pk;
-      PREV_MODEL_COST[mk_] = (PREV_MODEL_COST[mk_]||0) + (r.market_value_usd||0);
-    });
-  }
 
   const byM=agg(rows,r=>short(r.model),r=>r.calls).slice(0,10);
   mk('cModels','bar',byM.map(x=>ic(x[0])),[{data:byM.map(x=>x[1]),backgroundColor:byM.map(x=>colorOf(x[0])),borderRadius:3}],
@@ -1927,22 +1834,11 @@ function render(){
     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:6}}},cutout:'55%'});
 
   const days=[...new Set(rows.map(r=>r.date))].sort();
-  // Compare mode (#99): overlay the previous period as a dashed series,
-  // aligned by DAY INDEX (day 1 of prev period under day 1 of current), not
-  // by calendar date -- the two periods never share real dates. previousPeriod()
-  // always returns an equal-length range, so index alignment lines up cleanly;
-  // a shorter/mismatched prevRows just leaves trailing points undefined
-  // (Chart.js draws a gap, never a fabricated zero).
-  const prevDaysSorted = COMPARE_ON ? [...new Set(prevRows.map(r=>r.date))].sort() : [];
-  const prevCallsByIdx = prevDaysSorted.map(d=>prevRows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0));
   mk('cDaily','line',days,[
     {label:'calls',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.calls,0)),
      borderColor:AC,backgroundColor:AC+'22',fill:true,tension:.3,yAxisID:'y'},
     {label:'tokens',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0)),
-     borderColor:PAL[1],tension:.3,yAxisID:'y1'},
-    ...(COMPARE_ON && prevCallsByIdx.length ? [{label:'calls (previous period)',
-     data:days.map((_,i)=>prevCallsByIdx[i]), borderColor:AC, borderDash:[5,4],
-     backgroundColor:'transparent', pointRadius:0, tension:.3, yAxisID:'y'}] : [])],
+     borderColor:PAL[1],tension:.3,yAxisID:'y1'}],
     {plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
      y1:{position:'right',grid:{display:false},ticks:{callback:v=>fmt(v)}}}});
 
@@ -2017,7 +1913,6 @@ function render(){
       <th class="text-right" title="Estimated bytes sent to this provider. Derived from tokens, not measured.">&#8593; Up (est)</th>
       <th class="text-right" title="Estimated bytes received from this provider. Derived from tokens, not measured.">&#8595; Down (est)</th>
       <th class="text-right">Est. cost</th>
-      ${COMPARE_ON?'<th class="text-right" title="Change vs the previous period of equal length">&#916;</th>':''}
       <th class="text-right">Models</th><th class="text-left pl-3">Breakdown</th></tr>`+
     Object.entries(pCost).sort((a,b)=>b[1].mkt-a[1].mkt).map(([pr,v])=>{
       const s=PROV[pr]||{icon:'○',fg:MU};
@@ -2029,7 +1924,6 @@ function render(){
         <td class="text-right text-[length:var(--fs-xs)] bwup">${fmtB(v.up)}</td>
         <td class="text-right text-[length:var(--fs-xs)] bwdown">${fmtB(v.down)}</td>
         <td class="text-right text-[length:var(--fs-xs)] font-semibold" style="color:${s.fg}">$${v.mkt.toFixed(2)}</td>
-        ${COMPARE_ON?`<td class="text-right text-[length:var(--fs-xs)]">${deltaHtml(compareDelta(v.mkt, PREV_PROV_COST[pr], 'cost'))}</td>`:''}
         <td class="text-right text-[length:var(--fs-xs)]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
       </tr>`;}).join('');
@@ -2047,7 +1941,6 @@ function render(){
     <th class="text-right" title="Estimated bytes uploaded. Tokens x 4.68, not measured. Includes cache reads: prefix caching re-sends the prompt.">&#8593; Up (est)</th>
     <th class="text-right" title="Estimated bytes downloaded. Tokens x 4.68, not measured.">&#8595; Down (est)</th>
     <th class="text-right">Est. cost</th>
-    ${COMPARE_ON?'<th class="text-right" title="Change vs the previous period of equal length">&#916;</th>':''}
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
       return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
@@ -2057,7 +1950,6 @@ function render(){
         <td class="text-right bwup">${fmtB(v.up)}</td>
         <td class="text-right bwdown">${fmtB(v.down)}</td>
         <td class="text-right">${costCell(v.mkt, v.local, v.freetier ? 'freetier' : (!v.priced && !v.local) ? 'unpriced' : '')}</td>
-        ${COMPARE_ON?`<td class="text-right">${deltaHtml(compareDelta(v.mkt, PREV_MODEL_COST[k], 'cost'))}</td>`:''}
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[length:var(--fs-xs)] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
 }
@@ -6538,14 +6430,6 @@ async function doRefresh(silent){
   }
 }
 $('refresh').onclick = () => doRefresh(false);
-
-// P10-11 (#99): Compare mode toggle -- checked state persists across a
-// session (not across reloads; a stale compare-on with a fresh page load
-// reading old data would be confusing), same as $('theme').
-$('comparetoggle').onclick = () => {
-  COMPARE_ON = $('comparetoggle').checked;
-  render();
-};
 
 // ---- fast live polling -------------------------------------------------
 // Live data is the one thing that is genuinely "now", so it gets its own tiny
