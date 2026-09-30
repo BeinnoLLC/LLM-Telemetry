@@ -407,7 +407,8 @@ def price_row(row, catalog):
         cls = "preset"
     elif (model or "").lower().endswith(FREE_TIER_SUFFIX):
         # OpenRouter ":free" tier: genuinely $0 per token, a different thing
-        # from local inference.
+        # from local inference (rates_for is skipped below so the row can
+        # never inherit the metered SKU's price through the base-name match).
         cls = "free"
     elif is_local(model):
         cls = "local"
@@ -425,7 +426,7 @@ def price_row(row, catalog):
         # No provider recorded: recover the class from the model name rather
         # than reporting a well-known model as untracked.
         cls = class_from_model(model) or "unknown"
-    r = rates_for(model, catalog)
+    r = None if (model or "").lower().endswith(FREE_TIER_SUFFIX) else rates_for(model, catalog)
     if cls == "local" and not is_local(model):
         # Classed local by its endpoint (a LAN host) but not by name: still
         # electricity, never a catalogue price and never $0 (P7-01).

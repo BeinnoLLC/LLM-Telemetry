@@ -1809,11 +1809,16 @@ function render(){
       const meta = KPI_META[l] || {icon:'', color:MU};
       const iconEl = meta.icon ? `<span class="kpi-icon" aria-hidden="true">${meta.icon}</span>` : '';
       const badge = `<div class="kpi-badge" style="background:color-mix(in srgb,${meta.color} 14%,var(--card));color:${meta.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${meta.color} 30%,transparent)">${iconEl}</div>`;
-      if (ring) return `<div class="card p-3 kpi-card kpi-ring">${badge}<div class="kringwrap">${ring}</div>
-        <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide kpi-label">${l}</div></div>`;
-      return `<div class="card p-3 kpi-card">${badge}
-      <div class="kpi-num-row"><div class="text-[length:var(--fs-lg)] font-semibold${l==='In progress'?' kpi-live':''}">${v}</div>${spark?`<span class="kspwrap">${spark}</span>`:''}</div>
-      <div class="muted text-[length:var(--fs-xs)] uppercase tracking-wide kpi-label">${l}</div></div>`;
+      const trend = spark ? `<div class="kpi-trend">${spark}</div>` : '';
+      if (ring) return `<div class="card kpi-card kpi-ring">${badge}
+        <div class="kpi-ring-body">
+          <div class="kringwrap">${ring}</div>
+          <div class="kpi-name">${l}</div>
+        </div></div>`;
+      return `<div class="card kpi-card">
+        <div class="kpi-head">${badge}<div class="kpi-name">${l}</div></div>
+        <div class="kpi-num"><div class="kpi-big font-semibold${l==='In progress'?' kpi-live':''}">${v}</div></div>
+        ${trend}</div>`;
     }).join('');
 
   // Live data is independent of the date filter — render it before the early
