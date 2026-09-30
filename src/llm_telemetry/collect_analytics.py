@@ -48,7 +48,7 @@ order by d
 """
 
 # Hour-granularity twin of ROWS, for the dashboard's sub-day range presets
-# (1h/6h/12h — #131). ROWS is DAY grain on purpose (the from/to range filter
+# (1h/6h/12h — #129). ROWS is DAY grain on purpose (the from/to range filter
 # used to be date-only, so day grain kept the payload small); this adds an
 # hour column on the SAME underlying table so an hour preset can filter rows
 # by real clock time instead of collapsing to "today". Scoped to the last 72
@@ -753,7 +753,7 @@ def fetch_rows(con):
 
 
 def fetch_hour_rows(con):
-    """Hour-grain twin of fetch_rows (#131): same resolution (project,
+    """Hour-grain twin of fetch_rows (#129): same resolution (project,
     source) applied to HOUR_ROWS/HOUR_COLS instead of ROWS/COLS, so the
     dashboard's hour range presets (1h/6h/12h) filter real per-hour data
     instead of collapsing to a whole day. Scoped to HOUR_WINDOW_S — see the
@@ -773,7 +773,7 @@ def fetch_hour_rows(con):
 
 def _enrich_rows(rows, catalog):
     """Price + bandwidth-enrich rows in place. Shared by the day-grain
-    (fetch_rows) and hour-grain (fetch_hour_rows, #131) paths so the two can
+    (fetch_rows) and hour-grain (fetch_hour_rows, #129) paths so the two can
     never compute a different cost or wire-byte estimate for the same call.
     """
     for r in rows:
@@ -838,7 +838,7 @@ def build():
         try:
             rows = fetch_rows(con)
             _enrich_rows(rows, catalog)
-            # #131: hour-grain rows for the dashboard's sub-day range
+            # #129: hour-grain rows for the dashboard's sub-day range
             # presets, enriched with the SAME pricing/bandwidth helper as
             # the day-grain rows so the two can never disagree about what a
             # call cost or weighed on the wire.

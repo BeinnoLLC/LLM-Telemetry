@@ -2316,7 +2316,7 @@ const emptyHTML = (icon, msg, hint) =>
 let charts = [], current = null;
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
 let COMPARE_ON = false;
-// #131: sub-day range presets (1h/6h/12h). null = the from/to DATE range
+// #129: sub-day range presets (1h/6h/12h). null = the from/to DATE range
 // applies as before (day grain, p.rows). A number = "last N hours from
 // now", read from p.hour_rows (real hour-grain data, HOUR_WINDOW_S-bounded
 // server-side — see collect_analytics.py). Exclusive with the date pickers:
@@ -2340,7 +2340,7 @@ const bounds = p => {
   return [ds[0]||'', ds[ds.length-1]||''];
 };
 function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
-// #131: pick a sub-day preset (hours = 1/6/12). Clears the date pickers'
+// #129: pick a sub-day preset (hours = 1/6/12). Clears the date pickers'
 // influence for this render — hourRowsFor() below is what render() actually
 // reads while HOUR_RANGE is set.
 function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeToggleLabel(); }
@@ -2389,7 +2389,7 @@ function presets(p){
   const [lo,hi] = bounds(p);
   const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
     const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
-  // #131: hour presets are separate chips (own data-h attribute) from the
+  // #129: hour presets are separate chips (own data-h attribute) from the
   // day presets — they set HOUR_RANGE instead of From/To, and read
   // p.hour_rows (real per-hour data) rather than collapsing to "today" like
   // reusing the 24h day-preset would.
@@ -2905,7 +2905,7 @@ function render(){
   syncProjFilterUI();
   const from = $('from').value, to = $('to').value;
   const inR = d => d && (!from || d>=from) && (!to || d<=to);
-  // #131: an hour preset (1h/6h/12h) takes over row selection entirely —
+  // #129: an hour preset (1h/6h/12h) takes over row selection entirely —
   // real hour-grain data from p.hour_rows, filtered by wall-clock cutoff
   // rather than the date-string range the day presets use. The project
   // filter still composes on top, same as the day-range path below.
@@ -7502,7 +7502,7 @@ TOOLCOLORS = buildToolColors(allToolNames());
 current = ('All' in DATA.profiles) ? 'All' : Object.keys(DATA.profiles)[0];
 tabs();
 renderResolution();
-// #131: editing either date input exits hour-preset mode (the two are
+// #129: editing either date input exits hour-preset mode (the two are
 // mutually exclusive — see HOUR_RANGE's own comment).
 const exitHourRange = () => { HOUR_RANGE = null; render(); };
 $('from').onchange=exitHourRange; $('to').onchange=exitHourRange;

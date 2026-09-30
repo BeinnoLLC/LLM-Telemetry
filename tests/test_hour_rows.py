@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""collect_analytics: HOUR_ROWS / fetch_hour_rows (#131), the hour-grain
+"""collect_analytics: HOUR_ROWS / fetch_hour_rows (#129), the hour-grain
 twin of ROWS/fetch_rows that backs the dashboard's sub-day range presets
 (1h/6h/12h).
 
