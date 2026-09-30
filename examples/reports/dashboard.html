@@ -5,9 +5,25 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
- :root{
+/* Theme tokens — the ONE place the shared palette is declared.
+ *
+ * Both pages inline this file first (see src/llm_telemetry/webassets.py): the
+ * dashboard's stylesheet and the price sheet's stylesheet then carry only the
+ * tokens that are theirs. Before this file existed the block was duplicated in
+ * each build script, so a palette change had to be made twice and could drift
+ * silently — the price sheet would quietly keep the old colours.
+
+   Page-specific tokens are deliberately NOT here: the dashboard keeps its type
+   scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
+   per-provider accent colours. */
+:root{
    --bg:#0b0f17; --card:#131822; --fg:#e6edf6; --muted:#8b98ab;
    --border:#232b39; --accent:#6366f1; --accent2:#22c55e;
+}
+ /* Palette tokens (--bg/--card/--fg/--muted/--border/--accent/--accent2) are
+   declared once in tokens.css, which the build inlines ahead of this file —
+   P2-04 (#28): the price sheet used to carry its own copy of them. */
+:root{
    --fs:15px; --gap:16px; --pad:20px;
    /* ---- Fluid type + spacing scale ---------------------------------
       One continuous scale instead of per-breakpoint font rules. Every

@@ -1,6 +1,7 @@
- :root{
-   --bg:#0b0f17; --card:#131822; --fg:#e6edf6; --muted:#8b98ab;
-   --border:#232b39; --accent:#6366f1; --accent2:#22c55e;
+ /* Palette tokens (--bg/--card/--fg/--muted/--border/--accent/--accent2) are
+   declared once in tokens.css, which the build inlines ahead of this file —
+   P2-04 (#28): the price sheet used to carry its own copy of them. */
+:root{
    --fs:15px; --gap:16px; --pad:20px;
    /* ---- Fluid type + spacing scale ---------------------------------
       One continuous scale instead of per-breakpoint font rules. Every

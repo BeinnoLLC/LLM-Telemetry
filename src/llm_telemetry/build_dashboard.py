@@ -42,7 +42,7 @@ else:
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router",
                     str(CFG.reports_dir / "router-data.json")], check=True)
 from .schema import SCHEMA_VERSION  # noqa: E402
-from .webassets import inline_js, read_css, read_shell  # noqa: E402 - after module-level build-time subprocess calls
+from .webassets import inline_js, read_css, read_shell, read_tokens  # noqa: E402
 
 
 def _load_versioned(path):
@@ -104,7 +104,10 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
                        "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
          "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
                                 "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
-_DASHBOARD_CSS = read_css()
+# P2-04 (#28): the palette tokens live in ONE file (web/css/tokens.css) that
+# both pages inline ahead of their own styles, so a colour change cannot land
+# on the dashboard and miss the price sheet.
+_DASHBOARD_CSS = read_tokens() + read_css()
 SHELL = read_shell()
 
 

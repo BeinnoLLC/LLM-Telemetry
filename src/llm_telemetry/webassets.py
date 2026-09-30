@@ -20,10 +20,41 @@ CSS_PATH = os.path.join(HERE, "web", "css", "dashboard.css")
 SHELL_PATH = os.path.join(HERE, "web", "dashboard.html")
 JS_DIR = os.path.join(HERE, "web", "js")
 ORDER_PATH = os.path.join(JS_DIR, "order.json")
+# P2-04 (#28): the palette every page shares, declared exactly once. Both
+# stylesheets are inlined behind this file, so the dashboard and the price
+# sheet cannot drift apart.
+TOKENS_PATH = os.path.join(HERE, "web", "css", "tokens.css")
+COSTS_CSS_PATH = os.path.join(HERE, "web", "css", "costs.css")
+COSTS_SHELL_PATH = os.path.join(HERE, "web", "costs.html")
+COSTS_JS_PATH = os.path.join(JS_DIR, "costs.js")
 # The modules, in dependency order (main boots last and is the only one that
 # runs anything while loading).
 JS_ORDER = ["palette.js", "charts.js", "views.js", "flow.js", "drawer.js",
             "live.js", "router.js", "main.js"]
+
+
+def read_tokens():
+    """The shared palette tokens, inlined ahead of every page's stylesheet."""
+    with open(TOKENS_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def read_costs_css():
+    """The price sheet's own styles (palette tokens come from read_tokens())."""
+    with open(COSTS_CSS_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def read_costs_shell():
+    """The price sheet's HTML with __COSTS_CSS__ / __COSTS_JS__ slots."""
+    with open(COSTS_SHELL_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def read_costs_js():
+    """The price sheet's calculator script."""
+    with open(COSTS_JS_PATH, encoding="utf-8") as fh:
+        return fh.read()
 
 
 def read_css():
