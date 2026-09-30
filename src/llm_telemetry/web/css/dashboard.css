@@ -853,30 +853,29 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the number as a full-width footer. The card height is set so every card
    in the strip — number or ring — finishes at the same baseline; the ring
    card centres its gauge+label inside that fixed-height body. */
-.kpi-head{display:flex;align-items:center;gap:10px;min-height:36px}
-.kpi-name{font-size:var(--fs-sm);font-weight:650;letter-spacing:.005em;
-  color:var(--muted);text-transform:uppercase}
-.kpi-num{flex:1;display:flex;align-items:flex-end}
+.kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
+.kpi-name{font-size:var(--fs-xs);font-weight:700;letter-spacing:.01em;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.kpi-num{flex:1;display:flex;align-items:flex-start}
 .kpi-num > div{line-height:1}
 .kpi-big{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.015em;
   font-variant-numeric:tabular-nums;color:var(--fg)}
-.kpi-trend{height:22px;margin:0 -16px -18px}
+/* The trend sits INSIDE the card padding: bleeding it to the borders made
+   the polyline touch the card edge (measured 1px) and read as clipped. */
+.kpi-trend{height:20px;margin-top:2px}
 .kpi-trend svg{display:block;width:100%;height:100%}
 .kpi-live{color:var(--accent)}
-/* Ring card: badge sits alone in the header, then a centered body column
-   holds the gauge (same diameter as a number card's number+sparkline) and
-   the label underneath, so the card matches the number card's vertical
-   rhythm. */
+/* Ring card: same badge+name header as every number card (so the strip has
+   ONE header rhythm), then the gauge centred in the remaining body. */
 .kpi-ring{gap:12px}
-.kpi-ring-body{flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:8px;text-align:center}
+.kpi-ring-body{flex:1;display:flex;align-items:center;justify-content:center}
 .kpi-label{margin-top:-1px}
 
 /* #11: radial KPI rings — compact, no-needle variant of the gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the
    unbounded counters next to it, so both live in the same card recipe. */
-.kpi-ring{align-items:center;text-align:center}
-.kringwrap{width:44px;height:44px;align-self:center}
+.kpi-ring{align-items:stretch;text-align:left}
+.kringwrap{width:56px;height:56px;align-self:center}
 .kring{display:block;width:100%;height:100%}
 .kring svg{width:100%;height:100%;display:block}
 .kspwrap{display:inline-block;width:60px;height:20px;vertical-align:middle;flex:none}

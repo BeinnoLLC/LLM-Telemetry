@@ -54,11 +54,22 @@ setTimeout(() => {
     // fixed TZ in CI; use local Date the page itself would construct instead:
     const localNow = w.eval('new Date()');
 
+    // hourRowsFor() reconstructs r.date as a LOCAL midnight and uses r.hour as
+    // a local wall-clock hour (the HOUR_ROWS collector buckets with
+    // date(...)/strftime('%H',...,'localtime')). A fixture that takes the date
+    // from toISOString() (UTC) while taking the hour from getHours() (local)
+    // therefore breaks whenever the local date is ahead of the UTC date —
+    // i.e. between local midnight and the UTC offset (00:00-03:00 in EEST),
+    // when the fixture row lands on yesterday's date and falls outside every
+    // preset window. Derive BOTH from the same local instant.
     w.eval(`
+      const localYmd = (dt) => dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0');
       const fakeP = {hour_rows: [
-        {date: (new Date(Date.now() - 30*60*1000)).toISOString().slice(0,10),
+        {date: localYmd(new Date(Date.now() - 30*60*1000)),
          hour: (new Date(Date.now() - 30*60*1000)).getHours(), calls: 3, id:'within30m'},
-        {date: (new Date(Date.now() - 9*3600*1000)).toISOString().slice(0,10),
+        {date: localYmd(new Date(Date.now() - 9*3600*1000)),
          hour: (new Date(Date.now() - 9*3600*1000)).getHours(), calls: 5, id:'nine_hours_ago'},
       ]};
       window.__hr1 = hourRowsFor(fakeP, 1);
@@ -97,9 +108,12 @@ setTimeout(() => {
     // Seed a real hour_rows entry inside the actual DATA (not the fake
     // fixture above) so render()'s KPI math is exercised end to end.
     w.eval(`
+      const localYmd2 = (dt) => dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0');
       const p = DATA.profiles[current];
       p.hour_rows = (p.hour_rows || []).concat([{
-        date: (new Date()).toISOString().slice(0,10), hour: (new Date()).getHours(),
+        date: localYmd2(new Date()), hour: (new Date()).getHours(),
         model:'gpt-x', provider:'openai', task:'main', calls: 7, inp: 10, outp: 5,
         cread: 0, cwrite: 0, rtok: 0, market_value_usd: 0.02, billed_usd: 0.02,
         sessions: 1, project: null, source: 'desktop'
