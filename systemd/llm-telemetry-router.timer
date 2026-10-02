@@ -1,0 +1,15 @@
+[Unit]
+Description=Refresh the Router tab every hour
+
+[Timer]
+OnBootSec=2min
+# Hourly (#130): router config changes when you edit config.yaml, and the
+# decision counts come from the agent log, which is too heavy to re-walk on
+# the dashboard's every-minute build. That build re-collects on its own only
+# when router-data.json is older than 65 minutes, so a missed tick heals.
+OnCalendar=hourly
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

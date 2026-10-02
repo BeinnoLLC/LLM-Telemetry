@@ -236,8 +236,19 @@ chk(added.length === 0, 'no NEW cross-module writes (a module assigning to an im
 chk(gone.length === 0, 'cross-module-write list has no stale entries (removed ones deleted)',
     gone.length ? `already fixed, drop from the list: ${gone.join(', ')}` : '');
 
-chk(MODULES.filter(f => f !== 'costs.js').length === 8, 'expected eight dashboard modules',
-    `found ${MODULES.filter(f => f !== 'costs.js').length}`);
+// Every dashboard module on disk must be in the build's JS_ORDER (and vice
+// versa). A count pin ("expected eight") only forced an edit here when a module
+// was added; comparing against the build list catches the real failure — a
+// module that exists but is never inlined, so its blocks silently vanish.
+const jsOrderSrc = fs.readFileSync(path.join(ROOT, 'src', 'llm_telemetry', 'webassets.py'), 'utf8');
+const jsOrderM = jsOrderSrc.match(/JS_ORDER\s*=\s*\[([^\]]*)\]/);
+const jsOrder = jsOrderM ? [...jsOrderM[1].matchAll(/"([^"]+\.js)"/g)].map(m => m[1]) : [];
+const onDisk = MODULES.filter(f => f !== 'costs.js');
+const notBuilt = onDisk.filter(f => !jsOrder.includes(f));
+const missing = jsOrder.filter(f => !onDisk.includes(f));
+chk(jsOrder.length > 0 && !notBuilt.length && !missing.length,
+    'every dashboard module is in webassets.JS_ORDER and vice versa',
+    `not built: ${notBuilt.join(', ') || '-'}; missing on disk: ${missing.join(', ') || '-'}`);
 
 console.log(`\ncheck-module-graph.mjs  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -30,7 +30,13 @@ GOLDEN = os.path.join(HERE, "..", "tests", "fixtures", "golden")
 # real host. Matching them is the job of an explicit allowlist, not a lookbehind
 # (`(?<!127\.0\.0\.)` fails on "127.0.0.1" itself — the prefix is the match).
 ALLOWED_IPS = {"127.0.0.1", "0.0.0.0", "255.255.255.255", "8.8.8.8"}
-IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+# Real dotted quads only: every octet 0-255, and not a slice of a longer run of
+# dotted numbers. Inlined SVG path data (the Router tab's provider logos, #130)
+# is full of "2.774.868.86"-style coordinate runs that the old \d{1,3} pattern
+# reported as addresses. A genuine LAN IP such as 10.0.0.5 or 192.168.1.11
+# still matches, including at the end of a sentence ("... at 10.0.0.5.").
+_OCT = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
+IP_RE = re.compile(rf"(?<![\d.])(?:{_OCT}\.){{3}}{_OCT}(?!\d|\.\d)")
 
 PATTERNS = [
     (r"llmstudio", "internal hostname"),

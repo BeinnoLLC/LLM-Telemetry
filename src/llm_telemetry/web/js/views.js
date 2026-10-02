@@ -11,6 +11,7 @@ import {
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
 import { renderLive } from './live.js';
+import { renderRouterView, routerStat } from './routerview.js';
 import {
   HOUR_RANGE, POWER, PROJECT_FILTER, hourRowsFor, pickView, setHash, view,
 } from './router.js';
@@ -517,6 +518,9 @@ export function render(){
   // empty date range clears the graph instead of leaving a stale one on screen.
   flowControls();
   if (view === 'Flow') renderFlow(rows);
+  // Router tab (#130) reads DATA.router, not the ledger rows, so it renders
+  // before the empty-range return too.
+  if (view === 'Router') renderRouterView();
 
   // Before the empty-range return: a range with no ledger rows must say so,
   // not keep showing the previous range's numbers.
@@ -773,6 +777,8 @@ export function renderHome(inR){
       live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
     ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
       models.size + (models.size === 1 ? ' model' : ' models')],
+    ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',
+      routerStat()],
     ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
     ['Projects', icon('folder'), PAL[5], 'Spend and calls broken down by project',
       projStat],

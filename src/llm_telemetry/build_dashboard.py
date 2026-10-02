@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import subprocess
+import time
 
 from .config import get as _cfg
 
@@ -36,11 +37,15 @@ if os.environ.get("LLM_TELEMETRY_NO_COLLECT"):
     pass
 else:
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
-    # Router config is small and changes only when you edit config.yaml, so it is
-    # baked into the page rather than polled. Regenerated on every build, so the
-    # help page cannot drift from the config the agent actually loads.
-    subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router",
-                    str(CFG.reports_dir / "router-data.json")], check=True)
+    # Router data (#130) has its own hourly job (systemd/llm-telemetry-router.timer):
+    # it walks every profile's agent log, which is too much work for a build that
+    # runs every minute. This build only re-collects as a safety net when the file
+    # is missing or older than ROUTER_MAX_AGE_S, so a deployment with no timer
+    # (a plain container running the build loop) still refreshes hourly.
+    _router = CFG.reports_dir / "router-data.json"
+    ROUTER_MAX_AGE_S = 65 * 60
+    if not _router.exists() or time.time() - _router.stat().st_mtime > ROUTER_MAX_AGE_S:
+        subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router", str(_router)], check=True)
 from .schema import SCHEMA_VERSION  # noqa: E402
 from .webassets import inline_js, read_css, read_shell, read_tokens  # noqa: E402
 
@@ -60,7 +65,11 @@ def _load_versioned(path):
 
 
 data = _load_versioned(DATA)
-data["router"] = _load_versioned(CFG.reports_dir / "router-data.json")["profiles"]
+_rd = _load_versioned(CFG.reports_dir / "router-data.json")
+data["router"] = _rd["profiles"]
+# Router tab (#130): the shared category/level vocabulary and when the hourly
+# job last ran, so the tab can say how fresh its picture is.
+data["router_meta"] = {"vocab": _rd.get("vocab") or {}, "collected_at": _rd.get("collected_at")}
 
 
 def _shown_path(f):

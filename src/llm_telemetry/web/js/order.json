@@ -134,6 +134,98 @@
    "name": "charts"
   },
   {
+   "mod": "routerview",
+   "name": "RT_TIER_HUE"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtHue"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_SVG"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_LOGO"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtLogo"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtModel"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_AUTH"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtAuthBadge"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtStatus"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtAgo"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtTierChip"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtFlowStrip"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtChart"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtMatrix"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtWorkers"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtAuthTable"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtDecisions"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_FOLD_KEY"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtFolded"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtSaveFold"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtSection"
+  },
+  {
+   "mod": "routerview",
+   "name": "routerStat"
+  },
+  {
+   "mod": "routerview",
+   "name": "renderRouterView"
+  },
+  {
    "mod": "router",
    "name": "view"
   },

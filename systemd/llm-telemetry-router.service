@@ -1,0 +1,6 @@
+[Unit]
+Description=Collect model-router config, auth and routing decisions (Router tab)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/llm-telemetry router

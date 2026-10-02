@@ -215,6 +215,15 @@ __DASHBOARD_CSS__
   </div>
  </div>
 
+ <!-- #130: model router per profile — responsibility chart, routing matrix,
+      decisions, background workers, provider auth. Filled by routerview.js. -->
+ <div class="view" data-view="Router" hidden>
+  <div class="lbl mb-2.5">Model router
+   <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="routersub"></span>
+  </div>
+  <div id="routerview"></div>
+ </div>
+
  <div class="view" data-view="Flow" hidden>
   <div class="card p-4">
    <div class="lbl mb-2.5">Provider → model → task
