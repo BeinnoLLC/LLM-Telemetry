@@ -128,6 +128,14 @@ def assemble(data, catalog, installed=()):
         used = bool(agg and agg["calls"])
         local = model in local_names or P.is_local(model)
         source = "local" if local else rate_source(model, catalog)
+        # Served only through Nous Portal: show what Nous charges (#131), not
+        # the OpenRouter number. A model also served elsewhere keeps the
+        # catalogue rate, because one row cannot carry two prices.
+        nous_rt = None
+        if not local and agg and agg["providers"] == {"nous"}:
+            nous_rt = P.nous_rates_for(model, catalog)
+            if nous_rt:
+                source = "free-tier" if not any(nous_rt) else "nous"
         tps = energy = None
         if source == "local":
             (ri, ro, rc), tps = local_rates(model)
@@ -136,7 +144,7 @@ def assemble(data, catalog, installed=()):
         elif source == "free-tier":
             ri = ro = rc = 0.0
         else:
-            rt = P.rates_for(model, catalog)
+            rt = nous_rt if source == "nous" else P.rates_for(model, catalog)
             ri, ro, rc = (rt[0] * 1e6, rt[1] * 1e6, rt[2] * 1e6) if rt else (None, None, None)
             if rt is None:
                 source = "unpriced"
@@ -179,7 +187,7 @@ def build():
 
     return {
         "models": models,
-        "catalog_size": len(catalog),
+        "catalog_size": P.catalog_size(catalog),
         "catalog_source": src,
         "freshness": P.catalog_freshness(src),
         "generated": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -267,6 +275,7 @@ def prov_badge(name):
 LABEL = {
     "vendor": "vendor page",
     "openrouter": "openrouter",
+    "nous": "nous portal",
     "local": "local models",
     "free-tier": "free tier",
     "unpriced": "unpriced",

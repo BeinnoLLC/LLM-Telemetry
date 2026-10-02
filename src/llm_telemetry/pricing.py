@@ -35,6 +35,13 @@ def _local_patterns():
 CACHE = str(_cfg().reports_dir / "pricing-cache.json")
 URL = "https://openrouter.ai/api/v1/models"
 TTL = 6 * 3600
+# Nous Portal publishes its OWN price list (#131): public, OpenRouter-shaped,
+# and not always equal to OpenRouter's (deepseek-v4-pro-0813 is 5x cheaper on
+# Nous). Merged into the catalogue under NOUS_PREFIX so Nous traffic prices at
+# what Nous charges while every other row keeps the OpenRouter rate.
+NOUS_URL = "https://inference-api.nousresearch.com/v1/models"
+NOUS_CACHE = str(_cfg().reports_dir / "nous-pricing-cache.json")
+NOUS_PREFIX = "nous:"
 
 # billing_provider -> class
 PROVIDER_CLASS = {
@@ -290,15 +297,65 @@ def catalog_freshness(source, now=None):
             "ttl": ttl_label(), "detail": detail}
 
 
+def _fetch_cached(url, cache, shape, force=False):
+    """-> (models, source) for one remote catalogue, cached for TTL seconds,
+    falling back to a stale cache when the network is down."""
+    if not force and os.path.exists(cache):
+        if time.time() - os.path.getmtime(cache) < TTL:
+            try:
+                return json.load(open(cache))["models"], "cache"
+            except Exception:
+                pass
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "hermes-analytics"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            models = shape(json.load(r))
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        json.dump({"fetched": time.time(), "models": models}, open(cache, "w"))
+        return models, "live"
+    except Exception as e:
+        if os.path.exists(cache):
+            try:
+                return json.load(open(cache))["models"], f"stale ({e.__class__.__name__})"
+            except Exception:
+                pass
+        return {}, f"unavailable ({e.__class__.__name__})"
+
+
+def _shape_nous(raw):
+    """Nous /v1/models -> {"nous:<id>": pricing}, one key per id AND alias
+    (rows record either "deepseek/deepseek-v4-pro-0813" or a dated alias)."""
+    out = {}
+    for m in raw.get("data", []):
+        pr = m.get("pricing") or {}
+        for mid in [m.get("id"), *(m.get("aliases") or [])]:
+            if mid:
+                out.setdefault(NOUS_PREFIX + mid, pr)
+    return out
+
+
+def fetch_nous_catalog(force=False):
+    return _fetch_cached(NOUS_URL, NOUS_CACHE, _shape_nous, force)
+
+
 def fetch_catalog(force=False):
-    """Return {openrouter_id: pricing_dict}, cached for TTL seconds.
+    """Return {openrouter_id: pricing_dict} plus {"nous:<id>": pricing_dict},
+    cached for TTL seconds.
 
     LLM_TELEMETRY_CATALOG pins a catalogue file (the committed sample one),
     read as-is: no network, no refresh, so a sample build is reproducible.
+    The source label is the OpenRouter one; a Nous fetch failure only means
+    Nous rows fall back to OpenRouter rates.
     """
     pinned = os.environ.get("LLM_TELEMETRY_CATALOG")
     if pinned:
         return json.load(open(pinned))["models"], "pinned"
+    models, src = _fetch_openrouter(force)
+    nous, _nsrc = fetch_nous_catalog(force)
+    return {**models, **nous}, src
+
+
+def _fetch_openrouter(force=False):
     if not force and os.path.exists(CACHE):
         age = time.time() - os.path.getmtime(CACHE)
         if age < TTL:
@@ -369,11 +426,55 @@ def _resolve_catalog_id(model, catalog):
         cands.append(dotted)
     for cand in cands:
         for cid in catalog:
-            if ":" in cid.split("/")[-1]:
+            # Nous entries (#131) are looked up explicitly for Nous rows only;
+            # a fuzzy match must never hand a non-Nous row a Nous rate.
+            if cid.startswith(NOUS_PREFIX) or ":" in cid.split("/")[-1]:
                 continue
             if cid.split("/")[-1].lower() == cand:
                 return cid
     return None
+
+
+def catalog_size(catalog):
+    """OpenRouter models in a catalogue, excluding the merged Nous entries."""
+    return sum(1 for k in catalog if not k.startswith(NOUS_PREFIX))
+
+
+def _rate_triple(p):
+    try:
+        r = (float(p.get("prompt") or 0), float(p.get("completion") or 0),
+             float(p.get("input_cache_read") or 0))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return None if any(x < 0 for x in r) else r
+
+
+def nous_rates_for(model, catalog, prompt_per_call=None):
+    """-> Nous Portal's own (prompt, completion, cache_read) per token, or None.
+
+    Exact id or alias only, with the vendor prefix tolerated both ways
+    ("deepseek-v4.1-flash" vs "deepseek/deepseek-v4.1-flash" is NOT guessed:
+    a wrong Nous match would be worse than the OpenRouter fallback). When the
+    row's average prompt per call reaches an override's min_prompt_tokens, the
+    long-context tier applies — rows are aggregates, so the average is the
+    best available proxy for the per-call size Nous bills on.
+    """
+    p = catalog.get(NOUS_PREFIX + (model or ""))
+    if not p:
+        return None
+    base = _rate_triple(p)
+    if not base:
+        return None
+    if prompt_per_call:
+        tiers = sorted((o for o in (p.get("overrides") or []) if isinstance(o, dict)),
+                       key=lambda o: float(o.get("min_prompt_tokens") or 0))
+        for o in tiers:
+            if prompt_per_call >= float(o.get("min_prompt_tokens") or 0):
+                merged = {"prompt": o.get("prompt", p.get("prompt")),
+                          "completion": o.get("completion", p.get("completion")),
+                          "input_cache_read": o.get("input_cache_read", p.get("input_cache_read"))}
+                base = _rate_triple(merged) or base
+    return base
 
 
 def rates_for(model, catalog):
@@ -437,6 +538,8 @@ def price_row(row, catalog):
             prov = "opencode-go"
         elif "api.anthropic.com" in url:
             prov = "anthropic"
+        elif "nousresearch.com" in url:
+            prov = "nous"
         elif "ollama.com" in url:
             # Ollama Cloud is hosted and metered, never a LAN host: it must be
             # matched BEFORE the local patterns (issue #118).
@@ -470,13 +573,29 @@ def price_row(row, catalog):
         # No provider recorded: recover the class from the model name rather
         # than reporting a well-known model as untracked.
         cls = class_from_model(model) or "unknown"
-    r = None if is_free_tier(model) else rates_for(model, catalog)
+    r = None
+    rate_source = ""
+    if prov == "nous" and cls not in ("local", "preset"):
+        # What Nous actually charges (#131), before any OpenRouter guess. Its
+        # catalogue lists its own ":free" SKUs at 0, so it also wins over the
+        # free-tier shortcut for Nous traffic.
+        calls = row.get("calls") or 0
+        prompt = (row.get("input_tokens") or 0) + (row.get("cache_read") or 0)
+        ppc = (prompt / calls) if calls else None
+        r = nous_rates_for(model, catalog, ppc)
+        if r:
+            rate_source = "nous"
+    if r is None:
+        r = None if is_free_tier(model) else rates_for(model, catalog)
+        if r:
+            rate_source = "catalog"
     if cls == "local" and not is_local(model):
         # Classed local by its endpoint (a LAN host) but not by name: still
         # electricity, never a catalogue price and never $0 (P7-01).
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)
         r = (ri / 1e6, ro / 1e6, rc / 1e6)
+        rate_source = "energy"
     value = 0.0
     if r:
         pin, pout, pcache = r
@@ -497,13 +616,16 @@ def price_row(row, catalog):
         # catalogue gap and told the user their est. cost was understated when
         # it was exact (#135).
         "priced": bool(r) or cls == "free",
+        # Which price list the rate came from: "nous" (Nous Portal's own,
+        # #131), "catalog" (OpenRouter / web rates), or "" when unpriced.
+        "rate_source": rate_source,
     }
 
 
 if __name__ == "__main__":
     import sys
     cat, src = fetch_catalog(force="--force" in sys.argv)
-    print(f"catalog: {len(cat)} models ({src})")
+    print(f"catalog: {catalog_size(cat)} OpenRouter + {len(cat) - catalog_size(cat)} Nous ids ({src})")
     for m in ("claude-opus-5", "glm-5.3-flash", "qwen3-coder:30b",
               "accounts/fireworks/models/deepseek-v4p1-flash"):
         r = rates_for(m, cat)
