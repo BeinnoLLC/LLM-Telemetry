@@ -86,6 +86,37 @@ chk("bare kimi-k3 priced", r["priced"], True)
 r = cls("deepseek-v4.1-flash", "ollama-cloud", "https://ollama.com/v1")
 chk("deepseek-v4.1-flash priced from card", r["billed_usd"] > 0, True)
 
+# --- OpenCode Zen free SKUs (#135) ---------------------------------------------
+# Zen's free models use their OWN naming convention, not OpenRouter's ":free".
+# They must read as a priced free tier: a published $0 is a known rate, and
+# reporting it as "unpriced" told the user 153 real calls were excluded from
+# est. cost when they were in fact genuinely free.
+ZEN = ["space-bunny-free", "longcat-2.5-preview-free", "big-pickle",
+       "mimo-v2.5-free", "nemotron-3-ultra-free", "jev-1.13-free"]
+for model in ZEN:
+    r = cls(model, "opencode-go", "https://opencode.ai/zen/v1")
+    chk(f"{model} is class free", r["cost_class"], "free")
+    chk(f"{model} counts as priced", r["priced"], True)
+    chk(f"{model} costs $0", r["market_value_usd"], 0)
+    chk(f"{model} is not billed", r["billed_usd"], 0)
+    chk(f"{model} is not electricity", r["energy_usd"], 0)
+
+# A vendor prefix must not hide the free rate.
+r = cls("zen/space-bunny-free", "custom", "https://opencode.ai/zen/v1")
+chk("prefixed Zen free SKU still free", r["cost_class"], "free")
+
+# A free SKU must never swallow a paid sibling, and an unrecognised name must
+# still surface as a real gap rather than silently $0. The paid SKU keeps
+# whatever class its provider slot already implied (opencode-go is a
+# subscription); what matters is that it is priced and is NOT classed free.
+r = cls("space-bunny-free-experimental", "opencode-go", "https://opencode.ai/zen/v1")
+chk("unknown '-free'-like name stays unpriced", r["priced"], False)
+chk("unknown name is not classed free", r["cost_class"] != "free", True)
+r = cls("glm-5.3-flash", "opencode-go", "https://opencode.ai/zen/v1")
+chk("a paid Zen SKU is priced", r["priced"], True)
+chk("a paid Zen SKU is not classed free", r["cost_class"] != "free", True)
+chk("a paid Zen SKU carries a real value", r["market_value_usd"] > 0, True)
+
 if FAIL:
     print(f"test_cloud_pricing.py  {len(FAIL)} FAILED")
     for f in FAIL:

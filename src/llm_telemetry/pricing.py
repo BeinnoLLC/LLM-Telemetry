@@ -81,6 +81,49 @@ PRESET_MODELS = ("default",)
 # ":free" is an OpenRouter tier suffix: real traffic, genuinely $0 per token.
 FREE_TIER_SUFFIX = ":free"
 
+# OpenCode Zen ships free SKUs under its OWN naming convention, not OpenRouter's
+# ":free" suffix — "space-bunny-free", "longcat-2.5-preview-free", or a bare
+# "big-pickle". They were falling through to the catalogue, which does not list
+# them, so 153 calls of real traffic priced at $0 and landed in "unpriced":
+# genuine $0, reported as a data gap (issue #135). Declared here as an explicit
+# $0 price so they read as a priced free tier, exactly like ":free" does.
+# Source: opencode.ai/docs/zen pricing table (Input/Output/Cached Read = Free).
+ZEN_FREE_MODELS = {
+    "space-bunny-free",
+    "longcat-2.5-preview-free",
+    "mimo-v2.6-flash-free",
+    "mimo-v2.5-free",
+    "ling-3.0-flash-fin-free",
+    "nemotron-3-ultra-free",
+    "nemotron-3.5-lightning-free",
+    "muse-spark-1.3-contributor-free",
+    "jev-1.13-free",
+    "big-pickle",
+}
+
+
+def is_free_tier(model):
+    """True when this model's rate is a published $0, not merely unknown.
+
+    Two conventions, both real traffic at zero cost per token: OpenRouter's
+    ":free" suffix and OpenCode Zen's free SKUs (which may carry a "-free"
+    suffix, a bare marketing name, or a dated "-preview-free" variant). The name
+    alone cannot prove $0 — anything unrecognised must stay "unpriced" so the
+    gap still surfaces — so only the explicit lists below qualify.
+    """
+    m = (model or "").strip().lower()
+    if not m:
+        return False
+    if m.endswith(FREE_TIER_SUFFIX):
+        return True
+    if m in ZEN_FREE_MODELS:
+        return True
+    # Zen free SKUs also appear with a vendor prefix ("openrouter/…", "zen/…")
+    # or an ":online" tag; match on the basename only after an exact-list miss,
+    # and never on a substring so "space-bunny-free-experimental" stays unpriced.
+    base = m.rsplit("/", 1)[-1]
+    return base in ZEN_FREE_MODELS
+
 
 # Known model -> billing class, used when the usage row carries no provider at
 # all (older rows predate provider recording). Without this they land in
@@ -405,10 +448,11 @@ def price_row(row, catalog):
     if (model or "").strip().lower() in PRESET_MODELS or prov == "moa":
         # Ensemble/router preset: members are billed on their own rows.
         cls = "preset"
-    elif (model or "").lower().endswith(FREE_TIER_SUFFIX):
-        # OpenRouter ":free" tier: genuinely $0 per token, a different thing
-        # from local inference (rates_for is skipped below so the row can
-        # never inherit the metered SKU's price through the base-name match).
+    elif is_free_tier(model):
+        # A published $0 tier: OpenRouter ":free" and OpenCode Zen's free SKUs
+        # are genuinely free, a different thing from local inference (rates_for
+        # is skipped below so the row can never inherit a metered SKU's price
+        # through the base-name match).
         cls = "free"
     elif is_local(model):
         cls = "local"
@@ -426,7 +470,7 @@ def price_row(row, catalog):
         # No provider recorded: recover the class from the model name rather
         # than reporting a well-known model as untracked.
         cls = class_from_model(model) or "unknown"
-    r = None if (model or "").lower().endswith(FREE_TIER_SUFFIX) else rates_for(model, catalog)
+    r = None if is_free_tier(model) else rates_for(model, catalog)
     if cls == "local" and not is_local(model):
         # Classed local by its endpoint (a LAN host) but not by name: still
         # electricity, never a catalogue price and never $0 (P7-01).
@@ -448,7 +492,11 @@ def price_row(row, catalog):
         # silently folded into billed spend.
         "billed_usd": round(value, 6) if cls == "metered" else 0.0,
         "energy_usd": round(energy, 6),
-        "priced": bool(r),
+        # A published $0 tier is PRICED: the rate is known, it just happens to
+        # be zero. Reporting it as "unpriced" made real traffic look like a
+        # catalogue gap and told the user their est. cost was understated when
+        # it was exact (#135).
+        "priced": bool(r) or cls == "free",
     }
 
 

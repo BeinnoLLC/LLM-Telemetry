@@ -49,10 +49,11 @@ def rate_source(model, catalog):
     """Where did this model's price come from? Drives the provenance column."""
     if P.is_local(model):
         return "local"
-    # An OpenRouter ":free" tier is real traffic at a genuine $0 per token —
-    # priced, not missing. Without this it lands in "unpriced" and looks like
-    # a gap in the catalogue that someone needs to go and fix.
-    if (model or "").endswith(P.FREE_TIER_SUFFIX):
+    # A published $0 tier is real traffic at a genuine $0 per token — OpenRouter
+    # ":free" and OpenCode Zen's free SKUs alike — priced, not missing. Without
+    # this it lands in "unpriced" and looks like a gap in the catalogue that
+    # someone needs to go and fix.
+    if P.is_free_tier(model):
         return "free-tier"
     if P.WEB_RATES.get(model) or P.WEB_RATES.get((model or "").split("/")[-1]):
         return "vendor"
