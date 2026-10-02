@@ -17,12 +17,12 @@ GROUPS.forEach(([k, label]) => {
     .sort(([a], [b]) => (b.u - a.u) || a.n.localeCompare(b.n));
   if (!ms.length) return;
   const g = document.createElement('optgroup');
-  g.label = label + ' \u00b7 ' + ms.length;
+  g.label = label + ' · ' + ms.length;
   g.dataset.kind = k;
   ms.forEach(([m, i]) => {
     const o = document.createElement('option');
     o.value = i;
-    o.textContent = m.n + (m.u ? '  \u2022 used' : '');
+    o.textContent = m.n + (m.u ? '  • used' : '');
     g.appendChild(o);
   });
   sel.appendChild(g);
@@ -63,7 +63,7 @@ function calc(){
   const cin = i / 1e6 * m.i, cout = o / 1e6 * m.o;
   const total = (cin + cout) * runs;
   const what = k === 'local' ? 'electricity' : k === 'free' ? 'free tier' : 'billed';
-  $('ctot').textContent = (k === 'local' ? '\u2248 ' : '') + money(total) + ' ' + what;
+  $('ctot').textContent = (k === 'local' ? '≈ ' : '') + money(total) + ' ' + what;
   $('ctot').style.color = k === 'local' ? '#fbbf24' : 'inherit';
   const per = runs > 1 ? ` &times; ${runs} runs` : '';
   $('cbrk').innerHTML =

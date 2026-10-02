@@ -5,10 +5,13 @@ The shipped page stays ONE self-contained file (clone and open it, no bundler,
 no network), so the modules are inlined at build time — imports dropped,
 ``export`` keywords stripped, blocks replayed in the original load order.
 
-Load order matters and is not guessed: ``web/js/order.json`` records, for every
-top-level block, which module owns it and at which line it starts. Replaying
-that manifest reproduces the pre-split script byte for byte, which is what makes
-the split safe — the emitted page is not merely "equivalent", it is identical.
+Load order matters and is not guessed: ``web/js/order.json`` records the order of
+every top-level block and the module that owns it. Blocks are located by NAME at
+build time, not by a stored line number: a stored offset silently slices the
+wrong text the moment anyone edits a module (every later block in that file
+shifts), and a wrong slice is a corrupted page rather than an error. The name
+scan below is the same rule the split used, so the manifest only has to get the
+ORDER right — the thing that cannot be inferred.
 """
 import json
 import os
@@ -31,6 +34,9 @@ COSTS_JS_PATH = os.path.join(JS_DIR, "costs.js")
 # runs anything while loading).
 JS_ORDER = ["palette.js", "charts.js", "views.js", "flow.js", "drawer.js",
             "live.js", "router.js", "main.js"]
+# A top-level declaration: the only thing that starts a block.
+DECL_RE = re.compile(r"^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
+                     r"([A-Za-z_$][\w$]*)")
 
 
 def read_tokens():
@@ -69,48 +75,51 @@ def read_shell():
         return fh.read()
 
 
+def split_blocks(text):
+    """{block name: [lines]} for one module, by top-level declaration."""
+    lines = text.splitlines(True)
+    starts = []                                    # (index, declared name)
+    for i, line in enumerate(lines):
+        match = DECL_RE.match(line)
+        if match:
+            starts.append((i, match.group(1)))
+    blocks = {}
+    for n, (i, name) in enumerate(starts):
+        stop = starts[n + 1][0] if n + 1 < len(starts) else len(lines)
+        if name in blocks:
+            sys.exit(f"web/js: module declares '{name}' twice")
+        blocks[name] = lines[i:stop]
+    return blocks
+
+
 def inline_js():
     """Return the page's JavaScript as one classic-script body."""
     with open(ORDER_PATH, encoding="utf-8") as fh:
         manifest = json.load(fh)
 
-    per_mod = {}
-    for entry in manifest["order"]:
-        per_mod.setdefault(entry["mod"] + ".js", []).append(entry)
-
-    src = {}
+    blocks = {}
     for name in JS_ORDER:
         path = os.path.join(JS_DIR, name)
         if not os.path.exists(path):
             sys.exit(f"web/js: missing module {name} (expected by order.json)")
         with open(path, encoding="utf-8") as fh:
-            src[name] = fh.read()
-
-    # Every block runs from its start line to the next block in the same
-    # module, or to end of file.
-    ranges = {}
-    for name, entries in per_mod.items():
-        total = src[name].count("\n") + 1
-        for i, entry in enumerate(entries):
-            stop = entries[i + 1]["start"] if i + 1 < len(entries) else total + 1
-            ranges.setdefault(name, {})[entry["name"]] = (entry["start"], stop)
+            blocks[name] = split_blocks(fh.read())
 
     chunks = [manifest.get("prelude", "")]
     for entry in manifest["order"]:
         name = entry["mod"] + ".js"
         try:
-            lo, hi = ranges[name][entry["name"]]
+            text = "".join(blocks[name][entry["name"]])
         except KeyError:
             sys.exit(f"web/js/order.json references '{entry['name']}' in {name}, "
                      f"but that module does not declare it")
-        text = "".join(src[name].splitlines(True)[lo - 1:hi - 1])
         chunks.append(re.sub(r"^export\s+", "", text, flags=re.M))
     body = "".join(chunks)
 
     # Flattening modules into a single script scope must not collapse two
     # declarations onto one name; fail loudly rather than shadow silently.
     seen = set()
-    for match in re.finditer(r"^(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)",
+    for match in re.finditer(r"^(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)",
                              body, flags=re.M):
         if match.group(1) in seen:
             sys.exit(f"web/js: '{match.group(1)}' is declared twice — flattening "

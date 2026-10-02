@@ -41,14 +41,47 @@ for (const m of MODULES) {
 }
 
 // ---- exports per module ----------------------------------------------------
+// A declaration can bind SEVERAL names at once — `export let AC, MU, BD, FG;`
+// and `export let charts = [], current = null;` are both idiomatic here, and the
+// palette/charts/drawer modules use them heavily. Capturing only the first
+// identifier made every later name look unexported, so importing them reported
+// false failures on correct code (MU, BD, FG, bwPrevAt, current, logsLoading,
+// …). Split the declarator list on top-level commas and take the identifier
+// that starts each one.
+//
+// Line-based on purpose: a `[^;]*` character class also matches newlines, so it
+// runs straight past the end of a declaration and swallows the following ones.
+const topLevelNames = (decl) => {
+  let depth = 0, part = '';
+  const parts = [];
+  for (const ch of decl) {
+    if (ch === '[' || ch === '{' || ch === '(') depth++;
+    else if (ch === ']' || ch === '}' || ch === ')') depth--;
+    if (ch === ',' && depth === 0) { parts.push(part); part = ''; } else part += ch;
+  }
+  parts.push(part);
+  return parts.map(p => /^\s*([A-Za-z_$][\w$]*)/.exec(p))
+              .filter(Boolean).map(m => m[1]);
+};
+
+const scanDecls = (source, optionalExport) => {
+  const names = new Set();
+  const re = optionalExport
+    ? /^export\s+(?:async\s+)?(?:function|const|let|var|class)\s+(.+)$/
+    : /^(?:export\s+)?(?:function|const|let|var|class)\s+(.+)$/;
+  for (const line of source.split('\n')) {
+    const g = re.exec(line);
+    if (g) topLevelNames(g[1]).forEach(n => names.add(n));
+  }
+  return names;
+};
+
 const exported = {};
 for (const m of MODULES) {
-  const names = new Set();
-  const re = /^export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm;
-  let g;
-  while ((g = re.exec(src[m]))) names.add(g[1]);
+  const names = scanDecls(src[m], true);
   // `export { a, b };` form
   const re2 = /^export\s*\{([^}]*)\}/gm;
+  let g;
   while ((g = re2.exec(src[m]))) {
     g[1].split(',').map(s => s.trim().split(/\s+as\s+/).pop()).filter(Boolean)
         .forEach(n => names.add(n));
@@ -78,13 +111,14 @@ for (const m of MODULES) {
 }
 
 // ---- 4. no duplicate top-level declarations across modules -----------------
+// Same multi-declarator caveat as the export scan above: `export let AC, MU,
+// BD, FG;` declares FOUR top-level names, and reading only the first would let a
+// real collision slip through unnoticed in every module after the first.
 const seen = new Map(), dupes = [];
 for (const m of MODULES) {
-  const re = /^(?:export\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm;
-  let g;
-  while ((g = re.exec(src[m]))) {
-    if (seen.has(g[1])) dupes.push(`${g[1]} (${seen.get(g[1])} + ${m})`);
-    else seen.set(g[1], m);
+  for (const name of scanDecls(src[m], false)) {
+    if (seen.has(name)) dupes.push(`${name} (${seen.get(name)} + ${m})`);
+    else seen.set(name, m);
   }
 }
 chk(dupes.length === 0, 'no top-level name is declared in two modules', dupes.join(', '));

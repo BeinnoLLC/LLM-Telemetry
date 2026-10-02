@@ -3,17 +3,19 @@
  * (including the completion sound).
  */
 import {
-  $, ago, bwPrev, catOf, colorOf, emptyHTML, esc, fmtB, short, toolColor,
+  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, fmtB, pick, short, toolColor,
 } from './palette.js';
-import { agg, bwRow, loeIcon, mk } from './charts.js';
+import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
 import {
-  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, renderOllama, renderRepoBranch,
+  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
 import { renderAgents, renderQueue } from './flow.js';
 import {
-  installDrawer, installSessionFinder, installTimelineModal, installTranscriptModal,
+  drawerSync, installDrawer, installSessionFinder, installTimelineModal, installTranscriptModal,
 } from './drawer.js';
-import { POWER, intervalsInstall, profileHue, settingsInstall, view } from './router.js';
+import {
+  POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
+} from './router.js';
 import { DATA } from './main.js';
 
 export function renderLive(){
@@ -181,6 +183,51 @@ export function mergeDelegations(list){
 // Synthetic "All" profile: every real profile merged, so the first tab answers
 // "what is my whole setup doing / costing" without switching back and forth.
 // Built client-side from DATA so it always matches what the tabs show.
+export async function doRefresh(silent){
+  const b = $('refresh');
+  if (b.dataset.busy) return;
+  b.dataset.busy = '1'; if(!silent) b.style.opacity = '.5';
+  try {
+    const r = await fetch('analytics-data.json?t=' + Date.now(), {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const fresh = await r.json();
+    const bad = schemaProblem(fresh, 'analytics-data.json');
+    if (bad) { showSchemaError(bad); throw new Error(bad); }
+    if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
+    const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
+    DATA = fresh;
+    // #121: re-filter through the ON set (this also rebuilds the merge).
+    // installAll() alone would put the raw profile map back and lose the
+    // toggles; pvFilter() reads PV_ALL, which the capture below refreshes.
+    PV_ALL = Object.fromEntries(Object.entries(DATA.profiles).filter(([n]) => n !== 'All'));
+    DATA.profiles = pvFilter();
+    // A model can appear for the first time in a refresh; recompute the global
+    // palette so it gets a stable shade instead of the grey fallback.
+    COLORS = buildColors(allModelNames());
+    TOOLCOLORS = buildToolColors(allToolNames());
+    tabs();
+    renderResolution();
+    // keep the user where they were: the same profile if it is still shown,
+    // else the merge, else whatever is left.
+    pick(DATA.profiles[keepProfile] ? keepProfile
+       : ('All' in DATA.profiles ? 'All' : Object.keys(DATA.profiles)[0]));
+    // restore the range the user was looking at, when it is still in bounds
+    if (keepFrom) $('from').value = keepFrom;
+    if (keepTo) $('to').value = keepTo;
+    render();
+  } catch (e) {
+    $('meta').textContent = 'refresh failed: ' + e.message + ' — showing last good data';
+  } finally {
+    b.dataset.busy = ''; b.style.opacity = '';
+  }
+}
+$('refresh').onclick = () => doRefresh(false);
+
+// ---- fast live polling -------------------------------------------------
+// Live data is the one thing that is genuinely "now", so it gets its own tiny
+// endpoint (~2 KB, 56 ms to build) polled every 5s, independent of the 60s
+// full refresh. Only the Live view's data is swapped, so cost/usage charts are
+// never rebuilt by a live tick.
 export const LIVE_MS_DEFAULT = 5000;
 // P7-05 (#112): live poll cadence, live-adjustable. A let (not const) so
 // changing it in the Advanced settings card takes effect on the very next
@@ -308,6 +355,82 @@ export function soundToggleInstall(){
 // One chronological feed merging two sources: model failures parsed from
 // errors.log, and tool events from the live sessions. Kept out of the tab
 // system on purpose — a log you can only reach by changing tabs is not a log.
+export async function pollLive(){
+  // The drawer is reachable from every tab, so the feed must keep running even
+  // when Live is not on screen. Only a hidden document stops it.
+  if (liveBusy || document.hidden) return;
+  liveBusy = true;
+  try {
+    const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const fresh = await r.json();
+    // Version check is NOT a transient miss: say so on the first poll, not the third.
+    const bad = schemaProblem(fresh, 'live-data.json');
+    if (bad) { liveFails = 2; throw new Error(bad); }
+    if (!fresh.profiles) throw new Error('empty payload');
+    // Diff for completions BEFORE merging into DATA -- once merged there is
+    // no "previous" state left to compare against. First call ever is a
+    // baseline (soundBaseline stays true through it): every open session and
+    // delegation is "recent" on a page load, and none of that is a real
+    // completion the user should hear about.
+    checkCompletions(fresh.profiles);
+    soundBaseline = false;
+    // Merge the live slice into each profile in place, then rebuild the
+    // synthetic All profile so its merged live list stays correct.
+    Object.keys(fresh.profiles).forEach(n => {
+      if (!DATA.profiles[n]) return;
+      const f = fresh.profiles[n];
+      DATA.profiles[n].live = f.live;
+      DATA.profiles[n].active = f.active;
+      DATA.profiles[n].tools_recent = f.tools_recent;
+      DATA.profiles[n].logs = f.logs;
+      DATA.profiles[n].agents = f.agents;
+    });
+    DATA.errors = fresh.errors || [];
+    // Fleet telemetry is global (not per-profile): both profiles share the
+    // same two GPU boxes, so it hangs off DATA, not DATA.profiles[n].
+    DATA.ollama = fresh.ollama || DATA.ollama;
+    // #121: re-apply the ON set. The live slice was merged INTO PV_ALL's
+    // profiles above, so re-filtering keeps the toggles honoured while the
+    // merge picks up the fresh live rows.
+    PV_ALL = Object.fromEntries(
+      Object.entries(PV_ALL).map(([n, p]) => [n, DATA.profiles[n] || p]));
+    DATA.profiles = pvFilter();
+    tabs();
+    drawerSync();
+    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
+    // left the live list and the bandwidth card holding the first payload
+    // whenever any other tab was open — the numbers silently went stale, and
+    // switching back showed a jump rather than a live feed. renderLive writes
+    // into hidden nodes cheaply, so there is no reason to gate it on the view.
+    renderLive();
+    navSync();
+    // Update only the "In progress" KPI in place — the other cards depend on
+    // date-filtered aggregates the live feed does not carry, so a full KPI
+    // rebuild here would show wrong numbers.
+    const p = DATA.profiles[current] || {};
+    const card = document.querySelector('#kpis .kpi-live');
+    if (card) card.innerHTML = p.active
+      ? `<span style="color:#22c55e">●</span> ${p.active}`
+      : `<span class="muted">●</span> 0`;
+    liveFails = 0;
+    const t = $('livestamp');
+    if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    // Fail quietly: a transient miss must not blank the panel the user is
+    // watching. Only a sustained outage is worth reporting.
+    if (++liveFails === 3) {
+      const t = $('livestamp');
+      if (t) t.textContent = 'live feed stalled — ' + e.message;
+    }
+  } finally {
+    liveBusy = false;
+  }
+}
+// #79/P9-02: read-only transcript preview. Content is untrusted DB text —
+// everything is escaped first, then specific safe affordances (links, code
+// fences, data:image URIs) are opted into on the escaped string. Nothing
+// here ever does innerHTML on raw model output.
 export function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }

@@ -5,9 +5,9 @@
 import {
   $, COLORS, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, toolColor,
 } from './palette.js';
+import { current } from './charts.js';
 import { schemaProblem } from './views.js';
-import { checkCompletions, liveBusy, renderLive, soundBaseline } from './live.js';
-import { PV_ALL, navSync, pickView, pvFilter, tabs, view } from './router.js';
+import { pickView } from './router.js';
 import { DATA } from './main.js';
 
 export const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
@@ -67,7 +67,7 @@ export const lgSel = {level:new Set(), role:new Set(), tool:new Set(), model:new
                session:new Set(), kind:new Set()};
 export let lgWindow = 24, lgQ = '';
 
-async function loadLogs(){
+export async function loadLogs(){
   if (LOGS || logsLoading) return;
   logsLoading = true; logsErr = '';
   renderLogs();
@@ -444,82 +444,6 @@ export function installDrawer(){
   });
 }
 
-async function pollLive(){
-  // The drawer is reachable from every tab, so the feed must keep running even
-  // when Live is not on screen. Only a hidden document stops it.
-  if (liveBusy || document.hidden) return;
-  liveBusy = true;
-  try {
-    const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const fresh = await r.json();
-    // Version check is NOT a transient miss: say so on the first poll, not the third.
-    const bad = schemaProblem(fresh, 'live-data.json');
-    if (bad) { liveFails = 2; throw new Error(bad); }
-    if (!fresh.profiles) throw new Error('empty payload');
-    // Diff for completions BEFORE merging into DATA -- once merged there is
-    // no "previous" state left to compare against. First call ever is a
-    // baseline (soundBaseline stays true through it): every open session and
-    // delegation is "recent" on a page load, and none of that is a real
-    // completion the user should hear about.
-    checkCompletions(fresh.profiles);
-    soundBaseline = false;
-    // Merge the live slice into each profile in place, then rebuild the
-    // synthetic All profile so its merged live list stays correct.
-    Object.keys(fresh.profiles).forEach(n => {
-      if (!DATA.profiles[n]) return;
-      const f = fresh.profiles[n];
-      DATA.profiles[n].live = f.live;
-      DATA.profiles[n].active = f.active;
-      DATA.profiles[n].tools_recent = f.tools_recent;
-      DATA.profiles[n].logs = f.logs;
-      DATA.profiles[n].agents = f.agents;
-    });
-    DATA.errors = fresh.errors || [];
-    // Fleet telemetry is global (not per-profile): both profiles share the
-    // same two GPU boxes, so it hangs off DATA, not DATA.profiles[n].
-    DATA.ollama = fresh.ollama || DATA.ollama;
-    // #121: re-apply the ON set. The live slice was merged INTO PV_ALL's
-    // profiles above, so re-filtering keeps the toggles honoured while the
-    // merge picks up the fresh live rows.
-    PV_ALL = Object.fromEntries(
-      Object.entries(PV_ALL).map(([n, p]) => [n, DATA.profiles[n] || p]));
-    DATA.profiles = pvFilter();
-    tabs();
-    drawerSync();
-    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
-    // left the live list and the bandwidth card holding the first payload
-    // whenever any other tab was open — the numbers silently went stale, and
-    // switching back showed a jump rather than a live feed. renderLive writes
-    // into hidden nodes cheaply, so there is no reason to gate it on the view.
-    renderLive();
-    navSync();
-    // Update only the "In progress" KPI in place — the other cards depend on
-    // date-filtered aggregates the live feed does not carry, so a full KPI
-    // rebuild here would show wrong numbers.
-    const p = DATA.profiles[current] || {};
-    const card = document.querySelector('#kpis .kpi-live');
-    if (card) card.innerHTML = p.active
-      ? `<span style="color:#22c55e">●</span> ${p.active}`
-      : `<span class="muted">●</span> 0`;
-    liveFails = 0;
-    const t = $('livestamp');
-    if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
-  } catch (e) {
-    // Fail quietly: a transient miss must not blank the panel the user is
-    // watching. Only a sustained outage is worth reporting.
-    if (++liveFails === 3) {
-      const t = $('livestamp');
-      if (t) t.textContent = 'live feed stalled — ' + e.message;
-    }
-  } finally {
-    liveBusy = false;
-  }
-}
-// #79/P9-02: read-only transcript preview. Content is untrusted DB text —
-// everything is escaped first, then specific safe affordances (links, code
-// fences, data:image URIs) are opted into on the escaped string. Nothing
-// here ever does innerHTML on raw model output.
 export let tOpen = false, tFocusReturn = null;
 export const TCACHE = {}; // profile -> {sessionId: [messages]}, refetched per open
 
@@ -567,7 +491,7 @@ export function tRenderMsg(m){
   return `<div class="tmsg role-${role}"><span class="trole">${role}${when ? ' · ' + when : ''}</span>${body}</div>`;
 }
 
-async function tOpenModal(sessionId, profile, titleText){
+export async function tOpenModal(sessionId, profile, titleText){
   const scrim = $('tscrim'), modal = $('tmodal'), body = $('tbody');
   const ttitle = $('ttitle'), tsub = $('tsub');
   if (!scrim || !modal || !body) return;
@@ -762,7 +686,7 @@ export const LN_LANE_LABELS = { model: 'Model', tool: 'Tool', delegation: 'Deleg
 export let lnOpen = false, lnFocusReturn = null, lnSpansFlat = [], lnFocusIdx = -1;
 export let lnOpenAt = null;   // {session, profile, title} — what Enter hands to the transcript modal
 
-async function lnOpenModal(sessionId, profile, titleText){
+export async function lnOpenModal(sessionId, profile, titleText){
   const scrim = $('lnscrim'), modal = $('lnmodal'), body = $('lnbody');
   if (!scrim || !modal || !body) return;
   lnFocusReturn = document.activeElement;
@@ -811,7 +735,7 @@ export function lnRenderTimeline(tl){
 
   body.innerHTML = LN_LANES.map(lane => {
     const laneSpans = spans.filter(s => s.lane === lane);
-    const pxSpans = laneSpans.map((s, i) => {
+    const pxSpans = laneSpans.map((s) => {
       const leftPct = ((s.start - tl.axis_start) / durS) * 100;
       const widthPct = Math.max(0.3, ((s.end - s.start) / durS) * 100);
       const isTick = s.start === s.end;

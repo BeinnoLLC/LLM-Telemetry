@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "function-calc-no-unspaced-operator": true,
+    "color-no-invalid-hex": true,
+    "function-no-unknown": true,
+    "declaration-property-value-no-unknown": true,
+    "no-duplicate-selectors": true,
+    "block-no-empty": true,
+    "comment-no-empty": true,
+    "font-family-no-duplicate-names": true,
+    "shorthand-property-no-redundant-values": true,
+    "keyframe-declaration-no-important": true,
+    "media-feature-name-no-unknown": true,
+    "property-no-unknown": true,
+    "selector-pseudo-class-no-unknown": true,
+    "selector-pseudo-element-no-unknown": true,
+    "unit-no-unknown": true,
+    "no-descending-specificity": [true, { "severity": "warning" }]
+  }
+}

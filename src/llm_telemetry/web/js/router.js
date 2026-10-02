@@ -6,13 +6,13 @@ import {
   $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, esc, escA, hashHue, pick, slugOf,
 } from './palette.js';
 import {
-  bounds, charts, outPer1M, projDistNormalized, projTrendStacked, usdPerSec,
+  bounds, charts, current, outPer1M, projDistNormalized, projTrendStacked, usdPerSec,
 } from './charts.js';
 import { flash, render, renderResolution, syncProjFilterUI } from './views.js';
 import { renderFlow } from './flow.js';
-import { logsInstall } from './drawer.js';
+import { loadLogs, logsInstall } from './drawer.js';
 import { LIVE_MS, REBUILD_MS, renderLive } from './live.js';
-import { DATA, buildAll, installAll, saved } from './main.js';
+import { DATA, buildAll, installAll } from './main.js';
 
 export let view = localStorage.getItem('hermes-dash-view') || 'Home';
 // #129: sub-day range presets (1h/6h/12h). null = the from/to DATE range
@@ -364,7 +364,7 @@ export function setLogosInstall(){
   });
 }
 
-async function loadSettings(){
+export async function loadSettings(){
   setWrite(setState.values);
   try {
     const r = await fetch('api/settings', {cache: 'no-store'});
@@ -383,7 +383,7 @@ async function loadSettings(){
   renderSettings();
 }
 
-async function saveSettings(){
+export async function saveSettings(){
   const bad = setInvalid();
   if (bad.length) return setMsg('Fix ' + bad.join(', ') + ' first.', 'err');
   const v = setRead();
@@ -447,7 +447,7 @@ export function applyIntervals(v){
   REBUILD_MS = Math.round(v.analytics_rebuild_interval_s * 1000);
 }
 
-async function saveIntervals(){
+export async function saveIntervals(){
   const bad = intervalsInvalid();
   if (bad.length) return intervalsMsg('Fix ' + bad.join(', ') + ' first.', 'err');
   const v = intervalsRead();
@@ -822,7 +822,7 @@ export function profileIconHtml(n, px){
 // Full, unfiltered profile map — captured once at boot so a toggled-off
 // profile can come back without refetching (DATA.profiles is the filtered set).
 export let PV_ALL = null;
-export function pvFilter(keep){
+export function pvFilter(){
   // keep: null = everything on (boot). Rebuilds DATA.profiles from PV_ALL.
   // With 2+ profiles on the merged view is materialised as the 'All' DATA KEY
   // (the same merge the old "All" tab showed) and is what `current` points at

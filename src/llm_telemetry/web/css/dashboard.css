@@ -342,7 +342,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 #navscrim{ display:none; }
 @media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
 
-}
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
  /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
@@ -868,14 +867,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kpi-live{color:var(--accent)}
 /* Ring card: same badge+name header as every number card (so the strip has
    ONE header rhythm), then the gauge centred in the remaining body. */
-.kpi-ring{gap:12px}
+.kpi-ring{gap:12px;align-items:stretch;text-align:left}
 .kpi-ring-body{flex:1;display:flex;align-items:center;justify-content:center}
 .kpi-label{margin-top:-1px}
 
 /* #11: radial KPI rings — compact, no-needle variant of the gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the
    unbounded counters next to it, so both live in the same card recipe. */
-.kpi-ring{align-items:stretch;text-align:left}
 .kringwrap{width:56px;height:56px;align-self:center}
 .kring{display:block;width:100%;height:100%}
 .kring svg{width:100%;height:100%;display:block}
@@ -1049,7 +1047,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the transcript modal above, same scrim/open-class/focus-trap pattern,
    just a different anchor edge so it reads as "detail alongside the
    matrix" rather than "a whole-screen takeover" on desktop. */
-}
 #pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
 #pdscrim.open{opacity:1;pointer-events:auto}
@@ -1136,7 +1133,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
    .hide-mobile{display:none}
-   .page-title{font-size:var(--fs-lg) !important}
+   .page-title{font-size:var(--fs-lg) !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 
    /* #13: header collapses to one row — hamburger, title, overflow controls
       wrap onto their own line only if the viewport is truly too narrow for
@@ -1144,7 +1141,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       aligned two-block layout fighting for the same row. */
    .page > .flex.items-end.justify-between{align-items:center}
    .page > .flex.items-end.justify-between > .flex.items-center.gap-2{min-width:0;flex:1 1 auto}
-   .page-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
    .page > .flex.items-end.justify-between > div > .muted.flex{flex-wrap:wrap}
 
    /* Every chip/button is a tap target: 44x44 minimum (#13). */

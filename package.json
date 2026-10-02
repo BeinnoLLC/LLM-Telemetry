@@ -1,0 +1,18 @@
+{
+  "name": "llm-telemetry-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Frontend linting for the dashboard's web/ sources. Development-only: the shipped artifact is static files plus stdlib Python, and nothing here is imported at runtime. See P2-05 (#29).",
+  "type": "module",
+  "scripts": {
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:inline-sized",
+    "lint:js": "eslint src/llm_telemetry/web/js",
+    "lint:css": "stylelint \"src/llm_telemetry/web/css/*.css\"",
+    "lint:inline-sized": "node tests/check_inline_sized_elements.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "globals": "^17.12.0",
+    "stylelint": "^16.10.0"
+  }
+}

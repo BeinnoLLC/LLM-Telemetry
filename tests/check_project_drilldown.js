@@ -8,14 +8,24 @@ const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(
   path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
 
+// pdOpen/pdClose moved from an inlined <script> into the ES module split
+// (P2-02, #27), so they are no longer present as text in the built page.
+// Grep the module source for the two SOURCE assertions below; everything else
+// here drives the real DOM and keeps reading the built page. Matching on the
+// parameter LIST is also brittle — the refactor renamed the unused third
+// parameter to `_highlightModel` — so assert the function exists and takes the
+// rows it needs, not an exact spelling.
+const viewsJs = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js', 'views.js'), 'utf8');
+
 let pass = 0, fail = 0;
 function chk(ok, name, got) {
   if (ok) { pass++; console.log(`  ok  ${name}`); }
   else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); }
 }
 
-chk(/function pdOpen\(project, rows, highlightModel\)\{/.test(html), 'pdOpen exists');
-chk(/function pdClose\(\)\{/.test(html), 'pdClose exists');
+chk(/export function pdOpen\(project, rows\b/.test(viewsJs), 'pdOpen exists');
+chk(/export function pdClose\(\)/.test(viewsJs), 'pdClose exists');
 chk(/id="pdrawer" role="dialog" aria-modal="true"/.test(html), 'the panel is a proper aria-modal dialog');
 chk(/@media\(max-width:640px\)\{\s*\n\s*#pdrawer\{top:auto;left:0;right:0;bottom:0;width:100vw/.test(html),
     'a 640px breakpoint turns the panel into a full-width bottom sheet');

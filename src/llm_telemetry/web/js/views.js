@@ -4,10 +4,10 @@
  * own container and reads the profile payload.
  */
 import {
-  $, AC, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short,
+  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short,
 } from './palette.js';
 import {
-  PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, mk, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
+  PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
 import { renderLive } from './live.js';
@@ -306,7 +306,7 @@ export function renderBandwidthPanel(p, inR){
 // Three states used to render identically as "$0.00" (P9-05, #82):
 //   unpriced  -> no rate found, the real cost is unknown and NOT counted
 //   local     -> electricity at your tariff, marked "elec" (P7)
-//   free tier -> an OpenRouter ":free" SKU, a genuine $0
+//   free tier -> a published $0 SKU (OpenRouter ":free", OpenCode Zen free)
 export function unpricedModels(rows){
   const by = {};
   rows.forEach(r => {
@@ -425,7 +425,6 @@ export function render(){
 
   const calls=rows.reduce((s,r)=>s+r.calls,0), tok=rows.reduce((s,r)=>s+r.inp+r.outp,0);
   const cache=rows.reduce((s,r)=>s+r.cread,0);
-  const billed=rows.reduce((s,r)=>s+(r.billed_usd||0),0);
   const market=rows.reduce((s,r)=>s+(r.market_value_usd||0),0);
   const elec=rows.reduce((s,r)=>s+(r.cost_class==='local'?(r.energy_usd||0):0),0);
   renderUnpriced(rows);
@@ -992,7 +991,6 @@ export function flipMove(el, toContainer){
     el.classList.add('travel');
     el.style.transition = 'none';
     el.style.transform = `translate(${dx}px,${dy}px)`;
-    // eslint-disable-next-line no-unused-expressions
     el.offsetHeight; // force reflow so the next line animates FROM here
     el.style.transition = '';
     el.style.transform = '';
@@ -1303,7 +1301,7 @@ export const PROJ_MATRIX_MAX_COLS = 8;
 // their unit would be worse than no toggle at all. Persisted like theme
 // and view choice (localStorage), so it survives a reload.
 export function renderProjectMatrix(rows){
-  const wrap = $('projmatrixwrap'), table = $('projmatrix'), empty = $('projmatrixempty');
+  const table = $('projmatrix'), empty = $('projmatrixempty');
   if (!table) return;
   if (!rows || !rows.length){
     table.innerHTML = '';
@@ -1424,7 +1422,10 @@ export let pdOpenState = false;
 // row set the matrix/distribution charts were built from, so panel numbers
 // reconcile with whatever cell opened it by construction — there is no
 // second query or recomputation that could silently disagree.
-export function pdOpen(project, rows, highlightModel){
+export function pdOpen(project, rows, _highlightModel){
+  // _highlightModel: callers pass the model the user clicked, but the drawer
+  // renders the whole project. Kept in the signature (named, not silently
+  // dropped) so the intent is visible; used once the drawer scrolls to a row.
   const scrim = $('pdscrim'), drawer = $('pdrawer'), body = $('pdbody'), title = $('pdtitle');
   if (!scrim || !drawer || !body) return;
   pdFocusReturn = document.activeElement;
@@ -2073,7 +2074,6 @@ export function renderOutcomes(outcomes){
   const total = Object.values(byReason).reduce((a,n)=>a+n,0);
   const reapedN = (o.reaped || []).length;
   const silentN = (o.silent || []).length;
-  const hasAbnormal = Object.entries(byReason).some(([r,n]) => OUTCOME_ABNORMAL.has(r) && n > 0);
   if (!total){ card.hidden = true; return; }
   card.hidden = false;
 

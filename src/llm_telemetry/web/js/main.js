@@ -2,15 +2,11 @@
  * Main: the payload contract and boot wiring — the only module that runs
  * anything at load time.
  */
-import {
-  $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, pick, readTheme,
-} from './palette.js';
-import { CHART_ANIM_DONE } from './charts.js';
-import { render, renderResolution, schemaProblem, showSchemaError } from './views.js';
+import { $, pick, readTheme } from './palette.js';
+import { CHART_ANIM_DONE, current } from './charts.js';
+import { render } from './views.js';
 import { mergeDelegations } from './live.js';
-import {
-  PROJECT_FILTER, PV_ALL, pickView, projectFromHash, pvFilter, tabs, view, viewFromHash,
-} from './router.js';
+import { PROJECT_FILTER, pickView, projectFromHash, view, viewFromHash } from './router.js';
 
 export let DATA = __DATA__;
 // Injected from config.local_host_patterns so provOf() classifies self-hosted
@@ -171,48 +167,3 @@ export function bootDone(){
 requestAnimationFrame(()=>requestAnimationFrame(bootDone));
 setTimeout(bootDone, 4000);
 
-async function doRefresh(silent){
-  const b = $('refresh');
-  if (b.dataset.busy) return;
-  b.dataset.busy = '1'; if(!silent) b.style.opacity = '.5';
-  try {
-    const r = await fetch('analytics-data.json?t=' + Date.now(), {cache:'no-store'});
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const fresh = await r.json();
-    const bad = schemaProblem(fresh, 'analytics-data.json');
-    if (bad) { showSchemaError(bad); throw new Error(bad); }
-    if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
-    const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
-    DATA = fresh;
-    // #121: re-filter through the ON set (this also rebuilds the merge).
-    // installAll() alone would put the raw profile map back and lose the
-    // toggles; pvFilter() reads PV_ALL, which the capture below refreshes.
-    PV_ALL = Object.fromEntries(Object.entries(DATA.profiles).filter(([n]) => n !== 'All'));
-    DATA.profiles = pvFilter();
-    // A model can appear for the first time in a refresh; recompute the global
-    // palette so it gets a stable shade instead of the grey fallback.
-    COLORS = buildColors(allModelNames());
-    TOOLCOLORS = buildToolColors(allToolNames());
-    tabs();
-    renderResolution();
-    // keep the user where they were: the same profile if it is still shown,
-    // else the merge, else whatever is left.
-    pick(DATA.profiles[keepProfile] ? keepProfile
-       : ('All' in DATA.profiles ? 'All' : Object.keys(DATA.profiles)[0]));
-    // restore the range the user was looking at, when it is still in bounds
-    if (keepFrom) $('from').value = keepFrom;
-    if (keepTo) $('to').value = keepTo;
-    render();
-  } catch (e) {
-    $('meta').textContent = 'refresh failed: ' + e.message + ' — showing last good data';
-  } finally {
-    b.dataset.busy = ''; b.style.opacity = '';
-  }
-}
-$('refresh').onclick = () => doRefresh(false);
-
-// ---- fast live polling -------------------------------------------------
-// Live data is the one thing that is genuinely "now", so it gets its own tiny
-// endpoint (~2 KB, 56 ms to build) polled every 5s, independent of the 60s
-// full refresh. Only the Live view's data is swapped, so cost/usage charts are
-// never rebuilt by a live tick.

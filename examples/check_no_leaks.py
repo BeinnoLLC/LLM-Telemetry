@@ -12,10 +12,12 @@ Usage: python3 examples/check_no_leaks.py
 import json
 import os
 import re
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
+REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 # P1-03 (#25): golden fixtures are frozen copies of the same scrubbed sample
 # payloads, committed for the same public repo — the leak gate must cover
 # them with the exact same rules, not a separate weaker check.
@@ -60,6 +62,17 @@ def walk(o, path=""):
 def scan_dir(scan_dir, findings):
     for fn in sorted(os.listdir(scan_dir)):
         full = os.path.join(scan_dir, fn)
+        # Only files git would actually publish. examples/reports/ also holds
+        # gitignored local artifacts — pricing-cache.json is the real fetched
+        # OpenRouter catalogue, not a sample — and this gate's whole job is to
+        # protect the PUBLIC repo. Scanning an untracked file both cannot leak
+        # anything and produced a false "missing sample marker" failure locally
+        # that CI never sees (CI has no cache file). Content rules still apply to
+        # any tracked file, so a committed payload that loses its marker is still
+        # caught.
+        if subprocess.run(["git", "ls-files", "--error-unmatch", os.path.relpath(full, REPO_ROOT)],
+                          cwd=REPO_ROOT, capture_output=True).returncode != 0:
+            continue
         if fn.endswith(".json"):
             with open(full) as f:
                 try:

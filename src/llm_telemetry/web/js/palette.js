@@ -3,8 +3,8 @@
  * distinctness, tool colours) plus the shared formatting/escape helpers every
  * view uses. No DOM, no Chart.js — safe to import from anywhere.
  */
-import { bounds } from './charts.js';
-import { GB, PROV, provIcon, render } from './views.js';
+import { bounds, current } from './charts.js';
+import { PROV, provIcon, render } from './views.js';
 import { presets } from './router.js';
 import { DATA, css } from './main.js';
 
@@ -200,7 +200,7 @@ export function ic(sm){ return provIcon(sm) + ' ' + sm; }
 export function costCell(v, local, state){
   v = +v || 0;
   if (state === 'unpriced') return `<span class="unpriced" title="No price found for this model: its traffic is counted at $0, so Est. cost is understated. Fix: add it to WEB_RATES or ALIASES in pricing.py.">unpriced</span>`;
-  if (state === 'freetier') return `<span class="freetier" title="OpenRouter :free tier: genuinely $0 per token.">$0 <span class="ftmark">free tier</span></span>`;
+  if (state === 'freetier') return `<span class="freetier" title="Published $0 tier (OpenRouter :free or an OpenCode Zen free SKU): genuinely $0 per token.">$0 <span class="ftmark">free tier</span></span>`;
   if (!local) return '$' + v.toFixed(2);
   const s = v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toFixed(4) : '0';
   return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">elec</span></span>`;
@@ -208,8 +208,8 @@ export function costCell(v, local, state){
 
 // ---- Unpriced traffic (P9-05, #82) ------------------------------------------
 // Computed from the payload: a model is unpriced when none of its rows found
-// a rate and it is neither local (electricity) nor a ":free" tier nor a router
-// preset. Its traffic is counted at $0, so Est. cost is understated; the
+// a rate and it is neither local (electricity) nor a published free tier nor a
+// router preset. Its traffic is counted at $0, so Est. cost is understated; the
 // banner says so and names the models. Zero unpriced hides it entirely.
 export const escA = v => esc(v).replace(/"/g, '&quot;');   // attribute-safe: titles are user text
 export function pick(name){

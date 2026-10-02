@@ -3,1609 +3,1319 @@
  "order": [
   {
    "mod": "main",
-   "name": "DATA",
-   "start": 15
+   "name": "DATA"
   },
   {
    "mod": "main",
-   "name": "LOCAL_HOSTS",
-   "start": 18
+   "name": "LOCAL_HOSTS"
   },
   {
    "mod": "main",
-   "name": "SCHEMA_VERSION",
-   "start": 23
+   "name": "SCHEMA_VERSION"
   },
   {
    "mod": "views",
-   "name": "schemaProblem",
-   "start": 19
+   "name": "schemaProblem"
   },
   {
    "mod": "views",
-   "name": "showSchemaError",
-   "start": 27
+   "name": "showSchemaError"
   },
   {
    "mod": "views",
-   "name": "flash",
-   "start": 57
+   "name": "flash"
   },
   {
    "mod": "views",
-   "name": "renderResolution",
-   "start": 102
+   "name": "renderResolution"
   },
   {
    "mod": "main",
-   "name": "css",
-   "start": 24
+   "name": "css"
   },
   {
    "mod": "palette",
-   "name": "AC",
-   "start": 11
+   "name": "AC"
   },
   {
    "mod": "palette",
-   "name": "readTheme",
-   "start": 12
+   "name": "readTheme"
   },
   {
    "mod": "palette",
-   "name": "PAL",
-   "start": 14
+   "name": "PAL"
   },
   {
    "mod": "palette",
-   "name": "ICON_SVG",
-   "start": 22
+   "name": "ICON_SVG"
   },
   {
    "mod": "palette",
-   "name": "icon",
-   "start": 42
+   "name": "icon"
   },
   {
    "mod": "palette",
-   "name": "fade",
-   "start": 45
+   "name": "fade"
   },
   {
    "mod": "palette",
-   "name": "FAMILY",
-   "start": 58
+   "name": "FAMILY"
   },
   {
    "mod": "palette",
-   "name": "FAM_OTHER",
-   "start": 69
+   "name": "FAM_OTHER"
   },
   {
    "mod": "palette",
-   "name": "hashHue",
-   "start": 70
+   "name": "hashHue"
   },
   {
    "mod": "palette",
-   "name": "famOf",
-   "start": 76
+   "name": "famOf"
   },
   {
    "mod": "palette",
-   "name": "FAM_HUE_SPREAD",
-   "start": 94
+   "name": "FAM_HUE_SPREAD"
   },
   {
    "mod": "palette",
-   "name": "buildColors",
-   "start": 95
+   "name": "buildColors"
   },
   {
    "mod": "palette",
-   "name": "allModelNames",
-   "start": 121
+   "name": "allModelNames"
   },
   {
    "mod": "palette",
-   "name": "COLORS",
-   "start": 137
+   "name": "COLORS"
   },
   {
    "mod": "palette",
-   "name": "colorOf",
-   "start": 142
+   "name": "colorOf"
   },
   {
    "mod": "palette",
-   "name": "fmt",
-   "start": 147
+   "name": "fmt"
   },
   {
    "mod": "palette",
-   "name": "fmtB",
-   "start": 150
+   "name": "fmtB"
   },
   {
    "mod": "palette",
-   "name": "fmtRate",
-   "start": 155
+   "name": "fmtRate"
   },
   {
    "mod": "palette",
-   "name": "bwPrev",
-   "start": 158
+   "name": "bwPrev"
   },
   {
    "mod": "palette",
-   "name": "money",
-   "start": 159
+   "name": "money"
   },
   {
    "mod": "palette",
-   "name": "short",
-   "start": 160
+   "name": "short"
   },
   {
    "mod": "palette",
-   "name": "esc",
-   "start": 161
+   "name": "esc"
   },
   {
    "mod": "palette",
-   "name": "$",
-   "start": 163
+   "name": "$"
   },
   {
    "mod": "palette",
-   "name": "emptyHTML",
-   "start": 168
+   "name": "emptyHTML"
   },
   {
    "mod": "charts",
-   "name": "charts",
-   "start": 10
+   "name": "charts"
   },
   {
    "mod": "router",
-   "name": "view",
-   "start": 17
+   "name": "view"
   },
   {
    "mod": "router",
-   "name": "HOUR_RANGE",
-   "start": 23
+   "name": "HOUR_RANGE"
   },
   {
    "mod": "charts",
-   "name": "CHART_ANIM_DONE",
-   "start": 11
+   "name": "CHART_ANIM_DONE"
   },
   {
    "mod": "charts",
-   "name": "noLeg",
-   "start": 13
+   "name": "noLeg"
   },
   {
    "mod": "charts",
-   "name": "bounds",
-   "start": 15
+   "name": "bounds"
   },
   {
    "mod": "router",
-   "name": "setRange",
-   "start": 33
+   "name": "setRange"
   },
   {
    "mod": "router",
-   "name": "setHourRange",
-   "start": 37
+   "name": "setHourRange"
   },
   {
    "mod": "router",
-   "name": "hourRowsFor",
-   "start": 42
+   "name": "hourRowsFor"
   },
   {
    "mod": "router",
-   "name": "updateRangeToggleLabel",
-   "start": 65
+   "name": "updateRangeToggleLabel"
   },
   {
    "mod": "router",
-   "name": "presets",
-   "start": 79
+   "name": "presets"
   },
   {
    "mod": "palette",
-   "name": "labelColor",
-   "start": 173
+   "name": "labelColor"
   },
   {
    "mod": "palette",
-   "name": "LABEL_FONT",
-   "start": 187
+   "name": "LABEL_FONT"
   },
   {
    "mod": "charts",
-   "name": "tintTicks",
-   "start": 19
+   "name": "tintTicks"
   },
   {
    "mod": "charts",
-   "name": "mk",
-   "start": 24
+   "name": "mk"
   },
   {
    "mod": "charts",
-   "name": "agg",
-   "start": 78
+   "name": "agg"
   },
   {
    "mod": "views",
-   "name": "PROV",
-   "start": 125
+   "name": "PROV"
   },
   {
    "mod": "views",
-   "name": "LOCAL_RE",
-   "start": 143
+   "name": "LOCAL_RE"
   },
   {
    "mod": "views",
-   "name": "CLOUD_SUFFIX",
-   "start": 148
+   "name": "CLOUD_SUFFIX"
   },
   {
    "mod": "views",
-   "name": "provOf",
-   "start": 149
+   "name": "provOf"
   },
   {
    "mod": "views",
-   "name": "provBadge",
-   "start": 183
+   "name": "provBadge"
   },
   {
    "mod": "views",
-   "name": "MODEL_PROV",
-   "start": 193
+   "name": "MODEL_PROV"
   },
   {
    "mod": "views",
-   "name": "buildModelProv",
-   "start": 194
+   "name": "buildModelProv"
   },
   {
    "mod": "views",
-   "name": "provIcon",
-   "start": 201
+   "name": "provIcon"
   },
   {
    "mod": "palette",
-   "name": "ic",
-   "start": 188
+   "name": "ic"
   },
   {
    "mod": "views",
-   "name": "resendOf",
-   "start": 206
+   "name": "resendOf"
   },
   {
    "mod": "views",
-   "name": "renderBandwidthPanel",
-   "start": 211
+   "name": "renderBandwidthPanel"
   },
   {
    "mod": "palette",
-   "name": "costCell",
-   "start": 200
+   "name": "costCell"
   },
   {
    "mod": "views",
-   "name": "unpricedModels",
-   "start": 310
+   "name": "unpricedModels"
   },
   {
    "mod": "views",
-   "name": "renderUnpriced",
-   "start": 321
+   "name": "renderUnpriced"
   },
   {
    "mod": "views",
-   "name": "RESEND_MIN",
-   "start": 337
+   "name": "RESEND_MIN"
   },
   {
    "mod": "palette",
-   "name": "escA",
-   "start": 214
+   "name": "escA"
   },
   {
    "mod": "views",
-   "name": "renderResend",
-   "start": 338
+   "name": "renderResend"
   },
   {
    "mod": "views",
-   "name": "ALERT_ICON",
-   "start": 372
+   "name": "ALERT_ICON"
   },
   {
    "mod": "views",
-   "name": "ALERT_COLOR",
-   "start": 373
+   "name": "ALERT_COLOR"
   },
   {
    "mod": "views",
-   "name": "renderAlerts",
-   "start": 378
+   "name": "renderAlerts"
   },
   {
    "mod": "drawer",
-   "name": "SF_FILTER_KEYS",
-   "start": 13
+   "name": "SF_FILTER_KEYS"
   },
   {
    "mod": "drawer",
-   "name": "sfParseQuery",
-   "start": 15
+   "name": "sfParseQuery"
   },
   {
    "mod": "drawer",
-   "name": "sfMatch",
-   "start": 38
+   "name": "sfMatch"
   },
   {
    "mod": "drawer",
-   "name": "sfSearch",
-   "start": 60
+   "name": "sfSearch"
   },
   {
    "mod": "views",
-   "name": "render",
-   "start": 396
+   "name": "render"
   },
   {
    "mod": "palette",
-   "name": "pick",
-   "start": 215
+   "name": "pick"
   },
   {
    "mod": "palette",
-   "name": "CAT",
-   "start": 225
+   "name": "CAT"
   },
   {
    "mod": "palette",
-   "name": "catOf",
-   "start": 238
+   "name": "catOf"
   },
   {
    "mod": "palette",
-   "name": "ago",
-   "start": 239
+   "name": "ago"
   },
   {
    "mod": "charts",
-   "name": "bwRow",
-   "start": 85
+   "name": "bwRow"
   },
   {
    "mod": "views",
-   "name": "XF_SEEN",
-   "start": 683
+   "name": "XF_SEEN"
   },
   {
    "mod": "views",
-   "name": "renderXfer",
-   "start": 684
+   "name": "renderXfer"
   },
   {
    "mod": "views",
-   "name": "renderHome",
-   "start": 729
+   "name": "renderHome"
   },
   {
    "mod": "views",
-   "name": "liveModelsOpen",
-   "start": 843
+   "name": "liveModelsOpen"
   },
   {
    "mod": "views",
-   "name": "modelsOf",
-   "start": 844
+   "name": "modelsOf"
   },
   {
    "mod": "views",
-   "name": "modelsBadge",
-   "start": 845
+   "name": "modelsBadge"
   },
   {
    "mod": "views",
-   "name": "lmMetric",
-   "start": 861
+   "name": "lmMetric"
   },
   {
    "mod": "views",
-   "name": "LM_METRIC",
-   "start": 862
+   "name": "LM_METRIC"
   },
   {
    "mod": "views",
-   "name": "modelsShare",
-   "start": 869
+   "name": "modelsShare"
   },
   {
    "mod": "views",
-   "name": "modelsPanel",
-   "start": 894
+   "name": "modelsPanel"
   },
   {
    "mod": "flow",
-   "name": "Q_SEEN",
-   "start": 11
+   "name": "Q_SEEN"
   },
   {
    "mod": "views",
-   "name": "fillChip",
-   "start": 961
+   "name": "fillChip"
   },
   {
    "mod": "views",
-   "name": "qChip",
-   "start": 971
+   "name": "qChip"
   },
   {
    "mod": "views",
-   "name": "flipMove",
-   "start": 986
+   "name": "flipMove"
   },
   {
    "mod": "views",
-   "name": "renderConcurrency",
-   "start": 1008
+   "name": "renderConcurrency"
   },
   {
    "mod": "views",
-   "name": "_unattrPattern",
-   "start": 1062
+   "name": "_unattrPattern"
   },
   {
    "mod": "views",
-   "name": "unattrPattern",
-   "start": 1063
+   "name": "unattrPattern"
   },
   {
    "mod": "views",
-   "name": "UNATTR_LABEL",
-   "start": 1087
+   "name": "UNATTR_LABEL"
   },
   {
    "mod": "views",
-   "name": "renderLatency",
-   "start": 1093
+   "name": "renderLatency"
   },
   {
    "mod": "views",
-   "name": "renderAttribution",
-   "start": 1131
+   "name": "renderAttribution"
   },
   {
    "mod": "views",
-   "name": "REPO_EXPANDED",
-   "start": 1188
+   "name": "REPO_EXPANDED"
   },
   {
    "mod": "views",
-   "name": "renderRepoBranch",
-   "start": 1190
+   "name": "renderRepoBranch"
   },
   {
    "mod": "views",
-   "name": "renderProjects",
-   "start": 1220
+   "name": "renderProjects"
   },
   {
    "mod": "views",
-   "name": "PROJ_MATRIX_MAX_COLS",
-   "start": 1299
+   "name": "PROJ_MATRIX_MAX_COLS"
   },
   {
    "mod": "charts",
-   "name": "PROJ_WEIGHT",
-   "start": 119
+   "name": "PROJ_WEIGHT"
   },
   {
    "mod": "charts",
-   "name": "PROJ_WEIGHT_LABELS",
-   "start": 122
+   "name": "PROJ_WEIGHT_LABELS"
   },
   {
    "mod": "charts",
-   "name": "weightValue",
-   "start": 133
+   "name": "weightValue"
   },
   {
    "mod": "views",
-   "name": "renderProjectMatrix",
-   "start": 1305
+   "name": "renderProjectMatrix"
   },
   {
    "mod": "views",
-   "name": "pdFocusReturn",
-   "start": 1420
+   "name": "pdFocusReturn"
   },
   {
    "mod": "views",
-   "name": "pdOpenState",
-   "start": 1421
+   "name": "pdOpenState"
   },
   {
    "mod": "views",
-   "name": "pdOpen",
-   "start": 1427
+   "name": "pdOpen"
   },
   {
    "mod": "views",
-   "name": "pdClose",
-   "start": 1511
+   "name": "pdClose"
   },
   {
    "mod": "views",
-   "name": "pdKeydown",
-   "start": 1526
+   "name": "pdKeydown"
   },
   {
    "mod": "views",
-   "name": "installProjectDrilldown",
-   "start": 1543
+   "name": "installProjectDrilldown"
   },
   {
    "mod": "views",
-   "name": "installProjWeight",
-   "start": 1552
+   "name": "installProjWeight"
   },
   {
    "mod": "views",
-   "name": "PROJ_FILTER_VIEWS",
-   "start": 1581
+   "name": "PROJ_FILTER_VIEWS"
   },
   {
    "mod": "views",
-   "name": "populateProjFilterSelect",
-   "start": 1583
+   "name": "populateProjFilterSelect"
   },
   {
    "mod": "views",
-   "name": "syncProjFilterUI",
-   "start": 1603
+   "name": "syncProjFilterUI"
   },
   {
    "mod": "views",
-   "name": "installProjFilter",
-   "start": 1613
+   "name": "installProjFilter"
   },
   {
    "mod": "charts",
-   "name": "projDistNormalized",
-   "start": 149
+   "name": "projDistNormalized"
   },
   {
    "mod": "views",
-   "name": "renderProjectDistribution",
-   "start": 1634
+   "name": "renderProjectDistribution"
   },
   {
    "mod": "views",
-   "name": "renderProjDistLegend",
-   "start": 1732
+   "name": "renderProjDistLegend"
   },
   {
    "mod": "views",
-   "name": "PROJ_TREND_TOP_N",
-   "start": 1758
+   "name": "PROJ_TREND_TOP_N"
   },
   {
    "mod": "charts",
-   "name": "projTrendStacked",
-   "start": 151
+   "name": "projTrendStacked"
   },
   {
    "mod": "views",
-   "name": "renderProjectTrend",
-   "start": 1759
+   "name": "renderProjectTrend"
   },
   {
    "mod": "views",
-   "name": "renderProjTrendLegend",
-   "start": 1851
+   "name": "renderProjTrendLegend"
   },
   {
    "mod": "flow",
-   "name": "renderQueue",
-   "start": 13
+   "name": "renderQueue"
   },
   {
    "mod": "flow",
-   "name": "renderAgents",
-   "start": 195
+   "name": "renderAgents"
   },
   {
    "mod": "live",
-   "name": "renderLive",
-   "start": 19
+   "name": "renderLive"
   },
   {
    "mod": "charts",
-   "name": "GAUGE_PREV",
-   "start": 153
+   "name": "GAUGE_PREV"
   },
   {
    "mod": "charts",
-   "name": "radialRing",
-   "start": 163
+   "name": "radialRing"
   },
   {
    "mod": "charts",
-   "name": "sparkSvg",
-   "start": 196
+   "name": "sparkSvg"
   },
   {
    "mod": "charts",
-   "name": "loeIcon",
-   "start": 216
+   "name": "loeIcon"
   },
   {
    "mod": "live",
-   "name": "mergeDelegations",
-   "start": 124
+   "name": "mergeDelegations"
   },
   {
    "mod": "main",
-   "name": "buildAll",
-   "start": 25
+   "name": "buildAll"
   },
   {
    "mod": "views",
-   "name": "FKIND",
-   "start": 1873
+   "name": "FKIND"
   },
   {
    "mod": "views",
-   "name": "installKindCSS",
-   "start": 1888
+   "name": "installKindCSS"
   },
   {
    "mod": "views",
-   "name": "fk",
-   "start": 1898
+   "name": "fk"
   },
   {
    "mod": "views",
-   "name": "FAILTRACK",
-   "start": 1903
+   "name": "FAILTRACK"
   },
   {
    "mod": "views",
-   "name": "rateColor",
-   "start": 1905
+   "name": "rateColor"
   },
   {
    "mod": "views",
-   "name": "renderDeleg",
-   "start": 1911
+   "name": "renderDeleg"
   },
   {
    "mod": "views",
-   "name": "renderHealth",
-   "start": 1974
+   "name": "renderHealth"
   },
   {
    "mod": "views",
-   "name": "renderLifecycle",
-   "start": 2038
+   "name": "renderLifecycle"
   },
   {
    "mod": "views",
-   "name": "OUTCOME_ABNORMAL",
-   "start": 2065
+   "name": "OUTCOME_ABNORMAL"
   },
   {
    "mod": "views",
-   "name": "OUTCOME_LABELS",
-   "start": 2066
+   "name": "OUTCOME_LABELS"
   },
   {
    "mod": "views",
-   "name": "renderOutcomes",
-   "start": 2068
+   "name": "renderOutcomes"
   },
   {
    "mod": "views",
-   "name": "renderToolReliability",
-   "start": 2136
+   "name": "renderToolReliability"
   },
   {
    "mod": "views",
-   "name": "renderHealthSummary",
-   "start": 2175
+   "name": "renderHealthSummary"
   },
   {
    "mod": "views",
-   "name": "failMsgClean",
-   "start": 2196
+   "name": "failMsgClean"
   },
   {
    "mod": "views",
-   "name": "groupFailures",
-   "start": 2206
+   "name": "groupFailures"
   },
   {
    "mod": "views",
-   "name": "failKind",
-   "start": 2218
+   "name": "failKind"
   },
   {
    "mod": "views",
-   "name": "renderFailures",
-   "start": 2220
+   "name": "renderFailures"
   },
   {
    "mod": "charts",
-   "name": "olBar",
-   "start": 311
+   "name": "olBar"
   },
   {
    "mod": "views",
-   "name": "GB",
-   "start": 2292
+   "name": "GB"
   },
   {
    "mod": "views",
-   "name": "OL_SEEN",
-   "start": 2299
+   "name": "OL_SEEN"
   },
   {
    "mod": "views",
-   "name": "OL_HIST",
-   "start": 2307
+   "name": "OL_HIST"
   },
   {
    "mod": "views",
-   "name": "OL_HIST_CAP",
-   "start": 2308
+   "name": "OL_HIST_CAP"
   },
   {
    "mod": "views",
-   "name": "olTrack",
-   "start": 2309
+   "name": "olTrack"
   },
   {
    "mod": "views",
-   "name": "renderOllama",
-   "start": 2318
+   "name": "renderOllama"
   },
   {
    "mod": "flow",
-   "name": "FLOWSIM",
-   "start": 213
+   "name": "FLOWSIM"
   },
   {
    "mod": "flow",
-   "name": "FLOWROWS",
-   "start": 214
+   "name": "FLOWROWS"
   },
   {
    "mod": "flow",
-   "name": "flowDepth",
-   "start": 215
+   "name": "flowDepth"
   },
   {
    "mod": "flow",
-   "name": "flowData",
-   "start": 217
+   "name": "flowData"
   },
   {
    "mod": "flow",
-   "name": "flowFlatten",
-   "start": 252
+   "name": "flowFlatten"
   },
   {
    "mod": "palette",
-   "name": "TOOL_FAM",
-   "start": 245
+   "name": "TOOL_FAM"
   },
   {
    "mod": "palette",
-   "name": "toolFam",
-   "start": 257
+   "name": "toolFam"
   },
   {
    "mod": "palette",
-   "name": "TOOLCOLORS",
-   "start": 261
+   "name": "TOOLCOLORS"
   },
   {
    "mod": "palette",
-   "name": "TOOL_ROSTER",
-   "start": 269
+   "name": "TOOL_ROSTER"
   },
   {
    "mod": "palette",
-   "name": "allToolNames",
-   "start": 281
+   "name": "allToolNames"
   },
   {
    "mod": "palette",
-   "name": "buildToolColors",
-   "start": 291
+   "name": "buildToolColors"
   },
   {
    "mod": "palette",
-   "name": "toolColor",
-   "start": 316
+   "name": "toolColor"
   },
   {
    "mod": "flow",
-   "name": "flowSessions",
-   "start": 273
+   "name": "flowSessions"
   },
   {
    "mod": "flow",
-   "name": "flowColor",
-   "start": 289
+   "name": "flowColor"
   },
   {
    "mod": "flow",
-   "name": "renderFlow",
-   "start": 297
+   "name": "renderFlow"
   },
   {
    "mod": "flow",
-   "name": "flowControls",
-   "start": 731
+   "name": "flowControls"
   },
   {
    "mod": "views",
-   "name": "SRC_BADGE",
-   "start": 2409
+   "name": "SRC_BADGE"
   },
   {
    "mod": "views",
-   "name": "sesstreeCollapsed",
-   "start": 2411
+   "name": "sesstreeCollapsed"
   },
   {
    "mod": "views",
-   "name": "sesstreeNode",
-   "start": 2413
+   "name": "sesstreeNode"
   },
   {
    "mod": "views",
-   "name": "renderSessionsTree",
-   "start": 2442
+   "name": "renderSessionsTree"
   },
   {
    "mod": "charts",
-   "name": "ctxSpark",
-   "start": 324
+   "name": "ctxSpark"
   },
   {
    "mod": "views",
-   "name": "renderContext",
-   "start": 2467
+   "name": "renderContext"
   },
   {
    "mod": "views",
-   "name": "installSesstree",
-   "start": 2507
+   "name": "installSesstree"
   },
   {
    "mod": "views",
-   "name": "renderHeatmap",
-   "start": 2520
+   "name": "renderHeatmap"
   },
   {
    "mod": "palette",
-   "name": "slugOf",
-   "start": 318
+   "name": "slugOf"
   },
   {
    "mod": "router",
-   "name": "PROJECT_FILTER",
-   "start": 105
+   "name": "PROJECT_FILTER"
   },
   {
    "mod": "router",
-   "name": "setHash",
-   "start": 110
+   "name": "setHash"
   },
   {
    "mod": "router",
-   "name": "viewFromHash",
-   "start": 118
+   "name": "viewFromHash"
   },
   {
    "mod": "router",
-   "name": "projectFromHash",
-   "start": 128
+   "name": "projectFromHash"
   },
   {
    "mod": "router",
-   "name": "POWER",
-   "start": 153
+   "name": "POWER"
   },
   {
    "mod": "router",
-   "name": "SET_DEFAULTS",
-   "start": 154
+   "name": "SET_DEFAULTS"
   },
   {
    "mod": "router",
-   "name": "setState",
-   "start": 155
+   "name": "setState"
   },
   {
    "mod": "charts",
-   "name": "usdPerSec",
-   "start": 342
+   "name": "usdPerSec"
   },
   {
    "mod": "charts",
-   "name": "outPer1M",
-   "start": 346
+   "name": "outPer1M"
   },
   {
    "mod": "router",
-   "name": "setRead",
-   "start": 157
+   "name": "setRead"
   },
   {
    "mod": "router",
-   "name": "setWrite",
-   "start": 162
+   "name": "setWrite"
   },
   {
    "mod": "router",
-   "name": "setInvalid",
-   "start": 167
+   "name": "setInvalid"
   },
   {
    "mod": "router",
-   "name": "renderSetDeriv",
-   "start": 172
+   "name": "renderSetDeriv"
   },
   {
    "mod": "router",
-   "name": "renderSetFacts",
-   "start": 193
+   "name": "renderSetFacts"
   },
   {
    "mod": "router",
-   "name": "setMsg",
-   "start": 211
+   "name": "setMsg"
   },
   {
    "mod": "router",
-   "name": "renderSettings",
-   "start": 217
+   "name": "renderSettings"
   },
   {
    "mod": "router",
-   "name": "setColorSwatch",
-   "start": 242
+   "name": "setColorSwatch"
   },
   {
    "mod": "router",
-   "name": "renderSetColors",
-   "start": 255
+   "name": "renderSetColors"
   },
   {
    "mod": "router",
-   "name": "setColorsInstall",
-   "start": 265
+   "name": "setColorsInstall"
   },
   {
    "mod": "router",
-   "name": "setLogoRow",
-   "start": 305
+   "name": "setLogoRow"
   },
   {
    "mod": "router",
-   "name": "renderSetLogos",
-   "start": 317
+   "name": "renderSetLogos"
   },
   {
    "mod": "router",
-   "name": "setLogosInstall",
-   "start": 325
+   "name": "setLogosInstall"
   },
   {
    "mod": "router",
-   "name": "INTERVAL_DEFAULTS",
-   "start": 408
+   "name": "loadSettings"
   },
   {
    "mod": "router",
-   "name": "intervalsRead",
-   "start": 413
+   "name": "saveSettings"
   },
   {
    "mod": "router",
-   "name": "intervalsWrite",
-   "start": 418
+   "name": "INTERVAL_DEFAULTS"
   },
   {
    "mod": "router",
-   "name": "intervalsInvalid",
-   "start": 423
+   "name": "intervalsRead"
   },
   {
    "mod": "router",
-   "name": "intervalsMsg",
-   "start": 427
+   "name": "intervalsWrite"
   },
   {
    "mod": "router",
-   "name": "renderIntervals",
-   "start": 433
+   "name": "intervalsInvalid"
   },
   {
    "mod": "router",
-   "name": "applyIntervals",
-   "start": 445
+   "name": "intervalsMsg"
   },
   {
    "mod": "router",
-   "name": "intervalsInstall",
-   "start": 467
+   "name": "renderIntervals"
   },
   {
    "mod": "router",
-   "name": "settingsInstall",
-   "start": 477
+   "name": "applyIntervals"
   },
   {
    "mod": "router",
-   "name": "setCrumb",
-   "start": 495
+   "name": "saveIntervals"
   },
   {
    "mod": "router",
-   "name": "NAV_ICONS",
-   "start": 505
+   "name": "intervalsInstall"
   },
   {
    "mod": "router",
-   "name": "NAV_GROUPS",
-   "start": 514
+   "name": "settingsInstall"
   },
   {
    "mod": "router",
-   "name": "NAV_FALLBACK_GROUP",
-   "start": 519
+   "name": "setCrumb"
   },
   {
    "mod": "router",
-   "name": "navViews",
-   "start": 521
+   "name": "NAV_ICONS"
   },
   {
    "mod": "router",
-   "name": "navGroups",
-   "start": 527
+   "name": "NAV_GROUPS"
   },
   {
    "mod": "router",
-   "name": "renderNav",
-   "start": 541
+   "name": "NAV_FALLBACK_GROUP"
   },
   {
    "mod": "router",
-   "name": "navSync",
-   "start": 570
+   "name": "navViews"
   },
   {
    "mod": "router",
-   "name": "navOpen",
-   "start": 593
+   "name": "navGroups"
   },
   {
    "mod": "router",
-   "name": "isOffCanvas",
-   "start": 595
+   "name": "renderNav"
   },
   {
    "mod": "router",
-   "name": "navFocusables",
-   "start": 602
+   "name": "navSync"
   },
   {
    "mod": "router",
-   "name": "navTrap",
-   "start": 613
+   "name": "navOpen"
   },
   {
    "mod": "router",
-   "name": "navSetOpen",
-   "start": 622
+   "name": "isOffCanvas"
   },
   {
    "mod": "router",
-   "name": "NAVKEY",
-   "start": 646
+   "name": "navFocusables"
   },
   {
    "mod": "router",
-   "name": "navCollapsed",
-   "start": 647
+   "name": "navTrap"
   },
   {
    "mod": "router",
-   "name": "navApplyCollapsed",
-   "start": 651
+   "name": "navSetOpen"
   },
   {
    "mod": "router",
-   "name": "navSetCollapsed",
-   "start": 663
+   "name": "NAVKEY"
+  },
+  {
+   "mod": "router",
+   "name": "navCollapsed"
+  },
+  {
+   "mod": "router",
+   "name": "navApplyCollapsed"
+  },
+  {
+   "mod": "router",
+   "name": "navSetCollapsed"
   },
   {
    "mod": "drawer",
-   "name": "LOGS",
-   "start": 65
+   "name": "LOGS"
   },
   {
    "mod": "drawer",
-   "name": "lgSel",
-   "start": 66
+   "name": "lgSel"
   },
   {
    "mod": "drawer",
-   "name": "lgWindow",
-   "start": 68
+   "name": "lgWindow"
   },
   {
    "mod": "drawer",
-   "name": "lgProfile",
-   "start": 91
+   "name": "loadLogs"
   },
   {
    "mod": "drawer",
-   "name": "lgMatch",
-   "start": 98
+   "name": "lgProfile"
   },
   {
    "mod": "drawer",
-   "name": "lgChips",
-   "start": 116
+   "name": "lgMatch"
   },
   {
    "mod": "drawer",
-   "name": "lgActiveLabel",
-   "start": 130
+   "name": "lgChips"
   },
   {
    "mod": "drawer",
-   "name": "LG_FACET_NAMES",
-   "start": 139
+   "name": "lgActiveLabel"
   },
   {
    "mod": "drawer",
-   "name": "renderLgActive",
-   "start": 142
+   "name": "LG_FACET_NAMES"
   },
   {
    "mod": "drawer",
-   "name": "renderLogs",
-   "start": 156
+   "name": "renderLgActive"
   },
   {
    "mod": "drawer",
-   "name": "logsInstall",
-   "start": 218
+   "name": "renderLogs"
+  },
+  {
+   "mod": "drawer",
+   "name": "logsInstall"
   },
   {
    "mod": "router",
-   "name": "navInstall",
-   "start": 674
+   "name": "navInstall"
   },
   {
    "mod": "router",
-   "name": "views",
-   "start": 699
+   "name": "views"
   },
   {
    "mod": "router",
-   "name": "pickView",
-   "start": 703
+   "name": "pickView"
   },
   {
    "mod": "main",
-   "name": "installAll",
-   "start": 131
+   "name": "installAll"
   },
   {
    "mod": "router",
-   "name": "PV_OFF",
-   "start": 740
+   "name": "PV_OFF"
   },
   {
    "mod": "router",
-   "name": "pvKey",
-   "start": 741
+   "name": "pvKey"
   },
   {
    "mod": "router",
-   "name": "pvOff",
-   "start": 742
+   "name": "pvOff"
   },
   {
    "mod": "router",
-   "name": "pvSet",
-   "start": 749
+   "name": "pvSet"
   },
   {
    "mod": "router",
-   "name": "pvOnProfiles",
-   "start": 753
+   "name": "pvOnProfiles"
   },
   {
    "mod": "router",
-   "name": "PV_HUE",
-   "start": 762
+   "name": "PV_HUE"
   },
   {
    "mod": "router",
-   "name": "pvHueKey",
-   "start": 763
+   "name": "pvHueKey"
   },
   {
    "mod": "router",
-   "name": "pvHueOverride",
-   "start": 764
+   "name": "pvHueOverride"
   },
   {
    "mod": "router",
-   "name": "pvHueSet",
-   "start": 772
+   "name": "pvHueSet"
   },
   {
    "mod": "router",
-   "name": "profileHue",
-   "start": 783
+   "name": "profileHue"
   },
   {
    "mod": "router",
-   "name": "PROFILE_LOGO_MAX_BYTES",
-   "start": 793
+   "name": "PROFILE_LOGO_MAX_BYTES"
   },
   {
    "mod": "router",
-   "name": "PV_LOGO",
-   "start": 794
+   "name": "PV_LOGO"
   },
   {
    "mod": "router",
-   "name": "pvLogoKey",
-   "start": 795
+   "name": "pvLogoKey"
   },
   {
    "mod": "router",
-   "name": "profileLogo",
-   "start": 796
+   "name": "profileLogo"
   },
   {
    "mod": "router",
-   "name": "profileLogoSet",
-   "start": 803
+   "name": "profileLogoSet"
   },
   {
    "mod": "router",
-   "name": "profileIconHtml",
-   "start": 814
+   "name": "profileIconHtml"
   },
   {
    "mod": "router",
-   "name": "PV_ALL",
-   "start": 824
+   "name": "PV_ALL"
   },
   {
    "mod": "router",
-   "name": "pvFilter",
-   "start": 825
+   "name": "pvFilter"
   },
   {
    "mod": "router",
-   "name": "pvSyncCurrent",
-   "start": 847
+   "name": "pvSyncCurrent"
   },
   {
    "mod": "router",
-   "name": "pvToggle",
-   "start": 854
+   "name": "pvToggle"
   },
   {
    "mod": "router",
-   "name": "tabs",
-   "start": 864
+   "name": "tabs"
   },
   {
    "mod": "router",
-   "name": "pvMenu",
-   "start": 889
+   "name": "pvMenu"
   },
   {
    "mod": "router",
-   "name": "exitHourRange",
-   "start": 919
+   "name": "exitHourRange"
   },
   {
    "mod": "main",
-   "name": "saved",
-   "start": 143
+   "name": "saved"
   },
   {
    "mod": "main",
-   "name": "bootDone",
-   "start": 160
+   "name": "bootDone"
   },
   {
    "mod": "live",
-   "name": "LIVE_MS_DEFAULT",
-   "start": 184
+   "name": "doRefresh"
   },
   {
    "mod": "live",
-   "name": "LIVE_MS",
-   "start": 188
+   "name": "LIVE_MS_DEFAULT"
   },
   {
    "mod": "live",
-   "name": "liveBusy",
-   "start": 190
+   "name": "LIVE_MS"
   },
   {
    "mod": "live",
-   "name": "soundOn",
-   "start": 198
+   "name": "liveBusy"
   },
   {
    "mod": "live",
-   "name": "audioCtx",
-   "start": 199
+   "name": "soundOn"
   },
   {
    "mod": "live",
-   "name": "soundBaseline",
-   "start": 200
+   "name": "audioCtx"
   },
   {
    "mod": "live",
-   "name": "seenEnded",
-   "start": 201
+   "name": "soundBaseline"
   },
   {
    "mod": "live",
-   "name": "seenDeleg",
-   "start": 202
+   "name": "seenEnded"
   },
   {
    "mod": "live",
-   "name": "soundDebounceUntil",
-   "start": 203
+   "name": "seenDeleg"
   },
   {
    "mod": "live",
-   "name": "ensureAudioCtx",
-   "start": 205
+   "name": "soundDebounceUntil"
   },
   {
    "mod": "live",
-   "name": "playTone",
-   "start": 214
+   "name": "ensureAudioCtx"
   },
   {
    "mod": "live",
-   "name": "pendingKind",
-   "start": 241
+   "name": "playTone"
   },
   {
    "mod": "live",
-   "name": "soundTimerPending",
-   "start": 242
+   "name": "pendingKind"
   },
   {
    "mod": "live",
-   "name": "scheduleTone",
-   "start": 243
+   "name": "soundTimerPending"
   },
   {
    "mod": "live",
-   "name": "checkCompletions",
-   "start": 260
+   "name": "scheduleTone"
   },
   {
    "mod": "live",
-   "name": "soundToggleInstall",
-   "start": 282
-  },
-  {
-   "mod": "drawer",
-   "name": "dFilter",
-   "start": 270
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerEvents",
-   "start": 275
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerSync",
-   "start": 306
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerOpen",
-   "start": 343
-  },
-  {
-   "mod": "drawer",
-   "name": "installDrawerDrag",
-   "start": 383
-  },
-  {
-   "mod": "drawer",
-   "name": "installDrawer",
-   "start": 414
-  },
-  {
-   "mod": "drawer",
-   "name": "tOpen",
-   "start": 523
-  },
-  {
-   "mod": "drawer",
-   "name": "TCACHE",
-   "start": 524
-  },
-  {
-   "mod": "drawer",
-   "name": "tEscape",
-   "start": 526
-  },
-  {
-   "mod": "drawer",
-   "name": "tRenderContent",
-   "start": 533
-  },
-  {
-   "mod": "drawer",
-   "name": "tRenderMsg",
-   "start": 554
-  },
-  {
-   "mod": "drawer",
-   "name": "tCloseModal",
-   "start": 611
-  },
-  {
-   "mod": "drawer",
-   "name": "tKeydown",
-   "start": 624
-  },
-  {
-   "mod": "drawer",
-   "name": "installTranscriptModal",
-   "start": 643
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpen",
-   "start": 657
-  },
-  {
-   "mod": "drawer",
-   "name": "sfRowsHtml",
-   "start": 659
-  },
-  {
-   "mod": "drawer",
-   "name": "sfRender",
-   "start": 685
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpenPalette",
-   "start": 694
-  },
-  {
-   "mod": "drawer",
-   "name": "sfClosePalette",
-   "start": 707
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpenSelected",
-   "start": 716
-  },
-  {
-   "mod": "drawer",
-   "name": "installSessionFinder",
-   "start": 726
-  },
-  {
-   "mod": "drawer",
-   "name": "LN_LANES",
-   "start": 760
-  },
-  {
-   "mod": "drawer",
-   "name": "LN_LANE_LABELS",
-   "start": 761
-  },
-  {
-   "mod": "drawer",
-   "name": "lnOpen",
-   "start": 762
-  },
-  {
-   "mod": "drawer",
-   "name": "lnOpenAt",
-   "start": 763
-  },
-  {
-   "mod": "drawer",
-   "name": "lnRenderTimeline",
-   "start": 797
-  },
-  {
-   "mod": "drawer",
-   "name": "lnCloseModal",
-   "start": 831
-  },
-  {
-   "mod": "drawer",
-   "name": "lnKeydown",
-   "start": 845
-  },
-  {
-   "mod": "drawer",
-   "name": "lnColorOf",
-   "start": 874
-  },
-  {
-   "mod": "drawer",
-   "name": "installTimelineModal",
-   "start": 882
+   "name": "checkCompletions"
   },
   {
    "mod": "live",
-   "name": "scheduleLivePoll",
-   "start": 311
+   "name": "soundToggleInstall"
+  },
+  {
+   "mod": "drawer",
+   "name": "dFilter"
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerEvents"
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerSync"
+  },
+  {
+   "mod": "drawer",
+   "name": "drawerOpen"
+  },
+  {
+   "mod": "drawer",
+   "name": "installDrawerDrag"
+  },
+  {
+   "mod": "drawer",
+   "name": "installDrawer"
   },
   {
    "mod": "live",
-   "name": "liveTimer",
-   "start": 314
+   "name": "pollLive"
+  },
+  {
+   "mod": "drawer",
+   "name": "tOpen"
+  },
+  {
+   "mod": "drawer",
+   "name": "TCACHE"
+  },
+  {
+   "mod": "drawer",
+   "name": "tEscape"
+  },
+  {
+   "mod": "drawer",
+   "name": "tRenderContent"
+  },
+  {
+   "mod": "drawer",
+   "name": "tRenderMsg"
+  },
+  {
+   "mod": "drawer",
+   "name": "tOpenModal"
+  },
+  {
+   "mod": "drawer",
+   "name": "tCloseModal"
+  },
+  {
+   "mod": "drawer",
+   "name": "tKeydown"
+  },
+  {
+   "mod": "drawer",
+   "name": "installTranscriptModal"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpen"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfRowsHtml"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfRender"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpenPalette"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfClosePalette"
+  },
+  {
+   "mod": "drawer",
+   "name": "sfOpenSelected"
+  },
+  {
+   "mod": "drawer",
+   "name": "installSessionFinder"
+  },
+  {
+   "mod": "drawer",
+   "name": "LN_LANES"
+  },
+  {
+   "mod": "drawer",
+   "name": "LN_LANE_LABELS"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnOpen"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnOpenAt"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnOpenModal"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnRenderTimeline"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnCloseModal"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnKeydown"
+  },
+  {
+   "mod": "drawer",
+   "name": "lnColorOf"
+  },
+  {
+   "mod": "drawer",
+   "name": "installTimelineModal"
   },
   {
    "mod": "live",
-   "name": "REBUILD_MS",
-   "start": 339
+   "name": "scheduleLivePoll"
   },
   {
    "mod": "live",
-   "name": "scheduleRebuild",
-   "start": 341
+   "name": "liveTimer"
   },
   {
    "mod": "live",
-   "name": "rebuildTimer",
-   "start": 347
+   "name": "REBUILD_MS"
+  },
+  {
+   "mod": "live",
+   "name": "scheduleRebuild"
+  },
+  {
+   "mod": "live",
+   "name": "rebuildTimer"
   }
- ],
- "header_lines": 0
+ ]
 }

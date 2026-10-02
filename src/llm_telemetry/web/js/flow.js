@@ -3,9 +3,9 @@
  * tooltip), the task-queue visualisation and the agent cards.
  */
 import { $, ago, colorOf, esc, short } from './palette.js';
-import { mk } from './charts.js';
+import { current } from './charts.js';
 import { PROV, fillChip, flipMove, provOf, qChip, render } from './views.js';
-import { profileHue, view, views } from './router.js';
+import { profileHue } from './router.js';
 import { DATA, css } from './main.js';
 
 export const Q_SEEN = new Map();   // dom key -> {lane, chip} so we can detect travel

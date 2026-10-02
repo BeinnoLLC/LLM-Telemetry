@@ -3,7 +3,7 @@
  * including the KPI ring/sparkline primitives.
  */
 import {
-  $, LABEL_FONT, bwPrev, escA, fmt, fmtB, fmtRate, labelColor, readTheme,
+  $, BD, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmtB, fmtRate, labelColor, readTheme,
 } from './palette.js';
 import { DATA } from './main.js';
 
