@@ -64,7 +64,17 @@ with tempfile.TemporaryDirectory() as t:
     home = make_home(t)
     cfg = os.path.join(t, "cfg.json")
     json.dump({"reports_dir": t, "agent_home": home, "profiles": [{"name": "p", "home": home}]}, open(cfg, "w"))
-    env = {**os.environ, "LLM_TELEMETRY_CONFIG": cfg, "LLM_TELEMETRY_OFFLINE": "1"}
+    # Pin the committed sample catalogue. Without it the two sides of the
+    # reconciliation below price from DIFFERENT sources: the collector gets a
+    # temp reports_dir (no cache, so a live OpenRouter fetch that silently
+    # degrades to {} when the network hiccups), while this process resolves
+    # _cfg() to the gate's reports_dir and reads its cached catalogue. Any
+    # transient fetch failure then shows up as a price mismatch rather than
+    # the bug this test is actually hunting.
+    catalog = os.path.join(ROOT, "examples", "reports", "sample-catalog.json")
+    os.environ["LLM_TELEMETRY_CATALOG"] = catalog
+    env = {**os.environ, "LLM_TELEMETRY_CONFIG": cfg, "LLM_TELEMETRY_OFFLINE": "1",
+           "LLM_TELEMETRY_CATALOG": catalog}
     env.pop("LLM_TELEMETRY_AGENT_HOME", None)
     out = os.path.join(t, "a.json")
     r = subprocess.run([PY, "-m", "llm_telemetry.collect_analytics", "-o", out],
