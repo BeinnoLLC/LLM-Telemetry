@@ -8081,8 +8081,36 @@ async function doRefresh(silent){
     const bad = schemaProblem(fresh, 'analytics-data.json');
     if (bad) { showSchemaError(bad); throw new Error(bad); }
     if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
+    // Router data (#130) is merged into dashboard.html at BUILD time only —
+    // build_dashboard.py folds router-data.json in, analytics-data.json never
+    // carries it. Swapping DATA wholesale therefore blanked the Router tab to
+    // "No router data" on the very first refresh (the ↻ button and the 60s
+    // rebuild alike), which read like the hourly job had never run. Fetch the
+    // hourly payload here too, so a refresh carries it across AND picks up a
+    // newer collection; anything short of a good payload keeps what the page
+    // booted with rather than emptying the tab.
+    let router = null;
+    try {
+      const rr = await fetch('router-data.json?t=' + Date.now(), {cache:'no-store'});
+      if (rr.ok) {
+        const rd = await rr.json();
+        // Shape, not just version: the tab is addressed by profile name, and a
+        // payload without router data (the analytics one, say) would put every
+        // profile there with no tier_router on it — the same empty tab, arrived
+        // at more confusingly. `vocab` is written by collect_router alone.
+        if (rd && rd.schema_version === SCHEMA_VERSION && rd.vocab && rd.profiles) {
+          router = { profiles: rd.profiles,
+                     meta: { vocab: rd.vocab, collected_at: rd.collected_at } };
+        }
+      }
+    } catch (e){ /* keep the built-in router payload */ }
     const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
+    const prevRouter = DATA.router, prevRouterMeta = DATA.router_meta;
     DATA = fresh;
+    // Keep the tab populated even if the hourly payload could not be fetched:
+    // stale router data beats an empty tab that reads like the job never ran.
+    DATA.router = router ? router.profiles : prevRouter;
+    DATA.router_meta = router ? router.meta : prevRouterMeta;
     // #121: re-filter through the ON set (this also rebuilds the merge).
     // installAll() alone would put the raw profile map back and lose the
     // toggles; pvFilter() reads PV_ALL, which the capture below refreshes.

@@ -9,6 +9,7 @@ reports/
 # them directly, so excluding them makes CI unrunnable on a fresh clone.
 !examples/reports/
 examples/reports/pricing-cache.json
+examples/reports/nous-pricing-cache.json
 
 __pycache__/
 *.py[cod]

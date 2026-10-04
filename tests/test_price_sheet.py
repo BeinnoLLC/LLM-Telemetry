@@ -74,12 +74,19 @@ chk("Prices are stale" in text(hs) and "3d ago" in text(hs) and "URLError" in te
 
 # ---- #60: cold cache + network down = readable error -----------------------
 with tempfile.TemporaryDirectory() as tmp:
+    # Both catalogues, or this is not a cold cache: the Nous list (#131) has
+    # its own cache file, and leaving it warm made this test pass on the
+    # OpenRouter failure while a page full of Nous rates came back.
     old_cache, old_url = P.CACHE, P.URL
+    old_ncache, old_nurl = P.NOUS_CACHE, P.NOUS_URL
     P.CACHE = os.path.join(tmp, "none.json")
+    P.NOUS_CACHE = os.path.join(tmp, "none-nous.json")
     P.URL = "http://127.0.0.1:9/nothing-listens-here"
+    P.NOUS_URL = "http://127.0.0.1:9/nothing-listens-here-either"
     cat, src_state = P.fetch_catalog(force=True)
     fr = P.catalog_freshness(src_state)
     P.CACHE, P.URL = old_cache, old_url
+    P.NOUS_CACHE, P.NOUS_URL = old_ncache, old_nurl
 chk(cat == {} and fr["state"] == "unavailable", "forced fetch failure with a cold cache is 'unavailable'", fr)
 hu = sheet([model("anthropic/claude-x", "unpriced", 10)], fr, size=0)
 chk('data-state="unavailable"' in hu and "Catalogue prices are missing" in text(hu),
