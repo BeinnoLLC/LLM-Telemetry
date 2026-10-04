@@ -92,15 +92,20 @@ setTimeout(() => {
     // ---- the fallback: a brand-new view with no group entry --------------
     // Inject a view the way a future page would, then re-render the nav; it
     // must land in the trailing "More" group, not vanish.
+    //
+    // The name must NOT be one NAV_GROUPS now lists. This used to inject a view
+    // called "Quota", which #115 later added to Overview for real -- so the
+    // duplicate matched the declared group, never reached the fallback, and the
+    // whole block below reported failures that looked like a nav bug.
     const fake = d.createElement('div');
     fake.className = 'view';
-    fake.dataset.view = 'Quota';
+    fake.dataset.view = 'ViewFromTheFuture';
     fake.hidden = true;
     d.querySelector('.views, body')?.appendChild(fake);
     w.eval('renderNav()');
     const after = [...d.querySelectorAll('#navlist [data-nav]')].map(a => a.dataset.nav);
-    chk(after.includes('Quota'), 'an ungrouped new view STILL appears in the nav', after.join(','));
-    chk(!!d.querySelector('#navlist .navgroup[data-navgroup="More"] [data-nav="Quota"]'),
+    chk(after.includes('ViewFromTheFuture'), 'an ungrouped new view STILL appears in the nav', after.join(','));
+    chk(!!d.querySelector('#navlist .navgroup[data-navgroup="More"] [data-nav="ViewFromTheFuture"]'),
         'ungrouped view lands in the trailing More group');
     const moreGroups = d.querySelectorAll('#navlist .navgroup[data-navgroup="More"]').length;
     chk(moreGroups === 1, 'exactly one More group', String(moreGroups));

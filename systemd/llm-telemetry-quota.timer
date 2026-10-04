@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh the Quota tab every hour
+
+[Timer]
+OnBootSec=3min
+# Hourly (#115): the collector only reads the Hermes quota-plugin cache, which
+# its own hourly cron refreshes from the providers. Re-reading our own copy
+# every minute would just re-measure an unchanged number, and a quota bar that
+# moves by 0.01% is noise, not news. The dashboard's per-minute build embeds
+# quota-data.json, so a missed tick shows up as a stale bar, not an error.
+OnCalendar=hourly
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

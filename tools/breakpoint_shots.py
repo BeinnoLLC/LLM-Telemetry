@@ -26,10 +26,39 @@ import sys
 
 WIDTHS = [375, 768, 1024, 1440, 1920]
 THEMES = ["dark", "light"]
-# Every data-view in build_dashboard.py's <nav>, in source order.
+# Fallback view list, used only if the nav cannot be read out of the page (see
+# discover_views below). build_dashboard.py writes the real nav, so normally
+# nothing consults this -- and when it did, it had drifted, so the Router tab
+# (#130) and the Quota tab (#115) were never screenshotted or sanity-checked.
 VIEWS = ["Home", "Live", "Flow", "Settings", "Logs", "Health", "Usage", "Cost", "Detail"]
 
 HEIGHT = 1000  # tall enough that most views don't need scrolling to check layout
+
+
+def discover_views(page):
+    """The view names in nav order, read out of the built page's own nav.
+
+    Falls back to the hardcoded VIEWS list if the nav exposes nothing usable —
+    a screenshot run with a stale list is still better than one that crashes.
+    """
+    names = page.evaluate(
+        """() => {
+            const nav = document.getElementById('navdrawer') || document;
+            // data-nav carries the real view name; the href is a slug
+            // ("#/logs" for "Logs"), so reading hrefs back would need a
+            // round-trip and would hand the caller the wrong casing.
+            const found = [...nav.querySelectorAll('[data-nav]')]
+                .map(el => (el.dataset.nav || '').trim())
+                .filter(Boolean);
+            return [...new Set(found)];
+        }"""
+    )
+    names = [n for n in names if n]
+    if not names:
+        print("WARNING: no views found in the page nav — falling back to the "
+              "built-in list, which may be out of date", file=sys.stderr)
+        return list(VIEWS)
+    return names
 
 
 def main():
@@ -69,7 +98,7 @@ def main():
             # identical images. Detect this once up front instead of failing
             # the per-view sanity check 90 times.
             has_nav = probe.evaluate("!!document.getElementById('navdrawer')")
-            views = VIEWS if has_nav else [None]
+            views = discover_views(probe) if has_nav else [None]
             probe.close()
 
             for width in WIDTHS:

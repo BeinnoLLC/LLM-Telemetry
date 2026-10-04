@@ -246,6 +246,86 @@
    "name": "renderRouterView"
   },
   {
+   "mod": "quotaview",
+   "name": "QV_PAGES"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvAttention"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvPct"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvLevel"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvCalls"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvIsFree"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvBar"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvWindow"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvBalance"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvHead"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvProviders"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvBalances"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvNotes"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvPageGet"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvPageSet"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvFolded"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvSaveFold"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvSection"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvStat"
+  },
+  {
+   "mod": "quotaview",
+   "name": "renderQuotaView"
+  },
+  {
    "mod": "router",
    "name": "view"
   },

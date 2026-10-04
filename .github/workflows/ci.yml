@@ -65,6 +65,15 @@ jobs:
       - name: Python suites
         run: python3 -m pytest tests/test_pytest_wrapper.py -v
 
+      - name: Quota view layout probe (#115)
+        # Real geometry in real Chrome: every card sized, every bar drawn inside
+        # its row, nothing overflowing the viewport. Cheaper and more specific
+        # than reading screenshots, so this one blocks the merge (unlike the
+        # artifact-only screenshot step below).
+        run: |
+          pip install playwright
+          python3 tools/quota_layout_probe.py --chrome "$(which google-chrome-stable || which google-chrome)"
+
       - name: Breakpoint screenshots (#21) — non-blocking QA artifact
         # Dev-extra tooling: playwright is never a runtime dependency (the
         # package itself stays PyYAML-only). Uses the runner's preinstalled

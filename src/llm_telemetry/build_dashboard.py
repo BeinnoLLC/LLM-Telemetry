@@ -46,6 +46,15 @@ else:
     ROUTER_MAX_AGE_S = 65 * 60
     if not _router.exists() or time.time() - _router.stat().st_mtime > ROUTER_MAX_AGE_S:
         subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router", str(_router)], check=True)
+    # Quota data (#115) follows the same shape for the same reason: reading the
+    # Hermes quota plugin's cache is cheap, but the collector also rewrites a
+    # 30-day history ledger, so it gets its own hourly job
+    # (systemd/llm-telemetry-quota.timer) and this build only fills in when the
+    # file is missing or stale.
+    _quota = CFG.reports_dir / "quota-data.json"
+    QUOTA_MAX_AGE_S = 65 * 60
+    if not _quota.exists() or time.time() - _quota.stat().st_mtime > QUOTA_MAX_AGE_S:
+        subprocess.run([sys.executable, "-m", "llm_telemetry.collect_quota", str(_quota)], check=True)
 from .schema import SCHEMA_VERSION  # noqa: E402
 from .webassets import inline_js, read_css, read_shell, read_tokens  # noqa: E402
 
@@ -64,12 +73,34 @@ def _load_versioned(path):
     return d
 
 
+def _load_versioned_opt(path):
+    """Load an optional payload; absent means empty, stale still fails (#23).
+
+    The quota payload is optional by design: it mirrors the Hermes quota plugin's
+    cache, and that plugin is not installed everywhere. A machine with no plugin
+    must still build a dashboard (the Quota tab renders its own empty state) —
+    but a payload that IS there and speaks an older schema is a real error and
+    must not be silently swallowed, so the version check stays mandatory here.
+    """
+    if not path.exists():
+        return {}
+    return _load_versioned(path)
+
+
 data = _load_versioned(DATA)
 _rd = _load_versioned(CFG.reports_dir / "router-data.json")
 data["router"] = _rd["profiles"]
 # Router tab (#130): the shared category/level vocabulary and when the hourly
 # job last ran, so the tab can say how fresh its picture is.
 data["router_meta"] = {"vocab": _rd.get("vocab") or {}, "collected_at": _rd.get("collected_at")}
+# Quota tab (#115): provider headroom per profile, plus when the hourly job last
+# refreshed the picture. The payload is already credential-free (see
+# collect_quota's whitelist), so it passes through as-is.
+_qd = _load_versioned_opt(CFG.reports_dir / "quota-data.json")
+data["quota"] = _qd.get("profiles") or {}
+data["quota_meta"] = {"collected_at": _qd.get("collected_at"),
+                      "attention_percent": _qd.get("attention_percent"),
+                      "summary": _qd.get("summary") or {}}
 
 
 def _shown_path(f):

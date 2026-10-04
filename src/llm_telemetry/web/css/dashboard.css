@@ -1343,3 +1343,42 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-recent{margin-top:.6rem}
 .rt-chain{display:flex;flex-direction:column;align-items:flex-start;gap:.25rem}
 .rt-hop{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+
+/* --- Quota tab (#115) ------------------------------------------------------
+   A usage window is one horizontal metered bar plus a reset time. The fill is an
+   <i>, so it must be display:block — an inline box ignores width and renders
+   0x0 (see tests/check_inline_sized_elements.js). Level colours reuse the
+   Router tab's green/amber/red; 'mute' is the honest colour for "no reading"
+   and must never fall back to green, or an unknown quota reads as healthy. */
+.qv-track{display:block;width:100%;height:6px;border-radius:3px;background:var(--border);overflow:hidden}
+.qv-fill{display:block;height:100%;border-radius:3px;background:var(--muted);transition:width .25s ease}
+.qv-fill.qv-ok{background:#22c55e}
+.qv-fill.qv-warn{background:#f59e0b}
+.qv-fill.qv-bad{background:#ef4444}
+.qv-fill.qv-mute{background:var(--muted)}
+.qv-win{display:grid;grid-template-columns:minmax(70px,auto) 52px 1fr auto;gap:.5rem;align-items:center;padding:.3rem 0}
+.qv-win+.qv-win{border-top:1px solid var(--border)}
+.qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
+.qv-pct.qv-ok{color:#22c55e}
+.qv-pct.qv-warn{color:#f59e0b}
+.qv-pct.qv-bad{color:#ef4444}
+.qv-pct.qv-mute{color:var(--muted)}
+.qv-reset{font-size:var(--fs-xs);white-space:nowrap}
+.qv-prov{padding:.45rem 0}
+.qv-prov+.qv-prov{border-top:1px solid var(--border)}
+.qv-prov.qv-near{background:#f59e0b0d;border-radius:8px;padding:.45rem .5rem;margin:0 -.5rem}
+.qv-head{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.2rem}
+.qv-name{font-size:var(--fs-sm)}
+.qv-plan{font-size:var(--fs-xs);color:var(--muted)}
+.qv-free{font-size:var(--fs-xs);color:#22c55e;border:1px solid #22c55e55;background:#22c55e14;border-radius:999px;padding:0 .4rem}
+.qv-why{font-size:var(--fs-xs);color:#f59e0b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22rem}
+.qv-wins-none{font-size:var(--fs-xs)}
+.qv-balrow{padding:.35rem 0;font-size:var(--fs-xs)}
+.qv-balrow+.qv-balrow{border-top:1px solid var(--border)}
+.qv-bal{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.2rem}
+.qv-amt{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.qv-cur{color:var(--muted);font-family:ui-monospace,monospace}
+.qv-note{padding:.45rem 0;font-size:var(--fs-xs)}
+.qv-note+.qv-note{border-top:1px solid var(--border)}
+.qv-detail{font-family:ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;word-break:break-word}

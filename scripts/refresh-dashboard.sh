@@ -38,6 +38,7 @@ unset LLM_TELEMETRY_CONFIG LLM_TELEMETRY_NO_COLLECT   # personal config, real co
   # `logs` writes logs-data.json for the Logs view, fetched on demand (~1.3 MB
   # per profile, so it deliberately stays out of the HTML).
   "$CLI" dashboard
+  "$CLI" quota
   "$CLI" live
   "$CLI" logs
   "$CLI" costs

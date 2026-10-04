@@ -241,7 +241,17 @@ __DASHBOARD_CSS__
   <div id="routerview"></div>
  </div>
 
- <div class="view" data-view="Flow" hidden>
+ <!-- #115: provider quota headroom per profile — usage windows, account
+      balances and provider notes, from the Hermes quota plugin cache.
+      Filled by quotaview.js. -->
+ <div class="view" data-view="Quota" hidden>
+  <div class="lbl mb-2.5">Provider quota
+   <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="quotasub"></span>
+  </div>
+  <div id="quotaview"></div>
+ </div>
+
+<div class="view" data-view="Flow" hidden>
   <div class="card p-4">
    <div class="lbl mb-2.5">Provider → model → task
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="flowsub"></span>

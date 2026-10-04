@@ -56,6 +56,10 @@ const PRODUCER = {
   'live-data.json': ['live'],
   'logs-data.json': ['logs'],
   'router-data.json': ['router', 'dashboard'],   // dashboard re-collects when stale
+  // `dashboard` embeds the quota payload, but live.js re-reads quota-data.json on
+  // every refresh so the headroom bars move without a rebuild -- so `quota` must be
+  // in the refresh cycle too, not just the build.
+  'quota-data.json': ['quota'],
   'transcripts.json': ['transcripts'],
   'sessions/<profile>/<id>.json': ['session-timeline'],
 };

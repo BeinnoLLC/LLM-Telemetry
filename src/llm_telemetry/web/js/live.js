@@ -217,13 +217,34 @@ export async function doRefresh(silent){
         }
       }
     } catch (e){ /* keep the built-in router payload */ }
+    // Same treatment for the Quota tab (#115): it reads DATA.quota, which
+    // build_dashboard.py folds in from quota-data.json. Guarded by attention_percent
+    // because collect_quota writes it alone — a payload without it carries no
+    // per-profile headroom, so accepting it would blank the tab.
+    let quota = null;
+    try {
+      const qr = await fetch('quota-data.json?t=' + Date.now(), {cache:'no-store'});
+      if (qr.ok) {
+        const qd = await qr.json();
+        if (qd && qd.schema_version === SCHEMA_VERSION
+            && qd.attention_percent && qd.profiles) {
+          quota = { profiles: qd.profiles,
+                    meta: { collected_at: qd.collected_at,
+                            attention_percent: qd.attention_percent,
+                            summary: qd.summary || {} } };
+        }
+      }
+    } catch (e){ /* keep the built-in quota payload */ }
     const keepFrom = $('from').value, keepTo = $('to').value, keepProfile = current;
     const prevRouter = DATA.router, prevRouterMeta = DATA.router_meta;
+    const prevQuota = DATA.quota, prevQuotaMeta = DATA.quota_meta;
     DATA = fresh;
     // Keep the tab populated even if the hourly payload could not be fetched:
     // stale router data beats an empty tab that reads like the job never ran.
     DATA.router = router ? router.profiles : prevRouter;
     DATA.router_meta = router ? router.meta : prevRouterMeta;
+    DATA.quota = quota ? quota.profiles : prevQuota;
+    DATA.quota_meta = quota ? quota.meta : prevQuotaMeta;
     // #121: re-filter through the ON set (this also rebuilds the merge).
     // installAll() alone would put the raw profile map back and lose the
     // toggles; pvFilter() reads PV_ALL, which the capture below refreshes.

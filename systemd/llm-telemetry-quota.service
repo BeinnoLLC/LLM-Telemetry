@@ -1,0 +1,6 @@
+[Unit]
+Description=Collect provider quota headroom from the Hermes quota-plugin cache (Quota tab)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/llm-telemetry quota

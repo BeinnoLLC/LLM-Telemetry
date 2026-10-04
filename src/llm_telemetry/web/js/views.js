@@ -12,6 +12,7 @@ import {
 import { flowControls, renderFlow } from './flow.js';
 import { renderLive } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
+import { renderQuotaView, qvStat } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
   pickView, setCrossFilter, setHash, view,
@@ -527,6 +528,8 @@ export function render(){
   // Router tab (#130) reads DATA.router, not the ledger rows, so it renders
   // before the empty-range return too.
   if (view === 'Router') renderRouterView();
+  // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
+  if (view === 'Quota') renderQuotaView();
 
   // Before the empty-range return: a range with no ledger rows must say so,
   // not keep showing the previous range's numbers.
@@ -792,6 +795,8 @@ export function renderHome(inR){
       models.size + (models.size === 1 ? ' model' : ' models')],
     ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',
       routerStat()],
+    ['Quota', icon('scale'), PAL[4], 'How much headroom is left on each provider',
+      qvStat()],
     ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
     ['Projects', icon('folder'), PAL[5], 'Spend and calls broken down by project',
       projStat],

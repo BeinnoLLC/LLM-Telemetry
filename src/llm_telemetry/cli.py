@@ -37,6 +37,7 @@ def main():
     sub.add_parser("probe", help="probe inference hosts -> ollama-data.json")
     sub.add_parser("analytics", help="write analytics-data.json only")
     sub.add_parser("router", help="write router-data.json only")
+    sub.add_parser("quota", help="write quota-data.json + history only (#115)")
     p_serve = sub.add_parser("serve", help="serve reports/ with no-store headers")
     p_serve.add_argument("port", nargs="?", default=None)
     sub.add_parser("config", help="print the resolved configuration and exit")
@@ -59,6 +60,7 @@ def main():
         "probe": "probe_hosts",
         "analytics": "collect_analytics",
         "router": "collect_router",
+        "quota": "collect_quota",
         "serve": "serve",
     }
     argv = rest

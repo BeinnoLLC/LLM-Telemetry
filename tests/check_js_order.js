@@ -24,7 +24,7 @@ const chk = (ok, l, x) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l}${x ? '  
 // The dashboard's modules. costs.js is the price sheet's own page, inlined by
 // build_costs.py against its own list, so it is not part of this manifest.
 const DASHBOARD_MODULES = ['palette', 'charts', 'views', 'flow', 'drawer', 'live',
-                           'routerview', 'router', 'main'];
+                           'routerview', 'quotaview', 'router', 'main'];
 
 // Top-level declarations a module makes, exported or not: the flattening puts
 // every one of them in the shared scope, and webassets refuses a duplicate.

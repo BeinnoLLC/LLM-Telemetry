@@ -1,0 +1,62 @@
+{
+  "sample": true,
+  "_comment": "SYNTHETIC Hermes quota-plugin cache. Every value here is invented for the sample dashboard: no provider was contacted, and no credential appears (the api_key/session_token fields exist to prove the collector's whitelist drops them). See docs/plan.md #115.",
+  "fetched_at": "2026-10-05T09:14:22Z",
+  "providers": {
+    "anthropic": {
+      "label": "Anthropic",
+      "plan": "Max 20x",
+      "api_calls_available": true,
+      "windows": [
+        {"label": "5h", "used_percent": 41.5, "reset_at": "2026-10-05T14:14:22Z"},
+        {"label": "week", "used_percent": 88.0, "reset_at": "2026-10-09T00:00:00Z"}
+      ],
+      "account_balances": [],
+      "details": ["Weekly window resets Thursday 00:00 UTC."],
+      "api_key": "sk-ant-synthetic-not-a-real-key-0000"
+    },
+    "opencode-go": {
+      "label": "opencode go",
+      "plan": "free",
+      "api_calls_available": true,
+      "windows": [
+        {"label": "5h", "used_percent": 12.0, "reset_at": "2026-10-05T14:14:22Z"}
+      ],
+      "account_balances": [],
+      "details": [],
+      "session_token": "ghp_SYNTHETICsessionTOKENnotreal0000"
+    },
+    "nous-portal": {
+      "label": "Nous Portal",
+      "plan": "Pro",
+      "api_calls_available": false,
+      "unavailable_reason": "not logged in",
+      "windows": [],
+      "account_balances": [
+        {
+          "currency": "USD",
+          "total_balance": "42.75000000",
+          "granted_balance": "25.00000000",
+          "topped_up_balance": "17.75000000"
+        }
+      ],
+      "details": ["Run `hermes auth login` to refresh this balance."]
+    },
+    "openrouter": {
+      "label": "OpenRouter",
+      "plan": "Pro",
+      "api_calls_available": true,
+      "windows": [
+        {"label": "1d", "used_percent": 97.5, "reset_at": "2026-10-06T00:00:00Z"},
+        {"label": "month", "used_percent": 63.25, "reset_at": "2026-11-01T00:00:00Z"}
+      ],
+      "account_balances": [
+        {"currency": "USD", "total_balance": "118.42", "granted_balance": null, "topped_up_balance": "118.42"}
+      ],
+      "details": [
+        "Key sk-syntheticOPENROUTERnotreal9999 is stored in Hermes, not here.",
+        "Rate limit: 60 requests/min on free tier."
+      ]
+    }
+  }
+}
