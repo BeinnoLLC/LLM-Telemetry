@@ -13,7 +13,8 @@ import { flowControls, renderFlow } from './flow.js';
 import { renderLive } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
 import {
-  HOUR_RANGE, POWER, PROJECT_FILTER, hourRowsFor, pickView, setHash, view,
+  HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
+  pickView, setCrossFilter, setHash, view,
 } from './router.js';
 import { DATA, LOCAL_HOSTS, SCHEMA_VERSION, css } from './main.js';
 
@@ -398,6 +399,7 @@ export function render(){
   const p = DATA.profiles[current];
   renderAlerts(p.alerts);
   populateProjFilterSelect();
+  populateRowFilterSelects();
   syncProjFilterUI();
   const from = $('from').value, to = $('to').value;
   const inR = d => d && (!from || d>=from) && (!to || d<=to);
@@ -406,9 +408,13 @@ export function render(){
   // rather than the date-string range the day presets use. The project
   // filter still composes on top, same as the day-range path below.
   const dateRows = HOUR_RANGE ? hourRowsFor(p, HOUR_RANGE) : p.rows.filter(r=>inR(r.date));
-  const rows = PROJECT_FILTER
-    ? dateRows.filter(r => (r.project || 'Unattributed') === PROJECT_FILTER)
-    : dateRows;
+  // Cross-filters compose, in a fixed order (project -> provider -> model), so
+  // the same three choices always select the same rows whichever order they
+  // were picked in.
+  const rows = dateRows.filter(r =>
+    (!PROJECT_FILTER || (r.project || 'Unattributed') === PROJECT_FILTER) &&
+    (!PROVIDER_FILTER || (r.provider || '') === PROVIDER_FILTER) &&
+    (!MODEL_FILTER || r.model === MODEL_FILTER));
   // p.hours/p.sessions have no hour grain (day-only, like p.rows normally
   // is) — under an hour preset they're approximated by whichever CALENDAR
   // DAYS the cutoff touches, so the KPI cards (which read `rows` directly)
@@ -543,11 +549,18 @@ export function render(){
   }
 
   if(!rows.length){
-    // P4-09 (#46): an explicit empty state when the filtered PROJECT has no
-    // rows in range — not the same generic "no data" a truly empty date
-    // range shows, so it's obvious the filter (not the range) is why.
-    $('tbl').innerHTML = PROJECT_FILTER
-      ? `<tr><td class="muted py-3">No data for "${esc(PROJECT_FILTER)}" in this range.</td></tr>`
+    // P4-09 (#46): an explicit empty state when a filter is why there are no
+    // rows — not the generic "no data" a truly empty date range shows, so it is
+    // obvious which of the three (or the range) to relax. Naming only the
+    // project filter here meant a provider or model filter that matched nothing
+    // blamed the date range instead (#130).
+    const active = [
+      PROJECT_FILTER && `project "${PROJECT_FILTER}"`,
+      PROVIDER_FILTER && `provider "${PROVIDER_FILTER}"`,
+      MODEL_FILTER && `model "${MODEL_FILTER}"`,
+    ].filter(Boolean);
+    $('tbl').innerHTML = active.length
+      ? `<tr><td class="muted py-3">No data for ${esc(active.join(' + '))} in this range.</td></tr>`
       : '<tr><td class="muted py-3">No data in this range.</td></tr>';
     return;
   }
@@ -1601,33 +1614,84 @@ export function populateProjFilterSelect(){
   // project also exists in the new profile; otherwise fall back cleanly to
   // "All projects" rather than pointing at an option that no longer exists.
   sel.value = projects.includes(PROJECT_FILTER) ? PROJECT_FILTER : (projects.includes(prevValue) ? prevValue : '');
-  if (sel.value !== PROJECT_FILTER) PROJECT_FILTER = sel.value;
+  if (sel.value !== PROJECT_FILTER) setCrossFilter('project', sel.value);
 }
 
-// Reflects PROJECT_FILTER into the select + chip on every affected view,
-// and hides the chip everywhere else — a silent filter is exactly the bug
-// this ticket exists to prevent.
+// Provider + model selects (#130): options come from the CURRENT profile's row
+// values, so the list can never offer a slot or model that matches nothing —
+// the same reason the project list is derived rather than hardcoded.
+export function populateRowFilterSelects(){
+  const p = DATA.profiles[current];
+  if (!p) return;
+  const fill = (id, vals, all, keep) => {
+    const sel = $(id);
+    if (!sel) return '';
+    sel.innerHTML = `<option value="">${all}</option>` +
+      vals.map(v => `<option value="${escA(v)}">${esc(v)}</option>`).join('');
+    // The FILTER STATE decides, never the widget's own previous value. Falling
+    // back to the stale select resurrected a filter that had just been cleared:
+    // press Back to an unfiltered URL and hashchange resets the state, but the
+    // select still held the old value, so the next render put the filter back on
+    // while the URL said otherwise. Keeping a choice across a profile switch is
+    // the state's job — it survives, and it is what `keep` already is.
+    sel.value = vals.includes(keep) ? keep : '';
+    return sel.value;
+  };
+  const rows = p.rows || [];
+  // Through the setter: these names are imported bindings, and assigning to one
+  // throws outside the inlined page (see router.js setCrossFilter).
+  setCrossFilter('provider', fill('provfiltersel',
+    [...new Set(rows.map(r => r.provider || ''))].filter(Boolean).sort(), 'All providers', PROVIDER_FILTER));
+  setCrossFilter('model', fill('modelfiltersel',
+    [...new Set(rows.map(r => r.model).filter(Boolean))].sort(), 'All models', MODEL_FILTER));
+}
+
+// Reflects the three cross-filters into their selects + the chip on every view
+// they affect, and hides the chip everywhere else — a silent filter is exactly
+// the bug this bar exists to prevent.
 export function syncProjFilterUI(){
   const sel = $('projfiltersel'), chip = $('projfilterchip'), name = $('projfilterchipname');
   if (sel && sel.value !== PROJECT_FILTER) sel.value = PROJECT_FILTER;
+  const psel = $('provfiltersel'), msel = $('modelfiltersel');
+  if (psel && psel.value !== PROVIDER_FILTER) psel.value = PROVIDER_FILTER;
+  if (msel && msel.value !== MODEL_FILTER) msel.value = MODEL_FILTER;
   if (!chip || !name) return;
-  const showChip = !!PROJECT_FILTER && PROJ_FILTER_VIEWS.has(view);
+  const active = [PROJECT_FILTER, PROVIDER_FILTER, MODEL_FILTER].filter(Boolean);
+  const showChip = active.length > 0 && PROJ_FILTER_VIEWS.has(view);
   chip.hidden = !showChip;
   chip.style.display = showChip ? 'inline-flex' : 'none';
-  if (showChip) name.textContent = PROJECT_FILTER;
+  if (showChip) name.textContent = active.join(' \u00b7 ');
 }
 
 export function installProjFilter(){
   const sel = $('projfiltersel');
   if (sel) sel.addEventListener('change', () => {
-    PROJECT_FILTER = sel.value;
+    setCrossFilter('project', sel.value);
+    setHash(view);
+    syncProjFilterUI();
+    render();
+  });
+  // Provider and model behave identically to project: write the state, push it
+  // into the hash so the view stays shareable, re-sync the bar, re-render.
+  const prov = $('provfiltersel');
+  if (prov) prov.addEventListener('change', () => {
+    setCrossFilter('provider', prov.value);
+    setHash(view);
+    syncProjFilterUI();
+    render();
+  });
+  const mdl = $('modelfiltersel');
+  if (mdl) mdl.addEventListener('change', () => {
+    setCrossFilter('model', mdl.value);
     setHash(view);
     syncProjFilterUI();
     render();
   });
   $('projfilterclear')?.addEventListener('click', () => {
-    PROJECT_FILTER = '';
+    clearCrossFilters();
     if (sel) sel.value = '';
+    if (prov) prov.value = '';
+    if (mdl) mdl.value = '';
     setHash(view);
     syncProjFilterUI();
     render();

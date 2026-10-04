@@ -103,13 +103,24 @@ export function presets(p){
 // resolve through COLORS, providers through PROV — meaning a label is tinted
 // the same as the bar, slice or line it names, in EVERY chart.
 export let PROJECT_FILTER = '';
+// Provider and model cross-filters, alongside project (#130). Same discipline:
+// ONE piece of state each, applied as a row-filter step that COMPOSES with the
+// range and the profile tabs, carried in the hash so a filtered view is one
+// shareable URL. Provider is a slot name ("anthropic", "nous", "ollama-12");
+// model is the id exactly as the row records it, since that is what the
+// collector prices and the charts label.
+export let PROVIDER_FILTER = '';
+export let MODEL_FILTER = '';
 
 // Written by pickView. No timing flag: compare the hash to the view that is
 // already showing. A timer-based guard raced with jsdom's async hashchange and
 // let a redundant re-render wipe the live list mid-update.
 export function setHash(v){
-  const q = PROJECT_FILTER ? ('?project=' + encodeURIComponent(PROJECT_FILTER)) : '';
-  const want = '#/' + slugOf(v) + q;
+  const p = [];
+  if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
+  if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
+  if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
+  const want = '#/' + slugOf(v) + (p.length ? '?' + p.join('&') : '');
   if (location.hash !== want) location.hash = want;
 }
 
@@ -126,17 +137,41 @@ export function viewFromHash(){
 // a filter is the whole point — a URL someone pastes into chat should
 // restore exactly the view they were looking at, filter included.
 export function projectFromHash(){
+  return filterFromHash('project');
+}
+
+// Setters, because an ES import is a read-only binding: a caller in another
+// module assigning to PROJECT_FILTER throws the moment the module is loaded
+// directly (a test, a bundler, a worker) — the inlined page hides it by erasing
+// the import. State stays here; everyone else goes through these.
+export function setCrossFilter(key, value){
+  if (key === 'project') PROJECT_FILTER = value || '';
+  else if (key === 'provider') PROVIDER_FILTER = value || '';
+  else if (key === 'model') MODEL_FILTER = value || '';
+}
+export function clearCrossFilters(){ PROJECT_FILTER = PROVIDER_FILTER = MODEL_FILTER = ''; }
+// Boot and hashchange: read all three out of the one query string.
+export function setFiltersFromHash(){
+  PROJECT_FILTER = projectFromHash();
+  PROVIDER_FILTER = filterFromHash('provider');
+  MODEL_FILTER = filterFromHash('model');
+}
+
+// One reader for all three cross-filters: they live in the same query string and
+// differ only by key. A malformed hash must degrade to "no filter", never throw
+// and blank the page.
+export function filterFromHash(key){
   const raw = location.hash || '';
   const qIdx = raw.indexOf('?');
   if (qIdx === -1) return '';
   try {
-    return new URLSearchParams(raw.slice(qIdx + 1)).get('project') || '';
+    return new URLSearchParams(raw.slice(qIdx + 1)).get(key) || '';
   } catch (e) { return ''; }
 }
 
 window.addEventListener('hashchange', () => {
   const v = viewFromHash();
-  PROJECT_FILTER = projectFromHash();
+  setFiltersFromHash();
   syncProjFilterUI();
   // Back/forward land here, and so does pickView's own hash write. Comparing
   // against the visible view makes the self-write a no-op, so a view change

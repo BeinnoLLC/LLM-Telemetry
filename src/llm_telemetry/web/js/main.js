@@ -6,7 +6,7 @@ import { $, pick, readTheme } from './palette.js';
 import { CHART_ANIM_DONE, current } from './charts.js';
 import { render } from './views.js';
 import { mergeDelegations } from './live.js';
-import { PROJECT_FILTER, pickView, projectFromHash, view, viewFromHash } from './router.js';
+import { pickView, setFiltersFromHash, view, viewFromHash } from './router.js';
 
 export let DATA = __DATA__;
 // Injected from config.local_host_patterns so provOf() classifies self-hosted
@@ -145,7 +145,9 @@ $('theme').onclick = () => {
   localStorage.setItem('hermes-dash-theme', light?'dark':'light');
   readTheme(); render();
 };
-PROJECT_FILTER = projectFromHash();
+// All three cross-filters out of one hash, through the owning module's setter
+// (an imported binding cannot be assigned here).
+setFiltersFromHash();
 pickView(viewFromHash() || view);
 pick(current);
 

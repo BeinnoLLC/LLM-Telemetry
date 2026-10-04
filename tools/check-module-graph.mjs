@@ -159,12 +159,12 @@ for (const [file, a] of analyses) for (const n of a.declared) exportedBy.set(n, 
 const KNOWN_CROSS_MODULE_WRITES = new Set([
   'live.js:bwPrev', 'live.js:bwPrevAt', 'live.js:DATA', 'live.js:PV_ALL',
   'live.js:COLORS', 'live.js:TOOLCOLORS',
-  'main.js:PROJECT_FILTER', 'main.js:CHART_ANIM_DONE',
+  'main.js:CHART_ANIM_DONE',
   'palette.js:current',
   'router.js:LIVE_MS', 'router.js:REBUILD_MS', 'router.js:current',
   'router.js:COLORS', 'router.js:TOOLCOLORS', 'router.js:projDistNormalized',
   'router.js:projTrendStacked',
-  'views.js:charts', 'views.js:PROJ_WEIGHT', 'views.js:PROJECT_FILTER',
+  'views.js:charts', 'views.js:PROJ_WEIGHT',
 ]);
 
 const ALLOWED_GLOBALS = new Set([

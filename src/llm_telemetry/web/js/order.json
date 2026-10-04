@@ -575,6 +575,10 @@
   },
   {
    "mod": "views",
+   "name": "populateRowFilterSelects"
+  },
+  {
+   "mod": "views",
    "name": "syncProjFilterUI"
   },
   {
@@ -847,6 +851,14 @@
   },
   {
    "mod": "router",
+   "name": "PROVIDER_FILTER"
+  },
+  {
+   "mod": "router",
+   "name": "MODEL_FILTER"
+  },
+  {
+   "mod": "router",
    "name": "setHash"
   },
   {
@@ -856,6 +868,22 @@
   {
    "mod": "router",
    "name": "projectFromHash"
+  },
+  {
+   "mod": "router",
+   "name": "filterFromHash"
+  },
+  {
+   "mod": "router",
+   "name": "setCrossFilter"
+  },
+  {
+   "mod": "router",
+   "name": "clearCrossFilters"
+  },
+  {
+   "mod": "router",
+   "name": "setFiltersFromHash"
   },
   {
    "mod": "router",
