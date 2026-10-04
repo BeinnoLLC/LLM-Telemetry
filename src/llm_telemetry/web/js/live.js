@@ -16,7 +16,7 @@ import {
 import {
   POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
 } from './router.js';
-import { DATA } from './main.js';
+import { DATA, SCHEMA_VERSION } from './main.js';
 
 export function renderLive(){
   const p = DATA.profiles[current] || {};

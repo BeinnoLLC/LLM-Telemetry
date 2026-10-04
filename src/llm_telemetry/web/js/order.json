@@ -203,6 +203,26 @@
   },
   {
    "mod": "routerview",
+   "name": "RT_PAGES"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_PAGE_KEY"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtPageGet"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtPage"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtPageSet"
+  },
+  {
+   "mod": "routerview",
    "name": "RT_FOLD_KEY"
   },
   {

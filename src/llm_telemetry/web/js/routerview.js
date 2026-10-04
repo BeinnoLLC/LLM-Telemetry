@@ -7,7 +7,7 @@
  * Imports only palette/charts/main so views.js can import it without a new
  * circular edge.
  */
-import { $, esc, escA, pick } from './palette.js';
+import { $, esc, escA } from './palette.js';
 import { current } from './charts.js';
 import { DATA } from './main.js';
 
@@ -232,6 +232,32 @@ export function rtDecisions(p){
       : `<div class="muted">No routing decisions in the last ${d.window_days} days.</div>`);
 }
 
+// The tab is split into sub-pages (#130) because one profile's router picture
+// is six dense cards and a fleet-wide view stacked all of them. Each page is a
+// question you actually arrive with; the strip is inside the view because the
+// left nav is section-level and these are not sections.
+export const RT_PAGES = [
+  ['overview', 'Overview', 'How a turn is routed, and which model owns what'],
+  ['matrix', 'Matrix', 'Category x level to tier, with real classifier counts'],
+  ['decisions', 'Decisions', 'What the router actually did, from the agent log'],
+  ['workers', 'Workers', 'Background tasks, subagents and MoA'],
+  ['providers', 'Providers', 'Credential type, source and pool status per slot'],
+];
+export const RT_PAGE_KEY = 'hermes-dash-router-page';
+export function rtPageGet(){
+  try {
+    const p = localStorage.getItem(RT_PAGE_KEY);
+    return RT_PAGES.some(([id]) => id === p) ? p : 'overview';
+  } catch { return 'overview'; }
+}
+export let rtPage = rtPageGet();
+export function rtPageSet(id){
+  if (!RT_PAGES.some(([p]) => p === id) || id === rtPage) return;
+  rtPage = id;
+  try { localStorage.setItem(RT_PAGE_KEY, id); } catch { /* private mode */ }
+  renderRouterView();
+}
+
 // Collapsed sections persist per browser: a key is "<profile>|<card>", so
 // folding the auth table on one profile does not fold it on another.
 export const RT_FOLD_KEY = 'hermes-dash-router-folded';
@@ -257,21 +283,32 @@ export function rtSection(name, p, vocab){
       `<summary class="lbl">${esc(title)}${sub ? ` <span class="muted rt-lblsub">${esc(sub)}</span>` : ''}</summary>` +
       `<div class="rt-cbody">${body}</div></details>`;
   };
-  let body;
-  if (on) {
-    const dw = (p.decisions || {}).window_days || 7;
-    body = card('flow', 'How a turn is routed', '', rtFlowStrip(tr)) +
-      card('chart', 'Model responsibility chart', `share = router decisions, last ${dw} days`, rtChart(p)) +
-      card('matrix', 'Routing matrix', 'category × level → tier', rtMatrix(p, vocab)) +
-      card('decisions', 'Routing decisions', `from the agent log, last ${dw} days`, rtDecisions(p));
-  } else {
+  // Only the selected sub-page's cards are built. A profile with the router off
+  // has no matrix/decisions to show, so those pages fall back to its model
+  // chain rather than rendering an empty grid that reads like a bug — except
+  // Providers, which every profile has.
+  const dw = (p.decisions || {}).window_days || 7;
+  const chainCard = () => {
     const chain = [p.primary, ...(p.chain || [])];
-    body = card('chain', 'Model chain', tr ? 'tier router configured but disabled' : 'no tier router in this profile',
+    return card('chain', 'Model chain', tr ? 'tier router configured but disabled' : 'no tier router in this profile',
       `<div class="rt-chain">${chain.map((e, i) => `${i ? '<span class="rt-arrow" aria-hidden="true">↓</span>' : ''}` +
         `<div class="rt-hop"><span class="rt-role">${i ? `fallback ${i}` : 'primary'}</span>${rtModel(e)}${rtAuthBadge((p.auth || {})[e.provider])}</div>`).join('')}</div>`);
-  }
-  body += card('workers', 'Background workers', 'auxiliary tasks, subagents, MoA', rtWorkers(p)) +
-    card('auth', 'Providers & auth', 'how each provider slot authenticates', rtAuthTable(p));
+  };
+  const PAGES = {
+    overview: () => on
+      ? card('flow', 'How a turn is routed', '', rtFlowStrip(tr)) +
+        card('chart', 'Model responsibility chart', `share = router decisions, last ${dw} days`, rtChart(p))
+      : chainCard(),
+    matrix: () => on
+      ? card('matrix', 'Routing matrix', 'category × level → tier', rtMatrix(p, vocab))
+      : chainCard(),
+    decisions: () => on
+      ? card('decisions', 'Routing decisions', `from the agent log, last ${dw} days`, rtDecisions(p))
+      : chainCard(),
+    workers: () => card('workers', 'Background workers', 'auxiliary tasks, subagents, MoA', rtWorkers(p)),
+    providers: () => card('auth', 'Providers & auth', 'how each provider slot authenticates', rtAuthTable(p)),
+  };
+  const body = (PAGES[rtPage] || PAGES.overview)();
   const pkey = `${name}|*`;
   return `<details class="rt-profile" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${folded.has(pkey) ? '' : ' open'}>
     <summary class="rt-phead"><h2>${esc(name)}</h2>
@@ -308,26 +345,21 @@ export function renderRouterView(){
   if (sub) sub.textContent = meta.collected_at
     ? `refreshed hourly · last ${rtAgo(meta.collected_at)}` : 'refreshed hourly';
   if (!names.length) { el.innerHTML = '<div class="card rt-card muted">No router data — run <code>llm-telemetry router</code>.</div>'; return; }
-  // Profile switcher: every profile, its router state, one click away. Picking
-  // goes through the global pick() so the rest of the dashboard follows.
-  const jump = every.length > 1
-    ? `<nav class="rt-jump" aria-label="Profiles">${every.map(n => {
-        const on = (all[n].tier_router || {}).enabled;
-        return `<a href="#" data-rtjump="${escA(n)}"${names.length === 1 && names[0] === n ? ' aria-current="true"' : ''}>` +
-          `<span class="rt-dot ${on ? 'rt-ok' : 'rt-mute'}" aria-hidden="true"></span>${esc(n)}</a>`;
-      }).join('')}</nav>` : '';
-  el.innerHTML = jump + names.map(n => rtSection(n, all[n], vocab)).join('');
+  // No profile switcher here: the header chip strip already switches profile,
+  // and a second one mid-page invited the wrong click. What the tab needs is a
+  // way through its OWN content, so the strip picks a sub-page — one question
+  // per page instead of six dense cards stacked per profile.
+  const strip = `<nav class="rt-pages" aria-label="Router pages">${RT_PAGES.map(([id, label, tip]) => {
+    const on = id === rtPage;
+    return `<button type="button" data-rtpage="${escA(id)}"${on ? ' aria-current="page"' : ''}` +
+      ` title="${escA(tip)}" class="rt-page${on ? ' rt-page-on' : ''}">${esc(label)}</button>`;
+  }).join('')}</nav>`;
+  el.innerHTML = strip + names.map(n => rtSection(n, all[n], vocab)).join('');
   el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle', () => rtSaveFold(dt.dataset.rtfold, dt.open)));
   el.querySelectorAll('[data-rtall]').forEach(b => b.addEventListener('click', ev => {
     ev.preventDefault(); ev.stopPropagation();   // inside <summary>: don't fold the profile
     const open = b.dataset.rtall === 'open';
     b.closest('.rt-profile').querySelectorAll('details.rt-card').forEach(dt => { dt.open = open; rtSaveFold(dt.dataset.rtfold, open); });
   }));
-  el.querySelectorAll('[data-rtjump]').forEach(a => a.addEventListener('click', ev => {
-    ev.preventDefault();
-    const n = a.dataset.rtjump;
-    if (DATA.profiles && DATA.profiles[n]) { pick(n); return; }
-    const s = el.querySelector(`.rt-profile[data-profile="${CSS.escape(n)}"]`);
-    if (s) s.scrollIntoView({behavior: 'smooth', block: 'start'});
-  }));
+  el.querySelectorAll('[data-rtpage]').forEach(b => b.addEventListener('click', () => rtPageSet(b.dataset.rtpage)));
 }

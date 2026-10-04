@@ -1272,12 +1272,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-foldall button{font-size:var(--fs-xs);padding:.15rem .5rem;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
 .rt-foldall button:hover{color:var(--fg);border-color:var(--accent)}
 .rt-phead h2{font-size:var(--fs-lg);font-weight:600;margin:0}
-.rt-jump{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.9rem}
-.rt-jump a{font-size:var(--fs-sm);padding:.2rem .6rem;border:1px solid var(--border);border-radius:999px;color:var(--fg);text-decoration:none}
-.rt-jump a{display:inline-flex;align-items:center;gap:.35rem}
-.rt-jump a:hover{border-color:var(--accent)}
-.rt-jump a[aria-current]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
-.rt-dot{width:7px;height:7px;border-radius:50%;background:currentColor;border:0}
+/* Sub-page strip (#130). Not a profile switcher — the header chips do that, and
+   a second one mid-page invited the wrong click. This picks a page of the
+   tab's own content. Sticky so the way back is always in reach on a long page. */
+.rt-pages{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem;position:sticky;top:0;z-index:3;
+  background:var(--bg);padding:.35rem 0}
+.rt-page{font-size:var(--fs-sm);padding:.3rem .8rem;border:1px solid var(--border);border-radius:999px;
+  background:transparent;color:var(--muted);cursor:pointer;font:inherit;line-height:1.4}
+.rt-page:hover{border-color:var(--accent);color:var(--fg)}
+.rt-page:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rt-page-on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--fg)}
 .rt-logo{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;width:var(--px);height:var(--px);border-radius:5px;
   background:color-mix(in srgb,var(--c) 16%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent);overflow:hidden}
 .rt-mono{font-size:calc(var(--px) * .5);font-weight:700;color:var(--c);line-height:1}
