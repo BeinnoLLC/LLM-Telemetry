@@ -84,7 +84,11 @@ export function qvWindow(w, attention){
   const lvl = qvLevel(pct, attention);
   const reset = w.reset_at
     ? `<span class="muted qv-reset" title="${escA(w.reset_at)}">resets ${esc(w.reset_at)}</span>` : '';
-  return `<div class="qv-win" data-level="${lvl}">` +
+  // The reset timestamp also rides on the row itself: below 520px the reset
+  // span is hidden to keep the bar visible, and a title on a hidden element is
+  // unreachable, so this is the only way to keep it on mobile.
+  const rowTip = w.reset_at ? ` title="resets ${escA(w.reset_at)}"` : '';
+  return `<div class="qv-win" data-level="${lvl}"${rowTip}>` +
     `<span class="qv-wname">${esc(w.label || 'window')}</span>` +
     `<span class="qv-pct qv-${lvl}">${pct === null ? '—' : `${pct}%`}</span>` +
     qvBar(pct, attention) + reset + '</div>';

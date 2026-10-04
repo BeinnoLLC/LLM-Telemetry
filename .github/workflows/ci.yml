@@ -72,7 +72,16 @@ jobs:
         # artifact-only screenshot step below).
         run: |
           pip install playwright
-          python3 tools/quota_layout_probe.py --chrome "$(which google-chrome-stable || which google-chrome)"
+          CHROME="$(which google-chrome-stable || which google-chrome)"
+          python3 tools/quota_layout_probe.py --chrome "$CHROME"
+          # Two controls, because a layout probe that cannot fail is not a gate.
+          # A: revert the row CSS and REQUIRE the failure — proves this probe
+          #    would have caught the real 360px bug (5 collapsed bar tracks).
+          # B: keep the fixed CSS but widen the reset column to the runner's
+          #    font metrics and REQUIRE no failure — proves the shipped fix is
+          #    font-proof, not merely a fit on the machine that wrote it.
+          python3 tools/quota_layout_probe.py --control --control-part revert --chrome "$CHROME"
+          python3 tools/quota_layout_probe.py --control --control-part widen --chrome "$CHROME"
 
       - name: Breakpoint screenshots (#21) — non-blocking QA artifact
         # Dev-extra tooling: playwright is never a runtime dependency (the

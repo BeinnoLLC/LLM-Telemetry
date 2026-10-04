@@ -1378,7 +1378,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-fill.qv-warn{background:#f59e0b}
 .qv-fill.qv-bad{background:#ef4444}
 .qv-fill.qv-mute{background:var(--muted)}
-.qv-win{display:grid;grid-template-columns:minmax(70px,auto) 52px 1fr auto;gap:.5rem;align-items:center;padding:.3rem 0}
+.qv-win{display:grid;grid-template-columns:minmax(70px,auto) 52px minmax(48px,1fr) auto;gap:.5rem;align-items:center;padding:.3rem 0}
+/* Below this width the four columns cannot coexist and the 1fr bar collapses
+   to nothing -- leaving a percentage with no bar at all. Drop the "resets …"
+   column before squeezing the bar: the bar is the point of the tab, the reset
+   time is supplementary and survives as the row's title. */
+@media (max-width:520px){.qv-win{grid-template-columns:minmax(56px,auto) 46px minmax(48px,1fr)}.qv-reset{display:none}}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
@@ -2971,7 +2976,11 @@ function qvWindow(w, attention){
   const lvl = qvLevel(pct, attention);
   const reset = w.reset_at
     ? `<span class="muted qv-reset" title="${escA(w.reset_at)}">resets ${esc(w.reset_at)}</span>` : '';
-  return `<div class="qv-win" data-level="${lvl}">` +
+  // The reset timestamp also rides on the row itself: below 520px the reset
+  // span is hidden to keep the bar visible, and a title on a hidden element is
+  // unreachable, so this is the only way to keep it on mobile.
+  const rowTip = w.reset_at ? ` title="resets ${escA(w.reset_at)}"` : '';
+  return `<div class="qv-win" data-level="${lvl}"${rowTip}>` +
     `<span class="qv-wname">${esc(w.label || 'window')}</span>` +
     `<span class="qv-pct qv-${lvl}">${pct === null ? '—' : `${pct}%`}</span>` +
     qvBar(pct, attention) + reset + '</div>';
