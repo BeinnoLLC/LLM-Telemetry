@@ -214,3 +214,144 @@ def test_history_sample_is_none_when_there_is_nothing_to_record():
     """An all-empty ledger row would be noise in an append-only file."""
     assert cq.history_sample(1700000000, {"profiles": {}}) is None
     assert cq.history_sample(1700000000, {"profiles": {"a": {"providers": {}}}}) is None
+
+
+def test_account_copies_only_whitelisted_fields():
+    """The account whitelist is the guarantee, so test it as one: a pool entry
+    carries whatever the plugin puts there, including secrets."""
+    acct = cq.account({
+        "id": "acct-1", "label": "primary", "status": "bogus", "last_status": "ok",
+        "priority": 0, "request_count": 12, "access_token": "sk-live-abcdefghijkl",
+        "refresh_token": "rt-live-abcdefghijkl", "unexpected": "surprise",
+    })
+    assert acct is not None
+    assert set(acct) == set(cq._ACCOUNT_FIELDS) | {
+        "status", "models", "in_use", "usage", "priority", "request_count"}
+    assert "access_token" not in acct and "refresh_token" not in acct
+    assert "secret_fingerprint" not in acct  # a hash of a secret is still secret-shaped
+    assert "unexpected" not in acct
+    assert "sk-live" not in json.dumps(acct)
+
+
+def test_account_reads_the_cache_spelling_as_well_as_the_pool_one():
+    """The cache normalises `last_status`/`model_cooldowns`; a file written by a
+    different plugin version is routine, so both spellings must read."""
+    from_cache = cq.account({"id": "a", "status": "exhausted", "models": ["gpt-5"]})
+    from_pool = cq.account(
+        {"id": "a", "last_status": "exhausted", "model_cooldowns": {"gpt-5": {}}})
+    assert from_cache is not None and from_pool is not None
+    assert from_cache["status"] == from_pool["status"] == "exhausted"
+    assert from_cache["models"] == from_pool["models"] == ["gpt-5"]
+
+
+def test_in_use_marks_one_key_and_defaults_to_false():
+    """Several keys can sit under one provider; the view has to show which one
+    the next request would actually use."""
+    marked = cq.account({"id": "a", "in_use": True})
+    unmarked = cq.account({"id": "a"})
+    truthy = cq.account({"id": "a", "in_use": "yes"})
+    assert marked is not None and unmarked is not None and truthy is not None
+    assert marked["in_use"] is True
+    assert unmarked["in_use"] is False
+    # Only a real boolean counts -- a truthy string is not a verdict.
+    assert truthy["in_use"] is False
+
+
+def test_per_key_usage_is_whitelisted_and_defaults_to_empty():
+    """`[]` means "not measured for this key", never "this key has no usage"."""
+    acct = cq.account({"id": "a", "usage": [
+        {"label": "weekly", "used_percent": 12.5, "reset_at": "2026-01-01"},
+        {"used_percent": 3},  # no label -> not a window
+        "nonsense",
+    ]})
+    unmeasured = cq.account({"id": "a"})
+    malformed = cq.account({"id": "a", "usage": "nope"})
+    assert acct is not None and unmeasured is not None and malformed is not None
+    assert [w["label"] for w in acct["usage"]] == ["weekly"]
+    assert acct["usage"][0]["used_percent"] == 12.5
+    assert unmeasured["usage"] == []
+    assert malformed["usage"] == []
+
+
+def test_a_spent_key_never_carries_a_credential_value():
+    """The per-key path adds fields, so re-assert the whitelist on it too."""
+    acct = cq.account({
+        "id": "acct-1", "status": "exhausted", "in_use": True,
+        "usage": [{"label": "weekly", "used_percent": 1.0}],
+        "access_token": "«redacted:sk-…»", "refresh_token": "rt-live-abcdefghijkl",
+    })
+    assert acct is not None
+    blob = json.dumps(acct)
+    assert "sk-live" not in blob and "rt-live" not in blob
+
+
+def test_account_requires_an_identity_and_never_uses_the_label():
+    """`id` is the identity. Two pool accounts may share a label -- keying on it
+    would merge them, which is the bug the account dimension exists to fix."""
+    assert cq.account({"label": "no-id-here"}) is None
+    assert cq.account("not-a-dict") is None
+    assert cq.account({"id": ""}) is None
+    out = cq.provider("p", {"accounts": [
+        {"id": "a", "label": "shared"}, {"id": "b", "label": "shared"}]})
+    assert [a["id"] for a in out["accounts"]] == ["a", "b"]
+    assert len(out["accounts"]) == 2
+
+
+def test_accounts_are_ordered_by_priority_with_unset_last():
+    """Priority is the router's fallthrough order, so the view can render the
+    accounts as the chain a request would actually walk."""
+    out = cq.provider("p", {"accounts": [
+        {"id": "third", "priority": 20},
+        {"id": "first", "priority": 0},
+        {"id": "unset"},
+        {"id": "second", "priority": 5},
+    ]})
+    assert [a["id"] for a in out["accounts"]] == ["first", "second", "third", "unset"]
+
+
+def test_provider_without_accounts_yields_an_empty_list():
+    """Old caches have no `accounts` key; the view must get `[]`, never None."""
+    assert cq.provider("p", {"windows": []})["accounts"] == []
+    assert cq.provider("p", {"accounts": None})["accounts"] == []
+
+
+def test_account_status_is_whitelisted_and_absent_reads_as_unknown():
+    """`dead` must stay distinguishable from `exhausted`: one needs a re-login,
+    the other resets itself. An unrecognised verdict is not silently 'ok'."""
+    assert cq.account({"id": "a", "last_status": "dead"})["status"] == "dead"
+    assert cq.account({"id": "a", "last_status": "exhausted"})["status"] == "exhausted"
+    assert cq.account({"id": "a", "last_status": "invented"})["status"] is None
+    assert cq.account({"id": "a"})["status"] is None
+
+
+def test_account_models_list_is_bounded_and_scrubbed():
+    """`model_cooldowns` is a dict upstream; only its model names are useful and
+    a provider must not be able to size the payload."""
+    acct = cq.account({"id": "a", "model_cooldowns": {f"m{i}": {} for i in range(30)}})
+    assert acct["models"] == [f"m{i}" for i in range(cq._MAX_ACCOUNT_MODELS)]
+    assert cq.account({"id": "a", "model_cooldowns": "nope"})["models"] == []
+    assert cq.account({"id": "a"})["models"] == []
+
+
+def test_summarise_counts_accounts_and_usable_ones():
+    """The headline number is the fleet, not the row count: a provider can have
+    several accounts and only some of them usable."""
+    profiles = {"a": {"providers": {"x": {
+        "attention": False, "unavailable_reason": None, "accounts": [
+            {"id": "1", "status": "ok"},
+            {"id": "2", "status": "exhausted"},
+            {"id": "3", "status": "dead"},
+            {"id": "4", "status": None},
+        ]}}}}
+    s = cq.summarise(profiles)
+    assert s["accounts"] == 4
+    assert s["accounts_usable"] == 2
+    # The pre-existing counters must not be disturbed by the new dimension.
+    assert s["providers"] == 1 and s["available"] == 1 and s["attention"] == 0
+
+
+def test_summarise_tolerates_providers_that_predate_accounts():
+    """A provider dict built by an older collector has no `accounts` key."""
+    s = cq.summarise({"a": {"providers": {"x": {"attention": False,
+                                               "unavailable_reason": None}}}})
+    assert s["accounts"] == 0 and s["accounts_usable"] == 0

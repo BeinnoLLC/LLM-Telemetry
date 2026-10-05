@@ -246,6 +246,47 @@ if (bootErr) {
   chk(/No quota data/.test(D.body.textContent),
       'a profile with no quota cache shows the empty state');
   chk(!!quota.profiles.personal, 'the fixture includes a profile with no quota cache');
+
+  // --- per-key rows (#115 follow-up) -----------------------------------------
+  // A provider with several keys must show each one separately: a pool that
+  // collapses to one provider-level bar hides which key is actually spent.
+  const multi = Object.entries(quota.profiles.work.providers)
+    .filter(([, pr]) => (pr.accounts || []).length >= 2);
+  chk(multi.length >= 2, 'the fixture has at least two providers with several keys',
+      multi.map(([id, pr]) => `${id}:${pr.accounts.length}`).join(' '));
+  const keyProblems = [];
+  for (const [pid, pr] of multi) {
+    const card = cardOf(D, pid);
+    const rows = card ? [...card.querySelectorAll('.qv-acct')] : [];
+    if (rows.length !== pr.accounts.length) {
+      keyProblems.push(`${pid}: ${rows.length} key rows for ${pr.accounts.length} accounts`); continue;
+    }
+    const names = rows.map(r => r.querySelector('.qv-aname')?.textContent);
+    const idx = rows.map(r => r.querySelector('.qv-aidx')?.textContent);
+    if (new Set(idx).size !== rows.length) keyProblems.push(`${pid}: ordinal badges are not unique (${idx})`);
+    for (const a of pr.accounts) {
+      if (!names.includes(a.label)) keyProblems.push(`${pid}: key "${a.label}" has no row`);
+    }
+    const inuse = rows.filter(r => r.dataset.inuse === '1');
+    if (inuse.length !== pr.accounts.filter(a => a.in_use).length)
+      keyProblems.push(`${pid}: in-use marker count ${inuse.length} != payload`);
+    for (const a of pr.accounts.filter(a => a.status === 'exhausted' || a.status === 'dead')) {
+      const row = rows.find(r => r.querySelector('.qv-aname')?.textContent === a.label);
+      if (!row || row.dataset.level === 'ok') keyProblems.push(`${pid}: spent key "${a.label}" is not flagged`);
+    }
+    // Worst-first: the first rendered row must be at least as bad as the last.
+    // data-level is the view's own vocabulary (bad < warn < ok < mute).
+    const rank = { bad: 0, warn: 1, ok: 2, mute: 3 };
+    const lv = rows.map(r => rank[r.dataset.level] ?? 4);
+    if (lv[0] > lv[lv.length - 1]) keyProblems.push(`${pid}: keys are not ordered worst-first (${lv})`);
+    const sum = card.querySelector('.qv-keysum')?.textContent || '';
+    if (!sum.startsWith(`${pr.accounts.length} key`)) keyProblems.push(`${pid}: key summary reads "${sum}"`);
+  }
+  for (const e of keyProblems) chk(false, e);
+  chk(keyProblems.length === 0, 'every multi-key provider lists each key as its own distinguishable row');
+  const s = quota.summary || {};
+  chk(s.accounts >= 7 && s.accounts === s.accounts_usable + s.accounts_spent,
+      'the summary counts keys and splits them into usable + spent', JSON.stringify(s));
 }
 
 // --- negative controls ------------------------------------------------------

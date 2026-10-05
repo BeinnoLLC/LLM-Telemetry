@@ -13,6 +13,52 @@
       ],
       "account_balances": [],
       "details": ["Weekly window resets Thursday 00:00 UTC."],
+      "accounts": [
+        {
+          "id": "aa01c4",
+          "label": "personal",
+          "status": "ok",
+          "in_use": true,
+          "priority": 1,
+          "request_count": 412,
+          "source": "oauth",
+          "auth_type": "oauth",
+          "usage": [
+            {"label": "5h", "used_percent": 12.0, "reset_at": "2026-10-05T14:14:22Z"},
+            {"label": "week", "used_percent": 44.5, "reset_at": "2026-10-09T00:00:00Z"}
+          ]
+        },
+        {
+          "id": "aa02b7",
+          "label": "work",
+          "status": "ok",
+          "in_use": false,
+          "priority": 2,
+          "request_count": 187,
+          "source": "oauth",
+          "auth_type": "oauth",
+          "usage": [
+            {"label": "5h", "used_percent": 68.25, "reset_at": "2026-10-05T14:14:22Z"},
+            {"label": "week", "used_percent": 91.0, "reset_at": "2026-10-09T00:00:00Z"}
+          ]
+        },
+        {
+          "id": "aa03d2",
+          "label": "spare",
+          "status": "exhausted",
+          "in_use": false,
+          "priority": 3,
+          "request_count": 63,
+          "last_error_code": "429",
+          "last_error_reason": "usage limit reached",
+          "last_error_reset_at": "2026-10-05T14:14:22Z",
+          "source": "api_key",
+          "auth_type": "api_key",
+          "usage": [
+            {"label": "5h", "used_percent": 100.0, "reset_at": "2026-10-05T14:14:22Z"}
+          ]
+        }
+      ],
       "api_key": "sk-ant-synthetic-not-a-real-key-0000"
     },
     "opencode-go": {
@@ -24,6 +70,33 @@
       ],
       "account_balances": [],
       "details": [],
+      "accounts": [
+        {
+          "id": "og11ea",
+          "label": "go main",
+          "status": "ok",
+          "in_use": true,
+          "priority": 1,
+          "request_count": 1284,
+          "source": "session_token",
+          "auth_type": "token",
+          "usage": [
+            {"label": "5h", "used_percent": 7.5, "reset_at": "2026-10-05T14:14:22Z"}
+          ]
+        },
+        {
+          "id": "og22fb",
+          "label": "go backup",
+          "status": "dead",
+          "in_use": false,
+          "priority": 2,
+          "request_count": 96,
+          "failure_reason": "token revoked",
+          "source": "session_token",
+          "auth_type": "token",
+          "model_cooldowns": ["grok-code"]
+        }
+      ],
       "session_token": "ghp_SYNTHETICsessionTOKENnotreal0000"
     },
     "nous-portal": {
@@ -41,6 +114,49 @@
         }
       ],
       "details": ["Run `hermes auth login` to refresh this balance."]
+    },
+    "openai-codex": {
+      "label": "OpenAI Codex",
+      "plan": "ChatGPT Plus",
+      "api_calls_available": true,
+      "windows": [
+        {"label": "5h", "used_percent": 34.0, "reset_at": "2026-10-05T14:14:22Z"},
+        {"label": "week", "used_percent": 72.5, "reset_at": "2026-10-09T00:00:00Z"}
+      ],
+      "account_balances": [],
+      "details": ["Codex draws on the ChatGPT plan's quota, not a separate credit pool."],
+      "accounts": [
+        {
+          "id": "cx01aa",
+          "label": "codex main",
+          "status": "ok",
+          "in_use": true,
+          "priority": 1,
+          "request_count": 742,
+          "expires_at_ms": 1799012345000,
+          "source": "oauth",
+          "auth_type": "oauth",
+          "models": ["gpt-5-codex", "gpt-5-mini"],
+          "usage": [
+            {"label": "5h", "used_percent": 34.0, "reset_at": "2026-10-05T14:14:22Z"}
+          ]
+        },
+        {
+          "id": "cx02bb",
+          "label": "codex spare",
+          "status": "ok",
+          "in_use": false,
+          "priority": 2,
+          "request_count": 118,
+          "expires_at_ms": 1799012345000,
+          "source": "file",
+          "auth_type": "oauth",
+          "usage": [
+            {"label": "5h", "used_percent": 2.0, "reset_at": "2026-10-05T14:14:22Z"},
+            {"label": "week", "used_percent": 9.5, "reset_at": "2026-10-09T00:00:00Z"}
+          ]
+        }
+      ]
     },
     "openrouter": {
       "label": "OpenRouter",

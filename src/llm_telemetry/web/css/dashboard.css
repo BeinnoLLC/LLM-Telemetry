@@ -1384,6 +1384,85 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-bal{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.2rem}
 .qv-amt{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .qv-cur{color:var(--muted);font-family:ui-monospace,monospace}
+
+/* Keys ---------------------------------------------------------------
+   A provider is a container; the key is what runs out. These rows give
+   each credential its own line under the provider it belongs to, in a
+   single-column list indented off a spine, so a provider holding three
+   keys reads as one provider with three states rather than one number. */
+/* ── quota: the keys behind a provider ──────────────────────────────────
+   A provider card answers "how much is left". These rows answer the question
+   the card cannot: it holds more than one credential, so which one is spent.
+   The block is indented off a 2px spine so it reads as the provider's detail
+   rather than as another provider.
+   Colour is the theme's own --z-* pair, never a literal: --z-* is the solid
+   mark (dots), --z-*-fg the foreground (text). A literal passes on the dark
+   card and fails on the light one, where #22c55e is 2.28:1 on white. */
+.qv-accts{margin:.5rem 0 .15rem;border-left:2px solid var(--border);padding-left:.7rem}
+.qv-keysum{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;font-weight:600;margin-bottom:.3rem}
+.qv-keysum b{color:var(--z-warn-fg);font-weight:700}
+
+/* Each key is a two-line block: the identifying line, then what went wrong.
+   Heavier top padding than bottom keeps consecutive keys from reading as one
+   paragraph — the previous .2rem with a hairline was not enough to separate
+   them at a glance. */
+.qv-acct{padding:.4rem 0 .35rem;font-size:var(--fs-xs);min-width:0}
+.qv-acct+.qv-acct{border-top:1px solid var(--border)}
+.qv-acctop{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;min-width:0}
+
+/* The dot repeats what the status text says, so the verdict is legible
+   without parsing words. It is never the only carrier of the state: the text
+   beside it names it, which is what a colour-blind reader gets. */
+.qv-adot{width:.5rem;height:.5rem;border-radius:999px;background:var(--muted);
+  flex:0 0 auto;align-self:center}
+.qv-acct[data-level="ok"]   .qv-adot{background:var(--z-ok)}
+.qv-acct[data-level="warn"] .qv-adot{background:var(--z-warn)}
+.qv-acct[data-level="bad"]  .qv-adot{background:var(--z-bad)}
+
+/* Identity, not decoration: the pool hands out opaque ids and two live keys
+   can carry the same label, so the ordinal is the only handle that tells them
+   apart. Monospace + tabular so #1 and #10 align. */
+.qv-aidx{font-family:ui-monospace,monospace;color:var(--muted);
+  font-variant-numeric:tabular-nums;flex:0 0 auto}
+.qv-aname{font-size:var(--fs-sm);font-weight:600;color:var(--fg);
+  overflow-wrap:anywhere;min-width:0}
+
+/* The state ladder is carried by weight as well as hue, so it survives a
+   greyscale scan: a dead key is a solid filled block (loudest, needs a human),
+   a spent key an outlined one, an unknown key no more than quiet text. */
+.qv-astat{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;
+  border:1px solid transparent;border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
+.qv-astat.qv-ok{color:var(--z-ok-fg);border-color:color-mix(in srgb,var(--z-ok) 45%,transparent)}
+.qv-astat.qv-warn{color:var(--z-warn-fg);border-color:color-mix(in srgb,var(--z-warn) 45%,transparent)}
+.qv-astat.qv-bad{color:var(--card);background:var(--z-bad);border-color:var(--z-bad)}
+.qv-astat.qv-mute{color:var(--muted);border-color:transparent;padding-left:0}
+
+/* The key the next request would spend. Marked by a rule on the left edge and a
+   tinted ground rather than by another pill: the status pill already occupies
+   that slot, and two adjacent pills read as one control. */
+.qv-ainuse{font-size:var(--fs-xs);font-weight:600;color:var(--accent);
+  border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+  border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
+.qv-acct[data-inuse="1"]{background:color-mix(in srgb,var(--accent) 7%,transparent);
+  border-radius:6px;padding-left:.45rem;padding-right:.45rem;margin-left:-.45rem;
+  margin-right:-.45rem;border-left:2px solid var(--accent)}
+
+.qv-abits{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums}
+/* The provider's own words for why a key stopped. Monospace marks it as copied
+   text, not written by us — the reader can tell reportage from the UI. */
+.qv-why{font-family:ui-monospace,monospace;font-size:var(--fs-xs);color:var(--z-bad-fg);
+  margin:.2rem 0 0 1.35rem;overflow-wrap:anywhere}
+.qv-amodels{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;max-width:24rem;margin-top:.15rem}
+.qv-auchips{display:inline-flex;gap:.3rem;flex-wrap:wrap}
+.qv-achip{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;
+  border:1px solid var(--border);border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
+.qv-achip.qv-ok{color:var(--z-ok-fg);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}
+.qv-achip.qv-warn{color:var(--z-warn-fg);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
+.qv-achip.qv-bad{color:var(--z-bad-fg);border-color:color-mix(in srgb,var(--z-bad) 40%,transparent)}
+.qv-achip.qv-mute{color:var(--muted)}
 .qv-note{padding:.45rem 0;font-size:var(--fs-xs)}
 .qv-note+.qv-note{border-top:1px solid var(--border)}
 .qv-detail{font-family:ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;word-break:break-word}

@@ -94,6 +94,137 @@ export function qvWindow(w, attention){
     qvBar(pct, attention) + reset + '</div>';
 }
 
+// ---------------------------------------------------------------------------
+// Keys. A provider is a container; the thing that actually runs out of quota
+// is one credential. A provider holding three keys reported one number before
+// this, so a healthy key hid two exhausted siblings — the collapse was the
+// bug. Every key now gets its own row with its own verdict.
+//
+// All of this comes from the cache record, which the plugin writes through a
+// naming whitelist: ids, verdicts and counters, never a credential. The one
+// field derived from a secret is `in_use`, and it arrives already reduced to a
+// boolean — computed inside the plugin process, where the comparison stays.
+// ---------------------------------------------------------------------------
+
+// A key's verdict, mapped onto the same ok/warn/bad/mute scale as a window, so
+// one glance covers both. 'exhausted' is a window that has not rolled over yet;
+// 'dead' needs a human to re-enrol the key, so the two must not look alike.
+export function qvAcctLevel(a){
+  const s = a.status;
+  if (s === 'dead') return 'bad';
+  if (s === 'exhausted') return 'warn';
+  return s === 'ok' ? 'ok' : 'mute';
+}
+
+// What the row says about state. Not-measured stays distinct from healthy for
+// the same reason a missing window level is 'mute': silence is not good news.
+export function qvAcctState(a){
+  if (a.status === 'ok') return a.in_use ? 'in use' : 'standby';
+  if (a.status === 'exhausted') return 'exhausted';
+  if (a.status === 'dead') return 'needs re-login';
+  return 'not reported';
+}
+
+// Why a key stopped, preferring the pool's own words over the HTTP code: a
+// provider's error body explains far more than "429" does.
+export function qvAcctWhy(a){
+  const why = a.failure_reason || a.last_error_reason || '';
+  if (why) return why;
+  return a.last_error_code ? `HTTP ${a.last_error_code}` : '';
+}
+
+// An expiry, as a duration the reader can act on. rtAgo() cannot be reused: it
+// clamps a future timestamp to "just now", which is the opposite of true for a
+// token that has not expired yet.
+export function qvAcctExpiry(ms){
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  const s = n / 1000 - Date.now() / 1000;
+  const left = s < 0 ? 'expired' : s < 3600 ? `${Math.max(1, Math.round(s / 60))}m`
+    : s < 172800 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
+  return s < 0 ? left : `expires in ${left}`;
+}
+
+// How the key got here, in words rather than field names. The raw values are
+// snake_case identifiers from the credential pool, and one of them spells a
+// credential kind literally; neither belongs on a dashboard. Kept inside the
+// function it serves: a top-level const would start a block the build has to
+// find in order.json by name, and this one has no business being public.
+export function qvAcctOrigin(a){
+  const words = {api_key: 'API key', oauth: 'OAuth', token: 'token',
+    env: 'environment', environment: 'environment', file: 'auth file',
+    vault: 'vault', keychain: 'keychain'};
+  const raw = String(a.source || a.auth_type || '').trim();
+  if (!raw) return '';
+  const key = raw.split(/[:/]/).pop().toLowerCase();
+  return words[key] || words[raw.toLowerCase()] || '';
+}
+
+// A key's own usage windows, as one dense line of chips. Deliberately NOT the
+// full window row: those nested inside a provider card would read as the
+// provider's own limits twice over, and they carry .qv-win/.qv-fill classes the
+// page's bar audit counts and recolours. A chip shows the same number at a
+// glance and stays out of that contract's way.
+export function qvAcctUsage(a){
+  const wins = a.usage || [];
+  if (!wins.length) return '';
+  return '<span class="qv-auchips">' + wins.map(w => {
+    const pct = qvPct(w.used_percent);
+    const lvl = qvLevel(pct, qvAttention());
+    return `<span class="qv-achip qv-${lvl}">${esc(w.label)} ${pct === null ? '—' : pct + '%'}</span>`;
+  }).join('') + '</span>';
+}
+
+// One key. The row reads left to right as: which key, what state, how much it
+// has been used. The ordinal badge is identity: two keys can share a label, and
+// the pool's id is opaque, so position is the only honest handle to show.
+export function qvAccount(a, i){
+  const lvl = qvAcctLevel(a);
+  const why = qvAcctWhy(a);
+  const exp = qvAcctExpiry(a.expires_at_ms);
+  const origin = qvAcctOrigin(a);
+  const bits = [];
+  if (a.request_count !== null && a.request_count !== undefined && a.request_count !== '') {
+    bits.push(`${esc(a.request_count)} call${Number(a.request_count) === 1 ? '' : 's'}`);
+  }
+  if (origin) bits.push(esc(origin));
+  if (exp) bits.push(esc(exp));
+  const models = (a.models || []).filter(Boolean);
+  const cooling = models.length
+    ? `<div class="qv-amodels" title="${escA(models.join(', '))}">cooling: ${esc(models.join(', '))}</div>` : '';
+  const inuse = a.in_use ? '<span class="qv-ainuse" title="the key the next request would use">in use</span>' : '';
+  const whyEl = why ? `<div class="qv-why" title="${escA(why)}">${esc(why)}</div>` : '';
+  return `<div class="qv-acct" data-level="${lvl}" data-inuse="${a.in_use ? '1' : '0'}">` +
+    `<div class="qv-acctop"><span class="qv-adot" aria-hidden="true"></span>` +
+    `<span class="qv-aidx">#${i + 1}</span>` +
+    `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` + inuse +
+    `<span class="qv-astat qv-${lvl}">${esc(qvAcctState(a))}</span>` +
+    (bits.length ? `<span class="qv-abits">${bits.join(' · ')}</span>` : '') +
+    qvAcctUsage(a) + '</div>' +
+    whyEl + cooling + '</div>';
+}
+
+// The keys of one provider, worst first so an exhausted key is not buried under
+// healthy ones. Returns '' when the cache predates per-key records, which keeps
+// an older cache rendering exactly as it did before.
+export function qvAccounts(prov){
+  const accts = prov.accounts || [];
+  if (!accts.length) return '';
+  const rank = {dead: 0, exhausted: 1, ok: 2};
+  const order = [...accts].sort((a, b) =>
+    (rank[a.status] === undefined ? 3 : rank[a.status]) - (rank[b.status] === undefined ? 3 : rank[b.status]));
+  // Display order is worst-first; the ordinal badge is NOT that order. The badge
+  // is the only handle two same-labelled keys can be told apart by, so it is
+  // assigned from the payload's own order -- which the collector already sorts
+  // by pool priority. Badging from the sorted index instead would renumber a
+  // key the moment a sibling changed state, i.e. stop naming the key it sits by.
+  const ordinal = new Map(accts.map((a, i) => [a, i]));
+  const spent = accts.filter(a => a.status === 'exhausted' || a.status === 'dead').length;
+  const head = `<div class="qv-keysum">${accts.length} key${accts.length === 1 ? '' : 's'}` +
+    (spent ? ` · <b>${spent} spent</b>` : '') + '</div>';
+  return `<div class="qv-accts">${head}${order.map(a => qvAccount(a, ordinal.get(a))).join('')}</div>`;
+}
+
 // One account balance. Amounts are already strings (decimal precision is the
 // provider's, not ours), so they are printed verbatim.
 export function qvBalance(b){
@@ -137,8 +268,12 @@ export function qvProviders(pdata){
   return rows.map(([pid, prov]) => {
     const wins = (prov.windows || []).map(w => qvWindow(w, attention)).join('') ||
       '<div class="muted qv-wins-none">No usage windows reported.</div>';
+    // Keys sit between the provider summary and its windows: the summary is the
+    // provider's own answer (which is the in-use key alone), and the windows
+    // break that answer down by limit. The key rows say what the summary cannot
+    // — that the provider holds more than one credential, and how each is doing.
     return `<div class="qv-prov${prov.attention ? ' qv-near' : ''}" data-provider="${escA(pid)}">` +
-      qvHead(pid, prov) + `<div class="qv-wins">${wins}</div></div>`;
+      qvHead(pid, prov) + qvAccounts(prov) + `<div class="qv-wins">${wins}</div></div>`;
   }).join('');
 }
 
