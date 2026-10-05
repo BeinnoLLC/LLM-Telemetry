@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Render analytics JSON into the dashboard page.
 
-P2-03 (#37): the page shell is a real file - ``web/dashboard.html`` - with
-six __PLACEHOLDER__ slots (__PRICE_TTL__, __DASHBOARD_CSS__, __DATA__,
-__POWER__, __LOCAL_HOSTS__, __SCHEMA_VERSION__). This module only does
-collect -> read assets -> inject -> write, so the HTML/CSS/JS all live in
-files that editors and linters treat as what they are.
+P2-03 (#37): the page shell is a real file (``web/dashboard.html``) and the JS
+is real ES modules, so editors and linters treat them as what they are. This
+module only collects -> reads assets -> injects -> writes. Seven __PLACEHOLDER__
+slots get filled: __PRICE_TTL__, __DASHBOARD_CSS__ and __DASHBOARD_JS__ in the
+shell; __DATA__, __POWER__, __LOCAL_HOSTS__ and __SCHEMA_VERSION__ in the JS.
 """
 import json
 import os
@@ -16,18 +16,12 @@ import time
 from .config import get as _cfg
 
 CFG = _cfg()
-HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = str(CFG.reports_dir / "analytics-data.json")
 OUT  = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "dashboard.html")
-# P2-01 (#26): CSS lives in its own file (stylelint, editor completion,
-# specificity tooling all work on a real .css that never worked on a Python
-# string literal), inlined into <style> at build time so the page stays a
-# single self-contained file you can open straight off disk.
-CSS_PATH = os.path.join(HERE, "web", "css", "dashboard.css")
-# P2-03 (#37) + P2-02 (#27): the page shell is a real .html file and the
-# JavaScript is real ES modules under web/js/ — see webassets for why the
-# modules are inlined back into one file instead of being loaded by the page.
-SHELL_PATH = os.path.join(HERE, "web", "dashboard.html")
+# P2-01 (#26) / P2-03 (#37) / P2-02 (#27): CSS, the page shell, and the JS are
+# real files under web/ (a lint or an editor sees a .css/.html/.js, not a
+# Python string literal), inlined back at build time so the page stays a single
+# self-contained file you can open straight off disk. webassets owns the paths.
 
 # LLM_TELEMETRY_NO_COLLECT renders from whatever JSON is already on disk.
 # Required for the sample build: the collectors would otherwise overwrite the
@@ -37,24 +31,19 @@ if os.environ.get("LLM_TELEMETRY_NO_COLLECT"):
     pass
 else:
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
-    # Router data (#130) has its own hourly job (systemd/llm-telemetry-router.timer):
-    # it walks every profile's agent log, which is too much work for a build that
-    # runs every minute. This build only re-collects as a safety net when the file
-    # is missing or older than ROUTER_MAX_AGE_S, so a deployment with no timer
-    # (a plain container running the build loop) still refreshes hourly.
-    _router = CFG.reports_dir / "router-data.json"
-    ROUTER_MAX_AGE_S = 65 * 60
-    if not _router.exists() or time.time() - _router.stat().st_mtime > ROUTER_MAX_AGE_S:
-        subprocess.run([sys.executable, "-m", "llm_telemetry.collect_router", str(_router)], check=True)
-    # Quota data (#115) follows the same shape for the same reason: reading the
-    # Hermes quota plugin's cache is cheap, but the collector also rewrites a
-    # 30-day history ledger, so it gets its own hourly job
-    # (systemd/llm-telemetry-quota.timer) and this build only fills in when the
-    # file is missing or stale.
-    _quota = CFG.reports_dir / "quota-data.json"
-    QUOTA_MAX_AGE_S = 65 * 60
-    if not _quota.exists() or time.time() - _quota.stat().st_mtime > QUOTA_MAX_AGE_S:
-        subprocess.run([sys.executable, "-m", "llm_telemetry.collect_quota", str(_quota)], check=True)
+    # Router (#130) and quota (#115) data each have their own hourly job — the
+    # router collector walks every profile's agent log, and the quota collector
+    # also rewrites a 30-day history ledger, so neither belongs in a build that
+    # runs every minute. This build only re-collects as a safety net when the
+    # file is missing or older than MAX_AGE_S, so a deployment with no timer (a
+    # plain container running the build loop) still refreshes hourly. The module
+    # name is the payload name minus "-data"; both collectors take the output
+    # path as their only argument.
+    MAX_AGE_S = 65 * 60
+    for _name in ("router", "quota"):
+        _p = CFG.reports_dir / f"{_name}-data.json"
+        if not _p.exists() or time.time() - _p.stat().st_mtime > MAX_AGE_S:
+            subprocess.run([sys.executable, "-m", f"llm_telemetry.collect_{_name}", str(_p)], check=True)
 from .schema import SCHEMA_VERSION  # noqa: E402
 from .webassets import inline_js, read_css, read_shell, read_tokens  # noqa: E402
 
@@ -132,25 +121,20 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
          "tps": _E.LOCAL_TPS, "tps_default": _E.LOCAL_TPS_DEFAULT,
          "prefill": _E.PREFILL_SPEEDUP, "cachex": _E.CACHE_SPEEDUP,
          "config_file": _shown_path((CFG.resolution or {}).get("config_file", "")),
-         # P7-05 (#112): the interval VALUES IN EFFECT right now (config
-         # override or default), separate from "tariff"/"defaults" (the
-         # power-model Settings card's own SET_DEFAULTS derives from
-         # "defaults" and requires every one of its keys present in a
-         # /api/settings reply -- these live in their own key so they
-         # never widen that card's own required-key set) -- the page reads
-         # these to seed its own live setInterval calls without waiting
-         # on a /api/settings round trip.
+         # P7-05 (#112): the interval VALUES IN EFFECT right now (config override
+         # or default), kept out of "tariff"/"defaults" because the power-model
+         # Settings card's SET_DEFAULTS requires every key of "defaults" present in
+         # a /api/settings reply. The page reads these to seed its own live
+         # setInterval calls without waiting on a round trip.
          "intervals": {"live_poll_interval_s": getattr(CFG, "live_poll_interval_s", _d.live_poll_interval_s),
                        "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
          "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
                                 "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
-# P2-04 (#28): the palette tokens live in ONE file (web/css/tokens.css) that
-# both pages inline ahead of their own styles, so a colour change cannot land
-# on the dashboard and miss the price sheet.
+# P2-04 (#28): the palette tokens live in ONE file (web/css/tokens.css) that both
+# pages inline ahead of their own styles, so a colour change cannot land on the
+# dashboard and miss the price sheet.
 _DASHBOARD_CSS = read_tokens() + read_css()
 SHELL = read_shell()
-
-
 _JS_INLINE = inline_js()
 
 html = (SHELL.replace("__PRICE_TTL__", _ttl_label())
