@@ -26,6 +26,16 @@ jobs:
           ruff check src/
           mypy src/
 
+      - name: Lint web sources (ESLint + stylelint + inline-sized check) — P2-05, #29
+        # Dev-only tooling pinned by the root package-lock.json; the shipped
+        # artifact stays static files + stdlib Python. stylelint runs at
+        # zero errors: the nine duplicate-selector pairs in dashboard.css were
+        # merged behaviour-preservingly (proved by a computed-style A/B in
+        # real Chrome, 18k entries, 0 diffs), so any new duplicate fails CI.
+        run: |
+          npm ci
+          npm run lint
+
       - name: Leak gate (samples must carry nothing identifying)
         run: python3 examples/check_no_leaks.py
 

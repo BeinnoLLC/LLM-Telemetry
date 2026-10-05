@@ -35,7 +35,7 @@
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-      -webkit-font-smoothing:antialiased}
+      -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  /* Full viewport width — no max-width cap */
  .page{width:100%;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;gap:var(--gap)}
  .card{background:var(--card);border:1px solid var(--border);border-radius:8px}
@@ -99,25 +99,10 @@
 /* Left nav drawer (#3). Fixed rail, content shifts right. Mobile behaviour
    (off-canvas + scrim) is ticket #4; this keeps it simply hidden below the
    tablet breakpoint so the page never loses its nav mid-refactor. */
-#navdrawer{
-  position:fixed; top:0; left:0; bottom:0; z-index:40;
-  width:var(--rail-now);
-  background:var(--card); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
-  padding:14px 10px; transition:width .18s ease, transform .2s ease;
-}
 #navdrawer .navbrand{
   display:flex; align-items:center; gap:8px; padding:4px 8px 12px;
   font-weight:650; letter-spacing:-.02em;
 }
-.navitem{
-  display:flex; align-items:center; gap:10px; width:100%;
-  padding:8px 10px; margin-bottom:2px; border-radius:8px;
-  border:0; background:none; cursor:pointer; text-align:left;
-  color:var(--muted); font-size:var(--fs-md); line-height:1.2;
-  border-left:2px solid transparent; text-decoration:none;
-}
-.navitem:hover{ background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--fg); }
 .navitem:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
 /* Active item: accent bar plus accent text, so it reads as "you are here"
    without relying on colour alone. */
@@ -339,7 +324,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   #navtoggle{ display:inline-flex; }
 }
 #navtoggle{ display:none; }
-#navscrim{ display:none; }
 @media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
 
  .brandmark{color:var(--accent);flex:0 0 auto}
@@ -391,13 +375,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #boot.gone{opacity:0;pointer-events:none}
  .bars{display:flex;align-items:flex-end;gap:5px;height:34px}
  .bars i{display:block;width:7px;border-radius:2px;background:var(--accent);
-         animation:bb 1.05s ease-in-out infinite}
+         animation:bb 1.05s ease-in-out infinite;transform-origin:bottom}
  .bars i:nth-child(1){height:38%;animation-delay:0s}
  .bars i:nth-child(2){height:66%;animation-delay:.12s;background:hsl(17 66% 55%)}
  .bars i:nth-child(3){height:100%;animation-delay:.24s;background:hsl(250 85% 66%)}
  .bars i:nth-child(4){height:54%;animation-delay:.36s;background:hsl(213 90% 60%)}
  @keyframes bb{0%,100%{transform:scaleY(.45);opacity:.55}50%{transform:scaleY(1);opacity:1}}
- .bars i{transform-origin:bottom}
  @media (prefers-reduced-motion:reduce){
    .bars i,.dot{animation:none}
    .costpulse{animation:none}
@@ -427,7 +410,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    color:var(--muted);padding:12px 14px 4px;flex:none}
  .navlist{display:flex;flex-direction:column;gap:2px;padding:6px 8px}
  /* Real anchors, so middle-click and ⌘-click open a section in a new tab. */
- .navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;
+ .navitem{width:100%;margin-bottom:2px;border:0;background:none;text-align:left;line-height:1.2;display:flex;align-items:center;gap:10px;padding:8px 10px;
    border-radius:6px;color:var(--muted);text-decoration:none;font-size:var(--fs-sm);
    position:relative;min-height:40px;cursor:pointer;
    border-left:2px solid transparent;transition:background .12s ease,color .12s ease}
@@ -446,11 +429,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
    cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
  #navpin:hover{color:var(--accent)}
- #navscrim{position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
+ #navscrim{display:none;position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
    backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
  #navscrim.open{opacity:1;pointer-events:auto}
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
- body{--shell-pad:var(--nav-w)}
  .shell{padding-left:var(--shell-pad);transition:padding-left .2s ease}
 
  /* Top app bar — slim, sticky, one row at every width. */
@@ -521,7 +503,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Dark theme only: a faint glow under the value arc so it reads as an
     instrument face, not a flat vector (#7). */
  [data-theme=dark] .loe .gval{filter:drop-shadow(0 0 3px currentColor)}
- .loe .needle{transform-origin:50% 38%}
  /* Travel: on first paint and every refresh the needle SWEEPS from its
     previous angle (--from) to the new one (--d) — refreshes must be visibly
     alive (#9). animation-fill-mode:both holds the end angle once the travel
@@ -529,7 +510,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     now that travel carries the "something changed" signal) starts only
     after travel completes via its own animation-delay, so the two never
     fight over the transform mid-sweep. */
- .loe .needle{
+ .loe .needle{transform-origin:50% 38%;
    animation: needle-travel .6s cubic-bezier(.22,1,.36,1) both,
               needle-tremor var(--spd) ease-in-out .6s infinite;
  }
@@ -742,7 +723,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;font-weight:600;
    background:hsl(196 88% 55% / .16);color:hsl(196 88% 60%);flex:none}
  .olver{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;flex:none}
- .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 8px 0;word-break:break-all}
+ .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 8px;word-break:break-all}
  /* Load bars. Colour is a judgement (green/amber/red), not decoration: it is
     the only thing that reads at a glance from across the room. */
  .olrow{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:var(--fs-sm)}
@@ -810,13 +791,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .fflbl{width:48px;flex:none;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
  .frow{padding:4px 6px;border-radius:4px}
  .frow:hover{background:var(--card)}
- .fwhen{min-width:74px;font-variant-numeric:tabular-nums}
- .fmsg{flex:1;min-width:0;color:var(--fg)}
  .fcnt{min-width:36px;text-align:center;font-size:var(--fs-xs);font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
  .fkind{width:72px;text-align:center}
  .fmodel{width:150px}
- .fwhen{width:92px}
- .fmsg{flex:1;min-width:0}
+ .fwhen{min-width:74px;font-variant-numeric:tabular-nums;width:92px}
+ .fmsg{color:var(--fg);flex:1;min-width:0}
  #faillist::-webkit-scrollbar{width:7px}
  #faillist::-webkit-scrollbar-track{background:transparent}
  #faillist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -1377,7 +1356,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-name{font-size:var(--fs-sm)}
 .qv-plan{font-size:var(--fs-xs);color:var(--muted)}
 .qv-free{font-size:var(--fs-xs);color:#22c55e;border:1px solid #22c55e55;background:#22c55e14;border-radius:999px;padding:0 .4rem}
-.qv-why{font-size:var(--fs-xs);color:#f59e0b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22rem}
 .qv-wins-none{font-size:var(--fs-xs)}
 .qv-balrow{padding:.35rem 0;font-size:var(--fs-xs)}
 .qv-balrow+.qv-balrow{border-top:1px solid var(--border)}
@@ -1452,7 +1430,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-abits{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums}
 /* The provider's own words for why a key stopped. Monospace marks it as copied
    text, not written by us — the reader can tell reportage from the UI. */
-.qv-why{font-family:ui-monospace,monospace;font-size:var(--fs-xs);color:var(--z-bad-fg);
+.qv-why{font-family:ui-monospace,monospace;font-size:var(--fs-xs);color:var(--z-bad-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22rem;
   margin:.2rem 0 0 1.35rem;overflow-wrap:anywhere}
 .qv-amodels{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;max-width:24rem;margin-top:.15rem}
