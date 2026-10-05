@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Run every check_*.js / drive_*.js suite and summarise.
+// Run every check_*.js / drive_*.js suite, plus the unit_*.mjs suites (#30:
+// modules imported directly, no built page), and summarise.
 //
 // Each suite is a standalone script that exits non-zero on failure and prints
 // "N passed, M failed". Running them in-process would let one suite's jsdom
@@ -10,7 +11,7 @@ const path = require('path');
 
 const dir = __dirname;
 const suites = fs.readdirSync(dir)
-  .filter(f => /^(check_|drive_).*\.js$/.test(f))
+  .filter(f => /^(check_|drive_).*\.js$/.test(f) || /^unit_.*\.mjs$/.test(f))
   .sort();
 
 let total = 0, failed = [];
