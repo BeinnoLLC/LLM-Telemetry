@@ -30,6 +30,7 @@ def main():
 
     sub.add_parser("dashboard", help="build dashboard.html (runs the collectors)")
     sub.add_parser("costs", help="build costs.html (per-1M rate reference)")
+    sub.add_parser("rankings", help="fetch OpenRouter rankings + build rankings.html (#113)")
     sub.add_parser("live", help="write live-data.json (fast poll feed)")
     sub.add_parser("transcripts", help="write transcripts.json (windowed live-session chat, #79)")
     sub.add_parser("session-timeline", help="write sessions/<profile>/<id>.json (per-session timeline, #94)")
@@ -53,6 +54,7 @@ def main():
     mods = {
         "dashboard": "build_dashboard",
         "costs": "build_costs",
+        "rankings": "build_rankings",
         "live": "collect_live",
         "transcripts": "collect_transcripts",
         "session-timeline": "collect_session_timeline",

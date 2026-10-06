@@ -1,0 +1,37 @@
+/* OpenRouter rankings page (#113). Palette tokens come from tokens.css,
+   inlined ahead of this file by build_rankings.py. */
+:root{--green:#22c55e;--red:#ef4444;--amber:#f59e0b}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);margin:0;
+  font:14px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:1100px;margin:0 auto;padding:clamp(16px,3vw,32px)}
+.back{color:var(--accent);font-size:12.5px;text-decoration:none}
+h1{font-size:clamp(18px,2.4vw,24px);margin:8px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:18px}
+.muted{color:var(--muted)}
+.chooser{display:flex;gap:6px;margin-bottom:12px}
+.vb{background:transparent;color:var(--fg);border:1px solid var(--muted);border-radius:6px;
+  padding:4px 12px;font:inherit;cursor:pointer}
+.vb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.vmeta{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+.rk{width:100%;border-collapse:collapse}
+.rk th,.rk td{padding:6px 8px;border-bottom:1px solid rgb(127 127 127 / 18%);text-align:left}
+.rk th{font-size:12px;color:var(--muted);font-weight:600}
+.rk .num{text-align:right;font-variant-numeric:tabular-nums}
+.rank{width:3em;color:var(--muted)}
+.model{overflow-wrap:anywhere}
+.vendor{color:var(--muted);font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.share{white-space:nowrap}
+.bar{display:inline-block;width:90px;height:7px;border-radius:4px;background:rgb(127 127 127 / 18%);
+  overflow:hidden;vertical-align:middle}
+.bar span{display:block;height:100%}
+.rk-other td{color:var(--muted)}
+.tr.up{color:var(--green)}
+.tr.down{color:var(--red)}
+.empty,.stale{border:1px dashed var(--muted);border-radius:8px;padding:14px;margin:10px 0}
+.stale{border-color:var(--amber)}
+.legend,.attr{color:var(--muted);font-size:12px;margin-top:14px}
+.attr a{color:var(--accent)}
+@media (width <= 640px){.share .bar{display:none}}

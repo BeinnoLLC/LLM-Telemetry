@@ -13,5 +13,6 @@ ExecStart=%h/.local/bin/llm-telemetry quota
 ExecStart=%h/.local/bin/llm-telemetry live
 ExecStart=%h/.local/bin/llm-telemetry logs
 ExecStart=%h/.local/bin/llm-telemetry costs
+ExecStart=%h/.local/bin/llm-telemetry rankings
 ExecStart=%h/.local/bin/llm-telemetry transcripts
 ExecStart=%h/.local/bin/llm-telemetry session-timeline

@@ -42,6 +42,7 @@ unset LLM_TELEMETRY_CONFIG LLM_TELEMETRY_NO_COLLECT   # personal config, real co
   "$CLI" live
   "$CLI" logs
   "$CLI" costs
+  "$CLI" rankings
   # The transcript modal (transcripts.json) and the session timeline
   # (sessions/<profile>/<id>.json) are fetched ON DEMAND by the page, so a
   # missing file is not an error the build can catch -- the modal just says

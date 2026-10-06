@@ -32,6 +32,12 @@ COSTS_SHELL_PATH = os.path.join(HERE, "web", "costs.html")
 COSTS_JS_PATH = os.path.join(JS_DIR, "costs.js")
 # The row/box/KPI markup build_costs.py fills; the Python keeps only shaping.
 COSTS_FRAGMENTS_PATH = os.path.join(HERE, "web", "costs-fragments.html")
+# #113: the OpenRouter rankings page — a standalone page like the price sheet
+# (not an SPA module, so it is deliberately absent from JS_ORDER).
+RANKINGS_CSS_PATH = os.path.join(HERE, "web", "css", "rankings.css")
+RANKINGS_SHELL_PATH = os.path.join(HERE, "web", "rankings.html")
+RANKINGS_JS_PATH = os.path.join(JS_DIR, "rankings.js")
+RANKINGS_FRAGMENTS_PATH = os.path.join(HERE, "web", "rankings-fragments.html")
 # The modules, in dependency order (main boots last and is the only one that
 # runs anything while loading).
 JS_ORDER = ["palette.js", "charts.js", "views.js", "flow.js", "drawer.js",
@@ -70,15 +76,58 @@ _SLOT_RE = re.compile(r"\{([a-z_][a-z0-9_]*)\}")
 _frags = None
 
 
-def read_costs_fragments():
-    """name -> template, parsed from web/costs-fragments.html."""
-    with open(COSTS_FRAGMENTS_PATH, encoding="utf-8") as fh:
+def read_fragments(path):
+    """name -> template, parsed from one ``<!-- @frag name -->`` file."""
+    with open(path, encoding="utf-8") as fh:
         found = _FRAG_RE.findall(fh.read())
     names = [n for n, _ in found]
     dupes = sorted({n for n in names if names.count(n) > 1})
     if dupes:
-        raise ValueError(f"duplicate fragments in {COSTS_FRAGMENTS_PATH}: {dupes}")
+        raise ValueError(f"duplicate fragments in {path}: {dupes}")
     return dict(found)
+
+
+def read_costs_fragments():
+    """name -> template, parsed from web/costs-fragments.html."""
+    return read_fragments(COSTS_FRAGMENTS_PATH)
+
+
+def read_rankings_css():
+    """The rankings page's own styles (palette tokens come from read_tokens())."""
+    with open(RANKINGS_CSS_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def read_rankings_shell():
+    """The rankings page's HTML with __PLACEHOLDER__ slots."""
+    with open(RANKINGS_SHELL_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def read_rankings_js():
+    """The rankings page's window-chooser script."""
+    with open(RANKINGS_JS_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+_rank_frags = None
+
+
+def _fill(name, tpl, slots):
+    def fill(m):
+        key = m.group(1)
+        if key not in slots:
+            raise KeyError(f"fragment {name!r} needs slot {key!r}")
+        return str(slots[key])
+    return _SLOT_RE.sub(fill, tpl)
+
+
+def rankings_frag(name, /, **slots):
+    """Fill one rankings-page fragment (same contract as frag())."""
+    global _rank_frags
+    if _rank_frags is None:
+        _rank_frags = read_fragments(RANKINGS_FRAGMENTS_PATH)
+    return _fill(name, _rank_frags[name], slots)
 
 
 def frag(name, /, **slots):

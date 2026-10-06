@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh the OpenRouter rankings page (#113)
+
+[Service]
+# Standalone refresh of rankings-data.json + rankings.html. The same step also
+# runs in llm-telemetry-build.service (kept in step with
+# scripts/refresh-dashboard.sh); the collector reuses a payload younger than
+# LLM_TELEMETRY_RANKINGS_TTL (default 1h), so the per-minute cycle does not
+# re-hit the API. OPENROUTER_API_KEY must be in the user environment; without
+# it the page renders an explicit "unavailable" state and the unit exits 0.
+Type=oneshot
+ExecStart=%h/.local/bin/llm-telemetry rankings
