@@ -40,11 +40,18 @@ export function qvAttention(){
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-// A window's fill level, or null when the provider did not report one.
+// A window's fill level, or null when the provider did not report one. The
+// value is the provider's, but its precision is not: a raw float carrying six
+// decimals ("88.333333") would reach the page as "88.333333%" and drag the
+// headroom bar and its aria-label along with it. Two decimals is the finest
+// any quota API reports, so a clean value is returned untouched — 41.5 stays
+// 41.5, 63.25 stays 63.25 — and only a genuinely noisy float is cut.
 export function qvPct(v){
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n)) return null;
+  const r = Math.round(n * 100) / 100;
+  return r === n ? n : r;
 }
 
 // ok < 60 <= warn < attention <= bad. A missing level is 'mute', not 'ok':

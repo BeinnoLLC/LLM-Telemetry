@@ -428,6 +428,31 @@ goPage(dupDom.window.document, dupDom.window, 'headroom');
       `${idx.length} badges: ${idx.join(',')}`);
 }
 
+// --- precision: a noisy float must not reach the page ----------------------
+// The provider owns the value; it does not own the precision. A quota API that
+// answers 88.333333 must read "88.33%", not six decimals carried into the text,
+// the bar width and the aria-label. The sample payload holds only clean values,
+// so this needs its own payload with one deliberately noisy window.
+{
+  const noisy = JSON.parse(JSON.stringify(quota));
+  noisy.profiles.work.providers.openrouter.windows[0].used_percent = 88.333333;
+  const nDom = boot(noisy);
+  goPage(nDom.window.document, nDom.window, 'headroom');
+  const nTxt = viewText(nDom.window.document);
+  chk(nTxt.includes('88.33%'),
+      'a 6-decimal provider value renders rounded to 2dp',
+      `"88.33%" ${nTxt.includes('88.33%') ? 'present' : 'MISSING'}`);
+  chk(!nTxt.includes('88.333333'),
+      'the raw 6-decimal float never reaches the page',
+      nTxt.includes('88.333333') ? 'LEAKED' : 'clean');
+  // A clean value is the provider's own precision and must survive untouched:
+  // no trailing zero added, no second decimal invented.
+  chk(nTxt.includes('41.5%') && !nTxt.includes('41.50%'),
+      'a clean 1dp value is printed verbatim', '41.5%');
+  chk(nTxt.includes('63.25%'),
+      'a clean 2dp value is printed verbatim', '63.25%');
+}
+
 console.log(`\ncheck_quota_view.js  ${p} passed, ${f} failed`);
 // jsdom's pretendToBeVisual timer keeps the event loop alive, so without an
 // explicit exit the suite hangs forever in CI.
