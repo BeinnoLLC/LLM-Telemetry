@@ -174,6 +174,8 @@ export function renderQueue(){
     const e = dBox.querySelector('.qempty'); if (e) e.remove();
   }
 
+  paintTrain(queuedAll, runningAll, doneAll);
+
   // --- counts + subtitle ----------------------------------------------------
   // Counts show the REAL total, even when the lane is capped to 10 chips —
   // capping the display must never quietly change what the number means.
@@ -187,6 +189,78 @@ export function renderQueue(){
       ? `backed up on ${busy.join(', ')}`
       : (hosts.length ? `fleet clear · ${hosts.length} host${hosts.length===1?'':'s'}` : '');
   }
+}
+
+// #140: the railway strip above the lanes. Squares are keyed and reused, so a
+// car keeps its place in its animation across polls; only arrivals and
+// departures animate. Purely decorative (aria-hidden): the lanes below stay
+// the accessible, readable record.
+export const TRAIN_CAP = 10;
+export function trainCar(key, cls){
+  const c = document.createElement('i');
+  c.className = 'qt-car ' + cls;
+  c.dataset.key = key;
+  return c;
+}
+export function paintCars(box, items, cls, decorate){
+  const have = new Map([...box.children].filter(c => c.dataset && c.dataset.key && !c.classList.contains('qt-leaving'))
+    .map(c => [c.dataset.key, c]));
+  const keep = new Set();
+  items.forEach((it, i) => {
+    let c = have.get(it.key);
+    if (!c){ c = trainCar(it.key, cls); box.appendChild(c); }
+    keep.add(c);
+    decorate(c, it, i);
+  });
+  [...box.children].forEach(c => {
+    if (keep.has(c) || c.classList.contains('qt-leaving')) return;
+    if (c.classList.contains('qt-more')){ c.remove(); return; }
+    c.classList.add('qt-leaving');
+    setTimeout(() => c.remove(), 600);
+  });
+}
+export function paintTrain(queuedAll, runningAll, doneAll){
+  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
+  if (!tr || !qb || !rb || !db) return;
+  const nq = queuedAll.length, nr = runningAll.length;
+  const running = runningAll.slice(0, TRAIN_CAP);
+  // A busier line runs faster, within a readable range.
+  const loop = Math.max(5, 11 - running.length * 0.6);
+  tr.style.setProperty('--qt-loop', loop + 's');
+  // Cars loop across the line's real width (fallback before layout).
+  tr.style.setProperty('--qt-w', ((rb.clientWidth || 520) + 10) + 'px');
+  tr.classList.toggle('moving', nr > 0);
+  tr.classList.toggle('backed', nq > 0);
+  tr.classList.toggle('clear', nq === 0 && nr === 0);
+  if (sig) sig.title = nq > 0 ? `${nq} waiting` : 'line clear';
+
+  paintCars(qb, queuedAll.slice(0, TRAIN_CAP), 'qt-q', (c, it, i) => {
+    c.style.setProperty('--i', i);
+  });
+  // Coupled train: every car shares one loop, offset by a fixed gap behind
+  // the locomotive, so the train stays evenly spaced and moves as one.
+  paintCars(rb, running, 'qt-r', (c, it, i) => {
+    c.style.setProperty('--d', (-(running.length - 1 - i) * 0.32).toFixed(2) + 's');
+    c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+    c.classList.toggle('qt-loco', i === 0);
+    c.title = it.label;
+  });
+  paintCars(db, doneAll.slice(0, TRAIN_CAP), 'qt-d', (c, it, i) => {
+    c.style.setProperty('--i', i);
+  });
+  // "+N" past the cap, so the strip never hides real depth.
+  [[qb, nq], [rb, nr], [db, doneAll.length]].forEach(([box, n]) => {
+    const old = box.querySelector('.qt-more'); if (old) old.remove();
+    if (n > TRAIN_CAP){
+      const m = document.createElement('b');
+      m.className = 'qt-more'; m.textContent = '+' + (n - TRAIN_CAP);
+      box.appendChild(m);
+    }
+  });
+  // An empty line still shows life: one ghost car patrols it.
+  if (nr === 0 && !rb.querySelector('.qt-patrol')){
+    const p = document.createElement('i'); p.className = 'qt-car qt-patrol'; rb.appendChild(p);
+  } else if (nr > 0){ const p = rb.querySelector('.qt-patrol'); if (p) p.remove(); }
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed

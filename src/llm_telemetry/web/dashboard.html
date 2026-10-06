@@ -196,6 +196,17 @@ __DASHBOARD_CSS__
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
+   <!-- #140: the queue as a railway. Depot (queued cars held at a signal) ->
+        the line (running sessions as a moving train, locomotive first) ->
+        the yard (finished sessions parked). Squares are keyed like the lane
+        chips below, so a 5s poll never restarts a car's animation. -->
+   <div class="qtrain" id="qtrain" aria-hidden="true">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot</span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line</span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard</span><div class="qt-cars" id="qt-done"></div></div>
+    <div class="qt-rail"></div>
+   </div>
    <div id="qlanes" class="qlanes">
     <div class="qlane" data-lane="queued">
      <div class="qlanehdr">Queued<span class="qcount" id="qcount-queued">0</span></div>

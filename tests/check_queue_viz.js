@@ -237,6 +237,59 @@ setTimeout(() => {
     chk(!!em && /idle/i.test(em.textContent), 'no sessions -> calm idle state', em && em.textContent);
     chk(d.getElementById('qcount-running').textContent === '0', 'running count back to 0',
         d.getElementById('qcount-running').textContent);
+
+    // ---- #140: the railway strip -------------------------------------------
+    const tr = d.getElementById('qtrain');
+    const tq = d.getElementById('qt-queued'), trn = d.getElementById('qt-running'), td = d.getElementById('qt-done');
+    chk(!!tr && !!tq && !!trn && !!td, '#140 train strip with depot, line and yard exists');
+    chk(!!tr && tr.getAttribute('aria-hidden') === 'true', '#140 the strip is decorative; the lanes stay the readable record');
+    chk(!!tr && (tr.compareDocumentPosition(d.getElementById('qlanes')) & 4) !== 0, '#140 the train sits above the lanes');
+    for (const k of ['qt-run', 'qt-shunt', 'qt-sleepers', 'qt-park', 'qt-depart', 'qt-blink'])
+      chk(new RegExp('@keyframes ' + k + '\\b').test(html), `#140 keyframes ${k} defined`);
+    chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain/.test(html), '#140 all train motion stops under reduced motion');
+
+    // fleet clear: no queue, nothing running
+    w.eval(`DATA.ollama.hosts.forEach(h => h.queue = 0); DATA.profiles[current].live = []; renderQueue();`);
+    chk(tr.classList.contains('clear') && !tr.classList.contains('moving') && !tr.classList.contains('backed'),
+        '#140 fleet clear: strip is .clear, not moving, not backed', tr.className);
+    chk(trn.querySelectorAll('.qt-patrol').length === 1, '#140 fleet clear: exactly one ghost car patrols the empty line');
+    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 0, '#140 fleet clear: depot is empty');
+
+    // backed up + running: depth becomes queued cars, sessions become a train
+    w.eval(`DATA.ollama.hosts[0].queue = 4;
+      DATA.profiles[current].live = [
+        {id:'t1', model:'qwen3-coder:30b', title:'one', idle_s:1},
+        {id:'t2', model:'claude-opus-5', title:'two', idle_s:2},
+        {id:'t3', model:'gpt-5', title:'three', idle_s:3}]; renderQueue();`);
+    chk(tr.classList.contains('backed') && tr.classList.contains('moving') && !tr.classList.contains('clear'),
+        '#140 backed + moving when work waits and runs', tr.className);
+    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 4, '#140 4 waiting requests are 4 depot cars',
+        String(tq.querySelectorAll('.qt-q').length));
+    const cars = [...trn.querySelectorAll('.qt-r:not(.qt-leaving)')];
+    chk(cars.length === 3, '#140 3 running sessions are 3 cars on the line', String(cars.length));
+    chk(cars.filter(c => c.classList.contains('qt-loco')).length === 1 && cars[0].classList.contains('qt-loco'),
+        '#140 the lead car is the one locomotive');
+    chk(new Set(cars.map(c => c.style.getPropertyValue('--d'))).size === 3,
+        '#140 cars are spaced along the loop (distinct delays)');
+    chk(!trn.querySelector('.qt-patrol'), '#140 the patrol car leaves once real cars run');
+    chk(/^\d+(\.\d+)?s$/.test(tr.style.getPropertyValue('--qt-loop')), '#140 loop speed is set', tr.style.getPropertyValue('--qt-loop'));
+
+    // re-render keeps the same car nodes (no animation restart on poll)
+    const car0 = cars[0];
+    w.eval('renderQueue()');
+    chk(car0.isConnected && !car0.classList.contains('qt-leaving') && trn.querySelector('.qt-r:not(.qt-leaving)') === car0,
+        '#140 unchanged cars are reused across polls');
+
+    // a session leaving the line departs, then is removed
+    w.eval(`DATA.profiles[current].live = DATA.profiles[current].live.slice(1); renderQueue();`);
+    chk(car0.classList.contains('qt-leaving'), '#140 a finished car plays the departure animation');
+    chk(trn.querySelectorAll('.qt-r:not(.qt-leaving)').length === 2, '#140 two cars stay on the line');
+
+    // depth past the cap shows +N instead of hiding it
+    w.eval(`DATA.ollama.hosts[0].queue = 13; renderQueue();`);
+    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 10, '#140 depot caps at 10 cars');
+    const more = tq.querySelector('.qt-more');
+    chk(!!more && more.textContent === '+3', '#140 depot shows +3 past the cap', more && more.textContent);
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));

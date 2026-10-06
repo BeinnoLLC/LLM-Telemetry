@@ -720,7 +720,88 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .qchip .qprof{color:var(--muted);font-size:var(--fs-xs);
    padding:0 5px;border:1px solid var(--border);border-radius:999px}
  .qchip .qwait{margin-left:auto;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
- .flowctl{float:right;display:flex;gap:4px;align-items:center}
+ /* ---- #140 task queue as a railway ------------------------------------
+   Depot (queued cars, held at a signal) -> the line (running sessions as a
+   moving train) -> the yard (finished sessions). transform/opacity-only
+   animations; all of it stops under prefers-reduced-motion. */
+.qtrain{position:relative;display:grid;grid-template-columns:minmax(90px,1fr) 18px minmax(160px,2.4fr) minmax(90px,1fr);
+  align-items:end;gap:0 8px;height:74px;margin:2px 0 14px;padding:0 4px;--qt-loop:9s;
+  border-radius:10px;overflow:hidden;
+  background:linear-gradient(180deg,transparent 40%,color-mix(in srgb,var(--border) 35%,transparent))}
+.qt-sec{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
+.qt-name{position:absolute;top:6px;left:2px;font-size:var(--fs-xs);text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted)}
+.qt-cars{position:relative;height:30px;margin-bottom:13px;display:flex;align-items:flex-end;gap:5px;min-width:0}
+.qt-depot .qt-cars{justify-content:flex-end}
+.qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:3px;height:auto;max-height:44px}
+/* the rail: two steel lines over sleepers that scroll while the line is moving */
+.qt-rail{position:absolute;left:0;right:0;bottom:6px;height:8px;pointer-events:none;
+  border-top:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
+  border-bottom:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
+  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--muted) 45%,transparent) 0 3px,transparent 3px 14px)}
+.qtrain.moving .qt-rail{animation:qt-sleepers .6s linear infinite}
+@keyframes qt-sleepers{to{background-position:14px 0}}
+/* cars */
+.qt-car{display:block;flex:none;width:18px;height:18px;border-radius:4px;position:relative;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);
+  --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--foreground,#fff))}
+.qt-car::after{content:"";position:absolute;left:3px;right:3px;bottom:-5px;height:4px;
+  background:radial-gradient(circle at 3px 2px,var(--qt-wheel) 2px,transparent 2.5px),
+             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px)}
+/* queued: amber, shunting in place, staggered so the depot breathes */
+.qt-q{background:#f59e0b;animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,
+  qt-shunt 1.8s ease-in-out calc(var(--i,0) * .15s) infinite}
+@keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+/* running: a train looping the line, coloured by profile; the leader is the loco */
+.qt-line .qt-cars{overflow:hidden}
+.qt-r{position:absolute;bottom:6px;left:0;background:hsl(var(--h,142) 65% 50%);
+  animation:qt-run var(--qt-loop) linear var(--d,0s) infinite;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 10px hsl(var(--h,142) 70% 50% / .45)}
+.qt-r::before{content:"";position:absolute;inset:3px 4px 7px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  background-size:200% 100%;animation:qt-glint 1.2s linear infinite}
+/* couplers: a bar back to the car behind (the tail car has none), plus wheels */
+.qt-r::after{left:-13px;right:3px;
+  background:radial-gradient(circle at 16px 2px,var(--qt-wheel) 2px,transparent 2.5px),
+             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px),
+             linear-gradient(var(--qt-wheel),var(--qt-wheel)) 0 -7px/13px 3px no-repeat}
+.qt-r:last-child::after{background:radial-gradient(circle at 16px 2px,var(--qt-wheel) 2px,transparent 2.5px),
+             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px)}
+.qt-loco{width:24px;border-top-right-radius:9px}
+.qt-loco::before{inset:auto 3px 7px auto;width:6px;height:6px;border-radius:2px;background:rgba(255,255,255,.8);animation:none}
+@keyframes qt-run{from{transform:translateX(-160px)}to{transform:translateX(calc(var(--qt-w,520px)))}}
+@keyframes qt-glint{from{background-position:200% 0}to{background-position:-200% 0}}
+/* done: grey, parked; the newest rolls in */
+.qt-d{width:12px;height:12px;border-radius:3px;background:#64748b;opacity:.85;
+  animation:qt-park .6s cubic-bezier(.2,.8,.2,1) both}
+.qt-d::after{display:none}
+@keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes qt-park{from{opacity:0;transform:translateX(-24px) scale(.6)}to{opacity:.85;transform:none}}
+.qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important}
+@keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
+.qt-more{font-size:var(--fs-xs);color:var(--muted);font-weight:600;align-self:center;margin-left:2px}
+/* signal between depot and line: red while anything waits, green when clear */
+.qt-signal{position:relative;height:58px;margin-bottom:12px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;padding-top:4px;border-left:2px solid color-mix(in srgb,var(--muted) 50%,transparent);
+  border-radius:0;width:2px;justify-self:center}
+.qt-signal i{display:block;width:9px;height:9px;border-radius:50%;margin-left:-2px;background:color-mix(in srgb,var(--muted) 35%,transparent)}
+.qtrain.backed .qt-signal i:first-child{background:#ef4444;box-shadow:0 0 8px #ef4444;animation:qt-blink 1s steps(2,end) infinite}
+.qtrain:not(.backed) .qt-signal i:last-child{background:#22c55e;box-shadow:0 0 8px #22c55e}
+@keyframes qt-blink{50%{opacity:.35}}
+/* fleet clear: an empty line with one ghost car on patrol */
+.qt-patrol{position:absolute;bottom:0;left:0;width:14px;height:14px;background:transparent;
+  border:1.5px dashed #22c55e;box-shadow:0 0 12px rgba(34,197,94,.35);
+  animation:qt-run 7s ease-in-out infinite alternate}
+.qt-patrol::after{display:none}
+.qtrain.clear .qt-line .qt-name::after{content:" · clear";color:#22c55e}
+@media (prefers-reduced-motion: reduce){
+  .qtrain *, .qtrain *::before, .qtrain{animation:none !important}
+  .qt-r{position:relative}
+}
+/* lane chips read as coupled train cars */
+.qitems .qchip + .qchip::before{content:"";position:absolute;left:14px;top:-7px;width:2px;height:6px;
+  background:var(--border);border-radius:1px}
+.flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);
    background:transparent;color:var(--muted);cursor:pointer}
@@ -1695,6 +1776,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   <div class="card p-4 mb-3" id="qcard">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
+   </div>
+   <!-- #140: the queue as a railway. Depot (queued cars held at a signal) ->
+        the line (running sessions as a moving train, locomotive first) ->
+        the yard (finished sessions parked). Squares are keyed like the lane
+        chips below, so a 5s poll never restarts a car's animation. -->
+   <div class="qtrain" id="qtrain" aria-hidden="true">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot</span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line</span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard</span><div class="qt-cars" id="qt-done"></div></div>
+    <div class="qt-rail"></div>
    </div>
    <div id="qlanes" class="qlanes">
     <div class="qlane" data-lane="queued">
@@ -5616,6 +5708,77 @@ function renderProjTrendLegend(datasets){
   });
 }
 
+const TRAIN_CAP = 10;
+function trainCar(key, cls){
+  const c = document.createElement('i');
+  c.className = 'qt-car ' + cls;
+  c.dataset.key = key;
+  return c;
+}
+function paintCars(box, items, cls, decorate){
+  const have = new Map([...box.children].filter(c => c.dataset && c.dataset.key && !c.classList.contains('qt-leaving'))
+    .map(c => [c.dataset.key, c]));
+  const keep = new Set();
+  items.forEach((it, i) => {
+    let c = have.get(it.key);
+    if (!c){ c = trainCar(it.key, cls); box.appendChild(c); }
+    keep.add(c);
+    decorate(c, it, i);
+  });
+  [...box.children].forEach(c => {
+    if (keep.has(c) || c.classList.contains('qt-leaving')) return;
+    if (c.classList.contains('qt-more')){ c.remove(); return; }
+    c.classList.add('qt-leaving');
+    setTimeout(() => c.remove(), 600);
+  });
+}
+function paintTrain(queuedAll, runningAll, doneAll){
+  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
+  if (!tr || !qb || !rb || !db) return;
+  const nq = queuedAll.length, nr = runningAll.length;
+  const running = runningAll.slice(0, TRAIN_CAP);
+  // A busier line runs faster, within a readable range.
+  const loop = Math.max(5, 11 - running.length * 0.6);
+  tr.style.setProperty('--qt-loop', loop + 's');
+  // Cars loop across the line's real width (fallback before layout).
+  tr.style.setProperty('--qt-w', ((rb.clientWidth || 520) + 10) + 'px');
+  tr.classList.toggle('moving', nr > 0);
+  tr.classList.toggle('backed', nq > 0);
+  tr.classList.toggle('clear', nq === 0 && nr === 0);
+  if (sig) sig.title = nq > 0 ? `${nq} waiting` : 'line clear';
+
+  paintCars(qb, queuedAll.slice(0, TRAIN_CAP), 'qt-q', (c, it, i) => {
+    c.style.setProperty('--i', i);
+  });
+  // Coupled train: every car shares one loop, offset by a fixed gap behind
+  // the locomotive, so the train stays evenly spaced and moves as one.
+  paintCars(rb, running, 'qt-r', (c, it, i) => {
+    c.style.setProperty('--d', (-(running.length - 1 - i) * 0.32).toFixed(2) + 's');
+    c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+    c.classList.toggle('qt-loco', i === 0);
+    c.title = it.label;
+  });
+  paintCars(db, doneAll.slice(0, TRAIN_CAP), 'qt-d', (c, it, i) => {
+    c.style.setProperty('--i', i);
+  });
+  // "+N" past the cap, so the strip never hides real depth.
+  [[qb, nq], [rb, nr], [db, doneAll.length]].forEach(([box, n]) => {
+    const old = box.querySelector('.qt-more'); if (old) old.remove();
+    if (n > TRAIN_CAP){
+      const m = document.createElement('b');
+      m.className = 'qt-more'; m.textContent = '+' + (n - TRAIN_CAP);
+      box.appendChild(m);
+    }
+  });
+  // An empty line still shows life: one ghost car patrols it.
+  if (nr === 0 && !rb.querySelector('.qt-patrol')){
+    const p = document.createElement('i'); p.className = 'qt-car qt-patrol'; rb.appendChild(p);
+  } else if (nr > 0){ const p = rb.querySelector('.qt-patrol'); if (p) p.remove(); }
+}
+
+// P10-08 (#96): agents alive. Renders the collector's own already-computed
+// classification (alive/stale/dead + kill_hint); never guesses liveness
+// client-side.
 function renderQueue(){
   const qBox = $('qitems-queued'), rBox = $('qitems-running'), dBox = $('qitems-done');
   if (!qBox || !rBox || !dBox) return;
@@ -5780,6 +5943,8 @@ function renderQueue(){
     const e = dBox.querySelector('.qempty'); if (e) e.remove();
   }
 
+  paintTrain(queuedAll, runningAll, doneAll);
+
   // --- counts + subtitle ----------------------------------------------------
   // Counts show the REAL total, even when the lane is capped to 10 chips —
   // capping the display must never quietly change what the number means.
@@ -5795,9 +5960,10 @@ function renderQueue(){
   }
 }
 
-// P10-08 (#96): agents alive. Renders the collector's own already-computed
-// classification (alive/stale/dead + kill_hint); never guesses liveness
-// client-side.
+// #140: the railway strip above the lanes. Squares are keyed and reused, so a
+// car keeps its place in its animation across polls; only arrivals and
+// departures animate. Purely decorative (aria-hidden): the lanes below stay
+// the accessible, readable record.
 function renderAgents(agents){
   const card = $('agentscard');
   if (!card) return;

@@ -731,6 +731,22 @@
   },
   {
    "mod": "flow",
+   "name": "TRAIN_CAP"
+  },
+  {
+   "mod": "flow",
+   "name": "trainCar"
+  },
+  {
+   "mod": "flow",
+   "name": "paintCars"
+  },
+  {
+   "mod": "flow",
+   "name": "paintTrain"
+  },
+  {
+   "mod": "flow",
    "name": "renderQueue"
   },
   {
