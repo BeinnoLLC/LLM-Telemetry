@@ -1,6 +1,6 @@
 // Reports dir: env override so the suite runs on any machine.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 // Measure PERCEPTUAL distance between model colours (CIE76 in Lab).
 const fs=require('fs'), {JSDOM}=require('jsdom');
 let html=fs.readFileSync(REPORTS+'/dashboard.html','utf8')

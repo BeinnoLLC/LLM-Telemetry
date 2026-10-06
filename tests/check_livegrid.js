@@ -6,7 +6,7 @@
 // Real pixel verification is done with headless chrome (scratch/audit_one.py).
 const fs=require('fs'), path=require('path');
 const DIR=process.env.LLM_TELEMETRY_REPORTS
-  || path.join(require('os').homedir(),'.hermes','reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const html=fs.readFileSync(path.join(DIR,'dashboard.html'),'utf8');
 let p=0,f=0;
 const ok=(c,m,x='')=>{c?(p++,console.log('  ok   '+m+(x?'  '+x:''))):(f++,console.log('  FAIL '+m+(x?'  '+x:'')));};

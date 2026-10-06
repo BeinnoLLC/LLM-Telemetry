@@ -2,7 +2,7 @@
 // stubbed to report the width under test and the JS paths are driven directly.
 // This checks behaviour (classes, aria, focus, close paths), not pixel layout.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');

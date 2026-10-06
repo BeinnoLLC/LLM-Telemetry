@@ -7,7 +7,7 @@ const path = require('path');
 const {execFileSync} = require('child_process');
 const {JSDOM} = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || path.join(os.homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const ROOT = path.join(__dirname, '..');
 const PY = process.env.PYTHON
   || (fs.existsSync(path.join(ROOT, '.venv/bin/python')) ? path.join(ROOT, '.venv/bin/python') : 'python3');

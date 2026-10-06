@@ -2,7 +2,7 @@
 // card above the fold. Both render from the live payload, so both are asserted
 // against the built HTML rather than eyeballed.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');
 const html = raw.replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');

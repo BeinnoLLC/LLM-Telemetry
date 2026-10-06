@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const REPORTS = process.env.LLM_TELEMETRY_REPORTS || 'examples/reports';
+const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 const html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8');
 let p = 0, f = 0;
 const chk = (c, m, x) => { c ? (p++, console.log('  OK   ' + m + (x ? '  ' + x : '')))

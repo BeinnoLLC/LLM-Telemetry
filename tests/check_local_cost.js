@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const {JSDOM} = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || path.join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 
 const html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8')
   .replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');

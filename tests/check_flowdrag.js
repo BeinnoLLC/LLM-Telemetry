@@ -1,7 +1,7 @@
 // Flow graph: work-proportional glow + drag-to-reposition.
 const fs=require('fs'), path=require('path'), {JSDOM}=require('jsdom');
 const DIR=process.env.LLM_TELEMETRY_REPORTS
-  || path.join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 let html=fs.readFileSync(path.join(DIR,'dashboard.html'),'utf8');
 html=html.replace(/<script src="https?:\/\/[^"]+"><\/script>/g,'');
 

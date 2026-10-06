@@ -1,6 +1,6 @@
 // Reports dir: env override so the suite runs on any machine.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 // Verify the Flow graph (provider -> model -> task).
 const fs=require('fs'), {JSDOM}=require('jsdom');
 const html=fs.readFileSync(REPORTS+'/dashboard.html','utf8')

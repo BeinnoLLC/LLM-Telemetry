@@ -2,7 +2,7 @@
 // payload. A grid that renders but links nowhere, or shows a hardcoded
 // number, is the failure this guards against.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');

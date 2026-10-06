@@ -1,5 +1,5 @@
 // Live row: "N models used" must name the models (#107).
-const REPORTS = process.env.LLM_TELEMETRY_REPORTS || 'examples/reports';
+const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8')
   .replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');

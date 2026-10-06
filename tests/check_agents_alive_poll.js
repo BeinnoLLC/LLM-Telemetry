@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const R = process.env.LLM_TELEMETRY_REPORTS || 'examples/reports';
+const R = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 const html = fs.readFileSync(path.join(R, 'dashboard.html'), 'utf8');
 const live = JSON.parse(fs.readFileSync(path.join(R, 'live-data.json'), 'utf8'));
 const analytics = JSON.parse(fs.readFileSync(path.join(R, 'analytics-data.json'), 'utf8'));

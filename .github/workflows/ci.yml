@@ -62,13 +62,12 @@ jobs:
         run: python3 examples/check_no_leaks.py
 
       - name: Golden fixture check (P1-03, #25) — payload shape did not silently drift
-        env:
-          LLM_TELEMETRY_REPORTS: examples/reports
         run: node tests/bless.js --check
 
       - name: DOM suites
+        # No LLM_TELEMETRY_REPORTS here on purpose (#30): every suite defaults to the
+        # repo's examples/reports, so a bare `node tests/run-all.js` must pass.
         env:
-          LLM_TELEMETRY_REPORTS: examples/reports
           NODE_PATH: tests/node_modules
         run: node tests/run-all.js
 

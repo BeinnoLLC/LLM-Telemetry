@@ -1,6 +1,6 @@
 // Reports dir: env override so the suite runs on any machine.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 // Failure-kind colours must be consistent across widgets AND distinguishable.
 //
 // Regression guard for two real bugs:

@@ -20,7 +20,7 @@
 // the same payload is what once let the Router tab blank on refresh with no suite
 // noticing (see check_router_refresh.js).
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8')

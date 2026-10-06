@@ -3,7 +3,7 @@
 // sum of the rows it claims to summarise — a total that quietly disagrees with
 // its own source is the failure mode worth guarding.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');

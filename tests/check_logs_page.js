@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const R = process.env.LLM_TELEMETRY_REPORTS || 'examples/reports';
+const R = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 const html = fs.readFileSync(path.join(R, 'dashboard.html'), 'utf8');
 const logsFixture = JSON.parse(fs.readFileSync(path.join(R, 'logs-data.json'), 'utf8'));
 // The drawer renders from live-data.json. Without it #dbody stays empty and the

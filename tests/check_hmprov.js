@@ -1,6 +1,6 @@
 // Reports dir: env override so the suite runs on any machine.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 // Verify the activity heatmap tints cells by PROVIDER.
 //   - cells carry an inline background derived from provOf()
 //   - a multi-provider day renders proportional gradient bands

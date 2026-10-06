@@ -1,7 +1,7 @@
 // Left nav drawer (#3). The rail is the primary section nav: it must list
 // every view, mark the current one, route on click, and carry live counts.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');

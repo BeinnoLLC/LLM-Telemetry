@@ -1,6 +1,6 @@
 // The Activity heatmap belongs to the Detail tab, not to every tab.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');
 const html = raw.replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');

@@ -6,7 +6,7 @@
 // padding on a border-box element; the test asserts no rule pairs a non-zero
 // margin-left with the rail width again.
 const fs = require('fs'), { JSDOM } = require('jsdom');
-const REPORTS = process.env.LLM_TELEMETRY_REPORTS || 'examples/reports';
+const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');
 const html = raw.replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
 

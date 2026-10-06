@@ -1,7 +1,7 @@
 // Hash routing (#5) and breadcrumb (#6). A deep link must open the section in
 // the URL, back/forward must work, and the header must say where you are.
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || require('path').join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const fs = require('fs'), { JSDOM } = require('jsdom');
 
 const raw = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8');

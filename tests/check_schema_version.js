@@ -10,7 +10,7 @@ const PY = process.env.PYTHON
       ? path.join(__dirname, '..', '.venv/bin/python') : 'python3');
 
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
-  || path.join(require('os').homedir(), '.local/share/llm-telemetry/reports');
+  || require('path').join(__dirname, '..', 'examples', 'reports');
 const ROOT = path.join(__dirname, '..');
 let p = 0, f = 0;
 const chk = (ok, l, x) => { console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${l}${x ? '  ' + x : ''}`); ok ? p++ : f++; };
