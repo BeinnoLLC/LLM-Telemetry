@@ -83,10 +83,20 @@ with tempfile.TemporaryDirectory() as tmp:
     P.NOUS_CACHE = os.path.join(tmp, "none-nous.json")
     P.URL = "http://127.0.0.1:9/nothing-listens-here"
     P.NOUS_URL = "http://127.0.0.1:9/nothing-listens-here-either"
-    cat, src_state = P.fetch_catalog(force=True)
-    fr = P.catalog_freshness(src_state)
-    P.CACHE, P.URL = old_cache, old_url
-    P.NOUS_CACHE, P.NOUS_URL = old_ncache, old_nurl
+    # A pinned catalogue file wins over the URLs above and returns "pinned"
+    # without ever attempting a fetch, which made this block assert on the
+    # sample catalogue instead of a cold-cache failure whenever the build env
+    # was exported. Unpin for the duration: this block is about the no-network
+    # path, so it has to be the thing deciding the outcome.
+    old_cat = os.environ.pop("LLM_TELEMETRY_CATALOG", None)
+    try:
+        cat, src_state = P.fetch_catalog(force=True)
+        fr = P.catalog_freshness(src_state)
+    finally:
+        P.CACHE, P.URL = old_cache, old_url
+        P.NOUS_CACHE, P.NOUS_URL = old_ncache, old_nurl
+        if old_cat is not None:
+            os.environ["LLM_TELEMETRY_CATALOG"] = old_cat
 chk(cat == {} and fr["state"] == "unavailable", "forced fetch failure with a cold cache is 'unavailable'", fr)
 hu = sheet([model("anthropic/claude-x", "unpriced", 10)], fr, size=0)
 chk('data-state="unavailable"' in hu and "Catalogue prices are missing" in text(hu),
