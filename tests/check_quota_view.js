@@ -187,6 +187,45 @@ function checkHeadroom(doc, win, payload) {
   return errs;
 }
 
+// The summary strip above the cards. Every number must be derived from the
+// payload's provider rows, so the strip can never quietly disagree with the
+// cards below it (that is the whole reason it is computed, not written out).
+function checkKpis(doc, payload) {
+  const errs = [];
+  const say = (ok, l) => { if (!ok) errs.push(l); };
+  for (const [name, pdata] of Object.entries(payload.profiles)) {
+    const strip = doc.querySelector(`.rt-profile[data-profile="${name}"] .qv-kpis`);
+    const provs = Object.values(pdata.providers || {});
+    if (!provs.length) {
+      // A profile with nothing to count must not render an empty shell of tiles.
+      say(!strip, `${name}: rendered a KPI strip for a profile with no providers`);
+      continue;
+    }
+    if (!strip) { errs.push(`${name}: no KPI strip`); continue; }
+    const tiles = [...strip.querySelectorAll('.qv-kpi')];
+    const val = (l) => tiles.find(t => t.querySelector('span')?.textContent === l)
+      ?.querySelector('.qv-kv')?.textContent;
+    const wantProv = provs.length;
+    const wantAvail = provs.filter(p => !p.unavailable_reason).length;
+    const wantNear = provs.filter(p => p.attention).length;
+    const keys = provs.flatMap(p => p.accounts || []);
+    const wantKeys = keys.filter(a => a.status === 'ok').length;
+    say(val(wantProv === 1 ? 'provider' : 'providers') === String(wantProv),
+        `${name}: provider count tile is wrong`);
+    say(val('available') === `${wantAvail}/${wantProv}`,
+        `${name}: available tile "${val('available')}" != ${wantAvail}/${wantProv}`);
+    say(val('near limit') === String(wantNear), `${name}: near-limit tile is wrong`);
+    // The keys tile is conditional: it must appear iff the profile has keys.
+    say(!!val('keys usable') === (keys.length > 0),
+        `${name}: keys-usable tile ${keys.length ? 'is missing' : 'should not be there'}`);
+    if (keys.length) {
+      say(val('keys usable') === `${wantKeys}/${keys.length}`,
+          `${name}: keys-usable tile "${val('keys usable')}" != ${wantKeys}/${keys.length}`);
+    }
+  }
+  return errs;
+}
+
 function checkBalances(doc, payload) {
   const errs = [];
   const say = (ok, l) => { if (!ok) errs.push(l); };
@@ -224,6 +263,7 @@ if (bootErr) {
   }
   goPage(D, W, 'headroom');
   all.push(...checkHeadroom(D, W, quota));
+  all.push(...checkKpis(D, quota));
   if (!viewText(D).includes('97.5%')) all.push('the 97.5% window is missing from Headroom');
   goPage(D, W, 'balances');
   all.push(...checkBalances(D, quota));

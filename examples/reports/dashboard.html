@@ -1351,8 +1351,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    0x0 (see tests/check_inline_sized_elements.js). Level colours reuse the
    Router tab's green/amber/red; 'mute' is the honest colour for "no reading"
    and must never fall back to green, or an unknown quota reads as healthy. */
-.qv-track{display:block;width:100%;height:6px;border-radius:3px;background:var(--border);overflow:hidden}
-.qv-fill{display:block;height:100%;border-radius:3px;background:var(--muted);transition:width .25s ease}
+.qv-track{display:block;width:100%;height:8px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
+.qv-fill{display:block;height:100%;border-radius:999px;background:var(--muted);transition:width .25s ease}
 .qv-fill.qv-ok{background:#22c55e}
 .qv-fill.qv-warn{background:#f59e0b}
 .qv-fill.qv-bad{background:#ef4444}
@@ -1371,11 +1371,20 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-pct.qv-bad{color:#ef4444}
 .qv-pct.qv-mute{color:var(--muted)}
 .qv-reset{font-size:var(--fs-xs);white-space:nowrap}
-.qv-prov{padding:.45rem 0}
-.qv-prov+.qv-prov{border-top:1px solid var(--border)}
-.qv-prov.qv-near{background:#f59e0b0d;border-radius:8px;padding:.45rem .5rem;margin:0 -.5rem}
-.qv-head{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.2rem}
-.qv-name{font-size:var(--fs-sm)}
+/* Providers are self-contained cards in a responsive grid: each one answers
+   "how much is left here" on its own, so they sit side by side instead of as
+   one long ruled list. A provider near its limit gets a red edge, not a wash
+   of background -- the edge survives both themes and greyscale. */
+.qv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:.75rem;align-items:stretch}
+.qv-prov{border:1px solid var(--border);border-radius:10px;padding:.75rem .85rem;min-width:0;
+  background:color-mix(in srgb,var(--fg) 2%,transparent)}
+.qv-prov.qv-near{border-color:color-mix(in srgb,var(--z-bad) 55%,var(--border));box-shadow:inset 3px 0 0 var(--z-bad)}
+.qv-head{display:flex;align-items:center;gap:.55rem;margin-bottom:.55rem;flex-wrap:wrap}
+.qv-head > .qv-pct{margin-left:auto;font-size:var(--fs-sm);font-weight:700;border-radius:999px;padding:.1rem .55rem;
+  background:color-mix(in srgb,currentColor 12%,transparent)}
+.qv-ident{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.qv-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.qv-name{font-size:var(--fs-md);line-height:1.2}
 .qv-plan{font-size:var(--fs-xs);color:var(--muted)}
 .qv-free{font-size:var(--fs-xs);color:#22c55e;border:1px solid #22c55e55;background:#22c55e14;border-radius:999px;padding:0 .4rem}
 .qv-wins-none{font-size:var(--fs-xs)}
@@ -1398,7 +1407,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    Colour is the theme's own --z-* pair, never a literal: --z-* is the solid
    mark (dots), --z-*-fg the foreground (text). A literal passes on the dark
    card and fails on the light one, where #22c55e is 2.28:1 on white. */
-.qv-accts{margin:.5rem 0 .15rem;border-left:2px solid var(--border);padding-left:.7rem}
+.qv-accts{margin:.7rem 0 0;border-top:1px dashed var(--border);padding-top:.55rem}
 .qv-keysum{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;
   letter-spacing:.06em;font-weight:600;margin-bottom:.3rem}
 .qv-keysum b{color:var(--z-warn-fg);font-weight:700}
@@ -1441,10 +1450,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* The key the next request would spend. Marked by a rule on the left edge and a
    tinted ground rather than by another pill: the status pill already occupies
    that slot, and two adjacent pills read as one control. */
-.qv-ainuse{font-size:var(--fs-xs);font-weight:600;color:var(--accent);
-  border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
-  background:color-mix(in srgb,var(--accent) 12%,transparent);
-  border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
 .qv-acct[data-inuse="1"]{background:color-mix(in srgb,var(--accent) 7%,transparent);
   border-radius:6px;padding-left:.45rem;padding-right:.45rem;margin-left:-.45rem;
   margin-right:-.45rem;border-left:2px solid var(--accent)}
@@ -1466,6 +1471,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-note{padding:.45rem 0;font-size:var(--fs-xs)}
 .qv-note+.qv-note{border-top:1px solid var(--border)}
 .qv-detail{font-family:ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+/* Quota KPI strip: four counts above the sub-page, derived from the same
+   provider rows the cards render. Numbers carry the colour, labels stay muted. */
+.qv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;margin:.2rem 0 .8rem}
+.qv-kpi{border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.qv-kpi .qv-kv{font-size:var(--fs-lg);font-variant-numeric:tabular-nums;line-height:1.1}
+.qv-kpi span{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.qv-kpi-ok .qv-kv{color:var(--z-ok-fg)}
+.qv-kpi-warn .qv-kv{color:var(--z-warn-fg)}
+.qv-kpi-bad .qv-kv{color:var(--z-bad-fg)}
+.qv-head > .qv-why{flex-basis:100%;margin:0;max-width:none}
 
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
@@ -3141,12 +3156,11 @@ function qvAccount(a, i){
   const models = (a.models || []).filter(Boolean);
   const cooling = models.length
     ? `<div class="qv-amodels" title="${escA(models.join(', '))}">cooling: ${esc(models.join(', '))}</div>` : '';
-  const inuse = a.in_use ? '<span class="qv-ainuse" title="the key the next request would use">in use</span>' : '';
   const whyEl = why ? `<div class="qv-why" title="${escA(why)}">${esc(why)}</div>` : '';
   return `<div class="qv-acct" data-level="${lvl}" data-inuse="${a.in_use ? '1' : '0'}">` +
     `<div class="qv-acctop"><span class="qv-adot" aria-hidden="true"></span>` +
     `<span class="qv-aidx">#${i + 1}</span>` +
-    `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` + inuse +
+    `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` +
     `<span class="qv-astat qv-${lvl}">${esc(qvAcctState(a))}</span>` +
     (bits.length ? `<span class="qv-abits">${bits.join(' · ')}</span>` : '') +
     qvAcctUsage(a) + '</div>' +
@@ -3193,11 +3207,12 @@ function qvHead(pid, prov){
   const calls = qvCalls(prov.api_calls_available);
   const why = prov.unavailable_reason
     ? `<span class="qv-why" title="${escA(prov.unavailable_reason)}">${esc(prov.unavailable_reason)}</span>` : '';
-  return `<div class="qv-head">${rtLogo(pid, 18)}` +
-    `<b class="qv-name">${esc(prov.label || pid)}</b>` +
+  return `<div class="qv-head">${rtLogo(pid, 22)}` +
+    `<div class="qv-ident"><b class="qv-name">${esc(prov.label || pid)}</b>` +
+    '<span class="qv-meta">' +
     (prov.plan ? `<span class="qv-plan">${esc(prov.plan)}</span>` : '') +
     (qvIsFree(prov) ? '<span class="qv-free" title="no-cost plan">free</span>' : '') +
-    `<span class="rt-st rt-${calls.cls}">${esc(calls.t)}</span>` +
+    `<span class="rt-st rt-${calls.cls}">${esc(calls.t)}</span></span></div>` +
     `<span class="qv-pct qv-${lvl}">${worst === null ? 'no reading' : `${worst}% max`}</span>` + why + '</div>';
 }
 
@@ -3214,7 +3229,9 @@ function qvProviders(pdata){
     const wa = qvPct(a[1].max_used_percent), wb = qvPct(b[1].max_used_percent);
     return (wb === null ? -1 : wb) - (wa === null ? -1 : wa);
   });
-  return rows.map(([pid, prov]) => {
+  // Cards flow into as many columns as the width allows: a provider is a
+  // self-contained answer, so they read side by side rather than as one list.
+  return '<div class="qv-grid">' + rows.map(([pid, prov]) => {
     const wins = (prov.windows || []).map(w => qvWindow(w, attention)).join('') ||
       '<div class="muted qv-wins-none">No usage windows reported.</div>';
     // Keys sit between the provider summary and its windows: the summary is the
@@ -3222,8 +3239,8 @@ function qvProviders(pdata){
     // break that answer down by limit. The key rows say what the summary cannot
     // — that the provider holds more than one credential, and how each is doing.
     return `<div class="qv-prov${prov.attention ? ' qv-near' : ''}" data-provider="${escA(pid)}">` +
-      qvHead(pid, prov) + qvAccounts(prov) + `<div class="qv-wins">${wins}</div></div>`;
-  }).join('');
+      qvHead(pid, prov) + `<div class="qv-wins">${wins}</div>` + qvAccounts(prov) + '</div>';
+  }).join('') + '</div>';
 }
 
 function qvBalances(pdata){
@@ -3275,6 +3292,26 @@ function qvSaveFold(key, open){
   try { localStorage.setItem('hermes-dash-quota-folded', JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
+// The profile at a glance, above whichever sub-page is open: how many
+// providers, how many can take a call, how many are near a limit, and how many
+// keys are still usable. Counts only -- each tile is derived from the same
+// provider rows the cards below render, so the strip can never disagree.
+function qvKpis(pdata){
+  const provs = Object.values(pdata.providers || {});
+  if (!provs.length) return '';
+  const avail = provs.filter(p => !p.unavailable_reason).length;
+  const near = provs.filter(p => p.attention).length;
+  const keys = provs.flatMap(p => p.accounts || []);
+  const usable = keys.filter(a => a.status === 'ok').length;
+  const tile = (v, l, cls) => `<div class="qv-kpi${cls ? ` ${cls}` : ''}"><b class="qv-kv">${v}</b><span>${esc(l)}</span></div>`;
+  return '<div class="qv-kpis">' +
+    tile(provs.length, provs.length === 1 ? 'provider' : 'providers') +
+    tile(`${avail}/${provs.length}`, 'available', avail < provs.length ? 'qv-kpi-warn' : '') +
+    tile(near, 'near limit', near ? 'qv-kpi-bad' : 'qv-kpi-ok') +
+    (keys.length ? tile(`${usable}/${keys.length}`, 'keys usable', usable < keys.length ? 'qv-kpi-warn' : '') : '') +
+    '</div>';
+}
+
 // One profile: a folding header (how many providers, how many near a limit,
 // when the hourly job last ran) and the current sub-page's card inside it.
 function qvSection(name, pdata){
@@ -3303,7 +3340,7 @@ function qvSection(name, pdata){
         qvAttention() === null ? ' · threshold unknown' : ''}${
         pdata.cache_fetched_at ? ` · cached ${esc(rtAgo(Date.parse(pdata.cache_fetched_at) / 1000))}` : ''}</span>
       <span class="rt-foldall"><button type="button" data-qvall="open">expand all</button><button type="button" data-qvall="close">collapse all</button></span>
-    </summary>${body}</details>`;
+    </summary>${qvKpis(pdata)}${body}</details>`;
 }
 
 // Home card stat: the current profile's answer, or the fleet's when the merge

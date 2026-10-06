@@ -192,12 +192,11 @@ export function qvAccount(a, i){
   const models = (a.models || []).filter(Boolean);
   const cooling = models.length
     ? `<div class="qv-amodels" title="${escA(models.join(', '))}">cooling: ${esc(models.join(', '))}</div>` : '';
-  const inuse = a.in_use ? '<span class="qv-ainuse" title="the key the next request would use">in use</span>' : '';
   const whyEl = why ? `<div class="qv-why" title="${escA(why)}">${esc(why)}</div>` : '';
   return `<div class="qv-acct" data-level="${lvl}" data-inuse="${a.in_use ? '1' : '0'}">` +
     `<div class="qv-acctop"><span class="qv-adot" aria-hidden="true"></span>` +
     `<span class="qv-aidx">#${i + 1}</span>` +
-    `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` + inuse +
+    `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` +
     `<span class="qv-astat qv-${lvl}">${esc(qvAcctState(a))}</span>` +
     (bits.length ? `<span class="qv-abits">${bits.join(' · ')}</span>` : '') +
     qvAcctUsage(a) + '</div>' +
@@ -244,11 +243,12 @@ export function qvHead(pid, prov){
   const calls = qvCalls(prov.api_calls_available);
   const why = prov.unavailable_reason
     ? `<span class="qv-why" title="${escA(prov.unavailable_reason)}">${esc(prov.unavailable_reason)}</span>` : '';
-  return `<div class="qv-head">${rtLogo(pid, 18)}` +
-    `<b class="qv-name">${esc(prov.label || pid)}</b>` +
+  return `<div class="qv-head">${rtLogo(pid, 22)}` +
+    `<div class="qv-ident"><b class="qv-name">${esc(prov.label || pid)}</b>` +
+    '<span class="qv-meta">' +
     (prov.plan ? `<span class="qv-plan">${esc(prov.plan)}</span>` : '') +
     (qvIsFree(prov) ? '<span class="qv-free" title="no-cost plan">free</span>' : '') +
-    `<span class="rt-st rt-${calls.cls}">${esc(calls.t)}</span>` +
+    `<span class="rt-st rt-${calls.cls}">${esc(calls.t)}</span></span></div>` +
     `<span class="qv-pct qv-${lvl}">${worst === null ? 'no reading' : `${worst}% max`}</span>` + why + '</div>';
 }
 
@@ -265,7 +265,9 @@ export function qvProviders(pdata){
     const wa = qvPct(a[1].max_used_percent), wb = qvPct(b[1].max_used_percent);
     return (wb === null ? -1 : wb) - (wa === null ? -1 : wa);
   });
-  return rows.map(([pid, prov]) => {
+  // Cards flow into as many columns as the width allows: a provider is a
+  // self-contained answer, so they read side by side rather than as one list.
+  return '<div class="qv-grid">' + rows.map(([pid, prov]) => {
     const wins = (prov.windows || []).map(w => qvWindow(w, attention)).join('') ||
       '<div class="muted qv-wins-none">No usage windows reported.</div>';
     // Keys sit between the provider summary and its windows: the summary is the
@@ -273,8 +275,8 @@ export function qvProviders(pdata){
     // break that answer down by limit. The key rows say what the summary cannot
     // — that the provider holds more than one credential, and how each is doing.
     return `<div class="qv-prov${prov.attention ? ' qv-near' : ''}" data-provider="${escA(pid)}">` +
-      qvHead(pid, prov) + qvAccounts(prov) + `<div class="qv-wins">${wins}</div></div>`;
-  }).join('');
+      qvHead(pid, prov) + `<div class="qv-wins">${wins}</div>` + qvAccounts(prov) + '</div>';
+  }).join('') + '</div>';
 }
 
 export function qvBalances(pdata){
@@ -326,6 +328,26 @@ export function qvSaveFold(key, open){
   try { localStorage.setItem('hermes-dash-quota-folded', JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
+// The profile at a glance, above whichever sub-page is open: how many
+// providers, how many can take a call, how many are near a limit, and how many
+// keys are still usable. Counts only -- each tile is derived from the same
+// provider rows the cards below render, so the strip can never disagree.
+export function qvKpis(pdata){
+  const provs = Object.values(pdata.providers || {});
+  if (!provs.length) return '';
+  const avail = provs.filter(p => !p.unavailable_reason).length;
+  const near = provs.filter(p => p.attention).length;
+  const keys = provs.flatMap(p => p.accounts || []);
+  const usable = keys.filter(a => a.status === 'ok').length;
+  const tile = (v, l, cls) => `<div class="qv-kpi${cls ? ` ${cls}` : ''}"><b class="qv-kv">${v}</b><span>${esc(l)}</span></div>`;
+  return '<div class="qv-kpis">' +
+    tile(provs.length, provs.length === 1 ? 'provider' : 'providers') +
+    tile(`${avail}/${provs.length}`, 'available', avail < provs.length ? 'qv-kpi-warn' : '') +
+    tile(near, 'near limit', near ? 'qv-kpi-bad' : 'qv-kpi-ok') +
+    (keys.length ? tile(`${usable}/${keys.length}`, 'keys usable', usable < keys.length ? 'qv-kpi-warn' : '') : '') +
+    '</div>';
+}
+
 // One profile: a folding header (how many providers, how many near a limit,
 // when the hourly job last ran) and the current sub-page's card inside it.
 export function qvSection(name, pdata){
@@ -354,7 +376,7 @@ export function qvSection(name, pdata){
         qvAttention() === null ? ' · threshold unknown' : ''}${
         pdata.cache_fetched_at ? ` · cached ${esc(rtAgo(Date.parse(pdata.cache_fetched_at) / 1000))}` : ''}</span>
       <span class="rt-foldall"><button type="button" data-qvall="open">expand all</button><button type="button" data-qvall="close">collapse all</button></span>
-    </summary>${body}</details>`;
+    </summary>${qvKpis(pdata)}${body}</details>`;
 }
 
 // Home card stat: the current profile's answer, or the fleet's when the merge
