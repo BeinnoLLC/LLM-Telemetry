@@ -11,6 +11,11 @@ const eq = (actual, expected, msg) => {
 };
 const ok = (cond, msg) => eq(!!cond, true, msg);
 const has = (hay, needle, msg) => ok(String(hay).includes(needle), `${msg} — contains ${JSON.stringify(needle)}`);
+// attribute names of every tag, parsed with quoted values skipped — an
+// injected handler shows up as a real attribute name, encoded text does not.
+const attrNames = html => [...String(html).matchAll(/<[a-z][^\s>]*((?:\s+[^\s=>]+(?:="[^"]*")?)*)\s*\/?>/gi)]
+  .flatMap(m => [...m[1].matchAll(/\s+([^\s=>]+)(?:="[^"]*")?/g)].map(a => a[1].toLowerCase()));
+const noHandler = html => !attrNames(html).some(n => n.startsWith('on'));
 const lacks = (hay, needle, msg) => ok(!String(hay).includes(needle), `${msg} — does not contain ${JSON.stringify(needle)}`);
 const times = (hay, needle, n, msg) => eq(String(hay).split(needle).length - 1, n, msg);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -132,7 +137,7 @@ async function boot(opt = {}){
       catOf: PAL.catOf,
       colorOf: m => { logs.colorOf.push(m); return '#abc123'; },
       emptyHTML: (icon, msg, hint) => { logs.emptyHTML = [icon, msg, hint]; return `<empty>${icon}|${msg}|${hint}</empty>`; },
-      esc: PAL.esc, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
+      esc: PAL.esc, escA: PAL.escA, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
       toolColor: () => '#0a0',
     },
     'charts.js': {
@@ -428,25 +433,26 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(html, PAL.esc(dirty), 'escaping: the session title is rendered HTML-escaped');
   lacks(html, '<img src=x', 'escaping: no raw tag from the title survives');
   has(html, PAL.esc('<b>cat</b>'), 'escaping: the category tooltip is escaped');
-  // known gaps (#30) — these fields are interpolated raw by live.js:
-  has(html, '<b>cat</b>', 'gap: the category label itself is interpolated unescaped');
-  has(html, '<i>tool</i>', 'gap: tool chip labels are interpolated unescaped');
-  lacks(html, '&lt;script&gt;', 'gap: the model name is never escaped, neither in the tooltip nor in the text');
-  has(html, 'title="<script>"', 'gap: ...so a model id containing markup lands raw inside a title attribute');
+  // #137: every field is escaped — text with esc, attributes with escA.
+  lacks(html, '<b>cat</b>', 'escaping: the category label is escaped (#137)');
+  lacks(html, '<i>tool</i>', 'escaping: tool chip labels are escaped (#137)');
+  has(html, '&lt;script&gt;', 'escaping: the model name is escaped (#137)');
+  lacks(html, 'title="<script>"', 'escaping: markup in a model id never lands raw in a title attribute (#137)');
 
-  // esc() escapes & < > but NOT quotes, so a title or id containing a double
-  // quote closes the attribute and injects a new one.
+  // A double quote in a title, id or model must not close the attribute.
   const q = await boot({ data: { profiles: { p1: { live: [ { id:'q1', title:'x" onmouseover="alert(1)' } ] } } } });
   renderErr(q.M);
-  has(q.els.livelist.innerHTML, ' onmouseover="alert(1) — open transcript"',
-      'bug: a quote in the session title injects an attribute (esc is the wrong escaper for an attribute)');
+  ok(noHandler(q.els.livelist.innerHTML),
+      'escaping: a quote in the session title cannot inject an attribute (#137)');
+  has(q.els.livelist.innerHTML, 'x&quot; onmouseover=&quot;alert(1) — open transcript"',
+      'escaping: the quote in the title tooltip is encoded as &quot; (#137)');
   const qi = await boot({ data: { profiles: { p1: { live: [ { id:'z" onclick="alert(1)', title:'t' } ] } } } });
   renderErr(qi.M);
-  has(qi.els.livelist.innerHTML, ' onclick="alert(1)', 'bug: a quote in the session id injects an attribute the same way');
+  ok(noHandler(qi.els.livelist.innerHTML), 'escaping: a quote in the session id cannot inject an attribute (#137)');
   const mq = await boot({ data: { profiles: { p1: { live: [ { id:'m1', model:'vendor/x" onmouseover="alert(1)' } ] } } } });
   renderErr(mq.M);
-  has(mq.els.livelist.innerHTML, ' onmouseover="alert(1)',
-      'bug: a quote in the model id injects an attribute too (the model tooltip is never escaped at all)');
+  ok(noHandler(mq.els.livelist.innerHTML),
+      'escaping: a quote in the model id cannot inject an attribute (#137)');
 }
 
 // ── checkCompletions ─────────────────────────────────────────────────────────

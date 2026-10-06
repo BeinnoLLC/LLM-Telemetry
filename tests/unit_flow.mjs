@@ -49,6 +49,12 @@ function throws(fn, msg){
 const short = m => String(m).split('/').pop();
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// attribute names of every tag, parsed with quoted values skipped — an
+// injected handler shows up as a real attribute name, encoded text does not.
+const attrNames = html => [...String(html).matchAll(/<[a-z][^\s>]*((?:\s+[^\s=>]+(?:="[^"]*")?)*)\s*\/?>/gi)]
+  .flatMap(m => [...m[1].matchAll(/\s+([^\s=>]+)(?:="[^"]*")?/g)].map(a => a[1].toLowerCase()));
+const noHandler = html => !attrNames(html).some(n => n.startsWith('on'));
+const escA = s => esc(s).replace(/"/g, '&quot;');
 const ago = s => s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + 'm' : Math.round(s / 3600) + 'h';
 
 // ── a fake element with just enough DOM surface ─────────────────────────────
@@ -122,7 +128,7 @@ function harness(els = {}){
   const stubs = {
     'palette.js': {
       $: id => ids.get(id) || null,
-      ago, esc, short,
+      ago, esc, escA, short,
       colorOf: m => 'col:' + m,
     },
     'charts.js': { current: 'p1' },
@@ -564,10 +570,11 @@ const ROWS = () => ([
   ok(html.includes('&lt;script&gt;'), 'agents: kill hint HTML-escaped');
   ok(html.includes('&lt;st&gt;'), 'agents: state HTML-escaped');
 
-  // esc() escapes &, < and > only — not quotes — yet the backend goes into a
-  // title="..." attribute: a quote in the data breaks out of the attribute.
+  // The backend goes into a title="..." attribute, so it is escaped with
+  // escA: a quote in the data cannot break out of the attribute (#137).
   D.renderAgents([{ state: 'alive', backend: 'x" onmouseover="alert(1)', host: 'h', pid: 6, profile: 'p', age_s: 1, leases: 0 }]);
-  ok(list.innerHTML.includes('" onmouseover="alert(1)"'), 'agents: a quote in the backend is not escaped (attribute context)');
+  ok(noHandler(list.innerHTML), 'agents: a quote in the backend cannot inject an attribute (#137)');
+  ok(list.innerHTML.includes('x&quot; onmouseover=&quot;alert(1)'), 'agents: the quote in the backend is encoded as &quot; (#137)');
 
   const noList = harness({ agentscard: fakeEl('div') });
   const D2 = await isolate(TARGET, noList.stubs);
@@ -674,8 +681,8 @@ const ROWS = () => ([
   eq(svg.getAttribute('viewBox').split(' ').slice(2), ['3300.0', '1680.0'], 'flow: zoom out is clamped to 3x the canvas');
   ok(svg.classList.contains('zoomedout'), 'flow: zooming out past the canvas marks the svg');
 
-  // A hostile model name reaches the tooltip header unescaped (chat titles ARE
-  // escaped, three lines earlier) — n.name comes from collector data.
+  // A hostile model name is escaped in the tooltip header (#137) — n.name
+  // comes from collector data.
   const nasty = 'x<img src=x onerror=alert(1)>';
   svg.children.length = 0;
   D.renderFlow([{ provider: 'p', model: nasty, base_url: '', task: 'main', calls: 5, market_value_usd: 1 }]);
@@ -683,7 +690,8 @@ const ROWS = () => ([
   const bad = gn2.children.find(g => g.children[0]?.getAttribute('fill') === 'col:' + nasty);
   ok(!!bad, 'flow: the hostile model name reaches the graph');
   if (bad) bad.fire('mouseenter');
-  ok(tip.innerHTML.includes('>' + nasty + '</div>'), 'flow: tooltip header interpolates the model name UNescaped');
+  ok(!tip.innerHTML.includes('>' + nasty + '</div>'), 'flow: tooltip header escapes the model name (#137)');   // (the style colour is the colorOf stub echoing its input)
+  ok(tip.innerHTML.includes('>' + esc(nasty) + '</div>'), 'flow: tooltip header shows the escaped model name (#137)');
   eq(labels(bad || fakeEl('g')).map(t => t.textContent)[0]?.endsWith('…'), true, 'flow: the hostile label is still truncated');
 }
 

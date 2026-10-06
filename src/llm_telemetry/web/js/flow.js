@@ -2,7 +2,7 @@
  * Flow: the provider→model→task force graph (layout, drag, focus/dim,
  * tooltip), the task-queue visualisation and the agent cards.
  */
-import { $, ago, colorOf, esc, short } from './palette.js';
+import { $, ago, colorOf, esc, escA, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, fillChip, flipMove, provOf, qChip, render } from './views.js';
 import { profileHue } from './router.js';
@@ -203,7 +203,7 @@ export function renderAgents(agents){
     <div class="flex items-center gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
       <span class="qdotwrap" style="background:${stateColor[a.state] || '#64748b'};width:7px;height:7px;border-radius:999px;flex:none"></span>
       <span class="font-semibold" style="min-width:5.5rem">${esc(a.state)}</span>
-      <span class="muted flex-1 truncate" title="${esc(a.backend)}">${esc(a.host)} · pid ${a.pid} · ${esc(a.profile)}</span>
+      <span class="muted flex-1 truncate" title="${escA(a.backend)}">${esc(a.host)} · pid ${a.pid} · ${esc(a.profile)}</span>
       <span class="muted">${ago(a.age_s)} ago</span>
       <span class="muted" title="mid-turn session leases held by this backend">${a.leases} lease${a.leases===1?'':'s'}</span>
       ${a.kill_hint ? `<code class="muted text-[length:var(--fs-xs)]" title="confirmed-dead on this host">${esc(a.kill_hint)}</code>` : ''}
@@ -711,7 +711,7 @@ export function renderFlow(rows){
         ? `<div class="ft-s">chats</div>` + chats.map(c =>
             `<div class="ft-c"><span>${esc(c.title)}</span><b>${c.calls.toLocaleString()}</b></div>`).join('')
         : '';
-      tip.innerHTML = `<div class="ft-h" style="color:${flowColor(n)}">${n.name}</div>` +
+      tip.innerHTML = `<div class="ft-h" style="color:${flowColor(n)}">${esc(n.name)}</div>` +
         rows.map(([k,v])=>`<div class="ft-r"><span>${k}</span><b>${v}</b></div>`).join('') + chatHtml;
       const bx = wrap.getBoundingClientRect();
       const sx = bx.width / W, sy = bx.height / H;

@@ -3,7 +3,7 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, fmtB, pick, short, toolColor,
+  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmtB, pick, short, toolColor,
 } from './palette.js';
 import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
 import {
@@ -42,7 +42,7 @@ export function renderLive(){
       ? fanouts.map(([pid, n]) => {
           const parentTitle = live.find(L => L.id === pid)?.title
             || p.recent_sessions?.find(s => s.id === pid)?.title || pid;
-          return `<button type="button" class="chip livefanout-chip ttitlebtn" data-tsession="${esc(pid)}" data-tprofile="${esc(current)}">${esc(parentTitle)} \u2192 ${n} running</button>`;
+          return `<button type="button" class="chip livefanout-chip ttitlebtn" data-tsession="${escA(pid)}" data-tprofile="${escA(current)}">${esc(parentTitle)} \u2192 ${n} running</button>`;
         }).join(' ')
       : '';
     fanoutEl.hidden = fanouts.length === 0;
@@ -55,24 +55,24 @@ export function renderLive(){
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tools = (L.tools||[]).slice(0,5).map(t=>
-        `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${t}</span>`).join(' ');
+        `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
       return `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
-        <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${esc(L.category)}">${c.i}</div>
+        <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${escA(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${esc(L.id)}" data-tprofile="${esc(L.profile||'')}" title="${esc(L.title)} — open transcript">${esc(L.title)}</button>
-            <button type="button" class="chip lntimelinebtn text-[length:var(--fs-xs)]" data-tsession="${esc(L.id)}" data-tprofile="${esc(L.profile||'')}" data-title="${esc(L.title)}" title="${esc(L.title)} — view timeline">Timeline</button>
-            <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${L.category}</span>
+            <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>
+            <button type="button" class="chip lntimelinebtn text-[length:var(--fs-xs)]" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>
+            <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${esc(L.category)}</span>
             ${provBadge(provOf('', L.model, L.base_url))}
-            ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${L.profile}</span>` : ''}
+            ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${esc(L.profile)}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[length:var(--fs-xs)] muted">↳ subagent</span>':''}
           </div>
-          <div class="muted text-[length:var(--fs-xs)] truncate">${L.phase||'—'}</div>
+          <div class="muted text-[length:var(--fs-xs)] truncate">${esc(L.phase||'—')}</div>
           <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
         </div>
         <div class="metacol shrink-0">
-          <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${short(L.model)}">${short(L.model)}</div>
-          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${short(L.init_model)}">↯ from ${short(L.init_model)}</div>` : ''}
+          <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(L.model))}">${esc(short(L.model))}</div>
+          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
           ${modelsBadge(L)}
           <div class="muted text-[length:var(--fs-xs)]">${ago(L.idle_s)} ago</div>
         </div>
