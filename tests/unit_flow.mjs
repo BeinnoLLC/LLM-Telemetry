@@ -46,7 +46,7 @@ function throws(fn, msg){
 }
 
 // ── faithful copies of palette.js's helpers (not under test here) ───────────
-const short = m => String(m).split('/').pop();
+const short = m => m == null ? '' : String(m).split('/').pop();
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // attribute names of every tag, parsed with quoted values skipped — an
@@ -426,13 +426,13 @@ const ROWS = () => ([
   eq(done[2]?.meta, '2m run', 'done: duration formatted by ago()');
   eq(h.ids.get('qcount-done').textContent, '3', 'done: count');
 
-  // A session with no model at all: short(undefined) is the STRING 'undefined',
-  // which is truthy — so the 'session' fallback never fires.
+  // A session with no model at all: short(undefined) is '' (#138), so the
+  // 'session' fallback fires instead of the literal string 'undefined'.
   h.rec.qChip.length = 0;
   h.DATA.profiles.p1 = { live: [{ id: 'n', title: '(untitled)', idle_s: 0 }], recent_sessions: [] };
   D.renderQueue();
-  eq(h.rec.qChip[0]?.label, 'undefined', "running: no model at all shows the literal label 'undefined'");
-  eq(h.rec.qChip[0]?.meta, 'undefined', 'running: and the literal meta "undefined"');
+  eq(h.rec.qChip[0]?.label, 'session', "running: no model at all falls back to the label 'session' (#138)");
+  ok(h.rec.qChip[0]?.meta !== 'undefined', 'running: and never the literal meta "undefined" (#138)');
 }
 
 // ═══ renderQueue — reuse, travel, exit, promotion ═══════════════════════════

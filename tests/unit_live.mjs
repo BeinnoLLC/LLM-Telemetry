@@ -278,7 +278,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   const n0 = md([{ by_model: [{ model:'x', n:0, ok:0 }] }, { children: 1, ok: 1 }]);
   eq(n0.by_model[0].rate, 0, 'merge: a by_model entry with n=0 rates 0 rather than NaN');
   const noOk = md([{ by_model: [{ model:'x', n:1 }] }, { children: 1, ok: 1 }]);
-  eq(noOk.by_model[0].ok, NaN, 'merge: a by_model entry without ok yields NaN (ok is summed without a default)');
+  eq([noOk.by_model[0].ok, noOk.by_model[0].rate], [0, 0], 'merge: a by_model entry without ok counts as 0 ok, never NaN (#138)');
 
   const tie = md([{ by_model: [{ model:'zeta', n:1, ok:1 }] }, { by_model: [{ model:'alpha', n:1, ok:1 }] }]);
   eq(tie.by_model.map(x => x.model), ['alpha','zeta'], 'merge: equal-n models tie-break by name');
@@ -286,7 +286,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   eq(desc.by_model.map(x => x.model), ['alpha','beta'], 'merge: the ordering is by n, not by arrival');
 
   const badRate = md([{ tools: [{ tool:'t', calls:1, fail:3 }] }, { children: 1, ok: 1 }]);
-  eq(badRate.tools[0].rate, -200, 'merge: a tool rate goes negative when fail exceeds calls');
+  eq(badRate.tools[0].rate, 0, 'merge: a tool rate is clamped at 0 when fail exceeds calls (#138)');
 
   const many = md([{ recent: Array.from({ length: 45 }, (_, i) => ({ id:'r'+i, at:i+1 })) }, { children: 0 }]);
   eq([many.recent.length, many.recent[0].at, many.recent[39].at], [40, 45, 6], 'merge: recent is capped at the 40 newest');
@@ -351,7 +351,8 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   times(h2h, 'rounded" style="background:#20242e;color:#8b93a7"', 5, 'renderLive: at most five tool chips are drawn');
   has(h2h, '>e</span>', 'renderLive: ...keeping the first five');
   lacks(h2h, '>f</span>', 'renderLive: ...and dropping the rest');
-  has(h2h, 'NaNh ago', 'renderLive: a session with no idle_s renders as "NaNh ago" (ago() has no default)');
+  lacks(h2h, 'NaN', 'renderLive: a session with no idle_s never renders NaN (#138)');
+  has(h2h, 'muted text-[length:var(--fs-xs)]">—</div>', 'renderLive: ...it shows an em dash instead (#138)');
 
   // dedupe
   const hd = await boot({ data: { profiles: { p1: { live: [ { id:'dup', title:'first' }, { id:'dup', title:'second' } ] } } } });
@@ -498,11 +499,12 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   st.win.soundBaseline = false;
   st.timers.length = 0;
   await cc(st, { p1: { recent_delegations: [{ id:'r1', state:'running' }] } });
-  eq(st.M.pendingKind, 'success', 'gap: a delegation still running is announced as a success (any state but "error")');
+  eq(st.M.pendingKind, null, 'checkCompletions: a delegation still running is not announced (#138)');
+  eq(st.M.seenDeleg.has('r1'), false, 'checkCompletions: ...nor remembered, so its real completion still chimes (#138)');
   const ni = await boot();
   ni.win.soundBaseline = false;
   eq([await cc(ni, { p1: { recent_delegations: [{ state:'done' }, { state:'done' }] } }), ni.M.seenDeleg.size],
-     [true, 1], 'gap: two delegations without an id collapse onto one undefined key, so only the first is announced');
+     [true, 2], 'checkCompletions: id-less delegations get distinct keys, so neither is dropped (#138)');
 
   const off = await boot();
   off.win.soundBaseline = false;

@@ -157,7 +157,8 @@ export const fmtRate = bps => (bps==null||!isFinite(bps)||bps<=0) ? '' : fmtB(bp
 // without the collector having to persist state between runs.
 export let bwPrev = {}, bwPrevAt = 0;
 export const money = v => v ? '$'+(+v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-export const short = m => String(m).split('/').pop();
+// null/undefined -> '' (falsy), so callers' `|| fallback` still fires.
+export const short = m => m == null ? '' : String(m).split('/').pop();
 export const esc = s => String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 export const $ = id => document.getElementById(id);

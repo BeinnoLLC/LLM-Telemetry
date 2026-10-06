@@ -2649,7 +2649,8 @@ const fmtRate = bps => (bps==null||!isFinite(bps)||bps<=0) ? '' : fmtB(bps)+'/s'
 // without the collector having to persist state between runs.
 let bwPrev = {}, bwPrevAt = 0;
 const money = v => v ? '$'+(+v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-const short = m => String(m).split('/').pop();
+// null/undefined -> '' (falsy), so callers' `|| fallback` still fires.
+const short = m => m == null ? '' : String(m).split('/').pop();
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const $ = id => document.getElementById(id);
@@ -3470,6 +3471,8 @@ function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeToggleLabel
 // slice rather than silently widening to the day range: a 1h preset that
 // quietly showed a whole day of data would be worse than showing nothing.
 function hourRowsFor(p, hours){
+  // No window means no filtering — null*3600e3 is 0, which would drop every past row.
+  if (hours == null) return (p.hour_rows || []).slice();
   const cutoff = Date.now() - hours*3600*1000;
   return (p.hour_rows || []).filter(r => {
     if (!r.date) return false;
@@ -5869,7 +5872,7 @@ function renderLive(){
           <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(L.model))}">${esc(short(L.model))}</div>
           ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
           ${modelsBadge(L)}
-          <div class="muted text-[length:var(--fs-xs)]">${ago(L.idle_s)} ago</div>
+          <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(L.idle_s) ? ago(L.idle_s) + ' ago' : '—'}</div>
         </div>
         <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
       </div>${modelsPanel(L)}`;
@@ -6092,13 +6095,13 @@ function mergeDelegations(list){
     (g.by_model || []).forEach(m => {
       const o = M[m.model] || (M[m.model] = {model:m.model, n:0, ok:0,
         cost_usd:0, tokens:0, hours:0, wasted_hours:0});
-      o.n += m.n; o.ok += m.ok; o.cost_usd += m.cost_usd || 0;
+      o.n += m.n || 0; o.ok += m.ok || 0; o.cost_usd += m.cost_usd || 0;
       o.tokens += m.tokens || 0; o.hours += m.hours || 0;
       o.wasted_hours += m.wasted_hours || 0;
     });
     (g.tools || []).forEach(t => {
       const o = T[t.tool] || (T[t.tool] = {tool:t.tool, calls:0, fail:0});
-      o.calls += t.calls; o.fail += t.fail;
+      o.calls += t.calls || 0; o.fail += t.fail || 0;
     });
     Object.entries(g.reasons || {}).forEach(([k,v]) => reasons[k] = (reasons[k]||0) + v);
     Object.entries(g.exits || {}).forEach(([k,v]) => exits[k] = (exits[k]||0) + v);
@@ -6114,7 +6117,8 @@ function mergeDelegations(list){
   })).sort((a,b) => (b.n - a.n) || a.model.localeCompare(b.model));
 
   const tools = Object.values(T).map(t => ({
-    ...t, rate: t.calls ? Math.round(1000*(t.calls-t.fail)/t.calls)/10 : 0,
+    // fail can exceed calls in merged data; clamp so a rate is always 0–100.
+    ...t, rate: t.calls ? Math.round(1000*Math.max(0, t.calls-t.fail)/t.calls)/10 : 0,
   })).sort((a,b) => b.calls - a.calls);
 
   recent.sort((a,b) => (b.at||0) - (a.at||0));
@@ -6790,7 +6794,6 @@ function renderOllama(ol){
 // the whole simulation below is smaller than the d3 bundle it would replace.
 // Colours are NOT new: providers use PROV[], models use colorOf() — the same
 // palette as every other widget, so a model is one colour dashboard-wide.
-let FLOWSIM = null;      // running animation handle, so tab switches can stop it
 let FLOWROWS = null;     // last rows rendered, so a resize can re-render without refetching
 let flowDepth = 3;       // 2 = provider>model, 3 = provider>model>task
 
@@ -6950,7 +6953,6 @@ function flowColor(n){
 function renderFlow(rows){
   const svg = $('flow'), wrap = $('flowwrap'), sub = $('flowsub');
   if (!svg || !wrap) return;
-  if (FLOWSIM){ cancelAnimationFrame(FLOWSIM); FLOWSIM = null; }
 
   if (!rows || !rows.length){
     svg.innerHTML = '';
@@ -7692,18 +7694,21 @@ let MODEL_FILTER = '';
 // already showing. A timer-based guard raced with jsdom's async hashchange and
 // let a redundant re-render wipe the live list mid-update.
 function setHash(v){
+  // No view to name: leave the current hash alone rather than write #/null or #/.
+  if (v == null || String(v).trim() === '') return;
   const p = [];
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
-  const want = '#/' + slugOf(v) + (p.length ? '?' + p.join('&') : '');
+  const want = '#/' + encodeURIComponent(slugOf(v)) + (p.length ? '?' + p.join('&') : '');
   if (location.hash !== want) location.hash = want;
 }
 
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 function viewFromHash(){
-  const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
+  let raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
+  try { raw = decodeURIComponent(raw); } catch { /* malformed escape: match as-is */ }
   if (!raw) return null;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
@@ -8981,12 +8986,17 @@ function checkCompletions(freshProfiles){
       const bad = /orphan_reap|error/i.test(s.end_reason || '');
       scheduleTone(bad ? 'fail' : 'success');
     });
-    (f.recent_delegations || []).forEach(d => {
-      if (seenDeleg.has(d.id)) return;
-      seenDeleg.add(d.id);
+    (f.recent_delegations || []).forEach((d, i) => {
+      // A delegation that has not finished is not a completion: no tone, and
+      // not remembered, so it is announced once it really ends.
+      if (/^(running|pending|queued)$/i.test(d.state || '')) return;
+      // Id-less rows still need distinct keys, or they collapse onto one.
+      const key = d.id != null ? d.id : `anon:${d.completed_at ?? ''}:${d.state ?? ''}:${i}`;
+      if (seenDeleg.has(key)) return;
+      seenDeleg.add(key);
       if (soundBaseline) return;
       any = true;
-      scheduleTone(d.state === 'error' ? 'fail' : 'success');
+      scheduleTone(/error|fail|interrupt|cancel|timeout/i.test(d.state || '') ? 'fail' : 'success');
     });
   });
   return any;

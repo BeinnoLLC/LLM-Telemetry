@@ -40,6 +40,8 @@ export function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeTogg
 // slice rather than silently widening to the day range: a 1h preset that
 // quietly showed a whole day of data would be worse than showing nothing.
 export function hourRowsFor(p, hours){
+  // No window means no filtering — null*3600e3 is 0, which would drop every past row.
+  if (hours == null) return (p.hour_rows || []).slice();
   const cutoff = Date.now() - hours*3600*1000;
   return (p.hour_rows || []).filter(r => {
     if (!r.date) return false;
@@ -116,18 +118,21 @@ export let MODEL_FILTER = '';
 // already showing. A timer-based guard raced with jsdom's async hashchange and
 // let a redundant re-render wipe the live list mid-update.
 export function setHash(v){
+  // No view to name: leave the current hash alone rather than write #/null or #/.
+  if (v == null || String(v).trim() === '') return;
   const p = [];
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
-  const want = '#/' + slugOf(v) + (p.length ? '?' + p.join('&') : '');
+  const want = '#/' + encodeURIComponent(slugOf(v)) + (p.length ? '?' + p.join('&') : '');
   if (location.hash !== want) location.hash = want;
 }
 
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 export function viewFromHash(){
-  const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
+  let raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
+  try { raw = decodeURIComponent(raw); } catch { /* malformed escape: match as-is */ }
   if (!raw) return null;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;

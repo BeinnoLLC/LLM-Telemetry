@@ -302,7 +302,9 @@ eq(R.viewFromHash(), null, 'viewFromHash: whitespace-only slug -> null');
 loc._h = null;
 eq(R.viewFromHash(), null, 'viewFromHash: null hash tolerated (the || \'\' guard)');
 loc._h = '#/a%20b';
-eq(R.viewFromHash(), null, 'viewFromHash: percent-encoded slug does NOT resolve (no decode)');
+eq(R.viewFromHash(), 'A B', 'viewFromHash: a percent-encoded slug is decoded before matching (#138)');
+loc._h = '#/a%3Fb%ZZ';
+eq(R.viewFromHash(), null, 'viewFromHash: a malformed escape does not throw (#138)');
 
 // ============================================== setHash serialisation (URL) ==
 clearAll(); R.clearCrossFilters();
@@ -315,7 +317,7 @@ R.setHash('Projects');
 eq(loc.hash, '#/projects', 'setHash: projects -> #/projects');
 eq(hashWrites, 2, 'setHash: a different target does write');
 R.setHash('A B');
-eq(loc.hash, '#/a b', 'setHash: space kept as-is (no encoding on the view)');
+eq(loc.hash, '#/a%20b', 'setHash: a space in the view is percent-encoded (#138)');
 
 // round-trip: parse(serialise(view)) == view
 let bad = [];
@@ -373,16 +375,16 @@ eq(loc.hash, '#/home', 'setHash: clearing the filters drops the query string');
 R.clearCrossFilters();
 loc._h = '';
 R.setHash(null);
-eq(loc.hash, '#/null', 'setHash(null): BUG — writes a dead #/null URL');
+eq(loc.hash, '', 'setHash(null): leaves the hash alone instead of writing #/null (#138)');
 eq(R.viewFromHash(), null, 'setHash(null): and #/null does not parse back');
 loc._h = '';
 R.setHash('');
-eq(loc.hash, '#/', 'setHash(""): writes a bare #/ and does not round-trip');
+eq(loc.hash, '', 'setHash(""): leaves the hash alone instead of writing #/ (#138)');
 eq(R.viewFromHash(), null, 'setHash(""): #/ resolves to no view');
 loc._h = '';
 R.setHash('A?B');
-eq(loc.hash, '#/a?b', 'setHash("A?B"): ? is not escaped in the view slug');
-eq(R.viewFromHash(), null, 'round-trip BREAKS for a view name containing ? (? is read as a query)');
+eq(loc.hash, '#/a%3Fb', 'setHash("A?B"): ? is percent-encoded in the view slug (#138)');
+ok(!loc.hash.slice(2).includes('?'), 'setHash("A?B"): so the slug can no longer be read as a query string (#138)');
 
 // ============================================== filterFromHash / malformed ==
 loc._h = '#/usage?project=acme';
@@ -504,6 +506,10 @@ const pad = n => String(n).padStart(2, '0');
 const today = new Date();
 const localToday = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 eq(R.hourRowsFor({}, 24), [], 'hourRowsFor: profile with no hour_rows -> []');
+eq(R.hourRowsFor({ hour_rows: [{ date: '1999-01-01', hour: 0 }] }, null).length, 1,
+  'hourRowsFor: no window (null) means no filtering — past rows are kept (#138)');
+eq(R.hourRowsFor({ hour_rows: [{ date: '1999-01-01', hour: 0 }] }, undefined).length, 1,
+  'hourRowsFor: undefined window keeps past rows too (#138)');
 eq(R.hourRowsFor({ hour_rows: [] }, 24), [], 'hourRowsFor: empty hour_rows -> []');
 eq(R.hourRowsFor({ hour_rows: [{ date: '1999-01-01', hour: 0 }] }, 24), [],
   'hourRowsFor: a 1999 row is outside a 24h window');

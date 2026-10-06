@@ -210,7 +210,6 @@ export function renderAgents(agents){
     </div>`).join('');
 }
 
-export let FLOWSIM = null;      // running animation handle, so tab switches can stop it
 export let FLOWROWS = null;     // last rows rendered, so a resize can re-render without refetching
 export let flowDepth = 3;       // 2 = provider>model, 3 = provider>model>task
 
@@ -297,7 +296,6 @@ export function flowColor(n){
 export function renderFlow(rows){
   const svg = $('flow'), wrap = $('flowwrap'), sub = $('flowsub');
   if (!svg || !wrap) return;
-  if (FLOWSIM){ cancelAnimationFrame(FLOWSIM); FLOWSIM = null; }
 
   if (!rows || !rows.length){
     svg.innerHTML = '';

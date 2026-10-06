@@ -74,7 +74,7 @@ export function renderLive(){
           <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(L.model))}">${esc(short(L.model))}</div>
           ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
           ${modelsBadge(L)}
-          <div class="muted text-[length:var(--fs-xs)]">${ago(L.idle_s)} ago</div>
+          <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(L.idle_s) ? ago(L.idle_s) + ' ago' : '—'}</div>
         </div>
         <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
       </div>${modelsPanel(L)}`;
@@ -139,13 +139,13 @@ export function mergeDelegations(list){
     (g.by_model || []).forEach(m => {
       const o = M[m.model] || (M[m.model] = {model:m.model, n:0, ok:0,
         cost_usd:0, tokens:0, hours:0, wasted_hours:0});
-      o.n += m.n; o.ok += m.ok; o.cost_usd += m.cost_usd || 0;
+      o.n += m.n || 0; o.ok += m.ok || 0; o.cost_usd += m.cost_usd || 0;
       o.tokens += m.tokens || 0; o.hours += m.hours || 0;
       o.wasted_hours += m.wasted_hours || 0;
     });
     (g.tools || []).forEach(t => {
       const o = T[t.tool] || (T[t.tool] = {tool:t.tool, calls:0, fail:0});
-      o.calls += t.calls; o.fail += t.fail;
+      o.calls += t.calls || 0; o.fail += t.fail || 0;
     });
     Object.entries(g.reasons || {}).forEach(([k,v]) => reasons[k] = (reasons[k]||0) + v);
     Object.entries(g.exits || {}).forEach(([k,v]) => exits[k] = (exits[k]||0) + v);
@@ -161,7 +161,8 @@ export function mergeDelegations(list){
   })).sort((a,b) => (b.n - a.n) || a.model.localeCompare(b.model));
 
   const tools = Object.values(T).map(t => ({
-    ...t, rate: t.calls ? Math.round(1000*(t.calls-t.fail)/t.calls)/10 : 0,
+    // fail can exceed calls in merged data; clamp so a rate is always 0–100.
+    ...t, rate: t.calls ? Math.round(1000*Math.max(0, t.calls-t.fail)/t.calls)/10 : 0,
   })).sort((a,b) => b.calls - a.calls);
 
   recent.sort((a,b) => (b.at||0) - (a.at||0));
@@ -364,12 +365,17 @@ export function checkCompletions(freshProfiles){
       const bad = /orphan_reap|error/i.test(s.end_reason || '');
       scheduleTone(bad ? 'fail' : 'success');
     });
-    (f.recent_delegations || []).forEach(d => {
-      if (seenDeleg.has(d.id)) return;
-      seenDeleg.add(d.id);
+    (f.recent_delegations || []).forEach((d, i) => {
+      // A delegation that has not finished is not a completion: no tone, and
+      // not remembered, so it is announced once it really ends.
+      if (/^(running|pending|queued)$/i.test(d.state || '')) return;
+      // Id-less rows still need distinct keys, or they collapse onto one.
+      const key = d.id != null ? d.id : `anon:${d.completed_at ?? ''}:${d.state ?? ''}:${i}`;
+      if (seenDeleg.has(key)) return;
+      seenDeleg.add(key);
       if (soundBaseline) return;
       any = true;
-      scheduleTone(d.state === 'error' ? 'fail' : 'success');
+      scheduleTone(/error|fail|interrupt|cancel|timeout/i.test(d.state || '') ? 'fail' : 'success');
     });
   });
   return any;

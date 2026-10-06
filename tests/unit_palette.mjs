@@ -107,6 +107,7 @@ eq([P.fmtRate(0), P.fmtRate(null), P.fmtRate(Infinity), P.fmtRate(-5), P.fmtRate
 eq(P.money(0), '—', 'money(0) is an em dash, not $0.00');
 eq(/^\$1.?234\.50$/.test(P.money(1234.5)), true, 'money keeps 2dp', P.money(1234.5));
 eq(P.short('openrouter/anthropic/claude'), 'claude', 'short keeps the last path segment');
+eq([P.short(undefined), P.short(null)], ['', ''], 'short of a missing model is empty, so `|| fallback` fires (#138)');
 eq(P.esc('<a href="x">&</a>'), '&lt;a href="x"&gt;&amp;&lt;/a&gt;', 'esc escapes & < >');
 eq(P.esc(null), '', 'esc(null) is empty');
 eq(P.escA('"t"<'), '&quot;t&quot;&lt;', 'escA also escapes quotes');
