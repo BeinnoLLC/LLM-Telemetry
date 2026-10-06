@@ -2672,12 +2672,7 @@
       "array",
       "null"
      ],
-     "items": {
-      "type": [
-       "null",
-       "string"
-      ]
-     }
+     "items": {}
     },
     "configured": {
      "type": [

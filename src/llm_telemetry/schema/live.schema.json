@@ -417,6 +417,7 @@
         }
        },
        "required": [
+        "completed_at",
         "id",
         "state"
        ],
@@ -580,6 +581,12 @@
     "object"
    ],
    "properties": {
+    "ts": {
+     "type": [
+      "null",
+      "number"
+     ]
+    },
     "hosts": {
      "type": [
       "array",
@@ -827,23 +834,7 @@
            "null",
            "object"
           ],
-          "properties": {
-           "main": {
-            "type": [
-             "null",
-             "number"
-            ]
-           },
-           "background_review": {
-            "type": [
-             "null",
-             "number"
-            ]
-           }
-          },
-          "required": [
-           "main"
-          ],
+          "properties": {},
           "additionalProperties": true
          },
          "models": {
@@ -911,6 +902,18 @@
       "additionalProperties": true
      }
     },
+    "endpoints": {
+     "type": [
+      "null",
+      "number"
+     ]
+    },
+    "physical": {
+     "type": [
+      "null",
+      "number"
+     ]
+    },
     "age": {
      "type": [
       "null",
@@ -920,7 +923,8 @@
    },
    "required": [
     "age",
-    "hosts"
+    "hosts",
+    "ts"
    ],
    "additionalProperties": true
   },
