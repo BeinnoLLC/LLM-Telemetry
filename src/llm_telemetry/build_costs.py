@@ -19,8 +19,8 @@ import collections
 import html as _html
 
 from .config import get as _cfg
-from .webassets import (read_costs_css, read_costs_js, read_costs_shell,
-                       read_tokens)
+from .webassets import (frag, read_costs_css, read_costs_js, read_costs_shell,
+                       read_tokens, script_json)
 
 CFG = _cfg()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -212,9 +212,9 @@ PAGE = (read_costs_shell()
 
 def fmt_money_1m(v):
     if v is None:
-        return '<span class="muted">&mdash;</span>'
+        return frag("muted_dash")
     if v == 0:
-        return '<span class="muted">$0</span>'
+        return frag("muted_zero")
     if v < 0.01:
         return f"${v:.4f}"
     if v < 1:
@@ -268,8 +268,7 @@ def prov_badge(name):
     if key.startswith("ollama") or key == "custom":
         key = "local"
     icon, bg, fg = PROV.get(key, ("○", "rgba(127,127,127,.14)", "var(--muted)"))
-    return (f'<span class="pb" style="background:{bg};color:{fg}">'
-            f'{icon} {name}</span>')
+    return frag("prov_badge", bg=bg, fg=fg, icon=icon, name=name)
 
 
 LABEL = {
@@ -284,25 +283,27 @@ LABEL = {
 
 def freshness_html(f, catalog_size):
     """Catalogue freshness line (P6-02, #60). Stale and unavailable are warnings."""
-    age = f" &middot; fetched {f['age']} ago" if f.get("age") else ""
+    age = frag("fresh_age", age=f["age"]) if f.get("age") else ""
     ttl = f"cache refreshes every {f['ttl']}"
     why = f" ({f['detail']})" if f.get("detail") else ""
+    size = f"{catalog_size:,}"
     if f["state"] == "unavailable" and not catalog_size:
-        return ('<div class="warnbox" id="catfresh" data-state="unavailable">'
-                '<b>Catalogue prices are missing.</b> The OpenRouter catalogue could not be '
-                f'fetched{why} and there is no cached copy, so every model that relies on it '
-                'is unpriced below. Vendor rates and local electricity rates still apply. '
-                'Check network access and rebuild.</div>')
+        return frag("fresh_unavailable", why=why)
     if f["state"] in ("stale", "unavailable"):
-        return ('<div class="warnbox" id="catfresh" data-state="stale">'
-                f'<b>Prices are stale</b>{age}. The latest fetch failed{why}, so an older '
-                f'cached catalogue ({catalog_size:,} models) is in use; {ttl}.</div>')
+        return frag("fresh_stale", age=age, why=why, size=size, ttl=ttl)
     if f["state"] == "pinned":
-        return (f'<span id="catfresh" data-state="pinned">Pinned catalogue: '
-                f'{catalog_size:,} models from a fixed file (sample build, never refreshed)</span>')
+        return frag("fresh_pinned", size=size)
     word = "fetched live" if f["state"] == "live" else "from cache"
-    return (f'<span id="catfresh" data-state="{f["state"]}">OpenRouter catalogue: '
-            f'{catalog_size:,} models, {word}{age}; {ttl}</span>')
+    return frag("fresh_plain", state=f["state"], size=size, word=word, age=age, ttl=ttl)
+
+
+def freshness_is_warning(f, catalog_size):
+    """Stale/unavailable get their own box; every other state sits in the header."""
+    return f["state"] in ("stale", "unavailable")
+
+
+def _plural(n):
+    return "s" if n != 1 else ""
 
 
 def unpriced_html(models):
@@ -311,68 +312,46 @@ def unpriced_html(models):
     used = [m for m in un if m.get("calls")]
     idle = [m for m in un if not m.get("calls")]
     if not used:
-        tail = (f' {len(idle)} unused model{"s" if len(idle) != 1 else ""} have no rate, '
+        tail = (f' {len(idle)} unused model{_plural(len(idle))} have no rate, '
                 'which costs nothing.') if idle else ''
-        return ('<div class="okbox" id="unpriced" data-used="0">'
-                f'<b>Every model with traffic is priced.</b>{tail}</div>')
+        return frag("unpriced_ok", tail=tail)
     calls = sum(m["calls"] for m in used)
     toks = sum(m.get("inp", 0) + m.get("outp", 0) for m in used)
-    names = ", ".join(f'<span class="mono">{m["short"]}</span>' for m in used)
-    idle_note = (f' Another {len(idle)} unpriced model{"s" if len(idle) != 1 else ""} '
+    names = ", ".join(frag("mono", text=m["short"]) for m in used)
+    idle_note = (f' Another {len(idle)} unpriced model{_plural(len(idle))} '
                  'had no traffic, which is harmless.') if idle else ''
-    return ('<div class="warnbox" id="unpriced" data-used="%d">' % len(used)
-            + f'<b>{len(un)} model{"s" if len(un) != 1 else ""} unpriced, {len(used)} of them '
-            f'with recorded traffic</b>: {names}.'
-            + f' <b>Spend is understated:</b> {calls:,} calls and {toks:,} tokens are '
-            'counted at $0 because no rate exists. How much is missing is unknown, so it '
-            'is excluded rather than guessed.'
-            + ' <b>Fix:</b> add the model to <span class="mono">WEB_RATES</span> '
-            '(official vendor price) or map its name to an OpenRouter id in '
-            '<span class="mono">ALIASES</span>, both in <span class="mono">pricing.py</span>.'
-            + idle_note + '</div>')
+    return frag("unpriced_warn", n_used=len(used), n_un=len(un), s=_plural(len(un)),
+                names=names, calls=f"{calls:,}", toks=f"{toks:,}", idle_note=idle_note)
+
+
+def row_html(m):
+    """One price-sheet row. Shaping here, markup in web/costs-fragments.html."""
+    src = m["source"]
+    tps = frag("tps", tps=m["tps"]) if m["tps"] else frag("muted_dash")
+    # Output÷input multiple: the single most useful number for predicting a
+    # bill, because output dominates cost on every metered provider.
+    ratio = (frag("mdash") if not m["in_1m"] or not m["out_1m"]
+             else frag("ratio", n=f'{m["out_1m"]/m["in_1m"]:.0f}'))
+    badges = " ".join(prov_badge(p) for p in m["providers"]) or frag("muted_dash")
+    used = m.get("used", bool(m.get("calls")))
+    oid = m.get("oid")
+    return frag(
+        "row",
+        model_attr=_html.escape(m["model"], quote=True),
+        oid_attr=_html.escape(oid or "", quote=True),
+        src=src, used=1 if used else 0,
+        unused_class="" if used else frag("unused_class"),
+        colour=colour(m["model"]), model=_html.escape(m["model"]),
+        priced_as=(frag("priced_as", oid=_html.escape(oid))
+                   if oid and oid != m["model"] else ""),
+        label=LABEL.get(src, src), badges=badges,
+        in_1m=fmt_money_1m(m["in_1m"]), out_1m=fmt_money_1m(m["out_1m"]),
+        cache_1m=fmt_money_1m(m["cache_1m"]), ratio=ratio, tps=tps,
+        use_cell=fmt_n(m["calls"]) if used else frag("unused_cell"))
 
 
 def render(d):
-    rows = []
-    for m in d["models"]:
-        src = m["source"]
-        tps = f'{m["tps"]} tok/s' if m["tps"] else '<span class="muted">&mdash;</span>'
-        # Output÷input multiple: the single most useful number for predicting a
-        # bill, because output dominates cost on every metered provider.
-        ratio = ('&mdash;' if not m["in_1m"] or not m["out_1m"]
-                 else f'{m["out_1m"]/m["in_1m"]:.0f}&times;')
-        badges = " ".join(prov_badge(p) for p in m["providers"]) or \
-            '<span class="muted">&mdash;</span>'
-        used = m.get("used", bool(m.get("calls")))
-        use_cell = (f'{fmt_n(m["calls"])}' if used
-                    else '<span class="muted" title="No recorded traffic">&mdash;</span>')
-        rows.append(
-            f'<tr data-model="{_html.escape(m["model"], quote=True)}" data-oid="{_html.escape(m.get("oid") or "", quote=True)}" data-source="{src}"'
-            f' data-used="{1 if used else 0}"' + ("" if used else ' class="unused"') + '>'
-            f'<td class="l"><span class="dot" style="background:{colour(m["model"])}"></span>'
-            f'<span class="mono mname" style="color:{colour(m["model"])}"'
-            f' title="{_html.escape(m["model"], quote=True)}">{_html.escape(m["model"])}</span>'
-            + (f'<div class="oid muted mono">priced as {_html.escape(m["oid"])}</div>'
-               if m.get("oid") and m["oid"] != m["model"] else '')
-            + '</td>'
-            f'<td class="l"><span class="tag t-{src}">{LABEL.get(src, src)}</span></td>'
-            f'<td class="l hide-s">{badges}</td>'
-            f'<td class="rate">{fmt_money_1m(m["in_1m"])}</td>'
-            f'<td class="rate">{fmt_money_1m(m["out_1m"])}</td>'
-            f'<td class="hide-s">{fmt_money_1m(m["cache_1m"])}</td>'
-            f'<td class="hide-s muted">{ratio}</td>'
-            f'<td class="hide-s muted">{tps}</td>'
-            f'<td class="used">{use_cell}</td>'
-            f'</tr>')
-
-    table = (
-        '<table><thead><tr>'
-        '<th class="l">Model</th><th class="l">Rate source</th>'
-        '<th class="l hide-s">Served by</th>'
-        '<th>Input /1M</th><th>Output /1M</th><th class="hide-s">Cache /1M</th>'
-        '<th class="hide-s">Out&divide;In</th><th class="hide-s">Throughput</th>'
-        '<th title="Calls you have recorded on this model">Your calls</th>'
-        '</tr></thead><tbody>' + "".join(rows) + '</tbody></table>')
+    table = frag("table", rows="".join(row_html(m) for m in d["models"]))
 
     priced = [m for m in d["models"] if m["out_1m"] is not None and m["source"] != "local"]
     local = [m for m in d["models"] if m["source"] == "local"]
@@ -387,27 +366,18 @@ def render(d):
     f = d.get("freshness") or P.catalog_freshness(d.get("catalog_source"))
     fb = freshness_html(f, d["catalog_size"])
     # A plain state goes inline in the header; a warning gets its own box.
-    fresh_line, fresh_box = (fb, "") if fb.startswith("<span") else (
+    fresh_line, fresh_box = (fb, "") if not freshness_is_warning(f, d["catalog_size"]) else (
         f'OpenRouter catalogue: {d["catalog_size"]:,} models', fb)
 
     # A reference sheet answers "what does a model cost", not "what did I spend".
-    kpis = f'''<div class="grid">
-  <div class="kpi"><div class="lbl" style="margin:0">Models on sheet</div>
-    <div class="v">{len(d["models"])}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px" id="usedcount">{n_used} used by you &middot; {len(unpriced)} unpriced</div></div>
-  <div class="kpi"><div class="lbl" style="margin:0">Dearest output</div>
-    <div class="v">{fmt_money_1m(dearest["out_1m"]) if dearest else "&mdash;"}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px">{dearest["short"] if dearest else ""}</div></div>
-  <div class="kpi"><div class="lbl" style="margin:0">Cheapest metered output</div>
-    <div class="v" style="color:#4ade80">{fmt_money_1m(cheapest["out_1m"]) if cheapest else "&mdash;"}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px">{cheapest["short"] if cheapest else ""}</div></div>
-  <div class="kpi"><div class="lbl" style="margin:0">Median output rate</div>
-    <div class="v">{fmt_money_1m(median)}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px">across {len(metered)} metered</div></div>
-  <div class="kpi"><div class="lbl" style="margin:0">Local models</div>
-    <div class="v" style="color:#fbbf24">{len(local)}</div>
-    <div class="muted" style="font-size:11px;margin-top:2px">priced by power draw</div></div>
-</div>'''
+    mdash = frag("mdash")
+    kpis = frag(
+        "kpis", n_models=len(d["models"]), n_used=n_used, n_unpriced=len(unpriced),
+        dearest_rate=fmt_money_1m(dearest["out_1m"]) if dearest else mdash,
+        dearest_name=dearest["short"] if dearest else "",
+        cheapest_rate=fmt_money_1m(cheapest["out_1m"]) if cheapest else mdash,
+        cheapest_name=cheapest["short"] if cheapest else "",
+        median_rate=fmt_money_1m(median), n_metered=len(metered), n_local=len(local))
 
     watts = d["watts"]
     usd_sec = (watts / 1000.0) * d["kwh"] / 3600.0
@@ -417,11 +387,11 @@ def render(d):
 
     # Live calculator: the point of knowing a rate is pricing a hypothetical
     # job, so let the sheet do that arithmetic instead of the reader.
-    calc_json = json.dumps([
+    calc_json = script_json([
         {"n": m["model"], "i": m["in_1m"], "o": m["out_1m"], "s": m["source"],
          "u": 1 if m.get("used", bool(m.get("calls"))) else 0}
         for m in d["models"]
-    ]).replace("</", "<\\/")
+    ])
 
     html = (PAGE
             .replace("__GEN__", d["generated"].replace("T", " "))

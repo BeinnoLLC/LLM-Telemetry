@@ -50,8 +50,46 @@ priced = [model("anthropic/claude-x", "vendor", 10), model("qwen3-coder:30b", "l
 
 # ---- #60: TTL text comes from the constant ---------------------------------
 src = open(B.__file__).read() + open(P.__file__).read()
+from llm_telemetry import webassets as W  # noqa: E402
+with open(W.COSTS_FRAGMENTS_PATH) as _fh:
+    src += _fh.read()  # the sheet's markup lives here since #28
 chk(not re.search(r"\b24\s?h\b|\b6h\b", src.replace("ttl_label", "")),
     "no literal refresh interval in the pricing/sheet source")
+
+# ---- #28: build_costs.py holds no markup; fragments are well formed ----------
+with open(B.__file__) as _fh:
+    _tagged = [ln for ln in _fh if re.search(r"<[A-Za-z/!]", ln)]
+chk(not _tagged, "no markup left in build_costs.py", _tagged[:3])
+with open(W.COSTS_FRAGMENTS_PATH) as _fh:
+    _ftxt = _fh.read()
+_frags = W.read_costs_fragments()
+chk(len(_frags) == _ftxt.count("<!-- @frag "), "every @frag block parses (none swallowed)",
+    (len(_frags), _ftxt.count("<!-- @frag ")))
+with open(B.__file__) as _fh:
+    _used = set(re.findall(r'frag\(\s*"([a-z0-9_]+)"', _fh.read()))
+chk(_used == set(_frags), "fragments used == fragments defined",
+    (sorted(_used - set(_frags)), sorted(set(_frags) - _used)))
+_slotless = [n for n, t in _frags.items() if re.search(r"\{[^}]*[^a-z0-9_}][^}]*\}", t)]
+chk(not _slotless, "no malformed {slot} survives the slot pattern", _slotless)
+try:
+    W.frag("mono")
+    chk(False, "a missing slot raises")
+except KeyError as e:
+    chk("text" in str(e), "a missing slot raises, naming it", e)
+chk(W.frag("mono", text="{x}") == '<span class="mono">{x}</span>', "slot values are not re-expanded")
+chk(W.script_json(["</script>"]) == '["<\\/script>"]', "inline JSON cannot close its <script>")
+with open(W.TOKENS_PATH) as _fh:
+    _tok_decl = _fh.read().count("--bg:#0b0f17")
+_tok_others = []
+for _dp, _dn, _fns in os.walk(os.path.dirname(B.__file__)):
+    for _fn in _fns:
+        _pth = os.path.realpath(os.path.join(_dp, _fn))
+        if _fn.endswith((".css", ".html", ".py", ".js")) and _pth != os.path.realpath(W.TOKENS_PATH):
+            with open(_pth, encoding="utf-8") as _fh:
+                if "--bg:#0b0f17" in _fh.read():
+                    _tok_others.append(_pth)
+chk(_tok_decl == 1 and not _tok_others, "dark theme tokens declared exactly once (tokens.css)",
+    _tok_others)
 chk(P.ttl_label() == "6h" and P.ttl_label(86400) == "1d" and P.ttl_label(1800) == "30m",
     "ttl_label derives from TTL", (P.ttl_label(), P.ttl_label(86400), P.ttl_label(1800)))
 h = sheet(priced, {"state": "cache", "age": "2h", "ttl": P.ttl_label(), "detail": "", "age_s": 7200})

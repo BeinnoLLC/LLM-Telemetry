@@ -30,6 +30,8 @@ TOKENS_PATH = os.path.join(HERE, "web", "css", "tokens.css")
 COSTS_CSS_PATH = os.path.join(HERE, "web", "css", "costs.css")
 COSTS_SHELL_PATH = os.path.join(HERE, "web", "costs.html")
 COSTS_JS_PATH = os.path.join(JS_DIR, "costs.js")
+# The row/box/KPI markup build_costs.py fills; the Python keeps only shaping.
+COSTS_FRAGMENTS_PATH = os.path.join(HERE, "web", "costs-fragments.html")
 # The modules, in dependency order (main boots last and is the only one that
 # runs anything while loading).
 JS_ORDER = ["palette.js", "charts.js", "views.js", "flow.js", "drawer.js",
@@ -61,6 +63,46 @@ def read_costs_js():
     """The price sheet's calculator script."""
     with open(COSTS_JS_PATH, encoding="utf-8") as fh:
         return fh.read()
+
+
+_FRAG_RE = re.compile(r"<!-- @frag ([a-z_][a-z0-9_]*) -->\n(.*?)\n<!-- @end -->", re.S)
+_SLOT_RE = re.compile(r"\{([a-z_][a-z0-9_]*)\}")
+_frags = None
+
+
+def read_costs_fragments():
+    """name -> template, parsed from web/costs-fragments.html."""
+    with open(COSTS_FRAGMENTS_PATH, encoding="utf-8") as fh:
+        found = _FRAG_RE.findall(fh.read())
+    names = [n for n, _ in found]
+    dupes = sorted({n for n in names if names.count(n) > 1})
+    if dupes:
+        raise ValueError(f"duplicate fragments in {COSTS_FRAGMENTS_PATH}: {dupes}")
+    return dict(found)
+
+
+def frag(name, /, **slots):
+    """Fill one price-sheet fragment. Values go in verbatim: escape first.
+
+    One pass, so a value that itself contains "{x}" is not re-expanded. A slot
+    the template names but the caller omits is an error, not a blank.
+    """
+    global _frags
+    if _frags is None:
+        _frags = read_costs_fragments()
+    tpl = _frags[name]
+
+    def fill(m):
+        key = m.group(1)
+        if key not in slots:
+            raise KeyError(f"fragment {name!r} needs slot {key!r}")
+        return str(slots[key])
+    return _SLOT_RE.sub(fill, tpl)
+
+
+def script_json(obj):
+    """JSON safe to inline in a <script> block: no premature end tag."""
+    return json.dumps(obj).replace("</", "<\\/")
 
 
 def read_css():

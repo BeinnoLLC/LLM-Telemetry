@@ -1,0 +1,90 @@
+<!--
+  Price-sheet fragments (P2-04, #28). build_costs.py shapes the pricing data
+  and fills these; it holds no markup of its own.
+
+  Format: each block runs from an "@frag NAME" comment to the next "@end"
+  comment. Exactly one newline after the opening marker and one before the
+  closing marker is stripped; every other character, leading spaces
+  included, is part of the fragment. {slot} names are filled by
+  webassets.frag(); values are inserted verbatim, so the caller escapes.
+-->
+<!-- @frag mdash -->
+&mdash;
+<!-- @end -->
+<!-- @frag muted_dash -->
+<span class="muted">&mdash;</span>
+<!-- @end -->
+<!-- @frag muted_zero -->
+<span class="muted">$0</span>
+<!-- @end -->
+<!-- @frag mono -->
+<span class="mono">{text}</span>
+<!-- @end -->
+<!-- @frag prov_badge -->
+<span class="pb" style="background:{bg};color:{fg}">{icon} {name}</span>
+<!-- @end -->
+
+<!-- @frag fresh_age -->
+ &middot; fetched {age} ago
+<!-- @end -->
+<!-- @frag fresh_unavailable -->
+<div class="warnbox" id="catfresh" data-state="unavailable"><b>Catalogue prices are missing.</b> The OpenRouter catalogue could not be fetched{why} and there is no cached copy, so every model that relies on it is unpriced below. Vendor rates and local electricity rates still apply. Check network access and rebuild.</div>
+<!-- @end -->
+<!-- @frag fresh_stale -->
+<div class="warnbox" id="catfresh" data-state="stale"><b>Prices are stale</b>{age}. The latest fetch failed{why}, so an older cached catalogue ({size} models) is in use; {ttl}.</div>
+<!-- @end -->
+<!-- @frag fresh_pinned -->
+<span id="catfresh" data-state="pinned">Pinned catalogue: {size} models from a fixed file (sample build, never refreshed)</span>
+<!-- @end -->
+<!-- @frag fresh_plain -->
+<span id="catfresh" data-state="{state}">OpenRouter catalogue: {size} models, {word}{age}; {ttl}</span>
+<!-- @end -->
+
+<!-- @frag unpriced_ok -->
+<div class="okbox" id="unpriced" data-used="0"><b>Every model with traffic is priced.</b>{tail}</div>
+<!-- @end -->
+<!-- @frag unpriced_warn -->
+<div class="warnbox" id="unpriced" data-used="{n_used}"><b>{n_un} model{s} unpriced, {n_used} of them with recorded traffic</b>: {names}. <b>Spend is understated:</b> {calls} calls and {toks} tokens are counted at $0 because no rate exists. How much is missing is unknown, so it is excluded rather than guessed. <b>Fix:</b> add the model to <span class="mono">WEB_RATES</span> (official vendor price) or map its name to an OpenRouter id in <span class="mono">ALIASES</span>, both in <span class="mono">pricing.py</span>.{idle_note}</div>
+<!-- @end -->
+
+<!-- @frag tps -->
+{tps} tok/s
+<!-- @end -->
+<!-- @frag ratio -->
+{n}&times;
+<!-- @end -->
+<!-- @frag unused_cell -->
+<span class="muted" title="No recorded traffic">&mdash;</span>
+<!-- @end -->
+<!-- @frag unused_class -->
+ class="unused"
+<!-- @end -->
+<!-- @frag priced_as -->
+<div class="oid muted mono">priced as {oid}</div>
+<!-- @end -->
+<!-- @frag row -->
+<tr data-model="{model_attr}" data-oid="{oid_attr}" data-source="{src}" data-used="{used}"{unused_class}><td class="l"><span class="dot" style="background:{colour}"></span><span class="mono mname" style="color:{colour}" title="{model_attr}">{model}</span>{priced_as}</td><td class="l"><span class="tag t-{src}">{label}</span></td><td class="l hide-s">{badges}</td><td class="rate">{in_1m}</td><td class="rate">{out_1m}</td><td class="hide-s">{cache_1m}</td><td class="hide-s muted">{ratio}</td><td class="hide-s muted">{tps}</td><td class="used">{use_cell}</td></tr>
+<!-- @end -->
+<!-- @frag table -->
+<table><thead><tr><th class="l">Model</th><th class="l">Rate source</th><th class="l hide-s">Served by</th><th>Input /1M</th><th>Output /1M</th><th class="hide-s">Cache /1M</th><th class="hide-s">Out&divide;In</th><th class="hide-s">Throughput</th><th title="Calls you have recorded on this model">Your calls</th></tr></thead><tbody>{rows}</tbody></table>
+<!-- @end -->
+
+<!-- @frag kpis -->
+<div class="grid">
+  <div class="kpi"><div class="lbl" style="margin:0">Models on sheet</div>
+    <div class="v">{n_models}</div>
+    <div class="muted" style="font-size:11px;margin-top:2px" id="usedcount">{n_used} used by you &middot; {n_unpriced} unpriced</div></div>
+  <div class="kpi"><div class="lbl" style="margin:0">Dearest output</div>
+    <div class="v">{dearest_rate}</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">{dearest_name}</div></div>
+  <div class="kpi"><div class="lbl" style="margin:0">Cheapest metered output</div>
+    <div class="v" style="color:#4ade80">{cheapest_rate}</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">{cheapest_name}</div></div>
+  <div class="kpi"><div class="lbl" style="margin:0">Median output rate</div>
+    <div class="v">{median_rate}</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">across {n_metered} metered</div></div>
+  <div class="kpi"><div class="lbl" style="margin:0">Local models</div>
+    <div class="v" style="color:#fbbf24">{n_local}</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">priced by power draw</div></div>
+</div>
+<!-- @end -->
