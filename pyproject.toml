@@ -50,7 +50,12 @@ where = ["src"]
 # The page shells (web/*.html) and the JS modules + their concatenation
 # order (web/js/*.js, web/js/order.json) are read the same way; shipping
 # only the CSS left an installed package unable to build either page.
-llm_telemetry = ["web/*.html", "web/css/*.css", "web/js/*.js", "web/js/order.json"]
+#
+# schema/*.json (P1-02, #24) is read the same way again: schema_check.py
+# validates every collector payload against it at write time, so an
+# installed wheel without it cannot collect at all.
+llm_telemetry = ["web/*.html", "web/css/*.css", "web/js/*.js",
+                 "web/js/order.json", "schema/*.json"]
 
 # ---------------------------------------------------------------------------
 # P3-01 (#31): Ruff + mypy, started NON-STRICT deliberately. The two real

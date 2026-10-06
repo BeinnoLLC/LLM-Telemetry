@@ -10,6 +10,10 @@ reports/
 !examples/reports/
 examples/reports/pricing-cache.json
 examples/reports/nous-pricing-cache.json
+# Runtime state the collectors write next to the samples (per-profile
+# bandwidth ledger, probed host capabilities). Machine-local, never samples.
+examples/reports/bandwidth-history.json
+examples/reports/.ollama-caps.json
 
 __pycache__/
 *.py[cod]

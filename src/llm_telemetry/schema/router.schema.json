@@ -1,0 +1,500 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "router payload",
+ "description": "Router decisions, written by collect_router.py.",
+ "type": [
+  "null",
+  "object"
+ ],
+ "properties": {
+  "profiles": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {},
+   "additionalProperties": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "primary": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "provider": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "model": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "url": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "prov": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "effort": {
+        "type": [
+         "null",
+         "string"
+        ]
+       }
+      },
+      "required": [
+       "effort",
+       "model",
+       "prov",
+       "provider",
+       "url"
+      ],
+      "additionalProperties": true
+     },
+     "chain": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "provider": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "prov": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "model",
+        "prov",
+        "provider",
+        "url"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "tasks": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "provider": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "prov": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "task": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "doc": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "fallbacks": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "doc",
+        "fallbacks",
+        "model",
+        "prov",
+        "provider",
+        "task",
+        "url"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "delegation": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "moa": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "tier_router": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "auth": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "prov": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "type": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "creds": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {
+           "auth_type": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "source": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "last_status": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "label": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "requests": {
+            "type": [
+             "null",
+             "number"
+            ]
+           }
+          },
+          "required": [
+           "auth_type",
+           "label",
+           "last_status",
+           "source"
+          ],
+          "additionalProperties": true
+         }
+        },
+        "note": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "creds",
+        "note",
+        "prov",
+        "type"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "decisions": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "compression": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "threshold": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "enabled": {
+        "type": [
+         "boolean",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "enabled"
+      ],
+      "additionalProperties": true
+     },
+     "endpoints": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": {
+       "type": [
+        "null",
+        "string"
+       ]
+      }
+     }
+    },
+    "required": [
+     "auth",
+     "chain",
+     "decisions",
+     "delegation",
+     "moa",
+     "primary",
+     "tasks",
+     "tier_router"
+    ],
+    "additionalProperties": true
+   }
+  },
+  "vocab": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {
+    "categories": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    "levels": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    "category_doc": {
+     "type": [
+      "null",
+      "object"
+     ],
+     "properties": {
+      "coding": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "test": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "research": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "writing": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "data": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "monitoring": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "plan": {
+       "type": [
+        "null",
+        "string"
+       ]
+      }
+     },
+     "required": [
+      "data",
+      "plan",
+      "test"
+     ],
+     "additionalProperties": true
+    },
+    "level_doc": {
+     "type": [
+      "null",
+      "object"
+     ],
+     "properties": {
+      "easy": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "medium": {
+       "type": [
+        "null",
+        "string"
+       ]
+      },
+      "hard": {
+       "type": [
+        "null",
+        "string"
+       ]
+      }
+     },
+     "required": [
+      "easy",
+      "hard",
+      "medium"
+     ],
+     "additionalProperties": true
+    }
+   },
+   "required": [
+    "categories",
+    "category_doc",
+    "level_doc",
+    "levels"
+   ],
+   "additionalProperties": true
+  },
+  "collected_at": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "schema_version": {
+   "type": [
+    "null",
+    "number"
+   ]
+  }
+ },
+ "required": [
+  "collected_at",
+  "profiles",
+  "schema_version",
+  "vocab"
+ ],
+ "additionalProperties": true
+}

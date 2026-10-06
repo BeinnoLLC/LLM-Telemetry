@@ -39,6 +39,14 @@ jobs:
       - name: Leak gate (samples must carry nothing identifying)
         run: python3 examples/check_no_leaks.py
 
+      - name: Payload schemas (P1-02, #24) — the samples match the contract
+        # The collectors validate at write time; this checks the committed
+        # samples on their own, so a payload edited without its schema (or the
+        # reverse) fails here instead of rendering as an empty panel. The
+        # consumer's half of the same check is tests/check_schema.js, which the
+        # DOM suites step runs.
+        run: python3 -m llm_telemetry.schema_check
+
       - name: Render dashboard from committed sample data
         env:
           LLM_TELEMETRY_NO_COLLECT: '1'

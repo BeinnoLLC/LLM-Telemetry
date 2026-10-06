@@ -32,6 +32,7 @@ except ImportError:
 
 from .config import get as _cfg
 from .schema import stamp
+from .schema_check import check
 
 CFG = _cfg()
 
@@ -492,6 +493,8 @@ def build():
 def main(dest=None):
     dest = dest or str(CFG.reports_dir / "router-data.json")
     data = build()
+    # Never write a payload the page cannot read (P1-02, #24).
+    check("router", data)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     tmp = dest + ".tmp"
     with open(tmp, "w") as f:

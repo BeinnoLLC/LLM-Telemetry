@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import pricing
 from . import cost_attribution
 from .schema import stamp
+from .schema_check import check
 from . import failures
 from . import bandwidth
 from . import bandwidth_history
@@ -1018,6 +1019,8 @@ if __name__ == "__main__":
     ap.add_argument("-o", "--out", default=str(REPORTS / "analytics-data.json"))
     a = ap.parse_args()
     data = build()
+    # Never write a payload the page cannot read (P1-02, #24).
+    check("analytics", data)
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
     with open(a.out, "w") as f:
         json.dump(data, f, separators=(",", ":"), default=str)

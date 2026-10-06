@@ -156,6 +156,47 @@ so the edge cases stay covered.
 against an empty home and against a home holding a decoy profile, and fails
 unless the two outputs are byte-identical.
 
+### The payload contract
+
+Every payload a collector writes has a schema in
+`src/llm_telemetry/schema/<tag>.schema.json`, and the collector validates the
+payload before it writes it — a payload the page cannot read is never written.
+The subset is deliberately small: `type`, `required`, `properties`, `items`
+and `additionalProperties`, implemented by a stdlib validator
+(`schema_check.py`) with no dependency and no network. A keyword the validator
+does not implement is an error, not a silent no-op, so a schema can never stop
+enforcing something quietly.
+
+Two rules keep it from being too tight or too loose:
+
+- `required` means *every payload we have seen has the key and the page reads
+  it*. Fields only some records carry are typed when present, not required, so
+  adding a field is never a breaking change and the schema does not fail on a
+  legitimate collection.
+- Numbers are `number`, never `integer`. JSON has one number type, and a field
+  that holds `12` in one payload holds `12.4` in the next.
+
+A schema is derived from *real* payloads, so its property names are data too: a
+dict keyed by data — profile, model, provider or route names — becomes
+`additionalProperties` rather than a list of pinned names, and
+`examples/check_no_leaks.py` scans the schema directory for the same identity
+patterns it applies to the samples.
+
+Check it from both ends:
+
+```bash
+python3 -m llm_telemetry.schema_check   # the committed samples
+node tests/check_schema.js              # the same samples, consumer side
+```
+
+`tools/gen_schemas.py` re-derives the schemas from the committed sample plus a
+payload from a real run — its header documents the rules and why each one is
+there:
+
+```bash
+CUR_OUT=/dir/with/fresh/payloads python3 tools/gen_schemas.py
+```
+
 ### Choosing which profiles are read
 
 Profiles are discovered under the agent home (`$LLM_TELEMETRY_AGENT_HOME`, else

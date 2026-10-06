@@ -1,0 +1,356 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "ollama payload",
+ "description": "Probed inference hosts, written by probe_hosts.py.",
+ "type": [
+  "null",
+  "object"
+ ],
+ "properties": {
+  "ts": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "hosts": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "items": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "urls": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "base": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "ms": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "up": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "base",
+        "ms",
+        "up"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "up": {
+      "type": [
+       "boolean",
+       "null"
+      ]
+     },
+     "err": {},
+     "ms": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "version": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "loaded": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "name": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "size": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "vram": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "res": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "ctx": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "expires": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "caps": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "string"
+          ]
+         }
+        }
+       },
+       "required": [
+        "caps",
+        "ctx",
+        "name",
+        "res",
+        "size",
+        "vram"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "installed": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "catalog": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "name": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "size": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "par": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "quant": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "name",
+        "size"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "vram": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "spill": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "ps_ms": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "fp": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "label": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "work": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "calls": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "tokens": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "last": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "tasks": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {},
+        "additionalProperties": true
+       },
+       "models": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {},
+        "additionalProperties": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "profiles": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       }
+      },
+      "required": [
+       "calls",
+       "last",
+       "models",
+       "profiles",
+       "tasks",
+       "tokens"
+      ],
+      "additionalProperties": true
+     },
+     "queue": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "is_self": {
+      "type": [
+       "boolean",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "err",
+     "installed",
+     "label",
+     "loaded",
+     "ms",
+     "queue",
+     "up",
+     "urls",
+     "version",
+     "vram",
+     "work"
+    ],
+    "additionalProperties": true
+   }
+  },
+  "endpoints": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "physical": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "schema_version": {
+   "type": [
+    "null",
+    "number"
+   ]
+  }
+ },
+ "required": [
+  "hosts",
+  "schema_version",
+  "ts"
+ ],
+ "additionalProperties": true
+}

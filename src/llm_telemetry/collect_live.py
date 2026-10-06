@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # hyphenated `export-analytics.py` that needed a spec-from-file workaround.
 from . import collect_analytics as EA
 from .schema import stamp
+from .schema_check import check
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
 from . import agents_alive
 import socket
@@ -332,6 +333,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         out_path = sys.argv[1]
     data = build_live()
+    # Never write a payload the page cannot read (P1-02, #24).
+    check("live", data)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     # Atomic replace: the dashboard polls this file every few seconds and must
     # never read a half-written JSON document.

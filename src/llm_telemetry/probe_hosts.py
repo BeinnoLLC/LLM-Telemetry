@@ -34,6 +34,7 @@ import urllib.request
 
 from .config import get as _cfg
 from .schema import stamp
+from .schema_check import check
 
 CFG = _cfg()
 
@@ -377,6 +378,8 @@ def main():
 
     data = stamp({"ts": int(time.time()), "hosts": hosts,
                   "endpoints": len(eps), "physical": len(hosts)})
+    # Never write a payload the page cannot read (P1-02, #24).
+    check("ollama", data)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     tmp = OUT + ".tmp"
     with open(tmp, "w") as f:

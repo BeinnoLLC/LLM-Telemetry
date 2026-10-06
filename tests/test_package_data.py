@@ -63,6 +63,19 @@ for dp, _dn, fns in os.walk(os.path.join(PKG, "web")):
 for r in sorted(web_files):
     chk(shipped(r), f"{r} ships")
 
+# schema/*.json is data too: schema_check.py reads it at collection time, so a
+# wheel missing it fails on the first collect rather than on a page render.
+from llm_telemetry import schema_check as S  # noqa: E402
+chk(rel(S.SCHEMA_DIR) == "schema", "schema_check points at the schema package dir",
+    rel(S.SCHEMA_DIR))
+schema_files = sorted(rel(os.path.join(dp, fn))
+                      for dp, _dn, fns in os.walk(S.SCHEMA_DIR) for fn in fns)
+chk(len(schema_files) == len(S.TAGS), "one schema file per payload", schema_files)
+for r in schema_files:
+    chk(shipped(r), f"{r} ships")
+for tag in S.TAGS:
+    chk(shipped(rel(S.schema_path(tag))), f"schema for {tag} is covered by package-data")
+
 # Negative control: the old list (CSS only) must fail on the shells and JS.
 old = ["web/css/*.css"]
 miss = [r for r in read_paths

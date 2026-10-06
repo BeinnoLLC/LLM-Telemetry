@@ -1,0 +1,949 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "live payload",
+ "description": "Live agent and host state, written by collect_live.py.",
+ "type": [
+  "null",
+  "object"
+ ],
+ "properties": {
+  "generated": {
+   "type": [
+    "null",
+    "string"
+   ]
+  },
+  "profiles": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {},
+   "additionalProperties": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "active": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "live": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "init_model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "phase": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "idle_s": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "parent": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "tools": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "string"
+          ]
+         }
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "nmodels": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "base_url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "category": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "kind": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "switched": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        },
+        "up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "bw_local": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        },
+        "models": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {
+           "model": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "tasks": {
+            "type": [
+             "array",
+             "null"
+            ],
+            "items": {
+             "type": [
+              "null",
+              "string"
+             ]
+            }
+           },
+           "calls": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "in_tok": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "out_tok": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "last": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "base_url": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "main": {
+            "type": [
+             "boolean",
+             "null"
+            ]
+           }
+          },
+          "required": [
+           "base_url",
+           "calls",
+           "in_tok",
+           "last",
+           "main",
+           "model",
+           "out_tok",
+           "tasks"
+          ],
+          "additionalProperties": true
+         }
+        }
+       },
+       "required": [
+        "base_url",
+        "category",
+        "down_bytes",
+        "id",
+        "idle_s",
+        "init_model",
+        "kind",
+        "lan_down_bytes",
+        "lan_up_bytes",
+        "model",
+        "models",
+        "nmodels",
+        "parent",
+        "phase",
+        "switched",
+        "title",
+        "tools",
+        "up_bytes"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "tools_recent": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "tool": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "calls",
+        "tool"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "logs": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "ts": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "role": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "tool": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "preview": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "preview",
+        "role",
+        "title",
+        "tool",
+        "ts"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "recent_ended": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "ended_at": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "end_reason": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "end_reason",
+        "id",
+        "title"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "recent_delegations": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "state": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "completed_at": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "id",
+        "state"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "agents": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "backend": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "profile": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "host": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "pid": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "last_heartbeat": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "age_s": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "state": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "leases": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "kill_hint": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "age_s",
+        "backend",
+        "host",
+        "kill_hint",
+        "leases",
+        "pid",
+        "profile",
+        "state"
+       ],
+       "additionalProperties": true
+      }
+     }
+    },
+    "required": [
+     "active",
+     "agents",
+     "live",
+     "logs",
+     "recent_delegations",
+     "recent_ended",
+     "tools_recent"
+    ],
+    "additionalProperties": true
+   }
+  },
+  "errors": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "items": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "ts": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "profile": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "level": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "kind": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "model": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "msg": {
+      "type": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    "required": [
+     "kind",
+     "level",
+     "model",
+     "msg",
+     "profile",
+     "ts"
+    ],
+    "additionalProperties": true
+   }
+  },
+  "ollama": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {
+    "hosts": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "urls": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "base": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "ms": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "up": {
+           "type": [
+            "boolean",
+            "null"
+           ]
+          }
+         },
+         "required": [
+          "base",
+          "ms",
+          "up"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "up": {
+        "type": [
+         "boolean",
+         "null"
+        ]
+       },
+       "err": {},
+       "ms": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "version": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "loaded": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "name": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "size": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "vram": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "res": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "ctx": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "expires": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "caps": {
+           "type": [
+            "array",
+            "null"
+           ],
+           "items": {
+            "type": [
+             "null",
+             "string"
+            ]
+           }
+          }
+         },
+         "required": [
+          "caps",
+          "ctx",
+          "name",
+          "res",
+          "size",
+          "vram"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "installed": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "catalog": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "name": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "size": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "par": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "quant": {
+           "type": [
+            "null",
+            "string"
+           ]
+          }
+         },
+         "required": [
+          "name",
+          "size"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "vram": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "spill": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "ps_ms": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "fp": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "label": {
+        "type": [
+         "null",
+         "string"
+        ]
+       },
+       "work": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {
+         "calls": {
+          "type": [
+           "null",
+           "number"
+          ]
+         },
+         "tokens": {
+          "type": [
+           "null",
+           "number"
+          ]
+         },
+         "last": {
+          "type": [
+           "null",
+           "number"
+          ]
+         },
+         "tasks": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {
+           "main": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "background_review": {
+            "type": [
+             "null",
+             "number"
+            ]
+           }
+          },
+          "required": [
+           "main"
+          ],
+          "additionalProperties": true
+         },
+         "models": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {},
+          "additionalProperties": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "profiles": {
+          "type": [
+           "array",
+           "null"
+          ],
+          "items": {
+           "type": [
+            "null",
+            "string"
+           ]
+          }
+         }
+        },
+        "required": [
+         "calls",
+         "last",
+         "models",
+         "profiles",
+         "tasks",
+         "tokens"
+        ],
+        "additionalProperties": true
+       },
+       "queue": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "is_self": {
+        "type": [
+         "boolean",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "err",
+       "installed",
+       "label",
+       "loaded",
+       "ms",
+       "queue",
+       "up",
+       "urls",
+       "version",
+       "vram",
+       "work"
+      ],
+      "additionalProperties": true
+     }
+    },
+    "age": {
+     "type": [
+      "null",
+      "number"
+     ]
+    }
+   },
+   "required": [
+    "age",
+    "hosts"
+   ],
+   "additionalProperties": true
+  },
+  "bytes_per_token": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "schema_version": {
+   "type": [
+    "null",
+    "number"
+   ]
+  }
+ },
+ "required": [
+  "bytes_per_token",
+  "errors",
+  "generated",
+  "ollama",
+  "profiles",
+  "schema_version"
+ ],
+ "additionalProperties": true
+}

@@ -7,6 +7,9 @@ telemetry could escape. A manual eyeball missed a LAN IP once already — in
 `health[].last_msg`, a second copy of a failure string whose `msg` twin was
 scrubbed. So the check runs in CI.
 
+It also scans src/llm_telemetry/schema/: those files are derived from a real
+payload, so their property names are data too.
+
 Usage: python3 examples/check_no_leaks.py
 """
 import json
@@ -22,6 +25,11 @@ REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 # payloads, committed for the same public repo — the leak gate must cover
 # them with the exact same rules, not a separate weaker check.
 GOLDEN = os.path.join(HERE, "..", "tests", "fixtures", "golden")
+# P1-02 (#24): the payload schemas are derived from a real payload, so their
+# *property names* are data too -- the first draft shipped real model ids as
+# keys ("accounts/fireworks/models/...") into a public repo. Keys are scanned
+# here for the same identity patterns; the sample marker is not required.
+SCHEMA_DIR = os.path.join(HERE, "..", "src", "llm_telemetry", "schema")
 
 # Anything that identifies a real person, host or workspace.
 # 127.0.0.1 is explicitly allowed: it is a synthetic dead endpoint used to
@@ -65,7 +73,18 @@ def walk(o, path=""):
         yield path, o
 
 
-def scan_dir(scan_dir, findings):
+def walk_keys(o, path=""):
+    """Yield (path, key) for every object key, since a schema's keys are data."""
+    if isinstance(o, dict):
+        for k, v in o.items():
+            yield f"{path}.{k}", k
+            yield from walk_keys(v, f"{path}.{k}")
+    elif isinstance(o, list):
+        for i, v in enumerate(o):
+            yield from walk_keys(v, f"{path}[{i}]")
+
+
+def scan_dir(scan_dir, findings, require_sample=True):
     for fn in sorted(os.listdir(scan_dir)):
         full = os.path.join(scan_dir, fn)
         # Only files git would actually publish. examples/reports/ also holds
@@ -88,8 +107,15 @@ def scan_dir(scan_dir, findings):
                     continue
             # A sample payload must SAY it is one, or a real payload could be
             # committed by accident and look identical to a reviewer.
-            if not doc.get("sample"):
+            if require_sample and not doc.get("sample"):
                 findings.append((fn, "$.sample", "missing `sample: true` marker"))
+            if not require_sample:
+                for path, name in walk_keys(doc):
+                    for pat, label in PATTERNS:
+                        if re.search(pat, name):
+                            findings.append((fn, path, f"{label} in a schema key: {name[:80]}"))
+                    for ip in bad_ips(name):
+                        findings.append((fn, path, f"private/LAN IP in a schema key: {ip}"))
             for path, val in walk(doc):
                 for pat, label in PATTERNS:
                     if re.search(pat, val):
@@ -115,6 +141,9 @@ def main():
     scan_dir(REPORTS, findings)
     if os.path.isdir(GOLDEN):
         scan_dir(GOLDEN, findings)
+    if os.path.isdir(SCHEMA_DIR):
+        # Same identity rules; no `sample` marker, since a schema is not a payload.
+        scan_dir(SCHEMA_DIR, findings, require_sample=False)
 
     if findings:
         print(f"LEAK CHECK FAILED — {len(findings)} finding(s):\n")
@@ -122,7 +151,7 @@ def main():
             print(f"  {fn}  {path}\n      {msg}")
         return 1
 
-    print("leak check passed — sample payloads carry nothing identifying")
+    print("leak check passed — sample payloads and schemas carry nothing identifying")
     return 0
 
 

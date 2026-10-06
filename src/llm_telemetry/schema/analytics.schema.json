@@ -1,0 +1,2728 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "analytics payload",
+ "description": "The dashboard's main payload, written by collect_analytics.py.",
+ "type": [
+  "null",
+  "object"
+ ],
+ "properties": {
+  "profiles": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {},
+   "additionalProperties": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "rows": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "date": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "provider": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "task": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "inp": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "outp": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cread": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cwrite": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "rtok": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "est": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "act": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "sessions": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "base_url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "cost_class": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "market_value_usd": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "billed_usd": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "priced": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        },
+        "up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "project": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "act",
+        "base_url",
+        "billed_usd",
+        "calls",
+        "cost_class",
+        "cread",
+        "cwrite",
+        "date",
+        "down_bytes",
+        "est",
+        "inp",
+        "lan_down_bytes",
+        "lan_up_bytes",
+        "market_value_usd",
+        "model",
+        "outp",
+        "priced",
+        "project",
+        "provider",
+        "sessions",
+        "task",
+        "up_bytes"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "hours": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "date": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "hour": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "calls",
+        "date",
+        "hour"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "sessions": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "date": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "source": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "sessions": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "date",
+        "sessions",
+        "source"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "active": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "live": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "init_model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "phase": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "idle_s": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "parent": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "tools": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "string"
+          ]
+         }
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "nmodels": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "base_url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "category": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "kind": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "switched": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "base_url",
+        "category",
+        "id",
+        "idle_s",
+        "init_model",
+        "kind",
+        "model",
+        "nmodels",
+        "parent",
+        "phase",
+        "switched",
+        "title",
+        "tools"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "tools_recent": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "tool": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "calls",
+        "tool"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "recent_sessions": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "message_count": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "last_ts": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "dur_s": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "last_model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "base_url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "prov": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "api_calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "tokens": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "base_url",
+        "dur_s",
+        "id",
+        "last_model",
+        "last_ts",
+        "model",
+        "prov",
+        "title",
+        "tokens"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "health": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "ok": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "fail": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "total": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "rate": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "kinds": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {},
+         "additionalProperties": true
+        },
+        "last": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "last_kind": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "last_msg": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "fail",
+        "kinds",
+        "last",
+        "last_kind",
+        "last_msg",
+        "model",
+        "ok",
+        "rate",
+        "total"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "heatmap": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "d": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "p": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "url": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "m": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "v": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "d",
+        "m",
+        "p",
+        "url",
+        "v"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "node_sessions": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": {
+       "type": [
+        "array",
+        "null"
+       ],
+       "items": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {
+         "title": {
+          "type": [
+           "null",
+           "string"
+          ]
+         },
+         "calls": {
+          "type": [
+           "null",
+           "number"
+          ]
+         },
+         "id": {
+          "type": [
+           "null",
+           "string"
+          ]
+         }
+        },
+        "required": [
+         "calls",
+         "id",
+         "title"
+        ],
+        "additionalProperties": true
+       }
+      }
+     },
+     "failures_recent": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "when": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "kind": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "msg": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "kind",
+        "model",
+        "msg",
+        "when"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "min_date": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "max_date": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "delegations": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "bandwidth_daily": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "date": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "provider": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_up_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "lan_down_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "input_tokens": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cache_read_tokens": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cache_write_tokens": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "output_tokens": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "bytes_per_token": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "frozen": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "bytes_per_token",
+        "cache_read_tokens",
+        "cache_write_tokens",
+        "calls",
+        "date",
+        "down_bytes",
+        "frozen",
+        "input_tokens",
+        "lan_down_bytes",
+        "lan_up_bytes",
+        "model",
+        "output_tokens",
+        "provider",
+        "up_bytes"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "resend": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "ctx_per_call": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cread_pct": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "resend_usd": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cost_class": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "last": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "calls",
+        "cost_class",
+        "cread_pct",
+        "ctx_per_call",
+        "id",
+        "last",
+        "model",
+        "resend_usd",
+        "title"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "end_reasons": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "reason": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "n": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "n",
+        "reason"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "compression_pressure": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "fallback_streak": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "ineffective_count": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "error": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "error",
+        "fallback_streak",
+        "id",
+        "ineffective_count",
+        "title"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "concurrency": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "hour": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "top": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "sub": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "hour",
+        "sub",
+        "top"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "sessions_tree": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "parent": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "source": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "started": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "ended": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "end_reason": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "msgs": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "tools": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "tok": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cost": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "cost_is_actual": {
+         "type": [
+          "boolean",
+          "null"
+         ]
+        },
+        "children": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {
+           "id": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "parent": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "source": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "title": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "model": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "started": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "ended": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "end_reason": {
+            "type": [
+             "null",
+             "string"
+            ]
+           },
+           "msgs": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "tools": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "tok": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "cost": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "cost_is_actual": {
+            "type": [
+             "boolean",
+             "null"
+            ]
+           },
+           "children": {
+            "type": [
+             "array",
+             "null"
+            ],
+            "items": {
+             "type": [
+              "null",
+              "object"
+             ],
+             "properties": {
+              "id": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "parent": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "source": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "title": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "model": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "started": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "ended": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "end_reason": {
+               "type": [
+                "null",
+                "string"
+               ]
+              },
+              "msgs": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "tools": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "tok": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "cost": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "cost_is_actual": {
+               "type": [
+                "boolean",
+                "null"
+               ]
+              },
+              "children": {
+               "type": [
+                "array",
+                "null"
+               ],
+               "items": {}
+              },
+              "child_count": {
+               "type": [
+                "null",
+                "number"
+               ]
+              },
+              "failed_child_count": {
+               "type": [
+                "null",
+                "number"
+               ]
+              }
+             },
+             "required": [
+              "child_count",
+              "children",
+              "cost",
+              "cost_is_actual",
+              "end_reason",
+              "ended",
+              "failed_child_count",
+              "id",
+              "model",
+              "parent",
+              "source",
+              "started",
+              "title",
+              "tok",
+              "tools"
+             ],
+             "additionalProperties": true
+            }
+           },
+           "child_count": {
+            "type": [
+             "null",
+             "number"
+            ]
+           },
+           "failed_child_count": {
+            "type": [
+             "null",
+             "number"
+            ]
+           }
+          },
+          "required": [
+           "child_count",
+           "children",
+           "cost",
+           "cost_is_actual",
+           "end_reason",
+           "ended",
+           "failed_child_count",
+           "id",
+           "model",
+           "parent",
+           "source",
+           "started",
+           "title",
+           "tok",
+           "tools"
+          ],
+          "additionalProperties": true
+         }
+        },
+        "child_count": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "failed_child_count": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "child_count",
+        "children",
+        "cost",
+        "cost_is_actual",
+        "end_reason",
+        "ended",
+        "failed_child_count",
+        "id",
+        "model",
+        "parent",
+        "source",
+        "started",
+        "title",
+        "tok",
+        "tools"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "outcomes": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "by_reason": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {},
+        "additionalProperties": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "by_source_reason": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {
+         "tui": {
+          "type": [
+           "null",
+           "object"
+          ],
+          "properties": {},
+          "additionalProperties": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         }
+        },
+        "additionalProperties": true
+       },
+       "silent": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "id": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "title": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "source": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "model": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "when": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "id",
+          "model",
+          "source",
+          "title",
+          "when"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "reaped": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "id": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "source": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "model": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "when": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "id",
+          "model",
+          "source",
+          "when"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "reap_trend": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "date": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "n": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "date",
+          "n"
+         ],
+         "additionalProperties": true
+        }
+       }
+      },
+      "required": [
+       "by_reason",
+       "by_source_reason",
+       "reap_trend",
+       "reaped",
+       "silent"
+      ],
+      "additionalProperties": true
+     },
+     "tools": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "name": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "calls": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "fails": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "fail_rate": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "prev_fail_rate": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "tok_wasted": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "p50_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "p95_bytes": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "calls",
+        "fail_rate",
+        "name",
+        "prev_fail_rate",
+        "tok_wasted"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "tool_fail_samples": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {},
+      "additionalProperties": true
+     },
+     "terminal_top_fail_commands": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "cmd": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "n": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "cmd",
+        "n"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "latency": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "by_model": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {},
+        "additionalProperties": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "n": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p50": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p90": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p99": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "tok_s": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "n",
+          "p50",
+          "p90",
+          "p99",
+          "tok_s"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "by_endpoint": {
+        "type": [
+         "null",
+         "object"
+        ],
+        "properties": {},
+        "additionalProperties": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "n": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p50": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p90": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "p99": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "tok_s": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "n",
+          "p50",
+          "p90",
+          "p99",
+          "tok_s"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "slowest": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "session": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "ts": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "model": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "s": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "model",
+          "s",
+          "session",
+          "ts"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "idle_threshold_s": {
+        "type": [
+         "null",
+         "number"
+        ]
+       },
+       "idle_n": {
+        "type": [
+         "null",
+         "number"
+        ]
+       }
+      },
+      "required": [
+       "by_endpoint",
+       "by_model",
+       "slowest"
+      ],
+      "additionalProperties": true
+     },
+     "attribution": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "by_source": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "source": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "cost": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "tokens": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "sessions": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "cost",
+          "sessions",
+          "source",
+          "tokens"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "by_root": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "id": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "title": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "own": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "descendants": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "total": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "descendants",
+          "id",
+          "own",
+          "title",
+          "total"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "by_cron": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "name": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "runs": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "total": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "avg": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "monthly_projection": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "avg",
+          "monthly_projection",
+          "name",
+          "runs",
+          "total"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "by_tool": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "tool": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "tokens": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "cost": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "cost",
+          "tokens",
+          "tool"
+         ],
+         "additionalProperties": true
+        }
+       }
+      },
+      "required": [
+       "by_cron",
+       "by_root",
+       "by_source",
+       "by_tool"
+      ],
+      "additionalProperties": true
+     },
+     "context": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "sessions": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "id": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "series": {
+           "type": [
+            "array",
+            "null"
+           ],
+           "items": {
+            "type": [
+             "array",
+             "null"
+            ],
+            "items": {
+             "type": [
+              "null",
+              "number"
+             ]
+            }
+           }
+          },
+          "compactions": {
+           "type": [
+            "array",
+            "null"
+           ],
+           "items": {
+            "type": [
+             "null",
+             "object"
+            ],
+            "properties": {
+             "ts": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "before": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "after": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "yield_tok": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "ineffective": {
+              "type": [
+               "boolean",
+               "null"
+              ]
+             }
+            },
+            "required": [
+             "ineffective",
+             "ts",
+             "yield_tok"
+            ],
+            "additionalProperties": true
+           }
+          }
+         },
+         "required": [
+          "compactions",
+          "id",
+          "series"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "reasoning_by_model": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "model": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "reasoning_tokens": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "output_tokens": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "share": {
+           "type": [
+            "null",
+            "number"
+           ]
+          }
+         },
+         "required": [
+          "model",
+          "output_tokens",
+          "reasoning_tokens",
+          "share"
+         ],
+         "additionalProperties": true
+        }
+       },
+       "cooldowns": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "id": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "title": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "cooldown_until": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "error_head": {
+           "type": [
+            "null",
+            "string"
+           ]
+          }
+         },
+         "required": [
+          "error_head",
+          "id",
+          "title"
+         ],
+         "additionalProperties": true
+        }
+       }
+      },
+      "required": [
+       "cooldowns",
+       "reasoning_by_model",
+       "sessions"
+      ],
+      "additionalProperties": true
+     },
+     "alerts": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "rule": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "severity": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "value": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "threshold": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "message": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "target_view": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "why": {
+         "type": [
+          "null",
+          "string"
+         ]
+        }
+       },
+       "required": [
+        "message",
+        "severity",
+        "target_view",
+        "value",
+        "why"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "session_index": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": [
+        "null",
+        "object"
+       ],
+       "properties": {
+        "id": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "title": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "model": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "source": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "tools": {
+         "type": [
+          "array",
+          "null"
+         ],
+         "items": {
+          "type": [
+           "null",
+           "string"
+          ]
+         }
+        },
+        "branch": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "cwd_tail": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "end": {
+         "type": [
+          "null",
+          "string"
+         ]
+        },
+        "cost": {
+         "type": [
+          "null",
+          "number"
+         ]
+        },
+        "dur": {
+         "type": [
+          "null",
+          "number"
+         ]
+        }
+       },
+       "required": [
+        "branch",
+        "cost",
+        "cwd_tail",
+        "dur",
+        "end",
+        "id",
+        "model",
+        "source",
+        "title",
+        "tools"
+       ],
+       "additionalProperties": true
+      }
+     },
+     "repo_branch": {
+      "type": [
+       "null",
+       "object"
+      ],
+      "properties": {
+       "repos": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": [
+          "null",
+          "object"
+         ],
+         "properties": {
+          "repo": {
+           "type": [
+            "null",
+            "string"
+           ]
+          },
+          "sessions": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "calls": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "tokens": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "cost": {
+           "type": [
+            "null",
+            "number"
+           ]
+          },
+          "branches": {
+           "type": [
+            "array",
+            "null"
+           ],
+           "items": {
+            "type": [
+             "null",
+             "object"
+            ],
+            "properties": {
+             "branch": {
+              "type": [
+               "null",
+               "string"
+              ]
+             },
+             "sessions": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "calls": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "tokens": {
+              "type": [
+               "null",
+               "number"
+              ]
+             },
+             "cost": {
+              "type": [
+               "null",
+               "number"
+              ]
+             }
+            },
+            "required": [
+             "branch",
+             "calls",
+             "cost",
+             "sessions",
+             "tokens"
+            ],
+            "additionalProperties": true
+           }
+          }
+         },
+         "required": [
+          "branches",
+          "calls",
+          "cost",
+          "repo",
+          "sessions",
+          "tokens"
+         ],
+         "additionalProperties": true
+        }
+       }
+      },
+      "required": [
+       "repos"
+      ],
+      "additionalProperties": true
+     }
+    },
+    "required": [
+     "active",
+     "alerts",
+     "attribution",
+     "bandwidth_daily",
+     "compression_pressure",
+     "concurrency",
+     "context",
+     "delegations",
+     "end_reasons",
+     "failures_recent",
+     "health",
+     "heatmap",
+     "hours",
+     "latency",
+     "live",
+     "node_sessions",
+     "outcomes",
+     "recent_sessions",
+     "repo_branch",
+     "resend",
+     "rows",
+     "session_index",
+     "sessions",
+     "sessions_tree",
+     "terminal_top_fail_commands",
+     "tools",
+     "tools_recent"
+    ],
+    "additionalProperties": true
+   }
+  },
+  "generated": {
+   "type": [
+    "null",
+    "string"
+   ]
+  },
+  "pricing_source": {
+   "type": [
+    "null",
+    "string"
+   ]
+  },
+  "pricing_models": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "schema_version": {
+   "type": [
+    "null",
+    "number"
+   ]
+  },
+  "resolution": {
+   "type": [
+    "null",
+    "object"
+   ],
+   "properties": {
+    "agent_home": {
+     "type": [
+      "null",
+      "string"
+     ]
+    },
+    "mode": {
+     "type": [
+      "null",
+      "string"
+     ]
+    },
+    "config_file": {
+     "type": [
+      "null",
+      "string"
+     ]
+    },
+    "discovered": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    "configured": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    "excluded": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {}
+    },
+    "failed": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {}
+    }
+   },
+   "required": [
+    "agent_home",
+    "config_file",
+    "configured",
+    "discovered",
+    "excluded",
+    "failed",
+    "mode"
+   ],
+   "additionalProperties": true
+  }
+ },
+ "required": [
+  "generated",
+  "profiles",
+  "resolution",
+  "schema_version"
+ ],
+ "additionalProperties": true
+}
