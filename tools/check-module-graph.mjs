@@ -243,7 +243,10 @@ chk(gone.length === 0, 'cross-module-write list has no stale entries (removed on
 const jsOrderSrc = fs.readFileSync(path.join(ROOT, 'src', 'llm_telemetry', 'webassets.py'), 'utf8');
 const jsOrderM = jsOrderSrc.match(/JS_ORDER\s*=\s*\[([^\]]*)\]/);
 const jsOrder = jsOrderM ? [...jsOrderM[1].matchAll(/"([^"]+\.js)"/g)].map(m => m[1]) : [];
-const onDisk = MODULES.filter(f => f !== 'costs.js');
+// costs.js and rankings.js are standalone page scripts (their own HTML pages),
+// never inlined into the dashboard, so they are not expected in JS_ORDER.
+const STANDALONE = new Set(['costs.js', 'rankings.js']);
+const onDisk = MODULES.filter(f => !STANDALONE.has(f));
 const notBuilt = onDisk.filter(f => !jsOrder.includes(f));
 const missing = jsOrder.filter(f => !onDisk.includes(f));
 chk(jsOrder.length > 0 && !notBuilt.length && !missing.length,
