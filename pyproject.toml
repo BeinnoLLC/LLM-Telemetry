@@ -117,3 +117,7 @@ warn_redundant_casts = true
 # Anchors test_pytest_wrapper.py's own collection root (P3-02, #32) so a
 # `pytest` invocation from any cwd resolves tests/ the same way.
 testpaths = ["tests"]
+# The other tests/test_*.py files are standalone scripts that sys.exit() at
+# import time; collecting them directly crashes pytest (INTERNALERROR
+# SystemExit). Only the wrapper is a pytest module — it runs the rest.
+python_files = ["test_pytest_wrapper.py"]
