@@ -219,7 +219,7 @@ const D = await load();
   const els = dom('resinfo', 'resbtn', 'respop');
   DATA.profiles = { p1: {}, p2: {}, All: {} };
   DATA.resolution = {
-    agent_home: '/home/u/.hermes', mode: 'discovered', discovered: ['p1'], configured: ['p2'],
+    agent_home: '/srv/agent-home', mode: 'discovered', discovered: ['p1'], configured: ['p2'],
     excluded: [{ name: 'old', reason: 'no state.db' }], failed: [],
   };
   clickHandlers.length = 0;
@@ -229,7 +229,7 @@ const D = await load();
   lacks(els.resinfo.innerHTML, 'resbad', 'renderResolution: nothing red when no profile failed');
   lacks(els.resinfo.innerHTML, '&#9888;', 'renderResolution: no warning glyph without failures');
   has(els.resinfo.innerHTML, 'class="resbtn"', 'renderResolution: plain resbtn class when healthy');
-  has(els.resinfo.innerHTML, '<code>/home/u/.hermes</code>', 'renderResolution: shows the agent home searched');
+  has(els.resinfo.innerHTML, '<code>/srv/agent-home</code>', 'renderResolution: shows the agent home searched');
   has(els.resinfo.innerHTML, '· discovered<', 'renderResolution: shows the resolution mode');
   has(els.resinfo.innerHTML, '<b>Discovered:</b> p1', 'renderResolution: lists discovered profiles');
   has(els.resinfo.innerHTML, '<b>From config:</b> p2', 'renderResolution: lists configured profiles');
