@@ -453,6 +453,25 @@ goPage(dupDom.window.document, dupDom.window, 'headroom');
       'a clean 2dp value is printed verbatim', '63.25%');
 }
 
+// --- the sample's own clock must agree with itself --------------------------
+// collected_at is what the page prints as "last refreshed"; cache_fetched_at is
+// when the very same collection pulled the provider cache. One run stamps both,
+// so they name the same moment. This sample shipped a collected_at a full year
+// behind its own cache, so the header read "refreshed hourly · last 366d ago" —
+// the fixture contradicted itself, and nothing ever compared the two fields.
+// Deterministic on purpose: it checks the fixture against itself, never against
+// the wall clock, so it cannot rot into a time bomb.
+{
+  const fetchedMs = Date.parse(quota.profiles.work.cache_fetched_at);
+  chk(Number.isFinite(fetchedMs),
+      'the sample names a cache_fetched_at to check collected_at against',
+      String(quota.profiles.work.cache_fetched_at));
+  const deltaMs = quota.collected_at * 1000 - fetchedMs;
+  chk(deltaMs >= -300000 && deltaMs <= 86400000,
+      'collected_at is stamped at the same moment as the cache it describes',
+      `${(deltaMs / 86400000).toFixed(1)}d apart`);
+}
+
 console.log(`\ncheck_quota_view.js  ${p} passed, ${f} failed`);
 // jsdom's pretendToBeVisual timer keeps the event loop alive, so without an
 // explicit exit the suite hangs forever in CI.
