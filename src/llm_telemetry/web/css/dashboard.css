@@ -1353,7 +1353,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    "how much is left here" on its own, so they sit side by side instead of as
    one long ruled list. A provider near its limit gets a red edge, not a wash
    of background -- the edge survives both themes and greyscale. */
-.qv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:.75rem;align-items:stretch}
+.qv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:.75rem;align-items:start}
 .qv-prov{border:1px solid var(--border);border-radius:10px;padding:.75rem .85rem;min-width:0;
   background:color-mix(in srgb,var(--fg) 2%,transparent)}
 .qv-prov.qv-near{border-color:color-mix(in srgb,var(--z-bad) 55%,var(--border));box-shadow:inset 3px 0 0 var(--z-bad)}
@@ -1385,17 +1385,23 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    Colour is the theme's own --z-* pair, never a literal: --z-* is the solid
    mark (dots), --z-*-fg the foreground (text). A literal passes on the dark
    card and fails on the light one, where #22c55e is 2.28:1 on white. */
-.qv-accts{margin:.7rem 0 0;border-top:1px dashed var(--border);padding-top:.55rem}
+.qv-accts{margin:.7rem 0 0;border-top:1px dashed var(--border);padding:.6rem 0 0 .55rem;
+  border-left:2px solid color-mix(in srgb,var(--border) 60%,transparent);
+  margin-left:.15rem}
 .qv-keysum{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;
-  letter-spacing:.06em;font-weight:600;margin-bottom:.3rem}
+  letter-spacing:.06em;font-weight:600;margin-bottom:.4rem}
 .qv-keysum b{color:var(--z-warn-fg);font-weight:700}
 
-/* Each key is a two-line block: the identifying line, then what went wrong.
-   Heavier top padding than bottom keeps consecutive keys from reading as one
-   paragraph — the previous .2rem with a hairline was not enough to separate
-   them at a glance. */
-.qv-acct{padding:.4rem 0 .35rem;font-size:var(--fs-xs);min-width:0}
-.qv-acct+.qv-acct{border-top:1px solid var(--border)}
+/* Every key is its own container, drawn the same way whatever state it is in.
+   The rows used to be separated by a hairline alone, so the single key carrying
+   a background tint read as "the selected key" and its siblings as stray text
+   — the visual shape of exactly the collapse this page exists to undo. Equal
+   containers first, state cues after, and N keys stay legible as N. */
+.qv-acct{font-size:var(--fs-xs);min-width:0;
+  border:1px solid var(--border);border-radius:8px;
+  background:color-mix(in srgb,var(--fg) 3%,transparent);
+  padding:.45rem .55rem}
+.qv-acct+.qv-acct{margin-top:.35rem}
 .qv-acctop{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;min-width:0}
 
 /* The dot repeats what the status text says, so the verdict is legible
@@ -1407,9 +1413,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-acct[data-level="warn"] .qv-adot{background:var(--z-warn)}
 .qv-acct[data-level="bad"]  .qv-adot{background:var(--z-bad)}
 
-/* Identity, not decoration: the pool hands out opaque ids and two live keys
-   can carry the same label, so the ordinal is the only handle that tells them
-   apart. Monospace + tabular so #1 and #10 align. */
+/* Fallback identity only: the pool hands out opaque ids and two live keys can
+   share a label, so when that happens the ordinal is the only handle that tells
+   them apart. It is not shown otherwise -- see the comment on qvAccount.
+   Monospace + tabular so #1 and #10 align. */
 .qv-aidx{font-family:ui-monospace,monospace;color:var(--muted);
   font-variant-numeric:tabular-nums;flex:0 0 auto}
 .qv-aname{font-size:var(--fs-sm);font-weight:600;color:var(--fg);
@@ -1425,12 +1432,23 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-astat.qv-bad{color:var(--card);background:var(--z-bad);border-color:var(--z-bad)}
 .qv-astat.qv-mute{color:var(--muted);border-color:transparent;padding-left:0}
 
-/* The key the next request would spend. Marked by a rule on the left edge and a
-   tinted ground rather than by another pill: the status pill already occupies
-   that slot, and two adjacent pills read as one control. */
-.qv-acct[data-inuse="1"]{background:color-mix(in srgb,var(--accent) 7%,transparent);
-  border-radius:6px;padding-left:.45rem;padding-right:.45rem;margin-left:-.45rem;
-  margin-right:-.45rem;border-left:2px solid var(--accent)}
+/* The key the next request would spend. The cue is deliberately NOT a change to
+   the container: an outlined/tinted box on a read-only page reads as selection,
+   inviting a click that does nothing. Nor is it a ring on the dot -- a ring in
+   the accent hue around a green dot reads as a stale focus ring, i.e. as damage.
+   The status pill already says "in use" in words, so that pill is the cue and it
+   is carried by weight, which survives greyscale. Container stays identical for
+   every key, which is what makes N keys read as N peers. */
+.qv-acct[data-inuse="1"] .qv-astat{font-weight:700;
+  border-color:color-mix(in srgb,currentColor 55%,transparent)}
+
+/* A key that is spent or dead can no longer serve a request: it is context, not
+   a live option. Its block recedes (dashed edge, no ground) and the status pill
+   is left as the only loud thing on the row, so a scan of a multi-key provider
+   lands on the keys that still work. */
+.qv-acct[data-level="bad"],.qv-acct[data-level="mute"]{
+  border-style:dashed;background:none}
+.qv-acct[data-level="bad"] .qv-aname,.qv-acct[data-level="mute"] .qv-aname{color:var(--muted)}
 
 .qv-abits{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums}
 /* The provider's own words for why a key stopped. Monospace marks it as copied
@@ -1439,7 +1457,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   margin:.2rem 0 0 1.35rem;overflow-wrap:anywhere}
 .qv-amodels{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;max-width:24rem;margin-top:.15rem}
-.qv-auchips{display:inline-flex;gap:.3rem;flex-wrap:wrap}
+/* Usage chips always take their own line. As a plain flex item they wrapped only
+   when they happened to overflow, so a key with one window kept its chip up on
+   the header line while a key with two dropped it to a second line -- the same
+   information drawn in two different shapes depending on window count, which
+   reads as a layout bug next to a sibling key. Fixing the basis makes every key
+   with usage read identically: identity line, then metrics. */
+.qv-auchips{display:inline-flex;gap:.3rem;flex-wrap:wrap;flex-basis:100%}
 .qv-achip{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;
   border:1px solid var(--border);border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
 .qv-achip.qv-ok{color:var(--z-ok-fg);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}

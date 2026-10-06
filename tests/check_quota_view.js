@@ -302,8 +302,17 @@ if (bootErr) {
       keyProblems.push(`${pid}: ${rows.length} key rows for ${pr.accounts.length} accounts`); continue;
     }
     const names = rows.map(r => r.querySelector('.qv-aname')?.textContent);
-    const idx = rows.map(r => r.querySelector('.qv-aidx')?.textContent);
-    if (new Set(idx).size !== rows.length) keyProblems.push(`${pid}: ordinal badges are not unique (${idx})`);
+    const idx = rows.map(r => r.querySelector('.qv-aidx')?.textContent).filter(Boolean);
+    // The badge is conditional: shown only when labels collide inside a pool,
+    // where it is the only handle. When shown, the numbers must still be unique.
+    const labels = pr.accounts.map(a => a.label);
+    const collides = new Set(labels).size !== labels.length;
+    if (collides) {
+      if (idx.length !== rows.length) keyProblems.push(`${pid}: labels collide but the ordinal badge is missing (${idx})`);
+      else if (new Set(idx).size !== rows.length) keyProblems.push(`${pid}: ordinal badges are not unique (${idx})`);
+    } else if (idx.length) {
+      keyProblems.push(`${pid}: ordinal badge shown for keys with distinct labels (${idx})`);
+    }
     for (const a of pr.accounts) {
       if (!names.includes(a.label)) keyProblems.push(`${pid}: key "${a.label}" has no row`);
     }
@@ -402,6 +411,22 @@ chk(!/\bNaN\b/.test(viewText(emptyDom.window.document))
     && provs(emptyDom.window.document).length === 0,
     'control: a profile with no providers renders empty, not broken',
     `${provs(emptyDom.window.document).length} cards`);
+
+// Control for the conditional badge: force a label collision inside one pool and
+// the numbers must come back. Without this the "badge is absent" assertion above
+// would also pass if qvAccount simply never rendered a badge at all.
+const dup = JSON.parse(JSON.stringify(quota));
+const dupProv = dup.profiles.work.providers.anthropic;
+dupProv.accounts[1].label = dupProv.accounts[0].label;
+const dupDom = boot(dup);
+goPage(dupDom.window.document, dupDom.window, 'headroom');
+{
+  const card = cardOf(dupDom.window.document, 'anthropic');
+  const idx = card ? [...card.querySelectorAll('.qv-aidx')].map(e => e.textContent) : [];
+  chk(idx.length === dupProv.accounts.length && new Set(idx).size === idx.length,
+      'control: two keys sharing a label fall back to unique ordinal badges',
+      `${idx.length} badges: ${idx.join(',')}`);
+}
 
 console.log(`\ncheck_quota_view.js  ${p} passed, ${f} failed`);
 // jsdom's pretendToBeVisual timer keeps the event loop alive, so without an

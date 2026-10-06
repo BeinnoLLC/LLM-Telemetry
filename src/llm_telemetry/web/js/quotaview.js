@@ -176,9 +176,12 @@ export function qvAcctUsage(a){
 }
 
 // One key. The row reads left to right as: which key, what state, how much it
-// has been used. The ordinal badge is identity: two keys can share a label, and
-// the pool's id is opaque, so position is the only honest handle to show.
-export function qvAccount(a, i){
+// has been used. The label is the handle. The ordinal badge appears ONLY when
+// two keys of the same pool share a label, because that is the one case the
+// label cannot answer; a bare position number on every row implies an order
+// the reader can act on, and rows are sorted worst-first, so the numbers would
+// run 3, 1, 2 and read as a bug rather than as identity.
+export function qvAccount(a, i, showIdx){
   const lvl = qvAcctLevel(a);
   const why = qvAcctWhy(a);
   const exp = qvAcctExpiry(a.expires_at_ms);
@@ -195,7 +198,7 @@ export function qvAccount(a, i){
   const whyEl = why ? `<div class="qv-why" title="${escA(why)}">${esc(why)}</div>` : '';
   return `<div class="qv-acct" data-level="${lvl}" data-inuse="${a.in_use ? '1' : '0'}">` +
     `<div class="qv-acctop"><span class="qv-adot" aria-hidden="true"></span>` +
-    `<span class="qv-aidx">#${i + 1}</span>` +
+    (showIdx ? `<span class="qv-aidx">#${i + 1}</span>` : '') +
     `<b class="qv-aname">${esc(a.label || a.id || 'key')}</b>` +
     `<span class="qv-astat qv-${lvl}">${esc(qvAcctState(a))}</span>` +
     (bits.length ? `<span class="qv-abits">${bits.join(' · ')}</span>` : '') +
@@ -212,16 +215,24 @@ export function qvAccounts(prov){
   const rank = {dead: 0, exhausted: 1, ok: 2};
   const order = [...accts].sort((a, b) =>
     (rank[a.status] === undefined ? 3 : rank[a.status]) - (rank[b.status] === undefined ? 3 : rank[b.status]));
-  // Display order is worst-first; the ordinal badge is NOT that order. The badge
-  // is the only handle two same-labelled keys can be told apart by, so it is
-  // assigned from the payload's own order -- which the collector already sorts
-  // by pool priority. Badging from the sorted index instead would renumber a
-  // key the moment a sibling changed state, i.e. stop naming the key it sits by.
+  // Display order is worst-first. The ordinal badge is NOT that order and is not
+  // shown by default, because a position number on a list sorted worst-first
+  // reads as a rank the reader can act on ("#1 is the one to fix") when it is
+  // really just where the key happened to fall. It appears only when two keys
+  // share a label, which is the one thing the label cannot answer; there it is
+  // assigned from the payload's own order, which the collector already sorts by
+  // pool priority, so a key keeps its number when a sibling changes state.
+  const dupLabel = new Map();
+  for (const a of accts) {
+    const k = a.label || a.id || 'key';
+    dupLabel.set(k, (dupLabel.get(k) || 0) + 1);
+  }
+  const needsIdx = [...dupLabel.values()].some(n => n > 1);
   const ordinal = new Map(accts.map((a, i) => [a, i]));
   const spent = accts.filter(a => a.status === 'exhausted' || a.status === 'dead').length;
   const head = `<div class="qv-keysum">${accts.length} key${accts.length === 1 ? '' : 's'}` +
     (spent ? ` · <b>${spent} spent</b>` : '') + '</div>';
-  return `<div class="qv-accts">${head}${order.map(a => qvAccount(a, ordinal.get(a))).join('')}</div>`;
+  return `<div class="qv-accts">${head}${order.map(a => qvAccount(a, ordinal.get(a), needsIdx)).join('')}</div>`;
 }
 
 // One account balance. Amounts are already strings (decimal precision is the
