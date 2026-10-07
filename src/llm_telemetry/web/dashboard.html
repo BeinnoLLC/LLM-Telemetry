@@ -178,49 +178,27 @@ __DASHBOARD_CSS__
       track list collapsed to `589px 0px` — a zero-width column with the list
       overflowing it. Fixed tracks + a media query remove both failure modes. -->
   <!-- #120/#125: task queue visualization, ABOVE the in-progress grid:
-       "what is about to run" is the question you ask before "what is running",
-       and the queued lane is the earliest warning that the fleet is saturated.
-       Three lanes, each capped to the 10 most recent workers (user request) so
-       the panel never grows without bound:
-         Queued  — real per-host waiting depth from the Ollama poller (h.queue)
-         Running — the live session list below it
-         Done    — sessions that actually ended, from the same recent_sessions
-                   feed the Analytics page uses; not a synthetic "completed"
-                   event invented for this panel.
-       A chip TRAVELS between lanes (FLIP-animated DOM move) rather than fading
-       out in one and back in in another, so the same task visibly crosses the
-       gap. Running -> Done is an exact identity match (same session id, from
-       two feeds that agree); Queued -> Running stays the count-based estimate
-       documented in renderQueue() because a queue slot carries no id. -->
-  <div class="card p-4 mb-3" id="qcard">
+       "what is about to run" is asked before "what is running". Built only
+       from real data: per-host waiting depth from the Ollama poller, the live
+       session list, and the recent_sessions feed Analytics uses. -->
+  <div class="card p-4 mb-3" id="qcard" style="position:relative">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
-   <!-- #140: the queue as a railway. Depot (queued cars held at a signal) ->
-        the line (running sessions as a moving train, locomotive first) ->
-        the yard (finished sessions parked). Squares are keyed like the lane
-        chips below, so a 5s poll never restarts a car's animation. -->
-   <div class="qtrain" id="qtrain" aria-hidden="true">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot</span><div class="qt-cars" id="qt-queued"></div></div>
+   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
+        view: the old queued/running/done lanes were removed). Depot = requests
+        waiting at an Ollama host, the line = live sessions as one coupled
+        train (loco = most recently active), the yard = finished sessions
+        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
+        a task that changes section flies across. Hover/focus a car for detail. -->
+   <div class="qtrain" id="qtrain">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
     <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line</span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard</span><div class="qt-cars" id="qt-done"></div></div>
-    <div class="qt-rail"></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-rail" aria-hidden="true"></div>
    </div>
-   <div id="qlanes" class="qlanes">
-    <div class="qlane" data-lane="queued">
-     <div class="qlanehdr">Queued<span class="qcount" id="qcount-queued">0</span></div>
-     <div class="qitems" id="qitems-queued"></div>
-    </div>
-    <div class="qlane" data-lane="running">
-     <div class="qlanehdr">Running<span class="qcount" id="qcount-running">0</span></div>
-     <div class="qitems" id="qitems-running"></div>
-    </div>
-    <div class="qlane" data-lane="done">
-     <div class="qlanehdr">Done<span class="qcount" id="qcount-done">0</span></div>
-     <div class="qitems" id="qitems-done"></div>
-    </div>
-   </div>
+   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">

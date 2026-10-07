@@ -1,10 +1,9 @@
-// #120/#125: the Live view's task-queue panel — THREE lanes (queued / running
-// / done) built only from real data (Ollama host queue depth, the live
-// session list, and the same recent_sessions feed Analytics uses), each
-// capped to the 10 most recent workers. A chip that has a real identity in
-// both feeds (a session ending: running -> done) TRAVELS as the same DOM node
-// via a FLIP transform rather than fading out and faking a new one in.
-// Loads the BUILT dashboard from examples/reports/dashboard.html.
+// #120/#125 + #140: the Live view's task queue, drawn as a railway. Since the
+// #140 follow-up it is the ONLY queue view (the queued/running/done lanes were
+// removed). Built only from real data: Ollama host queue depth (depot), the
+// live session list (the line), and the recent_sessions feed Analytics uses
+// (the yard). Cars are keyed and reused across polls; every car has a hover
+// card. Loads the BUILT dashboard from examples/reports/dashboard.html.
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -53,249 +52,121 @@ function bootDOM() {
 const dom = bootDOM();
 setTimeout(() => {
   const w = dom.window, d = w.document;
-  const qBox = d.getElementById('qitems-queued');
-  const rBox = d.getElementById('qitems-running');
-  const dBox = d.getElementById('qitems-done');
+  const tr = d.getElementById('qtrain');
+  const qb = d.getElementById('qt-queued'), rb = d.getElementById('qt-running'), db = d.getElementById('qt-done');
+  const cars = box => [...box.querySelectorAll('.qt-car[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
+  const lbl = c => c.querySelector('.qt-lbl').textContent;
+  const n = id => d.getElementById(id).textContent;
   try {
-    chk(!!qBox && !!rBox && !!dBox, 'all three queue lanes exist');
+    chk(!!tr && !!qb && !!rb && !!db, 'railway: depot, line and yard exist');
     chk(!!d.getElementById('qcard'), 'queue card exists');
     chk(!!d.getElementById('qsub'), 'queue subtitle exists');
+    chk(!!d.getElementById('qtip'), 'shared car tooltip exists');
+
+    // ---- the redundant lanes are gone -------------------------------------
+    chk(!d.getElementById('qlanes'), 'the queued/running/done lanes were removed');
+    chk(!d.getElementById('qitems-queued') && !d.getElementById('qcount-done'), 'no lane containers or lane counts remain');
+    chk(!/\.qchip\{/.test(html) && !/@keyframes qin\b/.test(html), 'the lane chip CSS was removed with them');
 
     // ---- #120 follow-up: the queue must sit ABOVE the in-progress grid ----
     const qcard = d.getElementById('qcard');
     const liveGrid = d.getElementById('live-grid');
     const FOLLOWING = w.Node.DOCUMENT_POSITION_FOLLOWING;
-    chk(!!liveGrid, 'live grid exists');
-    chk(!!qcard && !!liveGrid
-        && (qcard.compareDocumentPosition(liveGrid) & FOLLOWING) !== 0,
+    chk(!!liveGrid && (qcard.compareDocumentPosition(liveGrid) & FOLLOWING) !== 0,
         'task queue renders BEFORE the in-progress grid');
     const inProg = [...d.querySelectorAll('.lbl')].find(el => /In progress now/i.test(el.textContent));
-    chk(!!inProg && !!qcard
-        && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
+    chk(!!inProg && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
         'task queue renders before the "In progress now" heading');
 
-    // ---- CSS: the animations really exist and are wired ---------------------
-    chk(/@keyframes qin/.test(html), 'entry animation defined');
-    chk(/@keyframes qout/.test(html), 'exit animation defined');
-    chk(/@keyframes qland/.test(html), 'arrival ("landed") animation defined for travel');
-    chk(/@keyframes qshimmer/.test(html), 'idle shimmer for waiting items defined');
-    chk(/@keyframes qpulse-ok/.test(html), 'calm empty-state pulse defined');
-    chk(/animation:\s*qshimmer/.test(html), 'waiting dots actually use the shimmer');
-    chk(/\.qchip\.arrived\{animation:qland/.test(html), 'arrived chips play the land animation');
-    // perf requirement: motion is transform/opacity, not layout properties
-    chk(/transition:transform .*opacity/.test(html),
-        'chips transition on transform/opacity (no per-frame reflow)');
-    chk(typeof w.eval('flipMove') === 'function', 'flipMove (FLIP travel helper) is defined');
+    // ---- CSS: the motion really exists and is wired -----------------------
+    for (const k of ['qt-run', 'qt-shunt', 'qt-park', 'qt-depart', 'qt-land', 'qt-shunter', 'qt-newest', 'qt-sleepers'])
+      chk(new RegExp('@keyframes ' + k + '\\b').test(html), `@keyframes ${k} defined`);
+    chk(/\.qt-consist\{[^}]*animation:qt-run/.test(html), 'the whole consist runs the line as one train');
+    chk(/\.qtrain:hover \.qt-consist[^{]*\{animation-play-state:paused/.test(html), 'hovering the railway pauses the train so a car can be read');
+    chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get a still railway');
+    chk(/\.qt-yard \.qt-cars\{[^}]*repeating-linear-gradient/.test(html), 'the yard draws sidings');
+    chk(!!d.querySelector('.qt-yard .qt-shunter'), 'the yard has an idling shunter');
 
-    // ---- empty states first: reset the sample's own recent_sessions so ----
-    // the "done" lane checks are not diluted by 40 real baked-in sessions.
-    w.eval(`DATA.profiles[current].recent_sessions = []; renderQueue();`);
-    const emptyD0 = dBox.querySelector('.qempty');
-    chk(!!emptyD0 && /nothing finished/i.test(emptyD0.textContent),
-        'empty done lane shows a calm state', emptyD0 && emptyD0.textContent);
-
-    // ---- drive a REAL queue depth through the real render path ------------
-    w.eval(`DATA.ollama = {hosts: [
-      {label:'box-a', up:true, queue:3, loaded:[], urls:[]},
-      {label:'box-b', up:true, queue:0, loaded:[], urls:[]}
-    ]}; renderQueue();`);
-    let chips = [...qBox.querySelectorAll('.qchip')];
-    chk(chips.length === 3, '3 waiting requests render as 3 chips', String(chips.length));
-    chk(chips.every(c => c.dataset.lane === 'queued'), 'all 3 are in the queued lane');
-    chk(!qBox.querySelector('.qempty'), 'empty state disappears when the queue is not empty');
-    chk(d.getElementById('qcount-queued').textContent === '3',
-        'queued count matches the depth', d.getElementById('qcount-queued').textContent);
-    chk(/backed up on box-a/.test(d.getElementById('qsub').textContent),
-        'subtitle names the backed-up host', d.getElementById('qsub').textContent);
-
-    // idempotent re-render must not replay entry animations (the #114 flicker)
-    const firstChip = chips[0];
-    w.eval('renderQueue()');
-    chips = [...qBox.querySelectorAll('.qchip')];
-    chk(chips.length === 3, 're-render with unchanged data keeps 3 chips', String(chips.length));
-    chk(chips[0] === firstChip, 'unchanged chips are REUSED, not rebuilt (no flicker)');
-
-    // depth shrinking plays the exit animation, then removes the node
-    w.eval(`DATA.ollama.hosts[0].queue = 1; renderQueue();`);
-    const leaving = qBox.querySelectorAll('.qchip.leaving');
-    chk(leaving.length === 2, 'shrinking depth marks the surplus chips as leaving',
-        String(leaving.length));
-
-    // ---- 10-worker cap: 25 waiting slots show only 10 chips + overflow ----
-    w.eval(`DATA.ollama.hosts = [{label:'box-c', up:true, queue:25, loaded:[], urls:[]}];
-            renderQueue();`);
-    const cappedChips = qBox.querySelectorAll('.qchip:not(.leaving)');
-    chk(cappedChips.length === 10, 'queued lane caps at 10 chips even with 25 waiting',
-        String(cappedChips.length));
-    chk(d.getElementById('qcount-queued').textContent === '25',
-        'the COUNT still shows the real total (25), capping is display-only',
-        d.getElementById('qcount-queued').textContent);
-    const moreQ = qBox.querySelector('.qmore');
-    chk(!!moreQ && /15 more/.test(moreQ.textContent),
-        'an overflow footer states how many are hidden', moreQ && moreQ.textContent);
-  } catch (e) {
-    chk(false, 'queue checks crashed', e.message);
-    console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));
-  }
-
-  // let the 240ms exit animation finish before asserting lane contents
-  setTimeout(() => {
-  try {
-    // reset to a clean, small queue for the rest of the checks
+    // ---- empty: patrol car on a clear line --------------------------------
     w.eval(`DATA.ollama = {hosts: [{label:'box-a', up:true, queue:0, loaded:[], urls:[]}]};
-            renderQueue();`);
+            DATA.profiles[current].live = []; DATA.profiles[current].recent_sessions = []; renderQueue();`);
+    chk(rb.querySelectorAll('.qt-patrol').length === 1, 'empty line: exactly one patrol car');
+    chk(tr.classList.contains('clear'), 'empty line: railway flagged clear');
+    chk(d.getElementById('qsub').textContent === 'fleet clear · 1 host', 'subtitle: fleet clear');
 
-    // ---- running lane from the real live sessions -------------------------
-    w.eval(`DATA.profiles[current].live = [
-      {id:'s1', model:'claude-opus-5', profile:'work', idle_s:4},
-      {id:'s2', model:'qwen3-coder:30b', profile:'personal', idle_s:12}
-    ]; renderQueue();`);
-    const rc = [...rBox.querySelectorAll('.qchip:not(.leaving)')];
-    chk(rc.length === 2, 'live sessions render in the running lane', String(rc.length));
-    chk(rc.every(c => c.dataset.lane === 'running'), 'they are marked as running');
-    chk(d.getElementById('qcount-running').textContent === '2',
-        'running count matches', d.getElementById('qcount-running').textContent);
-    const dot = rc.find(c => c.dataset.key === 's:s1').querySelector('.qdotwrap');
-    const m = (dot.getAttribute('style') || '').match(/hsl\((\d+)/);
-    chk(!!m && Number(m[1]) === w.eval(`hashHue('work')`),
-        'running chip carries its profile colour', m && m[1]);
-
-    // ---- the promote transition: the queue drains while sessions start ----
-    w.eval(`DATA.ollama.hosts[0].queue = 1; renderQueue();`); // seed one waiting slot
-  } catch (e) {
-    chk(false, 'queue checks crashed (running setup)', e.message);
-  }
-
-  setTimeout(() => {
-  try {
-    w.eval(`DATA.ollama.hosts[0].queue = 0;
-            DATA.profiles[current].live = [
-              {id:'s1', model:'claude-opus-5', profile:'work', idle_s:4},
-              {id:'s2', model:'qwen3-coder:30b', profile:'personal', idle_s:12},
-              {id:'s-new', model:'qwen3-coder:30b', profile:'work', idle_s:1}
-            ]; renderQueue();`);
-    const promoted = rBox.querySelector('.qchip[data-key="s:s-new"]');
-    chk(!!promoted, 'the newly started session renders in the running lane');
-    chk(!!promoted && promoted.classList.contains('promoting'),
-        'it plays the promote animation (advancing, not swapped)',
-        promoted && promoted.className);
-
-    // An UNRELATED new session while the queue was already clear must NOT be
-    // dressed up as a promotion — the budget is zero when nothing left the queue.
-    w.eval(`DATA.profiles[current].live = [
-      {id:'s1', model:'claude-opus-5', profile:'work', idle_s:4},
-      {id:'s2', model:'qwen3-coder:30b', profile:'personal', idle_s:12},
-      {id:'s-new', model:'qwen3-coder:30b', profile:'work', idle_s:1},
-      {id:'s-unrelated', model:'claude-opus-5', profile:'work', idle_s:0}
-    ]; renderQueue();`);
-    const unrel = rBox.querySelector('.qchip[data-key="s:s-unrelated"]');
-    chk(!!unrel && !unrel.classList.contains('promoting'),
-        'an unrelated new session is not dressed up as a promotion',
-        unrel && unrel.className);
-
-    // ---- running -> done: the SAME element travels, not a fresh chip ------
-    // The ended session shares an id with a session that was just running, so
-    // the reconciler must move the ORIGINAL dom node rather than destroy one
-    // chip and create another — that identity is the whole point of #125.
-    const runningNode = rBox.querySelector('.qchip[data-key="s:s1"]');
-    chk(!!runningNode, 'session s1 is running before it ends');
-    w.eval(`DATA.profiles[current].live = DATA.profiles[current].live.filter(L => L.id !== 's1');
-            DATA.profiles[current].recent_sessions = [
-              {id:'s1', model:'claude-opus-5', last_model:'claude-opus-5', last_ts: Date.now()/1000, dur_s: 340}
-            ].concat(DATA.profiles[current].recent_sessions || []);
-            renderQueue();`);
-    const doneNode = dBox.querySelector('.qchip[data-key="s:s1"]');
-    chk(!!doneNode, 's1 now appears in the done lane');
-    chk(doneNode === runningNode,
-        'the DONE chip is the SAME dom node that was running (travel, not recreate)');
-    chk(!rBox.querySelector('.qchip[data-key="s:s1"]'),
-        's1 no longer sits in the running lane once it is done');
-    chk(!!doneNode && doneNode.classList.contains('qchip'),
-        'the travelled chip is still a valid chip element');
-    chk(d.getElementById('qcount-done').textContent === '1',
-        'done count reflects the newly-ended session', d.getElementById('qcount-done').textContent);
-
-    // ---- done lane also honours the 10-worker cap --------------------------
-    const many = Array.from({length: 14}, (_, i) => ({
-      id: `old${i}`, model: 'qwen3-coder:30b', last_model: 'qwen3-coder:30b',
-      last_ts: Date.now()/1000 - i, dur_s: 60,
-    }));
-    w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}.concat(
-      DATA.profiles[current].recent_sessions || []); renderQueue();`);
-    const doneChips = dBox.querySelectorAll('.qchip:not(.leaving)');
-    chk(doneChips.length === 10, 'done lane caps at 10 chips with 15 ended sessions',
-        String(doneChips.length));
-    chk(d.getElementById('qcount-done').textContent === '15',
-        'done count still shows the real total (15)', d.getElementById('qcount-done').textContent);
-    const moreD = dBox.querySelector('.qmore');
-    chk(!!moreD && /5 more/.test(moreD.textContent),
-        'done lane also gets an overflow footer', moreD && moreD.textContent);
-
-    // ---- idle / empty states -------------------------------------------
-    w.eval(`DATA.profiles[current].live = []; renderQueue();`);
-    const em = rBox.querySelector('.qempty');
-    chk(!!em && /idle/i.test(em.textContent), 'no sessions -> calm idle state', em && em.textContent);
-    chk(d.getElementById('qcount-running').textContent === '0', 'running count back to 0',
-        d.getElementById('qcount-running').textContent);
-
-    // ---- #140: the railway strip -------------------------------------------
-    const tr = d.getElementById('qtrain');
-    const tq = d.getElementById('qt-queued'), trn = d.getElementById('qt-running'), td = d.getElementById('qt-done');
-    chk(!!tr && !!tq && !!trn && !!td, '#140 train strip with depot, line and yard exists');
-    chk(!!tr && tr.getAttribute('aria-hidden') === 'true', '#140 the strip is decorative; the lanes stay the readable record');
-    chk(!!tr && (tr.compareDocumentPosition(d.getElementById('qlanes')) & 4) !== 0, '#140 the train sits above the lanes');
-    for (const k of ['qt-run', 'qt-shunt', 'qt-sleepers', 'qt-park', 'qt-depart', 'qt-blink'])
-      chk(new RegExp('@keyframes ' + k + '\\b').test(html), `#140 keyframes ${k} defined`);
-    chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain/.test(html), '#140 all train motion stops under reduced motion');
-
-    // fleet clear: no queue, nothing running
-    w.eval(`DATA.ollama.hosts.forEach(h => h.queue = 0); DATA.profiles[current].live = []; renderQueue();`);
-    chk(tr.classList.contains('clear') && !tr.classList.contains('moving') && !tr.classList.contains('backed'),
-        '#140 fleet clear: strip is .clear, not moving, not backed', tr.className);
-    chk(trn.querySelectorAll('.qt-patrol').length === 1, '#140 fleet clear: exactly one ghost car patrols the empty line');
-    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 0, '#140 fleet clear: depot is empty');
-
-    // backed up + running: depth becomes queued cars, sessions become a train
-    w.eval(`DATA.ollama.hosts[0].queue = 4;
-      DATA.profiles[current].live = [
-        {id:'t1', model:'qwen3-coder:30b', title:'one', idle_s:1},
-        {id:'t2', model:'claude-opus-5', title:'two', idle_s:2},
-        {id:'t3', model:'gpt-5', title:'three', idle_s:3}]; renderQueue();`);
-    chk(tr.classList.contains('backed') && tr.classList.contains('moving') && !tr.classList.contains('clear'),
-        '#140 backed + moving when work waits and runs', tr.className);
-    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 4, '#140 4 waiting requests are 4 depot cars',
-        String(tq.querySelectorAll('.qt-q').length));
-    const cars = [...trn.querySelectorAll('.qt-r:not(.qt-leaving)')];
-    chk(cars.length === 3, '#140 3 running sessions are 3 cars on the line', String(cars.length));
-    chk(cars.filter(c => c.classList.contains('qt-loco')).length === 1 && cars[0].classList.contains('qt-loco'),
-        '#140 the lead car is the one locomotive');
-    chk(new Set(cars.map(c => c.style.getPropertyValue('--d'))).size === 3,
-        '#140 cars are spaced along the loop (distinct delays)');
-    chk(!trn.querySelector('.qt-patrol'), '#140 the patrol car leaves once real cars run');
-    chk(/^\d+(\.\d+)?s$/.test(tr.style.getPropertyValue('--qt-loop')), '#140 loop speed is set', tr.style.getPropertyValue('--qt-loop'));
-
-    // re-render keeps the same car nodes (no animation restart on poll)
-    const car0 = cars[0];
+    // ---- depot: one car per real waiting slot -----------------------------
+    w.eval(`DATA.ollama = {hosts: [
+      {label:'box-a', up:true, queue:2, loaded:[], urls:[]},
+      {label:'box-b', up:true, queue:1, loaded:[], urls:[]}]}; renderQueue();`);
+    chk(cars(qb).length === 3, 'depot: 2 + 1 waiting -> 3 cars', cars(qb).length);
+    chk(n('qt-n-queued') === '3', 'depot: count badge', n('qt-n-queued'));
+    chk(tr.classList.contains('backed'), 'depot: signal goes red (backed)');
+    chk(/backed up on box-a, box-b/.test(d.getElementById('qsub').textContent), 'subtitle names both busy hosts');
+    const depotKeep = cars(qb)[0];
     w.eval('renderQueue()');
-    chk(car0.isConnected && !car0.classList.contains('qt-leaving') && trn.querySelector('.qt-r:not(.qt-leaving)') === car0,
-        '#140 unchanged cars are reused across polls');
+    chk(cars(qb)[0] === depotKeep, 'depot: an identical poll keeps the same car element');
 
-    // a session leaving the line departs, then is removed
-    w.eval(`DATA.profiles[current].live = DATA.profiles[current].live.slice(1); renderQueue();`);
-    chk(car0.classList.contains('qt-leaving'), '#140 a finished car plays the departure animation');
-    chk(trn.querySelectorAll('.qt-r:not(.qt-leaving)').length === 2, '#140 two cars stay on the line');
+    // ---- hover card on a real car -----------------------------------------
+    const tip = d.getElementById('qtip');
+    depotKeep.dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
+    chk(tip.classList.contains('on'), 'hover: the tooltip opens');
+    chk(/Waiting on box-a/.test(tip.textContent) && /1 of 2/.test(tip.textContent), 'hover: depot card names host and position', tip.textContent);
+    depotKeep.dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true, relatedTarget: d.body }));
+    chk(!tip.classList.contains('on'), 'hover: leaving the car closes it');
+    depotKeep.dispatchEvent(new w.FocusEvent('focusin', { bubbles: true }));
+    chk(tip.classList.contains('on'), 'keyboard: focusing a car opens the card too');
+    chk(depotKeep.tabIndex === 0, 'keyboard: cars are focusable');
+    depotKeep.dispatchEvent(new w.FocusEvent('focusout', { bubbles: true }));
 
-    // depth past the cap shows +N instead of hiding it
-    w.eval(`DATA.ollama.hosts[0].queue = 13; renderQueue();`);
-    chk(tq.querySelectorAll('.qt-q:not(.qt-leaving)').length === 10, '#140 depot caps at 10 cars');
-    const more = tq.querySelector('.qt-more');
-    chk(!!more && more.textContent === '+3', '#140 depot shows +3 past the cap', more && more.textContent);
+    // ---- the line: one coupled train, loco first --------------------------
+    w.eval(`DATA.ollama.hosts.forEach(h => h.queue = 0);
+      DATA.profiles[current].live = [
+        {id:'t1', model:'qwen3-coder:30b', title:'one', idle_s:1, profile:'work', phase:'receiving stream response'},
+        {id:'t2', model:'claude-opus-5', title:'two', idle_s:2},
+        {id:'t3', model:'gpt-5', title:'(untitled)', idle_s:3}]; renderQueue();`);
+    const consist = rb.querySelector('.qt-consist');
+    chk(!!consist, 'line: cars ride inside one consist');
+    const run = cars(consist);
+    chk(run.map(lbl).join('|') === 'one|two|gpt-5', 'line: titles lead, untitled falls back to the model', run.map(lbl).join('|'));
+    chk(run.filter(c => c.classList.contains('qt-loco')).length === 1 && run[0].classList.contains('qt-loco'), 'line: exactly one locomotive and it leads (departing cars aside)');
+    chk(!rb.querySelector('.qt-patrol'), 'line: the patrol car leaves once real cars run');
+    chk(n('qt-n-running') === '3', 'line: count badge');
+    chk(Number(run[0].style.getPropertyValue('--h')) === w.eval(`profileHue('work')`), 'line: car colour comes from the profile hue');
+    chk(/^\d+s$/.test(tr.style.getPropertyValue('--qt-loop')), 'line: a loop duration is set', tr.style.getPropertyValue('--qt-loop'));
+    run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
+    chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
+    chk(run[0].offsetWidth !== undefined && /\.qt-r\{width:104px/.test(html), 'cars are wide enough to carry a title');
+
+    // ---- line -> yard: the session parks under the same key ---------------
+    const t1 = run[0];
+    w.eval(`DATA.profiles[current].live = DATA.profiles[current].live.slice(1);
+      DATA.profiles[current].recent_sessions = [{id:'t1', title:'one', model:'qwen3-coder:30b', last_ts: Date.now()/1000, dur_s: 42, tokens: 2048, api_calls: 3}];
+      renderQueue();`);
+    chk(t1.classList.contains('qt-leaving'), 'line -> yard: the car departs the line');
+    const parked = cars(db);
+    chk(parked.length === 1 && parked[0].dataset.key === 's:t1', 'line -> yard: it is parked in the yard');
+    chk(parked[0].classList.contains('qt-newest'), 'yard: the newest arrival is highlighted');
+    chk(cars(rb.querySelector('.qt-consist'))[0].classList.contains('qt-loco'), 'line: the next car becomes the locomotive');
+    parked[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
+    chk(/ran for/.test(tip.textContent) && /2\.0k/.test(tip.textContent), 'hover: yard card has duration and tokens', tip.textContent);
+
+    // ---- generous caps; "+N" keeps the real total -------------------------
+    const cap = w.eval('QT_CAP');
+    chk(cap.r >= 30 && cap.d >= 30, 'caps allow many trains', JSON.stringify(cap));
+    w.eval(`DATA.ollama.hosts[0].queue = QT_CAP.q + 3; renderQueue();`);
+    chk(cars(qb).length > 0 && cars(qb).length <= cap.q, 'depot: display capped', cars(qb).length);
+    chk(n('qt-n-queued') === String(cap.q + 3), 'depot: count is the real total');
+    const more = qb.querySelector('.qt-more');
+    chk(!!more && more.textContent === '+' + (cap.q + 3 - cars(qb).length), 'depot: +N counts exactly the cars not drawn', more && more.textContent);
+    const many = Array.from({ length: cap.d + 5 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
+    w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}; renderQueue();`);
+    chk(cars(db).length > 0 && cars(db).length <= cap.d, 'yard: display capped', cars(db).length);
+    chk(db.querySelector('.qt-more')?.textContent === '+' + (cap.d + 5 - cars(db).length), 'yard: +N counts exactly the cars not drawn');
+    chk(n('qt-n-done') === String(cap.d + 5), 'yard: count is the real total');
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));
   }
   console.log(`\ncheck_queue_viz.js  ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
-  }, 320);
-  }, 320);
 }, 1500);

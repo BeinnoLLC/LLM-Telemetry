@@ -2,8 +2,8 @@
  * unit_flow.mjs — #30: isolated unit tests for src/llm_telemetry/web/js/flow.js.
  *
  * flow.js is loaded ON ITS OWN through tests/lib/isolate.mjs, so every sibling
- * import ($ / ago / esc / short / colorOf, DATA / css, qChip / fillChip /
- * flipMove / provOf / render / PROV, current, profileHue) is a stub and only
+ * import ($ / ago / esc / short / colorOf / hashHue, DATA / css, provOf /
+ * render / PROV, current, profileHue) is a stub and only
  * flow.js's own code runs. That is what lets the aggregation, the formatting
  * and the queue reconciliation be checked directly, with hand-built inputs and
  * exact expected values, instead of through the built dashboard page.
@@ -116,27 +116,18 @@ globalThis.document = {
 // ── stubs + recorders, one set per isolate() ───────────────────────────────
 function harness(els = {}){
   const ids = new Map(Object.entries(els));
-  const rec = { qChip: [], fillChip: [], flipMove: [], render: 0 };
-  const qChip = (lane, key, label, meta, hue) => {
-    const c = fakeEl('div'); c.className = 'livechip';
-    const m = fakeEl('div'); m.className = 'qmodel'; m.textContent = label; c.appendChild(m);
-    const p = fakeEl('div'); p.className = 'qprof'; p.textContent = meta; c.appendChild(p);
-    rec.qChip.push({ lane, key, label, meta, hue, chip: c });
-    return c;
-  };
+  const rec = { render: 0 };
   const DATA = { profiles: {}, ollama: { hosts: [] } };
   const stubs = {
     'palette.js': {
       $: id => ids.get(id) || null,
       ago, esc, escA, short,
       colorOf: m => 'col:' + m,
+      hashHue: m => 'mh:' + m,
     },
     'charts.js': { current: 'p1' },
     'views.js': {
       PROV: { fireworks: { fg: '#ff8a3d' }, nous: { fg: '#7c9cff' } },
-      qChip,
-      fillChip: (chip, lane, key, label, meta, hue) => rec.fillChip.push({ chip, lane, key, label, meta, hue }),
-      flipMove: (chip, box) => rec.flipMove.push({ chip, box }),
       provOf: (p, _m, u) => String(u || '').includes('fireworks') ? 'fireworks' : (p || 'local'),
       render: () => { rec.render++; },
     },
@@ -314,205 +305,179 @@ const ROWS = () => ([
   eq(D.flowColor({ kind: 'task', name: 'patch' }), 'col:patch', 'color: task without a model uses its own name');
 }
 
-// ═══ renderQueue — queued lane ══════════════════════════════════════════════
+// ═══ renderQueue / paintTrain — the railway (the only queue view since the
+// queued/running/done lanes were removed) ═══════════════════════════════════
+const railEls = () => ({
+  qtrain: fakeEl(), 'qt-queued': fakeEl(), 'qt-running': fakeEl(), 'qt-done': fakeEl(),
+  'qt-signal': fakeEl(), qsub: fakeEl(), 'qt-n-queued': fakeEl(), 'qt-n-running': fakeEl(), 'qt-n-done': fakeEl(),
+});
+const cars = box => box.children.filter(c => c.dataset && c.dataset.key && !c.classList.contains('qt-leaving'));
+const allCars = box => box.children.filter(c => c.dataset && c.dataset.key);
+const consistOf = h => h.ids.get('qt-running').querySelector('.qt-consist');
+const lblOf = c => c.querySelector('.qt-lbl').textContent;
 {
   const h = harness();
   const D = await isolate(TARGET, h.stubs);
   D.renderQueue();
-  eq(D.Q_SEEN.size, 0, 'queue: returns early when the lane boxes are missing');
+  eq(h.ids.size, 0, 'queue: returns quietly when the railway is not on the page');
 }
 {
-  const h = harness({
-    'qitems-queued': fakeEl(), 'qitems-running': fakeEl(), 'qitems-done': fakeEl(),
-    'qcount-queued': fakeEl(), 'qcount-running': fakeEl(), 'qcount-done': fakeEl(), 'qsub': fakeEl(),
-  });
+  const h = harness(railEls());
   const D = await isolate(TARGET, h.stubs);
   h.DATA.profiles.p1 = { live: [], recent_sessions: [] };
   h.DATA.ollama.hosts = [{ label: 'gpu-a', queue: 3 }, { label: 'gpu-b', queue: 0 }];
   D.renderQueue();
+  const qb = h.ids.get('qt-queued');
+  eq(cars(qb).map(c => c.dataset.key), ['q:gpu-a:0', 'q:gpu-a:1', 'q:gpu-a:2'], 'depot: one car per waiting slot, keyed by host and index');
+  eq(cars(qb).map(lblOf), ['gpu-a', 'gpu-a', 'gpu-a'], 'depot: car label is the host');
+  eq(cars(qb).map(c => c.style['--i']), [0, 1, 2], 'depot: cars carry a stagger index');
+  eq(h.ids.get('qt-n-queued').textContent, '3', 'depot: count shows the real depth');
+  eq(h.ids.get('qsub').textContent, 'backed up on gpu-a', 'depot: subtitle names the busy host');
+  ok(h.ids.get('qtrain').classList.contains('backed'), 'depot: the train is flagged backed up');
+  eq(h.ids.get('qt-signal').title, '3 waiting', 'depot: the signal says how many wait');
+  eq(D.carTip(cars(qb)[1]._qt), '<div class="ft-h">Waiting on gpu-a</div><div class="ft-r"><span>position</span><b>2 of 3</b></div><div class="ft-r"><span>state</span><b>queued at the Ollama host</b></div>',
+    'depot: hover card gives host and position');
+  ok(h.ids.get('qt-running').querySelector('.qt-patrol'), 'line: an empty line gets one patrol car');
 
-  const chips = h.rec.qChip;
-  eq(chips.filter(c => c.lane === 'queued').map(c => c.key), ['q:gpu-a:0', 'q:gpu-a:1', 'q:gpu-a:2'],
-    'queue: one chip per waiting slot, keyed by host and index');
-  eq(chips.filter(c => c.lane === 'queued').map(c => c.label), ['gpu-a', 'gpu-a', 'gpu-a'], 'queue: chip label is the host');
-  eq(chips[0]?.meta, 'waiting', 'queue: chip meta');
-  eq(chips[0]?.hue, null, 'queue: waiting chips carry no hue');
-  eq(h.ids.get('qcount-queued').textContent, '3', 'queue: count shows the real depth');
-  eq(h.ids.get('qitems-queued').children.length, 3, 'queue: three chips painted');
-  eq(h.ids.get('qsub').textContent, 'backed up on gpu-a', 'queue: subtitle names the busy host');
-  eq([...D.Q_SEEN.keys()].sort(), ['q:gpu-a:0', 'q:gpu-a:1', 'q:gpu-a:2'], 'queue: Q_SEEN remembers every chip');
-  eq(h.ids.get('qitems-running').querySelector('.qempty').className, 'qempty muted', 'queue: idle lane still gets its empty state');
-
-  // Depth parsing: string, zero, garbage, negative.
-  h.rec.qChip.length = 0;
   h.DATA.ollama.hosts = [{ label: 'h', queue: '2' }];
   D.renderQueue();
-  eq(h.rec.qChip.filter(c => c.lane === 'queued').length, 2, 'queue: numeric string depth');
-  eq(h.ids.get('qcount-queued').textContent, '2', 'queue: count from a numeric string');
-
-  h.rec.qChip.length = 0;
+  eq(cars(qb).length, 2, 'depot: numeric string depth');
   h.DATA.ollama.hosts = [{ label: 'h', queue: '-2' }, { label: 'j', queue: 'abc' }, { label: 'k' }];
   D.renderQueue();
-  eq(h.rec.qChip.filter(c => c.lane === 'queued').length, 0, 'queue: negative/garbage/missing depths are clamped to zero');
-  eq(h.ids.get('qcount-queued').textContent, '0', 'queue: clamped count is zero');
+  eq(cars(qb).filter(c => !c.classList.contains('qt-leaving')).length, 0, 'depot: negative/garbage/missing depths clamp to zero');
+  eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
+  ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  h.rec.qChip.length = 0;
-  h.DATA.ollama.hosts = [{ label: 'h', queue: 2.5 }];
+  // Cap: display is capped (QT_CAP.q), the count is not.
+  h.DATA.ollama.hosts = [{ label: 'big', queue: D.QT_CAP.q + 4 }];
   D.renderQueue();
-  eq(h.rec.qChip.filter(c => c.lane === 'queued').length, 3, 'queue: a fractional depth overshoots by one slot (loop has no floor)');
-
-  // Cap: display is capped, the count is not.
-  h.rec.qChip.length = 0;
-  h.DATA.ollama.hosts = [{ label: 'big', queue: 12 }];
+  eq(cars(qb).filter(c => !c.classList.contains('qt-leaving')).length, D.QT_CAP.q, 'depot: cars capped at QT_CAP.q');
+  eq(h.ids.get('qt-n-queued').textContent, String(D.QT_CAP.q + 4), 'depot: count ignores the cap');
+  eq(qb.querySelector('.qt-more')?.textContent, '+4', 'depot: "+N" badge past the cap');
   D.renderQueue();
-  eq(h.rec.qChip.filter(c => c.lane === 'queued').length, 10, 'queue: chips capped at 10');
-  eq(h.ids.get('qcount-queued').textContent, '12', 'queue: count ignores the cap');
-  const more = h.ids.get('qitems-queued').querySelector('.qmore');
-  eq(more && more.textContent, '+2 more', 'queue: overflow footer');
-  eq(h.ids.get('qsub').textContent, 'backed up on big', 'queue: subtitle for the capped host');
+  eq(qb.querySelectorAll('.qt-more').length, 1, 'depot: the badge is not duplicated on the next poll');
+  ok(D.QT_CAP.r >= 30 && D.QT_CAP.d >= 30, 'caps are generous enough for "as many trains as you want"');
 
-  // Subtitle variants.
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
   D.renderQueue();
-  eq(h.ids.get('qsub').textContent, 'fleet clear · 2 hosts', 'queue: clear fleet subtitle, plural');
+  eq(h.ids.get('qsub').textContent, 'fleet clear · 2 hosts', 'subtitle: clear fleet, plural');
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }];
   D.renderQueue();
-  eq(h.ids.get('qsub').textContent, 'fleet clear · 1 host', 'queue: clear fleet subtitle, singular');
+  eq(h.ids.get('qsub').textContent, 'fleet clear · 1 host', 'subtitle: clear fleet, singular');
   h.DATA.ollama.hosts = [];
   D.renderQueue();
-  eq(h.ids.get('qsub').textContent, '', 'queue: no hosts -> no subtitle');
+  eq(h.ids.get('qsub').textContent, '', 'subtitle: no hosts -> none');
+  ok(h.ids.get('qtrain').classList.contains('clear'), 'nothing waiting or running -> clear');
   h.DATA.ollama.hosts = [{ label: 'a', queue: 1 }, { label: 'b', queue: 2 }];
   D.renderQueue();
-  eq(h.ids.get('qsub').textContent, 'backed up on a, b', 'queue: every busy host is named');
+  eq(h.ids.get('qsub').textContent, 'backed up on a, b', 'subtitle: every busy host is named');
 }
 
-// ═══ renderQueue — running / done lanes and formatting ══════════════════════
+// ═══ the line (running) and the yard (done) ═════════════════════════════════
 {
-  const h = harness({
-    'qitems-queued': fakeEl(), 'qitems-running': fakeEl(), 'qitems-done': fakeEl(),
-    'qcount-queued': fakeEl(), 'qcount-running': fakeEl(), 'qcount-done': fakeEl(), 'qsub': fakeEl(),
-  });
+  const h = harness(railEls());
   const D = await isolate(TARGET, h.stubs);
   h.DATA.profiles.p1 = {
     live: [
-      { id: 'a', title: '(untitled)', model: 'accounts/fireworks/models/kimi-k3', idle_s: 30, profile: 'work' },
+      { id: 'a', title: '(untitled)', model: 'accounts/fireworks/models/kimi-k3', idle_s: 30, profile: 'work',
+        phase: 'receiving stream response', tools: ['t1', 't2'], nmodels: 3 },
       { id: 'b', title: 'Fix parser', model: 'm2', idle_s: 1 },
       { id: 'a', title: 'duplicate', model: 'other', idle_s: 0 },
     ],
     recent_sessions: [
-      { id: 'd1', title: 'Old run', model: 'm', last_ts: 100, dur_s: 125 },
+      { id: 'd1', title: 'Old run', model: 'm', last_ts: 100, dur_s: 125, tokens: 1530, api_calls: 7 },
       { id: 'd2', title: '(untitled)', last_model: 'accounts/nous/x/y', last_ts: 300, dur_s: null },
       { id: 'd3', title: 'No duration', model: 'z', last_ts: 200, dur_s: -5 },
     ],
   };
   D.renderQueue();
+  const run = cars(consistOf(h));
+  eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
+  eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
+  ok(run[0].classList.contains('qt-loco') && !run[1].classList.contains('qt-loco'), 'line: exactly the lead car is the locomotive');
+  eq(run[1].style['--h'], 'hue:work', 'line: car hue comes from the profile');
+  eq(run[0].attrs['aria-label'], 'running: Fix parser · m2', 'line: car has an accessible label');
+  eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
+  ok(h.ids.get('qtrain').classList.contains('moving'), 'line: the train is moving');
+  eq(h.ids.get('qt-running').querySelector('.qt-patrol'), null, 'line: no patrol car once real cars run');
+  eq(D.carTip(run[1]._qt),
+    '<div class="ft-h">kimi-k3</div><div class="ft-r"><span>model</span><b>kimi-k3</b></div>'
+    + '<div class="ft-r"><span>profile</span><b>work</b></div><div class="ft-r"><span>doing</span><b>receiving stream response</b></div>'
+    + '<div class="ft-r"><span>last activity</span><b>30s ago</b></div><div class="ft-r"><span>tools used</span><b>2</b></div>'
+    + '<div class="ft-r"><span>models seen</span><b>3</b></div>', 'line: hover card for a running session');
 
-  const run = h.rec.qChip.filter(c => c.lane === 'running');
-  eq(run.map(c => c.key), ['s:b', 's:a'], 'running: most recently active first, duplicates dropped');
-  eq(run.length, 2, 'running: a repeated session id renders one chip');
-  eq(run[1]?.label, 'kimi-k3', 'running: (untitled) falls back to the short model name');
-  eq(run[1]?.meta, 'kimi-k3', 'running: meta is the short model name');
-  eq(run[1]?.hue, 'hue:work', 'running: hue comes from the profile');
-  eq(run[0]?.label, 'Fix parser', 'running: a real title is used as-is');
-  eq(run[0]?.hue, 'hue:', 'running: missing profile -> empty hue');
-  eq(h.ids.get('qcount-running').textContent, '2', 'running: count');
-  eq(h.ids.get('qitems-running').children.map(c => c.children[0]?.textContent), ['Fix parser', 'kimi-k3'], 'running: painted in order');
+  const yard = cars(h.ids.get('qt-done'));
+  eq(yard.map(c => c.dataset.key), ['s:d2', 's:d3', 's:d1'], 'yard: newest first');
+  eq(yard.map(lblOf), ['y', 'No duration', 'Old run'], 'yard: (untitled) falls back to the short last_model');
+  ok(yard[0].classList.contains('qt-newest') && !yard[1].classList.contains('qt-newest'), 'yard: only the newest arrival is highlighted');
+  eq(h.ids.get('qt-n-done').textContent, '3', 'yard: count');
+  ok(D.carTip(yard[2]._qt).includes('<span>ran for</span><b>2m</b>'), 'yard: hover card has the duration');
+  ok(D.carTip(yard[2]._qt).includes('<span>tokens</span><b>1.5k</b>'), 'yard: hover card has tokens');
+  ok(D.carTip(yard[2]._qt).includes('<span>API calls</span><b>7</b>'), 'yard: hover card has API calls');
+  ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
+  ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
 
-  const done = h.rec.qChip.filter(c => c.lane === 'done');
-  eq(done.map(c => c.key), ['s:d2', 's:d3', 's:d1'], 'done: newest first');
-  eq(done[0]?.label, 'y', 'done: (untitled) falls back to the short last_model');
-  eq(done[0]?.meta, '', 'done: no dur_s -> no meta');
-  eq(done[1]?.meta, '0s run', 'done: negative duration is clamped to zero');
-  eq(done[2]?.meta, '2m run', 'done: duration formatted by ago()');
-  eq(h.ids.get('qcount-done').textContent, '3', 'done: count');
-
-  // A session with no model at all: short(undefined) is '' (#138), so the
-  // 'session' fallback fires instead of the literal string 'undefined'.
-  h.rec.qChip.length = 0;
+  // No model at all: 'session', never "undefined" (#138).
   h.DATA.profiles.p1 = { live: [{ id: 'n', title: '(untitled)', idle_s: 0 }], recent_sessions: [] };
   D.renderQueue();
-  eq(h.rec.qChip[0]?.label, 'session', "running: no model at all falls back to the label 'session' (#138)");
-  ok(h.rec.qChip[0]?.meta !== 'undefined', 'running: and never the literal meta "undefined" (#138)');
+  const lone = cars(consistOf(h)).filter(c => !c.classList.contains('qt-leaving'));
+  eq(lone.map(lblOf), ['session'], "line: no model at all falls back to 'session' (#138)");
+  ok(!D.carTip(lone[0]._qt).includes('undefined'), 'line: and the hover card never says "undefined" (#138)');
+
+  // Titles are escaped in the hover card.
+  ok(!D.carTip({ kind: 'd', label: '<img src=x onerror=alert(1)>' }).includes('<img'), 'tip: titles are HTML-escaped');
 }
 
-// ═══ renderQueue — reuse, travel, exit, promotion ═══════════════════════════
+// ═══ reuse across polls, departures, line -> yard ═══════════════════════════
 {
-  const h = harness({
-    'qitems-queued': fakeEl(), 'qitems-running': fakeEl(), 'qitems-done': fakeEl(),
-    'qcount-queued': fakeEl(), 'qcount-running': fakeEl(), 'qcount-done': fakeEl(), 'qsub': fakeEl(),
-  });
+  const h = harness(railEls());
   const D = await isolate(TARGET, h.stubs);
-
   h.DATA.profiles.p1 = { live: [], recent_sessions: [] };
   h.DATA.ollama.hosts = [{ label: 'g', queue: 3 }];
   D.renderQueue();
-  const first = h.rec.qChip.map(c => c.chip);
-  eq(first.length, 3, 'reconcile: three waiting chips on the first render');
+  const qb = h.ids.get('qt-queued');
+  const first = cars(qb);
+  eq(first.length, 3, 'reconcile: three depot cars on the first render');
 
-  // Queue drains 3 -> 1 and a session starts: the surviving chip is reused, the
-  // two that vanished leave, and the new running chip is flagged as promoted.
-  h.rec.qChip.length = 0;
   h.DATA.ollama.hosts = [{ label: 'g', queue: 1 }];
   h.DATA.profiles.p1 = { live: [{ id: 's1', title: 'Started', model: 'm', idle_s: 0 }], recent_sessions: [] };
   D.renderQueue();
-  const runChip = h.rec.qChip.find(c => c.lane === 'running')?.chip;
-  eq(h.rec.qChip.filter(c => c.lane === 'queued').length, 0, 'reconcile: the surviving waiting chip is reused, not recreated');
-  eq(h.ids.get('qitems-queued').children[0], first[0], 'reconcile: reused chip keeps its element identity');
-  ok(first[1]?.classList.contains('leaving'), 'reconcile: a chip that vanished plays the exit animation');
-  ok(first[2]?.classList.contains('leaving'), 'reconcile: every vanished chip leaves');
-  ok(runChip?.classList.contains('promoting'), 'reconcile: a new running chip after a draining queue is marked promoting');
-  eq(first[0]?.classList.contains('promoting'), false, 'reconcile: a reused waiting chip is not marked promoting');
-  eq(h.ids.get('qcount-queued').textContent, '1', 'reconcile: queue count after the drain');
+  eq(cars(qb)[0], first[0], 'reconcile: the surviving depot car keeps its element identity');
+  ok(first[1].classList.contains('qt-leaving') && first[2].classList.contains('qt-leaving'), 'reconcile: cars that vanished play the departure');
+  ok(allCars(qb).includes(first[1]), 'reconcile: a departing car stays in the DOM until its animation ends');
+  const runCar = cars(consistOf(h))[0];
+  eq(runCar.dataset.key, 's:s1', 'reconcile: the started session is on the line');
 
-  // running -> done travels the SAME element (session id is shared by both feeds).
-  h.rec.fillChip.length = 0; h.rec.flipMove.length = 0;
+  // An identical poll creates nothing and keeps every element.
+  D.renderQueue();
+  eq(cars(consistOf(h))[0], runCar, 'poll: an identical poll keeps the running car');
+  eq(cars(qb)[0], first[0], 'poll: and the depot car');
+
+  // Session ends: it leaves the line and parks in the yard under the same key.
   h.DATA.profiles.p1 = { live: [], recent_sessions: [{ id: 's1', title: 'Started', model: 'm', last_ts: 5, dur_s: 9 }] };
   D.renderQueue();
-  eq(h.rec.fillChip.length, 1, 'travel: the travelled chip is refilled in place');
-  eq(h.rec.fillChip[0]?.lane, 'done', 'travel: refilled into the done lane');
-  eq(h.rec.fillChip[0].chip, runChip, 'travel: same element, no destroy/recreate');
-  eq(h.rec.fillChip[0]?.meta, '9s run', 'travel: done meta is rewritten');
-  eq(h.rec.flipMove.length, 1, 'travel: exactly one flip-move animation');
-  eq(h.rec.flipMove[0]?.box, h.ids.get('qitems-done'), 'travel: flipped into the done box');
-  eq(h.ids.get('qitems-done').children[0], runChip, 'travel: the chip now lives in the done box');
-  eq(h.ids.get('qcount-running').textContent, '0', 'travel: running count drops to zero');
-
-  // Polling with unchanged data must not recreate anything (no flicker).
-  const before = h.rec.qChip.length;
+  ok(runCar.classList.contains('qt-leaving'), 'line -> yard: the running car departs the line');
+  const parked = cars(h.ids.get('qt-done'));
+  eq(parked.map(c => c.dataset.key), ['s:s1'], 'line -> yard: the same session is parked in the yard');
+  eq(h.ids.get('qt-n-running').textContent, '0', 'line -> yard: running count drops to zero');
+  const parkedEl = parked[0];
   D.renderQueue();
-  eq(h.rec.qChip.length, before, 'poll: an identical poll creates no new chips');
-  eq(h.ids.get('qitems-done').children[0], runChip, 'poll: the done chip survives an identical poll');
+  eq(cars(h.ids.get('qt-done'))[0], parkedEl, 'poll: the parked car survives an identical poll');
+
+  // Order changes re-sequence existing cars instead of recreating them.
+  h.DATA.profiles.p1 = { live: [], recent_sessions: [
+    { id: 'n2', title: 'Newer', model: 'm', last_ts: 9, dur_s: 1 },
+    { id: 's1', title: 'Started', model: 'm', last_ts: 5, dur_s: 9 }] };
+  D.renderQueue();
+  eq(cars(h.ids.get('qt-done')).map(c => c.dataset.key), ['s:n2', 's:s1'], 'yard: a newer arrival parks in front');
+  eq(cars(h.ids.get('qt-done'))[1], parkedEl, 'yard: the older car is moved, not recreated');
 }
-
-// ═══ renderQueue — empty states ═════════════════════════════════════════════
 {
-  const h = harness({
-    'qitems-queued': fakeEl(), 'qitems-running': fakeEl(), 'qitems-done': fakeEl(),
-    'qcount-queued': fakeEl(), 'qcount-running': fakeEl(), 'qcount-done': fakeEl(), 'qsub': fakeEl(),
-  });
+  // qtFly is a no-op without the Web Animations API / layout (and never throws).
+  const h = harness(railEls());
   const D = await isolate(TARGET, h.stubs);
-  h.DATA.profiles.p1 = { live: [], recent_sessions: [] };
-  D.renderQueue();
-
-  eq(h.ids.get('qitems-queued').querySelector('.qempty')?.innerHTML,
-    '<span class="qdot"></span>queue clear — nothing waiting', 'empty: queue message');
-  eq(h.ids.get('qitems-running').querySelector('.qempty')?.innerHTML,
-    '<span class="muted">idle — nothing running</span>', 'empty: running message');
-  eq(h.ids.get('qitems-done').querySelector('.qempty')?.innerHTML,
-    '<span class="muted">nothing finished yet</span>', 'empty: done message');
-  eq([h.ids.get('qcount-queued').textContent, h.ids.get('qcount-running').textContent, h.ids.get('qcount-done').textContent],
-    ['0', '0', '0'], 'empty: all counts zero');
-
-  D.renderQueue();
-  eq(h.ids.get('qitems-queued').children.length, 1, 'empty: the placeholder is not duplicated on the next poll');
-
-  h.DATA.ollama.hosts = [{ label: 'h', queue: 1 }];
-  h.DATA.profiles.p1 = { live: [{ id: 's', title: 'T', model: 'm', idle_s: 0 }], recent_sessions: [{ id: 'd', title: 'D', model: 'm', last_ts: 1, dur_s: 1 }] };
-  D.renderQueue();
-  eq(h.ids.get('qitems-queued').querySelector('.qempty'), null, 'empty: the queue placeholder is removed once work arrives');
-  eq(h.ids.get('qitems-running').querySelector('.qempty'), null, 'empty: the running placeholder is removed');
-  eq(h.ids.get('qitems-done').querySelector('.qempty'), null, 'empty: the done placeholder is removed');
-  eq(h.ids.get('qsub').textContent, 'backed up on h', 'empty: subtitle returns when a host is busy');
+  eq(D.qtFly(null, null, null, 'x'), false, 'fly: nothing to fly -> false');
+  eq(D.qtFly(fakeEl(), { left: 0, top: 0, width: 10, height: 10 }, fakeEl(), 'x'), false, 'fly: no element.animate -> false');
 }
 
 // ═══ renderAgents — escaping of collector-supplied strings ═════════════════
@@ -520,7 +485,7 @@ const ROWS = () => ([
   const h = harness();
   const D = await isolate(TARGET, h.stubs);
   D.renderAgents([{ state: 'alive', backend: 'llama.cpp', host: 'gpu-a', pid: 1, profile: 'w', age_s: 1, leases: 1 }]);
-  eq(D.Q_SEEN.size, 0, 'agents: returns silently when the card is absent');
+  eq(h.ids.size, 0, 'agents: returns silently when the card is absent');
 }
 {
   const card = fakeEl('div'), list = fakeEl('div');

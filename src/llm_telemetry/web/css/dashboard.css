@@ -653,113 +653,98 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .flowtip .ft-h{font-weight:600;font-size:var(--fs-sm);margin-bottom:3px}
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
- /* #120 task queue: two lanes, animated chip lifecycle. Kept CSS-driven
-    (transform/opacity transitions + one keyframe animation) rather than a
-    JS render loop, so the idle shimmer costs nothing on low-power devices. */
- /* Three lanes on desktop, one on narrow screens. Deliberately NOT
-    `1fr 1fr 1fr`: that fixed triple is exactly what check_responsive_grid.js
-    forbids (it squashes canvases and overflows), and it is also the wrong
-    tool here — auto-fit lets the lanes collapse to fewer columns on a
-    narrower screen without a media query doing the same job twice. */
- .qlanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
- .qlane{min-height:64px;min-width:0}
- .qlanehdr{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
-   color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
- .qcount{background:var(--card);border:1px solid var(--border);border-radius:999px;
-   padding:0 6px;font-size:var(--fs-xs);line-height:16px;min-width:16px;text-align:center}
- .qitems{display:flex;flex-direction:column;gap:6px;min-height:2px}
- .qempty{font-size:var(--fs-sm);color:var(--muted);padding:10px 0;
-   display:flex;align-items:center;gap:6px}
- .qempty .qdot{width:6px;height:6px;border-radius:999px;background:#22c55e;
-   box-shadow:0 0 0 rgba(34,197,94,.5);animation:qpulse-ok 2.2s ease-out infinite}
- @keyframes qpulse-ok{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}
-   70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
- /* One chip per task; enters via qin, sits with an idle shimmer while queued,
-    TRAVELS to the next lane via a FLIP transform (queued->running->done),
-    leaves for good via qout once its lane fills past 10 and it ages out. */
- .qchip{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;
-   border:1px solid var(--border);background:var(--card);font-size:var(--fs-sm);
-   animation:qin .28s cubic-bezier(.2,.8,.2,1) both;
-   transition:transform .32s cubic-bezier(.3,.85,.35,1),opacity .25s ease,border-color .25s ease}
- .qchip.leaving{animation:qout .22s ease-in forwards}
- .qchip.travel{will-change:transform}
- .qchip.arrived{animation:qland .3s cubic-bezier(.3,.9,.3,1) both}
- @keyframes qin{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
- @keyframes qout{to{opacity:0;transform:translateX(10px) scale(.96)}}
- @keyframes qland{0%{transform:scale(1.05)}100%{transform:scale(1)}}
- .qchip .qdotwrap{width:7px;height:7px;border-radius:999px;flex:none}
- .qlane[data-lane="queued"] .qchip .qdotwrap{background:#f59e0b;
-   animation:qshimmer 1.6s ease-in-out infinite}
- .qlane[data-lane="running"] .qchip .qdotwrap{background:#22c55e}
- .qlane[data-lane="done"] .qchip .qdotwrap{background:#64748b}
- .qlane[data-lane="done"] .qchip{opacity:.82}
- @keyframes qshimmer{0%,100%{opacity:.4}50%{opacity:1}}
- .qchip .qmodel{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
- .qchip .qprof{color:var(--muted);font-size:var(--fs-xs);
-   padding:0 5px;border:1px solid var(--border);border-radius:999px}
- .qchip .qwait{margin-left:auto;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
- /* ---- #140 task queue as a railway ------------------------------------
-   Depot (queued cars, held at a signal) -> the line (running sessions as a
-   moving train) -> the yard (finished sessions). transform/opacity-only
-   animations; all of it stops under prefers-reduced-motion. */
-.qtrain{position:relative;display:grid;grid-template-columns:minmax(90px,1fr) 18px minmax(160px,2.4fr) minmax(90px,1fr);
-  align-items:end;gap:0 8px;height:74px;margin:2px 0 14px;padding:0 4px;--qt-loop:9s;
-  border-radius:10px;overflow:hidden;
-  background:linear-gradient(180deg,transparent 40%,color-mix(in srgb,var(--border) 35%,transparent))}
-.qt-sec{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
+ /* ---- #140 task queue as a railway (the only queue view since the lanes
+   were removed). Depot (queued cars held at a signal) -> the line (live
+   sessions as ONE coupled train, loco in front) -> the yard (finished
+   sessions parked on sidings, a shunter idling). Cars are big enough to
+   carry a title; hover/focus shows the full card (#qtip). transform/opacity
+   animations only; everything stops under prefers-reduced-motion. */
+.qtrain{position:relative;display:grid;align-items:end;gap:0 10px;min-height:140px;
+  grid-template-columns:minmax(110px,1fr) 18px minmax(220px,2.6fr) minmax(180px,1.7fr);
+  margin:2px 0 4px;padding:0 4px;--qt-loop:12s;border-radius:10px;overflow:hidden;
+  background:linear-gradient(180deg,transparent 45%,color-mix(in srgb,var(--border) 35%,transparent))}
+.qt-sec{position:relative;height:100%;min-height:140px;display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
 .qt-name{position:absolute;top:6px;left:2px;font-size:var(--fs-xs);text-transform:uppercase;
-  letter-spacing:.06em;color:var(--muted)}
-.qt-cars{position:relative;height:30px;margin-bottom:13px;display:flex;align-items:flex-end;gap:5px;min-width:0}
-.qt-depot .qt-cars{justify-content:flex-end}
-.qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:3px;height:auto;max-height:44px}
-/* the rail: two steel lines over sleepers that scroll while the line is moving */
+  letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:5px;z-index:1}
+.qt-n{font-weight:600;letter-spacing:0;padding:0 6px;line-height:16px;border-radius:999px;
+  border:1px solid var(--border);background:var(--card);color:var(--foreground,var(--fg))}
+.qt-cars{position:relative;margin-bottom:16px;display:flex;align-items:flex-end;gap:6px;min-width:0}
+.qt-depot .qt-cars{justify-content:flex-end;flex-wrap:wrap-reverse;gap:10px 5px;max-height:88px;overflow:hidden}
+/* the rail: two steel lines over sleepers that scroll while the line moves */
 .qt-rail{position:absolute;left:0;right:0;bottom:6px;height:8px;pointer-events:none;
   border-top:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
   border-bottom:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
   background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--muted) 45%,transparent) 0 3px,transparent 3px 14px)}
 .qtrain.moving .qt-rail{animation:qt-sleepers .6s linear infinite}
 @keyframes qt-sleepers{to{background-position:14px 0}}
-/* cars */
-.qt-car{display:block;flex:none;width:18px;height:18px;border-radius:4px;position:relative;
-  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);
+/* a car: a titled box on wheels */
+.qt-car{flex:none;position:relative;display:flex;align-items:center;height:26px;padding:0 7px;
+  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:#fff;cursor:default;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);outline-offset:2px;
   --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--foreground,#fff))}
-.qt-car::after{content:"";position:absolute;left:3px;right:3px;bottom:-5px;height:4px;
-  background:radial-gradient(circle at 3px 2px,var(--qt-wheel) 2px,transparent 2.5px),
-             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px)}
-/* queued: amber, shunting in place, staggered so the depot breathes */
-.qt-q{background:#f59e0b;animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,
-  qt-shunt 1.8s ease-in-out calc(var(--i,0) * .15s) infinite}
+.qt-car:focus-visible{outline:2px solid var(--accent)}
+.qt-lbl{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.qt-car::after{content:"";position:absolute;left:5px;right:5px;bottom:-6px;height:5px;pointer-events:none;
+  background:radial-gradient(circle at 3px 2.5px,var(--qt-wheel) 2.5px,transparent 3px),
+             radial-gradient(circle at calc(100% - 3px) 2.5px,var(--qt-wheel) 2.5px,transparent 3px)}
+.qt-car:hover{filter:brightness(1.15)}
+/* queued: amber, held at the signal, shunting in place, staggered */
+.qt-q{width:74px;height:22px;background:#d97706;
+  animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,qt-shunt 1.8s ease-in-out calc(var(--i,0) * .15s) infinite}
 @keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
-/* running: a train looping the line, coloured by profile; the leader is the loco */
-.qt-line .qt-cars{overflow:hidden}
-.qt-r{position:absolute;bottom:6px;left:0;background:hsl(var(--h,142) 65% 50%);
-  animation:qt-run var(--qt-loop) linear var(--d,0s) infinite;
-  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 10px hsl(var(--h,142) 70% 50% / .45)}
-.qt-r::before{content:"";position:absolute;inset:3px 4px 7px;border-radius:2px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
-  background-size:200% 100%;animation:qt-glint 1.2s linear infinite}
-/* couplers: a bar back to the car behind (the tail car has none), plus wheels */
-.qt-r::after{left:-13px;right:3px;
-  background:radial-gradient(circle at 16px 2px,var(--qt-wheel) 2px,transparent 2.5px),
-             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px),
-             linear-gradient(var(--qt-wheel),var(--qt-wheel)) 0 -7px/13px 3px no-repeat}
-.qt-r:last-child::after{background:radial-gradient(circle at 16px 2px,var(--qt-wheel) 2px,transparent 2.5px),
-             radial-gradient(circle at calc(100% - 3px) 2px,var(--qt-wheel) 2px,transparent 2.5px)}
-.qt-loco{width:24px;border-top-right-radius:9px}
-.qt-loco::before{inset:auto 3px 7px auto;width:6px;height:6px;border-radius:2px;background:rgba(255,255,255,.8);animation:none}
-@keyframes qt-run{from{transform:translateX(-160px)}to{transform:translateX(calc(var(--qt-w,520px)))}}
+/* running: ONE consist loops the line; loco leads (rightmost), couplers between */
+.qt-line .qt-cars{height:44px;overflow:hidden;margin-bottom:10px}
+.qt-consist{position:absolute;left:0;bottom:6px;display:flex;flex-direction:row-reverse;gap:9px;
+  animation:qt-run var(--qt-loop) linear infinite;will-change:transform}
+.qtrain:hover .qt-consist,.qtrain:focus-within .qt-consist{animation-play-state:paused}
+.qt-r{width:104px;height:28px;background:hsl(var(--h,142) 60% 42%);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 12px hsl(var(--h,142) 70% 50% / .4)}
+.qt-r::before{content:"";position:absolute;inset:4px 6px 9px;border-radius:2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+  background-size:200% 100%;animation:qt-glint 1.6s linear infinite}
+/* coupler to the car behind (to the LEFT, since the consist is row-reverse) */
+.qt-r + .qt-r .qt-lbl::before{content:"";position:absolute;right:-10px;top:50%;width:10px;height:3px;
+  margin-top:-1px;background:var(--qt-wheel);border-radius:1px}
+.qt-loco{width:124px;border-top-right-radius:14px;padding-right:20px}
+.qt-loco::before{inset:5px 6px auto auto;width:9px;height:9px;border-radius:2px;
+  background:rgba(255,255,255,.85);animation:qt-lamp 1.4s ease-in-out infinite}
+@keyframes qt-run{from{transform:translateX(-100%)}to{transform:translateX(var(--qt-w,520px))}}
 @keyframes qt-glint{from{background-position:200% 0}to{background-position:-200% 0}}
-/* done: grey, parked; the newest rolls in */
-.qt-d{width:12px;height:12px;border-radius:3px;background:#64748b;opacity:.85;
-  animation:qt-park .6s cubic-bezier(.2,.8,.2,1) both}
-.qt-d::after{display:none}
+@keyframes qt-lamp{50%{opacity:.55;box-shadow:0 0 8px #fff}}
+/* yard: sidings (one rail per row) with finished sessions parked on them */
+.qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:12px 5px;max-height:84px;overflow:hidden;
+  padding-bottom:2px;margin-bottom:14px;
+  background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--muted) 40%,transparent) 0 2px,transparent 2px 25px);
+  background-position:0 100%}
+.qt-d{width:86px;height:18px;font-size:10px;padding:0 5px;background:hsl(var(--h,215) 22% 40%);opacity:.9;
+  animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
+.qt-d::after{bottom:-5px;height:4px}
+.qt-d.qt-newest{background:hsl(var(--h,215) 45% 45%);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 0 hsl(var(--h,215) 60% 60% / .6);
+  animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both,qt-newest 2.4s ease-out .7s infinite}
+@keyframes qt-newest{0%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 0 hsl(var(--h,215) 60% 60% / .55)}
+  70%,100%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 7px hsl(var(--h,215) 60% 60% / 0)}}
+/* the yard shunter: a little loco idling up and down the front siding */
+.qt-shunter{position:absolute;bottom:13px;left:4px;width:22px;height:13px;border-radius:3px 7px 2px 2px;
+  background:#475569;pointer-events:none;opacity:.8;animation:qt-shunter 9s ease-in-out infinite alternate}
+.qt-shunter::before{content:"";position:absolute;right:3px;top:3px;width:5px;height:4px;border-radius:1px;background:#fde68a}
+@keyframes qt-shunter{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--qt-yw,160px))}}
 @keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
-@keyframes qt-park{from{opacity:0;transform:translateX(-24px) scale(.6)}to{opacity:.85;transform:none}}
-.qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important}
+@keyframes qt-park{from{opacity:0;transform:translateX(-30px) scale(.7)}to{opacity:.9;transform:none}}
+.qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important;pointer-events:none}
 @keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
-.qt-more{font-size:var(--fs-xs);color:var(--muted);font-weight:600;align-self:center;margin-left:2px}
+/* a task changing section: a ghost car flies the arc, the real one lands */
+.qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:5px;transform-origin:0 0;
+  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:#fff;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.qt-ghost.qt-fly-yard{background:hsl(var(--h,215) 45% 45%)}
+.qt-ghost.qt-fly-line{background:#d97706}
+.qt-car.qt-landed{animation:qt-land .6s cubic-bezier(.3,1.6,.5,1) both !important}
+@keyframes qt-land{0%{transform:scale(1.18)}60%{transform:scale(.96)}100%{transform:none}}
+.qt-more{font-size:var(--fs-xs);color:var(--muted);font-weight:600;align-self:center;margin:0 2px}
+.qt-line > .qt-more{position:absolute;right:4px;top:6px}
 /* signal between depot and line: red while anything waits, green when clear */
-.qt-signal{position:relative;height:58px;margin-bottom:12px;display:flex;flex-direction:column;
+.qt-signal{position:relative;height:66px;margin-bottom:12px;display:flex;flex-direction:column;
   align-items:center;gap:4px;padding-top:4px;border-left:2px solid color-mix(in srgb,var(--muted) 50%,transparent);
   border-radius:0;width:2px;justify-self:center}
 .qt-signal i{display:block;width:9px;height:9px;border-radius:50%;margin-left:-2px;background:color-mix(in srgb,var(--muted) 35%,transparent)}
@@ -767,18 +752,22 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain:not(.backed) .qt-signal i:last-child{background:#22c55e;box-shadow:0 0 8px #22c55e}
 @keyframes qt-blink{50%{opacity:.35}}
 /* fleet clear: an empty line with one ghost car on patrol */
-.qt-patrol{position:absolute;bottom:0;left:0;width:14px;height:14px;background:transparent;
-  border:1.5px dashed #22c55e;box-shadow:0 0 12px rgba(34,197,94,.35);
-  animation:qt-run 7s ease-in-out infinite alternate}
-.qt-patrol::after{display:none}
-.qtrain.clear .qt-line .qt-name::after{content:" · clear";color:#22c55e}
+.qt-patrol{position:absolute;bottom:16px;left:0;width:40px;height:20px;border-radius:5px;
+  border:1.5px dashed #22c55e;box-shadow:0 0 12px rgba(34,197,94,.35);pointer-events:none;
+  animation:qt-patrol 7s ease-in-out infinite alternate}
+@keyframes qt-patrol{from{transform:translateX(0)}to{transform:translateX(calc(var(--qt-w,520px) - 60px))}}
+.qtrain.clear .qt-line .qt-name::after{content:"· clear";color:#22c55e}
+.qtip{position:fixed;max-width:300px;z-index:60}
+@media (max-width:720px){
+  .qtrain{grid-template-columns:minmax(0,1fr)}
+  .qt-signal{display:none}
+  .qt-sec{min-height:84px}
+}
 @media (prefers-reduced-motion: reduce){
   .qtrain *, .qtrain *::before, .qtrain{animation:none !important}
-  .qt-r{position:relative}
+  .qt-consist{position:relative;transform:none}
+  .qt-shunter,.qt-ghost{display:none}
 }
-/* lane chips read as coupled train cars */
-.qitems .qchip + .qchip::before{content:"";position:absolute;left:14px;top:-7px;width:2px;height:6px;
-  background:var(--border);border-radius:1px}
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);

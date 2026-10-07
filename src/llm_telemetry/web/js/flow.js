@@ -2,187 +2,54 @@
  * Flow: the provider→model→task force graph (layout, drag, focus/dim,
  * tooltip), the task-queue visualisation and the agent cards.
  */
-import { $, ago, colorOf, esc, escA, short } from './palette.js';
+import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
-import { PROV, fillChip, flipMove, provOf, qChip, render } from './views.js';
+import { PROV, provOf, render } from './views.js';
 import { profileHue } from './router.js';
 import { DATA, css } from './main.js';
 
-export const Q_SEEN = new Map();   // dom key -> {lane, chip} so we can detect travel
-
+// #140 follow-up: the queue IS the railway. The old queued/running/done lanes
+// were removed once the train carried the same facts plus hover detail.
+// Depot = requests waiting at an Ollama host (no id: "host X has N waiting"),
+// the line = live sessions as ONE coupled train (loco = most recently active),
+// the yard = finished sessions parked on sidings. Every car is keyed and
+// reused across 5s polls, so only real arrivals/departures animate.
 export function renderQueue(){
-  const qBox = $('qitems-queued'), rBox = $('qitems-running'), dBox = $('qitems-done');
-  if (!qBox || !rBox || !dBox) return;
   const p = DATA.profiles[current] || {};
   const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
-  const CAP = 10;
+  const titleOf = (title, model) => (title && title !== '(untitled)') ? title : (short(model) || 'session');
 
-  // --- queued: expand each host's real depth into depth-many chips ---------
   const queuedAll = [];
   hosts.forEach(h => {
     const depth = Math.max(0, (+h.queue || 0));
     for (let i = 0; i < depth; i++) {
-      queuedAll.push({ key: `q:${h.label}:${i}`, label: h.label, meta: 'waiting' });
+      queuedAll.push({ key: `q:${h.label}:${i}`, kind: 'q', label: h.label, host: h.label, pos: i + 1, depth });
     }
   });
-  const queued = queuedAll.slice(0, CAP);
 
-  // --- running: the same live sessions the grid shows, most active first ---
-  const seenLive = new Set();
-  const liveDedup = (p.live || []).filter(L => {
-    if (seenLive.has(L.id)) return false; seenLive.add(L.id); return true;
-  });
-  const runningAll = liveDedup
-    .slice()
-    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active first
+  const seen = new Set();
+  const runningAll = (p.live || [])
+    .filter(L => !seen.has(L.id) && seen.add(L.id))
+    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active leads
     .map(L => ({
-      key: `s:${L.id}`, sid: L.id,
-      label: (L.title && L.title !== '(untitled)') ? L.title : (short(L.model) || 'session'),
-      meta: short(L.model) || '', hue: profileHue(L.profile || ''),
+      key: `s:${L.id}`, kind: 'r', sid: L.id, label: titleOf(L.title, L.model),
+      model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+      phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+      tools: (L.tools || []).length, nmodels: L.nmodels,
     }));
-  const running = runningAll.slice(0, CAP);
 
-  // --- done: sessions that actually ended, newest first --------------------
   const doneAll = (p.recent_sessions || [])
     .slice()
     .sort((a, b) => (+b.last_ts || 0) - (+a.last_ts || 0))
     .map(s => ({
-      key: `s:${s.id}`, sid: s.id,
-      label: (s.title && s.title !== '(untitled)') ? s.title : (short(s.last_model || s.model) || 'session'),
-      meta: s.dur_s != null ? `${ago(Math.max(0, +s.dur_s))} run` : '',
-      hue: null,
+      key: `s:${s.id}`, kind: 'd', sid: s.id, label: titleOf(s.title, s.last_model || s.model),
+      model: short(s.last_model || s.model) || '', dur_s: s.dur_s, last_ts: s.last_ts,
+      tokens: s.tokens, api_calls: s.api_calls, hue: hashHue(s.last_model || s.model || ''),
     }));
-  const done = doneAll.slice(0, CAP);
-
-  // --- reconcile against what is on screen ----------------------------------
-  // Promotion (queued -> running) is detected by COUNT, not identity: a queue
-  // slot carries no request id (queued items are only "host X has N
-  // waiting"), so claiming an exact task-to-task match there would be
-  // inventing data. Running -> done DOES have identity (the same session id
-  // in both feeds), so that edge travels the real chip instead of guessing.
-  const queuedBefore = [...Q_SEEN.values()].filter(v => v.lane === 'queued').length;
-  const runningBefore = new Set(
-    [...Q_SEEN.entries()].filter(([, v]) => v.lane === 'running').map(([k]) => k));
-  let promoteBudget = Math.max(0, queuedBefore - queued.length);
-
-  const next = new Map();
-  const want = [
-    ...queued.map(q => ({ ...q, lane: 'queued', hue: null })),
-    ...running.map(r => ({ ...r, lane: 'running' })),
-    ...done.map(d => ({ ...d, lane: 'done' })),
-  ];
-  const laneBox = { queued: qBox, running: rBox, done: dBox };
-  want.forEach(w => {
-    const prev = Q_SEEN.get(w.key);
-    if (prev && prev.chip.isConnected && prev.lane === w.lane){
-      // same chip, same lane: reuse it so CSS does not replay the entry
-      // animation on every 5s poll (that would read as a flicker, the very
-      // thing #114 fixed elsewhere).
-      w.chip = prev.chip;
-      const m = w.chip.querySelector('.qmodel');
-      if (m && m.textContent !== w.label) m.textContent = w.label;
-      const pr = w.chip.querySelector('.qprof');
-      if (pr && w.meta && pr.textContent !== w.meta) pr.textContent = w.meta;
-    } else if (prev && prev.chip.isConnected && prev.lane !== w.lane){
-      // same key, different lane: this task TRAVELED (today only reachable
-      // via running -> done, since queued/running/done keys only collide
-      // when they share a real session id). Reuse the element and animate
-      // its move instead of destroying and recreating it.
-      w.chip = prev.chip;
-      fillChip(w.chip, w.lane, w.key, w.label, w.meta, w.hue);
-      flipMove(w.chip, laneBox[w.lane]);
-    } else {
-      w.chip = qChip(w.lane, w.key, w.label, w.meta, w.hue);
-      // A running chip that was not running last render, while the queue was
-      // draining, is the visible signal that a waiting task started.
-      const isNewRunning = w.lane === 'running' && !runningBefore.has(w.key);
-      if (isNewRunning && promoteBudget > 0){
-        promoteBudget--;
-        w.chip.classList.add('promoting');
-        setTimeout(() => w.chip.classList.remove('promoting'), 400);
-      }
-    }
-    next.set(w.key, w);
-  });
-  // chips that vanished entirely (not present in ANY lane this render): play
-  // the exit animation, then drop them. This is also how a done chip finally
-  // leaves once it ages out past the 10-item cap.
-  Q_SEEN.forEach((prev, key) => {
-    if (next.has(key)) return;
-    if (!prev.chip.isConnected) return;
-    prev.chip.classList.add('leaving');
-    const chip = prev.chip;
-    setTimeout(() => chip.remove(), 240);
-  });
-  Q_SEEN.clear();
-  next.forEach((v, k) => Q_SEEN.set(k, v));
-
-  // --- paint: reuse existing nodes where possible so only real changes move
-  const paint = (box, items) => {
-    items.forEach(it => { if (it.chip.parentNode !== box) box.appendChild(it.chip); });
-    [...box.children].forEach(c => {
-      if (c.classList.contains('qmore')) { c.remove(); return; }
-      if (!items.some(i => i.chip === c) && !c.classList.contains('leaving')) c.remove();
-    });
-  };
-  paint(qBox, want.filter(w => w.lane === 'queued'));
-  paint(rBox, want.filter(w => w.lane === 'running'));
-  paint(dBox, want.filter(w => w.lane === 'done'));
-
-  // --- overflow footers: the cap limits what's SHOWN, never what's counted --
-  const overflow = (box, all, shown) => {
-    if (all.length > shown.length){
-      const m = document.createElement('div');
-      m.className = 'qmore muted';
-      m.textContent = `+${all.length - shown.length} more`;
-      box.appendChild(m);
-    }
-  };
-  overflow(qBox, queuedAll, queued);
-  overflow(rBox, runningAll, running);
-  overflow(dBox, doneAll, done);
-
-  // --- empty states: calm, not blank --------------------------------------
-  if (!queued.length){
-    if (!qBox.querySelector('.qempty')){
-      const e = document.createElement('div');
-      e.className = 'qempty';
-      e.innerHTML = '<span class="qdot"></span>queue clear — nothing waiting';
-      qBox.insertBefore(e, qBox.firstChild);
-    }
-  } else {
-    const e = qBox.querySelector('.qempty'); if (e) e.remove();
-  }
-  if (!running.length){
-    if (!rBox.querySelector('.qempty')){
-      const e = document.createElement('div');
-      e.className = 'qempty muted';
-      e.innerHTML = '<span class="muted">idle — nothing running</span>';
-      rBox.insertBefore(e, rBox.firstChild);
-    }
-  } else {
-    const e = rBox.querySelector('.qempty'); if (e) e.remove();
-  }
-  if (!done.length){
-    if (!dBox.querySelector('.qempty')){
-      const e = document.createElement('div');
-      e.className = 'qempty muted';
-      e.innerHTML = '<span class="muted">nothing finished yet</span>';
-      dBox.insertBefore(e, dBox.firstChild);
-    }
-  } else {
-    const e = dBox.querySelector('.qempty'); if (e) e.remove();
-  }
 
   paintTrain(queuedAll, runningAll, doneAll);
 
-  // --- counts + subtitle ----------------------------------------------------
-  // Counts show the REAL total, even when the lane is capped to 10 chips —
-  // capping the display must never quietly change what the number means.
-  const cq = $('qcount-queued'), cr = $('qcount-running'), cd = $('qcount-done'), sub = $('qsub');
-  if (cq) cq.textContent = String(queuedAll.length);
-  if (cr) cr.textContent = String(runningAll.length);
-  if (cd) cd.textContent = String(doneAll.length);
+  const sub = $('qsub');
   if (sub){
     const busy = hosts.filter(h => (+h.queue || 0) > 0).map(h => h.label);
     sub.textContent = busy.length
@@ -191,76 +58,216 @@ export function renderQueue(){
   }
 }
 
-// #140: the railway strip above the lanes. Squares are keyed and reused, so a
-// car keeps its place in its animation across polls; only arrivals and
-// departures animate. Purely decorative (aria-hidden): the lanes below stay
-// the accessible, readable record.
-export const TRAIN_CAP = 10;
-export function trainCar(key, cls){
-  const c = document.createElement('i');
-  c.className = 'qt-car ' + cls;
-  c.dataset.key = key;
+// How many cars each section draws. Generous (the user asked for "as many as
+// you want"); past it a "+N" badge keeps the real total visible.
+export const QT_CAP = { q: 16, r: 40, d: 48 };
+
+export function trainCar(it){
+  const c = document.createElement('div');
+  c.className = 'qt-car qt-' + it.kind;
+  c.dataset.key = it.key;
+  c.tabIndex = 0;
+  const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
   return c;
 }
-export function paintCars(box, items, cls, decorate){
-  const have = new Map([...box.children].filter(c => c.dataset && c.dataset.key && !c.classList.contains('qt-leaving'))
-    .map(c => [c.dataset.key, c]));
-  const keep = new Set();
+
+// Keyed, ordered reconcile of one section. Returns the cars created this pass
+// so the caller can fly them in from where the task was a moment ago.
+export function paintCars(box, items, decorate){
+  const have = new Map();
+  [...box.children].forEach(c => {
+    if (c.dataset && c.dataset.key && !c.classList.contains('qt-leaving')) have.set(c.dataset.key, c);
+  });
+  const keep = new Set(), fresh = [];
+  const where = { q: 'waiting', r: 'running', d: 'finished' };
   items.forEach((it, i) => {
     let c = have.get(it.key);
-    if (!c){ c = trainCar(it.key, cls); box.appendChild(c); }
+    if (!c){ c = trainCar(it); fresh.push(c); }
+    const ref = box.children[i];
+    if (ref !== c){ if (c.parentNode === box) c.remove(); if (ref) box.insertBefore(c, ref); else box.appendChild(c); }
     keep.add(c);
+    const l = c.querySelector('.qt-lbl');
+    if (l && l.textContent !== it.label) l.textContent = it.label;
+    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}`);
+    c._qt = it;
     decorate(c, it, i);
   });
   [...box.children].forEach(c => {
     if (keep.has(c) || c.classList.contains('qt-leaving')) return;
-    if (c.classList.contains('qt-more')){ c.remove(); return; }
+    if (!c.dataset || !c.dataset.key){ c.remove(); return; }
     c.classList.add('qt-leaving');
     setTimeout(() => c.remove(), 600);
   });
+  return fresh;
 }
+
+// Hover/focus card for one car. Only fields the feeds really carry.
+export function carTip(it){
+  if (!it) return '';
+  const row = (k, v) => (v === '' || v == null || v === 0) ? ''
+    : `<div class="ft-r"><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`;
+  const tk = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
+  if (it.kind === 'q'){
+    return `<div class="ft-h">Waiting on ${esc(it.host)}</div>`
+      + row('position', `${it.pos} of ${it.depth}`) + row('state', 'queued at the Ollama host');
+  }
+  const head = `<div class="ft-h">${esc(it.label)}</div>`;
+  if (it.kind === 'r'){
+    return head + row('model', it.model) + row('profile', it.profile)
+      + row('doing', it.phase || it.category)
+      + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
+      + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
+  }
+  return head + row('model', it.model)
+    + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
+    + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
+    + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
+}
+
+// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
+// the real car with a landing bounce. No-op without the Web Animations API,
+// without layout (rects of 0), or under prefers-reduced-motion.
+export function qtFly(tr, fromRect, toEl, cls){
+  if (!tr || !toEl || !fromRect || typeof toEl.animate !== 'function') return false;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  const base = tr.getBoundingClientRect(), to = toEl.getBoundingClientRect();
+  if (!to.width || !fromRect.width) return false;
+  const g = document.createElement('div');
+  g.className = 'qt-ghost ' + cls;
+  g.style.cssText = `left:${fromRect.left - base.left}px;top:${fromRect.top - base.top}px;`
+    + `width:${fromRect.width}px;height:${fromRect.height}px`;
+  const h = toEl.style.getPropertyValue('--h'); if (h) g.style.setProperty('--h', h);
+  const lbl = toEl.querySelector('.qt-lbl'); g.textContent = lbl ? lbl.textContent : '';
+  tr.appendChild(g);
+  toEl.style.visibility = 'hidden';
+  const dx = to.left - fromRect.left, dy = to.top - fromRect.top;
+  const sx = to.width / fromRect.width, sy = to.height / fromRect.height;
+  const anim = g.animate([
+    { transform: 'translate(0,0) scale(1)' },
+    { transform: `translate(${dx / 2}px,${dy / 2 - 22}px) scale(${(1 + sx) / 2},${(1 + sy) / 2})`, offset: 0.55 },
+    { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` },
+  ], { duration: 950, easing: 'cubic-bezier(.45,.05,.3,1)' });
+  let fin = false;
+  const land = () => {
+    if (fin) return; fin = true;
+    g.remove(); toEl.style.visibility = '';
+    toEl.classList.add('qt-landed');
+    setTimeout(() => toEl.classList.remove('qt-landed'), 650);
+  };
+  anim.onfinish = land; anim.oncancel = land;
+  return true;
+}
+
 export function paintTrain(queuedAll, runningAll, doneAll){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
   if (!tr || !qb || !rb || !db) return;
-  const nq = queuedAll.length, nr = runningAll.length;
-  const running = runningAll.slice(0, TRAIN_CAP);
-  // A busier line runs faster, within a readable range.
-  const loop = Math.max(5, 11 - running.length * 0.6);
+  let consist = rb.querySelector('.qt-consist');
+  if (!consist){ consist = document.createElement('div'); consist.className = 'qt-consist'; rb.appendChild(consist); }
+  const nq = queuedAll.length, nr = runningAll.length, nd = doneAll.length;
+  // Depot and yard wrap into rows; show only what fits so "+N" stays honest
+  // (no car silently clipped by overflow). Without layout, fall back to cap.
+  const fit = (box, carW, rows, cap, n) => {
+    if (!box.clientWidth) return cap;
+    const per = Math.max(1, Math.floor((box.clientWidth + 5) / (carW + 5)));
+    const room = per * rows;
+    return Math.min(cap, n > room ? room - 1 : room);
+  };
+  const queued = queuedAll.slice(0, fit(qb, 74, 3, QT_CAP.q, nq));
+  const running = runningAll.slice(0, QT_CAP.r);
+  const done = doneAll.slice(0, fit(db, 86, 3, QT_CAP.d, nd));
+
+  // Where every car is right now, so a task that changes section can be
+  // flown across instead of blinking out and back in.
+  const before = new Map();
+  tr.querySelectorAll('.qt-car[data-key]').forEach(c => {
+    if (c.classList.contains('qt-leaving')) return;
+    before.set(c.dataset.key, { rect: c.getBoundingClientRect(),
+      sec: c.classList.contains('qt-q') ? 'q' : c.classList.contains('qt-r') ? 'r' : 'd' });
+  });
+  const keepQ = new Set(queued.map(q => q.key));
+  const departing = [...qb.querySelectorAll('.qt-car[data-key]')]
+    .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
+    .map(c => c.getBoundingClientRect());
+
+  // Constant speed whatever the train length: the loop covers line + train.
+  const lineW = rb.clientWidth || 520;
+  const trainW = consist.scrollWidth || running.length * 111;
+  const loop = Math.max(8, Math.round((lineW + trainW) / 55));
   tr.style.setProperty('--qt-loop', loop + 's');
-  // Cars loop across the line's real width (fallback before layout).
-  tr.style.setProperty('--qt-w', ((rb.clientWidth || 520) + 10) + 'px');
+  tr.style.setProperty('--qt-w', (lineW + 10) + 'px');
+  tr.style.setProperty('--qt-yw', Math.max(40, (db.clientWidth || 200) - 26) + 'px');
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
   if (sig) sig.title = nq > 0 ? `${nq} waiting` : 'line clear';
 
-  paintCars(qb, queuedAll.slice(0, TRAIN_CAP), 'qt-q', (c, it, i) => {
-    c.style.setProperty('--i', i);
-  });
-  // Coupled train: every car shares one loop, offset by a fixed gap behind
-  // the locomotive, so the train stays evenly spaced and moves as one.
-  paintCars(rb, running, 'qt-r', (c, it, i) => {
-    c.style.setProperty('--d', (-(running.length - 1 - i) * 0.32).toFixed(2) + 's');
+  paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
+  const freshR = paintCars(consist, running, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
     c.classList.toggle('qt-loco', i === 0);
-    c.title = it.label;
   });
-  paintCars(db, doneAll.slice(0, TRAIN_CAP), 'qt-d', (c, it, i) => {
-    c.style.setProperty('--i', i);
+  const freshD = paintCars(db, done, (c, it, i) => {
+    c.style.setProperty('--h', it.hue == null ? 215 : it.hue);
+    c.classList.toggle('qt-newest', i === 0);
   });
+
+  // line -> yard is an exact identity (same session id in both feeds).
+  freshD.forEach(c => {
+    const b = before.get(c.dataset.key);
+    if (b && b.sec === 'r') qtFly(tr, b.rect, c, 'qt-fly-yard');
+  });
+  // depot -> line: a queue slot has no id, so a departing depot car is paired
+  // with a newly running car by COUNT. Never claimed as an exact match.
+  freshR.forEach(c => {
+    if (before.has(c.dataset.key)) return;
+    const from = departing.shift();
+    if (from) qtFly(tr, from, c, 'qt-fly-line');
+  });
+
   // "+N" past the cap, so the strip never hides real depth.
-  [[qb, nq], [rb, nr], [db, doneAll.length]].forEach(([box, n]) => {
-    const old = box.querySelector('.qt-more'); if (old) old.remove();
-    if (n > TRAIN_CAP){
+  [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {
+    [...box.children].forEach(c => { if (c.classList.contains('qt-more')) c.remove(); });
+    if (n > shown){
       const m = document.createElement('b');
-      m.className = 'qt-more'; m.textContent = '+' + (n - TRAIN_CAP);
+      m.className = 'qt-more'; m.textContent = '+' + (n - shown);
       box.appendChild(m);
     }
   });
+  [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
+    const el = $(id); if (el && el.textContent !== String(n)) el.textContent = String(n);
+  });
   // An empty line still shows life: one ghost car patrols it.
-  if (nr === 0 && !rb.querySelector('.qt-patrol')){
-    const p = document.createElement('i'); p.className = 'qt-car qt-patrol'; rb.appendChild(p);
-  } else if (nr > 0){ const p = rb.querySelector('.qt-patrol'); if (p) p.remove(); }
+  const patrol = rb.querySelector('.qt-patrol');
+  if (nr === 0 && !patrol){
+    const g = document.createElement('i'); g.className = 'qt-patrol'; rb.appendChild(g);
+  } else if (nr > 0 && patrol){ patrol.remove(); }
+
+  if (!tr.dataset.tip){ tr.dataset.tip = '1'; qtTipWire(tr); }
+}
+
+// One shared tooltip for every car (event delegation, wired once).
+export function qtTipWire(tr){
+  const tip = $('qtip');
+  if (!tip) return;
+  const hide = () => tip.classList.remove('on');
+  const show = c => {
+    if (!c || !c._qt) return;
+    tip.innerHTML = carTip(c._qt);
+    tip.classList.add('on');
+    // position:fixed, so no card overflow can clip it; above the car when
+    // there is room in the viewport, else below.
+    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024;
+    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80;
+    const x = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const y = r.top - hgt - 10;
+    tip.style.left = x + 'px';
+    tip.style.top = (y < 6 ? r.bottom + 10 : y) + 'px';
+  };
+  const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
+  tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
+  tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
+  tr.addEventListener('focusin', e => show(carOf(e.target)));
+  tr.addEventListener('focusout', hide);
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed

@@ -8,7 +8,7 @@
 // src/llm_telemetry/web/js/views.js (the provider resolution order in provOf,
 // the re-send ratio in resendOf, the median/2x rule in renderBandwidthPanel, the
 // unpriced/priced state table, the re-send table's filter and 15-row cap, the
-// KPI arithmetic in renderHome, the FLIP sequence in flipMove). Nothing is
+// KPI arithmetic in renderHome). Nothing is
 // captured from program output: if a case fails, re-read the module.
 //
 // Time-dependent expectations use Date.now() + an offset so they cannot rot.
@@ -1005,65 +1005,6 @@ const liveClick = clickHandlers[clickHandlers.length - 1];
   eq(count(h, '<td class="num muted"></td>'), 2, 'modelsPanel: no last-use stamp -> empty cells');
   has(h, '<td class="num">1 / 0</td>', 'modelsPanel: third row tokens');
   D2.liveModelsOpen.delete('s1');
-}
-
-// ═══ fillChip / qChip ══════════════════════════════════════════════════════
-{
-  const c = D2.qChip('running', 's:1', 'opus<4>', 'profile1', 210);
-  eq(c.className, 'qchip', 'qChip: class for styling');
-  eq(c.dataset.key, 's:1', 'qChip: identity key on the node');
-  eq(c.dataset.lane, 'running', 'qChip: lane stamped on the node');
-  has(c.innerHTML, '<span class="qdotwrap" style="background:hsl(210 62% 45%)"></span>', 'fillChip: hue-only profile dot');
-  has(c.innerHTML, '<span class="qmodel">opus&lt;4&gt;</span>', 'fillChip: label escaped');
-  has(c.innerHTML, '<span class="qprof">profile1</span>', 'fillChip: meta rendered when present');
-
-  const plain = D2.qChip('queued', 'h:1', 'qwen3', '', null);
-  lacks(plain.innerHTML, 'background:hsl', 'fillChip: no colour when the profile has no hue');
-  lacks(plain.innerHTML, 'qprof', 'fillChip: no meta span when meta is empty');
-  has(plain.innerHTML, '<span class="qdotwrap"></span>', 'fillChip: dot without a style attribute');
-
-  // Reusing a node is what keeps the queue from flashing: identity must survive.
-  const lane = { children: [], appendChild(el){ this.children.push(el); return el; } };
-  D2.flipMove(plain, lane);
-  eq(lane.children[0], plain, 'qChip + flipMove: the same node object is moved, never recreated');
-  eq(plain.dataset.key, 'h:1', 'fillChip: the moved node keeps its key');
-}
-
-// ═══ flipMove ══════════════════════════════════════════════════════════════
-{
-  const timers = [];
-  const realST = globalThis.setTimeout;
-  globalThis.setTimeout = (fn, ms) => { timers.push([fn, ms]); return timers.length; };
-  try {
-    // No layout: every rect is 0x0, so the chip just arrives.
-    const flat = mkEl('flat');
-    const lane1 = { children: [], appendChild(el){ this.children.push(el); return el; } };
-    D2.flipMove(flat, lane1);
-    eq(lane1.children.length, 1, 'flipMove: the node is appended');
-    eq(flat.classList.contains('travel'), false, 'flipMove: no travel class without a position change');
-    eq(flat.classList.contains('arrived'), true, 'flipMove: arrival is always marked');
-    eq(timers.length, 1, 'flipMove: schedules the class cleanup');
-    eq(timers[0][1], 320, 'flipMove: cleanup after 320 ms (matches the CSS transition)');
-    timers[0][0]();
-    eq(flat.classList.contains('arrived'), false, 'flipMove: cleanup removes the arrival mark');
-    eq(flat.classList.contains('travel'), false, 'flipMove: cleanup removes the travel mark');
-
-    // A real position change: measure, move, invert, clear.
-    let moved = false;
-    const chip = mkEl('chip');
-    chip.getBoundingClientRect = () => moved ? { left: 0, top: 0 } : { left: 10, top: 25 };
-    const writes = [];
-    chip.style = new Proxy({}, { set(t, k, v){ writes.push(`${k}=${v}`); t[k] = v; return true; } });
-    const lane2 = { children: [], appendChild(el){ this.children.push(el); moved = true; return el; } };
-    D2.flipMove(chip, lane2);
-    has(writes.join(' | '), 'transition=none', 'flipMove: the invert runs without a transition');
-    has(writes.join(' | '), 'transform=translate(10px,25px)', 'flipMove: the delta is inverted into a transform');
-    eq(chip.style.transform, '', 'flipMove: the transform is cleared so CSS plays it back to zero');
-    eq(chip.style.transition, '', 'flipMove: the transition is restored before the animation');
-    eq(chip.classList.contains('travel'), true, 'flipMove: a moving chip is marked travelling');
-    timers[1][0]();
-    eq(chip.classList.contains('travel'), false, 'flipMove: travel mark cleared after the transition');
-  } finally { globalThis.setTimeout = realST; }
 }
 
 // ═══ renderConcurrency ═════════════════════════════════════════════════════

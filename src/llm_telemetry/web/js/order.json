@@ -582,22 +582,6 @@
    "name": "modelsPanel"
   },
   {
-   "mod": "flow",
-   "name": "Q_SEEN"
-  },
-  {
-   "mod": "views",
-   "name": "fillChip"
-  },
-  {
-   "mod": "views",
-   "name": "qChip"
-  },
-  {
-   "mod": "views",
-   "name": "flipMove"
-  },
-  {
    "mod": "views",
    "name": "renderConcurrency"
   },
@@ -731,11 +715,11 @@
   },
   {
    "mod": "flow",
-   "name": "TRAIN_CAP"
+   "name": "trainCar"
   },
   {
    "mod": "flow",
-   "name": "trainCar"
+   "name": "QT_CAP"
   },
   {
    "mod": "flow",
@@ -743,7 +727,19 @@
   },
   {
    "mod": "flow",
+   "name": "carTip"
+  },
+  {
+   "mod": "flow",
+   "name": "qtFly"
+  },
+  {
+   "mod": "flow",
    "name": "paintTrain"
+  },
+  {
+   "mod": "flow",
+   "name": "qtTipWire"
   },
   {
    "mod": "flow",

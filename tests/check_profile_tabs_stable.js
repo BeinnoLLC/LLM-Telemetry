@@ -134,10 +134,11 @@ setTimeout(() => {
     chk(!!badge, 'the live-session profile badge exists');
     chk(new RegExp(`hsl\\(${NEW_HUE} `).test(badge.getAttribute('style') || ''),
         'the live-session badge also picks up the overridden hue', badge.getAttribute('style'));
-    const qdot = d.querySelector(`#qitems-running .qchip[data-key="s:sx"] .qdotwrap`);
-    chk(!!qdot, 'the running-lane chip for that session exists');
-    chk(new RegExp(`hsl\\(${NEW_HUE} `).test(qdot.getAttribute('style') || ''),
-        'the queue lane dot also picks up the overridden hue', qdot.getAttribute('style'));
+    w.eval('renderQueue()');
+    const qcar = d.querySelector(`#qt-running .qt-car[data-key="s:sx"]`);
+    chk(!!qcar, 'the running train car for that session exists');
+    chk(qcar.style.getPropertyValue('--h') === String(NEW_HUE),
+        'the train car also picks up the overridden hue', qcar.getAttribute('style'));
 
     // ---- reset restores the deterministic default --------------------------
     w.eval(`pickView('Settings');`);

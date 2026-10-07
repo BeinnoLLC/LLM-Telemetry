@@ -62,31 +62,35 @@ setTimeout(() => {
     ];
     renderQueue(); renderLive();`);
 
-    // ---- Task queue: running lane leads with title, not model -------------
-    const runChip = d.querySelector('#qitems-running .qchip[data-key="s:tlive1"]');
-    chk(!!runChip, 'running-lane chip for the titled session exists');
-    chk(runChip.querySelector('.qmodel').textContent === 'Refactor the billing parser',
-        'running chip label is the session TITLE, not the model', runChip.querySelector('.qmodel').textContent);
-    chk(runChip.querySelector('.qprof').textContent === 'claude-opus-5',
-        'running chip meta shows the model as secondary info', runChip.querySelector('.qprof').textContent);
+    // ---- Task queue (railway): running car leads with title, not model ----
+    // The lanes were removed (#140 follow-up); the train cars now carry the
+    // label, and the hover card carries the model as secondary info.
+    const car = k => d.querySelector(`#qtrain .qt-car[data-key="${k}"]`);
+    const lbl = c => c.querySelector('.qt-lbl').textContent;
+    const runCar = car('s:tlive1');
+    chk(!!runCar, 'running car for the titled session exists');
+    chk(lbl(runCar) === 'Refactor the billing parser',
+        'running car label is the session TITLE, not the model', lbl(runCar));
+    const runTip = w.eval('carTip')(runCar._qt);
+    chk(runTip.includes('claude-opus-5'), 'running car hover card shows the model as secondary info', runTip);
 
     // untitled session falls back to model, never shows the literal "(untitled)"
-    const runChip2 = d.querySelector('#qitems-running .qchip[data-key="s:tlive2"]');
-    chk(!!runChip2, 'running-lane chip for the untitled session exists');
-    chk(runChip2.querySelector('.qmodel').textContent === 'deepseek-v4p1-flash',
-        'untitled running session falls back to the model name', runChip2.querySelector('.qmodel').textContent);
-    chk(!/\(untitled\)/.test(runChip2.textContent), 'the literal "(untitled)" string is never shown');
+    const runCar2 = car('s:tlive2');
+    chk(!!runCar2, 'running car for the untitled session exists');
+    chk(lbl(runCar2) === 'deepseek-v4p1-flash',
+        'untitled running session falls back to the model name', lbl(runCar2));
+    chk(!/\(untitled\)/.test(runCar2.textContent), 'the literal "(untitled)" string is never shown');
 
-    // ---- Task queue: done lane leads with title, not model -----------------
-    const doneChip = d.querySelector('#qitems-done .qchip[data-key="s:tdone1"]');
-    chk(!!doneChip, 'done-lane chip for the titled session exists');
-    chk(doneChip.querySelector('.qmodel').textContent === 'Migrate the auth schema',
-        'done chip label is the session TITLE, not the model', doneChip.querySelector('.qmodel').textContent);
+    // ---- Task queue (railway): parked yard car leads with title -----------
+    const doneCar = car('s:tdone1');
+    chk(!!doneCar, 'yard car for the titled session exists');
+    chk(lbl(doneCar) === 'Migrate the auth schema',
+        'yard car label is the session TITLE, not the model', lbl(doneCar));
 
-    const doneChip2 = d.querySelector('#qitems-done .qchip[data-key="s:tdone2"]');
-    chk(!!doneChip2, 'done-lane chip for the untitled session exists');
-    chk(doneChip2.querySelector('.qmodel').textContent === 'glm-5.3-flash',
-        'untitled done session falls back to the model name', doneChip2.querySelector('.qmodel').textContent);
+    const doneCar2 = car('s:tdone2');
+    chk(!!doneCar2, 'yard car for the untitled session exists');
+    chk(lbl(doneCar2) === 'glm-5.3-flash',
+        'untitled done session falls back to the model name', lbl(doneCar2));
 
     // ---- In progress now: title is the prominent text, model is secondary --
     const rows = [...d.querySelectorAll('#livelist > div')];
