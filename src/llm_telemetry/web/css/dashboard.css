@@ -793,6 +793,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcard{border:1px solid var(--border);border-radius:8px;padding:11px 12px;
    background:color-mix(in srgb,var(--card) 70%,transparent)}
  .olcard.down{opacity:.62;border-style:dashed}
+ /* #34: fire icon fires only on sustained GPU+queue pressure (~15s), not a
+    single spike — a border tint gives the same signal at a glance in lists. */
+ .olcard-pressure{border-color:hsl(16 85% 55% / .55)}
+ .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px;
+   filter:drop-shadow(0 0 2px hsl(16 85% 55% / .5))}
  .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its

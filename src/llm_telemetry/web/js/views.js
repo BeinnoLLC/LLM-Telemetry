@@ -2390,6 +2390,18 @@ export function olTrack(host, metric, val){
   OL_HIST.set(key, arr);
   return arr;
 }
+
+// #34 (decision): "really under pressure" fire icon. GPU >=85% AND queue
+// depth >=2, sustained across three consecutive 5s probes (~15s) — a single
+// spike lighting the icon trains the operator to ignore it, which is worse
+// than no icon. Down hosts never qualify; down is a separate state already
+// shown by the dashed border + red dot (per #34's sub-question).
+export const OL_PRESSURE = new Map();
+export function olPressureTick(host, underPressure){
+  const n = underPressure ? (OL_PRESSURE.get(host) || 0) + 1 : 0;
+  OL_PRESSURE.set(host, n);
+  return n >= 3; // 3 consecutive 5s probes ≈ 15s sustained, per #34
+}
 export function renderOllama(ol){
   const wrap = $('ollama'), card = $('olcard'), sub = $('olsub');
   if (!wrap || !card) return;
@@ -2411,6 +2423,9 @@ export function renderOllama(ol){
     const alias = urls.length > 1
       ? `<div class="olurls">${urls.length} endpoints → this box: ${urls.join(' · ')}</div>` : '';
     if (!h.up){
+      // Down resets the pressure streak — the icon never follows a host
+      // back up carrying a stale count from before it dropped.
+      OL_PRESSURE.set(h.label, 0);
       return `<div class="olcard down"><div class="olhead">` +
         `<i class="oldot down"></i><span class="olname">${h.label}</span>` +
         `<span class="olbadge">local</span>` +
@@ -2452,8 +2467,13 @@ export function renderOllama(ol){
     const tasks = Object.entries(w.tasks||{}).sort((a,b)=>b[1]-a[1])
       .map(([k,n]) => `${k} <b>${n}</b>`).join(' · ');
 
-    return `<div class="olcard"><div class="olhead">` +
-      `<i class="oldot up"></i><span class="olname">${h.label}</span>` +
+    const instantPressure = (L && L.gpu != null && L.gpu >= 85) && q >= 2;
+    const onFire = olPressureTick(h.label, instantPressure);
+    const fireIcon = onFire
+      ? `<i class="olfire" title="Under sustained pressure: GPU \u226585% and queue \u22652 for ~15s">\ud83d\udd25</i>` : '';
+
+    return `<div class="olcard${onFire ? ' olcard-pressure' : ''}"><div class="olhead">` +
+      `<i class="oldot up"></i><span class="olname">${h.label}</span>${fireIcon}` +
       `<span class="olbadge">▣ local</span>` +
       `<span class="olver">v${h.version||'?'} · ${h.ms}ms · ${h.installed} models</span></div>` +
       alias +

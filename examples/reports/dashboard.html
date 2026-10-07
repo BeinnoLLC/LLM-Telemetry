@@ -815,6 +815,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcard{border:1px solid var(--border);border-radius:8px;padding:11px 12px;
    background:color-mix(in srgb,var(--card) 70%,transparent)}
  .olcard.down{opacity:.62;border-style:dashed}
+ /* #34: fire icon fires only on sustained GPU+queue pressure (~15s), not a
+    single spike — a border tint gives the same signal at a glance in lists. */
+ .olcard-pressure{border-color:hsl(16 85% 55% / .55)}
+ .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px;
+   filter:drop-shadow(0 0 2px hsl(16 85% 55% / .5))}
  .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
@@ -6869,6 +6874,18 @@ function olTrack(host, metric, val){
   OL_HIST.set(key, arr);
   return arr;
 }
+
+// #34 (decision): "really under pressure" fire icon. GPU >=85% AND queue
+// depth >=2, sustained across three consecutive 5s probes (~15s) — a single
+// spike lighting the icon trains the operator to ignore it, which is worse
+// than no icon. Down hosts never qualify; down is a separate state already
+// shown by the dashed border + red dot (per #34's sub-question).
+const OL_PRESSURE = new Map();
+function olPressureTick(host, underPressure){
+  const n = underPressure ? (OL_PRESSURE.get(host) || 0) + 1 : 0;
+  OL_PRESSURE.set(host, n);
+  return n >= 3; // 3 consecutive 5s probes ≈ 15s sustained, per #34
+}
 function renderOllama(ol){
   const wrap = $('ollama'), card = $('olcard'), sub = $('olsub');
   if (!wrap || !card) return;
@@ -6890,6 +6907,9 @@ function renderOllama(ol){
     const alias = urls.length > 1
       ? `<div class="olurls">${urls.length} endpoints → this box: ${urls.join(' · ')}</div>` : '';
     if (!h.up){
+      // Down resets the pressure streak — the icon never follows a host
+      // back up carrying a stale count from before it dropped.
+      OL_PRESSURE.set(h.label, 0);
       return `<div class="olcard down"><div class="olhead">` +
         `<i class="oldot down"></i><span class="olname">${h.label}</span>` +
         `<span class="olbadge">local</span>` +
@@ -6931,8 +6951,13 @@ function renderOllama(ol){
     const tasks = Object.entries(w.tasks||{}).sort((a,b)=>b[1]-a[1])
       .map(([k,n]) => `${k} <b>${n}</b>`).join(' · ');
 
-    return `<div class="olcard"><div class="olhead">` +
-      `<i class="oldot up"></i><span class="olname">${h.label}</span>` +
+    const instantPressure = (L && L.gpu != null && L.gpu >= 85) && q >= 2;
+    const onFire = olPressureTick(h.label, instantPressure);
+    const fireIcon = onFire
+      ? `<i class="olfire" title="Under sustained pressure: GPU \u226585% and queue \u22652 for ~15s">\ud83d\udd25</i>` : '';
+
+    return `<div class="olcard${onFire ? ' olcard-pressure' : ''}"><div class="olhead">` +
+      `<i class="oldot up"></i><span class="olname">${h.label}</span>${fireIcon}` +
       `<span class="olbadge">▣ local</span>` +
       `<span class="olver">v${h.version||'?'} · ${h.ms}ms · ${h.installed} models</span></div>` +
       alias +
