@@ -842,6 +842,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcap.vision{border-color:hsl(320 85% 60% / .5);color:hsl(320 85% 70%)}
  .olcap.thinking{border-color:hsl(38 92% 52% / .5);color:hsl(38 92% 60%)}
  .olidle{font-size:var(--fs-sm);color:var(--muted);padding:4px 0}
+.olinstl{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 4px}
+.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono,monospace);padding:1px 6px;border:1px solid var(--border);
+  border-radius:999px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
+.olinst.olmore{cursor:default}
  .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
    margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
  #soundtoggle.on{border-color:var(--accent);color:var(--accent)}

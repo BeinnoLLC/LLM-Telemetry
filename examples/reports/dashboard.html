@@ -864,6 +864,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcap.vision{border-color:hsl(320 85% 60% / .5);color:hsl(320 85% 70%)}
  .olcap.thinking{border-color:hsl(38 92% 52% / .5);color:hsl(38 92% 60%)}
  .olidle{font-size:var(--fs-sm);color:var(--muted);padding:4px 0}
+.olinstl{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 4px}
+.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono,monospace);padding:1px 6px;border:1px solid var(--border);
+  border-radius:999px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
+.olinst.olmore{cursor:default}
  .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
    margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
  #soundtoggle.on{border-color:var(--accent);color:var(--accent)}
@@ -6865,6 +6869,21 @@ let OL_SEEN = false;
 // without the array growing unbounded over a long-open tab.
 const OL_HIST = new Map();
 const OL_HIST_CAP = 20;
+// Idle host body: nothing is resident in VRAM (Ollama unloads after
+// keep_alive), but the host is up and has models on disk. Say so, and list
+// what is installed, instead of looking like detection failed.
+function olIdle(h){
+  const cat = Array.isArray(h.catalog) ? h.catalog : [];
+  const n = cat.length || h.installed || 0;
+  if (!n) return '<div class="olidle">idle — no models installed</div>';
+  const gb = b => (b/1e9).toFixed(1) + ' GB';
+  const chips = cat.slice(0, 6).map(m =>
+    `<span class="olinst" title="${escA(m.name + ' · ' + (m.par||'?') + ' · ' + (m.quant||'?') + ' · ' + gb(m.size||0) + ' on disk')}">${esc(m.name)}</span>`).join('');
+  const more = cat.length > 6 ? `<span class="olinst olmore">+${cat.length - 6}</span>` : '';
+  return `<div class="olidle">idle — ${n} installed, none loaded in VRAM (loads on first request)</div>` +
+         (chips ? `<div class="olinstl">${chips}${more}</div>` : '');
+}
+
 function olTrack(host, metric, val){
   if (val == null) return null;
   const key = host + '\t' + metric;
@@ -6945,7 +6964,7 @@ function renderOllama(ol){
              `<div class="olrow"><span class="ollbl">ctx</span>` +
              `<span class="olval" style="width:auto">${(m.ctx||0).toLocaleString()} tok · ${GB(m.vram||0)} vram</span></div>` +
              res;
-    }).join('') : '<div class="olidle">idle — no model resident</div>';
+    }).join('') : olIdle(h);
 
     const w = h.work || {};
     const tasks = Object.entries(w.tasks||{}).sort((a,b)=>b[1]-a[1])

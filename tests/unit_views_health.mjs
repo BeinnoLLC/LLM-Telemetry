@@ -524,12 +524,25 @@ const FAILS = () => ([
   has(idle, 'v? · 3ms · 0 models', 'ollama idle: unknown version');
   has(idle, '[bar queue|0|clear||0]', 'ollama idle: empty queue reads clear');
   has(idle, '[bar vram|0|0.0G||0]', 'ollama idle: nothing loaded, no capacity -> 0%');
-  has(idle, 'idle — no model resident', 'ollama idle: idle line');
+  has(idle, 'idle — no models installed', 'ollama idle: idle line (nothing on disk)');
   lacks(idle, '[bar cpu', 'ollama idle: no load telemetry -> no cpu bar');
   lacks(idle, 'olurls', 'ollama idle: single/no endpoint -> no alias line');
   has(idle, '<b>0</b> calls', 'ollama idle: zero calls');
   has(idle, '<b>0.0M</b> tok</span></div>', 'ollama idle: no tasks span');
   has(gone, '<div class="olidle">no response</div>', 'ollama: down without err');
+
+  // Up, nothing in VRAM, but models on disk (Ollama unloaded after keep_alive):
+  // must list what is installed instead of reading as a detection failure.
+  const cat = Array.from({ length: 8 }, (_, i) => ({ name: 'm' + i, size: 2e9, par: '7B', quant: 'Q4' }));
+  DO.renderOllama({ hosts: [{ label: 'cold', up: true, ms: 3, installed: 8, catalog: cat }] });
+  const cold = E.ollama.innerHTML;
+  has(cold, 'idle — 8 installed, none loaded in VRAM', 'ollama cold: installed count, not "no model"');
+  lacks(cold, 'no model', 'ollama cold: never claims nothing is there');
+  has(cold, '>m0</span>', 'ollama cold: first installed model chip');
+  has(cold, '>m5</span>', 'ollama cold: sixth chip shown');
+  lacks(cold, '>m6</span>', 'ollama cold: chips capped at 6');
+  has(cold, '+2</span>', 'ollama cold: overflow count');
+  has(cold, 'm0 · 7B · Q4 · 2.0 GB on disk', 'ollama cold: chip tooltip details');
 
   DO.renderOllama({ hosts: [{ label: 'full', up: true, loaded: [{ name: 'm', vram: 1e9 }] }] });
   has(E.ollama.innerHTML, '[bar vram|100|1.0G||100]', 'ollama: no vram_total but a model loaded -> 100%');

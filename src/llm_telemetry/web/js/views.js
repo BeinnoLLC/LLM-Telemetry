@@ -2381,6 +2381,21 @@ export let OL_SEEN = false;
 // without the array growing unbounded over a long-open tab.
 export const OL_HIST = new Map();
 export const OL_HIST_CAP = 20;
+// Idle host body: nothing is resident in VRAM (Ollama unloads after
+// keep_alive), but the host is up and has models on disk. Say so, and list
+// what is installed, instead of looking like detection failed.
+export function olIdle(h){
+  const cat = Array.isArray(h.catalog) ? h.catalog : [];
+  const n = cat.length || h.installed || 0;
+  if (!n) return '<div class="olidle">idle — no models installed</div>';
+  const gb = b => (b/1e9).toFixed(1) + ' GB';
+  const chips = cat.slice(0, 6).map(m =>
+    `<span class="olinst" title="${escA(m.name + ' · ' + (m.par||'?') + ' · ' + (m.quant||'?') + ' · ' + gb(m.size||0) + ' on disk')}">${esc(m.name)}</span>`).join('');
+  const more = cat.length > 6 ? `<span class="olinst olmore">+${cat.length - 6}</span>` : '';
+  return `<div class="olidle">idle — ${n} installed, none loaded in VRAM (loads on first request)</div>` +
+         (chips ? `<div class="olinstl">${chips}${more}</div>` : '');
+}
+
 export function olTrack(host, metric, val){
   if (val == null) return null;
   const key = host + '\t' + metric;
@@ -2461,7 +2476,7 @@ export function renderOllama(ol){
              `<div class="olrow"><span class="ollbl">ctx</span>` +
              `<span class="olval" style="width:auto">${(m.ctx||0).toLocaleString()} tok · ${GB(m.vram||0)} vram</span></div>` +
              res;
-    }).join('') : '<div class="olidle">idle — no model resident</div>';
+    }).join('') : olIdle(h);
 
     const w = h.work || {};
     const tasks = Object.entries(w.tasks||{}).sort((a,b)=>b[1]-a[1])

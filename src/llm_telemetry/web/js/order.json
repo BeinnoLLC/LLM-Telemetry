@@ -871,6 +871,10 @@
   },
   {
    "mod": "views",
+   "name": "olIdle"
+  },
+  {
+   "mod": "views",
    "name": "olTrack"
   },
   {
