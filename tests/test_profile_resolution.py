@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 5 profile resolution (#50 P5-01, #51 P5-02, #52 P5-03).
+"""Profile resolution: explicit names, aliases and remote endpoints.
 
 Every case runs against a temporary fixture agent home, never the developer's
 real ~/.hermes.

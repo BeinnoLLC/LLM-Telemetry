@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Re-derive BYTES_PER_TOKEN from a live agent DB.
 
-The bandwidth figures in Phase 8 rest on one constant. This script reproduces it
+The bandwidth figures rest on one constant. This script reproduces it
 so the number is checkable rather than folklore. Run it against any profile's
 state.db:
 
