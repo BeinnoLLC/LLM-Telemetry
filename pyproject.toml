@@ -33,7 +33,8 @@ dev = ["playwright>=1.40", "pytest>=7.0", "ruff>=0.6", "mypy>=1.10"]
 
 [project.urls]
 Homepage = "https://github.com/BeinnoLLC/LLM-Telemetry"
-Issues = "https://github.com/BeinnoLLC/LLM-Telemetry/issues"
+Issues = "https://app.clickup.com/9015730805/v/l/li/901526482493"
+Documentation = "https://app.clickup.com/9015730805/v/dc/8cp28kn-3815"
 
 [project.scripts]
 llm-telemetry = "llm_telemetry.cli:main"
