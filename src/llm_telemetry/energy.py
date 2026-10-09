@@ -18,7 +18,7 @@ from .config import get as _cfg
 # "0b" style collisions cannot happen because every band ends in "b").
 LOCAL_TPS = [
     ("70b", 11), ("72b", 11), ("34b", 26), ("32b", 28), ("30b", 30),
-    ("27b", 33), ("14b", 55), ("13b", 58), ("8b", 95), ("7b", 100),
+    ("27b", 33), ("14b", 55), ("13b", 58), ("9b", 66), ("8b", 95), ("7b", 100),
     ("4b", 150), ("3b", 170), ("1.5b", 240), ("1b", 300),
 ]
 LOCAL_TPS_DEFAULT = 40      # unknown size: assume a mid-range band

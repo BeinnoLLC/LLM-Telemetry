@@ -66,7 +66,12 @@ PROVIDER_CLASS = {
 
 # Models that live on local hardware: never price them, whatever the name says.
 LOCAL_HINTS = ("qwen3-coder", "gpt-oss", "qwen3:14b", "qwen3.8:latest",
-               "deepseek-r1:14b", "nemotron", "qwen3:30b", "ministral")
+               "deepseek-r1:14b", "nemotron", "qwen3:30b", "ministral",
+               # 2026-10-10 fleet additions (ollama list): ornith/ornith-1.5 are
+               # 9B qwen3.5-family chat models; clef/clef-flash (27B/9B, vision)
+               # and openjev serve SystemOne decision traffic (/v1/systemone),
+               # never cloud chat — any usage row carrying them is local hardware.
+               "ornith", "clef", "openjev")
 
 # Model-name patterns that are ALWAYS pay-per-token, whatever provider slot the
 # row was recorded under. Needed because the provider field records the local
