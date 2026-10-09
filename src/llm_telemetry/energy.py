@@ -23,6 +23,14 @@ LOCAL_TPS = [
 ]
 LOCAL_TPS_DEFAULT = 40      # unknown size: assume a mid-range band
 
+# Tag names that carry no size ("...:latest"): pinned to the size band their
+# weights actually are (ollama show / measured), so a :latest facade does not
+# bill at the 40 tok/s default.
+TPS_NAME_PINS = {
+    "ornith:latest": "9b",    # ornith-1.5:9b sibling, 5.6 GB on disk; 66 tok/s measured live
+    "clef:latest": "27b",     # 17 GB on disk (27B vision line, qwen3.5 family)
+}
+
 # Prompt processing is one batched forward pass, not one pass per token.
 # Measured ratio of generation to prefill cost on this hardware.
 PREFILL_SPEEDUP = 12
@@ -41,6 +49,8 @@ def tariff(cfg=None):
 
 def tps_for(model):
     m = (model or "").lower()
+    if m in TPS_NAME_PINS:
+        m = TPS_NAME_PINS[m]
     for band, rate in LOCAL_TPS:
         if band in m:
             return rate
