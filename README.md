@@ -179,7 +179,24 @@ so the edge cases stay covered.
 
 `tests/test_sample_isolation.py` enforces this: it builds the sample twice,
 against an empty home and against a home holding a decoy profile, and fails
-unless the two outputs are byte-identical.
+unless the two outputs are byte-identical. `tests/test_sample_artifacts.py`
+closes the other half — it rebuilds every committed page from these same inputs
+into a temporary directory and diffs it against the committed file, so a page
+cannot silently fall behind the code. The only forgiven field is the
+`Generated <date>` line, normalised in one place.
+
+### Artifact weight
+
+Every committed page carries a budget in `tests/test_page_weight.py`, just above
+its current size, so growth is a decision rather than a surprise. Raise the
+number here and in that file in the same commit, or trim the page:
+
+| Artifact | Budget (bytes) |
+|---|---|
+| `examples/reports/dashboard.html` | 800,000 |
+| `examples/reports/analytics-data.json` | 200,000 |
+| `examples/reports/costs.html` | 90,000 |
+| `examples/reports/rankings.html` | 25,000 |
 
 ### The payload contract
 
