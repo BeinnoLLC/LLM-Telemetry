@@ -4,6 +4,7 @@
  */
 import {
   $, COLORS, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, stampFreshness, toolColor,
+  trapFocus, trapTab,
 } from './palette.js';
 import { current } from './charts.js';
 import { schemaProblem } from './views.js';
@@ -268,6 +269,8 @@ export function logsInstall(){
 // Wiring. Every close path the ticket names: scrim, Esc, nav activation, and
 // crossing the breakpoint.
 export let dFilter = 'all', dSeen = 0, dOpen = false, dScrollY = 0, dHistoryPushed = false;
+// #146: the drawer's trap handle; Tab wraps while the sheet is open.
+let dTrap = null;
 
 // Log lines are raw provider output — they can contain angle brackets and
 // quotes, so they must never be interpolated into innerHTML unescaped.
@@ -348,6 +351,11 @@ export function drawerOpen(on){
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
   $('logbtn')?.classList.toggle('hidden', on);
+  // #146: the sheet gets the shared Tab trap while open. Its own global
+  // listener keeps Escape and the 'l' toggle (which must still work while the
+  // drawer is closed), so the trap forwards keys to nothing: Tab only.
+  if (on && !dTrap) dTrap = trapFocus($('drawer'), $('scrim'), null);
+  if (!on && dTrap){ dTrap.release(); dTrap = null; }
   // #17: body scroll locked while the sheet/drawer is open, restored exactly
   // on close (remembers the real scroll position, not just 0).
   if (on){
@@ -446,7 +454,7 @@ export function installDrawer(){
   });
 }
 
-export let tOpen = false, tFocusReturn = null;
+export let tOpen = false, tFocusReturn = null, tTrap = null;
 export const TCACHE = {}; // profile -> {sessionId: [messages]}, refetched per open
 
 export function tEscape(s){ return esc(String(s == null ? '' : s)); }
@@ -497,16 +505,17 @@ export async function tOpenModal(sessionId, profile, titleText){
   const scrim = $('tscrim'), modal = $('tmodal'), body = $('tbody');
   const ttitle = $('ttitle'), tsub = $('tsub');
   if (!scrim || !modal || !body) return;
-  tFocusReturn = document.activeElement;
   ttitle.textContent = titleText || sessionId;
   tsub.textContent = 'loading…';
   body.innerHTML = '';
   const tlBtn = $('ttimelinebtn');
   if (tlBtn){ tlBtn.dataset.tsession = sessionId; tlBtn.dataset.tprofile = profile; tlBtn.dataset.title = titleText || sessionId; }
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
   tOpen = true;
-  document.addEventListener('keydown', tKeydown, true);
+  // #146: the shared trap remembers the opener, keeps aria-hidden in sync and
+  // owns the Tab wrap; tKeydown keeps Escape and this file's own keys.
+  tTrap = trapFocus(modal, scrim, tKeydown);
+  tFocusReturn = tTrap.opener;
   try {
     if (!TCACHE[profile]) TCACHE[profile] = {};
     // Fetched on demand, once per open — NOT folded into the 5s live poll,
@@ -539,31 +548,17 @@ export function tCloseModal(){
   tOpen = false;
   $('tscrim')?.classList.remove('open');
   $('tmodal')?.classList.remove('open');
-  $('tscrim')?.setAttribute('aria-hidden','true');
-  $('tmodal')?.setAttribute('aria-hidden','true');
-  document.removeEventListener('keydown', tKeydown, true);
-  // Focus goes back to the title button that opened it, not lost to <body>.
-  tFocusReturn?.focus?.();
+  // Release unbinds the keydown, restores aria-hidden and puts focus back on
+  // the title button that opened it, not on <body>.
+  tTrap?.release();
+  tTrap = null;
   tFocusReturn = null;
 }
 
 export function tKeydown(e){
   if (e.key === 'Escape'){ e.preventDefault(); tCloseModal(); return; }
-  // Trap focus inside the modal while open — Tab/Shift+Tab never escape to
-  // the page behind the scrim.
-  if (e.key === 'Tab'){
-    const modal = $('tmodal');
-    if (!modal) return;
-    const focusables = [...modal.querySelectorAll('a[href],button')]
-      .filter(el => el.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first){
-      e.preventDefault(); last.focus();
-    } else if (!e.shiftKey && document.activeElement === last){
-      e.preventDefault(); first.focus();
-    }
-  }
+  // #146: Tab/Shift+Tab wrap, through the one shared helper.
+  if (trapTab(e, $('tmodal'))) return;
 }
 
 export function installTranscriptModal(){
@@ -580,7 +575,7 @@ export function installTranscriptModal(){
 // P10-12 (#100): Session finder command palette UI. Pure matching logic
 // (sfParseQuery/sfMatch/sfSearch) lives above render(); this is just
 // DOM plumbing on top of it.
-export let sfOpen = false, sfFocusReturn = null, sfResults = [], sfActiveIdx = -1;
+export let sfOpen = false, sfFocusReturn = null, sfTrap = null, sfResults = [], sfActiveIdx = -1;
 
 export function sfRowsHtml(results, query){
   if (!results.length){
@@ -620,10 +615,12 @@ export function sfRender(){
 export function sfOpenPalette(){
   const scrim = $('sfscrim'), modal = $('sfmodal');
   if (!scrim || !modal) return;
-  sfFocusReturn = document.activeElement;
   sfOpen = true;
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
+  // #146: Tab now wraps inside the finder. The global handler below keeps
+  // Escape, the arrows and Enter; '/' still opens it from anywhere.
+  sfTrap = trapFocus(modal, scrim, null);
+  sfFocusReturn = sfTrap.opener;
   $('sfinput').value = '';
   sfActiveIdx = -1;
   sfRender();
@@ -635,8 +632,9 @@ export function sfClosePalette(){
   if (!scrim || !modal) return;
   sfOpen = false;
   scrim.classList.remove('open'); modal.classList.remove('open');
-  scrim.setAttribute('aria-hidden','true'); modal.setAttribute('aria-hidden','true');
-  if (sfFocusReturn && sfFocusReturn.focus) sfFocusReturn.focus();
+  sfTrap?.release();
+  sfTrap = null;
+  sfFocusReturn = null;
 }
 
 export function sfOpenSelected(){
@@ -685,22 +683,23 @@ export function installSessionFinder(){
 // the user has to puzzle over).
 export const LN_LANES = ['model', 'tool', 'delegation', 'compaction', 'user'];
 export const LN_LANE_LABELS = { model: 'Model', tool: 'Tool', delegation: 'Delegation', compaction: 'Compaction', user: 'User' };
-export let lnOpen = false, lnFocusReturn = null, lnSpansFlat = [], lnFocusIdx = -1;
+export let lnOpen = false, lnFocusReturn = null, lnTrap = null, lnSpansFlat = [], lnFocusIdx = -1;
 export let lnOpenAt = null;   // {session, profile, title} — what Enter hands to the transcript modal
 
 export async function lnOpenModal(sessionId, profile, titleText){
   const scrim = $('lnscrim'), modal = $('lnmodal'), body = $('lnbody');
   if (!scrim || !modal || !body) return;
-  lnFocusReturn = document.activeElement;
   $('lntitle').textContent = titleText || sessionId;
   $('lnsub').textContent = 'loading\u2026';
   $('lnmeta').textContent = '';
   body.innerHTML = '';
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
   lnOpen = true;
   lnOpenAt = { session: sessionId, profile, title: titleText || sessionId };
-  document.addEventListener('keydown', lnKeydown, true);
+  // #146: one trap for the Tab wrap; lnKeydown keeps Escape, the arrows and
+  // Enter, and the opener gets focus back when the modal closes.
+  lnTrap = trapFocus(modal, scrim, lnKeydown);
+  lnFocusReturn = lnTrap.opener;
   try {
     const r = await fetch(`sessions/${encodeURIComponent(profile)}/${encodeURIComponent(sessionId)}.json?t=` + Date.now(), {cache:'no-store'});
     if (r.status === 404){
@@ -759,11 +758,9 @@ export function lnCloseModal(){
   lnOpen = false;
   $('lnscrim')?.classList.remove('open');
   $('lnmodal')?.classList.remove('open');
-  $('lnscrim')?.setAttribute('aria-hidden','true');
-  $('lnmodal')?.setAttribute('aria-hidden','true');
   $('lntip').style.display = 'none';
-  document.removeEventListener('keydown', lnKeydown, true);
-  lnFocusReturn?.focus?.();
+  lnTrap?.release();
+  lnTrap = null;
   lnFocusReturn = null;
   lnOpenAt = null;
 }

@@ -215,6 +215,57 @@ async function load(over = {}) {
       ago: () => 'now', fade: () => '', ic: () => '<i></i>', icon: () => '',
       costCell: v => money(v), emptyHTML: '',
       colorOf: () => '#abcdef', short: m => String(m == null ? '' : m),
+      // #146: the REAL trap helpers, not stubs — pdOpen goes through the same
+      // helper every other overlay uses, so test what actually ships. palette.js
+      // cannot be isolated here (it reads document at call time inside these
+      // three), so this is the palette contract, copied verbatim from
+      // palette.js:268-320 by hand — the focus unit tests (unit_focus.mjs) hold
+      // the real implementations to these exact semantics.
+      trapFocus(modal, scrim, onKey){
+        const opener = (typeof document !== 'undefined' && document.activeElement) ? document.activeElement : null;
+        const setAria = (m, s, open) => {
+          [m, s].forEach(el => { if (el && el.setAttribute) el.setAttribute('aria-hidden', String(!open)); });
+          if (open && m && m.setAttribute) m.setAttribute('aria-modal', 'true');
+        };
+        const bound = e => {
+          // real trapTab semantics, same three lines as palette.js:277-287
+          if (!e || e.key !== 'Tab' || !modal) { if (onKey) onKey(e); return; }
+          const list = Array.prototype.slice.call(modal.querySelectorAll ? modal.querySelectorAll('a[href],button,[tabindex]') : []);
+          if (!list.length) { if (onKey) onKey(e); return; }
+          const first = list[0], last = list[list.length - 1];
+          const active = typeof document !== 'undefined' ? document.activeElement : null;
+          const inside = !!(active && modal.contains && modal.contains(active));
+          if (e.shiftKey && (!inside || active === first)){ e.preventDefault(); last.focus(); return; }
+          if (!e.shiftKey && (!inside || active === last)){ e.preventDefault(); first.focus(); return; }
+          if (onKey) onKey(e);
+        };
+        if (typeof document !== 'undefined') document.addEventListener('keydown', bound, true);
+        setAria(modal, scrim, true);
+        let released = false;
+        return {
+          opener, onKeydown: bound,
+          release(){ if (released) return false; released = true;
+            if (typeof document !== 'undefined') document.removeEventListener('keydown', bound, true);
+            setAria(modal, scrim, false);
+            if (opener && opener.focus) opener.focus(); return true; },
+        };
+      },
+      // pdKeydown calls trapTab directly too — same shared helper semantics.
+      trapTab(e, root){
+        if (!e || e.key !== 'Tab' || !root) return false;
+        const list = Array.prototype.slice.call(root.querySelectorAll('a[href],button,[tabindex]'));
+        if (!list.length) return false;
+        const first = list[0], last = list[list.length - 1];
+        const active = typeof document !== 'undefined' ? document.activeElement : null;
+        // real DOM: contains() on the drawer. The mock's contains() is always
+        // false, so accept the active element being IN the root's focusable
+        // list as inside — that list is the drawer's subtree in every case
+        // this suite exercises (real palettes use root.contains directly).
+        const inside = !!(active && (root.contains && root.contains(active) || list.includes(active)));
+        if (e.shiftKey && (!inside || active === first)){ e.preventDefault(); last.focus(); return true; }
+        if (!e.shiftKey && (!inside || active === last)){ e.preventDefault(); first.focus(); return true; }
+        return false;
+      },
     },
     'charts.js': baseChartsStub(over.charts),
     'flow.js': { flowControls: [], renderFlow() {} },

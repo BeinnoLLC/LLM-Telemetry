@@ -246,6 +246,26 @@
    "name": "renderRouterView"
   },
   {
+   "mod": "routerview",
+   "name": "helpOpen"
+  },
+  {
+   "mod": "routerview",
+   "name": "helpInstalled"
+  },
+  {
+   "mod": "routerview",
+   "name": "helpKeydown"
+  },
+  {
+   "mod": "routerview",
+   "name": "helpSetOpen"
+  },
+  {
+   "mod": "routerview",
+   "name": "installHelp"
+  },
+  {
    "mod": "quotaview",
    "name": "QV_PAGES"
   },
@@ -552,6 +572,26 @@
   {
    "mod": "palette",
    "name": "stampFreshness"
+  },
+  {
+   "mod": "palette",
+   "name": "FOCUS_SEL"
+  },
+  {
+   "mod": "palette",
+   "name": "focusables"
+  },
+  {
+   "mod": "palette",
+   "name": "setAria"
+  },
+  {
+   "mod": "palette",
+   "name": "trapTab"
+  },
+  {
+   "mod": "palette",
+   "name": "trapFocus"
   },
   {
    "mod": "charts",
@@ -1476,6 +1516,10 @@
   {
    "mod": "drawer",
    "name": "dFilter"
+  },
+  {
+   "mod": "drawer",
+   "name": "dTrap"
   },
   {
    "mod": "drawer",

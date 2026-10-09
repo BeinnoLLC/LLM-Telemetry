@@ -256,6 +256,69 @@ export const CADENCE = {
 // with a hint rather than quietly showing yesterday's numbers.
 export const STALE_FACTOR = 2;
 
+// ---- one focus trap for every overlay (P14, #146) ----------------------
+// Six overlays shipped four different amounts of keyboard support: two trapped
+// Tab with a copy of the same code, four did not, and one had no wiring at all.
+// A dialog that lets Tab wander into the page behind it "loses" the user.
+//
+// The selector deliberately has NO visibility filter. `offsetParent` is null
+// for every node under jsdom and inside a transformed ancestor, which emptied
+// the list and silently disabled the trap — the nav rail hit exactly that
+// (router.js) and the two copies had already drifted apart. One list, one rule.
+export const FOCUS_SEL = 'a[href],button,[tabindex]';
+
+export function focusables(root){
+  if (!root || !root.querySelectorAll) return [];
+  return Array.prototype.slice.call(root.querySelectorAll(FOCUS_SEL));
+}
+
+// Tab and Shift+Tab wrap inside `root`; returns true when it moved focus, so a
+// caller can stop there. Anything else is left to the overlay's own handler.
+export function trapTab(e, root){
+  if (!e || e.key !== 'Tab' || !root) return false;
+  const list = focusables(root);
+  if (!list.length) return false;
+  const first = list[0], last = list[list.length - 1];
+  const active = typeof document !== 'undefined' ? document.activeElement : null;
+  const inside = !!(active && root.contains && root.contains(active));
+  if (e.shiftKey && (!inside || active === first)){ e.preventDefault(); last.focus(); return true; }
+  if (!e.shiftKey && (!inside || active === last)){ e.preventDefault(); first.focus(); return true; }
+  return false;
+}
+
+export function setAria(modal, scrim, open){
+  [modal, scrim].forEach(el => { if (el && el.setAttribute) el.setAttribute('aria-hidden', String(!open)); });
+  if (open && modal && modal.setAttribute) modal.setAttribute('aria-modal', 'true');
+}
+
+// Open an overlay: remembers the element that opened it, keeps aria-hidden in
+// sync, and binds one capture-phase keydown that wraps Tab and then forwards
+// every other key to the overlay's own handler (Esc, arrows — unchanged).
+// release() is idempotent: it unbinds, restores aria-hidden and puts focus back
+// on the opener.
+export function trapFocus(modal, scrim, onKey){
+  const opener = (typeof document !== 'undefined' && document.activeElement) ? document.activeElement : null;
+  const bound = e => {
+    if (trapTab(e, modal)) return;
+    if (onKey) onKey(e);
+  };
+  if (typeof document !== 'undefined') document.addEventListener('keydown', bound, true);
+  setAria(modal, scrim, true);
+  let released = false;
+  return {
+    opener,
+    onKeydown: bound,
+    release(){
+      if (released) return false;
+      released = true;
+      if (typeof document !== 'undefined') document.removeEventListener('keydown', bound, true);
+      setAria(modal, scrim, false);
+      if (opener && opener.focus) opener.focus();
+      return true;
+    },
+  };
+}
+
 // Timestamps arrive in every shape the payloads use: unix seconds (number or
 // numeric string), a millisecond epoch, or an ISO string written without a zone
 // (local time). Kept inside `freshness` on purpose: the built page only replays

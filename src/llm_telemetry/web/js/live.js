@@ -16,6 +16,7 @@ import {
 import {
   POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
 } from './router.js';
+import { installHelp } from './routerview.js';
 import { DATA, SCHEMA_VERSION } from './main.js';
 
 export function renderLive(){
@@ -506,6 +507,8 @@ $('repolist')?.addEventListener('click', e => {
 });
 installTimelineModal();
 installProjectDrilldown();
+// #146: the help overlay had a close button and no wiring at all — one install.
+installHelp();
 installProjWeight();
 installProjFilter();
 installSesstree();

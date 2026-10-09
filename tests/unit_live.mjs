@@ -186,6 +186,9 @@ async function boot(opt = {}){
       settingsInstall(){ logs.installs.push('settingsInstall'); },
       tabs(){ logs.tabs++; },
     },
+    'routerview.js': {
+      installHelp(){ logs.installs.push('installHelp'); },
+    },
     'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3 },
   };
 
@@ -744,7 +747,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   const h = await boot({ data: { profiles: { p1: { repo_branch: { name:'main' } } } },
                          responses: { 'live-data.json': { body: { profiles: {} } }, 'analytics-data.json': { body: {} } } });
   eq(h.logs.installs, ['installDrawer','installTranscriptModal','installSessionFinder','installTimelineModal',
-                       'installProjectDrilldown','installProjWeight','installProjFilter','installSesstree',
+                       'installProjectDrilldown','installHelp','installProjWeight','installProjFilter','installSesstree',
                        'settingsInstall','intervalsInstall'],
      'load: every installer runs once, in the declared order');
   eq([typeof h.els.refresh.onclick, h.logs.visibility.length, h.M.liveTimer, h.M.rebuildTimer],

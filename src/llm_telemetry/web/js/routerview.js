@@ -7,7 +7,7 @@
  * Imports only palette/charts/main so views.js can import it without a new
  * circular edge.
  */
-import { $, esc, escA } from './palette.js';
+import { $, esc, escA, trapFocus } from './palette.js';
 import { current } from './charts.js';
 import { DATA } from './main.js';
 
@@ -362,4 +362,43 @@ export function renderRouterView(){
     b.closest('.rt-profile').querySelectorAll('details.rt-card').forEach(dt => { dt.open = open; rtSaveFold(dt.dataset.rtfold, open); });
   }));
   el.querySelectorAll('[data-rtpage]').forEach(b => b.addEventListener('click', () => rtPageSet(b.dataset.rtpage)));
+}
+
+
+// ---- Router help overlay (#146) -----------------------------------------
+// #helpwrap shipped in the HTML with a scrim, a close button and no wiring at
+// all: #helpbtn did nothing. This is the one install it needed — open, Tab
+// trap, Esc, click-out, restore focus to the "?" button.
+export let helpOpen = false, helpTrap = null;
+
+export function helpKeydown(e){
+  if (e.key === 'Escape'){ e.preventDefault(); helpSetOpen(false); }
+}
+
+export function helpSetOpen(on){
+  if (on === helpOpen) return;
+  helpOpen = on;
+  $('helpwrap')?.classList.toggle('open', on);
+  if (on){
+    // Content is rendered per open so the profile line is current; the panel
+    // itself stays a static body child (fixed positioning, like the drawer).
+    if ($('helpprof')) $('helpprof').textContent = (DATA.router_meta || {}).collected_at
+      ? 'One section per profile · refreshed hourly' : 'One section per profile';
+    helpTrap = trapFocus($('helpwrap'), $('helpscrim'), helpKeydown);
+  } else {
+    helpTrap?.release();
+    helpTrap = null;
+  }
+}
+
+let helpInstalled = false;
+export function installHelp(){
+  if (helpInstalled) return;
+  helpInstalled = true;
+  $('helpbtn')?.addEventListener('click', () => helpSetOpen(true));
+  $('helpclose')?.addEventListener('click', () => helpSetOpen(false));
+  $('helpscrim')?.addEventListener('click', () => helpSetOpen(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && helpOpen) helpSetOpen(false);
+  });
 }

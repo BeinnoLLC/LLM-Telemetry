@@ -23,10 +23,15 @@ chk(/target="_blank"/.test(html),
     'links open in a new tab, never navigating the dashboard itself away');
 chk(/function tKeydown\(e\)\{\s*\n\s*if \(e\.key === 'Escape'/.test(html),
     'Escape closes the modal');
-chk(/tFocusReturn\?\.focus\?\.\(\)/.test(html),
-    'focus returns to the trigger element on close');
-chk(/if \(e\.key === 'Tab'\)\{/.test(html),
-    'Tab is intercepted for a focus trap while the modal is open');
+// #146: focus return and the Tab wrap both moved into the shared trap —
+// the modal now opens through trapFocus (which remembers the opener) and
+// closes through release() (which restores focus), and Tab wraps via trapTab.
+chk(/tTrap = trapFocus\(modal, scrim, tKeydown\)/.test(html),
+    'the modal opens through the shared focus trap, which remembers the opener');
+chk(/tTrap\?\.release\(\)/.test(html) && !/tFocusReturn\?\.focus\?\.\(\)/.test(html),
+    'close goes through release(), which returns focus to the trigger (no hand-rolled .focus() copy)');
+chk(/function trapTab\(e, root\)/.test(html) && /trapTab\(e, \$\('tmodal'\)\)/.test(html),
+    'Tab is intercepted by the shared trap while the modal is open');
 chk(/onerror=\\?"this\.classList\.add\(\\?'tbroken\\?'\)/.test(html),
     'a broken data:image degrades to a placeholder via onerror, not a thrown JS error');
 chk(!/<textarea[^>]*id="t/.test(html) && !/id="tbody"[^>]*contenteditable/.test(html),

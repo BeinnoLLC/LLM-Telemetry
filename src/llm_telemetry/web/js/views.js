@@ -4,7 +4,7 @@
  * own container and reads the profile payload.
  */
 import {
-  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness,
+  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
 } from './palette.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
@@ -1444,7 +1444,7 @@ export function renderProjectMatrix(rows){
   });
 }
 
-export let pdFocusReturn = null;
+export let pdFocusReturn = null, pdTrap = null;
 export let pdOpenState = false;
 
 // P4-07 (#44): project drill-down panel. `rows` is the SAME date-filtered
@@ -1457,7 +1457,6 @@ export function pdOpen(project, rows, _highlightModel){
   // dropped) so the intent is visible; used once the drawer scrolls to a row.
   const scrim = $('pdscrim'), drawer = $('pdrawer'), body = $('pdbody'), title = $('pdtitle');
   if (!scrim || !drawer || !body) return;
-  pdFocusReturn = document.activeElement;
 
   const projRows = (rows || []).filter(r => (r.project || 'Unattributed') === project);
   title.textContent = project;
@@ -1532,9 +1531,14 @@ export function pdOpen(project, rows, _highlightModel){
     </div>`;
 
   scrim.classList.add('open'); drawer.classList.add('open');
-  scrim.setAttribute('aria-hidden', 'false'); drawer.setAttribute('aria-hidden', 'false');
   pdOpenState = true;
-  document.addEventListener('keydown', pdKeydown, true);
+  // #146: one trap for the Tab wrap; pdKeydown keeps Escape, the opener gets
+  // focus back (matrix cell / project row) when the panel closes. Release an
+  // existing trap first — pdOpen on an already-open panel (re-render, unknown
+  // project) would otherwise overwrite pdTrap and leak the old keydown.
+  if (pdTrap){ pdTrap.release(); pdTrap = null; }
+  pdTrap = trapFocus(drawer, scrim, pdKeydown);
+  pdFocusReturn = pdTrap.opener;
   drawer.focus();
 }
 
@@ -1543,9 +1547,8 @@ export function pdClose(){
   pdOpenState = false;
   $('pdscrim')?.classList.remove('open');
   $('pdrawer')?.classList.remove('open');
-  $('pdscrim')?.setAttribute('aria-hidden', 'true');
-  $('pdrawer')?.setAttribute('aria-hidden', 'true');
-  document.removeEventListener('keydown', pdKeydown, true);
+  pdTrap?.release();
+  pdTrap = null;
   // Focus returns to the trigger — the matrix cell or project row label
   // that opened the panel — not lost to <body> (explicit acceptance
   // criterion, same discipline as the transcript modal).
@@ -1555,19 +1558,8 @@ export function pdClose(){
 
 export function pdKeydown(e){
   if (e.key === 'Escape'){ e.preventDefault(); pdClose(); return; }
-  if (e.key === 'Tab'){
-    const drawer = $('pdrawer');
-    if (!drawer) return;
-    const focusables = [...drawer.querySelectorAll('a[href],button,[tabindex]')]
-      .filter(el => el.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first){
-      e.preventDefault(); last.focus();
-    } else if (!e.shiftKey && document.activeElement === last){
-      e.preventDefault(); first.focus();
-    }
-  }
+  // #146: Tab/Shift+Tab wrap, through the one shared helper.
+  trapTab(e, $('pdrawer'));
 }
 
 export function installProjectDrilldown(){

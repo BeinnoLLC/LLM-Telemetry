@@ -3096,6 +3096,45 @@ function renderRouterView(){
   }));
   el.querySelectorAll('[data-rtpage]').forEach(b => b.addEventListener('click', () => rtPageSet(b.dataset.rtpage)));
 }
+
+
+// ---- Router help overlay (#146) -----------------------------------------
+// #helpwrap shipped in the HTML with a scrim, a close button and no wiring at
+// all: #helpbtn did nothing. This is the one install it needed — open, Tab
+// trap, Esc, click-out, restore focus to the "?" button.
+let helpOpen = false, helpTrap = null;
+
+let helpInstalled = false;
+function helpKeydown(e){
+  if (e.key === 'Escape'){ e.preventDefault(); helpSetOpen(false); }
+}
+
+function helpSetOpen(on){
+  if (on === helpOpen) return;
+  helpOpen = on;
+  $('helpwrap')?.classList.toggle('open', on);
+  if (on){
+    // Content is rendered per open so the profile line is current; the panel
+    // itself stays a static body child (fixed positioning, like the drawer).
+    if ($('helpprof')) $('helpprof').textContent = (DATA.router_meta || {}).collected_at
+      ? 'One section per profile · refreshed hourly' : 'One section per profile';
+    helpTrap = trapFocus($('helpwrap'), $('helpscrim'), helpKeydown);
+  } else {
+    helpTrap?.release();
+    helpTrap = null;
+  }
+}
+
+function installHelp(){
+  if (helpInstalled) return;
+  helpInstalled = true;
+  $('helpbtn')?.addEventListener('click', () => helpSetOpen(true));
+  $('helpclose')?.addEventListener('click', () => helpSetOpen(false));
+  $('helpscrim')?.addEventListener('click', () => helpSetOpen(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && helpOpen) helpSetOpen(false);
+  });
+}
 const QV_PAGES = [
   ['headroom', 'Headroom', 'Where each provider stands, worst first'],
   ['balances', 'Balances', 'Account credit reported by the provider'],
@@ -4397,11 +4436,15 @@ const CADENCE = {
 // with a hint rather than quietly showing yesterday's numbers.
 const STALE_FACTOR = 2;
 
-// Timestamps arrive in every shape the payloads use: unix seconds (number or
-// numeric string), a millisecond epoch, or an ISO string written without a zone
-// (local time). Kept inside `freshness` on purpose: the built page only replays
-// the names order.json lists, so a module-private helper would simply be absent
-// there (#149 shipped once with exactly that bug).
+// ---- one focus trap for every overlay (P14, #146) ----------------------
+// Six overlays shipped four different amounts of keyboard support: two trapped
+// Tab with a copy of the same code, four did not, and one had no wiring at all.
+// A dialog that lets Tab wander into the page behind it "loses" the user.
+//
+// The selector deliberately has NO visibility filter. `offsetParent` is null
+// for every node under jsdom and inside a transformed ancestor, which emptied
+// the list and silently disabled the trap — the nav rail hit exactly that
+// (router.js) and the two copies had already drifted apart. One list, one rule.
 function freshness(ts, key, now){
   let t = ts;
   if (t == null || t === '') t = null;
@@ -4443,6 +4486,65 @@ function stampFreshness(el, ts, key, now){
 // rate when two polls are far enough apart to divide safely. `bwlive` animates
 // the arrows only while the session is genuinely transferring, so a stalled row
 // does not look busy.
+const FOCUS_SEL = 'a[href],button,[tabindex]';
+
+function focusables(root){
+  if (!root || !root.querySelectorAll) return [];
+  return Array.prototype.slice.call(root.querySelectorAll(FOCUS_SEL));
+}
+
+// Tab and Shift+Tab wrap inside `root`; returns true when it moved focus, so a
+// caller can stop there. Anything else is left to the overlay's own handler.
+function setAria(modal, scrim, open){
+  [modal, scrim].forEach(el => { if (el && el.setAttribute) el.setAttribute('aria-hidden', String(!open)); });
+  if (open && modal && modal.setAttribute) modal.setAttribute('aria-modal', 'true');
+}
+
+// Open an overlay: remembers the element that opened it, keeps aria-hidden in
+// sync, and binds one capture-phase keydown that wraps Tab and then forwards
+// every other key to the overlay's own handler (Esc, arrows — unchanged).
+// release() is idempotent: it unbinds, restores aria-hidden and puts focus back
+// on the opener.
+function trapTab(e, root){
+  if (!e || e.key !== 'Tab' || !root) return false;
+  const list = focusables(root);
+  if (!list.length) return false;
+  const first = list[0], last = list[list.length - 1];
+  const active = typeof document !== 'undefined' ? document.activeElement : null;
+  const inside = !!(active && root.contains && root.contains(active));
+  if (e.shiftKey && (!inside || active === first)){ e.preventDefault(); last.focus(); return true; }
+  if (!e.shiftKey && (!inside || active === last)){ e.preventDefault(); first.focus(); return true; }
+  return false;
+}
+
+function trapFocus(modal, scrim, onKey){
+  const opener = (typeof document !== 'undefined' && document.activeElement) ? document.activeElement : null;
+  const bound = e => {
+    if (trapTab(e, modal)) return;
+    if (onKey) onKey(e);
+  };
+  if (typeof document !== 'undefined') document.addEventListener('keydown', bound, true);
+  setAria(modal, scrim, true);
+  let released = false;
+  return {
+    opener,
+    onKeydown: bound,
+    release(){
+      if (released) return false;
+      released = true;
+      if (typeof document !== 'undefined') document.removeEventListener('keydown', bound, true);
+      setAria(modal, scrim, false);
+      if (opener && opener.focus) opener.focus();
+      return true;
+    },
+  };
+}
+
+// Timestamps arrive in every shape the payloads use: unix seconds (number or
+// numeric string), a millisecond epoch, or an ISO string written without a zone
+// (local time). Kept inside `freshness` on purpose: the built page only replays
+// the names order.json lists, so a module-private helper would simply be absent
+// there (#149 shipped once with exactly that bug).
 function bwRow(L){
   const up = +L.up_bytes || 0, down = +L.down_bytes || 0;
   const lup = +L.lan_up_bytes || 0, ldown = +L.lan_down_bytes || 0;
@@ -5192,7 +5294,7 @@ function renderProjectMatrix(rows){
   });
 }
 
-let pdFocusReturn = null;
+let pdFocusReturn = null, pdTrap = null;
 let pdOpenState = false;
 
 // P4-07 (#44): project drill-down panel. `rows` is the SAME date-filtered
@@ -5205,7 +5307,6 @@ function pdOpen(project, rows, _highlightModel){
   // dropped) so the intent is visible; used once the drawer scrolls to a row.
   const scrim = $('pdscrim'), drawer = $('pdrawer'), body = $('pdbody'), title = $('pdtitle');
   if (!scrim || !drawer || !body) return;
-  pdFocusReturn = document.activeElement;
 
   const projRows = (rows || []).filter(r => (r.project || 'Unattributed') === project);
   title.textContent = project;
@@ -5280,9 +5381,14 @@ function pdOpen(project, rows, _highlightModel){
     </div>`;
 
   scrim.classList.add('open'); drawer.classList.add('open');
-  scrim.setAttribute('aria-hidden', 'false'); drawer.setAttribute('aria-hidden', 'false');
   pdOpenState = true;
-  document.addEventListener('keydown', pdKeydown, true);
+  // #146: one trap for the Tab wrap; pdKeydown keeps Escape, the opener gets
+  // focus back (matrix cell / project row) when the panel closes. Release an
+  // existing trap first — pdOpen on an already-open panel (re-render, unknown
+  // project) would otherwise overwrite pdTrap and leak the old keydown.
+  if (pdTrap){ pdTrap.release(); pdTrap = null; }
+  pdTrap = trapFocus(drawer, scrim, pdKeydown);
+  pdFocusReturn = pdTrap.opener;
   drawer.focus();
 }
 
@@ -5291,9 +5397,8 @@ function pdClose(){
   pdOpenState = false;
   $('pdscrim')?.classList.remove('open');
   $('pdrawer')?.classList.remove('open');
-  $('pdscrim')?.setAttribute('aria-hidden', 'true');
-  $('pdrawer')?.setAttribute('aria-hidden', 'true');
-  document.removeEventListener('keydown', pdKeydown, true);
+  pdTrap?.release();
+  pdTrap = null;
   // Focus returns to the trigger — the matrix cell or project row label
   // that opened the panel — not lost to <body> (explicit acceptance
   // criterion, same discipline as the transcript modal).
@@ -5303,19 +5408,8 @@ function pdClose(){
 
 function pdKeydown(e){
   if (e.key === 'Escape'){ e.preventDefault(); pdClose(); return; }
-  if (e.key === 'Tab'){
-    const drawer = $('pdrawer');
-    if (!drawer) return;
-    const focusables = [...drawer.querySelectorAll('a[href],button,[tabindex]')]
-      .filter(el => el.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first){
-      e.preventDefault(); last.focus();
-    } else if (!e.shiftKey && document.activeElement === last){
-      e.preventDefault(); first.focus();
-    }
-  }
+  // #146: Tab/Shift+Tab wrap, through the one shared helper.
+  trapTab(e, $('pdrawer'));
 }
 
 function installProjectDrilldown(){
@@ -9288,6 +9382,8 @@ function soundToggleInstall(){
 // errors.log, and tool events from the live sessions. Kept out of the tab
 // system on purpose — a log you can only reach by changing tabs is not a log.
 let dFilter = 'all', dSeen = 0, dOpen = false, dScrollY = 0, dHistoryPushed = false;
+// #146: the drawer's trap handle; Tab wraps while the sheet is open.
+let dTrap = null;
 
 // Log lines are raw provider output — they can contain angle brackets and
 // quotes, so they must never be interpolated into innerHTML unescaped.
@@ -9368,6 +9464,11 @@ function drawerOpen(on){
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
   $('logbtn')?.classList.toggle('hidden', on);
+  // #146: the sheet gets the shared Tab trap while open. Its own global
+  // listener keeps Escape and the 'l' toggle (which must still work while the
+  // drawer is closed), so the trap forwards keys to nothing: Tab only.
+  if (on && !dTrap) dTrap = trapFocus($('drawer'), $('scrim'), null);
+  if (!on && dTrap){ dTrap.release(); dTrap = null; }
   // #17: body scroll locked while the sheet/drawer is open, restored exactly
   // on close (remembers the real scroll position, not just 0).
   if (on){
@@ -9544,7 +9645,7 @@ async function pollLive(){
 // everything is escaped first, then specific safe affordances (links, code
 // fences, data:image URIs) are opted into on the escaped string. Nothing
 // here ever does innerHTML on raw model output.
-let tOpen = false, tFocusReturn = null;
+let tOpen = false, tFocusReturn = null, tTrap = null;
 const TCACHE = {}; // profile -> {sessionId: [messages]}, refetched per open
 
 function tEscape(s){ return esc(String(s == null ? '' : s)); }
@@ -9595,16 +9696,17 @@ async function tOpenModal(sessionId, profile, titleText){
   const scrim = $('tscrim'), modal = $('tmodal'), body = $('tbody');
   const ttitle = $('ttitle'), tsub = $('tsub');
   if (!scrim || !modal || !body) return;
-  tFocusReturn = document.activeElement;
   ttitle.textContent = titleText || sessionId;
   tsub.textContent = 'loading…';
   body.innerHTML = '';
   const tlBtn = $('ttimelinebtn');
   if (tlBtn){ tlBtn.dataset.tsession = sessionId; tlBtn.dataset.tprofile = profile; tlBtn.dataset.title = titleText || sessionId; }
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
   tOpen = true;
-  document.addEventListener('keydown', tKeydown, true);
+  // #146: the shared trap remembers the opener, keeps aria-hidden in sync and
+  // owns the Tab wrap; tKeydown keeps Escape and this file's own keys.
+  tTrap = trapFocus(modal, scrim, tKeydown);
+  tFocusReturn = tTrap.opener;
   try {
     if (!TCACHE[profile]) TCACHE[profile] = {};
     // Fetched on demand, once per open — NOT folded into the 5s live poll,
@@ -9637,31 +9739,17 @@ function tCloseModal(){
   tOpen = false;
   $('tscrim')?.classList.remove('open');
   $('tmodal')?.classList.remove('open');
-  $('tscrim')?.setAttribute('aria-hidden','true');
-  $('tmodal')?.setAttribute('aria-hidden','true');
-  document.removeEventListener('keydown', tKeydown, true);
-  // Focus goes back to the title button that opened it, not lost to <body>.
-  tFocusReturn?.focus?.();
+  // Release unbinds the keydown, restores aria-hidden and puts focus back on
+  // the title button that opened it, not on <body>.
+  tTrap?.release();
+  tTrap = null;
   tFocusReturn = null;
 }
 
 function tKeydown(e){
   if (e.key === 'Escape'){ e.preventDefault(); tCloseModal(); return; }
-  // Trap focus inside the modal while open — Tab/Shift+Tab never escape to
-  // the page behind the scrim.
-  if (e.key === 'Tab'){
-    const modal = $('tmodal');
-    if (!modal) return;
-    const focusables = [...modal.querySelectorAll('a[href],button')]
-      .filter(el => el.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first){
-      e.preventDefault(); last.focus();
-    } else if (!e.shiftKey && document.activeElement === last){
-      e.preventDefault(); first.focus();
-    }
-  }
+  // #146: Tab/Shift+Tab wrap, through the one shared helper.
+  if (trapTab(e, $('tmodal'))) return;
 }
 
 function installTranscriptModal(){
@@ -9678,7 +9766,7 @@ function installTranscriptModal(){
 // P10-12 (#100): Session finder command palette UI. Pure matching logic
 // (sfParseQuery/sfMatch/sfSearch) lives above render(); this is just
 // DOM plumbing on top of it.
-let sfOpen = false, sfFocusReturn = null, sfResults = [], sfActiveIdx = -1;
+let sfOpen = false, sfFocusReturn = null, sfTrap = null, sfResults = [], sfActiveIdx = -1;
 
 function sfRowsHtml(results, query){
   if (!results.length){
@@ -9718,10 +9806,12 @@ function sfRender(){
 function sfOpenPalette(){
   const scrim = $('sfscrim'), modal = $('sfmodal');
   if (!scrim || !modal) return;
-  sfFocusReturn = document.activeElement;
   sfOpen = true;
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
+  // #146: Tab now wraps inside the finder. The global handler below keeps
+  // Escape, the arrows and Enter; '/' still opens it from anywhere.
+  sfTrap = trapFocus(modal, scrim, null);
+  sfFocusReturn = sfTrap.opener;
   $('sfinput').value = '';
   sfActiveIdx = -1;
   sfRender();
@@ -9733,8 +9823,9 @@ function sfClosePalette(){
   if (!scrim || !modal) return;
   sfOpen = false;
   scrim.classList.remove('open'); modal.classList.remove('open');
-  scrim.setAttribute('aria-hidden','true'); modal.setAttribute('aria-hidden','true');
-  if (sfFocusReturn && sfFocusReturn.focus) sfFocusReturn.focus();
+  sfTrap?.release();
+  sfTrap = null;
+  sfFocusReturn = null;
 }
 
 function sfOpenSelected(){
@@ -9783,22 +9874,23 @@ function installSessionFinder(){
 // the user has to puzzle over).
 const LN_LANES = ['model', 'tool', 'delegation', 'compaction', 'user'];
 const LN_LANE_LABELS = { model: 'Model', tool: 'Tool', delegation: 'Delegation', compaction: 'Compaction', user: 'User' };
-let lnOpen = false, lnFocusReturn = null, lnSpansFlat = [], lnFocusIdx = -1;
+let lnOpen = false, lnFocusReturn = null, lnTrap = null, lnSpansFlat = [], lnFocusIdx = -1;
 let lnOpenAt = null;   // {session, profile, title} — what Enter hands to the transcript modal
 
 async function lnOpenModal(sessionId, profile, titleText){
   const scrim = $('lnscrim'), modal = $('lnmodal'), body = $('lnbody');
   if (!scrim || !modal || !body) return;
-  lnFocusReturn = document.activeElement;
   $('lntitle').textContent = titleText || sessionId;
   $('lnsub').textContent = 'loading\u2026';
   $('lnmeta').textContent = '';
   body.innerHTML = '';
   scrim.classList.add('open'); modal.classList.add('open');
-  scrim.setAttribute('aria-hidden','false'); modal.setAttribute('aria-hidden','false');
   lnOpen = true;
   lnOpenAt = { session: sessionId, profile, title: titleText || sessionId };
-  document.addEventListener('keydown', lnKeydown, true);
+  // #146: one trap for the Tab wrap; lnKeydown keeps Escape, the arrows and
+  // Enter, and the opener gets focus back when the modal closes.
+  lnTrap = trapFocus(modal, scrim, lnKeydown);
+  lnFocusReturn = lnTrap.opener;
   try {
     const r = await fetch(`sessions/${encodeURIComponent(profile)}/${encodeURIComponent(sessionId)}.json?t=` + Date.now(), {cache:'no-store'});
     if (r.status === 404){
@@ -9857,11 +9949,9 @@ function lnCloseModal(){
   lnOpen = false;
   $('lnscrim')?.classList.remove('open');
   $('lnmodal')?.classList.remove('open');
-  $('lnscrim')?.setAttribute('aria-hidden','true');
-  $('lnmodal')?.setAttribute('aria-hidden','true');
   $('lntip').style.display = 'none';
-  document.removeEventListener('keydown', lnKeydown, true);
-  lnFocusReturn?.focus?.();
+  lnTrap?.release();
+  lnTrap = null;
   lnFocusReturn = null;
   lnOpenAt = null;
 }
@@ -9957,6 +10047,8 @@ $('repolist')?.addEventListener('click', e => {
 });
 installTimelineModal();
 installProjectDrilldown();
+// #146: the help overlay had a close button and no wiring at all — one install.
+installHelp();
 installProjWeight();
 installProjFilter();
 installSesstree();
