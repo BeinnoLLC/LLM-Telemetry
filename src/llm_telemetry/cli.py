@@ -42,6 +42,7 @@ def main():
     p_serve = sub.add_parser("serve", help="serve reports/ with no-store headers")
     p_serve.add_argument("port", nargs="?", default=None)
     sub.add_parser("config", help="print the resolved configuration and exit")
+    sub.add_parser("doctor", help="read-only preflight: config, DBs, artifacts, timers, hosts (#143)")
 
     args, rest = ap.parse_known_args()
 
@@ -64,6 +65,7 @@ def main():
         "router": "collect_router",
         "quota": "collect_quota",
         "serve": "serve",
+        "doctor": "doctor",
     }
     argv = rest
     if args.cmd == "serve" and args.port:

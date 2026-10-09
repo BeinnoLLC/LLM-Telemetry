@@ -75,6 +75,7 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 | Command | Does |
 |---|---|
 | `llm-telemetry config` | Print the resolved configuration and exit |
+| `llm-telemetry doctor` | Read-only preflight — config, agent DBs, artifact ages vs their timer cadence, installed timers, payload schema, hosts; `--json`, `--offline`; exits 1 on any `fail` (#143) |
 | `llm-telemetry dashboard` | Collect + render `dashboard.html` |
 | `llm-telemetry analytics` | Write `analytics-data.json` from the agent DBs |
 | `llm-telemetry live` | Write `live-data.json` (fast, for polling) |
