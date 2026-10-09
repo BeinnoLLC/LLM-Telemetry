@@ -3,7 +3,7 @@
  * transcript modal, the session finder and the timeline modal.
  */
 import {
-  $, COLORS, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, toolColor,
+  $, COLORS, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, stampFreshness, toolColor,
 } from './palette.js';
 import { current } from './charts.js';
 import { schemaProblem } from './views.js';
@@ -336,6 +336,8 @@ export function drawerSync(){
   if (c) c.textContent = `${rows.length} events · ${errs.length} failures`;
   const s = $('dstamp');
   if (s) s.textContent = 'updated ' + new Date().toLocaleTimeString();
+  // #149: the event list ages on the logs payload, which is a 60s artifact.
+  stampFreshness(s, (lgProfile() || {}).generated, 'logs');
   // Newest is at the top, so "follow" means stay pinned to the top.
   if (stick && atTop) body.scrollTop = 0;
 }

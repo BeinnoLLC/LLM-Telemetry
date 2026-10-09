@@ -62,6 +62,12 @@
  .page{width:100%;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;gap:var(--gap)}
  .card{background:var(--card);border:1px solid var(--border);border-radius:8px}
  .muted{color:var(--muted)}
+/* Per-section freshness (#149). A section fed by an hourly artifact must not
+   look as current as one fed by a 5s poll: past its cadence the stamp says how
+   old it is, past 2x it is dimmed and the title explains the expectation. */
+.stamp.old{color:#b45309}
+.stamp.stale{color:#b91c1c;opacity:.75}
+.stamp.stale::before{content:"⚠ ";font-size:.9em}
  .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
@@ -1615,7 +1621,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    <div>
     <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
     <div class="muted text-[length:var(--fs-xs)] mt-0.5 flex items-center gap-1.5">
-     <span class="dot"></span><span id="meta"></span>
+     <span class="dot"></span><span id="meta" class="stamp"></span>
      <span id="resinfo" class="resinfo"></span>
      <span aria-hidden="true" class="opacity-40">/</span>
      <span id="crumb" aria-live="polite" class="font-medium" style="color:var(--fg)"></span>
@@ -1781,7 +1787,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
-    <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
+    <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="stamp muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
     <div id="livefanout" class="flex flex-wrap gap-1.5 mb-2 shrink-0" hidden></div>
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
@@ -2384,7 +2390,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  <div class="dhead">
   <span class="dot"></span>
   <b style="font-size:var(--fs-md)">Live tail</b>
-  <span class="muted" id="dstamp" style="font-size:var(--fs-xs)">live</span>
+  <span class="muted stamp" id="dstamp" style="font-size:var(--fs-xs)">live</span>
   <a href="#/logs" id="dfull" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">All logs &rarr;</a>
   <button id="dclose" class="chip" style="margin-left:auto" title="Close">&times;</button>
  </div>
@@ -4077,6 +4083,9 @@ function render(){
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
   $('meta').textContent=`generated ${DATA.generated.replace('T',' ')} · auto-refresh every 1 min`;
+  // #149: the header stamp ages the analytics payload itself, on its own
+  // cadence, so a frozen dashboard.html says so instead of looking re-painted.
+  stampFreshness($('meta'), DATA.generated, 'dashboard');
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
@@ -4362,6 +4371,65 @@ const CAT = {
 };
 const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};
 const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.round(s/3600)+'h';
+
+// ---- per-section freshness (P14, #149) ----------------------------------
+// The header used to carry a single "rebuilt Ns ago" derived from the build,
+// which made a 5s live panel and an hourly router panel look equally current —
+// and made a frozen artifact look live. Each panel now reports the age of the
+// payload that feeds *it*, against that artifact's own cadence.
+//
+// Cadences live here, once, so no view re-guesses them. They must agree with
+// systemd/*.timer (probe 5s, build 60s, router/quota/rankings 1h) — the
+// `llm-telemetry doctor` command reads the same numbers from the unit files.
+const CADENCE = {
+  dashboard: 60, live: 5, logs: 60, costs: 60, transcripts: 60,
+  probe: 5, router: 3600, quota: 3600, rankings: 3600,
+};
+// Past 1x the cadence a section is late; past 2x it is stale and gets greyed
+// with a hint rather than quietly showing yesterday's numbers.
+const STALE_FACTOR = 2;
+
+// Timestamps arrive in every shape the payloads use: unix seconds (number or
+// numeric string), a millisecond epoch, or an ISO string written without a zone
+// (local time). Kept inside `freshness` on purpose: the built page only replays
+// the names order.json lists, so a module-private helper would simply be absent
+// there (#149 shipped once with exactly that bug).
+function freshness(ts, key, now){
+  let t = ts;
+  if (t == null || t === '') t = null;
+  else if (typeof t === 'string' && /^-?\d+(\.\d+)?$/.test(t.trim())) t = +t;
+  if (typeof t === 'number') t = t > 1e12 ? Math.floor(t / 1000) : t;
+  else if (typeof t === 'string'){ const ms = Date.parse(t); t = isNaN(ms) ? null : Math.floor(ms / 1000); }
+  const cadence = CADENCE[key];
+  const at = now == null ? Math.floor(Date.now() / 1000) : now;
+  if (t == null || !cadence) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
+  const age = Math.max(0, Math.round(at - t));
+  const state = age < cadence ? 'fresh' : age < cadence * STALE_FACTOR ? 'old' : 'stale';
+  return {state, key, cadence, age, label: ago(age) + ' old',
+          hint: `last update ${ago(age)} ago · expected every ${ago(cadence)}`};
+}
+
+// Writes the state onto the element: a class the CSS can grey, and (for a late
+// or stale section) a suffix on the existing text. The original text is kept in
+// one place, so a section that recovers does not accumulate suffixes.
+function stampFreshness(el, ts, key, now){
+  if (!el) return null;
+  const r = freshness(ts, key, now);
+  if (el.dataset.stampBase === undefined) el.dataset.stampBase = el.dataset.stampBase || el.textContent || '';
+  el.dataset.stampState = r.state;
+  el.dataset.stampKey = key;
+  if (el.classList && el.classList.toggle) {
+    el.classList.toggle('old', r.state === 'old');
+    el.classList.toggle('stale', r.state === 'stale');
+  }
+  if (r.state === 'fresh' || r.state === 'unknown') el.textContent = el.dataset.stampBase;
+  else {
+    const sep = el.dataset.stampBase ? ' · ' : '';
+    el.textContent = `${el.dataset.stampBase}${sep}${r.state === 'stale' ? 'stale, ' : ''}${r.label}`;
+  }
+  if ('title' in el) el.title = r.state === 'fresh' ? '' : (r.hint || r.label);
+  return r;
+}
 
 // One bandwidth line for a live session: estimated bytes up/down, plus a live
 // rate when two polls are far enough apart to divide safely. `bwlive` animates
@@ -9213,6 +9281,8 @@ function drawerSync(){
   if (c) c.textContent = `${rows.length} events · ${errs.length} failures`;
   const s = $('dstamp');
   if (s) s.textContent = 'updated ' + new Date().toLocaleTimeString();
+  // #149: the event list ages on the logs payload, which is a 60s artifact.
+  stampFreshness(s, (lgProfile() || {}).generated, 'logs');
   // Newest is at the top, so "follow" means stay pinned to the top.
   if (stick && atTop) body.scrollTop = 0;
 }
@@ -9382,6 +9452,8 @@ async function pollLive(){
     liveFails = 0;
     const t = $('livestamp');
     if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
+    // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
+    stampFreshness(t, Math.floor(Date.now() / 1000), 'live');
   } catch (e) {
     // Fail quietly: a transient miss must not blank the panel the user is
     // watching. Only a sustained outage is worth reporting.

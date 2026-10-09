@@ -4,7 +4,7 @@
  * own container and reads the profile payload.
  */
 import {
-  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short,
+  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness,
 } from './palette.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
@@ -439,6 +439,9 @@ export function render(){
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
   $('meta').textContent=`generated ${DATA.generated.replace('T',' ')} · auto-refresh every 1 min`;
+  // #149: the header stamp ages the analytics payload itself, on its own
+  // cadence, so a frozen dashboard.html says so instead of looking re-painted.
+  stampFreshness($('meta'), DATA.generated, 'dashboard');
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;

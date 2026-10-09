@@ -3,7 +3,7 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmtB, pick, short, toolColor,
+  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmtB, pick, short, stampFreshness, toolColor,
 } from './palette.js';
 import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
 import {
@@ -471,6 +471,8 @@ export async function pollLive(){
     liveFails = 0;
     const t = $('livestamp');
     if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
+    // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
+    stampFreshness(t, Math.floor(Date.now() / 1000), 'live');
   } catch (e) {
     // Fail quietly: a transient miss must not blank the panel the user is
     // watching. Only a sustained outage is worth reporting.

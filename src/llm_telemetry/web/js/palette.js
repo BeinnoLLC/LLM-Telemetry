@@ -239,6 +239,65 @@ export const CAT = {
 export const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};
 export const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.round(s/3600)+'h';
 
+// ---- per-section freshness (P14, #149) ----------------------------------
+// The header used to carry a single "rebuilt Ns ago" derived from the build,
+// which made a 5s live panel and an hourly router panel look equally current —
+// and made a frozen artifact look live. Each panel now reports the age of the
+// payload that feeds *it*, against that artifact's own cadence.
+//
+// Cadences live here, once, so no view re-guesses them. They must agree with
+// systemd/*.timer (probe 5s, build 60s, router/quota/rankings 1h) — the
+// `llm-telemetry doctor` command reads the same numbers from the unit files.
+export const CADENCE = {
+  dashboard: 60, live: 5, logs: 60, costs: 60, transcripts: 60,
+  probe: 5, router: 3600, quota: 3600, rankings: 3600,
+};
+// Past 1x the cadence a section is late; past 2x it is stale and gets greyed
+// with a hint rather than quietly showing yesterday's numbers.
+export const STALE_FACTOR = 2;
+
+// Timestamps arrive in every shape the payloads use: unix seconds (number or
+// numeric string), a millisecond epoch, or an ISO string written without a zone
+// (local time). Kept inside `freshness` on purpose: the built page only replays
+// the names order.json lists, so a module-private helper would simply be absent
+// there (#149 shipped once with exactly that bug).
+export function freshness(ts, key, now){
+  let t = ts;
+  if (t == null || t === '') t = null;
+  else if (typeof t === 'string' && /^-?\d+(\.\d+)?$/.test(t.trim())) t = +t;
+  if (typeof t === 'number') t = t > 1e12 ? Math.floor(t / 1000) : t;
+  else if (typeof t === 'string'){ const ms = Date.parse(t); t = isNaN(ms) ? null : Math.floor(ms / 1000); }
+  const cadence = CADENCE[key];
+  const at = now == null ? Math.floor(Date.now() / 1000) : now;
+  if (t == null || !cadence) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
+  const age = Math.max(0, Math.round(at - t));
+  const state = age < cadence ? 'fresh' : age < cadence * STALE_FACTOR ? 'old' : 'stale';
+  return {state, key, cadence, age, label: ago(age) + ' old',
+          hint: `last update ${ago(age)} ago · expected every ${ago(cadence)}`};
+}
+
+// Writes the state onto the element: a class the CSS can grey, and (for a late
+// or stale section) a suffix on the existing text. The original text is kept in
+// one place, so a section that recovers does not accumulate suffixes.
+export function stampFreshness(el, ts, key, now){
+  if (!el) return null;
+  const r = freshness(ts, key, now);
+  if (el.dataset.stampBase === undefined) el.dataset.stampBase = el.dataset.stampBase || el.textContent || '';
+  el.dataset.stampState = r.state;
+  el.dataset.stampKey = key;
+  if (el.classList && el.classList.toggle) {
+    el.classList.toggle('old', r.state === 'old');
+    el.classList.toggle('stale', r.state === 'stale');
+  }
+  if (r.state === 'fresh' || r.state === 'unknown') el.textContent = el.dataset.stampBase;
+  else {
+    const sep = el.dataset.stampBase ? ' · ' : '';
+    el.textContent = `${el.dataset.stampBase}${sep}${r.state === 'stale' ? 'stale, ' : ''}${r.label}`;
+  }
+  if ('title' in el) el.title = r.state === 'fresh' ? '' : (r.hint || r.label);
+  return r;
+}
+
 // One bandwidth line for a live session: estimated bytes up/down, plus a live
 // rate when two polls are far enough apart to divide safely. `bwlive` animates
 // the arrows only while the session is genuinely transferring, so a stalled row

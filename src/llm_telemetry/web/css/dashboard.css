@@ -40,6 +40,12 @@
  .page{width:100%;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;gap:var(--gap)}
  .card{background:var(--card);border:1px solid var(--border);border-radius:8px}
  .muted{color:var(--muted)}
+/* Per-section freshness (#149). A section fed by an hourly artifact must not
+   look as current as one fed by a 5s poll: past its cadence the stamp says how
+   old it is, past 2x it is dimmed and the title explains the expectation. */
+.stamp.old{color:#b45309}
+.stamp.stale{color:#b91c1c;opacity:.75}
+.stamp.stale::before{content:"⚠ ";font-size:.9em}
  .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}

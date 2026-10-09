@@ -538,6 +538,22 @@
    "name": "ago"
   },
   {
+   "mod": "palette",
+   "name": "CADENCE"
+  },
+  {
+   "mod": "palette",
+   "name": "STALE_FACTOR"
+  },
+  {
+   "mod": "palette",
+   "name": "freshness"
+  },
+  {
+   "mod": "palette",
+   "name": "stampFreshness"
+  },
+  {
    "mod": "charts",
    "name": "bwRow"
   },
