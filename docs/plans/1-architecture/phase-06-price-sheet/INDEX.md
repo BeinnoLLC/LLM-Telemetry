@@ -1,6 +1,6 @@
 # Phase 6 — Price sheet
 
-**Progress:** `███████████░░░░░░░` 5/8  ·  5 closed, 3 open
+**Progress:** `██████████████████` 9/9  ·  9 closed, 0 open
 **Milestone:** [BeinnoLLC/LLM-Telemetry #6](https://github.com/BeinnoLLC/LLM-Telemetry/milestone/6)
 
 **Source of truth:** every ticket's detail, description and discussion lives on GitHub. This page tracks only progress and links.
@@ -12,9 +12,10 @@
 | [P6-03 · Make unpriced models impossible to miss](https://github.com/BeinnoLLC/LLM-Telemetry/issues/61) | Bug | P1 High | ✅ Done |
 | [P6-04 · Job calculator covers every model, with local vs metered made clear](https://github.com/BeinnoLLC/LLM-Telemetry/issues/62) | Feature | P2 Medium | ✅ Done |
 | [P6-05 · Test the price sheet: it currently has zero coverage](https://github.com/BeinnoLLC/LLM-Telemetry/issues/63) | Test | P2 Medium | ✅ Done |
-| [Epic: Phase 6 — price sheet (every model's current rate, no filtering)](https://github.com/BeinnoLLC/LLM-Telemetry/issues/64) | Epic | P2 Medium | ⬜ Backlog |
-| [Bug: qwen3.8-max unpriced with real traffic — 21 calls at $0 understates spend](https://github.com/BeinnoLLC/LLM-Telemetry/issues/117) | Bug | P0 Blocker | ⬜ Backlog |
-| [Ollama Cloud (ollama-cloud / :cloud) models: cost cron and page misprice cloud traffic](https://github.com/BeinnoLLC/LLM-Telemetry/issues/118) | Bug | P0 Blocker | ⬜ Backlog |
+| [Epic: Phase 6 — price sheet (every model's current rate, no filtering)](https://github.com/BeinnoLLC/LLM-Telemetry/issues/64) | Epic | P2 Medium | ✅ Done |
+| [Bug: qwen3.8-max unpriced with real traffic — 21 calls at $0 understates spend](https://github.com/BeinnoLLC/LLM-Telemetry/issues/117) | Bug | P0 Blocker | ✅ Done |
+| [Ollama Cloud (ollama-cloud / :cloud) models: cost cron and page misprice cloud traffic](https://github.com/BeinnoLLC/LLM-Telemetry/issues/118) | Bug | P0 Blocker | ✅ Done |
+| [Pricing: price Nous Portal traffic from Nous's own published catalogue](https://github.com/BeinnoLLC/LLM-Telemetry/issues/131) | — | — | ✅ Done |
 
 ---
 
