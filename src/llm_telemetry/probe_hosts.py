@@ -79,9 +79,24 @@ CONFIGS = [str(p.config) for p in CFG.live_profiles()]
 
 
 def discover():
-    """Every distinct Ollama base URL mentioned in any profile config."""
+    """Every distinct Ollama base URL mentioned in any profile config.
+
+    Loopback URLs (localhost/127.0.0.1) are NOT dropped: a profile may say
+    localhost while others say the LAN IP or an alias hostname, and under the
+    old drop-rule the machine was invisible on days when only the loopback
+    spelling appeared. Instead each loopback URL is dynamically expanded into
+    this box's real LAN identities (local_ips -> hostname -I, no hardcoded
+    addresses) with the port preserved; group() then collapses the variants
+    into one physical host by fingerprint.
+    """
     seen, out = set(), []
     pat = re.compile(r"https?://[\w.\-]+(?::\d+)?(?=/v1|/?\s*$)")
+    # Valid URL-host identities of this box: dotted-quad IPv4 only (bare IPv6
+    # from hostname -I is not URL-safe without brackets, and link-local
+    # 169.254.* has no route, so either would produce phantom down twins).
+    lan = [ip for ip in local_ips()
+           if ip.count(".") == 3 and not ip.startswith("169.254.")
+           and ip not in ("127.0.0.1",)]
     for cfg in CONFIGS:
         try:
             txt = open(cfg).read()
@@ -95,13 +110,15 @@ def discover():
                 # Only Ollama-shaped endpoints: :11434 or a configured local host.
                 if ":11434" not in base and not _named_local(base):
                     continue
-                # localhost and 127.0.0.1 are the same interface as the LAN IP on
-                # this box; keep them out so one machine is not listed twice.
-                if "localhost" in base or "127.0.0.1" in base:
-                    continue
-                if base not in seen:
-                    seen.add(base)
-                    out.append(base)
+                variants = [base]
+                lo = re.match(r"(https?://)(?:localhost|127\.0\.0\.1)(:\d+)?", base)
+                if lo:
+                    for ip in lan:
+                        variants.append(f"{lo.group(1)}{ip}{lo.group(2) or ':11434'}")
+                for v in variants:
+                    if v not in seen:
+                        seen.add(v)
+                        out.append(v)
     return out
 
 
@@ -333,6 +350,48 @@ def machine_load():
     return out
 
 
+def _spellings(base, lan):
+    """Same machine, different spelling: loopback <-> this box's LAN IPs."""
+    m = re.match(r"(https?://)([^/:]+)(:\d+)", base)
+    if not m:
+        return set()
+    sch, host, port = m.groups()
+    if host in ("localhost", "127.0.0.1"):
+        return {f"{sch}{ip}{port}" for ip in lan}
+    if host in lan:
+        return {f"{sch}localhost{port}", f"{sch}127.0.0.1{port}"}
+    return set()
+
+
+def _collapse_loopback_twins(hosts):
+    """Fold a fully-down host card whose every URL is an alternate spelling of
+    a machine that is already up under another card.
+
+    Ollama binds to 127.0.0.1 by default, so after discover() expands loopback
+    URLs into LAN spellings, the LAN twin of a loopback-bound server fails TCP.
+    group() keys down endpoints by base URL, which would surface a phantom
+    "down" card for a machine that is demonstrably alive. Up/up twins need no
+    help: the fingerprint merge in group() already collapses those.
+    """
+    if len(hosts) < 2:
+        return hosts
+    up_urls = [u["base"] for h in hosts if h["up"] for u in h["urls"]]
+    if not up_urls:
+        return hosts
+    lan = {ip for ip in local_ips()
+           if ip.count(".") == 3 and not ip.startswith("169.254.")
+           and ip not in ("127.0.0.1", "localhost")}
+    keep = []
+    for h in hosts:
+        if h["up"]:
+            keep.append(h)
+            continue
+        if all(_spellings(u["base"], lan) & set(up_urls) for u in h["urls"]):
+            continue
+        keep.append(h)
+    return keep
+
+
 def main():
     try:
         cache = json.load(open(CAPS_CACHE))
@@ -340,7 +399,7 @@ def main():
         cache = {}
 
     eps = [probe(b, cache) for b in discover()]
-    hosts = group(eps)
+    hosts = _collapse_loopback_twins(group(eps))
     work = local_work()
 
     # Attach recorded work to whichever host serves that URL.
