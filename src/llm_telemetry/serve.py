@@ -24,12 +24,23 @@ deliberately narrow:
 
 ``GET /api/settings`` returns the values in effect and where they live, so the
 page shows what is really configured rather than what it was built with.
+
+Flags (P14, #147)
+-----------------
+``--port``/``--bind``/``--dir``/``--open``, with defaults unchanged (config
+``port`` 8477, ``bind`` 0.0.0.0, the reports dir) so the systemd unit and the
+README keep working. The positional port form (``serve 9000``) is still
+accepted: it was the only way to move the server before this and scripts exist
+that use it. ``--port 0`` asks the OS for a free port and prints it -- the only
+way to run the server twice in a test without picking a number yourself.
 """
+import argparse
 import ipaddress
 import json
 import os
 import sys
 import tempfile
+import webbrowser
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -187,10 +198,85 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 
-def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8477
-    handler = partial(NoCacheHandler, directory=DIRECTORY)
-    with ThreadingHTTPServer(("0.0.0.0", port), handler) as httpd:
+def parse_args(argv):
+    """Flag parsing, separated from binding so it can be tested in isolation.
+
+    `--port 0` is honoured as the OS's ephemeral-port request, which is why the
+    default is None rather than the config value: 0 and "unset" must not look
+    the same.
+    """
+    ap = argparse.ArgumentParser(
+        prog="llm-telemetry serve",
+        description="Serve the report directory with caching disabled.")
+    ap.add_argument("port_pos", nargs="?", type=int, metavar="PORT",
+                    help="port to listen on (same as --port; kept for scripts)")
+    ap.add_argument("--port", type=int, default=None,
+                    help=f"port to listen on, 0 for a free one (default: config, {C.get().port})")
+    ap.add_argument("--bind", default=None,
+                    help=f"address to bind (default: config, {C.get().bind})")
+    ap.add_argument("--dir", default=None, metavar="PATH",
+                    help=f"directory to serve (default: config reports dir, {DIRECTORY})")
+    ap.add_argument("--open", action="store_true", dest="open_browser",
+                    help="open the dashboard in a browser once listening")
+    args = ap.parse_args(argv)
+
+    if args.port_pos is not None and args.port is not None and args.port_pos != args.port:
+        ap.error(f"port given twice with different values: {args.port_pos} and {args.port}")
+    args.port = args.port if args.port is not None else args.port_pos
+    if args.port is not None and not 0 <= args.port <= 65535:
+        ap.error(f"port must be between 0 and 65535, got {args.port}")
+    return args
+
+
+def resolve(args, cfg=None):
+    """(port, bind, directory) with config defaults filled in."""
+    cfg = cfg or C.get()
+    directory = args.dir or DIRECTORY
+    if not os.path.isdir(directory):
+        raise SystemExit(f"serve: not a directory to serve: {directory}")
+    return (cfg.port if args.port is None else args.port,
+            args.bind or cfg.bind,
+            directory)
+
+
+def url_for(bind, port):
+    """The URL a browser can actually use for a given bind address.
+
+    A server bound to 0.0.0.0 or :: is reachable on loopback; browsers do not
+    reliably treat the wildcard as a host, so the URL names loopback instead.
+    """
+    host = "127.0.0.1" if bind in ("", "0.0.0.0") else ("::1" if bind == "::" else bind)
+    if ":" in host:
+        host = f"[{host}]"
+    return f"http://{host}:{port}/dashboard.html"
+
+
+def browser_available(env=None, platform=None):
+    """Whether a browser can be opened at all (no X/Wayland on a headless box)."""
+    env = os.environ if env is None else env
+    platform = sys.platform if platform is None else platform
+    if platform.startswith("linux"):
+        return bool(env.get("DISPLAY") or env.get("WAYLAND_DISPLAY"))
+    return True
+
+
+def main(argv=None):
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+    port, bind, directory = resolve(args)
+    handler = partial(NoCacheHandler, directory=directory)
+    with ThreadingHTTPServer((bind, port), handler) as httpd:
+        # server_address is the truth: with --port 0 only the OS knows the port.
+        actual = httpd.server_address[1]
+        print(f"serving {directory} on {bind}:{actual}", flush=True)
+        if args.port == 0:
+            print(f"port: {actual} (chosen by the OS, --port 0)", flush=True)
+        url = url_for(bind, actual)
+        if args.open_browser:
+            if browser_available():
+                print(f"opening {url}", flush=True)
+                webbrowser.open(url)
+            else:
+                print(f"no display available -- open {url} yourself", flush=True)
         httpd.serve_forever()
 
 

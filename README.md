@@ -86,7 +86,7 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 | `llm-telemetry rankings` | Fetch OpenRouter's public rankings → `rankings-data.json` + `rankings.html` (#113) |
 | `llm-telemetry router` | Export router config, tiers, auth and routing decisions (Router tab) |
 | `llm-telemetry quota` | Export per-profile provider quota headroom from the Hermes quota cache (Quota tab) |
-| `llm-telemetry serve` | Serve reports with caching disabled |
+| `llm-telemetry serve` | Serve reports with caching disabled (`--port N`, `--bind ADDR`, `--dir PATH`, `--open`; `--port 0` picks a free port and prints it) |
 
 ## Continuous updates
 
