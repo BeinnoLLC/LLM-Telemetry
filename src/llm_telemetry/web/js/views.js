@@ -703,6 +703,73 @@ export function render(){
 }
 
 export let XF_SEEN = false;
+
+// ---- Export CSV (#148) ---------------------------------------------------
+// The per-model table could only leave the page as a screenshot. This exports
+// what is on screen, read back from the rendered table, so the file can never
+// contain a row the user cannot see or miss one they can — the row count is the
+// rendered row count by construction, not by a second copy of the filter logic.
+//
+// RFC 4180: a value containing a comma, a quote or a newline is wrapped in
+// quotes with its own quotes doubled; CRLF between records; the header row is
+// always written, so an empty range still produces a valid file.
+export function tblCsv(header, rows){
+  const cell = v => {
+    const s = v == null ? '' : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const line = a => (a || []).map(cell).join(',');
+  return [line(header)].concat((rows || []).map(line)).join('\r\n') + '\r\n';
+}
+
+// A table may declare <thead>/<tbody>, or be flat like #tbl where the first row
+// is the header. Both shapes read the same way: visible cell text, whitespace
+// collapsed, so a wrapped cell does not smuggle newlines into the CSV.
+export function tableToRows(tbl){
+  const txt = el => ((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
+  if (!tbl || !tbl.querySelectorAll) return {header: [], rows: []};
+  let head = Array.from(tbl.querySelectorAll('thead tr:first-child th, thead tr:first-child td'));
+  let body = Array.from(tbl.querySelectorAll('tbody tr'));
+  if (!head.length){
+    const all = Array.from(tbl.querySelectorAll('tr'));
+    head = all.length ? Array.from(all[0].querySelectorAll('th,td')) : [];
+    body = all.slice(1);
+  }
+  return {header: head.map(txt),
+          rows: body.map(tr => Array.from(tr.querySelectorAll('th,td')).map(txt))};
+}
+
+export function csvFilename(from, to){
+  const clean = v => String(v == null || v === '' ? 'all' : v).replace(/[^\w.-]+/g, '-');
+  return `llm-telemetry-models-${clean(from)}_${clean(to)}.csv`;
+}
+
+// Returns the number of data rows written, so the count is assertable without a
+// browser. No fetch: the rows are already in the page.
+export function exportTableCsv(tbl, from, to){
+  const T = tableToRows(tbl === undefined ? $('tbl') : tbl);
+  const csv = tblCsv(T.header, T.rows);
+  const range = {
+    from: from === undefined ? (($('from') || {}).value || '') : from,
+    to: to === undefined ? (($('to') || {}).value || '') : to,
+  };
+  const name = csvFilename(range.from, range.to);
+  if (typeof Blob !== 'undefined' && typeof document !== 'undefined' && document.createElement){
+    const url = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    (document.body || document.body === null) && document.body.appendChild(a);
+    a.click();
+    a.remove && a.remove();
+    URL.revokeObjectURL(url);
+  }
+  return {rows: T.rows.length, columns: T.header.length, filename: name, csv};
+}
+
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'csvexport') exportTableCsv();
+});
+
 export function renderXfer(rows){
   const card = $('xfercard'); if (!card) return;
   const R = rows || [];

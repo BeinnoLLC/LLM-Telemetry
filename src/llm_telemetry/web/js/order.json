@@ -994,6 +994,22 @@
    "name": "renderHeatmap"
   },
   {
+   "mod": "views",
+   "name": "tblCsv"
+  },
+  {
+   "mod": "views",
+   "name": "tableToRows"
+  },
+  {
+   "mod": "views",
+   "name": "csvFilename"
+  },
+  {
+   "mod": "views",
+   "name": "exportTableCsv"
+  },
+  {
    "mod": "palette",
    "name": "slugOf"
   },

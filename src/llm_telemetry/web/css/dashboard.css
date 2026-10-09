@@ -43,6 +43,12 @@
 /* Per-section freshness (#149). A section fed by an hourly artifact must not
    look as current as one fed by a 5s poll: past its cadence the stamp says how
    old it is, past 2x it is dimmed and the title explains the expectation. */
+/* Export CSV (#148): a quiet control next to a table label, not a page action. */
+.csvbtn{font:inherit;font-size:var(--fs-xs);text-transform:none;letter-spacing:normal;
+  color:var(--accent);background:transparent;border:1px solid var(--border);border-radius:6px;
+  padding:2px 8px;cursor:pointer}
+.csvbtn:hover{border-color:var(--accent)}
+.csvbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .stamp.old{color:#b45309}
 .stamp.stale{color:#b91c1c;opacity:.75}
 .stamp.stale::before{content:"⚠ ";font-size:.9em}
