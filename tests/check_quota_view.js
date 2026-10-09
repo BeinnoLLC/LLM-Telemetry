@@ -286,6 +286,30 @@ if (bootErr) {
   chk(/No quota data/.test(D.body.textContent),
       'a profile with no quota cache shows the empty state');
   chk(!!quota.profiles.personal, 'the fixture includes a profile with no quota cache');
+  // --- uncached profiles collapse into one explainer (#152) -------------------
+  // N identical per-profile shells read as an error N times; the redesign folds
+  // them into ONE explainer card that names the profiles and the mechanism.
+  const uncached = Object.keys(quota.profiles)
+    .filter(n => !Object.keys(quota.profiles[n].providers || {}).length);
+  chk(uncached.length >= 1, 'the fixture has an uncached profile to audit', uncached.join(' '));
+  const expCards = [...D.querySelectorAll('.qv-uncached')];
+  chk(expCards.length === 1,
+      'uncached profiles render ONE explainer card, not one shell per profile',
+      `${expCards.length} explainer cards`);
+  for (const n of uncached) {
+    chk(expCards[0] && expCards[0].textContent.includes(n),
+        `the explainer names uncached profile "${n}"`);
+    chk(!D.querySelector(`.rt-profile[data-profile="${n}"]`),
+        `uncached profile "${n}" renders no profile section at all`);
+  }
+  if (expCards[0]) chk(/one cache per profile home/.test(expCards[0].textContent),
+      'the explainer states the per-profile-home cache mechanism');
+  // No badge lies: sections are only ever rendered for profiles WITH figures,
+  // so the page must not carry a profile section whose provider count is zero.
+  const zeroSecs = [...D.querySelectorAll('.rt-profile')]
+    .filter(s => !s.querySelectorAll('.qcard, .qv-card, .qv-prov, [class*=qv-]').length);
+  chk(zeroSecs.length === 0, 'no profile section renders without any provider data',
+      zeroSecs.map(s => s.dataset.profile).join(' '));
 
   // --- per-key rows (#115 follow-up) -----------------------------------------
   // A provider with several keys must show each one separately: a pool that

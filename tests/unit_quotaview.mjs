@@ -280,10 +280,13 @@ has(hdE, '<span class="qv-why" title="a&quot;b">a"b</span>', 'reason escaped in 
 
 // ── qvProviders: the grid, worst first, unmeasured last ─────────────────────
 eq(D.qvProviders({}),
-  '<div class="muted">No quota data — the Hermes quota plugin has not cached this profile yet.</div>',
-  'no providers -> single explanatory message');
-has(D.qvProviders({ note: 'stale' }), 'No quota data (stale) — the Hermes quota plugin has not cached this profile yet.',
+  '<div class="muted">No providers in this profile yet.</div>',
+  'no providers, no note -> quiet "empty" line, no plugin blame');
+has(D.qvProviders({ note: 'stale' }),
+  'No quota data (stale) — the Hermes quota plugin has not cached this profile yet.',
   'cache note folded into the message');
+has(D.qvProviders({ note: 'stale' }), 'Run the plugin under this profile once to cache its headroom.',
+  'uncached card names the mechanism that fills it');
 
 const grid = A.qvProviders({ providers: { a: { max_used_percent: 10 }, b: { max_used_percent: 80 }, c: {} } });
 has(grid, '<div class="qv-grid">', 'grid wrapper');
@@ -439,6 +442,58 @@ try {
     quota: { p1: { providers: { a: {} } }, p2: { providers: { b: {} } } },
     quota_meta: { summary: { available: 5, providers: 9 } },
   } })).qvStat(), '5/9 available', 'fleet view prefers the collector summary when present');
+  eq((await load({ current: 'p1', DATA: { quota: { p1: { note: 'no-quota-cache' } } } })).qvStat(),
+    'not cached', 'a selected uncached profile says so, never "providers clear"');
+  eq((await load({ current: 'All', DATA: { quota: {
+    p1: { note: 'no-quota-cache' }, p2: { note: 'no-quota-cache' },
+  } } })).qvStat(), 'no cached profiles', 'fleet of only-uncached profiles says so');
+
+  // ── qvFleet: the tab-scope overview strip (#152) ──────────────────────────
+  eq((await load({ DATA: {} })).qvFleet(), '', 'no quota payload -> no fleet strip');
+  eq((await load({ DATA: { quota: { p1: { note: 'no-quota-cache' } } } })).qvFleet(),
+    '', 'no providers anywhere -> no fleet strip');
+  const fk = (await load({ DATA: {
+    quota: {
+      p1: { providers: { a: {}, b: { attention: true } } },
+      p2: { providers: { c: { unavailable_reason: 'down' }, d: {} } },
+    },
+    quota_meta: {},
+  } })).qvFleet();
+  has(fk, '<div class="qv-fleet">', 'fleet strip wrapper');
+  has(fk, '<div class="qv-fkpi"><b class="qv-kv">4</b><span>providers</span></div>', 'fleet provider count');
+  has(fk, '<div class="qv-fkpi qv-kpi-warn"><b class="qv-kv">3/4</b><span>with figures</span></div>',
+    'fleet availability warns when one is down');
+  has(fk, '<div class="qv-fkpi qv-kpi-bad"><b class="qv-kv">1</b><span>near limit</span></div>', 'fleet near-limit tile is bad when non-zero');
+  lacks(fk, 'keys usable', 'no keys tile when no provider reports accounts');
+  const spent = (await load({ DATA: {
+    quota: { p1: { providers: { a: { accounts: [
+      { status: 'ok' }, { status: 'exhausted' }, { status: 'dead' }, {},
+    ] } } } },
+    quota_meta: {},
+  } })).qvFleet();
+  has(spent, '<div class="qv-fkpi qv-kpi-warn"><b class="qv-kv">2/4</b><span>keys usable</span></div>',
+    'fleet keys tile mirrors the collector: only exhausted/dead count out');
+  const fk2 = (await load({ DATA: {
+    quota: { p1: { providers: { a: {}, b: {} } } },
+    quota_meta: {},
+  } })).qvFleet();
+  has(fk2, '<div class="qv-fkpi qv-kpi-ok"><b class="qv-kv">0</b><span>near limit</span></div>', 'fleet near-limit tile is ok at zero');
+  has(fk2, '<div class="qv-fkpi"><b class="qv-kv">2/2</b><span>with figures</span></div>', 'fleet availability ok when all up');
+
+  // ── qvUncached: one explainer, not one shell per profile (#152) ───────────
+  eq((await load({ DATA: {} })).qvUncached(), '', 'no payload -> no explainer');
+  eq((await load({ DATA: { quota: { p1: { providers: { a: {} } } } } })).qvUncached(),
+    '', 'no uncached profiles -> no explainer');
+  const un = (await load({ DATA: { quota: {
+    gamma: { note: 'no-quota-cache' },
+    beta: { note: 'no-quota-cache' },
+    alpha: { providers: { a: {} } },
+  } } })).qvUncached();
+  has(un, 'class="card rt-card qv-uncached"', 'explainer card wrapper');
+  has(un, '<b class="lbl">No quota data (no-quota-cache)</b>', 'explainer names the collector note');
+  has(un, 'has not cached profiles beta, gamma', 'explainer lists the uncached profiles, sorted');
+  has(un, 'one cache per profile home', 'explainer states the mechanism');
+  has(un, 'Hermes has run under it with the quota plugin installed', 'explainer names what fills the cache');
 
   // ── renderQuotaView ───────────────────────────────────────────────────────
   const qvEl = { innerHTML: '', querySelectorAll: () => [] };

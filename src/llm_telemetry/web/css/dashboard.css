@@ -1573,4 +1573,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-kpi-ok .qv-kv{color:var(--z-ok-fg)}
 .qv-kpi-warn .qv-kv{color:var(--z-warn-fg)}
 .qv-kpi-bad .qv-kv{color:var(--z-bad-fg)}
+/* Fleet overview (#152): same tile grammar as .qv-kpi, at tab scope. Sibling
+   class, not a copy — the per-profile KPI audit keeps testing .qv-kpi only. */
+.qv-fleet{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;margin:0 0 .8rem}
+.qv-fkpi{border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.qv-fkpi .qv-kv{font-size:var(--fs-lg);font-variant-numeric:tabular-nums;line-height:1.1}
+.qv-fkpi span{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.qv-fkpi.qv-kpi-ok .qv-kv{color:var(--z-ok-fg)}
+.qv-fkpi.qv-kpi-warn .qv-kv{color:var(--z-warn-fg)}
+.qv-fkpi.qv-kpi-bad .qv-kv{color:var(--z-bad-fg)}
+.qv-uncached{margin:.8rem 0 0}
+.qv-uncached .lbl{display:block;font-size:var(--fs-sm)}
+.qv-uncached .rt-cbody{margin-top:.25rem}
 .qv-head > .qv-why{flex-basis:100%;margin:0;max-width:none}

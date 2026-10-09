@@ -1595,6 +1595,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-kpi-ok .qv-kv{color:var(--z-ok-fg)}
 .qv-kpi-warn .qv-kv{color:var(--z-warn-fg)}
 .qv-kpi-bad .qv-kv{color:var(--z-bad-fg)}
+/* Fleet overview (#152): same tile grammar as .qv-kpi, at tab scope. Sibling
+   class, not a copy — the per-profile KPI audit keeps testing .qv-kpi only. */
+.qv-fleet{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;margin:0 0 .8rem}
+.qv-fkpi{border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.qv-fkpi .qv-kv{font-size:var(--fs-lg);font-variant-numeric:tabular-nums;line-height:1.1}
+.qv-fkpi span{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.qv-fkpi.qv-kpi-ok .qv-kv{color:var(--z-ok-fg)}
+.qv-fkpi.qv-kpi-warn .qv-kv{color:var(--z-warn-fg)}
+.qv-fkpi.qv-kpi-bad .qv-kv{color:var(--z-bad-fg)}
+.qv-uncached{margin:.8rem 0 0}
+.qv-uncached .lbl{display:block;font-size:var(--fs-sm)}
+.qv-uncached .rt-cbody{margin-top:.25rem}
 .qv-head > .qv-why{flex-basis:100%;margin:0;max-width:none}
 
 </style></head><body>
@@ -3386,8 +3398,17 @@ function qvProviders(pdata){
   const attention = qvAttention();
   const rows = Object.entries(pdata.providers || {});
   if (!rows.length) {
-    return `<div class="muted">No quota data${pdata.note ? ` (${esc(pdata.note)})` : ''} — ` +
-      'the Hermes quota plugin has not cached this profile yet.</div>';
+    // An empty provider map under a section header already says the profile has
+    // no data; inside the card it must also say whose fault it is. An uncached
+    // profile gets the plugin explanation; a NO providers entry (cached but
+    // empty) reads as its own, quieter line — "no reading" must not claim a
+    // plugin problem it does not have.
+    if (pdata.note) {
+      return `<div class="muted">No quota data (${esc(pdata.note)}) — ` +
+        'the Hermes quota plugin has not cached this profile yet. Run the plugin ' +
+        'under this profile once to cache its headroom.</div>';
+    }
+    return '<div class="muted">No providers in this profile yet.</div>';
   }
   rows.sort((a, b) => {
     const wa = qvPct(a[1].max_used_percent), wb = qvPct(b[1].max_used_percent);
@@ -3496,11 +3517,20 @@ function qvSection(name, pdata){
   const provs = Object.values(pdata.providers || {});
   const n = provs.length;
   const near = provs.filter(p => p.attention).length;
+  // The badge must not lie. With figures, "all clear" is earned when nothing is
+  // near a limit. Without any provider data (uncached, or cached-but-empty) a
+  // green badge would read "plenty left" — it reads nothing yet: muted, and
+  // named for what is actually missing.
+  const badge = near
+    ? `<span class="rt-auth rt-warn">${near} near limit</span>`
+    : n
+      ? '<span class="rt-auth rt-ok">all clear</span>'
+      : '<span class="rt-auth rt-mute">no figures</span>';
   const pkey = `${name}|*`;
   return `<details class="rt-profile" data-profile="${escA(name)}" data-qvfold="${escA(pkey)}"${folded.has(pkey) ? '' : ' open'}>
     <summary class="rt-phead"><h2>${esc(name)}</h2>
-      <span class="rt-auth ${near ? 'rt-warn' : 'rt-ok'}">${near ? `${near} near limit` : 'all clear'}</span>
-      <span class="muted">${n} provider${n === 1 ? '' : 's'}${
+      ${badge}
+      <span class="muted">${n ? `${n} provider${n === 1 ? '' : 's'}` : 'no providers cached'}${
         qvAttention() === null ? ' · threshold unknown' : ''}${
         pdata.cache_fetched_at ? ` · cached ${esc(rtAgo(Date.parse(pdata.cache_fetched_at) / 1000))}` : ''}</span>
       <span class="rt-foldall"><button type="button" data-qvall="open">expand all</button><button type="button" data-qvall="close">collapse all</button></span>
@@ -3508,7 +3538,9 @@ function qvSection(name, pdata){
 }
 
 // Home card stat: the current profile's answer, or the fleet's when the merge
-// is selected. Mirrors routerStat()'s shape.
+// is selected. Mirrors routerStat()'s shape. A selection with no cached data
+// must say so — "3 providers clear" for a profile the plugin never cached is a
+// reading invented from nothing.
 function qvStat(){
   const all = DATA.quota || {};
   const meta = DATA.quota_meta || {};
@@ -3516,6 +3548,9 @@ function qvStat(){
   if (!names.length) return 'No data';
   const provs = [];
   for (const n of names) provs.push(...Object.values((all[n] || {}).providers || {}));
+  if (!provs.length) {
+    return names.length === 1 ? 'not cached' : 'no cached profiles';
+  }
   const near = provs.filter(p => p.attention).length;
   const avail = provs.filter(p => !p.unavailable_reason).length;
   if (names.length === 1) {
@@ -3523,6 +3558,54 @@ function qvStat(){
     return near ? `${near}/${n} near limit` : `${n} provider${n === 1 ? '' : 's'} clear`;
   }
   return `${(meta.summary && meta.summary.available) || avail}/${(meta.summary && meta.summary.providers) || provs.length} available`;
+}
+
+// Fleet overview, above the per-profile sections: the same four counts the
+// home card's Quota tile summarizes, plus usable keys — derived ONLY from the
+// provider rows the cards below render, never from meta.summary: the summary
+// is one derivation of those rows, and a tile that prefers it would agree with
+// tampered summary numbers over the visible sections. Classed .qv-fkpi (a
+// sibling of .qv-kpi, not a copy) so the per-profile KPI audit keeps testing
+// exactly the tiles it should.
+function qvFleet(){
+  const all = DATA.quota || {};
+  const names = Object.keys(all).sort();
+  const provs = [];
+  for (const n of names) provs.push(...Object.values((all[n] || {}).providers || {}));
+  if (!provs.length) return '';
+  const avail = provs.filter(p => !p.unavailable_reason).length;
+  const near = provs.filter(p => p.attention).length;
+  // Spent-key vocabulary mirrored from the collector's summarise(): only
+  // exhausted/dead count out, a key with no status yet is still usable —
+  // counting status === 'ok' only would disagree with the payload summary.
+  const SPENT = ['exhausted', 'dead'];
+  const keys = provs.flatMap(p => p.accounts || []);
+  const usable = keys.filter(a => !(SPENT.includes(a.status))).length;
+  const tile = (v, l, cls) => `<div class="qv-fkpi${cls ? ` ${cls}` : ''}"><b class="qv-kv">${v}</b><span>${esc(l)}</span></div>`;
+  return '<div class="qv-fleet">' +
+    tile(provs.length, 'providers') +
+    tile(`${avail}/${provs.length}`, 'with figures', avail < provs.length ? 'qv-kpi-warn' : '') +
+    tile(near, 'near limit', near ? 'qv-kpi-bad' : 'qv-kpi-ok') +
+    (keys.length ? tile(`${usable}/${keys.length}`, 'keys usable', usable < keys.length ? 'qv-kpi-warn' : '') : '') +
+    '</div>';
+}
+
+// One explainer card for every profile the plugin has not cached. N identical
+// per-profile shells ("No quota data (no-quota-cache)") read as an error N
+// times; one card naming the profiles, why their section is absent, and what
+// fills them, reads as a mechanism — and the empty shells stop crowding the
+// profiles that do have figures. renderQuotaView() skips their sections.
+function qvUncached(){
+  const all = DATA.quota || {};
+  const empty = Object.keys(all).sort()
+    .filter(n => !Object.keys((all[n] || {}).providers || {}).length);
+  if (!empty.length) return '';
+  const list = empty.map(n => esc(n)).join(', ');
+  const note = (all[empty[0]] || {}).note || 'no-quota-cache';
+  return `<div class="card rt-card qv-uncached"><b class="lbl">No quota data (${esc(note)})</b>` +
+    `<div class="muted rt-cbody">The Hermes quota plugin has not cached ${empty.length === 1 ? 'profile' : 'profiles'} ${list}. ` +
+    'It stores one cache per profile home, so a profile only shows up here after ' +
+    'Hermes has run under it with the quota plugin installed.</div></div>';
 }
 
 function renderQuotaView(){
@@ -3546,7 +3629,10 @@ function renderQuotaView(){
     return `<button type="button" data-qvpage="${escA(id)}"${on ? ' aria-current="page"' : ''}` +
       ` title="${escA(tip)}" class="rt-page${on ? ' rt-page-on' : ''}">${esc(label)}</button>`;
   }).join('')}</nav>`;
-  el.innerHTML = strip + names.map(n => qvSection(n, all[n])).join('');
+  // Sections only for profiles with figures; the plugin-uncached remainder
+  // collapses into one explainer card so the strip does not repeat it N times.
+  const drawn = names.filter(n => Object.keys((all[n] || {}).providers || {}).length);
+  el.innerHTML = qvFleet() + strip + drawn.map(n => qvSection(n, all[n])).join('') + qvUncached();
   el.querySelectorAll('details[data-qvfold]').forEach(dt =>
     dt.addEventListener('toggle', () => qvSaveFold(dt.dataset.qvfold, dt.open)));
   el.querySelectorAll('[data-qvall]').forEach(b => b.addEventListener('click', ev => {

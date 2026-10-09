@@ -379,6 +379,14 @@
   },
   {
    "mod": "quotaview",
+   "name": "qvFleet"
+  },
+  {
+   "mod": "quotaview",
+   "name": "qvUncached"
+  },
+  {
+   "mod": "quotaview",
    "name": "renderQuotaView"
   },
   {
