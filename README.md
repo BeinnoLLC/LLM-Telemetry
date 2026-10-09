@@ -74,11 +74,14 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 
 | Command | Does |
 |---|---|
-| `llm-telemetry collect` | Write `analytics-data.json` from the agent DBs |
-| `llm-telemetry live` | Write `live-data.json` (fast, for polling) |
-| `llm-telemetry transcripts` | Write `transcripts.json` — windowed per-session chat for the transcript modal (#79) |
-| `llm-telemetry probe` | Probe inference hosts → `ollama-data.json` |
+| `llm-telemetry config` | Print the resolved configuration and exit |
 | `llm-telemetry dashboard` | Collect + render `dashboard.html` |
+| `llm-telemetry analytics` | Write `analytics-data.json` from the agent DBs |
+| `llm-telemetry live` | Write `live-data.json` (fast, for polling) |
+| `llm-telemetry logs` | Write `logs-data.json` (the full Logs page) |
+| `llm-telemetry transcripts` | Write `transcripts.json` — windowed per-session chat for the transcript modal (#79) |
+| `llm-telemetry session-timeline` | Write `sessions/<profile>/<id>.json` — one session's timeline (#94) |
+| `llm-telemetry probe` | Probe inference hosts → `ollama-data.json` |
 | `llm-telemetry costs` | Render the per-1M rate reference page |
 | `llm-telemetry rankings` | Fetch OpenRouter's public rankings → `rankings-data.json` + `rankings.html` (#113) |
 | `llm-telemetry router` | Export router config, tiers, auth and routing decisions (Router tab) |
@@ -88,14 +91,16 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 ## Continuous updates
 
 `systemd/` has user units: a 1-minute dashboard rebuild, a 5-second host probe,
-an hourly router refresh, an hourly quota refresh, and the HTTP server.
+an hourly router refresh, an hourly quota refresh, an hourly rankings refresh,
+and the HTTP server.
 Install with:
 
 ```bash
 cp systemd/*.service systemd/*.timer ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now llm-telemetry-build.timer llm-telemetry-probe.timer \
-  llm-telemetry-router.timer llm-telemetry-quota.timer llm-telemetry-serve
+  llm-telemetry-router.timer llm-telemetry-quota.timer llm-telemetry-rankings.timer \
+  llm-telemetry-serve
 ```
 
 No systemd (e.g. a container)? Run `llm-telemetry router` and
