@@ -17,55 +17,24 @@
  * screenshot — off-white page #FBFBF9 with pure-white cards and cool
  * green-grey ink #1A201C in the light theme, and ONE muted emerald accent
  * #3F8358 (the green the reference board uses for its logo/progress marks).
- * The dark default keeps the same roles at night values: green-grey base
+ * The dark theme keeps the same roles at night values: green-grey base
  * #141A17, deep green-grey cards #1C2320, accent #5AA276. Hairline borders
  * (.12 alpha) instead of outlines; NO gradients, NO glow.
  *
- * The dark block is declared as ":root, [data-theme=dark]" — the app only
- * ever sets data-theme="light", but naming dark explicitly (tests, future
- * callers) must resolve to exactly the same values as the default.
+ * 2026-10-10 (3rd pass): LIGHT is the default (Hazem's decision), reached by
+ * toggling: dark only mounts as [data-theme="dark"]. The light block is
+ * declared as ":root, [data-theme=light]" so naming light explicitly resolves
+ * to exactly the same values as the default.
+ *
+ * The dashboard's stylesheet used to shadow this palette with its own
+ * root-level zones and a second light block; those copies are gone and any
+ * new shared token belongs HERE.
  *
  * Page-specific tokens are deliberately NOT here: the dashboard keeps its type
- * scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
+ * scale, spacing scale, gauge sizing and nav metrics; the price sheet keeps its
  * per-provider accent colours. */
 
 :root,
-[data-theme="dark"]{
-  /* base surfaces: green-grey night values, not pure neutral */
-  --bg:#141a17;
-  --card:#1c2320;
-  --fg:#e6e9e6;
-  --muted:#98a29b;
-  --border:rgba(230,233,230,.12);
-  /* the single calm accent: muted emerald, same family as the reference */
-  --accent:#5aa276;
-  --accent-ink:#0f1712;          /* text/icon on accent fills */
-  --accent-wash:rgba(90,162,118,.14);
-  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
-
-  /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
-  --wash-indigo:rgba(129,140,180,.14);
-  --wash-rose:rgba(196,124,140,.15);
-  --wash-slate:rgba(124,144,156,.15);
-  --wash-amber:rgba(196,160,110,.15);
-  --wash-mint:rgba(110,170,140,.14);
-
-  /* status hues, desaturated to match */
-  --z-ok:#5f9e6e;
-  --z-warn:#c2a15c;
-  --z-bad:#c66a6a;
-  --z-ok-fg:#dff0e4;
-  --z-warn-fg:#f4ecda;
-  --z-bad-fg:#f7e3e3;
-
-  /* solid chart pastels (fills for Chart.js) */
-  --pal-indigo:#818cb4;
-  --pal-rose:#c47c8c;
-  --pal-slate:#7c909c;
-  --pal-amber:#c4a06e;
-  --pal-mint:#6eaa8c;
-}
-
 [data-theme="light"]{
   /* the reference board look, sampled off Hazem's scorecard screenshot:
      off-white page, pure-white cards, cool green-grey ink, one muted
@@ -100,6 +69,42 @@
   --pal-slate:#71868f;
   --pal-amber:#b5905f;
   --pal-mint:#5f9e78;
+}
+
+[data-theme="dark"]{
+  /* base surfaces: green-grey night values, not pure neutral */
+  --bg:#141a17;
+  --card:#1c2320;
+  --fg:#e6e9e6;
+  --muted:#98a29b;
+  --border:rgba(230,233,230,.12);
+  /* the single calm accent: muted emerald, same family as the reference */
+  --accent:#5aa276;
+  --accent-ink:#0f1712;          /* text/icon on accent fills */
+  --accent-wash:rgba(90,162,118,.14);
+  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
+
+  /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
+  --wash-indigo:rgba(129,140,180,.14);
+  --wash-rose:rgba(196,124,140,.15);
+  --wash-slate:rgba(124,144,156,.15);
+  --wash-amber:rgba(196,160,110,.15);
+  --wash-mint:rgba(110,170,140,.14);
+
+  /* status hues, desaturated to match */
+  --z-ok:#5f9e6e;
+  --z-warn:#c2a15c;
+  --z-bad:#c66a6a;
+  --z-ok-fg:#dff0e4;
+  --z-warn-fg:#f4ecda;
+  --z-bad-fg:#f7e3e3;
+
+  /* solid chart pastels (fills for Chart.js) */
+  --pal-indigo:#818cb4;
+  --pal-rose:#c47c8c;
+  --pal-slate:#7c909c;
+  --pal-amber:#c4a06e;
+  --pal-mint:#6eaa8c;
 } /* Palette tokens (--bg/--card/--fg/--muted/--border/--accent/--accent2) are
    declared once in tokens.css, which the build inlines ahead of this file —
    P2-04 (#28): the price sheet used to carry its own copy of them. */
@@ -122,18 +127,10 @@
    --sp-6:clamp(18px,2.8vw,28px);
    /* Gauge sizing — a single knob drives stroke, ticks and readout. */
    --gauge-size:84px;
-   /* Gauge severity zones, themeable without touching the SVG code. */
-   --z-ok:hsl(142 65% 45%); --z-warn:hsl(38 92% 52%); --z-bad:hsl(0 72% 55%);
-   --z-ok-fg:hsl(142 55% 52%); --z-warn-fg:hsl(38 88% 58%); --z-bad-fg:hsl(0 70% 64%);
+   /* gauge severity zones + palette: single source = tokens.css */
    --nav-w:232px; --rail-w:60px; --bar-h:52px;
  }
- [data-theme=light]{
-   --bg:#f7f8fb; --card:#ffffff; --fg:#111827; --muted:#6b7280;
-   --border:#e5e7eb; --accent:#4f46e5; --accent2:#16a34a;
-   /* Darker zone fills: the dark-theme hues fail 3:1 against a white card. */
-   --z-ok:hsl(142 62% 34%); --z-warn:hsl(32 92% 42%); --z-bad:hsl(0 70% 46%);
-   --z-ok-fg:hsl(142 62% 28%); --z-warn-fg:hsl(28 92% 35%); --z-bad-fg:hsl(0 70% 42%);
- }
+
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -151,10 +148,10 @@
   padding:2px 8px;cursor:pointer}
 .csvbtn:hover{border-color:var(--accent)}
 .csvbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.stamp.old{color:#b45309}
-.stamp.stale{color:#b91c1c;opacity:.75}
+.stamp.old{color:var(--z-warn)}
+.stamp.stale{color:var(--z-bad);opacity:.75}
 .stamp.stale::before{content:"⚠ ";font-size:.9em}
- .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
+ .tabon{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
 /* ---- Profile tabs as a segmented control (#150 redesign) -----------------
@@ -175,17 +172,17 @@
  .tabseg::before{content:"";width:6px;height:6px;border-radius:50%;
    background:hsl(var(--h) 70% 55%);flex:none;
    transition:opacity .12s ease, transform .12s ease}
- .tabseg[data-off="0"]{background:hsl(var(--h) 45% 24%);color:#fff}
- .tabseg[data-off="0"]:hover{background:hsl(var(--h) 50% 28%)}
- .tabseg[data-off="0"]::before{background:hsl(var(--h) 80% 82%)}
- .tabseg[data-off="1"]{color:hsl(var(--h) 12% 58%)}
+ .tabseg[data-off="0"]{background:hsl(var(--h) 42% 88%);color:hsl(var(--h) 55% 24%)}
+ .tabseg[data-off="0"]:hover{background:hsl(var(--h) 48% 83%)}
+ .tabseg[data-off="0"]::before{background:hsl(var(--h) 55% 38%)}
+ .tabseg[data-off="1"]{color:hsl(var(--h) 30% 38%)}
  .tabseg[data-off="1"]::before{opacity:.30;transform:scale(.75)}
- .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 15% 18%)}
- [data-theme=light] .tabseg[data-off="0"]{background:hsl(var(--h) 42% 88%);color:hsl(var(--h) 55% 24%)}
- [data-theme=light] .tabseg[data-off="0"]:hover{background:hsl(var(--h) 48% 83%)}
- [data-theme=light] .tabseg[data-off="0"]::before{background:hsl(var(--h) 55% 38%)}
- [data-theme=light] .tabseg[data-off="1"]{color:hsl(var(--h) 10% 42%)}
- [data-theme=light] .tabseg[data-off="1"]:hover{background:hsl(var(--h) 20% 93%);color:hsl(var(--h) 30% 28%)}
+ .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 20% 93%)}
+ [data-theme=dark] .tabseg[data-off="0"]{background:hsl(var(--h) 45% 24%);color:#fff}
+ [data-theme=dark] .tabseg[data-off="0"]:hover{background:hsl(var(--h) 50% 28%)}
+ [data-theme=dark] .tabseg[data-off="0"]::before{background:hsl(var(--h) 80% 82%)}
+ [data-theme=dark] .tabseg[data-off="1"]{color:hsl(var(--h) 12% 58%)}
+ [data-theme=dark] .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 15% 18%)}
  .livehdr{display:flex;align-items:baseline;gap:4px}
  .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:var(--fs-sm);font-weight:500;color:var(--fg)}
  [hidden]{display:none !important}
@@ -194,8 +191,8 @@
        cursor:pointer;color:var(--muted);user-select:none;white-space:nowrap}
  .chip:hover{color:var(--fg);border-color:var(--accent)}
  input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:4px;
-   padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:dark}
- [data-theme=light] input[type=date]{color-scheme:light}
+   padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:light}
+ [data-theme=dark] input[type=date]{color-scheme:dark}
  /* Native <select> elements (currently just the project filter, #46) render
     with the OS/browser's own light widget chrome by default — jarring next
     to the dark, chip-styled rest of the page. Strip that chrome and rebuild
@@ -372,7 +369,7 @@ body.hasnav #views{ display:none; }
   padding:2px 6px 2px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer}
 .lgactivechip:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .lgactivechip .x{opacity:.75;font-weight:700}
-#lgcountbadge{background:var(--accent);color:#fff;border-radius:999px;
+#lgcountbadge{background:var(--accent);color:var(--accent-ink);border-radius:999px;
   font-size:var(--fs-xs);font-weight:700;padding:1px 7px;line-height:1.5}
 /* Event rows: monospace timestamps so they form a readable column. */
 .lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
@@ -493,7 +490,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwleg{display:flex;align-items:baseline;gap:5px}
  .bwarrow{font-size:var(--fs-md);line-height:1;font-weight:700}
  .bwup{color:var(--z-warn)}      /* upload: the dominant direction here */
- .bwdown{color:#38bdf8}
+ .bwdown{color:var(--pal-slate)}
  .bwrate{font-size:var(--fs-xs);letter-spacing:.02em}
  /* A running worker gets a moving arrow, so "is it transferring right now"
     is answerable without reading numbers. Paused when the OS asks for less
@@ -520,9 +517,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bars i{display:block;width:7px;border-radius:2px;background:var(--accent);
          animation:bb 1.05s ease-in-out infinite;transform-origin:bottom}
  .bars i:nth-child(1){height:38%;animation-delay:0s}
- .bars i:nth-child(2){height:66%;animation-delay:.12s;background:hsl(17 66% 55%)}
- .bars i:nth-child(3){height:100%;animation-delay:.24s;background:hsl(250 85% 66%)}
- .bars i:nth-child(4){height:54%;animation-delay:.36s;background:hsl(213 90% 60%)}
+ .bars i:nth-child(2){height:66%;animation-delay:.12s;background:var(--pal-rose)}
+ .bars i:nth-child(3){height:100%;animation-delay:.24s;background:var(--pal-indigo)}
+ .bars i:nth-child(4){height:54%;animation-delay:.36s;background:var(--accent2)}
  @keyframes bb{0%,100%{transform:scaleY(.45);opacity:.55}50%{transform:scaleY(1);opacity:1}}
  @media (prefers-reduced-motion:reduce){
    .bars i,.dot{animation:none}
@@ -726,7 +723,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .hnum{width:19px;height:19px;border-radius:50%;flex:none;display:flex;
    align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;
    background:var(--border);color:var(--muted)}
- .hhop.primary .hnum{background:hsl(142 65% 45%);color:#04140a}
+ .hhop.primary .hnum{background:var(--accent);color:var(--accent-ink)}
  .hmodel{font-size:var(--fs-md);font-weight:600}
  .hurl{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;font-family:ui-monospace,monospace}
  .harrow{color:var(--muted);font-size:var(--fs-md);text-align:center;margin:1px 0}
@@ -812,7 +809,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-car{flex:none;position:relative;display:flex;align-items:center;height:26px;padding:0 7px;
   border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:#fff;cursor:default;
   box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);outline-offset:2px;
-  --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--foreground,#fff))}
+  --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--card))}
 .qt-car:focus-visible{outline:2px solid var(--accent)}
 .qt-lbl{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
   text-shadow:0 1px 1px rgba(0,0,0,.35)}
@@ -857,8 +854,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   70%,100%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 7px hsl(var(--h,215) 60% 60% / 0)}}
 /* the yard shunter: a little loco idling up and down the front siding */
 .qt-shunter{position:absolute;bottom:13px;left:4px;width:22px;height:13px;border-radius:3px 7px 2px 2px;
-  background:#475569;pointer-events:none;opacity:.8;animation:qt-shunter 9s ease-in-out infinite alternate}
-.qt-shunter::before{content:"";position:absolute;right:3px;top:3px;width:5px;height:4px;border-radius:1px;background:#fde68a}
+  background:var(--pal-slate);pointer-events:none;opacity:.8;animation:qt-shunter 9s ease-in-out infinite alternate}
+.qt-shunter::before{content:"";position:absolute;right:3px;top:3px;width:5px;height:4px;border-radius:1px;background:var(--pal-amber)}
 @keyframes qt-shunter{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--qt-yw,160px))}}
 @keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
 @keyframes qt-park{from{opacity:0;transform:translateX(-30px) scale(.7)}to{opacity:.9;transform:none}}
@@ -915,17 +912,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcard.down{opacity:.62;border-style:dashed}
  /* #34: fire icon fires only on sustained GPU+queue pressure (~15s), not a
     single spike — a border tint gives the same signal at a glance in lists. */
- .olcard-pressure{border-color:hsl(16 85% 55% / .55)}
+ .olcard-pressure{border-color:color-mix(in srgb, var(--z-bad) 55%, transparent)}
  .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px} .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
     width/height are ignored (the dot only looked right because of its ring). */
  .oldot{display:block;width:8px;height:8px;border-radius:50%;flex:none}
- .oldot.up{background:hsl(142 70% 45%);box-shadow:0 0 0 3px hsl(142 70% 45% / .18)}
- .oldot.down{background:hsl(0 72% 55%);box-shadow:0 0 0 3px hsl(0 72% 55% / .18)}
+ .oldot.up{background:var(--z-ok);box-shadow:0 0 0 3px color-mix(in srgb, var(--z-ok) 18%, transparent)}
+ .oldot.down{background:var(--z-bad);box-shadow:0 0 0 3px color-mix(in srgb, var(--z-bad) 18%, transparent)}
  /* "local" badge: same glyph + tint as the local provider badge elsewhere. */
  .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;font-weight:600;
-   background:hsl(196 88% 55% / .16);color:hsl(196 88% 60%);flex:none}
+   background:var(--accent-wash);color:var(--accent2);flex:none}
  .olver{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;flex:none}
  .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 8px;word-break:break-all}
  /* Load bars. Colour is a judgement (green/amber/red), not decoration: it is
@@ -937,15 +934,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     non-replaced elements ignore width/height entirely — the fill rendered as a
     0x0 box, so every bar looked empty no matter what value it carried. */
  .olfill{display:block;height:100%;border-radius:4px;transition:width .45s ease}
- .olfill.good{background:hsl(142 65% 45%)}
- .olfill.warn{background:hsl(38 92% 52%)}
- .olfill.bad{background:hsl(0 72% 55%)}
+ .olfill.good{background:var(--z-ok)}
+ .olfill.warn{background:var(--z-warn)}
+ .olfill.bad{background:var(--z-bad)}
  .olval{width:62px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-size:var(--fs-xs)}
  /* The numeric readout carries the same traffic-light colour as its bar, so
     the value is legible as good/warn/bad without measuring the bar by eye. */
- .olval.good{color:hsl(142 55% 52%)}
- .olval.warn{color:hsl(38 88% 58%)}
- .olval.bad{color:hsl(0 70% 64%)}
+ .olval.good{color:var(--z-ok)}
+ .olval.warn{color:var(--z-warn)}
+ .olval.bad{color:var(--z-bad)}
  /* Per-GPU chips: only rendered for the local box, which is the only host that
     can report real device telemetry. */
  .olgpus{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 2px}
@@ -956,9 +953,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Capability pills — what this box can actually do (tools/vision/thinking). */
  .olcap{font-size:var(--fs-xs);padding:1px 5px;border-radius:3px;border:1px solid var(--border);
    color:var(--muted-foreground,var(--muted))}
- .olcap.tools{border-color:hsl(262 80% 60% / .5);color:hsl(262 80% 70%)}
- .olcap.vision{border-color:hsl(320 85% 60% / .5);color:hsl(320 85% 70%)}
- .olcap.thinking{border-color:hsl(38 92% 52% / .5);color:hsl(38 92% 60%)}
+ .olcap.tools{border-color:color-mix(in srgb, var(--pal-indigo) 50%, transparent);color:var(--pal-indigo)}
+ .olcap.vision{border-color:color-mix(in srgb, var(--pal-rose) 50%, transparent);color:var(--pal-rose)}
+ .olcap.thinking{border-color:color-mix(in srgb, var(--pal-amber) 50%, transparent);color:var(--pal-amber)}
  .olidle{font-size:var(--fs-sm);color:var(--muted);padding:4px 0}
 .olinstl{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 4px}
 .olinst{font-size:var(--fs-xs,11px);font-family:var(--mono,monospace);padding:1px 6px;border:1px solid var(--border);
@@ -968,7 +965,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
  #soundtoggle.on{border-color:var(--accent);color:var(--accent)}
  .olwork b{color:var(--foreground);font-weight:600;font-variant-numeric:tabular-nums}
- .olstale{font-size:var(--fs-xs);color:hsl(38 92% 60%)}
+ .olstale{font-size:var(--fs-xs);color:var(--z-warn)}
 
 
  /* Model name inside a drawer log line — bigger than the surrounding text so
@@ -1022,7 +1019,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  /* Local electricity cost (P7-04, #68): distinct from billed spend. */
  .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-   padding:0 4px;border-radius:3px;background:rgba(234,179,8,.14);color:#eab308;vertical-align:1px}
+   padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
 /* KPI card redesign (dashboard restyle 2026-09-30): a rounded-square icon
@@ -1071,10 +1068,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  /* Unpriced / free-tier cost states (P9-05, #82) */
  .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-   padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.14);color:#f87171}
+   padding:1px 5px;border-radius:3px;background:color-mix(in srgb, var(--z-bad) 14%, transparent);color:var(--z-bad)}
  .freetier{color:var(--muted)}
  .ftmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-   padding:0 4px;border-radius:3px;background:rgba(168,85,247,.15);color:#c084fc;vertical-align:1px}
+   padding:0 4px;border-radius:3px;background:var(--wash-indigo);color:var(--pal-indigo);vertical-align:1px}
  .unpricedbanner{margin:8px 0 2px;padding:8px 12px;border-radius:8px;font-size:var(--fs-sm);line-height:1.5;
    border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.07)}
  .unpricedbanner[hidden]{display:none}
@@ -1135,7 +1132,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
    border:1px solid var(--border);color:var(--muted);background:transparent}
  .dtab:hover{color:var(--fg);border-color:var(--accent)}
- .dtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+ .dtab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
 /* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
    (this is one session's whole conversation, not a cross-session tail). */
@@ -1299,7 +1296,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    margin-right:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
  /* .k-* chip colours are generated at boot from FKIND (installKindCSS) so the
     drawer, the health bars and the failure filters can never disagree. */
- .ev.err .b{color:#fca5a5}
+ .ev.err .b{color:var(--z-bad)}
  #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
@@ -1592,7 +1589,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    rather than as another provider.
    Colour is the theme's own --z-* pair, never a literal: --z-* is the solid
    mark (dots), --z-*-fg the foreground (text). A literal passes on the dark
-   card and fails on the light one, where #22c55e is 2.28:1 on white. */
+   card and fails on the light one, where hsl(142 70% 45%) is 2.6:1 on white — use tokens.css z-ok */
 .qv-accts{margin:.7rem 0 0;border-top:1px dashed var(--border);padding:.6rem 0 0 .55rem;
   border-left:2px solid color-mix(in srgb,var(--border) 60%,transparent);
   margin-left:.15rem}
@@ -4926,7 +4923,7 @@ function priceRow(m){
   // with an observed one — the "—" only survives when nothing is knowable.
   const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
   const provHtml = provs.length || inf.length
-    ? (provs.length ? provs : inf).map((pv, i) => {
+    ? (provs.length ? provs : inf).map((pv) => {
         const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
         const inferred = !provs.length;
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
@@ -9724,12 +9721,14 @@ if ($('projtrendstack')) $('projtrendstack').onchange = function(){
 };
 
 const saved = localStorage.getItem('hermes-dash-theme');
-if(saved==='light') document.documentElement.setAttribute('data-theme','light');
+// Since the light-default flip, :root IS light; dark mounts via the explicit
+// [data-theme="dark"] attribute. The saved value is honoured either way.
+if(saved==='dark') document.documentElement.setAttribute('data-theme','dark');
 $('theme').onclick = () => {
-  const light = document.documentElement.getAttribute('data-theme')==='light';
-  if(light) document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme','light');
-  localStorage.setItem('hermes-dash-theme', light?'dark':'light');
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  if(dark) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme','dark');
+  localStorage.setItem('hermes-dash-theme', dark?'light':'dark');
   readTheme(); render();
 };
 // All three cross-filters out of one hash, through the owning module's setter
