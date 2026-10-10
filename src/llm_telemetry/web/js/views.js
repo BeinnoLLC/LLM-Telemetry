@@ -2784,7 +2784,7 @@ const PROV_META = {
 let priceState = {q: '', tab: 'all'};
 let priceTouched = false; // search keeps its text when re-rendering
 
-function renderPrices(){
+export function renderPrices(){
   const el = $('view-prices-container');
   const data = window.COSTS_DATA;
   if (!el) return;
@@ -2895,14 +2895,14 @@ function priceWhatIfInstall(){
   priceWhatIfCalc();
 }
 
-function wiParseTokens(s){
+export function wiParseTokens(s){
   s = String(s).trim().toLowerCase().replace(/[, _]/g, '');
   const mult = s.endsWith('m') ? 1e6 : s.endsWith('k') ? 1e3 : 1;
   const n = parseFloat(mult === 1 ? s : s.slice(0, -1));
   return isFinite(n) && n >= 0 ? n * mult : 0;
 }
 
-function wiMoney(v){
+export function wiMoney(v){
   return v >= 1 ? '$' + v.toFixed(2)
        : v >= 0.01 ? '$' + v.toFixed(3)
        : v > 0 ? '$' + v.toFixed(5)
