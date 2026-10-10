@@ -2845,6 +2845,8 @@ function priceWhatIfShell(){
       </label>
       <label><div class="muted" style="font-size:var(--fs-xs)">In tokens</div>
         <input id="ci" class="chip" placeholder="100k" value="10k" style="max-width:120px;font-size:var(--fs-xs)"></label>
+      <label><div class="muted" style="font-size:var(--fs-xs)" title="Tokens per run served from the provider's cache - prefilled from this model's observed mix; bills at the cache-read rate">Cached in</div>
+        <input id="cc" class="chip" placeholder="0" style="max-width:120px;font-size:var(--fs-xs)"></label>
       <label><div class="muted" style="font-size:var(--fs-xs)">Out tokens</div>
         <input id="co" class="chip" placeholder="50k" value="5k" style="max-width:120px;font-size:var(--fs-xs)"></label>
       <label><div class="muted" style="font-size:var(--fs-xs)">Runs</div>
@@ -2861,6 +2863,8 @@ function priceWhatIfInstall(){
   const data = window.COSTS_DATA || {};
   const M = (data.models || []).map((m, i) => ({
     n: m.short || m.model, i: m.in_1m || 0, o: m.out_1m || 0,
+    by: m.served_by && m.served_by !== '\u2014' ? m.served_by : null,
+    mix: (m.inp && m.cache) ? Math.max(0, Math.min(1, m.cache / (m.inp + m.cache))) : null,
     s: m.source, u: (m.calls || 0) > 0 ? 1 : 0, ix: i,
   }));
   const KIND = m => m.s === 'local' ? 'local'
@@ -2877,7 +2881,7 @@ function priceWhatIfInstall(){
     ms.forEach(([m, ix]) => {
       const o2 = document.createElement('option');
       o2.value = String(ix);
-      o2.textContent = m.n + (m.u ? '  \u2022 used' : '');
+      o2.textContent = m.n + (m.by ? '  \u00b7 ' + m.by : '') + (m.u ? '  \u2022 used' : '');
       g.appendChild(o2);
     });
     sel.appendChild(g);
@@ -2885,13 +2889,23 @@ function priceWhatIfInstall(){
   const used = M.map((m, ix) => [m, ix]).filter(([m]) => m.u && KIND(m) === 'metered')
     .sort(([a], [b]) => b.o - a.o);
   if (used.length) sel.value = String(used[0][1]);
+  // prefill "Cached in" from this model's observed prompt mix (per-run),
+  // so the default estimate reflects how the fleet actually uses it
+  const prefill = () => {
+    const m = M[sel.value]; if (!m) return;
+    const p = $('cc'); if (!p) return;
+    p.placeholder = m.mix == null ? '0' : String(Math.round(m.mix * 100)) + '% of in';
+    if (m.mix != null && !p.value) p.value = String(Math.round(m.mix * 100));
+  };
   if (!whatIfInit) {
     whatIfInit = true;
-    ['cm', 'ci', 'co', 'cr'].forEach(id => {
+    ['cm', 'ci', 'cc', 'co', 'cr'].forEach(id => {
       const e2 = $(id);
       if (e2) { e2.addEventListener('input', priceWhatIfCalc); e2.addEventListener('change', priceWhatIfCalc); }
     });
+    sel.addEventListener('change', prefill);
   }
+  prefill();
   priceWhatIfCalc();
 }
 
@@ -2911,12 +2925,16 @@ export function wiMoney(v){
 
 function priceWhatIfCalc(){
   const data = window.COSTS_DATA || {};
-  const M = data.models || [];
+  const M = (data.models || []).map((m, i) => ({
+    n: m.short || m.model, i: m.in_1m || 0, o: m.out_1m || 0,
+    c: (m.cache_1m != null) ? m.cache_1m : null,
+    s: m.source, u: (m.calls || 0) > 0 ? 1 : 0, ix: i,
+  }));
   const sel = $('cm'); if (!sel || !M.length) return;
   const m = M[sel.value]; if (!m) return;
-  const k = m.source === 'local' ? 'local'
-    : m.source === 'unpriced' ? 'unpriced'
-    : m.source === 'free-tier' ? 'free' : 'metered';
+  const k = m.s === 'local' ? 'local'
+    : m.s === 'unpriced' ? 'unpriced'
+    : m.s === 'free-tier' ? 'free' : 'metered';
   const tot = $('ctot'), brk = $('cbrk');
   tot.dataset.kind = k;
   if (k === 'unpriced'){
@@ -2927,14 +2945,23 @@ function priceWhatIfCalc(){
   }
   const i = wiParseTokens($('ci').value), o = wiParseTokens($('co').value);
   const runs = Math.max(1, Math.round(wiParseTokens($('cr').value) || 1));
-  const cin = i / 1e6 * (m.in_1m || 0), cout = o / 1e6 * (m.out_1m || 0);
-  const total = (cin + cout) * runs;
+  // Cache-aware: cached prompt tokens bill at the cache-read rate, the rest
+  // at the fresh-input rate. Cache reads outnumber fresh inputs ~30:1 in
+  // this fleet, so billing every input at the fresh rate overstated badly.
+  const cached = Math.min(i, wiParseTokens($('cc') ? $('cc').value : ''));
+  const fresh = Math.max(0, i - cached);
+  const cin = fresh / 1e6 * (m.i || 0);
+  const ccin = m.c != null ? cached / 1e6 * m.c : cached / 1e6 * (m.i || 0);
+  const cout = o / 1e6 * (m.o || 0);
+  const un = m.c == null && k === 'metered';   // metered & no published rate
+  const total = (cin + ccin + cout) * runs;
   const what = k === 'local' ? 'electricity' : k === 'free' ? 'free tier' : 'billed';
   tot.textContent = (k === 'local' ? '\u2248 ' : '') + wiMoney(total) + ' ' + what;
   tot.style.color = k === 'local' ? 'var(--z-warn)' : 'inherit';
   const per = runs > 1 ? ` \u00d7 ${runs} runs` : '';
   brk.innerHTML =
-    `in ${wiMoney(cin)} + out ${wiMoney(cout)}${per}` +
+    `in ${wiMoney(cin)} + cached ${wiMoney(ccin)} + out ${wiMoney(cout)}${per}` +
+    (un ? ' \u00b7 no published cache rate \u2014 cached tokens billed at the fresh rate' : '') +
     (k === 'local' ? '<br>your power cost, not billed by anyone'
      : k === 'free' ? '<br>OpenRouter free tier: $0 per token' : '');
 }

@@ -34,7 +34,7 @@ const mkEl = () => ({
   value: '', textContent: '', innerHTML: '', dataset: {}, style: {},
   children: [], options: [], label: '', tag: '', hidden: false, id: '',
   appendChild(c) { this.children.push(c); if (this.tag === 'select') this.options.push(c); },
-  addEventListener(type, fn) { (this._on ||= {})[type] = fn; },
+  addEventListener(type, fn) { ((this._on ||= {})[type] ||= []).push(fn); },
   remove() {}, setAttribute() {}, classList: { add() {}, toggle() {}, remove() {} },
 });
 const registry = {};
@@ -54,7 +54,7 @@ globalThis.document = fakeDocument;
 // `m.short || m.model`, usage from `m.calls`. zed is the dearest used metered
 // model by out-rate, so the calculator's default lands on index 0.
 const CATALOG = [
-  { model: 'zed', source: 'metered', in_1m: 3, out_1m: 15, calls: 4 },
+  { model: 'zed', source: 'metered', in_1m: 3, out_1m: 15, cache_1m: 0.3, calls: 4 },
   { model: 'alpha', source: 'metered', in_1m: 1, out_1m: 1, calls: 2 },
   { model: 'mid', source: 'metered', in_1m: 2, out_1m: 4, calls: 0 },
   { model: 'zeta', source: 'openrouter', in_1m: 2, out_1m: 4, calls: 0 },
@@ -138,10 +138,10 @@ D.renderPrices();
 const sel = registry.cm;
 const text = () => registry.ctot.textContent;
 const brk = () => registry.cbrk.innerHTML;
-const fire = (id, type = 'input') => registry[id]._on[type]();
+const fire = (id, type = 'input') => registry[id]._on[type].forEach(fn => fn());
 eq(sel.value, '0', 'the default is the used metered model with the highest out-rate');
 eq(text(), '$0.00 billed', 'an empty load costs $0.00 billed');
-eq(brk(), 'in $0.00 + out $0.00', 'a single run has no ×N in the breakdown');
+eq(brk(), 'in $0.00 + cached $0.00 + out $0.00', 'a single run has no ×N in the breakdown');
 
 // ---- grouping: optgroups in the fixed kind order --------------------------
 const groups = sel.children.filter(c => c.tag === 'optgroup');
@@ -163,12 +163,12 @@ registry.ci.value = '1m';
 registry.co.value = '1m';
 fire('ci');
 eq(text(), '$18.00 billed', 'the total is in-cost + out-cost at the model rate (zed: 3 + 15)');
-eq(brk(), 'in $3.00 + out $15.00', 'the breakdown shows both sides');
+eq(brk(), 'in $3.00 + cached $0.00 + out $15.00', 'the breakdown shows both sides');
 
 registry.cr.value = '2';
 fire('cr');
 eq(text(), '$36.00 billed', 'runs multiply the total');
-eq(brk(), 'in $3.00 + out $15.00 × 2 runs', 'a multi-run breakdown says ×N runs');
+eq(brk(), 'in $3.00 + cached $0.00 + out $15.00 × 2 runs', 'a multi-run breakdown says in+cached+out and ×N runs');
 
 registry.cr.value = '2.4';
 fire('cr');
@@ -231,12 +231,32 @@ fire('ci');
 eq(text(), 'sentinel', 'an index past the end of the sheet is ignored, not rendered as NaN');
 
 // ---- every control is wired to the same calc -----------------------------
-chk(['cm', 'ci', 'co', 'cr'].every(id => registry[id]._on.input && registry[id]._on.change),
-    'all four controls listen on input and change');
-eq(registry.cm._on.input === registry.cm._on.change, true,
+chk(['cm', 'ci', 'cc', 'co', 'cr'].every(id => registry[id]._on.input && registry[id]._on.change),
+    'all five controls listen on input and change');
+eq(registry.cm._on.input[0] === registry.cm._on.change[0], true,
    'one handler serves both events, so keyboard and paste agree');
-eq(registry.ci._on.input === registry.ci._on.change, true,
+eq(registry.ci._on.input[0] === registry.ci._on.change[0], true,
    'input and change share the single calc function');
+
+// ---- cache-aware estimate (hand-derived) -----------------------------------
+// zed publishes cache 0.30/1M (10% of its fresh 3.00). 'Cached in' bills at
+// the cache rate, the fresh remainder at in_1m; the pair is clamped so you
+// can't claim more cache than requested inputs.
+registry.cm.value = '0';
+registry.cc.value = ''; fire('ci');
+eq(text(), '$18.00 billed', 'fresh-only estimate unchanged for zed at 1m/1m');
+registry.cc.value = '1m'; fire('ci');
+eq(text(), '$15.30 billed', 'cached tokens bill at the cache-read rate, not the fresh rate');
+registry.cc.value = '2m'; fire('ci');
+eq(text(), '$15.30 billed', 'cached tokens are clamped to the requested inputs');
+registry.cc.value = 'nonsense'; fire('ci');
+eq(text(), '$18.00 billed', 'junk cache input behaves as no cache');
+chk(!brk().includes('no published cache rate'), 'zed publishes a cache rate, so no caveat', brk());
+registry.cm.value = '1';                       // alpha: metered, no cache rate
+registry.ci.value = '1m'; registry.co.value = '1m'; registry.cc.value = '500k'; fire('ci');
+eq(text(), '$2.00 billed', 'without a cache rate the fresh rate applies, stated plainly');
+chk(brk().includes('no published cache rate'), 'the no-cache-rate caveat shows', brk());
+registry.cc.value = ''; registry.ci.value = '10k'; registry.co.value = ''; fire('ci');
 
 // ---- renderUnpriced: never a silent $0 ------------------------------------
 registry.unpricedbanner = mkEl();
@@ -248,4 +268,5 @@ D.renderUnpriced([{ model: 'zed', calls: 4, priced: true }]);
 eq(banner.hidden, true, 'a fully-priced sheet hides the banner');
 
 console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+process.exit(fail ? 1 : 0)
+;
