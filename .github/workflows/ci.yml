@@ -54,17 +54,10 @@ jobs:
           # Explicit fixture home: the sample must not depend on whether the
           # runner happens to have a real agent home (P5-06, #55).
           LLM_TELEMETRY_AGENT_HOME: examples/agent-home
-        run: python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
-
-      - name: Render price sheet from committed sample data
-        # Pinned sample catalogue: no network, and the committed sheet is
-        # reproducible (P6-05, #63). The DOM suite checks this build.
-        env:
-          LLM_TELEMETRY_NO_COLLECT: '1'
-          LLM_TELEMETRY_CONFIG: examples/sample-config.json
-          LLM_TELEMETRY_AGENT_HOME: examples/agent-home
+          # Pinned sample catalogue: no network, and the committed payload is
+          # reproducible (P6-05, #63). The DOM suite checks this build.
           LLM_TELEMETRY_CATALOG: examples/reports/sample-catalog.json
-        run: python3 -m llm_telemetry.build_costs examples/reports/costs.html
+        run: python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 
       - name: Leak gate on the rendered pages
         run: python3 examples/check_no_leaks.py

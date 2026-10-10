@@ -48,15 +48,7 @@ chk(mark && mark.getAttribute('aria-hidden') === 'true',
 
 chk(/<link rel="icon"/.test(html), 'favicon declared');
 
-// The price sheet must carry the same lockup, or the pages look unrelated.
-const cp = path.join(REPORTS, 'costs.html');
-if (fs.existsSync(cp)) {
-  const c = fs.readFileSync(cp, 'utf8');
-  chk(/<h1><svg/.test(c), 'price sheet h1 carries the same mark');
-  chk(/<link rel="icon"/.test(c), 'price sheet has a favicon');
-} else {
-  console.log('  --   costs.html not built, skipping price-sheet checks');
-}
-
+// The price sheet is an in-app view now (was standalone costs.html) — the
+// lockup is shared by construction; nothing separate to check.
 console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);
 process.exit(f === 0 ? 0 : 1);

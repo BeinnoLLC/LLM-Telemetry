@@ -92,11 +92,11 @@ def main():
             probe = browser.new_page()
             probe.goto(url)
             probe.wait_for_timeout(300)
-            # costs.html (build_costs.py) is a single-view page with no
-            # <nav id="navdrawer"> or data-view sections at all — screenshotting
-            # it 9 times with a hash that matches nothing would just produce 9
-            # identical images. Detect this once up front instead of failing
-            # the per-view sanity check 90 times.
+            # A page with no <nav id="navdrawer"> (e.g. a stripped-down dev
+            # build) has no data-view sections — screenshotting it with a
+            # hash that matches nothing would just produce identical images.
+            # Detect this once up front instead of failing the per-view
+            # sanity check 90 times.
             has_nav = probe.evaluate("!!document.getElementById('navdrawer')")
             views = discover_views(probe) if has_nav else [None]
             probe.close()

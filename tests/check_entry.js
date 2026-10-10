@@ -29,7 +29,7 @@ setTimeout(()=>{
  chk(!!edge,'edge Logs tab exists');
  chk(!hdr,'header Logs chip REMOVED (#116)');
  chk(headerRow && !headerRow.querySelector('a[href="costs.html"]'),
-     'header Rates link REMOVED (#116)');
+     'no header costs.html link (page deleted — Rates lives in-app)');
  chk(headerRow && [...headerRow.querySelectorAll('a')].every(
      a => !/^\$?\s*Rates/.test(a.textContent.trim())),
      'no Rates control anywhere in the header');

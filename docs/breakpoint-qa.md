@@ -18,10 +18,9 @@ confirm a view rendered without catching that it rendered badly.
 
 Both themes (`dark` — the default, `light` — `data-theme="light"`).
 
-Every nav view in `dashboard.html` (`#navdrawer` `.view[data-view]` in
-source order): Home, Live, Flow, Settings, Logs, Health, Usage, Cost,
-Detail. `costs.html` has no nav (`build_costs.py` is a single-view page) —
-just the 5 widths × 2 themes for it.
+Note: `costs.html` and `rankings.html` are gone (their views live inside
+`dashboard.html` as Prices and Rankings) — QA the Prices and Rankings
+views of `dashboard.html` at the five widths instead of separate files.
 
 ## What to check per screenshot
 
@@ -57,9 +56,7 @@ just the 5 widths × 2 themes for it.
 ```bash
 pip install playwright        # dev-extra; NOT a runtime dependency
 python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
-python3 -m llm_telemetry.build_costs examples/reports/costs.html
 python3 tools/breakpoint_shots.py --out breakpoint-shots --file examples/reports/dashboard.html
-python3 tools/breakpoint_shots.py --out breakpoint-shots --file examples/reports/costs.html
 ```
 
 `tools/breakpoint_shots.py` uses the system's `google-chrome` binary

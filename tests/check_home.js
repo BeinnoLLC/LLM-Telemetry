@@ -35,15 +35,11 @@ setTimeout(() => {
   chk(cards.length >= 5, 'Home renders navigation cards', `(${cards.length})`);
 
   // Every card must lead somewhere real: a dead card is worse than no card.
-  // Targets are either an in-page view (data-gohome) or an external page via
-  // href — the Rates card legitimately points at costs.html, not at a view.
+  // All cards route in-page now (costs.html was folded into the app as the
+  // Prices view), so data-gohome is the only destination mechanism.
   const views = new Set([...d.querySelectorAll('.view')].map(v => v.dataset.view));
   const targets = cards.map(c => c.dataset.gohome).filter(Boolean);
-  const external = cards.filter(c => !c.dataset.gohome &&
-    /\.html/.test(c.getAttribute('href') || ''));
-  chk(targets.length + external.length === cards.length,
-    'every card declares a destination',
-    `(${targets.length} in-page + ${external.length} external)`);
+  chk(targets.length === cards.length, 'every card declares a destination', `(${targets.length})`);
   const broken = targets.filter(t => !views.has(t) && !/\.html$/.test(t));
   chk(broken.length === 0, 'no card points at a missing view', broken.join(',') || 'none');
 

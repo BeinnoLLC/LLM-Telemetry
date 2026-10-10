@@ -2756,8 +2756,7 @@ export function renderHeatmap(hm){
 // ── Prices view (2026-10-10): the per-1M rate sheet, previously the standalone
 // costs.html, now an in-app view so there is exactly ONE dashboard surface.
 // Data: window.COSTS_DATA, the JSON build_costs.write_costs_data emits and
-// build_dashboard embeds — one source of truth (the CLI build still renders
-// costs standalone for CI/tests).
+// build_dashboard embeds — one source of truth.
 // Served-by cell: provider badges where rates/traffic come from. Unused
 // catalogue models legitimately have none (nothing was served) — shown as a
 // muted dash, not an error.
