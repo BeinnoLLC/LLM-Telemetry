@@ -17,7 +17,7 @@ import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
   pickView, setCrossFilter, setHash, view,
 } from './router.js';
-import { DATA, LOCAL_HOSTS, SCHEMA_VERSION, css } from './main.js';
+import { DATA, LOCAL_HOSTS, RANKINGS_DATA, SCHEMA_VERSION, css } from './main.js';
 
 export function schemaProblem(payload, name){
   if (!payload || typeof payload !== 'object') return `${name}: not a JSON object`;
@@ -37,8 +37,8 @@ export function showSchemaError(msg){
       + 'justify-content:center;background:var(--bg);padding:24px';
     document.body.appendChild(el);
   }
-  el.innerHTML = '<div class="card" style="max-width:640px;padding:24px;border-color:#ef4444">'
-    + '<div style="color:#ef4444;font-weight:600;font-size:var(--fs-lg);margin-bottom:8px">Payload version mismatch</div>'
+  el.innerHTML = '<div class="card" style="max-width:640px;padding:24px;border-color:var(--z-bad)">'
+    + '<div style="color:var(--z-bad);font-weight:600;font-size:var(--fs-lg);margin-bottom:8px">Payload version mismatch</div>'
     + '<div class="schemamsg" style="font-size:var(--fs-md);line-height:1.5"></div>'
     + '<div class="muted" style="font-size:var(--fs-xs);margin-top:12px">The dashboard refused to render rather than show '
     + 'numbers it cannot interpret.</div></div>';
@@ -126,15 +126,15 @@ export function renderResolution(){
   document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
 export const PROV = {
-  'anthropic':   {icon:'✳', bg:'hsl(17 66% 55% / .16)',  fg:'hsl(17 66% 55%)'},
-  'opencode-go': {icon:'◈', bg:'hsl(250 85% 62% / .16)', fg:'hsl(250 85% 68%)'},
-  'fireworks':   {icon:'✦', bg:'rgba(255,102,61,.16)',   fg:'#ff663d'},
-  'openai-codex':{icon:'◉', bg:'hsl(162 82% 38% / .16)', fg:'hsl(162 82% 40%)'},
-  'local':       {icon:'▣', bg:'hsl(213 90% 60% / .14)', fg:'hsl(213 90% 62%)'},
-  'moa':         {icon:'⬡', bg:'rgba(244,114,182,.16)',  fg:'#f472b6'},
-  'cloud':       {icon:'☁', bg:'hsl(205 80% 55% / .16)', fg:'hsl(205 80% 58%)'},
-  'ollama-cloud':{icon:'☁', bg:'hsl(199 90% 52% / .16)', fg:'hsl(199 90% 55%)'},
-  'nous':        {icon:'◆', bg:'rgba(234,179,8,.16)',    fg:'#eab308'}
+  'anthropic':   {icon:'✳', bg:'hsl(17 40% 55% / .16)',  fg:'hsl(17 40% 58%)'},
+  'opencode-go': {icon:'◈', bg:'hsl(250 30% 68% / .16)', fg:'hsl(250 30% 68%)'},
+  'fireworks':   {icon:'✦', bg:'hsl(20 45% 58% / .16)',   fg:'#b07a5e'},
+  'openai-codex':{icon:'◉', bg:'hsl(162 30% 42% / .16)', fg:'hsl(162 30% 42%)'},
+  'local':       {icon:'▣', bg:'hsl(213 28% 62% / .14)', fg:'hsl(213 28% 62%)'},
+  'moa':         {icon:'⬡', bg:'hsl(320 30% 66% / .16)',  fg:'#b87383'},
+  'cloud':       {icon:'☁', bg:'hsl(205 24% 58% / .16)', fg:'hsl(205 24% 58%)'},
+  'ollama-cloud':{icon:'☁', bg:'hsl(199 30% 55% / .16)', fg:'hsl(199 30% 55%)'},
+  'nous':        {icon:'◆', bg:'hsl(37 30% 55% / .16)',    fg:'#baa984'}
 };
 // Provider resolution order, strongest evidence first:
 //   1. billing_base_url — the endpoint the call actually hit. Authoritative.
@@ -251,7 +251,7 @@ export function renderBandwidthPanel(p, inR){
   // sliver. Upload gets the bars and the left axis; download and LAN get lines
   // on their own right axis, so each is legible and none is misread as zero.
   mk('cBwTrend', 'bar', days.map(d => d.slice(5)), [
-    {label:'upload', data:days.map(d => sum('up_bytes', by(d))), backgroundColor:'#f59e0b',
+    {label:'upload', data:days.map(d => sum('up_bytes', by(d))), backgroundColor:'#c4a06e',
      borderRadius:2, yAxisID:'y', order:2},
     {label:'download', type:'line', data:days.map(d => sum('down_bytes', by(d))),
      borderColor:'#38bdf8', backgroundColor:'#38bdf8', pointRadius:3, tension:.3, yAxisID:'y1', order:1},
@@ -261,7 +261,7 @@ export function renderBandwidthPanel(p, inR){
        tooltip:{callbacks:{title:c => days[c[0].dataIndex],
                            label:c => `${c.dataset.label}: ${fmtB(c.parsed.y)}`}}},
       scales:{x:{grid:{display:false}},
-              y:{position:'left', grid:{color:BD}, title:{display:true, text:'upload', color:'#f59e0b', font:{size:10}},
+              y:{position:'left', grid:{color:BD}, title:{display:true, text:'upload', color:'#c4a06e', font:{size:10}},
                  ticks:{maxTicksLimit:5, callback:v => fmtB(v)}},
               y1:{position:'right', grid:{display:false}, title:{display:true, text:'download · LAN', color:'#38bdf8', font:{size:10}},
                   ticks:{maxTicksLimit:5, callback:v => fmtB(v)}}}});
@@ -331,7 +331,7 @@ export function renderUnpriced(rows){
   el.innerHTML = `<b>${un.length} model${un.length === 1 ? '' : 's'} with traffic ${un.length === 1 ? 'has' : 'have'} no price</b>`
     + ` (${un.map(([m]) => '<span class="mono">' + esc(m) + '</span>').join(', ')}; ${calls.toLocaleString()} calls).`
     + ` Est. cost excludes that traffic, so it is understated.`
-    + ` <a href="costs.html">Price sheet</a> shows the fix.`;
+    + ` <a href="#/Prices">Price sheet</a> shows the fix.`;
 }
 // ---- Context re-send per session (P9-03, #80) ------------------------------
 // Rows come from the collector (p.resend): calls, average prompt context per
@@ -373,7 +373,7 @@ export function renderResend(p, inR){
 }
 
 export const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
-export const ALERT_COLOR = { critical: '#ef4444', warning: '#eab308', info: 'var(--accent)' };
+export const ALERT_COLOR = { critical: '#c66a6a', warning: '#c2a15c', info: 'var(--accent)' };
 
 // P10-10 (#98): renders exactly what the collector's alerts.build_alerts()
 // already evaluated -- never recomputes a threshold client-side, so the
@@ -449,7 +449,7 @@ export function render(){
   // range — "in progress" means right now, whatever window you are looking at.
   const live = DATA.profiles[current].active || 0;
   const liveDot = live
-    ? `<span style="color:#22c55e">●</span> ${live}`
+    ? `<span style="color:#5f9e6e">●</span> ${live}`
     : `<span class="muted">●</span> 0`;
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
@@ -533,6 +533,8 @@ export function render(){
   if (view === 'Router') renderRouterView();
   // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
   if (view === 'Quota') renderQuotaView();
+  if (view === 'Prices') renderPrices();
+  if (view === 'Rankings') renderRankings();
 
   // Before the empty-range return: a range with no ledger rows must say so,
   // not keep showing the previous range's numbers.
@@ -868,7 +870,7 @@ export function renderHome(inR){
     ['Quota', icon('scale'), PAL[4], 'How much headroom is left on each provider',
       qvStat()],
     ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
-    ['Projects', icon('folder'), PAL[5], 'Spend and calls broken down by project',
+    ['Sessions', icon('folder'), PAL[5], 'Spend and calls broken down by project',
       projStat],
     ['Cost', icon('dollar'), PAL[4], 'What the traffic is worth at public rates',
       '$' + cost.toFixed(2)],
@@ -907,16 +909,16 @@ export function renderHome(inR){
       <div class="muted text-[length:var(--fs-xs)] mt-1">Estimated from tokens, not measured</div>
     </a>`;
 
-  // Rates is a separate page, so it stays a real external link.
+  // Prices is an in-app view now (was the standalone costs.html page).
   html += `
-    <a class="card p-4 homecard" href="costs.html">
+    <a class="card p-4 homecard" href="#/Prices" data-gohome="Prices">
       <div class="flex items-center justify-between mb-2">
         <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
           <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Rates</span>
+        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Prices</span>
       </div>
       <div class="hc-stat">Price sheet</div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">Current per-million-token rates</div>
+      <div class="muted text-[length:var(--fs-xs)] mt-1">Per-million-token rates &amp; spend</div>
     </a>`;
 
   box.innerHTML = html;
@@ -1074,7 +1076,7 @@ export function renderConcurrency(concurrency, fromDate, toDate){
       {label: 'top-level', data: rows.map(r => r.top), backgroundColor: AC, stack: 's'},
       {label: 'subagent', data: rows.map(r => r.sub), backgroundColor: PAL[2], stack: 's'},
       {label: 'queue depth (now)', data: rows.map(() => queueNow), type: 'line',
-       borderColor: '#ef4444', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
+       borderColor: '#c66a6a', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
     ],
     {plugins: {legend: {labels: {boxWidth: 8}}},
      scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
@@ -1600,7 +1602,7 @@ export function installProjWeight(){
 // list — same discipline as the matrix's axes), syncs the visible chip on
 // every view the filter affects, and drives the hash so the filter is
 // deep-linkable and survives reload.
-export const PROJ_FILTER_VIEWS = new Set(['Usage', 'Cost', 'Flow', 'Health']);
+export const PROJ_FILTER_VIEWS = new Set(['Usage', 'Cost', 'Flow', 'Health', 'Sessions']);
 
 export function populateProjFilterSelect(){
   const sel = $('projfiltersel');
@@ -1610,7 +1612,7 @@ export function populateProjFilterSelect(){
   const projects = [...new Set(p.rows.map(r => r.project || 'Unattributed'))]
     .sort((a, b) => a === 'Unattributed' ? 1 : b === 'Unattributed' ? -1 : a.localeCompare(b));
   const prevValue = sel.value;
-  sel.innerHTML = '<option value="">All projects</option>' +
+  sel.innerHTML = '<option value="">All sessions</option>' +
     projects.map(pr => `<option value="${esc(pr)}">${esc(pr)}</option>`).join('');
   // Keep the current filter selected across a profile switch when that
   // project also exists in the new profile; otherwise fall back cleanly to
@@ -1644,8 +1646,14 @@ export function populateRowFilterSelects(){
   // throws outside the inlined page (see router.js setCrossFilter).
   setCrossFilter('provider', fill('provfiltersel',
     [...new Set(rows.map(r => r.provider || ''))].filter(Boolean).sort(), 'All providers', PROVIDER_FILTER));
+  // Provider -> model cascade: "All models" means all models OF THE SELECTED
+  // provider, not of the whole profile. With no provider chosen it falls back
+  // to every row so the selector stays honest about what it can filter to.
+  const modelRows = PROVIDER_FILTER
+    ? rows.filter(r => (r.provider || '') === PROVIDER_FILTER)
+    : rows;
   setCrossFilter('model', fill('modelfiltersel',
-    [...new Set(rows.map(r => r.model).filter(Boolean))].sort(), 'All models', MODEL_FILTER));
+    [...new Set(modelRows.map(r => r.model).filter(Boolean))].sort(), 'All models', MODEL_FILTER));
 }
 
 // Reflects the three cross-filters into their selects + the chip on every view
@@ -1944,11 +1952,11 @@ export function renderProjTrendLegend(datasets){
 }
 
 export const FKIND = {
-  rate_limit:  {c:'#f59e0b', t:'throttled'},
+  rate_limit:  {c:'#c4a06e', t:'throttled'},
   overloaded:  {c:'#fb923c', t:'overloaded'},
-  timeout:     {c:'#60a5fa', t:'timeout'},
-  auth:        {c:'#ef4444', t:'auth'},
-  server_error:{c:'#a855f7', t:'5xx'},
+  timeout:     {c:'#7c909c', t:'timeout'},
+  auth:        {c:'#c66a6a', t:'auth'},
+  server_error:{c:'#9a86b8', t:'5xx'},
   // Slate-blue, NOT grey: grey sat on top of the empty-track colour and made a
   // fully-unavailable model look like a model with no data at all. Also kept
   // clear of server_error's purple.
@@ -1975,7 +1983,7 @@ export const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 // behind it makes total failure read as failure at a glance.
 export const FAILTRACK = 'rgba(239,68,68,.22)';
 // Green above 95%, amber 80-95, red below: matches how you would triage it.
-export const rateColor = r => r===null ? MU : r>=95 ? '#22c55e' : r>=80 ? '#f59e0b' : '#ef4444';
+export const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a';
 
 // Delegation outcomes (#90). Two sources of truth live side by side here and
 // must never merge: the per-child rates are MEASURED by the runtime, while the
@@ -2085,7 +2093,7 @@ export function renderHealth(rows){
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
         <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
-          <div style="width:${okPct}%;background:#22c55e"></div>${segs}
+          <div style="width:${okPct}%;background:#5f9e6e"></div>${segs}
         </div>
         <div class="hrate text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
         <div class="hcount text-[length:var(--fs-xs)] muted text-right" style="width:150px">${count}</div>
@@ -2125,7 +2133,7 @@ export function renderLifecycle(pressure){
       return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
         <span class="truncate flex-1" title="${esc(s.id)}">${esc(s.title)}</span>
         <span class="muted">${bits.map(esc).join(' · ')}</span>
-        ${s.error ? `<span style="color:#ef4444" title="${esc(s.error)}">error</span>` : ''}
+        ${s.error ? `<span style="color:var(--z-bad)" title="${esc(s.error)}">error</span>` : ''}
       </div>` +
       (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
     }).join('');
@@ -2152,8 +2160,8 @@ export function renderOutcomes(outcomes){
   const kpi = (v, l, col) => `<div class="dkpi"><div class="dkv" style="${col?`color:${col}`:''}">${v}</div><div class="dkl">${l}</div></div>`;
   $('outkpis').innerHTML =
     kpi(total.toLocaleString(), 'Sessions ended · 30d', '') +
-    kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? '#ef4444' : '#22c55e') +
-    kpi(silentN.toLocaleString(), 'Ended silently', silentN ? '#f59e0b' : '#22c55e') +
+    kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? '#c66a6a' : '#5f9e6e') +
+    kpi(silentN.toLocaleString(), 'Ended silently', silentN ? '#c4a06e' : '#5f9e6e') +
     kpi(total ? (100*(total-reapedN-silentN)/total).toFixed(1)+'%' : '\u2014', 'Ended cleanly', '');
 
   // Source-split: a cron session ending as anything other than
@@ -2167,7 +2175,7 @@ export function renderOutcomes(outcomes){
       const label = OUTCOME_LABELS[reason] || reason;
       return `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="${
         abnormal
-          ? 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'
+          ? 'background:color-mix(in srgb,var(--z-bad) 13%,var(--card));color:var(--z-bad);border:1px solid color-mix(in srgb,var(--z-bad) 33%,transparent)'
           : 'background:var(--bg);color:var(--muted);border:1px solid var(--border)'
       }" title="${esc(reason)}: ${n} session(s)">${abnormal ? '&#9888; ' : ''}${esc(label)} <b>${n}</b></span>`;
     }).join(' ');
@@ -2185,7 +2193,7 @@ export function renderOutcomes(outcomes){
   $('outreaptrend').innerHTML = trend.length
     ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Orphan reaps per day</div>` +
       `<div class="flex flex-wrap gap-1">` + trend.map(t =>
-        `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455" title="${esc(t.date)}">${esc(t.date.slice(5))}: ${t.n}</span>`
+        `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded" style="background:color-mix(in srgb,var(--z-bad) 13%,var(--card));color:var(--z-bad);border:1px solid color-mix(in srgb,var(--z-bad) 33%,transparent)" title="${esc(t.date)}">${esc(t.date.slice(5))}: ${t.n}</span>`
       ).join('') + `</div>`
     : '';
 
@@ -2217,12 +2225,12 @@ export function renderToolReliability(tools, cmds){
     const delta = t.fail_rate - t.prev_fail_rate;
     if (Math.abs(delta) < 0.01) return '<span class="muted">\u2192</span>';
     const up = delta > 0;
-    return `<span style="color:${up ? '#ef4444' : '#22c55e'}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
+    return `<span style="color:${up ? '#c66a6a' : '#5f9e6e'}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
   };
 
   $('toolrows').innerHTML = list.map(t => {
     const rateText = t.fail_rate == null ? '<span class="muted">no confident calls</span>' : `${(t.fail_rate*100).toFixed(1)}%`;
-    const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? '#ef4444' : t.fail_rate > 0 ? '#f59e0b' : '#22c55e');
+    const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? '#c66a6a' : t.fail_rate > 0 ? '#c4a06e' : '#5f9e6e');
     return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
       <span class="font-semibold flex-1">${esc(t.name)}</span>
       <span class="muted">${t.calls.toLocaleString()} calls</span>
@@ -2236,7 +2244,7 @@ export function renderToolReliability(tools, cmds){
   $('toolcmds').innerHTML = cmdList.length
     ? `<div class="muted text-[length:var(--fs-xs)] mb-1">Top failing terminal commands</div>` +
       `<div class="flex flex-wrap gap-1">` + cmdList.map(c =>
-        `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455">${esc(c.cmd)} <b>${c.n}</b></span>`
+        `<span class="text-[length:var(--fs-xs)] px-2 py-1 rounded" style="background:color-mix(in srgb,var(--z-bad) 13%,var(--card));color:var(--z-bad);border:1px solid color-mix(in srgb,var(--z-bad) 33%,transparent)">${esc(c.cmd)} <b>${c.n}</b></span>`
       ).join('') + `</div>`
     : '';
 }
@@ -2257,7 +2265,7 @@ export function renderHealthSummary(H, F){
     <div class="hsuml">${l}</div>${sub?`<div class="muted hsums">${sub}</div>`:''}</div>`;
   el.innerHTML =
     card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`, icon('check')) +
-    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#ef4444':'#22c55e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
+    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#c66a6a':'#5f9e6e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
     card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', PAL[3], '', icon('layers')) +
     card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : MU,
       worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%', icon('target'));
@@ -2605,7 +2613,7 @@ export function renderContext(ctx){
         <span class="font-semibold truncate" style="min-width:8rem;max-width:12rem">${esc(s.id)}</span>
         ${ctxSpark(s.series, s.compactions)}
         <span class="muted" style="min-width:5rem">${(s.compactions||[]).length} compaction${(s.compactions||[]).length===1?'':'s'}</span>
-        ${ineffCount ? `<span style="color:#ef4444" title="compactions that recovered under 10% of context">${ineffCount} ineffective</span>` : ''}
+        ${ineffCount ? `<span style="color:var(--z-bad)" title="compactions that recovered under 10% of context">${ineffCount} ineffective</span>` : ''}
       </div>`;
       }).join('')
     : `<div class="muted text-[length:var(--fs-xs)] py-1">No session context data in range.</div>`;
@@ -2744,3 +2752,326 @@ export function renderHeatmap(hm){
 // deep link, a refresh, and the back button all agree. Without this the tab
 // lived only in localStorage: a shared URL always opened on someone else's
 // last-used tab.
+
+// ── Prices view (2026-10-10): the per-1M rate sheet, previously the standalone
+// costs.html, now an in-app view so there is exactly ONE dashboard surface.
+// Data: window.COSTS_DATA, the JSON build_costs.write_costs_data emits and
+// build_dashboard embeds — one source of truth (the CLI build still renders
+// costs standalone for CI/tests).
+// Served-by cell: provider badges where rates/traffic come from. Unused
+// catalogue models legitimately have none (nothing was served) — shown as a
+// muted dash, not an error.
+const PRICE_SRC = {
+  vendor:    {label: 'Vendor page', cls: 'pv-src-vendor'},
+  openrouter:{label: 'OpenRouter', cls: 'pv-src-openrouter'},
+  local:     {label: 'Local (electricity)', cls: 'pv-src-local'},
+  web:       {label: 'Vendor page', cls: 'pv-src-vendor'},
+  'free-tier': {label: 'Free tier', cls: 'pv-src-free'},
+  unpriced:  {label: 'Unpriced on record', cls: 'pv-src-unpriced'},
+  pinned:    {label: 'Pinned catalogue', cls: 'pv-src-pinned'},
+};
+// Same muted provider set as build_costs.PROV — one calm palette, both places.
+const PROV_META = {
+  anthropic:    {sig: '\u2733', color: 'hsl(17 38% 52%)'},
+  'opencode-go':{sig: '\u25C8', color: 'hsl(250 30% 68%)'},
+  fireworks:    {sig: '\u2726', color: '#b07a5e'},
+  'openai-codex':{sig: '\u25C9', color: 'hsl(162 30% 42%)'},
+  local:        {sig: '\u25A3', color: 'hsl(213 28% 62%)'},
+  moa:          {sig: '\u2B21', color: '#b87383'},
+  cloud:        {sig: '\u2601', color: 'hsl(205 24% 58%)'},
+  nous:         {sig: '\u25C6', color: '#baa984'},
+};
+let priceState = {q: '', tab: 'all'};
+let priceTouched = false; // search keeps its text when re-rendering
+
+function renderPrices(){
+  const el = $('view-prices-container');
+  const data = window.COSTS_DATA;
+  if (!el) return;
+  if (!$('priceSearch')) {           // shell mounts once; rebuild only if wiped
+    if (!data || !Array.isArray(data.models)) {
+      el.innerHTML = '<div class="muted p-6">Prices data not embedded in this build \u2014 run scripts/refresh-dashboard.sh.</div>';
+      return;
+    }
+    if (!priceTouched) priceState.q = '';   // fresh mount starts clean
+    el.innerHTML = pricesShell(data);
+    installPriceControls();
+  }
+  // Table-only refresh keeps the search box and tabs (and their focus) alive.
+  renderPriceTable(data);
+  priceWhatIfInstall();
+}
+
+function pricesShell(data){
+  const used = data.models.filter(m => (m.calls||0) > 0).length;
+  const src = PRICE_SRC[data.catalog_source] ? data.catalog_source : 'openrouter';
+  const fresh = data.freshness || {};
+  const freshLabel = fresh.age_hours != null ? `${Math.round(fresh.age_hours)}h old` : (data.catalog_source || '');
+  return `
+  <div class="pt-4 pb-2 flex items-end justify-between flex-wrap gap-3" data-cat-state="${esc(src)}">
+    <div>
+      <div class="muted uppercase tracking-wide" style="font-size:var(--fs-xs)">Price sheet</div>
+      <div class="muted pv-shell-sub" style="font-size:var(--fs-xs)">${data.catalog_size.toLocaleString()} models in catalogue \u00b7 ${used} with observed traffic \u00b7 generated ${esc((data.generated||'').replace('T',' '))} \u00b7 ${esc(freshLabel)}</div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <input id="priceSearch" class="chip" placeholder="Search models\u2026" value="${esc(priceState.q)}" style="min-width:220px;font-size:var(--fs-xs)">
+      <div id="priceTabs" class="flex gap-1">
+        ${[['all','All'],['used','Used'],['local','Local'],['vendor','Vendor'],['openrouter','OpenRouter'],['unpriced','Unpriced']]
+          .map(([k,l]) => `<button type="button" class="chip pt-tab${priceState.tab===k?' on':''}" data-tab="${k}" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">${l}</button>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div id="pricesTableWrap" class="pv-wrap card"></div>
+  <div class="muted mt-2" style="font-size:var(--fs-xs)">Costs shown at each model\u2019s own rate; local models burn electricity (energy), never the vendor metre.</div>
+  ${priceWhatIfShell()}
+}`;
+}
+
+// ---- What-if calculator (was the standalone sheet's costs.js) -------------
+// Same contract as the old page: grouped select (local / metered / free /
+// unpriced, used-first inside each group), accepts 100k / 1.5m input shorthands,
+// unpriced models say "no rate available" and NEVER $0. Rates come from the
+// same embedded payload as the table, so there is one source of truth.
+let whatIfInit = false;
+
+function priceWhatIfShell(){
+  return `
+  <div class="card p-4 mt-3">
+    <div class="lbl mb-2">What-if calculator</div>
+    <div class="flex items-end flex-wrap gap-3">
+      <label class="flex-1" style="min-width:260px">
+        <div class="muted" style="font-size:var(--fs-xs)">Model</div>
+        <select id="cm" class="chip" style="width:100%;font-size:var(--fs-xs)"></select>
+      </label>
+      <label><div class="muted" style="font-size:var(--fs-xs)">In tokens</div>
+        <input id="ci" class="chip" placeholder="100k" value="10k" style="max-width:120px;font-size:var(--fs-xs)"></label>
+      <label><div class="muted" style="font-size:var(--fs-xs)">Out tokens</div>
+        <input id="co" class="chip" placeholder="50k" value="5k" style="max-width:120px;font-size:var(--fs-xs)"></label>
+      <label><div class="muted" style="font-size:var(--fs-xs)">Runs</div>
+        <input id="cr" class="chip" value="1" style="max-width:90px;font-size:var(--fs-xs)"></label>
+    </div>
+    <div id="ctot" class="mt-2" style="font-size:var(--fs-lg);font-weight:600"></div>
+    <div id="cbrk" class="muted" style="font-size:var(--fs-xs)"></div>
+  </div>`;
+}
+
+function priceWhatIfInstall(){
+  const sel = $('cm');
+  if (!sel || sel.options.length) return;   // shell mounts once
+  const data = window.COSTS_DATA || {};
+  const M = (data.models || []).map((m, i) => ({
+    n: m.short || m.model, i: m.in_1m || 0, o: m.out_1m || 0,
+    s: m.source, u: (m.calls || 0) > 0 ? 1 : 0, ix: i,
+  }));
+  const KIND = m => m.s === 'local' ? 'local'
+    : m.s === 'unpriced' ? 'unpriced'
+    : m.s === 'free-tier' ? 'free' : 'metered';
+  const GROUPS = [['local', 'Local (electricity)'], ['metered', 'Metered (billed per token)'],
+                  ['free', 'Free tier ($0)'], ['unpriced', 'Unpriced (no rate)']];
+  GROUPS.forEach(([k, label]) => {
+    const ms = M.map((m, ix) => [m, ix]).filter(([m]) => KIND(m) === k)
+      .sort(([a], [b]) => (b.u - a.u) || a.n.localeCompare(b.n));
+    if (!ms.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label + ' \u00b7 ' + ms.length;
+    ms.forEach(([m, ix]) => {
+      const o2 = document.createElement('option');
+      o2.value = String(ix);
+      o2.textContent = m.n + (m.u ? '  \u2022 used' : '');
+      g.appendChild(o2);
+    });
+    sel.appendChild(g);
+  });
+  const used = M.map((m, ix) => [m, ix]).filter(([m]) => m.u && KIND(m) === 'metered')
+    .sort(([a], [b]) => b.o - a.o);
+  if (used.length) sel.value = String(used[0][1]);
+  if (!whatIfInit) {
+    whatIfInit = true;
+    ['cm', 'ci', 'co', 'cr'].forEach(id => {
+      const e2 = $(id);
+      if (e2) { e2.addEventListener('input', priceWhatIfCalc); e2.addEventListener('change', priceWhatIfCalc); }
+    });
+  }
+  priceWhatIfCalc();
+}
+
+function wiParseTokens(s){
+  s = String(s).trim().toLowerCase().replace(/[, _]/g, '');
+  const mult = s.endsWith('m') ? 1e6 : s.endsWith('k') ? 1e3 : 1;
+  const n = parseFloat(mult === 1 ? s : s.slice(0, -1));
+  return isFinite(n) && n >= 0 ? n * mult : 0;
+}
+
+function wiMoney(v){
+  return v >= 1 ? '$' + v.toFixed(2)
+       : v >= 0.01 ? '$' + v.toFixed(3)
+       : v > 0 ? '$' + v.toFixed(5)
+       : '$0.00';
+}
+
+function priceWhatIfCalc(){
+  const data = window.COSTS_DATA || {};
+  const M = data.models || [];
+  const sel = $('cm'); if (!sel || !M.length) return;
+  const m = M[sel.value]; if (!m) return;
+  const k = m.source === 'local' ? 'local'
+    : m.source === 'unpriced' ? 'unpriced'
+    : m.source === 'free-tier' ? 'free' : 'metered';
+  const tot = $('ctot'), brk = $('cbrk');
+  tot.dataset.kind = k;
+  if (k === 'unpriced'){
+    tot.textContent = 'no rate available';   // never a silent $0
+    tot.style.color = 'var(--z-bad)';
+    brk.textContent = 'This model has no price in the catalogue or WEB_RATES, so a job on it cannot be costed.';
+    return;
+  }
+  const i = wiParseTokens($('ci').value), o = wiParseTokens($('co').value);
+  const runs = Math.max(1, Math.round(wiParseTokens($('cr').value) || 1));
+  const cin = i / 1e6 * (m.in_1m || 0), cout = o / 1e6 * (m.out_1m || 0);
+  const total = (cin + cout) * runs;
+  const what = k === 'local' ? 'electricity' : k === 'free' ? 'free tier' : 'billed';
+  tot.textContent = (k === 'local' ? '\u2248 ' : '') + wiMoney(total) + ' ' + what;
+  tot.style.color = k === 'local' ? 'var(--z-warn)' : 'inherit';
+  const per = runs > 1 ? ` \u00d7 ${runs} runs` : '';
+  brk.innerHTML =
+    `in ${wiMoney(cin)} + out ${wiMoney(cout)}${per}` +
+    (k === 'local' ? '<br>your power cost, not billed by anyone'
+     : k === 'free' ? '<br>OpenRouter free tier: $0 per token' : '');
+}
+
+function priceTabsRow(models){
+  const t = priceState.tab;
+  const pass = m =>
+    t === 'all' ? true :
+    t === 'used' ? (m.calls||0) > 0 :
+    t === 'local' ? m.source === 'local' :
+    t === 'vendor' ? m.source === 'vendor' :
+    t === 'openrouter' ? m.source === 'openrouter' :
+    m.source === 'unpriced';
+  return models.filter(pass);
+}
+
+function renderPriceTable(data){
+  const wrap = $('pricesTableWrap');
+  if (!wrap) return;
+  const q = priceState.q.trim().toLowerCase();
+  let rows = priceTabsRow(data.models);
+  if (q) rows = rows.filter(m => (m.model||'').toLowerCase().includes(q));
+  rows = rows.slice().sort((a,b) => (b.calls||0)-(a.calls||0) || (b.cost||0)-(a.cost||0));
+  wrap.innerHTML = `
+  <table class="pv-tbl"><thead><tr>
+    <th>Model</th><th class="num">In $/1M</th><th class="num">Out $/1M</th><th class="num">Cache $/1M</th>
+    <th>Source</th><th class="num">Calls</th><th class="num">Tok Out</th><th class="num">Spend</th><th>Served by</th>
+  </tr></thead><tbody>
+  ${rows.map(m => priceRow(m)).join('') || '<tr><td colspan="9" class="muted" style="padding:1rem">No models match.</td></tr>'}
+  </tbody></table>
+  <div class="muted p-2" style="font-size:var(--fs-xs)">${rows.length} shown of ${data.models.length}</div>`;
+}
+
+function priceRow(m){
+  const rate = r => r == null ? '<span class="muted">\u2014</span>' : ('$' + (r < 0.01 ? r.toFixed(4) : r < 1 ? r.toFixed(3) : r.toLocaleString(undefined,{maximumFractionDigits:2})));
+  const used = (m.calls||0) > 0;
+  const srcMeta = PRICE_SRC[m.source] || {label: m.source, cls: ''};
+  const provs = used ? (m.providers && m.providers.length ? m.providers : (m.served_by ? [m.served_by] : [])) : [];
+  const provHtml = provs.length
+    ? provs.map(pv => { const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
+        return `<span class="pv-badge" style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.sig} ${esc(pv)}</span>`; }).join(' ')
+    : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
+  return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"
+    data-used="${used ? '1' : '0'}" data-source="${esc(m.source)}"
+    ${m.oid ? `data-oid="${esc(m.oid)}"` : ''}>
+    <td>${esc(m.model)}</td>
+    <td class="num">${rate(m.in_1m)}</td><td class="num">${rate(m.out_1m)}</td><td class="num">${rate(m.cache_1m)}</td>
+    <td><span class="pv-src ${srcMeta.cls}">${esc(srcMeta.label)}</span></td>
+    <td class="num">${used ? (m.calls||0).toLocaleString() : '<span class="muted">\u2014</span>'}</td>
+    <td class="num">${used ? fmtN(m.outp) : '<span class="muted">\u2014</span>'}</td>
+    <td class="num">${used ? fmtMoney(m.cost) : '<span class="muted">\u2014</span>'}</td>
+    <td>${provHtml}</td>
+  </tr>`;
+}
+
+function fmtN(n){ n = n || 0;
+  for (const [u,d] of [['B',1e9],['M',1e6],['K',1e3]]) if (n >= d) return (n/d).toFixed(1)+u;
+  return String(Math.round(n));
+}
+function fmtMoney(v){ if (v == null) return '\u2014'; if (v < 0.01) return '$'+v.toFixed(4); if (v < 1) return '$'+v.toFixed(3); return '$'+v.toLocaleString(undefined,{maximumFractionDigits:2}); }
+
+function installPriceControls(){
+  const s = $('priceSearch');
+  if (s) s.addEventListener('input', () => {
+    priceState.q = s.value; priceTouched = true;
+    const data = window.COSTS_DATA; if (data) renderPriceTable(data);
+    const s2 = $('priceSearch'); if (s2) { s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); }
+  });
+  document.querySelectorAll('#priceTabs .pt-tab').forEach(b => b.addEventListener('click', () => {
+    priceState.tab = b.dataset.tab;
+    document.querySelectorAll('#priceTabs .pt-tab').forEach(x => x.classList.toggle('on', x.dataset.tab === priceState.tab));
+    const data = window.COSTS_DATA; if (data) renderPriceTable(data);
+  }));
+}
+
+
+// ---- Rankings view (#113 in-app) ------------------------------------------
+// The OpenRouter rankings table, rendered client-side from the payload
+// build_rankings.py collects (same JSON the standalone page consumed):
+//   {status, source, as_of, views:{day,week,month:{days,start,end,total,
+//    top:[{rank,model,tokens,share,trend}], other:{tokens,share,models}}}}
+// One window visible at a time; the chooser is a pure show/hide, mirroring the
+// old page so muscle memory carries over. Model names come from a third
+// party and are escaped here like everywhere else.
+let RANKINGS_STATE = { window: 'week' };
+
+function renderRankings(){
+  const host = document.getElementById('view-rankings-container');
+  if (!host) return;
+  const d = RANKINGS_DATA || {};
+  if (!d || d.status !== 'ok' || !d.views) {
+    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.')}` +
+      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') + `</div>`;
+    return;
+  }
+  const wins = ['day', 'week', 'month'].filter(k => d.views[k]);
+  if (!wins.includes(RANKINGS_STATE.window)) RANKINGS_STATE.window = wins[0];
+  const cur = d.views[RANKINGS_STATE.window] || { top: [], other: {}, total: 0, start: '', end: '', days: 0 };
+  const lbl = { day: 'Day', week: 'Week', month: 'Month' };
+  const wv = wins.map(k =>
+    `<button type="button" class="tab${k === RANKINGS_STATE.window ? ' tabon' : ''}" data-rk-window="${k}" aria-pressed="${k === RANKINGS_STATE.window}">${lbl[k] || k}</button>`).join('');
+  const tr = (t) => {
+    if (t == null || t === 0) return '<span class="muted" title="no earlier usage to compare against">\u2014</span>';
+    const up = t > 0;
+    const tone = up ? 'color:var(--z-ok)' : 'color:var(--z-bad)';
+    return `<span style="${tone}" title="share of tokens vs the same window before: ${t > 0 ? '+' : ''}${t.toFixed(1)} pp">${up ? '\u2191' : '\u2193'} ${Math.abs(t).toFixed(1)}</span>`;
+  };
+  const ntop = cur.top.length;
+  let body = cur.top.map(r =>
+    `<tr><td class="muted">${r.rank}</td>` +
+    `<td title="${esc(r.model)}"><span class="dot" style="background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span>${esc(short(r.model))}</td>` +
+    `<td class="num">${fmt(r.tokens)}</td>` +
+    `<td><span class="bar"><span style="width:${Math.min(100, r.share || 0).toFixed(1)}%;background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span></span> ${(r.share || 0).toFixed(1)}%</td>` +
+    `<td class="num">${tr(r.trend)}</td></tr>`).join('');
+  const oth = cur.other || {};
+  if (oth && oth.tokens) {
+    body += `<tr class="rk-other"><td class="muted">&mdash;</td>` +
+      `<td class="muted">Other <span title="${oth.models || 0} more ranked models plus the long tail, outside this board's top ${ntop}">(${oth.models || 0} more)</span></td>` +
+      `<td class="num">${fmt(oth.tokens)}</td>` +
+      `<td><span class="bar"><span class="muted" style="width:${Math.min(100, oth.share || 0).toFixed(1)}%;background:var(--pal-slate)"></span></span> ${(oth.share || 0).toFixed(1)}%</td>` +
+      `<td class="num"><span class="muted">&mdash;</span></td></tr>`;
+  }
+  host.innerHTML = `
+  <div class="card p-4">
+    <div class="flex items-end justify-between flex-wrap gap-3 mb-2.5">
+      <div>
+        <div class="lbl">OpenRouter rankings \u00b7 ${esc(lbl[RANKINGS_STATE.window] || RANKINGS_STATE.window)} (${cur.days}d)</div>
+        <div class="muted" style="font-size:var(--fs-xs)">${esc(cur.start)} \u2192 ${esc(cur.end)} \u00b7 ${fmt(cur.total)} tokens total \u00b7 ${esc(d.source || '')}</div>
+      </div>
+      <div class="tabs" role="group" aria-label="Ranking window">${wv}</div>
+    </div>
+    <table class="w-full" style="border-collapse:collapse">
+      <thead><tr><th class="lbl" style="text-align:left">#</th><th class="lbl" style="text-align:left">Model</th><th class="lbl" style="text-align:right">Tokens</th><th class="lbl" style="text-align:left">Share</th><th class="lbl" style="text-align:right">7d trend</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <div class="muted" style="font-size:var(--fs-xs);margin-top:8px">${esc((d.attribution || {}).url || '')}</div>
+  </div>`;
+  host.querySelectorAll('[data-rk-window]').forEach(b =>
+    b.addEventListener('click', () => { RANKINGS_STATE.window = b.dataset.rkWindow; renderRankings(); }));
+}

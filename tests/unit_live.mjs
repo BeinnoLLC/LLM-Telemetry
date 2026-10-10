@@ -319,7 +319,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(html, 'title="Fix the parser — view timeline"', 'renderLive: timeline button tooltip');
   has(html, 'data-title="Fix the parser"', 'renderLive: timeline button carries the title');
   has(html, 'title="Coding"', 'renderLive: the category tooltip is escaped');
-  has(html, 'color:#22c55e', 'renderLive: category colour comes from catOf');
+  has(html, 'color:#5f9e6e', 'renderLive: category colour comes from catOf');
   has(html, '>Coding</span>', 'renderLive: the category label is rendered');
   has(html, 'title="opus-4"', 'renderLive: the model badge shows the SHORT model name');
   has(html, 'style="color:#abc123"', 'renderLive: the model badge colour comes from colorOf');

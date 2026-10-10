@@ -251,7 +251,7 @@ has(D.tRenderMsg({ role: 'assistant', content: '', tool_calls: [] }), '&#8594; t
     'an empty tool_calls list falls back to a generic label');
 
 // ---- timeline colours and lanes ---------------------------------------
-eq(D.lnColorOf('compaction'), '#f59e0b', 'compaction has its own colour');
+eq(D.lnColorOf('compaction'), '#c4a06e', 'compaction has its own colour (calmed)');
 eq(D.lnColorOf('user'), '#64748b', 'user has its own colour');
 eq(D.lnColorOf('gpt-4o'), PAL.COLORS['gpt-4o'] || D.lnColorOf('gpt-4o'), 'a colour-map key is used as-is');
 eq(D.lnColorOf('bash').startsWith('hsl('), true, 'an unknown key gets a stable hashed colour');

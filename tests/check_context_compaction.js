@@ -56,7 +56,7 @@ setTimeout(() => {
     const lines = demoSvg.querySelectorAll('line');
     chk(lines.length === 2, 'the compacting session\'s sparkline has exactly 2 compaction markers (two dashed lines)', lines.length);
     const colors = [...lines].map(l => l.getAttribute('stroke'));
-    chk(colors.includes('#22c55e') && colors.includes('#ef4444'),
+    chk(colors.includes('#5f9e6e') && colors.includes('#c66a6a'),
         'one marker is colored effective (green), the other ineffective (red)', colors);
 
     chk(sessionsHtml.includes('2 compactions'), 'the compacting session shows its real compaction count');

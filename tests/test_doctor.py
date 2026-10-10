@@ -145,10 +145,11 @@ rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
 chk(statuses(rows).get("artifact dashboard.html") == D.FAIL, "a missing artifact fails")
 
 touch("dashboard.html", 0)
-os.remove(os.path.join(REPORTS, "costs.html"))
+os.remove(os.path.join(REPORTS, "rankings-data.json"))
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
-chk(statuses(rows).get("artifact costs.html") == D.WARN,
+chk(statuses(rows).get("artifact rankings-data.json") == D.WARN,
     "a missing optional artifact only warns")
+touch("rankings-data.json", 0)
 
 # --- schema --------------------------------------------------------------
 write_payload("analytics-data.json", {"schema_version": "0-old"})

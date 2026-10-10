@@ -9,6 +9,16 @@ import { mergeDelegations } from './live.js';
 import { pickView, setFiltersFromHash, view, viewFromHash } from './router.js';
 
 export let DATA = __DATA__;
+// Prices view feed (was standalone costs.html): build_dashboard replaces this
+// token with the JSON build_costs.write_costs_data emits — one source of truth.
+export const COSTS_DATA = __COSTS_DATA__;
+// Rankings view feed (was standalone rankings.html): same pattern as the
+// Prices feed — build_dashboard injects the payload build_rankings collects.
+export const RANKINGS_DATA = __RANKINGS_DATA__;
+// views.js is a separate bundle in the standalone page but the same scope here;
+// guarded so plain-node test harnesses (isolate) can import main.js without a DOM.
+if (typeof window !== 'undefined') window.COSTS_DATA = COSTS_DATA;
+if (typeof window !== 'undefined') window.RANKINGS_DATA = RANKINGS_DATA;
 // Injected from config.local_host_patterns so provOf() classifies self-hosted
 // endpoints correctly on any network, not just the author's LAN.
 export const LOCAL_HOSTS = __LOCAL_HOSTS__;

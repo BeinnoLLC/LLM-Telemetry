@@ -48,7 +48,7 @@ def rel(path):
 # Every *_PATH constant webassets reads, plus every file under web/.
 read_paths = sorted({rel(v) for k, v in vars(W).items()
                      if k.endswith("_PATH") and isinstance(v, str)})
-chk(len(read_paths) >= 6, "webassets exposes its read paths", read_paths)
+chk(len(read_paths) >= 4, "webassets exposes its read paths", read_paths)
 for r in read_paths:
     chk(os.path.isfile(os.path.join(PKG, r)), f"{r} exists in the source tree")
     chk(shipped(r), f"{r} is covered by package-data", globs)

@@ -71,12 +71,16 @@ const M = await isolate('main.js', {
   __DATA__: { profiles: { p1: { rows: [] } } },
   __LOCAL_HOSTS__: ['192.168.1.12'],
   __SCHEMA_VERSION__: 7,
+  __COSTS_DATA__: { models: [] },
+  __RANKINGS_DATA__: { status: 'ok', views: {} },
 });
 
 // ---- the payload contract ----------------------------------------------
 eq(M.DATA, { profiles: { p1: { rows: [] } } }, 'DATA is the injected payload');
+eq(M.RANKINGS_DATA && M.RANKINGS_DATA.status, 'ok', 'RANKINGS_DATA is the injected rankings payload');
 eq(M.LOCAL_HOSTS, ['192.168.1.12'], 'LOCAL_HOSTS is injected from config');
 eq(M.SCHEMA_VERSION, 7, 'SCHEMA_VERSION is injected from config');
+eq(M.COSTS_DATA, { models: [] }, 'COSTS_DATA is the injected price-sheet payload');
 eq(M.css('--known'), '#fff', 'css() trims the computed value');
 eq(M.css('--missing'), '#888', 'css() falls back when the variable is empty');
 

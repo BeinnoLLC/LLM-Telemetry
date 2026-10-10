@@ -66,10 +66,10 @@ setTimeout(() => {
 
     // Abnormal reasons get the red/warning style; normal ones do not.
     const reapChip = [...d.querySelectorAll('#outbysource span')].find(s => s.textContent.includes('Reaped'));
-    chk(!!reapChip && /#ef4444/.test(reapChip.getAttribute('style')),
+    chk(!!reapChip && /--z-bad/.test(reapChip.getAttribute('style')),
         'a reap chip renders in the abnormal (red) style');
     const cronCompleteChip = [...d.querySelectorAll('#outbysource span')].find(s => /cron_complete/.test(s.title || ''));
-    chk(!!cronCompleteChip && !/#ef4444/.test(cronCompleteChip.getAttribute('style')),
+    chk(!!cronCompleteChip && !/--z-bad/.test(cronCompleteChip.getAttribute('style')),
         'the cron_complete chip renders in the neutral style, not flagged as abnormal');
 
     // Silent bucket: the actual session is listed, and it is a SEPARATE

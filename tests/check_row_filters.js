@@ -118,28 +118,31 @@ setTimeout(() => {
     // Two VALID values that do not co-occur: provider A with a model that only
     // ever runs on provider B. Each filter on its own matches rows; together
     // they match none, which is the case a reader actually hits.
+    // With the provider->model cascade, a contradictory pair (provider A +
+    // a model that only exists under provider B) can no longer come from the
+    // selects: render()'s populate step drops the stale model filter before
+    // the row filter runs. The state must RESOLVE to provider A alone, and
+    // the table must show provider A's rows — an empty contradiction that
+    // silently displayed unfiltered numbers was the bug this replaced (#46).
     const provA = wantProvs[0];
     const provB = wantProvs[wantProvs.length - 1];
     const modelOnB = (rows.find(r => r.provider === provB) || {}).model;
     w.eval(`setCrossFilter('provider', ${JSON.stringify(provA)});` +
            `setCrossFilter('model', ${JSON.stringify(modelOnB)}); render()`);
     const tbl = d.querySelector('#tbl');
-    chk(tbl && /No data/.test(tbl.textContent),
-      'a filter combination matching no rows says "No data" instead of showing unfiltered numbers',
+    chk(w.eval("MODEL_FILTER") === '',
+      'cascade resolves a stale cross-provider model filter to All models',
+      JSON.stringify(w.eval("MODEL_FILTER")));
+    chk(tbl && !/No data/.test(tbl.textContent) && tbl.textContent.includes(provA),
+      'after the cascade resolution the table shows the provider rows, not unfiltered numbers',
       (tbl ? tbl.textContent.slice(0, 70) : 'no table').replace(/\s+/g, ' '));
-    chk(tbl && tbl.textContent.includes(provA) && tbl.textContent.includes(modelOnB),
-      '...and it names BOTH filters, so it is obvious which to relax',
-      (tbl ? tbl.textContent.slice(0, 90) : '').replace(/\s+/g, ' '));
-    // A value the payload no longer carries must never stay ACTIVE while the
-    // select cannot show it: filter state and the visible control have to agree,
-    // or the page reports a filter the reader cannot see or clear.
-    w.eval("clearCrossFilters(); setCrossFilter('model', 'no-such-model'); render()");
-    const mSel = d.querySelector('#modelfiltersel');
-    const modelOptions = [...mSel.options].map(o => o.value);
-    chk(modelOptions.includes(w.eval("MODEL_FILTER")),
-      'whatever model filter is active is also an option in the select',
-      `filter=${JSON.stringify(w.eval('MODEL_FILTER'))}`);
-
+    // The project select resolves the same way: a project value that is not
+    // one of the profile's slots cannot survive populate (it falls back to
+    // All projects), so a filter naming a foreign project self-clears too.
+    w.eval("clearCrossFilters(); setCrossFilter('project', 'no-such-project'); render()");
+    chk(w.eval("PROJECT_FILTER") === '',
+      'project filter self-clears a value that is not one of the profile slots',
+      JSON.stringify(w.eval("PROJECT_FILTER")));
     // The invariant that matters: whatever the three state values say, the
     // numbers on screen are exactly the rows those values select. Computed here
     // from the payload, so it cannot pass by agreeing with itself.

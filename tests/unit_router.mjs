@@ -102,7 +102,7 @@ const mkEl = (tag = 'div') => {
 const els = new Map();
 const getEl = id => { if (!els.has(id)) { const e = mkEl(); e.id = id; els.set(id, e); } return els.get(id); };
 
-const BASE_VIEWS = ['Home', 'Live', 'Flow', 'Router', 'Quota', 'Usage', 'Projects', 'Cost', 'Health', 'Detail', 'Logs', 'Settings'];
+const BASE_VIEWS = ['Home', 'Live', 'Flow', 'Router', 'Quota', 'Usage', 'Sessions', 'Cost', 'Prices', 'Health', 'Detail', 'Logs', 'Settings'];
 const EXTRA_VIEWS = ['A B', 'A?B', 'Ünicode Ünïts'];
 const viewEls = [...BASE_VIEWS, ...EXTRA_VIEWS].map(n => {
   const e = mkEl('section');
@@ -262,8 +262,8 @@ eq(R.NAVKEY, 'hermes-dash-navcollapsed', 'NAVKEY: storage key literal');
 eq(R.NAV_FALLBACK_GROUP, 'More', 'NAV_FALLBACK_GROUP: literal');
 eq(R.PROFILE_LOGO_MAX_BYTES, 204800, 'PROFILE_LOGO_MAX_BYTES: 200 KiB');
 eq(R.NAV_GROUPS.map(g => g.name), ['Overview', 'Analysis', 'System'], 'NAV_GROUPS: group names/order');
-eq(R.NAV_GROUPS.map(g => g.views.length), [5, 4, 3], 'NAV_GROUPS: group sizes');
-eq(Object.keys(R.NAV_ICONS).length, 12, 'NAV_ICONS: one icon per built-in view');
+eq(R.NAV_GROUPS.map(g => g.views.length), [5, 6, 3], 'NAV_GROUPS: group sizes (Rankings joined Analysis)');
+eq(Object.keys(R.NAV_ICONS).length, 14, 'NAV_ICONS: one icon per built-in view (incl. Rankings)');
 
 // ==================================================== slugOf / viewFromHash ==
 eq(R.NAV_ICONS.Home, '\u2302', 'NAV_ICONS: Home icon code point');
@@ -754,10 +754,10 @@ eq(getEl('crumb').textContent, '', 'setCrumb: null is coerced to empty (the || \
 // ================================================================ pickView ===
 R.clearCrossFilters();
 loc._h = '';
-R.pickView('Projects');
-eq(R.view, 'Projects', 'pickView: switches the visible view');
-ok(loc.hash.startsWith('#/projects'), 'pickView: and mirrors it into the hash');
-eq(R.viewFromHash(), 'Projects', 'pickView: the hash it writes parses back to the view');
+R.pickView('Sessions');
+eq(R.view, 'Sessions', 'pickView: switches the visible view');
+ok(loc.hash.startsWith('#/sessions'), 'pickView: and mirrors it into the hash');
+eq(R.viewFromHash(), 'Sessions', 'pickView: the hash it writes parses back to the view');
 R.pickView('Home');
 eq(R.view, 'Home', 'pickView: switches back');
 eq(R.navOpen, false, 'pickView: does not open the drawer');

@@ -1,13 +1,15 @@
 // #19: wide tables/lists responsive — health rows + failure list stack at
-// mobile width instead of overflowing their old fixed-width flex columns,
-// and the costs.html rates table gets a sticky first column + fade edge.
+// mobile width instead of overflowing their old fixed-width flex columns.
+// The rates table's sticky first column + fade edge moved into the app's
+// Prices view (costs.html was deleted, #113), so the sticky-column contract
+// is checked against the app CSS (styles.css) the view renders with.
 const fs = require('fs');
 const path = require('path');
 
 const dash = fs.readFileSync(
   path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
-const costs = fs.readFileSync(
-  path.join(__dirname, '..', 'examples', 'reports', 'costs.html'), 'utf8');
+const css = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css', 'dashboard.css'), 'utf8');
 
 let pass = 0, fail = 0;
 function chk(ok, name, got) {
@@ -33,14 +35,15 @@ chk(/\.frow \.fmodel\{[^}]*overflow-wrap:anywhere/.test(block), 'failure row mod
 chk(/\.hname\{width:172px/.test(dash) || /width:172px/.test(dash), 'desktop health-row name column still exists at its original fixed width outside the mobile override');
 chk(/\.hrate\{width:52px/.test(dash) || /width:52px/.test(dash), 'desktop health-row rate column still exists at its original width');
 
-// ---- costs.html: sticky first column + fade edge --------------------------
-chk(/\.tblwrap\{position:relative;overflow-x:auto\}/.test(costs), 'costs.html table wrapper is scrollable and positioned for the sticky column');
-chk(/\.tblwrap::after\{content:'';position:absolute;top:0;right:0;bottom:0;width:28px;\s*background:linear-gradient\(to right,transparent,var\(--card\)\)/.test(costs),
-    'costs.html has a fading right edge signalling more columns off-screen');
-chk(/thead th:first-child,tbody td:first-child\{position:sticky;left:0/.test(costs),
-    'costs.html rates table pins its first column (model identity) while scrolling horizontally');
-chk(/<div class="tblwrap">/.test(costs), 'the rates table is actually wrapped in .tblwrap in the emitted markup');
-chk(!/<div style="overflow-x:auto">/.test(costs), 'the old unstyled overflow-x wrapper div is gone (replaced by .tblwrap)');
+// ---- Prices view (in-app rates table): sticky first column + fade edge ----
+chk(/\.pv-wrap\{position:relative\}/.test(css), 'rates table wrapper is positioned for the sticky column (.pv-wrap)');
+chk(/\.pv-wrap::after\{content:'';position:absolute;top:0;right:0;bottom:0;width:26px;\s*background:linear-gradient\(to right,transparent,var\(--card\)\)/.test(css),
+    'fading right edge signalling more columns off-screen');
+chk(/\.pv-tbl th:first-child,\.pv-tbl td:first-child\{position:sticky;left:0/.test(css),
+    'rates table pins its first column (model identity) while scrolling horizontally');
+chk(/pv-wrap/.test(dash), 'the Prices view table renders inside .pv-wrap (class on the wrapper element)');
+chk(!/<div style="overflow-x:auto">/.test(dash),
+    'the old unstyled overflow-x wrapper div is gone (pv-wrap owns scrolling now)');
 
 console.log(`\ncheck_wide_tables.js  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

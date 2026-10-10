@@ -20,10 +20,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # artifact -> (budget, floor). Both in bytes; the README table mirrors it.
 BUDGETS = {
-    "examples/reports/dashboard.html": (800_000, 400_000),
+    # 840k -> 920k (#113 in-app): the OpenRouter rankings payload + the Rankings
+    # view and the Prices view's what-if calculator moved inside the single app
+    # page; rankings.html (25k) and costs.html (85k) were deleted, so the app
+    # grew by the content that used to live in separate files.
+    "examples/reports/dashboard.html": (920_000, 400_000),
     "examples/reports/analytics-data.json": (200_000, 90_000),
-    "examples/reports/costs.html": (90_000, 40_000),
-    "examples/reports/rankings.html": (25_000, 10_000),
 }
 
 failed = 0

@@ -5,11 +5,83 @@
  * tokens that are theirs. Before this file existed the block was duplicated in
  * each build script, so a palette change had to be made twice and could drift
  * silently — the price sheet would quietly keep the old colours.
+ *
+ * 2026-10-10 rework: the calm-utility palette from Hazem's reference board —
+ * warm paper light theme (#F5F2EC) with muted pastel washes and a single
+ * #2F7D4F green accent; near-black ink on white cards; hairline borders
+ * (.12-.14 alpha) instead of outlines; NO gradients, NO glow. The dark theme
+ * (default) is its value inverse: #101418 base, neutral #1A1F26 cards, and
+ * the same roles — one green accent and desaturated pastel family colours.
+ *
+ * Page-specific tokens are deliberately NOT here: the dashboard keeps its type
+ * scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
+ * per-provider accent colours. */
 
-   Page-specific tokens are deliberately NOT here: the dashboard keeps its type
-   scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
-   per-provider accent colours. */
 :root{
-   --bg:#0b0f17; --card:#131822; --fg:#e6edf6; --muted:#8b98ab;
-   --border:#232b39; --accent:#6366f1; --accent2:#22c55e;
+  /* base surfaces */
+  --bg:#101418;
+  --card:#1a1f26;
+  --fg:#e8eaed;
+  --muted:#9aa3ad;
+  --border:rgba(232,234,237,.13);
+  /* the single calm accent: desaturated green */
+  --accent:#4ea578;
+  --accent-ink:#0f1712;          /* text/icon on accent fills */
+  --accent-wash:rgba(78,165,120,.14);
+  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
+
+  /* calm pastel washes (family/role colours, 3-9% desaturated tints) */
+  --wash-indigo:rgba(129,140,180,.14);
+  --wash-rose:rgba(196,124,140,.15);
+  --wash-slate:rgba(124,144,156,.15);
+  --wash-amber:rgba(196,160,110,.15);
+  --wash-mint:rgba(110,170,140,.14);
+
+  /* status hues, desaturated to match */
+  --z-ok:#5f9e6e;
+  --z-warn:#c2a15c;
+  --z-bad:#c66a6a;
+  --z-ok-fg:#dff0e4;
+  --z-warn-fg:#f4ecda;
+  --z-bad-fg:#f7e3e3;
+
+  /* solid chart pastels (dark-on-wash fills for Chart.js) */
+  --pal-indigo:#818cb4;
+  --pal-rose:#c47c8c;
+  --pal-slate:#7c909c;
+  --pal-amber:#c4a06e;
+  --pal-mint:#6eaa8c;
+}
+
+[data-theme="light"]{
+  /* warm paper base, near-black ink, white cards — the reference board look */
+  --bg:#f5f2ec;
+  --card:#ffffff;
+  --fg:#20242b;
+  --muted:#77716a;
+  --border:rgba(32,36,43,.13);
+  --accent:#2f7d4f;
+  --accent-ink:#ffffff;
+  --accent-wash:rgba(47,125,79,.10);
+
+  /* pastel washes on white cards */
+  --wash-indigo:rgba(99,110,164,.12);
+  --wash-rose:rgba(178,105,122,.13);
+  --wash-slate:rgba(104,122,133,.13);
+  --wash-amber:rgba(178,138,88,.13);
+  --wash-mint:rgba(88,150,115,.12);
+
+  --z-ok:#2f7d4f;
+  --z-warn:#a58436;
+  --z-bad:#b05656;
+  --z-ok-fg:#e4f0e9;
+  --z-warn-fg:#f4ecd7;
+  --z-bad-fg:#f7e4e4;
+
+  /* solid chart pastels, slightly deeper for white cards */
+  --pal-indigo:#7c86b0;
+  --pal-rose:#b87383;
+  --pal-slate:#71868f;
+  --pal-amber:#b5905f;
+  --pal-mint:#5f9e78;
 }

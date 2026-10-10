@@ -14,7 +14,7 @@ __DASHBOARD_CSS__
  <div class="navbrand"><span style="color:var(--accent)">◈</span><span class="brandword"> LLM Telemetry</span><button id="navcollapse" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Expand navigation">&#187;</button></div>
  <div id="navlist"></div>
  <div class="navsep"></div>
- <a class="navitem" href="costs.html" data-tip="Rates"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Rates</span></a>
+ <a class="navitem" href="#/Prices" data-tip="Prices"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Prices</span></a>
  <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><span class="nvico" aria-hidden="true">▤</span><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
@@ -612,7 +612,7 @@ __DASHBOARD_CSS__
       broken down PER MODEL — the question "which models does each project
       actually use" that the global Usage view can't answer, because it
       only ever shows model mix aggregated across everything. -->
- <div class="view" data-view="Projects" hidden>
+ <div class="view" data-view="Sessions" hidden>
   <!-- P4-08 (#45): weighting control. Drives the matrix (P4-05), the
        provider bars (P4-06) and, once it lands, the trend (P4-10) — ONE
        shared value so the three charts can never disagree about their
@@ -688,6 +688,13 @@ __DASHBOARD_CSS__
   <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Cost by category</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTaskCost"></canvas></div></div>
    <div class="card p-4"><div class="lbl mb-2.5">Calls by task</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTasks"></canvas></div></div>
+  </div>
+
+  <div class="view" data-view="Prices" hidden>
+    <div id="view-prices-container"></div>
+  </div>
+  <div class="view" data-view="Rankings" hidden>
+    <div id="view-rankings-container"></div>
   </div>
   <!-- Row 2: Cost by model + Provider mix -->
   <div class="grid-2 mb-4">

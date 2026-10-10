@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Price sheet: catalogue freshness (P6-02 #60) and unpriced models (P6-03 #61).
+"""Price payload: catalogue freshness (P6-02 #60) and unpriced models (P6-03 #61).
 
-Renders the sheet from synthetic model lists and freshness states, so no
-network, no real agent data and no collector run are involved.
+Builds the Prices-view payload from synthetic model lists and freshness states,
+so no network, no real agent data and no collector run are involved. The page
+side is gone (#113 consolidation): freshness and the unpriced notice render in
+the dashboard's Prices view, verified there by check_price_whatif.js and the
+view checks. Here the DATA contract is what's tested: the payload carries
+exactly the fields the view needs (freshness state/age/ttl/detail, unpriced
+used-counts separable from the total, per-model rate + source) — no HTML.
 """
 import os
 import re
 import sys
 import tempfile
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("LLM_TELEMETRY_CONFIG",
@@ -35,86 +39,60 @@ def model(name, source, calls, out=1.0):
             "cost": 0.0, "energy": None, "providers": ["x"], "served_by": "x", "profiles": ["p"]}
 
 
-def sheet(models, fresh, size=345):
-    d = {"models": models, "catalog_size": size, "catalog_source": fresh["state"],
-         "freshness": fresh, "generated": "2026-09-26T12:00:00", "kwh": 0.047, "watts": 440,
-         "gpu_w": 350, "host_w": 90, "prefill": 12, "cachex": 60}
-    return B.render(d)
-
-
-def text(html):
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+def payload(models, fresh, size=345):
+    return {"models": models, "catalog_size": size, "catalog_source": fresh["state"],
+            "freshness": fresh, "generated": "2026-09-26T12:00:00", "kwh": 0.047, "watts": 440,
+            "gpu_w": 350, "host_w": 90, "prefill": 12, "cachex": 60}
 
 
 priced = [model("anthropic/claude-x", "vendor", 10), model("qwen3-coder:30b", "local", 5)]
 
 # ---- #60: TTL text comes from the constant ---------------------------------
 src = open(B.__file__).read() + open(P.__file__).read()
-from llm_telemetry import webassets as W  # noqa: E402
-with open(W.COSTS_FRAGMENTS_PATH) as _fh:
-    src += _fh.read()  # the sheet's markup lives here since #28
 chk(not re.search(r"\b24\s?h\b|\b6h\b", src.replace("ttl_label", "")),
-    "no literal refresh interval in the pricing/sheet source")
-
-# ---- #28: build_costs.py holds no markup; fragments are well formed ----------
-with open(B.__file__) as _fh:
-    _tagged = [ln for ln in _fh if re.search(r"<[A-Za-z/!]", ln)]
-chk(not _tagged, "no markup left in build_costs.py", _tagged[:3])
-with open(W.COSTS_FRAGMENTS_PATH) as _fh:
-    _ftxt = _fh.read()
-_frags = W.read_costs_fragments()
-chk(len(_frags) == _ftxt.count("<!-- @frag "), "every @frag block parses (none swallowed)",
-    (len(_frags), _ftxt.count("<!-- @frag ")))
-with open(B.__file__) as _fh:
-    _used = set(re.findall(r'frag\(\s*"([a-z0-9_]+)"', _fh.read()))
-chk(_used == set(_frags), "fragments used == fragments defined",
-    (sorted(_used - set(_frags)), sorted(set(_frags) - _used)))
-_slotless = [n for n, t in _frags.items() if re.search(r"\{[^}]*[^a-z0-9_}][^}]*\}", t)]
-chk(not _slotless, "no malformed {slot} survives the slot pattern", _slotless)
-try:
-    W.frag("mono")
-    chk(False, "a missing slot raises")
-except KeyError as e:
-    chk("text" in str(e), "a missing slot raises, naming it", e)
-chk(W.frag("mono", text="{x}") == '<span class="mono">{x}</span>', "slot values are not re-expanded")
-chk(W.script_json(["</script>"]) == '["<\\/script>"]', "inline JSON cannot close its <script>")
-with open(W.TOKENS_PATH) as _fh:
-    _tok_decl = _fh.read().count("--bg:#0b0f17")
-_tok_others = []
-for _dp, _dn, _fns in os.walk(os.path.dirname(B.__file__)):
-    for _fn in _fns:
-        _pth = os.path.realpath(os.path.join(_dp, _fn))
-        if _fn.endswith((".css", ".html", ".py", ".js")) and _pth != os.path.realpath(W.TOKENS_PATH):
-            with open(_pth, encoding="utf-8") as _fh:
-                if "--bg:#0b0f17" in _fh.read():
-                    _tok_others.append(_pth)
-chk(_tok_decl == 1 and not _tok_others, "dark theme tokens declared exactly once (tokens.css)",
-    _tok_others)
+    "no literal refresh interval in the pricing/payload source")
 chk(P.ttl_label() == "6h" and P.ttl_label(86400) == "1d" and P.ttl_label(1800) == "30m",
     "ttl_label derives from TTL", (P.ttl_label(), P.ttl_label(86400), P.ttl_label(1800)))
-h = sheet(priced, {"state": "cache", "age": "2h", "ttl": P.ttl_label(), "detail": "", "age_s": 7200})
-chk(f"cached {P.ttl_label()}" in text(h) and f"every {P.ttl_label()}" in text(h),
-    "sheet states the TTL from the constant")
 old_ttl = P.TTL
 P.TTL = 12 * 3600
-h12 = sheet(priced, {"state": "cache", "age": "2h", "ttl": P.ttl_label(), "detail": "", "age_s": 7200})
+chk(P.ttl_label() == "12h", "changing TTL changes the label the view prints")
 P.TTL = old_ttl
-chk("every 12h" in text(h12) and "cached 12h" in text(h12), "changing TTL changes the sheet text")
+fr_ok = {"state": "cache", "age": "2h", "ttl": P.ttl_label(), "detail": "", "age_s": 7200}
+dh = payload(priced, fr_ok)
+chk(dh["freshness"]["ttl"] == "6h" and dh["freshness"]["age"] == "2h",
+    "fresh cache travels with age + ttl (view renders them as a plain line)")
 
-# ---- #60: age shown, stale visibly distinct --------------------------------
-chk("fetched 2h ago" in text(h), "age shown next to the source")
-chk('id="catfresh" data-state="cache"' in h and "warnbox" not in h.split('id="catfresh"')[0][-40:],
-    "a fresh cache renders as a plain line")
-hs = sheet(priced, {"state": "stale", "age": "3d", "ttl": "6h", "detail": "URLError", "age_s": 3 * 86400})
-chk('class="warnbox" id="catfresh" data-state="stale"' in hs, "stale renders as a warning box")
-chk("Prices are stale" in text(hs) and "3d ago" in text(hs) and "URLError" in text(hs),
-    "stale box says how old and why")
+# ---- #60: stale freshness travels with reason + age -------------------------
+fr = {"state": "stale", "age": "3d", "ttl": "6h", "detail": "URLError", "age_s": 3 * 86400}
+ds = payload(priced, fr)
+chk(ds["freshness"]["state"] == "stale" and ds["freshness"]["age"] == "3d"
+    and ds["freshness"]["detail"] == "URLError",
+    "stale freshness carries age + reason (view renders the warning box)")
 
-# ---- #60: cold cache + network down = readable error -----------------------
+# ---- #61: unpriced with vs without traffic (payload contract) ---------------
+mixed = priced + [model("acme/used-1", "unpriced", 40), model("acme/used-2", "unpriced", 2),
+                  model("acme/idle", "unpriced", 0)]
+dm = payload(mixed, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "age_s": 3600})
+un = [m for m in dm["models"] if m["source"] == "unpriced"]
+used_un = [m for m in un if (m["calls"] or 0) > 0]
+chk(len(un) == 3 and len(used_un) == 2,
+    "unpriced-with-traffic count is separable from the unpriced total", (len(un), len(used_un)))
+chk(sum(m["calls"] for m in used_un) == 42, "the traffic affected sums (42 calls)")
+chk({m["short"] for m in used_un} == {"used-1", "used-2"}, "names the models that need a price")
+chk(any((m["calls"] or 0) == 0 for m in un), "idle unpriced models ride along, harmless")
+chk(all(m["in_1m"] is None and m["out_1m"] is None for m in un),
+    "unpriced rows carry null rates (the view says 'no rate available', never $0)")
+
+clean = priced + [model("acme/idle", "unpriced", 0)]
+dc = payload(clean, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "age_s": 3600})
+chk(not [m for m in dc["models"] if m["source"] == "unpriced" and (m["calls"] or 0) > 0],
+    "zero unpriced-with-traffic is a clean payload state (no understated warning)")
+
+# ---- #60: cold cache + network down = 'unavailable' state -------------------
 with tempfile.TemporaryDirectory() as tmp:
     # Both catalogues, or this is not a cold cache: the Nous list (#131) has
     # its own cache file, and leaving it warm made this test pass on the
-    # OpenRouter failure while a page full of Nous rates came back.
+    # OpenRouter failure while a list full of Nous rates came back.
     old_cache, old_url = P.CACHE, P.URL
     old_ncache, old_nurl = P.NOUS_CACHE, P.NOUS_URL
     P.CACHE = os.path.join(tmp, "none.json")
@@ -122,7 +100,7 @@ with tempfile.TemporaryDirectory() as tmp:
     P.URL = "http://127.0.0.1:9/nothing-listens-here"
     P.NOUS_URL = "http://127.0.0.1:9/nothing-listens-here-either"
     # A pinned catalogue file wins over the URLs above and returns "pinned"
-    # without ever attempting a fetch, which made this block assert on the
+    # without ever attempting a fetch, which made this test assert on the
     # sample catalogue instead of a cold-cache failure whenever the build env
     # was exported. Unpin for the duration: this block is about the no-network
     # path, so it has to be the thing deciding the outcome.
@@ -136,26 +114,11 @@ with tempfile.TemporaryDirectory() as tmp:
         if old_cat is not None:
             os.environ["LLM_TELEMETRY_CATALOG"] = old_cat
 chk(cat == {} and fr["state"] == "unavailable", "forced fetch failure with a cold cache is 'unavailable'", fr)
-hu = sheet([model("anthropic/claude-x", "unpriced", 10)], fr, size=0)
-chk('data-state="unavailable"' in hu and "Catalogue prices are missing" in text(hu),
-    "cold-cache failure renders a readable error, not an empty table")
-
-# ---- #61: unpriced with vs without traffic ---------------------------------
-mixed = priced + [model("acme/used-1", "unpriced", 40), model("acme/used-2", "unpriced", 2),
-                  model("acme/idle", "unpriced", 0)]
-hm = sheet(mixed, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "age_s": 3600})
-t = text(hm)
-chk('id="unpriced" data-used="2"' in hm, "unpriced-with-traffic count is separate", (re.search(r'data-used="\d+"', hm) or [None])[0])
-chk("3 models unpriced, 2 of them with recorded traffic" in t, "headline gives both counts")
-chk("used-1" in t and "used-2" in t, "names the models that need a price")
-chk("Spend is understated" in t and "42 calls" in t, "says spend is understated, with the traffic affected")
-chk("WEB_RATES" in t and "ALIASES" in t, "names WEB_RATES / ALIASES as the fix")
-chk("Another 1 unpriced model had no traffic" in t, "unused unpriced models are called harmless")
-
-clean = priced + [model("acme/idle", "unpriced", 0)]
-hc = sheet(clean, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "age_s": 3600})
-chk('class="okbox" id="unpriced" data-used="0"' in hc and "understated" not in text(hc),
-    "zero unpriced-with-traffic is a clean state, not a warning")
+du = payload([model("anthropic/claude-x", "unpriced", 10)], fr, size=0)
+chk(du["freshness"]["state"] == "unavailable" and du["catalog_size"] == 0,
+    "unavailable freshness + size 0 is the payload the view's error state reads")
+chk(B.costs_data_path().name == "costs-data.json" and callable(B.write_costs_data),
+    "the payload writer targets costs-data.json (the view's feed)")
 
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)

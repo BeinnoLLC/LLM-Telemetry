@@ -11,7 +11,10 @@ import { DATA, css } from './main.js';
 export let AC, MU, BD, FG;
 export function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
   Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
-export const PAL = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4','#a855f7','#ec4899','#84cc16','#eab308','#14b8a6'];
+// Chart category palette — the calm pastel set (see tokens.css). Muted
+// washes keep long sessions of dashboard-reading calm; order spreads hues so
+// adjacent series stay distinguishable.
+export const PAL = ['#818cb4','#6eaa8c','#c4a06e','#c47c8c','#7c909c','#a8a29e','#9a86b8','#84a893','#baa984','#7fa3b5'];
 
 // Small line-icon set (Feather-style paths, stroke=currentColor) for KPI/nav
 // badges — real vector glyphs read as considerably more "designed" than a
@@ -224,16 +227,16 @@ export function pick(name){
 // Live view: what is running right now, not what the date filter says. The
 // category colours are fixed so a glance tells you the shape of the work.
 export const CAT = {
-  'Running':    {c:'#f59e0b', i:'▶'},
-  'Coding':     {c:'#22c55e', i:'✎'},
-  'Generating': {c:'#6366f1', i:'✦'},
-  'Thinking':   {c:'#a855f7', i:'◐'},
-  'Researching':{c:'#06b6d4', i:'⌕'},
-  'Reading':    {c:'#60a5fa', i:'▤'},
-  'Reviewing':  {c:'#ec4899', i:'✓'},
-  'Compressing':{c:'#94a3b8', i:'⇲'},
-  'Waiting':    {c:'#eab308', i:'⏸'},
-  'Working':    {c:'#84cc16', i:'•'},
+  'Running':    {c:'#c4a06e', i:'▶'},
+  'Coding':     {c:'#5f9e6e', i:'✎'},
+  'Generating': {c:'#818cb4', i:'✦'},
+  'Thinking':   {c:'#9a86b8', i:'◐'},
+  'Researching':{c:'#7fa3b5', i:'⌕'},
+  'Reading':    {c:'#7c909c', i:'▤'},
+  'Reviewing':  {c:'#c47c8c', i:'✓'},
+  'Compressing':{c:'#a8a29e', i:'⇲'},
+  'Waiting':    {c:'#baa984', i:'⏸'},
+  'Working':    {c:'#84a893', i:'•'},
   'Idle':       {c:'#6b7280', i:'○'}
 };
 export const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};

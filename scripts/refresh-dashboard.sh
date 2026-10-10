@@ -34,7 +34,8 @@ unset LLM_TELEMETRY_CONFIG LLM_TELEMETRY_NO_COLLECT   # personal config, real co
     "$PY" "$REPO/tests/test_pricing_coverage.py" 2>&1 | grep -v '^  OK' | tail -20
   fi
   # `dashboard` runs the analytics + router collectors itself and writes
-  # dashboard.html; `live` and `costs` are separate outputs off the same data.
+  # dashboard.html; `live` and `costs`/`rankings` refresh the payload files the
+  # in-app Prices/Rankings views consume (costs-data.json, rankings-data.json).
   # `logs` writes logs-data.json for the Logs view, fetched on demand (~1.3 MB
   # per profile, so it deliberately stays out of the HTML).
   "$CLI" dashboard

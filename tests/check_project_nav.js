@@ -1,4 +1,4 @@
-// #48/P4-11: Projects entry in the drawer nav (expanded/rail/off-canvas)
+// #48/P4-11: Sessions view (was Projects) entry in the drawer nav (expanded/rail/off-canvas)
 // and a homepage card showing top project + unattributed share, both from
 // the payload; #/projects deep-links; active-state styling matches other
 // drawer entries.
@@ -42,9 +42,9 @@ setTimeout(() => {
 
     // Drawer nav entry (built dynamically from .view elements — same list
     // as the chip row, so they can never disagree).
-    const navItem = d.querySelector('[data-nav="Projects"]');
-    chk(!!navItem, 'a "Projects" drawer nav entry exists');
-    chk(navItem.getAttribute('href') === '#/projects', 'the nav entry links to #/projects');
+    const navItem = d.querySelector('[data-nav="Sessions"]');
+    chk(!!navItem, 'a "Sessions" drawer nav entry exists');
+    chk(navItem.getAttribute('href') === '#/sessions', 'the nav entry links to #/sessions');
     chk(navItem.querySelector('.nvico') && navItem.querySelector('.nvico').textContent.trim().length > 0,
         'the nav entry has an icon');
 
@@ -52,16 +52,16 @@ setTimeout(() => {
     // deletes the chip row, and the ticket forbids re-adding to it). The
     // real acceptance constraint is that Projects exists in the drawer's
     // dynamic nav list regardless of whatever the legacy chip strip does.
-    chk(navGroupsContainsProjects(), 'Projects appears in navGroups() (drawer\'s own view enumeration)');
-    function navGroupsContainsProjects(){
+    chk(navGroupsContainsSessions(), 'Sessions appears in navGroups() (drawer\'s own view enumeration)');
+    function navGroupsContainsSessions(){
       const groups = w.eval('navGroups()');
-      return groups.some(g => g.views.includes('Projects'));
+      return groups.some(g => g.views.includes('Sessions'));
     }
 
     // Homepage card.
-    const homeCard = d.querySelector('[data-gohome="Projects"]');
-    chk(!!homeCard, 'a homepage card for Projects exists');
-    chk(homeCard.getAttribute('href') === '#/projects', 'the homepage card links to #/projects');
+    const homeCard = d.querySelector('[data-gohome="Sessions"]');
+    chk(!!homeCard, 'a homepage card for Sessions exists');
+    chk(homeCard.getAttribute('href') === '#/sessions', 'the homepage card links to #/sessions');
     const statText = homeCard.querySelector('.hc-stat').textContent;
     chk(statText.includes('unattributed'), `the homepage card states the unattributed share, got: ${statText}`);
 
@@ -82,25 +82,25 @@ setTimeout(() => {
 
     // Active-state styling matches other drawer entries (same class
     // convention, not a bespoke one for Projects).
-    w.eval("pickView('Projects');");
+    w.eval("pickView('Sessions');");
     const activeClass = navItem.className;
     w.eval("pickView('Usage');");
     const usageNav = d.querySelector('[data-nav="Usage"]');
     const usageActiveClass = usageNav.className;
-    w.eval("pickView('Projects');");
+    w.eval("pickView('Sessions');");
     chk(navItem.className === usageActiveClass || navItem.className.split(' ').sort().join(',') === usageActiveClass.split(' ').sort().join(','),
-        `active-state class on the Projects nav item matches the convention other entries use (got "${navItem.className}" vs reference "${usageActiveClass}")`);
+        `active-state class on the Sessions nav item matches the convention other entries use (got "${navItem.className}" vs reference "${usageActiveClass}")`);
 
     // Deep link.
-    chk(w.eval('location.hash') === '#/projects', 'navigating to Projects sets the hash to #/projects');
+    chk(w.eval('location.hash') === '#/sessions', 'navigating to Sessions sets the hash to #/sessions');
 
     // Fresh load from #/projects lands directly on the view.
-    const dom2 = boot('#/projects');
+    const dom2 = boot('#/sessions');
     setTimeout(() => {
       const w2 = dom2.window, d2 = w2.document;
-      chk(w2.eval('view') === 'Projects', 'a fresh page load from #/projects opens directly on the Projects view');
-      const projView = d2.querySelector('[data-view="Projects"]');
-      chk(projView && projView.hidden === false, 'the Projects view element is visible (not hidden) after a #/projects deep link');
+      chk(w2.eval('view') === 'Sessions', 'a fresh page load from #/sessions opens directly on the Sessions view');
+      const projView = d2.querySelector('[data-view="Sessions"]');
+      chk(projView && projView.hidden === false, 'the Sessions view element is visible (not hidden) after a #/sessions deep link');
 
       console.log(`\ncheck_project_nav.js  ${pass} passed, ${fail} failed`);
       process.exit(fail ? 1 : 0);

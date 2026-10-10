@@ -361,7 +361,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bw{display:flex;align-items:center;gap:14px}
  .bwleg{display:flex;align-items:baseline;gap:5px}
  .bwarrow{font-size:var(--fs-md);line-height:1;font-weight:700}
- .bwup{color:#f59e0b}      /* upload: the dominant direction here */
+ .bwup{color:var(--z-warn)}      /* upload: the dominant direction here */
  .bwdown{color:#38bdf8}
  .bwrate{font-size:var(--fs-xs);letter-spacing:.02em}
  /* A running worker gets a moving arrow, so "is it transferring right now"
@@ -377,8 +377,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resinfo{position:relative;margin-left:6px}
  .resbtn{font:inherit;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:9px;padding:0 7px;cursor:pointer}
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
- .resbtn.warn{color:#f59e0b;border-color:#f59e0b88;border-style:solid}
- .resbad{color:#f59e0b}
+ .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
+ .resbad{color:var(--z-warn)}
  .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
  .respop code{font-size:var(--fs-sm)}
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
@@ -434,7 +434,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .navbadge{margin-left:auto;font-size:var(--fs-xs);font-weight:700;padding:1px 6px;
    border-radius:999px;background:var(--border);color:var(--fg);flex:none;
    font-variant-numeric:tabular-nums}
- .navbadge.alert{background:#ef4444;color:#fff}
+ .navbadge.alert{background:var(--z-bad);color:var(--z-bad-fg)}
  .navbadge[hidden]{display:none}
  .navsep{height:1px;background:var(--border);margin:8px 12px;flex:none}
  .navfoot{margin-top:auto;padding:10px 12px;font-size:var(--fs-xs);color:var(--muted)}
@@ -512,9 +512,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .loe.sz-md{--gauge-size:84px}
  .loe.sz-lg{--gauge-size:132px}
  .loe svg{width:var(--gauge-size);height:var(--gauge-size);display:block}
- /* Dark theme only: a faint glow under the value arc so it reads as an
-    instrument face, not a flat vector (#7). */
- [data-theme=dark] .loe .gval{filter:drop-shadow(0 0 3px currentColor)}
  /* Travel: on first paint and every refresh the needle SWEEPS from its
     previous angle (--from) to the new one (--d) — refreshes must be visibly
     alive (#9). animation-fill-mode:both holds the end angle once the travel
@@ -618,22 +615,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    height:calc(100dvh - 250px);min-height:460px}
  #flow{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
  #flow.drag{cursor:grabbing}
- /* Work-proportional glow. --heat (0..1) is sqrt(calls/maxCalls), set per node
-    in renderFlow, so the busiest node burns brightest and idle ones stay flat.
-    drop-shadow on the GROUP (not the circle) so the label glows with it.
-    Radii are generous (up to 26px): a 9px blur on a 26px node was measurably
-    present but invisible against the dark card. Three stacked shadows — tight
-    core, mid bloom, wide falloff — read as light rather than a flat ring. */
+ /* Work-proportional emphasis. --heat (0..1) is sqrt(calls/maxCalls), set per node
+   in renderFlow. The calm-utility restyle removed the drop-shadow bloom:
+   volume reads from node size + stroke. */
  .nd{cursor:grab;
-   filter:drop-shadow(0 0 calc(1px + 5px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(95% * var(--heat,0)), transparent))
-          drop-shadow(0 0 calc(2px + 13px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(75% * var(--heat,0)), transparent))
-          drop-shadow(0 0 calc(3px + 26px * var(--heat,0)) color-mix(in srgb, var(--glow,#fff) calc(45% * var(--heat,0)), transparent));
    transition:filter .18s ease}
  /* Dragging overrides the heat ramp: while held, a node is always legible. */
- .nd.dragging{cursor:grabbing;
-   filter:drop-shadow(0 0 8px color-mix(in srgb, var(--glow,#fff) 95%, transparent))
-          drop-shadow(0 0 22px color-mix(in srgb, var(--glow,#fff) 70%, transparent))}
- .nd.dragging circle{stroke-width:2.5}
+ .nd.dragging{cursor:grabbing} .nd.dragging circle{stroke-width:2.5}
  /* A node the user placed keeps a thin ring, so deliberate layout survives
     visually even after the pointer leaves. */
  .nd.pinned circle{stroke-dasharray:2 2}
@@ -702,7 +690,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
              radial-gradient(circle at calc(100% - 3px) 2.5px,var(--qt-wheel) 2.5px,transparent 3px)}
 .qt-car:hover{filter:brightness(1.15)}
 /* queued: amber, held at the signal, shunting in place, staggered */
-.qt-q{width:74px;height:22px;background:#d97706;
+.qt-q{width:74px;height:22px;background:var(--z-warn);
   animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,qt-shunt 1.8s ease-in-out calc(var(--i,0) * .15s) infinite}
 @keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
 /* running: ONE consist loops the line; loco leads (rightmost), couplers between */
@@ -750,7 +738,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:#fff;
   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 .qt-ghost.qt-fly-yard{background:hsl(var(--h,215) 45% 45%)}
-.qt-ghost.qt-fly-line{background:#d97706}
+.qt-ghost.qt-fly-line{background:var(--z-warn)}
 .qt-car.qt-landed{animation:qt-land .6s cubic-bezier(.3,1.6,.5,1) both !important}
 @keyframes qt-land{0%{transform:scale(1.18)}60%{transform:scale(.96)}100%{transform:none}}
 .qt-more{font-size:var(--fs-xs);color:var(--muted);font-weight:600;align-self:center;margin:0 2px}
@@ -760,15 +748,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   align-items:center;gap:4px;padding-top:4px;border-left:2px solid color-mix(in srgb,var(--muted) 50%,transparent);
   border-radius:0;width:2px;justify-self:center}
 .qt-signal i{display:block;width:9px;height:9px;border-radius:50%;margin-left:-2px;background:color-mix(in srgb,var(--muted) 35%,transparent)}
-.qtrain.backed .qt-signal i:first-child{background:#ef4444;box-shadow:0 0 8px #ef4444;animation:qt-blink 1s steps(2,end) infinite}
-.qtrain:not(.backed) .qt-signal i:last-child{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.qtrain.backed .qt-signal i:first-child{background:var(--z-bad);animation:qt-blink 1s steps(2,end) infinite}
+.qtrain:not(.backed) .qt-signal i:last-child{background:var(--z-ok)}
 @keyframes qt-blink{50%{opacity:.35}}
 /* fleet clear: an empty line with one ghost car on patrol */
 .qt-patrol{position:absolute;bottom:16px;left:0;width:40px;height:20px;border-radius:5px;
-  border:1.5px dashed #22c55e;box-shadow:0 0 12px rgba(34,197,94,.35);pointer-events:none;
+  border:1.5px dashed var(--z-ok);pointer-events:none;
   animation:qt-patrol 7s ease-in-out infinite alternate}
 @keyframes qt-patrol{from{transform:translateX(0)}to{transform:translateX(calc(var(--qt-w,520px) - 60px))}}
-.qtrain.clear .qt-line .qt-name::after{content:"· clear";color:#22c55e}
+.qtrain.clear .qt-line .qt-name::after{content:"· clear";color:var(--z-ok)}
 .qtip{position:fixed;max-width:300px;z-index:60}
 @media (max-width:720px){
   .qtrain{grid-template-columns:minmax(0,1fr)}
@@ -797,9 +785,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* #34: fire icon fires only on sustained GPU+queue pressure (~15s), not a
     single spike — a border tint gives the same signal at a glance in lists. */
  .olcard-pressure{border-color:hsl(16 85% 55% / .55)}
- .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px;
-   filter:drop-shadow(0 0 2px hsl(16 85% 55% / .5))}
- .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+ .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px} .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
     width/height are ignored (the dot only looked right because of its ring). */
@@ -973,12 +959,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
  .setin input{width:100%;min-width:0;max-width:140px;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font:inherit}
  .setin input:focus{outline:2px solid var(--accent);outline-offset:1px}
- .setin input:invalid{border-color:#ef4444}
+ .setin input:invalid{border-color:var(--z-bad)}
  .seth{font-size:var(--fs-sm);color:var(--muted)}
  .setderiv{margin-top:12px;font-size:var(--fs-sm);overflow-wrap:anywhere}
  .setderiv code{font-size:var(--fs-sm)}
- .setbad{color:#ef4444}
- .setok{color:#22c55e}
+ .setbad{color:var(--z-bad)}
+ .setok{color:var(--z-ok)}
  .setfacts2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
  .setfacts2 td,.setfacts2 th{padding:2px 6px}
  .setlist{list-style:disc;padding-left:16px;display:flex;flex-direction:column;gap:6px}
@@ -997,10 +983,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #logbtn:hover{border-color:var(--accent);padding-right:14px}
  /* Hide the tab itself while the drawer is open — it would sit under the panel. */
  #logbtn.hidden{opacity:0;pointer-events:none}
- #logbtn .n{background:#ef4444;color:#fff;border-radius:999px;padding:1px 6px;
+ #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
    font-size:var(--fs-xs);font-weight:600;line-height:1.5}
  #logbtn .n[hidden]{display:none}
- .n2{background:#ef4444;color:#fff;border-radius:999px;padding:0 5px;
+ .n2{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:0 5px;
    font-size:var(--fs-xs);font-weight:700;margin-left:3px}
  .n2[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
@@ -1104,7 +1090,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .lnlanename{width:88px;flex-shrink:0;font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
 .lntrack{flex:1;position:relative;height:14px;background:var(--bg);border-radius:3px}
 .lnspan{position:absolute;top:0;height:14px;border-radius:2px;cursor:pointer;min-width:2px}
-.lnspan.lnfail{outline:2px solid #ef4444;outline-offset:-1px}
+.lnspan.lnfail{outline:2px solid var(--z-bad);outline-offset:-1px}
 .lnspan.lntick{width:3px!important;border-radius:1px}
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 #lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
@@ -1305,14 +1291,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwrm{font-weight:600}
  .bwrbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
  .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
- .bwrrow.hot .bwrbar i{background:#ef4444}
+ .bwrrow.hot .bwrbar i{background:var(--z-bad)}
  .bwrx{text-align:right;font-variant-numeric:tabular-nums}
- .bwrflag{font-size:var(--fs-xs);color:#ef4444;white-space:nowrap}
+ .bwrflag{font-size:var(--fs-xs);color:var(--z-bad);white-space:nowrap}
 
 /* Sessions tree (P10-01, #89) */
 .sesstree-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .sesstree-row:last-child{border-bottom:none}
-.sesstree-row-failed{background:color-mix(in srgb, #ef4444 6%, transparent)}
+.sesstree-row-failed{background:color-mix(in srgb, var(--z-bad) 6%, transparent)}
 .sesstree-toggle{width:1.25rem;height:1.25rem;flex:0 0 auto;background:none;border:1px solid var(--border);border-radius:4px;color:var(--foreground);cursor:pointer;line-height:1;font-size:var(--fs-xs)}
 .sesstree-toggle-spacer{width:1.25rem;flex:0 0 auto;display:inline-block}
 .sesstree-title{font-weight:600;flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1322,7 +1308,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .sesstree-tok{font-size:var(--fs-xs);flex:0 0 auto;min-width:4.5rem;text-align:right}
 .sesstree-cost{font-variant-numeric:tabular-nums;flex:0 0 auto}
 .sesstree-endreason{font-size:var(--fs-xs);flex:0 0 auto}
-.sesstree-endreason-failed{border-color:#ef4444;color:#ef4444}
+.sesstree-endreason-failed{border-color:var(--z-bad);color:var(--z-bad)}
 .sesstree-children{margin-left:.25rem;border-left:1px dashed var(--border)}
 .livefanout-chip{font-size:var(--fs-xs);cursor:pointer}
 
@@ -1363,9 +1349,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-hits{font-size:var(--fs-xs);color:var(--accent2);font-variant-numeric:tabular-nums}
 .rt-models{display:flex;flex-wrap:wrap;gap:.3rem}
 .rt-auth,.rt-st,.rt-mode,.rt-default{display:inline-block;font-size:var(--fs-xs);padding:.05rem .45rem;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
-.rt-ok{color:#22c55e;border-color:#22c55e55;background:#22c55e14}
-.rt-warn{color:#f59e0b;border-color:#f59e0b55;background:#f59e0b14}
-.rt-bad{color:#ef4444;border-color:#ef444455;background:#ef444414}
+.rt-ok{color:var(--z-ok);border-color:color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card))}
+.rt-warn{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 33%,transparent);background:color-mix(in srgb,var(--z-warn) 8%,var(--card))}
+.rt-bad{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 33%,transparent);background:color-mix(in srgb,var(--z-bad) 8%,var(--card))}
 .rt-mute{color:var(--muted)}
 .rt-default{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
 .rt-tier{display:inline-block;font-size:var(--fs-xs);font-weight:600;padding:.05rem .5rem;border-radius:999px;
@@ -1409,7 +1395,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-kpi{display:flex;flex-direction:column;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-width:110px}
 .rt-kpi b{font-size:var(--fs-lg);font-variant-numeric:tabular-nums}
 .rt-kpi span{font-size:var(--fs-xs);color:var(--muted)}
-.rt-kbad b{color:#f59e0b}
+.rt-kbad b{color:var(--z-warn)}
 .rt-recent{margin-top:.6rem}
 .rt-chain{display:flex;flex-direction:column;align-items:flex-start;gap:.25rem}
 .rt-hop{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
@@ -1422,9 +1408,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    and must never fall back to green, or an unknown quota reads as healthy. */
 .qv-track{display:block;width:100%;height:8px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
 .qv-fill{display:block;height:100%;border-radius:999px;background:var(--muted);transition:width .25s ease}
-.qv-fill.qv-ok{background:#22c55e}
-.qv-fill.qv-warn{background:#f59e0b}
-.qv-fill.qv-bad{background:#ef4444}
+.qv-fill.qv-ok{background:var(--z-ok)}
+.qv-fill.qv-warn{background:var(--z-warn)}
+.qv-fill.qv-bad{background:var(--z-bad)}
 .qv-fill.qv-mute{background:var(--muted)}
 .qv-win{display:grid;grid-template-columns:minmax(70px,auto) 52px minmax(48px,1fr) auto;gap:.5rem;align-items:center;padding:.3rem 0}
 /* Below this width the four columns cannot coexist and the 1fr bar collapses
@@ -1435,9 +1421,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
-.qv-pct.qv-ok{color:#22c55e}
-.qv-pct.qv-warn{color:#f59e0b}
-.qv-pct.qv-bad{color:#ef4444}
+.qv-pct.qv-ok{color:var(--z-ok)}
+.qv-pct.qv-warn{color:var(--z-warn)}
+.qv-pct.qv-bad{color:var(--z-bad)}
 .qv-pct.qv-mute{color:var(--muted)}
 .qv-reset{font-size:var(--fs-xs);white-space:nowrap}
 /* Providers are self-contained cards in a responsive grid: each one answers
@@ -1455,7 +1441,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 .qv-name{font-size:var(--fs-md);line-height:1.2}
 .qv-plan{font-size:var(--fs-xs);color:var(--muted)}
-.qv-free{font-size:var(--fs-xs);color:#22c55e;border:1px solid #22c55e55;background:#22c55e14;border-radius:999px;padding:0 .4rem}
+.qv-free{font-size:var(--fs-xs);color:var(--z-ok);border:1px solid color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card));border-radius:999px;padding:0 .4rem}
 .qv-wins-none{font-size:var(--fs-xs)}
 .qv-balrow{padding:.35rem 0;font-size:var(--fs-xs)}
 .qv-balrow+.qv-balrow{border-top:1px solid var(--border)}
@@ -1586,3 +1572,32 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-uncached .lbl{display:block;font-size:var(--fs-sm)}
 .qv-uncached .rt-cbody{margin-top:.25rem}
 .qv-head > .qv-why{flex-basis:100%;margin:0;max-width:none}
+
+/* ── Prices view (the in-app price sheet, was standalone costs.html) ────── */
+.pv-wrap{overflow:auto;max-height:70vh;border:1px solid var(--border)}
+.pv-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-xs)}
+.pv-tbl th{position:sticky;top:0;background:var(--card);z-index:1;
+
+  font-size:var(--fs-2xs);text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:500;text-align:left;padding:.5rem .6rem;
+  border-bottom:1px solid var(--border)}
+/* #19 in-app: the rates table pins its model column while scrolling wide
+   (many profile columns), with a fading right edge like the old sheet. */
+.pv-wrap{position:relative}
+.pv-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:26px;
+  background:linear-gradient(to right,transparent,var(--card));
+  pointer-events:none;border-radius:0 0 var(--radius,8px) 0}
+.pv-tbl th:first-child,.pv-tbl td:first-child{position:sticky;left:0;
+  background:var(--card);z-index:2;box-shadow:6px 0 8px -6px var(--border)}
+.pv-tbl tr:hover td:first-child{background:var(--accent-wash)}
+.pv-unused td:first-child{background:var(--card)}
+
+.pv-tbl td{padding:.42rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
+.pv-tbl tr:hover td{background:var(--accent-wash)}
+.pv-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.pv-unused td{color:var(--muted)}
+.pv-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:var(--fs-2xs);
+  padding:.06rem .42rem;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+.pv-src{font-size:var(--fs-2xs);text-transform:none;letter-spacing:0;
+  color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
+.pv-src-local{color:var(--accent)}

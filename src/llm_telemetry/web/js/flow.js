@@ -279,7 +279,7 @@ export function renderAgents(agents){
   agents = agents || [];
   if (!agents.length) { card.hidden = true; return; }
   card.hidden = false;
-  const stateColor = { alive: '#22c55e', stale: '#f59e0b', dead: '#ef4444' };
+  const stateColor = { alive: '#5f9e6e', stale: '#c4a06e', dead: '#c66a6a' };
   $('agentslist').innerHTML = agents.map(a => `
     <div class="flex items-center gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
       <span class="qdotwrap" style="background:${stateColor[a.state] || '#64748b'};width:7px;height:7px;border-radius:999px;flex:none"></span>

@@ -543,8 +543,8 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Router:'\u2442', Quota:'\u25F0', Usage:'\u2211', Projects:'\u25A6',
-  Cost:'$', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
+  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Router:'\u2442', Quota:'\u25F0', Usage:'\u2211', Sessions:'\u25A6',
+  Cost:'$', Prices:'\u00A4', Rankings:'\u2211', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
 };
 
 // Grouped sections (#122). The rail is grouped by what a view is FOR, so the
@@ -553,7 +553,7 @@ export const NAV_ICONS = {
 // disappearing — a new view must never be silently missing from the nav.
 export const NAV_GROUPS = [
   {name:'Overview',  views:['Home', 'Live', 'Flow', 'Router', 'Quota']},
-  {name:'Analysis',  views:['Usage', 'Projects', 'Cost', 'Health']},
+  {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
 export const NAV_FALLBACK_GROUP = 'More';
@@ -737,7 +737,7 @@ export function navInstall(){
   navSetOpen(false);
 }
 export function views(){
-  $('views').innerHTML=['Home','Live','Flow','Router','Quota','Usage','Projects','Cost','Health','Detail','Logs','Settings']
+  $('views').innerHTML=['Home','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){

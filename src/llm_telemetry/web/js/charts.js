@@ -332,7 +332,7 @@ export function ctxSpark(series, compactions){
   const pts = series.map(pt => `${xAt(pt[0]).toFixed(1)},${yAt(pt[1]).toFixed(1)}`).join(' ');
   const markers = (compactions || []).map(c => {
     const x = xAt(c.ts).toFixed(1);
-    const color = c.ineffective ? '#ef4444' : '#22c55e';
+    const color = c.ineffective ? '#c66a6a' : '#5f9e6e';
     return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2,2"><title>${c.ineffective ? 'ineffective' : 'effective'} compaction: -${(c.yield_tok||0).toLocaleString()} tok</title></line>`;
   }).join('');
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">` +

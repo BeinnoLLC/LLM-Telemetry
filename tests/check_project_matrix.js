@@ -16,7 +16,7 @@ function chk(ok, name, got) {
 
 chk(/function renderProjectMatrix\(rows\)\{/.test(html),
     'renderProjectMatrix exists');
-chk(/data-view="Projects"/.test(html), 'the Projects view section exists in markup');
+chk(/data-view="Sessions"/.test(html), 'the Sessions view section exists in markup');
 chk(/id="projmatrixwrap" style="overflow-x:auto/.test(html),
     'the matrix table sits inside a horizontally-scrolling wrapper (#21 acceptance criterion)');
 

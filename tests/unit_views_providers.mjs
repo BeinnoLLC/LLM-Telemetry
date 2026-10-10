@@ -291,7 +291,7 @@ const D = await load();
   eq(D.PROV.anthropic.icon, '✳', 'PROV: anthropic glyph');
   eq(D.PROV['ollama-cloud'].icon, '☁', 'PROV: ollama-cloud is a cloud glyph');
   eq(D.PROV.cloud.icon, '☁', 'PROV: cloud shares the cloud glyph');
-  eq(D.PROV.nous.fg, '#eab308', 'PROV: nous gold');
+  eq(D.PROV.nous.fg, '#baa984', 'PROV: nous gold (calmed)');
   eq(D.PROV.local.icon, '▣', 'PROV: local is a terminal box, not a cloud');
   lacks(JSON.stringify(D.PROV), 'openrouter', 'PROV: openrouter has no entry (badges fall back)');
 
@@ -359,9 +359,9 @@ const D = await load();
 // ═══ provBadge ══════════════════════════════════════════════════════════════
 {
   const b = D.provBadge('anthropic');
-  has(b, 'background:hsl(17 66% 55% / .16)', 'provBadge: provider background');
-  has(b, 'color:hsl(17 66% 55%)', 'provBadge: provider foreground');
-  has(b, 'border:1px solid hsl(17 66% 55%)33', 'provBadge: border is the fg colour plus 0x33 alpha');
+  has(b, 'background:hsl(17 40% 55% / .16)', 'provBadge: provider background');
+  has(b, 'color:hsl(17 40% 58%)', 'provBadge: provider foreground');
+  has(b, 'border:1px solid hsl(17 40% 58%)33', 'provBadge: border is the fg colour plus 0x33 alpha');
   has(b, '>✳</span>anthropic</span>', 'provBadge: glyph then the key as the label');
   eq(D.provBadge('Anthropic'), b, 'provBadge: key is lower-cased before the lookup');
   eq(D.provBadge('  anthropic  '), b, 'provBadge: key is trimmed');
@@ -481,7 +481,7 @@ const BW_ROWS = [
   eq(labels, ['10-01', '10-02'], 'bandwidth: x labels are month-day');
   eq(sets.map(s => s.label), ['upload', 'download', 'LAN'], 'bandwidth: three series');
   eq(sets[0].data, [1500, 200], 'bandwidth: upload summed per day');
-  eq(sets[0].backgroundColor, '#f59e0b', 'bandwidth: upload is amber');
+  eq(sets[0].backgroundColor, '#c4a06e', 'bandwidth: upload is calm amber');
   eq(sets[1].type, 'line', 'bandwidth: download is a line on the second axis');
   eq(sets[1].data, [400, 200], 'bandwidth: download summed per day');
   eq(sets[1].yAxisID, 'y1', 'bandwidth: download uses the right axis');
@@ -585,8 +585,8 @@ const BW_ROWS = [
     'renderUnpriced: names escaped, worst first, calls summed');
   has(e2.unpricedbanner.innerHTML, 'Est. cost excludes that traffic, so it is understated.',
     'renderUnpriced: warns the estimate is low');
-  has(e2.unpricedbanner.innerHTML, '<a href="costs.html">Price sheet</a> shows the fix.',
-    'renderUnpriced: links to the fix');
+  has(e2.unpricedbanner.innerHTML, '<a href="#/Prices">Price sheet</a> shows the fix.',
+    'renderUnpriced: links to the fix (in-app Prices view)');
 
   const e3 = dom('unpricedbanner');
   D.renderUnpriced([{ model: 'solo', calls: 1 }]);
@@ -673,8 +673,8 @@ const BW_ROWS = [
 {
   eq(D.ALERT_ICON, { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' },
     'ALERT_ICON: three severities, decorative entities');
-  eq(D.ALERT_COLOR, { critical: '#ef4444', warning: '#eab308', info: 'var(--accent)' },
-    'ALERT_COLOR: red / amber / theme accent');
+  eq(D.ALERT_COLOR, { critical: '#c66a6a', warning: '#c2a15c', info: 'var(--accent)' },
+    'ALERT_COLOR: red / amber / theme accent (calmed)');
 
   const e = dom('alertscard', 'alertscount', 'alertslist');
   e.alertscard.hidden = false;
@@ -692,7 +692,7 @@ const BW_ROWS = [
   eq(e.alertscard.hidden, false, 'renderAlerts: alerts show the card');
   eq(e.alertscount.textContent, '2 items need attention', 'renderAlerts: count line');
   eq(count(e.alertslist.innerHTML, 'class="flex items-start gap-2'), 2, 'renderAlerts: one block per alert');
-  has(e.alertslist.innerHTML, 'style="color:#ef4444;flex:none" title="critical">&#9888;</span>',
+  has(e.alertslist.innerHTML, 'style="color:#c66a6a;flex:none" title="critical">&#9888;</span>',
     'renderAlerts: critical colour and glyph');
   has(e.alertslist.innerHTML, 'title="tmp "x"">Disk &lt;full&gt;</span>',
     'renderAlerts: message escaped, why kept in the title attribute (esc does not touch quotes)');
@@ -785,7 +785,7 @@ const D2 = await load();
 
   D2.renderHome((d) => d !== '2026-09-01');
   const h = e.homecards.innerHTML;
-  eq(count(h, 'data-gohome='), 11, 'renderHome: ten stat cards plus bandwidth are clickable');
+  eq(count(h, 'data-gohome='), 12, 'renderHome: ten stat cards plus bandwidth are clickable');
   has(h, '<a class="card p-4 homecard" href="#/live" data-gohome="Live">', 'renderHome: cards are real links');
   has(h, '<div class="hc-stat">idle</div>', 'renderHome: no live sessions reads idle');
   has(h, '<span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Flow</span>',
@@ -802,12 +802,12 @@ const D2 = await load();
   has(h, '<div class="hc-stat">QS</div>', 'renderHome: quota card delegates to qvStat');
   has(h, '>Bandwidth (est.)</span>', 'renderHome: bandwidth card is explicitly an estimate');
   has(h, 'href="#/usage"', 'renderHome: bandwidth deep-links into usage');
-  has(h, 'href="costs.html"', 'renderHome: rates stays a real external link');
-  has(h, '<div class="hc-stat">Price sheet</div>', 'renderHome: rates card is not a router destination');
+  has(h, 'href="#/Prices"', 'renderHome: rates deep-links to the in-app Prices view');
+  has(h, '<div class="hc-stat">Price sheet</div>', 'renderHome: rates card names the price sheet');
   has(h, '<div class="hc-stat"><span class="bwup">\u2191 150 B</span>',
     'renderHome: up bytes are live+LAN and labelled as estimated');
   has(h, '<span class="bwdown">\u2193 15 B</span>', 'renderHome: down bytes are live+LAN');
-  eq(count(h, 'data-gohome='), 11, 'renderHome: every card names its destination view');
+  eq(count(h, 'data-gohome='), 12, 'renderHome: every card names its destination view');
   eq(count(h, 'data-gohome="Detail"'), 1, 'renderHome: destination views keep their display capitalisation');
 
   D2.renderHome((d) => d === '2026-10-01');
@@ -1039,7 +1039,7 @@ const liveClick = clickHandlers[clickHandlers.length - 1];
   eq(sets[2].label, 'queue depth (now)', 'renderConcurrency: queue is a reference series');
   eq(sets[2].data, [2, 2], 'renderConcurrency: queue depth is the current total, negative clamped to 0');
   eq(sets[2].type, 'line', 'renderConcurrency: drawn as a line');
-  eq(sets[2].borderColor, '#ef4444', 'renderConcurrency: dashed red reference');
+  eq(sets[2].borderColor, '#c66a6a', 'renderConcurrency: dashed red reference (calmed)');
   eq(sets[2].borderDash, [4, 3], 'renderConcurrency: dash pattern');
   eq(sets[2].fill, false, 'renderConcurrency: no fill under the reference line');
   eq(sets[2].pointRadius, 0, 'renderConcurrency: no points');

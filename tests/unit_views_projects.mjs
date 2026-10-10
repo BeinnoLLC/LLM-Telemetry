@@ -885,7 +885,7 @@ const FILT_DATA = {
   V.populateProjFilterSelect();
   eq('populateProjFilterSelect: options are the All entry plus sorted projects',
      els.projfiltersel.innerHTML,
-     '<option value="">All projects</option><option value="A">A</option><option value="B">B</option><option value="Unattributed">Unattributed</option>');
+     '<option value="">All sessions</option><option value="A">A</option><option value="B">B</option><option value="Unattributed">Unattributed</option>');
   eq('populateProjFilterSelect: rows with no project become the Unattributed option',
      count(els.projfiltersel.innerHTML, '<option'), 4);
   ck('populateProjFilterSelect: Unattributed sorts last, not alphabetically',
@@ -940,7 +940,11 @@ const FILT_DATA = {
   const { V: V6, els: e6 } = await load({ data: FILT_DATA, router: { PROVIDER_FILTER: 'openai', MODEL_FILTER: 'claude-y' } });
   V6.populateRowFilterSelects();
   eq('populateRowFilterSelects: an existing provider filter is selected', e6.provfiltersel.value, 'openai');
-  eq('populateRowFilterSelects: an existing model filter is selected', e6.modelfiltersel.value, 'claude-y');
+  // Provider -> model cascade: options narrow to the filtered provider, so a stale
+  // cross-provider MODEL_FILTER ('claude-y' under 'openai') falls back to All models.
+  eq('populateRowFilterSelects: cascade narrows model options to the provider', e6.modelfiltersel.value, '');
+  ck('populateRowFilterSelects: cascade narrows model options',
+     e6.modelfiltersel.innerHTML === '<option value="">All models</option><option value="gpt-x">gpt-x</option>');
 
   const { V: V7, els: e7 } = await load({ data: FILT_DATA, router: { PROVIDER_FILTER: 'ZZZ' } });
   V7.populateRowFilterSelects();

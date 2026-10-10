@@ -25,8 +25,8 @@ sidecar, no external service.
   Self-hosted models are costed from electricity, hosted ones from live rates.
 - **Health** — success rate per model with failure kinds broken out.
 - **Logs** — a live drawer of tool calls and failures, colour-coded.
-- **Rankings** — `rankings.html`, OpenRouter's public top models by token
-  usage for the last day / week / month (see [Rankings](#rankings)).
+- **Rankings** — OpenRouter's public top models by token usage for the last
+  day / week / month, as an in-app view (see [Rankings](#rankings)).
 
 Every model, provider and tool has one stable colour across every chart,
 verified perceptually (CIE76 ΔE) rather than by eye.
@@ -84,7 +84,7 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 | `llm-telemetry session-timeline` | Write `sessions/<profile>/<id>.json` — one session's timeline (#94) |
 | `llm-telemetry probe` | Probe inference hosts → `ollama-data.json` |
 | `llm-telemetry costs` | Render the per-1M rate reference page |
-| `llm-telemetry rankings` | Fetch OpenRouter's public rankings → `rankings-data.json` + `rankings.html` (#113) |
+| `llm-telemetry rankings` | Fetch OpenRouter's public rankings → `rankings-data.json`, rendered by the dashboard's Rankings view (#113) |
 | `llm-telemetry router` | Export router config, tiers, auth and routing decisions (Router tab) |
 | `llm-telemetry quota` | Export per-profile provider quota headroom from the Hermes quota cache (Quota tab) |
 | `llm-telemetry serve` | Serve reports with caching disabled (`--port N`, `--bind ADDR`, `--dir PATH`, `--open`; `--port 0` picks a free port and prints it) |
@@ -115,18 +115,19 @@ Hermes quota plugin's refresh first; a stale cache just means stale bars.
 
 ### Rankings
 
-`rankings.html` shows OpenRouter's public model rankings (top models by token
-usage, plus the long-tail `other` row) with a day / week / month chooser. Each
-run makes ONE request to OpenRouter's `rankings-daily` dataset and writes
-`rankings-data.json`; the page inlines it and fetches nothing. It needs
+The dashboard's **Rankings** view shows OpenRouter's public model rankings (top
+models by token usage, plus the long-tail `other` row) with a day / week / month
+chooser. Each run makes ONE request to OpenRouter's `rankings-daily` dataset and
+writes `rankings-data.json`; build_dashboard inlines it into the single app page
+and the view fetches nothing. It needs
 `OPENROUTER_API_KEY` in the environment of the build unit / cron job (only the
 variable name is ever reported). Without the key, or when the request fails,
-the payload records `status: "unavailable"` with the reason and the page says
+the payload records `status: "unavailable"` with the reason and the view says
 so instead of guessing; a previous good snapshot is kept and marked stale. The
 step runs in the 1-minute build cycle (a good payload younger than an hour is
 reused) and has its own hourly `llm-telemetry-rankings.timer`.
 
-Rankings data by OpenRouter, CC BY 4.0 — <https://openrouter.ai/docs>. The page
+Rankings data by OpenRouter, CC BY 4.0 — <https://openrouter.ai/docs>. The view
 carries the same attribution line.
 
 Host probing runs on its own fast timer because GPU residency and queue depth
@@ -194,10 +195,9 @@ number here and in that file in the same commit, or trim the page:
 
 | Artifact | Budget (bytes) |
 |---|---|
-| `examples/reports/dashboard.html` | 800,000 |
+| `examples/reports/dashboard.html` | 920,000 |
 | `examples/reports/analytics-data.json` | 200,000 |
 | `examples/reports/costs.html` | 90,000 |
-| `examples/reports/rankings.html` | 25,000 |
 
 ### The payload contract
 

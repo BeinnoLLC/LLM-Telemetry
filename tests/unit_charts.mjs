@@ -83,7 +83,7 @@ eq(C.ctxSpark([]).includes('no data'), true, 'ctxSpark empty -> no data');
 {
   const s = C.ctxSpark([[0, 0], [10, 20]], [{ ts: 5, ineffective: true, yield_tok: 1200 }]);   // W260 H40 pad2
   eq(s.includes('points="2.0,38.0 258.0,2.0"'), true, 'ctxSpark scales x across the width and y to the max', s);
-  eq(s.includes('x1="130.0"') && s.includes('#ef4444'), true, 'ctxSpark places an ineffective compaction mid-way in red');
+  eq(s.includes('x1="130.0"') && s.includes('#c66a6a'), true, 'ctxSpark places an ineffective compaction mid-way in red');
 }
 
 // ---- electricity maths ---------------------------------------------------

@@ -2,7 +2,7 @@
 Description=Rebuild the LLM telemetry dashboard
 
 [Service]
-# One cycle = every page and every on-demand payload. Keep this list in step
+# One cycle = the dashboard page rebuild plus every on-demand payload. Keep this list in step
 # with scripts/refresh-dashboard.sh (the cron spelling of the same cycle):
 # tests/check_refresh_coverage.js fails if a payload the page fetches has no
 # producer here, which is how live-data.json and logs-data.json were silently

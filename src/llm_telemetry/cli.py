@@ -29,8 +29,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("dashboard", help="build dashboard.html (runs the collectors)")
-    sub.add_parser("costs", help="build costs.html (per-1M rate reference)")
-    sub.add_parser("rankings", help="fetch OpenRouter rankings + build rankings.html (#113)")
+    sub.add_parser("costs", help="refresh the price payload for the app's Prices view")
+    sub.add_parser("rankings", help="fetch OpenRouter rankings -> rankings-data.json, shown by the dashboard Rankings view (#113)")
     sub.add_parser("live", help="write live-data.json (fast poll feed)")
     sub.add_parser("transcripts", help="write transcripts.json (windowed live-session chat, #79)")
     sub.add_parser("session-timeline", help="write sessions/<profile>/<id>.json (per-session timeline, #94)")

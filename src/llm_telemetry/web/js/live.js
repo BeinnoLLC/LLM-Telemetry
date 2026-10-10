@@ -73,7 +73,7 @@ export function renderLive(){
         </div>
         <div class="metacol shrink-0">
           <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(L.model))}">${esc(short(L.model))}</div>
-          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:#f59e0b" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
+          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:var(--z-warn)" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
           ${modelsBadge(L)}
           <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(L.idle_s) ? ago(L.idle_s) + ' ago' : '—'}</div>
         </div>
@@ -467,7 +467,7 @@ export async function pollLive(){
     const p = DATA.profiles[current] || {};
     const card = document.querySelector('#kpis .kpi-live');
     if (card) card.innerHTML = p.active
-      ? `<span style="color:#22c55e">●</span> ${p.active}`
+      ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
       : `<span class="muted">●</span> 0`;
     liveFails = 0;
     const t = $('livestamp');

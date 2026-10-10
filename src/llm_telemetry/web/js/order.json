@@ -7,6 +7,14 @@
   },
   {
    "mod": "main",
+   "name": "COSTS_DATA"
+  },
+  {
+   "mod": "main",
+   "name": "RANKINGS_DATA"
+  },
+  {
+   "mod": "main",
    "name": "LOCAL_HOSTS"
   },
   {
@@ -548,6 +556,86 @@
   {
    "mod": "views",
    "name": "render"
+  },
+  {
+   "mod": "views",
+   "name": "PRICE_SRC"
+  },
+  {
+   "mod": "views",
+   "name": "PROV_META"
+  },
+  {
+   "mod": "views",
+   "name": "priceState"
+  },
+  {
+   "mod": "views",
+   "name": "priceTouched"
+  },
+  {
+   "mod": "views",
+   "name": "renderPrices"
+  },
+  {
+   "mod": "views",
+   "name": "pricesShell"
+  },
+  {
+   "mod": "views",
+   "name": "priceTabsRow"
+  },
+  {
+   "mod": "views",
+   "name": "renderPriceTable"
+  },
+  {
+   "mod": "views",
+   "name": "priceWhatIfShell"
+  },
+  {
+   "mod": "views",
+   "name": "whatIfInit"
+  },
+  {
+   "mod": "views",
+   "name": "priceWhatIfInstall"
+  },
+  {
+   "mod": "views",
+   "name": "wiParseTokens"
+  },
+  {
+   "mod": "views",
+   "name": "wiMoney"
+  },
+  {
+   "mod": "views",
+   "name": "priceWhatIfCalc"
+  },
+  {
+   "mod": "views",
+   "name": "RANKINGS_STATE"
+  },
+  {
+   "mod": "views",
+   "name": "renderRankings"
+  },
+  {
+   "mod": "views",
+   "name": "priceRow"
+  },
+  {
+   "mod": "views",
+   "name": "fmtN"
+  },
+  {
+   "mod": "views",
+   "name": "fmtMoney"
+  },
+  {
+   "mod": "views",
+   "name": "installPriceControls"
   },
   {
    "mod": "palette",

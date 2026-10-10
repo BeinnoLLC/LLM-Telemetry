@@ -116,21 +116,21 @@ const D = await load();
   eq(styles.length, 1, 'installKindCSS: one <style> appended at load');
   const css = styles[0].textContent;
   eq(css.split('\n').length, 7, 'installKindCSS: one rule per kind');
-  has(css, '.k-rate_limit{background:#f59e0b2e;color:#f59e0b}', 'installKindCSS: background is the kind colour + 2e alpha');
+  has(css, '.k-rate_limit{background:#c4a06e2e;color:#c4a06e}', 'installKindCSS: background is the kind colour + 2e alpha');
   has(css, '.k-unavailable{background:#64b5c92e;color:#64b5c9}', 'installKindCSS: unavailable is slate-blue, not grey');
 
-  eq(JSON.stringify(D.fk('timeout')), JSON.stringify({ c: '#60a5fa', t: 'timeout' }), 'fk: known kind');
+  eq(JSON.stringify(D.fk('timeout')), JSON.stringify({ c: '#7c909c', t: 'timeout' }), 'fk: known kind');
   eq(JSON.stringify(D.fk('weird')), JSON.stringify({ c: '#MU', t: 'weird' }), 'fk: unknown kind keeps its name, muted colour');
   eq(D.fk('').t, '—', 'fk: empty kind shows a dash');
   eq(D.fk(undefined).t, '—', 'fk: undefined kind shows a dash');
 
   eq(D.rateColor(null), '#MU', 'rateColor: null is muted');
-  eq(D.rateColor(100), '#22c55e', 'rateColor: 100 green');
-  eq(D.rateColor(95), '#22c55e', 'rateColor: 95 is the green boundary');
-  eq(D.rateColor(94.9), '#f59e0b', 'rateColor: just under 95 is amber');
-  eq(D.rateColor(80), '#f59e0b', 'rateColor: 80 is the amber boundary');
-  eq(D.rateColor(79.9), '#ef4444', 'rateColor: just under 80 is red');
-  eq(D.rateColor(0), '#ef4444', 'rateColor: 0 red');
+  eq(D.rateColor(100), '#5f9e6e', 'rateColor: 100 green');
+  eq(D.rateColor(95), '#5f9e6e', 'rateColor: 95 is the green boundary');
+  eq(D.rateColor(94.9), '#c4a06e', 'rateColor: just under 95 is amber');
+  eq(D.rateColor(80), '#c4a06e', 'rateColor: 80 is the amber boundary');
+  eq(D.rateColor(79.9), '#c66a6a', 'rateColor: just under 80 is red');
+  eq(D.rateColor(0), '#c66a6a', 'rateColor: 0 red');
   eq(D.FAILTRACK, 'rgba(239,68,68,.22)', 'FAILTRACK: red wash');
 }
 
@@ -182,9 +182,9 @@ const D = await load();
   D.renderHealthSummary(H, F);
   const s = hsummary.innerHTML;
   eq(count(s, 'class="card hsumc"'), 4, 'summary: four cards');
-  has(s, '<div class="hsumv" style="color:#f59e0b">80%</div>', 'summary: 32/40 = 80%, amber');
+  has(s, '<div class="hsumv" style="color:#c4a06e">80%</div>', 'summary: 32/40 = 80%, amber');
   has(s, '32 of 40 calls', 'summary: ok of total');
-  has(s, '<div class="hsumv" style="color:#ef4444">2</div>', 'summary: failure count in red');
+  has(s, '<div class="hsumv" style="color:#c66a6a">2</div>', 'summary: failure count in red');
   has(s, '1 distinct errors', 'summary: identical failures grouped');
   has(s, '3 <span class="muted" style="font-size:var(--fs-md)">of 4</span>', 'summary: 3 of 4 models failing');
   has(s, '<div class="hsumv" style="color:col:beta">beta</div>', 'summary: worst judged model (>=5 calls) is beta, not 0/2 gamma');
@@ -195,7 +195,7 @@ const D = await load();
   const e = hsummary.innerHTML;
   has(e, '<div class="hsumv" style="">—</div>', 'summary empty: no rate -> dash, no colour');
   has(e, '0 of 0 calls', 'summary empty: zero calls');
-  has(e, '<div class="hsumv" style="color:#22c55e">0</div>', 'summary empty: zero failures in green');
+  has(e, '<div class="hsumv" style="color:#5f9e6e">0</div>', 'summary empty: zero failures in green');
   has(e, 'none recorded', 'summary empty: no failures sub-line');
   has(e, 'nothing below 100%', 'summary empty: no worst model');
   has(e, 'background:color-mix(in srgb,#MU 14%', 'summary empty: badge falls back to MU');
@@ -223,23 +223,23 @@ const rowsOf = html => html.split('<div class="flex items-center gap-2.5 hrow').
   const [a, b, d, n] = R;
   has(a, 'title="">', 'health alpha: not thin, empty title');
   has(a, 'style="background:#BD"', 'health alpha: normal track colour');
-  has(a, '<div style="width:100.00%;background:#22c55e"></div>', 'health alpha: ok segment 100.00%');
-  has(a, 'color:#22c55e">100%</div>', 'health alpha: rate green');
+  has(a, '<div style="width:100.00%;background:#5f9e6e"></div>', 'health alpha: ok segment 100.00%');
+  has(a, 'color:#5f9e6e">100%</div>', 'health alpha: rate green');
   has(a, '>10 of 10</div>', 'health alpha: count without failures');
   has(a, 'style="width:172px;color:col:alpha" title="alpha">alpha</div>', 'health alpha: short name, colorOf');
 
   ok(b.startsWith(' hthin"'), 'health beta: <5 calls is thin');
   has(b, 'title="Fewer than 5 calls — too few to judge"', 'health beta: thin tooltip');
-  has(b, '<div style="width:25.00%;background:#22c55e"></div>', 'health beta: ok 1/4');
-  has(b, '<div title="timeout: 2" style="width:50.00%;background:#60a5fa"></div>', 'health beta: timeout segment');
-  has(b, '<div title="auth: 1" style="width:25.00%;background:#ef4444"></div>', 'health beta: auth segment');
-  has(b, '1 of 4 · <span style="color:#ef4444">3 failed</span>', 'health beta: count says what each number is');
+  has(b, '<div style="width:25.00%;background:#5f9e6e"></div>', 'health beta: ok 1/4');
+  has(b, '<div title="timeout: 2" style="width:50.00%;background:#7c909c"></div>', 'health beta: timeout segment');
+  has(b, '<div title="auth: 1" style="width:25.00%;background:#c66a6a"></div>', 'health beta: auth segment');
+  has(b, '1 of 4 · <span style="color:#c66a6a">3 failed</span>', 'health beta: count says what each number is');
   ok(b.indexOf('>timeout 2</span>') < b.indexOf('>auth 1</span>') && b.indexOf('>auth 1</span>') > 0,
     'health beta: chips sorted by count desc');
-  has(b, 'style="background:#60a5fa22;color:#60a5fa">timeout 2</span>', 'health beta: chip colour from FKIND');
+  has(b, 'style="background:#7c909c22;color:#7c909c">timeout 2</span>', 'health beta: chip colour from FKIND');
 
   has(d, 'style="background:rgba(239,68,68,.22)"', 'health dead: 100% failure gets FAILTRACK');
-  has(d, 'color:#ef4444">0%</div>', 'health dead: 0% red');
+  has(d, 'color:#c66a6a">0%</div>', 'health dead: 0% red');
   lacks(d, 'hthin', 'health dead: 5 calls is not thin');
   has(d, '>unavailable 5</span>', 'health dead: unavailable chip');
 
@@ -267,7 +267,7 @@ const rowsOf = html => html.split('<div class="flex items-center gap-2.5 hrow').
   const R = rowsOf(healthgrid.innerHTML);
   eq(R.length, 1, 'health filter: only models the project used');
   has(R[0], '>alpha</div>', 'health filter: alpha kept');
-  has(R[0], 'color:#22c55e">100%</div>', 'health filter: rate unchanged');
+  has(R[0], 'color:#5f9e6e">100%</div>', 'health filter: rate unchanged');
 
   DP.renderHealth([{ model: 'other' }]);
   eq(healthgrid.innerHTML, '<div class="muted text-[length:var(--fs-sm)]">No calls recorded for "R&amp;D" in this range.</div>',
@@ -299,7 +299,7 @@ const FAILS = () => ([
     'failures: message escaped with the local attribute-safe esc');
   has(rows[0], '>10-02 09:00</span>', 'failures: single event shows MM-DD HH:MM');
   has(rows[0], ' style="visibility:hidden">', 'failures: x1 counter hidden');
-  has(rows[0], 'style="background:#ef444422;color:#ef4444">auth</span>', 'failures: kind chip');
+  has(rows[0], 'style="background:#c66a6a22;color:#c66a6a">auth</span>', 'failures: kind chip');
   has(fl.innerHTML, 'data-n="2"', 'failures: group size on the row');
   has(rows[1], '>10-01 10:00 → 11:05</span>', 'failures: repeated group shows first → last time');
   has(rows[1], ' title="2 identical failures">&times;2</span>', 'failures: x2 counter');
@@ -318,7 +318,7 @@ const FAILS = () => ([
   eq(DF.failKind, 'auth', 'click kind: state updated');
   eq(fc.textContent, '1 of 3 failures (1 groups)', 'click kind: filtered count line');
   eq(fl.innerHTML.split('frow"').length - 1, 1, 'click kind: one group left');
-  has(ff.innerHTML, '<button class="fchip on" data-fk="auth"\n        style="border-color:#ef4444;color:#ef4444">', 'click kind: active chip in kind colour');
+  has(ff.innerHTML, '<button class="fchip on" data-fk="auth"\n        style="border-color:#c66a6a;color:#c66a6a">', 'click kind: active chip in kind colour');
 
   click(ff, '[data-fm]', 'm1');
   eq(DF.failModel, 'm1', 'click model: state updated');
@@ -383,8 +383,8 @@ const FAILS = () => ([
   eq(E.outcard.hidden, false, 'outcomes: shown');
   const k = E.outkpis.innerHTML;
   has(k, '<div class="dkv" style="">10</div><div class="dkl">Sessions ended · 30d</div>', 'outcomes: total');
-  has(k, '<div class="dkv" style="color:#ef4444">2</div><div class="dkl">Orphan reaps</div>', 'outcomes: reaps red');
-  has(k, '<div class="dkv" style="color:#f59e0b">2</div><div class="dkl">Ended silently</div>', 'outcomes: silent amber');
+  has(k, '<div class="dkv" style="color:#c66a6a">2</div><div class="dkl">Orphan reaps</div>', 'outcomes: reaps red');
+  has(k, '<div class="dkv" style="color:#c4a06e">2</div><div class="dkl">Ended silently</div>', 'outcomes: silent amber');
   has(k, '>60.0%</div><div class="dkl">Ended cleanly</div>', 'outcomes: (10-2-2)/10 clean');
 
   const s = E.outbysource.innerHTML;
@@ -401,7 +401,7 @@ const FAILS = () => ([
   has(l, '<span class="muted">tui \u00b7 </span>', 'outcomes: missing model is blank');
 
   D.renderOutcomes({ by_reason: { cron_complete: 4 } });
-  has(E.outkpis.innerHTML, '<div class="dkv" style="color:#22c55e">0</div><div class="dkl">Orphan reaps</div>', 'outcomes clean: reaps green');
+  has(E.outkpis.innerHTML, '<div class="dkv" style="color:#5f9e6e">0</div><div class="dkl">Orphan reaps</div>', 'outcomes clean: reaps green');
   has(E.outkpis.innerHTML, '>100.0%</div>', 'outcomes clean: 100% clean');
   eq(E.outreaptrend.innerHTML, '', 'outcomes clean: no trend');
   eq(E.outsilentlist.innerHTML, '', 'outcomes clean: no silent list');
@@ -421,13 +421,13 @@ const FAILS = () => ([
   ], [{ cmd: 'rm <x>', n: 4 }]);
   const [t, r, w, x] = E.toolrows.innerHTML.split('py-1"').slice(1);
   has(t, '1,200 calls', 'tools terminal: calls');
-  has(t, 'style="color:#ef4444;min-width:3.5rem;text-align:right">25.0%</span>', 'tools terminal: >=20% red');
-  has(t, '<span style="color:#ef4444" title="was 10.0% in the prior 30 days">\u2191</span>', 'tools terminal: worse -> red up');
+  has(t, 'style="color:#c66a6a;min-width:3.5rem;text-align:right">25.0%</span>', 'tools terminal: >=20% red');
+  has(t, '<span style="color:#c66a6a" title="was 10.0% in the prior 30 days">\u2191</span>', 'tools terminal: worse -> red up');
   has(t, '5,000 tok wasted', 'tools terminal: waste');
-  has(r, 'style="color:#22c55e;min-width:3.5rem;text-align:right">0.0%</span>', 'tools read: 0 green');
+  has(r, 'style="color:#5f9e6e;min-width:3.5rem;text-align:right">0.0%</span>', 'tools read: 0 green');
   has(r, '<span class="muted">\u2192</span>', 'tools read: <1pt change is flat');
-  has(w, 'color:#f59e0b;', 'tools web: >0 <20% amber');
-  has(w, '<span style="color:#22c55e" title="was 20.0% in the prior 30 days">\u2193</span>', 'tools web: better -> green down');
+  has(w, 'color:#c4a06e;', 'tools web: >0 <20% amber');
+  has(w, '<span style="color:#5f9e6e" title="was 20.0% in the prior 30 days">\u2193</span>', 'tools web: better -> green down');
   has(x, '<span style=";min-width:3.5rem;text-align:right"><span class="muted">no confident calls</span></span>', 'tools x: null rate');
   lacks(x, '\u2192', 'tools x: no trend without both rates');
   has(E.toolcmds.innerHTML, 'Top failing terminal commands', 'tools: cmd header');
@@ -680,14 +680,14 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
 {
   eq(D.FAILTRACK, 'rgba(239,68,68,.22)', 'FAILTRACK: the red wash hex');
   eq(Object.keys(D.FKIND).length, 7, 'FKIND: seven failure kinds');
-  eq(D.FKIND.rate_limit.c, '#f59e0b', 'FKIND: rate_limit colour');
+  eq(D.FKIND.rate_limit.c, '#c4a06e', 'FKIND: rate_limit colour');
   eq(D.FKIND.overloaded.t, 'overloaded', 'FKIND: overloaded label');
-  eq(D.FKIND.timeout.c, '#60a5fa', 'FKIND: timeout colour');
-  eq(D.FKIND.auth.c, '#ef4444', 'FKIND: auth colour');
+  eq(D.FKIND.timeout.c, '#7c909c', 'FKIND: timeout colour');
+  eq(D.FKIND.auth.c, '#c66a6a', 'FKIND: auth colour');
   eq(D.FKIND.server_error.t, '5xx', 'FKIND: server_error label is 5xx, not server_error');
   eq(D.FKIND.unavailable.c, '#64b5c9', 'FKIND: unavailable is slate-blue, not grey');
   eq(D.FKIND.tool.c, '#818cf8', 'FKIND: tool colour');
-  has(styles[0].textContent, '.k-rate_limit{background:#f59e0b2e;color:#f59e0b}', 'installKindCSS: chip rule is built from FKIND');
+  has(styles[0].textContent, '.k-rate_limit{background:#c4a06e2e;color:#c4a06e}', 'installKindCSS: chip rule is built from FKIND');
   has(styles[0].textContent, '.k-tool{background:#818cf82e;color:#818cf8}', 'installKindCSS: every kind gets a rule');
   eq(D.fk('nope').c, '#MU', 'fk: an unknown kind falls back to MU');
   eq(D.fk('nope').t, 'nope', 'fk: an unknown kind keeps its own name');
@@ -695,11 +695,11 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
   ok(D.fk('auth') === D.FKIND.auth, 'fk: a known kind returns the FKIND entry itself');
 
   eq(D.rateColor(null), '#MU', 'rateColor: null (unmeasured) is MU, not red');
-  eq(D.rateColor(95), '#22c55e', 'rateColor: 95 exactly is green');
-  eq(D.rateColor(94.99), '#f59e0b', 'rateColor: 94.99 is amber');
-  eq(D.rateColor(80), '#f59e0b', 'rateColor: 80 exactly is amber');
-  eq(D.rateColor(79.99), '#ef4444', 'rateColor: 79.99 is red');
-  eq(D.rateColor(0), '#ef4444', 'rateColor: zero is red, not MU');
+  eq(D.rateColor(95), '#5f9e6e', 'rateColor: 95 exactly is green');
+  eq(D.rateColor(94.99), '#c4a06e', 'rateColor: 94.99 is amber');
+  eq(D.rateColor(80), '#c4a06e', 'rateColor: 80 exactly is amber');
+  eq(D.rateColor(79.99), '#c66a6a', 'rateColor: 79.99 is red');
+  eq(D.rateColor(0), '#c66a6a', 'rateColor: zero is red, not MU');
 
   eq(D.GB(0), '0.0G', 'GB: zero');
   eq(D.GB(1e9), '1.0G', 'GB: exactly one gig');
@@ -848,7 +848,7 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
     'heatmap: lone un-priced day is level 1 / 34% accent');
   has(html, `<i class="hm-d l3" style="background:color-mix(in srgb, var(--accent) 70%, var(--border))" title="${d2} \u00b7 100 calls \u00b7 ? 100%"></i>`,
     'heatmap: the busiest day is level 3 / 70% (quartiles over [1,5,100])');
-  has(html, `background:linear-gradient(135deg, color-mix(in srgb, hsl(17 66% 55%) 52%, var(--border)) 0.00% 60.00%,color-mix(in srgb, #ff663d 52%, var(--border)) 60.00% 100.00%)`,
+  has(html, `background:linear-gradient(135deg, color-mix(in srgb, hsl(17 40% 58%) 52%, var(--border)) 0.00% 60.00%,color-mix(in srgb, #b07a5e 52%, var(--border)) 60.00% 100.00%)`,
     'heatmap: a two-provider day is a hard-stop gradient sized by share');
   has(html, `title="${d4} \u00b7 5 calls \u00b7 anthropic 60% \u00b7 fireworks 40%"`, 'heatmap: tooltip lists providers by share, biggest first');
   has(html, `<i class="hm-d l0" style="" title="${d3} \u00b7 0 calls \u00b7 ? NaN%"></i>`,
@@ -856,8 +856,8 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
   has(html, `<i class="hm-d l0" title="`, 'heatmap: a grid day with no payload row gets no style attribute');
 
   has(html, '<i class="hm-sw" style="background:var(--accent)"></i><span class="muted">?</span>', 'heatmap legend: an unknown provider key uses the accent');
-  has(html, '<i class="hm-sw" style="background:hsl(17 66% 55%)"></i><span class="muted">anthropic</span>', 'heatmap legend: anthropic uses PROV.fg');
-  has(html, '<i class="hm-sw" style="background:#ff663d"></i><span class="muted">fireworks</span>', 'heatmap legend: fireworks uses PROV.fg');
+  has(html, '<i class="hm-sw" style="background:hsl(17 40% 58%)"></i><span class="muted">anthropic</span>', 'heatmap legend: anthropic uses PROV.fg');
+  has(html, '<i class="hm-sw" style="background:#b07a5e"></i><span class="muted">fireworks</span>', 'heatmap legend: fireworks uses PROV.fg');
   ok(html.indexOf('>?</span>') < html.indexOf('>anthropic</span>') && html.indexOf('>anthropic</span>') < html.indexOf('>fireworks</span>'),
     'heatmap legend: providers ordered by total calls (101 / 3 / 2)');
   has(html, '<span class="muted">less</span>', 'heatmap key: less label');

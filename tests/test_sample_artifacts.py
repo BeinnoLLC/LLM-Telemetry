@@ -40,11 +40,15 @@ def chk(cond, label, extra=""):
 
 
 GENERATED = re.compile(r"Generated \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+# The payloads (costs/rankings) are refreshed during the sample rebuild too and
+# carry an ISO "generated" stamp; their rebuild time is not part of the artifact
+# contract either.
+PAYLOAD_TS = re.compile(r'"generated": ?"?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})"?')
 
 
 def normalise(text):
     """The one place that forgives a build-time field. Keep it that small."""
-    return GENERATED.sub("Generated <timestamp>", text)
+    return PAYLOAD_TS.sub(r'"generated":"<timestamp>"', GENERATED.sub("Generated <timestamp>", text))
 
 
 def width_and_offset(a, b):
@@ -71,10 +75,11 @@ def build(name, module, out_dir):
     return proc, " ".join(cmd)
 
 
+# costs.html is gone (#113 consolidation): the sample rebuild covers the whole
+# app — dashboard.html embeds both the costs payload the Prices view reads and
+# the rankings payload, and build_dashboard refreshes costs-data.json itself.
 targets = [
     ("dashboard.html", "llm_telemetry.build_dashboard"),
-    ("costs.html", "llm_telemetry.build_costs"),
-    ("rankings.html", "llm_telemetry.build_rankings"),
 ]
 
 tmp = tempfile.mkdtemp(prefix="sample-artifacts-")

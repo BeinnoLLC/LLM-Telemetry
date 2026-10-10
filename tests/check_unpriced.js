@@ -69,7 +69,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   chk(/1 model with traffic has no price/.test(b.textContent), 'banner count comes from the payload', `(${b.textContent.slice(0, 60)})`);
   chk(/mystery-9/.test(b.textContent), 'banner names the model');
   chk(/understated/.test(b.textContent), 'banner says Est. cost is understated');
-  chk(b.querySelector('a[href="costs.html"]'), 'banner links to the price sheet');
+  chk(b.querySelector('a[href="#/Prices"]'), 'banner links to the in-app price sheet');
   const un = rowOf(d, 'mystery-9');
   chk(un && un.querySelector('.unpriced') && !/\$0\.00/.test(un.textContent),
     'unpriced row reads "unpriced", not "$0.00"');

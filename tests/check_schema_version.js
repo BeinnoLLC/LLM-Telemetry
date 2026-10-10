@@ -38,10 +38,19 @@ chk(new RegExp(`const SCHEMA_VERSION = ${SV};`).test(html0), 'page bakes in the 
 
 function boot(mutate, cb) {
   // Rewrite the embedded analytics payload to simulate a stale/mismatched build.
-  const m = html0.match(/let DATA = (\{[\s\S]*?\});\n\/\/ Injected from config/);
-  const data = JSON.parse(m[1]);
+  const start = html0.indexOf('let DATA = ') + 'let DATA = '.length;
+  let depth = 0, inStr = false, escp = false, end = -1;
+  for (let pos = start; pos < html0.length; pos++){
+    const ch = html0[pos];
+    if (inStr){ if (escp) escp = false; else if (ch === '\\') escp = true; else if (ch === '"') inStr = false; }
+    else if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}'){ depth--; if (depth === 0){ end = pos + 1; break; } }
+  }
+  const lit = html0.slice(start, end);
+  const data = JSON.parse(lit);
   mutate(data);
-  const html = html0.replace(m[1], () => JSON.stringify(data));
+  const html = html0.replace(lit, () => JSON.stringify(data));
   const errs = [];
   const vc = new (require('jsdom').VirtualConsole)();
   vc.on('jsdomError', e => errs.push(String(e.message || e)));

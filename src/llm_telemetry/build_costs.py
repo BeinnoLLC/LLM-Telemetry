@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Render a per-million-token price sheet for every model Hermes has used.
+"""Collect the per-million-token price payload the app's Prices view shows.
 
-This page answers one question: "how is a cost number on the dashboard
-produced?" It shows, per model, the exact input/output/cache rate applied,
-where that rate came from (official vendor page, OpenRouter catalogue, or the
-local-electricity model), and what the observed traffic cost at that rate.
+Answers one question: "how is a cost number on the dashboard produced?" Per
+model: the exact input/output/cache rate applied, where that rate came from
+(official vendor page, OpenRouter catalogue, or the local-electricity model),
+and what the observed traffic cost at that rate. The rendering is the Prices
+view inside dashboard.html (#113 consolidation: one app, no standalone pages).
 
 Local models are NOT free — they burn electricity. That cost is shown as its
 own figure (energy_usd), never folded into billed spend, and priced here from
@@ -17,10 +18,10 @@ import subprocess
 import datetime
 import collections
 import html as _html
+from pathlib import Path
 
 from .config import get as _cfg
-from .webassets import (frag, read_costs_css, read_costs_js, read_costs_shell,
-                       read_tokens, script_json)
+from .webassets import frag  # noqa: F401 — payload JSON escaping helper
 
 CFG = _cfg()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +29,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 from . import pricing as P  # noqa: E402 — deliberately after CFG/HERE; see module-level ordering note above
 
 DATA = str(CFG.reports_dir / "analytics-data.json")
-OUT = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "costs.html")
 
 # ---------------------------------------------------------------- electricity
 # The power model lives in energy.py (P7-01/02): one module, tariff and
@@ -72,6 +72,23 @@ def installed_local_models(ollama):
     return out
 
 
+def _resolve_serving_provider(row):
+    """Fallback serving-provider for rows with a blank billing slot."""
+    url = (row.get("base_url") or "").lower()
+    if "fireworks.ai" in url or "openrouter.ai" in url:
+        return "fireworks" if "fireworks.ai" in url else "openrouter"
+    if "opencode.ai" in url:      return "opencode-go"
+    if "api.anthropic.com" in url: return "anthropic"
+    if "nousresearch.com" in url:  return "nous"
+    if "ollama.com" in url:        return "ollama-cloud"
+    model = (row.get("model") or "").strip().lower()
+    if model.startswith("gpt-"):   return "openai-codex"
+    if model.startswith(("stepfun/", "step-")) or "hermes-" in model: return "nous"
+    if "claude" in model:          return "anthropic"
+    if "glm" in model or "kimi" in model or "minimax" in model: return "opencode-go"
+    return ""
+
+
 def observed_traffic(data):
     """Observed traffic per model across every profile."""
     seen = collections.defaultdict(lambda: {
@@ -86,8 +103,16 @@ def observed_traffic(data):
             e["outp"] += r.get("outp", 0)
             e["cache"] += r.get("cread", 0)
             e["cost"] += r.get("market_value_usd") or 0.0
+            # The collector stores the billing slot verbatim; an empty slot
+            # (endpoint never set one) still served the traffic, so resolve it
+            # the way price_row does — endpoint first, then the model shape —
+            # instead of leaving the sheet's Served-by column blank.
             if r.get("provider"):
                 e["providers"].add(r["provider"])
+            elif not e["providers"]:
+                fallback = _resolve_serving_provider(r)
+                if fallback:
+                    e["providers"].add(fallback)
             # The collector already classed the row by its endpoint (a LAN
             # host is local whatever the model is called), so the sheet
             # agrees with the dashboard instead of re-deriving from the name.
@@ -200,229 +225,27 @@ def build():
     }
 
 
-# P2-04 (#28): the page is a real file now (web/costs.html) with its styles in
-# web/css/costs.css and its calculator in web/js/costs.js. The shared palette
-# tokens come from web/css/tokens.css — the same file the dashboard inlines —
-# so a colour change cannot land on one page and miss the other.
-COSTS_CSS = read_tokens() + read_costs_css()
-PAGE = (read_costs_shell()
-        .replace("__COSTS_CSS__", COSTS_CSS)
-        .replace("__COSTS_JS__", read_costs_js()))
+
+def costs_data_path():
+    payload_path = os.environ.get("LLM_TELEMETRY_COSTS_DATA", "")
+    if payload_path:
+        return Path(payload_path)
+    return CFG.reports_dir / "costs-data.json"
 
 
-def fmt_money_1m(v):
-    if v is None:
-        return frag("muted_dash")
-    if v == 0:
-        return frag("muted_zero")
-    if v < 0.01:
-        return f"${v:.4f}"
-    if v < 1:
-        return f"${v:.3f}"
-    return f"${v:,.2f}"
-
-
-def fmt_n(n):
-    n = n or 0
-    for u, d in (("B", 1e9), ("M", 1e6), ("K", 1e3)):
-        if n >= d:
-            return f"{n/d:.1f}{u}"
-    return str(int(n))
-
-
-# Model-family colour, matching the dashboard so a model reads the same on both
-# pages. Kept in sync with FAMILY in build_dashboard.py.
-FAMILIES = [
-    (("claude", "opus", "sonnet", "haiku"), "hsl(17 66% 55%)"),
-    (("glm", "kimi", "minimax"), "hsl(320 85% 60%)"),
-    (("deepseek",), "hsl(262 80% 60%)"),
-    (("qwen", "gpt-oss", "nemotron", "llama", "mistral", "phi", "gemma"), "hsl(196 88% 55%)"),
-    (("gpt-", "astra", "luna", "codex", "sol", "terra"), "hsl(120 70% 45%)"),
-]
-
-
-def colour(model):
-    m = (model or "").lower()
-    for keys, c in FAMILIES:
-        if any(k in m for k in keys):
-            return c
-    return "hsl(215 16% 55%)"
-
-
-PROV = {
-    "anthropic":    ("✳", "hsl(17 66% 55% / .16)",  "hsl(17 66% 55%)"),
-    "opencode-go":  ("◈", "hsl(250 85% 62% / .16)", "hsl(250 85% 68%)"),
-    "fireworks":    ("✦", "rgba(255,102,61,.16)",   "#ff663d"),
-    "openai-codex": ("◉", "hsl(162 82% 38% / .16)", "hsl(162 82% 40%)"),
-    "local":        ("▣", "hsl(213 90% 60% / .14)", "hsl(213 90% 62%)"),
-    "moa":          ("⬡", "rgba(244,114,182,.16)",  "#f472b6"),
-    "cloud":        ("☁", "hsl(205 80% 55% / .16)", "hsl(205 80% 58%)"),
-    "nous":         ("◆", "rgba(234,179,8,.16)",    "#eab308"),
-}
-
-
-def prov_badge(name):
-    """Same badge the dashboard renders, so the two pages read as one app."""
-    key = (name or "").strip()
-    # Ollama slots are recorded under several names; they are all local.
-    if key.startswith("ollama") or key == "custom":
-        key = "local"
-    icon, bg, fg = PROV.get(key, ("○", "rgba(127,127,127,.14)", "var(--muted)"))
-    return frag("prov_badge", bg=bg, fg=fg, icon=icon, name=name)
-
-
-LABEL = {
-    "vendor": "vendor page",
-    "openrouter": "openrouter",
-    "nous": "nous portal",
-    "local": "local models",
-    "free-tier": "free tier",
-    "unpriced": "unpriced",
-}
-
-
-def freshness_html(f, catalog_size):
-    """Catalogue freshness line (P6-02, #60). Stale and unavailable are warnings."""
-    age = frag("fresh_age", age=f["age"]) if f.get("age") else ""
-    ttl = f"cache refreshes every {f['ttl']}"
-    why = f" ({f['detail']})" if f.get("detail") else ""
-    size = f"{catalog_size:,}"
-    if f["state"] == "unavailable" and not catalog_size:
-        return frag("fresh_unavailable", why=why)
-    if f["state"] in ("stale", "unavailable"):
-        return frag("fresh_stale", age=age, why=why, size=size, ttl=ttl)
-    if f["state"] == "pinned":
-        return frag("fresh_pinned", size=size)
-    word = "fetched live" if f["state"] == "live" else "from cache"
-    return frag("fresh_plain", state=f["state"], size=size, word=word, age=age, ttl=ttl)
-
-
-def freshness_is_warning(f, catalog_size):
-    """Stale/unavailable get their own box; every other state sits in the header."""
-    return f["state"] in ("stale", "unavailable")
-
-
-def _plural(n):
-    return "s" if n != 1 else ""
-
-
-def unpriced_html(models):
-    """Unpriced models, split by whether they carry traffic (P6-03, #61)."""
-    un = [m for m in models if m["source"] == "unpriced"]
-    used = [m for m in un if m.get("calls")]
-    idle = [m for m in un if not m.get("calls")]
-    if not used:
-        tail = (f' {len(idle)} unused model{_plural(len(idle))} have no rate, '
-                'which costs nothing.') if idle else ''
-        return frag("unpriced_ok", tail=tail)
-    calls = sum(m["calls"] for m in used)
-    toks = sum(m.get("inp", 0) + m.get("outp", 0) for m in used)
-    names = ", ".join(frag("mono", text=m["short"]) for m in used)
-    idle_note = (f' Another {len(idle)} unpriced model{_plural(len(idle))} '
-                 'had no traffic, which is harmless.') if idle else ''
-    return frag("unpriced_warn", n_used=len(used), n_un=len(un), s=_plural(len(un)),
-                names=names, calls=f"{calls:,}", toks=f"{toks:,}", idle_note=idle_note)
-
-
-def row_html(m):
-    """One price-sheet row. Shaping here, markup in web/costs-fragments.html."""
-    src = m["source"]
-    tps = frag("tps", tps=m["tps"]) if m["tps"] else frag("muted_dash")
-    # Output÷input multiple: the single most useful number for predicting a
-    # bill, because output dominates cost on every metered provider.
-    ratio = (frag("mdash") if not m["in_1m"] or not m["out_1m"]
-             else frag("ratio", n=f'{m["out_1m"]/m["in_1m"]:.0f}'))
-    badges = " ".join(prov_badge(p) for p in m["providers"]) or frag("muted_dash")
-    used = m.get("used", bool(m.get("calls")))
-    oid = m.get("oid")
-    return frag(
-        "row",
-        model_attr=_html.escape(m["model"], quote=True),
-        oid_attr=_html.escape(oid or "", quote=True),
-        src=src, used=1 if used else 0,
-        unused_class="" if used else frag("unused_class"),
-        colour=colour(m["model"]), model=_html.escape(m["model"]),
-        priced_as=(frag("priced_as", oid=_html.escape(oid))
-                   if oid and oid != m["model"] else ""),
-        label=LABEL.get(src, src), badges=badges,
-        in_1m=fmt_money_1m(m["in_1m"]), out_1m=fmt_money_1m(m["out_1m"]),
-        cache_1m=fmt_money_1m(m["cache_1m"]), ratio=ratio, tps=tps,
-        use_cell=fmt_n(m["calls"]) if used else frag("unused_cell"))
-
-
-def render(d):
-    table = frag("table", rows="".join(row_html(m) for m in d["models"]))
-
-    priced = [m for m in d["models"] if m["out_1m"] is not None and m["source"] != "local"]
-    local = [m for m in d["models"] if m["source"] == "local"]
-    unpriced = [m for m in d["models"] if m["source"] == "unpriced"]
-    metered = [m for m in priced if m["out_1m"]]
-    n_used = sum(1 for m in d["models"] if m.get("used", bool(m.get("calls"))))
-    dearest = max(priced, key=lambda m: m["out_1m"], default=None)
-    cheapest = min(metered, key=lambda m: m["out_1m"], default=None)
-    median = (sorted(m["out_1m"] for m in metered)[len(metered) // 2]
-              if metered else None)
-
-    f = d.get("freshness") or P.catalog_freshness(d.get("catalog_source"))
-    fb = freshness_html(f, d["catalog_size"])
-    # A plain state goes inline in the header; a warning gets its own box.
-    fresh_line, fresh_box = (fb, "") if not freshness_is_warning(f, d["catalog_size"]) else (
-        f'OpenRouter catalogue: {d["catalog_size"]:,} models', fb)
-
-    # A reference sheet answers "what does a model cost", not "what did I spend".
-    mdash = frag("mdash")
-    kpis = frag(
-        "kpis", n_models=len(d["models"]), n_used=n_used, n_unpriced=len(unpriced),
-        dearest_rate=fmt_money_1m(dearest["out_1m"]) if dearest else mdash,
-        dearest_name=dearest["short"] if dearest else "",
-        cheapest_rate=fmt_money_1m(cheapest["out_1m"]) if cheapest else mdash,
-        cheapest_name=cheapest["short"] if cheapest else "",
-        median_rate=fmt_money_1m(median), n_metered=len(metered), n_local=len(local))
-
-    watts = d["watts"]
-    usd_sec = (watts / 1000.0) * d["kwh"] / 3600.0
-    ex_out = usd_sec * (1e6 / 30)
-    ex_in = ex_out / d["prefill"]
-    ex_cache = ex_out / d["cachex"]
-
-    # Live calculator: the point of knowing a rate is pricing a hypothetical
-    # job, so let the sheet do that arithmetic instead of the reader.
-    calc_json = script_json([
-        {"n": m["model"], "i": m["in_1m"], "o": m["out_1m"], "s": m["source"],
-         "u": 1 if m.get("used", bool(m.get("calls"))) else 0}
-        for m in d["models"]
-    ])
-
-    html = (PAGE
-            .replace("__GEN__", d["generated"].replace("T", " "))
-            .replace("__CATSIZE__", f'{d["catalog_size"]:,}')
-            .replace("__CATSRC__", d["catalog_source"])
-            .replace("__FRESHLINE__", fresh_line)
-            .replace("__FRESHBOX__", fresh_box)
-            .replace("__TTL__", P.ttl_label())
-            .replace("__UNPRICED__", unpriced_html(d["models"]))
-            .replace("__KPIS__", kpis)
-            .replace("__TABLE__", table)
-            .replace("__CALCDATA__", calc_json)
-            .replace("__KWH__", f'{d["kwh"]:.3f}')
-            .replace("__GPUW__", f'{d["gpu_w"]:g}')
-            .replace("__HOSTW__", f'{d["host_w"]:g}')
-            .replace("__WATTS__", f'{watts:g}')
-            .replace("__USDSEC__", f"{usd_sec:.9f}")
-            .replace("__PREFILL__", str(d["prefill"]))
-            .replace("__CACHEX__", str(d["cachex"]))
-            .replace("__EX_CACHE__", f"{ex_cache:.4f}")
-            .replace("__EX_OUT__", f"{ex_out:.4f}")
-            .replace("__EX_IN__", f"{ex_in:.4f}"))
-    return html
+def write_costs_data(d):
+    """Payload the dashboard's Prices view consumes (raw values, not strings)."""
+    path = costs_data_path()
+    os.makedirs(path.parent, exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(d, fh, default=str)
+    return path
 
 
 if __name__ == "__main__":
     d = build()
-    html = render(d)
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    open(OUT, "w").write(html)
+    data_path = write_costs_data(d)
     n_local = sum(1 for m in d["models"] if m["source"] == "local")
     n_un = sum(1 for m in d["models"] if m["source"] == "unpriced")
-    print(f"{OUT}  ({len(html):,} bytes)  "
-          f"{len(d['models'])} models, {n_local} local, {n_un} unpriced")
+    print(f"{data_path}  ({len(d['models']):,} models, {n_local} local, "
+          f"{n_un} unpriced) -> the app's Prices view")

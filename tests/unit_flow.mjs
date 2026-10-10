@@ -501,7 +501,7 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   D.renderAgents([{ state: 'alive', backend: 'llama.cpp', host: 'gpu-a', pid: 4242, profile: 'work', age_s: 3600, leases: 2, kill_hint: 'pkill -f llama' }]);
   let html = list.innerHTML;
   eq(card.hidden, false, 'agents: a live fleet shows the card');
-  ok(html.includes('background:#22c55e'), 'agents: alive dot colour');
+  ok(html.includes('background:#5f9e6e'), 'agents: alive dot colour');
   ok(html.includes('>alive<'), 'agents: state text');
   ok(html.includes('gpu-a · pid 4242 · work'), 'agents: host, pid and profile line');
   ok(html.includes('>1h ago<'), 'agents: age formatted by ago()');
@@ -510,7 +510,7 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
 
   D.renderAgents([{ state: 'stale', backend: 'b', host: 'h', pid: 2, profile: 'p', age_s: 61, leases: 1 }]);
   html = list.innerHTML;
-  ok(html.includes('background:#f59e0b'), 'agents: stale dot colour');
+  ok(html.includes('background:#c4a06e'), 'agents: stale dot colour');
   ok(html.includes('>1 lease<'), 'agents: singular lease');
   ok(!html.includes('1 leases'), 'agents: no double plural');
   ok(html.includes('1m ago'), 'agents: 61s rounds to 1m');
@@ -518,7 +518,7 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
 
   D.renderAgents([{ state: 'dead', backend: 'b', host: 'h', pid: 3, profile: 'p', age_s: 5, leases: 0 }]);
   html = list.innerHTML;
-  ok(html.includes('background:#ef4444'), 'agents: dead dot colour');
+  ok(html.includes('background:#c66a6a'), 'agents: dead dot colour');
   D.renderAgents([{ state: 'zombie', backend: 'b', host: 'h', pid: 4, profile: 'p', age_s: 5, leases: 0 }]);
   ok(list.innerHTML.includes('background:#64748b'), 'agents: an unknown state gets the neutral colour');
 

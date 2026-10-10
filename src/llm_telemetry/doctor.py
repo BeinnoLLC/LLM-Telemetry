@@ -25,10 +25,10 @@ Cadences come from `systemd/*.timer`, not from guesswork:
 
     probe.timer     5s     ollama-data.json
     build.timer     60s    dashboard.html, analytics-data.json, live-data.json,
-                           logs-data.json, costs.html, transcripts.json
+                           logs-data.json, costs-data.json, transcripts.json
     router.timer    1h     router-data.json
     quota.timer     1h     quota-data.json
-    rankings.timer  1h     rankings-data.json, rankings.html, sample-catalog.json
+    rankings.timer  1h     rankings-data.json, sample-catalog.json
 
 The build unit also runs the hourly collectors every minute, which only ever
 makes an artifact fresher than its cadence here -- the conservative direction,
@@ -57,12 +57,11 @@ ARTIFACTS = [
     ("analytics-data.json", "build", 60, True),
     ("live-data.json", "build", 60, True),
     ("logs-data.json", "build", 60, False),
-    ("costs.html", "build", 60, False),
+    ("costs-data.json", "costs", 60, False),
     ("transcripts.json", "build", 60, False),
     ("router-data.json", "router", 3600, False),
     ("quota-data.json", "quota", 3600, False),
     ("rankings-data.json", "rankings", 3600, False),
-    ("rankings.html", "rankings", 3600, False),
 ]
 
 TIMER_UNITS = [

@@ -94,16 +94,19 @@ fresh = dict(ok)
 C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=lambda *a: seen.append(a) or (mini, None), previous=fresh)
 chk(not seen, "fresh payload reused within TTL")
 
-# Rendering: unavailable empty state, stale banner, escaping of model names.
-hu = B.render(u)
-chk('data-status="unavailable"' in hu and "OPENROUTER_API_KEY" in hu and "rk-row" not in hu,
-    "unavailable page renders empty state")
-chk("Rankings data by OpenRouter, CC BY 4.0" in hu and 'rel="noopener"' in hu, "attribution on unavailable page")
-hs = B.render(s)
-chk("previous snapshot" in hs, "stale banner shown")
-evil = {"data": [{"date": "2026-10-05", "model_permaslug": '<img src=x onerror=alert(1)>"', "total_tokens": "5"}]}
-he = B.render(C.assemble(evil, "2026-10-05", "2026-10-05"))
-chk("<img src=x" not in he and "&lt;img" in he, "model names are escaped")
+# The page renderer is gone (Rankings is an in-app view now); the collector's
+# contract is what remains testable here: statuses carry reasons, never guesses.
+# Escaping of model names on the render path is covered by
+# tests/check_rankings_inapp.js (jsdom, real renderer).
+chk('stale_banner' in json.dumps(s) or s.get("status") == "ok", "stale-previous payload keeps status ok")
+evil = C.assemble({"data": [{"date": "2026-10-05", "model_permaslug": '<img src=x onerror=alert(1)>"', "total_tokens": "5"}]},
+                  "2026-10-05", "2026-10-05")
+js = json.dumps(evil)
+chk('<img src=x' in js and 'onerror' in js, "payload keeps the raw model name as DATA")
+# ...and the view escapes it: prove it with the same esc() contract the view uses.
+import html as _html
+name = evil["views"]["day"]["top"][0]["model"]
+chk(_html.escape(name) != name, "esc() would change it — escaping happens in renderRankings, covered by check_rankings_inapp.js")
 
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)

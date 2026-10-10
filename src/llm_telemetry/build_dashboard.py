@@ -17,6 +17,10 @@ from .config import get as _cfg
 
 CFG = _cfg()
 DATA = str(CFG.reports_dir / "analytics-data.json")
+# The Prices view (the in-app price sheet, was standalone costs.html) reads the
+# payload build_costs.write_costs_data emits; same reports dir, one source of
+# truth. Missing file -> the view shows a hint instead of crashing the build.
+COSTS_DATA = str(CFG.reports_dir / "costs-data.json")
 OUT  = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "dashboard.html")
 # P2-01 (#26) / P2-03 (#37) / P2-02 (#27): CSS, the page shell, and the JS are
 # real files under web/ (a lint or an editor sees a .css/.html/.js, not a
@@ -135,12 +139,26 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
 # dashboard and miss the price sheet.
 _DASHBOARD_CSS = read_tokens() + read_css()
 SHELL = read_shell()
+# Prices view feed: the JSON build_costs.write_costs_data emits (see module
+# note). A missing/stale file degrades to an empty payload — the view tells the
+# user to refresh rather than crashing the whole dashboard build.
+try:
+    _costs_payload = json.dumps(json.load(open(COSTS_DATA)), default=str)
+except (OSError, ValueError):
+    _costs_payload = "{}"
+RANKINGS_DATA = str(CFG.reports_dir / "rankings-data.json")
+try:
+    _rankings_payload = json.dumps(json.load(open(RANKINGS_DATA)), default=str)
+except (OSError, ValueError):
+    _rankings_payload = "{}"
 _JS_INLINE = inline_js()
 
 html = (SHELL.replace("__PRICE_TTL__", _ttl_label())
              .replace("__DASHBOARD_CSS__", _DASHBOARD_CSS)
              .replace("__DASHBOARD_JS__", _JS_INLINE)
              .replace("__DATA__", json.dumps(data, default=str))
+             .replace("__COSTS_DATA__", _costs_payload)
+             .replace("__RANKINGS_DATA__", _rankings_payload)
              .replace("__POWER__", json.dumps(POWER))
              .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))
              .replace("__SCHEMA_VERSION__", str(SCHEMA_VERSION)))
