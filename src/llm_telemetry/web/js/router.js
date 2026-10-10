@@ -902,26 +902,31 @@ export function pvToggle(n){
   tabs(); pick(current);
 }
 export function tabs(){
-  // #121: toggle chips. Each profile is ALWAYS rendered (you can see every
-  // profile and its state), coloured by its stable hashHue — ON is filled,
-  // OFF is a dimmed outline of the same hue. No "All" chip: the merge is
-  // what you see when everything is on, and the view always shows the
-  // on-set's merge, so there is nothing for a separate tab to select.
+  // #121 / #150: segmented control. One framed group; each profile is a
+  // chip that is always visible. The profile's stable hue rides in as the
+  // --h custom property and ALL on/off styling is CSS-owned (no inline
+  // style ternaries to stomp or get stomped — #126 regression class).
   $('tabs').innerHTML=Object.keys(PV_ALL)
     .map(n=>{
       const h = profileHue(n);
       const off = pvOff(n);
-      const st = off
-        ? `style="background:transparent;color:hsl(${h} 45% 62%);border-color:hsl(${h} 40% 34%);opacity:.62"`
-        : `style="background-color:hsl(${h} 62% 38%);color:#fff;border-color:hsl(${h} 70% 55%)"`;
-      return `<button data-tab="${n}" data-off="${off?1:0}" onclick="pvToggle('${n}')"`
-           + ` oncontextmenu="pvMenu(event,'${esc(n)}')" title="${off?'Off — click to turn on':'On — click to turn off'}"`
-           + ` class="px-5 py-3 rounded-md border text-[length:var(--fs-lg)] taboff flex items-center gap-2" ${st}>${profileIconHtml(n,16)}<span>${n}</span></button>`;
+      return `<button data-tab="${n}" data-off="${off?1:0}" style="--h:${h}"`
+           + ` onclick="pvToggle('${n}')"`
+           + ` oncontextmenu="pvMenu(event,'${esc(n)}')"`
+           + ` title="${off?'Off — click to turn on':'On — click to turn off'}" `
+           + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}<span>${n}</span></button>`;
     }).join('');
-  // a compact "N/M on" readout so the merge's extent is stated, not implied
+  // a compact "N/M on" readout, inside the frame (right end, after a
+  // hairline divider) so the merge's extent is stated, not implied
   const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
-  const sub = $('tabsub');
-  if (sub) sub.textContent = on === tot ? `all ${tot} shown` : `${on}/${tot} on`;
+  let sub = $('tabsub');
+  if (!sub) {
+    sub = document.createElement('span');
+    sub.id = 'tabsub'; sub.className = 'tabsub';
+    sub.setAttribute('aria-live', 'polite');
+    $('tabs').appendChild(sub);
+  }
+  sub.textContent = on === tot ? `all ${tot} shown` : `${on}/${tot} on`;
 }
 // Right-click a profile tab to toggle it (#119). A tiny menu explains what
 // will happen and keeps the accidental-disabled-profile footgun Behind a

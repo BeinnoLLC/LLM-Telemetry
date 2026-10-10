@@ -55,6 +55,35 @@
  .tabon{background:var(--accent);border-color:var(--accent);color:#fff}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
+/* ---- Profile tabs as a segmented control (#150 redesign) -----------------
+   The reference look: chip group lives in its own framed card, chips are
+   dense pills, the ACTIVE state is a soft tinted fill (dark theme keeps the
+   tint; light theme darkens it) tinted by the profile's own stable hue —
+   identity stays per-profile, chrome stays identical across chips. All
+   state lives in [data-off]; the JS hands over --h and touches nothing
+   else, so no render pass can stomp a chip's styling again (#126). */
+ .tabframe{display:flex;gap:3px;align-items:center;padding:3px;
+   background:var(--card);border:1px solid var(--border);border-radius:14px}
+ .tabframe .tabsub{margin-left:auto;padding-right:6px}
+ .tabseg{font:inherit;font-size:var(--fs-md);font-weight:500;line-height:1;
+   display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:10px;
+   border:none;background:transparent;color:var(--fg);cursor:pointer;
+   white-space:nowrap;-webkit-user-select:none;user-select:none}
+ .tabseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+ .tabseg::before{content:"";width:6px;height:6px;border-radius:50%;
+   background:hsl(var(--h) 70% 55%);flex:none;
+   transition:opacity .12s ease, transform .12s ease}
+ .tabseg[data-off="0"]{background:hsl(var(--h) 45% 24%);color:#fff}
+ .tabseg[data-off="0"]:hover{background:hsl(var(--h) 50% 28%)}
+ .tabseg[data-off="0"]::before{background:hsl(var(--h) 80% 82%)}
+ .tabseg[data-off="1"]{color:hsl(var(--h) 12% 58%)}
+ .tabseg[data-off="1"]::before{opacity:.30;transform:scale(.75)}
+ .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 15% 18%)}
+ [data-theme=light] .tabseg[data-off="0"]{background:hsl(var(--h) 42% 88%);color:hsl(var(--h) 55% 24%)}
+ [data-theme=light] .tabseg[data-off="0"]:hover{background:hsl(var(--h) 48% 83%)}
+ [data-theme=light] .tabseg[data-off="0"]::before{background:hsl(var(--h) 55% 38%)}
+ [data-theme=light] .tabseg[data-off="1"]{color:hsl(var(--h) 10% 42%)}
+ [data-theme=light] .tabseg[data-off="1"]:hover{background:hsl(var(--h) 20% 93%);color:hsl(var(--h) 30% 28%)}
  .livehdr{display:flex;align-items:baseline;gap:4px}
  .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:var(--fs-sm);font-weight:500;color:var(--fg)}
  [hidden]{display:none !important}

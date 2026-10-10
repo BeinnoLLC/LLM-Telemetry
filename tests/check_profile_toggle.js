@@ -131,7 +131,8 @@ setTimeout(() => {
     chk(hueOf(w, victim) !== hueOf(w, survivor), 'two profiles get different hues',
         `${hueOf(w, victim)} vs ${hueOf(w, survivor)}`);
     const tabHue = n => {
-      const m = (chipOf(doc, n).getAttribute('style') || '').match(/hsl\((\d+)/);
+      // #150: the hue rides as the --h CSS custom property, not raw hsl()
+      const m = (chipOf(doc, n).getAttribute('style') || '').match(/--h:\s*(\d+)/);
       return m ? Number(m[1]) : null;
     };
     chk(tabHue(victim) === hueOf(w, victim), 'off-then-on tab colour still from the hash',
