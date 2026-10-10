@@ -3005,7 +3005,7 @@ function priceRow(m){
   // with an observed one — the "—" only survives when nothing is knowable.
   const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
   const provHtml = provs.length || inf.length
-    ? (provs.length ? provs : inf).map((pv, i) => {
+    ? (provs.length ? provs : inf).map((pv) => {
         const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
         const inferred = !provs.length;
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`

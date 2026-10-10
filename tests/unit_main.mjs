@@ -202,16 +202,16 @@ eq([sparse.rows.length, sparse.health.length, sparse.end_reasons.length], [0, 0,
 eq(sparse.tools_recent, [], 'an absent tools_recent is an empty list');
 eq(sparse.node_sessions, {}, 'an absent node_sessions is an empty map');
 
-// ---- theme toggle -------------------------------------------------------
-eq(attrs['data-theme'], undefined, 'a dark preference sets no attribute');
+// ---- theme toggle (light default since the 2026-10-10 flip) -------------
+eq(attrs['data-theme'], undefined, 'no saved preference stays on the light default (no attribute)');
 els['theme'].onclick();
-eq(attrs['data-theme'], 'light', 'the first click switches to light');
-eq(localStorage.getItem('hermes-dash-theme'), 'light', 'the choice is persisted');
+eq(attrs['data-theme'], 'dark', 'the first click switches to dark');
+eq(localStorage.getItem('hermes-dash-theme'), 'dark', 'the choice is persisted');
 eq(calls.readTheme, 1, 'readTheme re-reads the palette after a switch');
 eq(calls.render, 1, 'the view re-renders after a switch');
 els['theme'].onclick();
-eq(attrs['data-theme'], undefined, 'the second click switches back to dark');
-eq(localStorage.getItem('hermes-dash-theme'), 'dark', 'the switch back is persisted too');
+eq(attrs['data-theme'], undefined, 'the second click switches back to the light default');
+eq(localStorage.getItem('hermes-dash-theme'), 'light', 'the switch back is persisted too');
 eq(calls.render, 2, 'every switch re-renders');
 
 // ---- bootDone: the preloader -------------------------------------------
