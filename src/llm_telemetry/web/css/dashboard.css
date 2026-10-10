@@ -1626,6 +1626,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-unused td{color:var(--muted)}
 .pv-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:var(--fs-2xs);
   padding:.06rem .42rem;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+/* Inferred serving provider: dashed border marks provenance (nothing was
+   observed — the family was recognised from the model's name) */
+.pv-badge.pv-badge-inferred{border-style:dashed;opacity:.82}
 .pv-src{font-size:var(--fs-2xs);text-transform:none;letter-spacing:0;
   color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
 .pv-src-local{color:var(--accent)}

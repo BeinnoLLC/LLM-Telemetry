@@ -95,6 +95,19 @@ def _resolve_serving_provider(row):
     return ""
 
 
+def _infer_catalog_provider(model, catalog):
+    """Serving-provider hint for catalogue rows with no recorded traffic.
+
+    Thin wrapper over pricing.serving_provider_hint(); kept here so the
+    sheet never imports the resolver directly and the resolution order
+    stays in one place (pricing.py).
+    """
+    try:
+        return P.serving_provider_hint(model, catalog)
+    except Exception:  # a broken hint must never break the sheet build
+        return ""
+
+
 def observed_traffic(data):
     """Observed traffic per model across every profile."""
     seen = collections.defaultdict(lambda: {
@@ -181,6 +194,18 @@ def assemble(data, catalog, installed=()):
                 source = "unpriced"
         a = agg or {"calls": 0, "inp": 0, "outp": 0, "cache": 0, "cost": 0.0,
                     "providers": set(), "profiles": set()}
+        # serving hint for the empty-traffic rows: a model installed on a
+        # probed host IS served locally (observed, not inferred); a
+        # local-by-name SKU that is not installed anywhere and never called
+        # stays "—" (deploying it would be a guess); everything else falls
+        # through to the catalogue shape. `inferred_by` records provenance
+        # so the Prices view can show the hint as inferred, not observed.
+        hint = ""
+        if not agg:
+            if installed and model in set(installed):
+                hint = "local"
+            elif not local:
+                hint = _infer_catalog_provider(model, catalog) or ""
         models.append({
             "model": model, "short": model.split("/")[-1],
             # The catalogue id this row prices from, when it differs from
@@ -191,7 +216,12 @@ def assemble(data, catalog, installed=()):
             "calls": a["calls"], "inp": a["inp"], "outp": a["outp"],
             "cache": a["cache"], "cost": a["cost"], "energy": energy,
             "providers": sorted(a["providers"]),
-            "served_by": ", ".join(sorted(a["providers"])) or "—",
+            # A row with no recorded traffic has no provider slot to read —
+            # that is why most of the sheet showed "—". The hint below fills
+            # what is knowable from the model's name/aliases (never wrong by
+            # construction: only families the resolver is sure of are used).
+            "served_by": ", ".join(sorted(a["providers"])) or hint or "—",
+            "inferred_by": hint,
             "profiles": sorted(a["profiles"]),
         })
     # Most expensive per output token first, unpriced last; name breaks ties

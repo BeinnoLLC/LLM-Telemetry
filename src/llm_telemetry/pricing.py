@@ -445,6 +445,62 @@ def catalog_size(catalog):
     return sum(1 for k in catalog if not k.startswith(NOUS_PREFIX))
 
 
+def serving_provider_hint(model, catalog):
+    """Which provider WOULD serve this model, from its name alone.
+
+    Answers the sheet's Served-by column for rows with no recorded traffic
+    (a model you have not called yet has no provider slot to read, which is
+    why most rows showed "—"). Resolution order mirrors real attribution:
+      1. nous:<model> in the catalogue / a nous vendor prefix  -> "nous"
+      2. vendor-qualified id ("anthropic/x", "moonshotai/y")   -> that vendor
+      3. an ALIAS resolving into the catalogue                 -> alias' vendor
+      4. a fuzzy catalogue hit (_resolve_catalog_id)           -> its vendor
+      5. WEB_RATES-covered names                               -> that vendor
+      6. local-by-name (no vendor prefix, LOCAL_HINTS hit)     -> "local"
+    Returns None ONLY when nothing is knowable — never a guess dressed up
+    as a fact.
+    """
+    m = (model or "").strip()
+    if not m:
+        return None
+    lm = m.lower()
+    if lm.startswith(NOUS_PREFIX.rstrip(":") + ":") or (NOUS_PREFIX + m) in catalog:
+        return "nous"
+    if "/" in m:
+        return m.split("/", 1)[0].lower()
+    # bare name: try the alias table, then the fuzzy match, then WEB_RATES,
+    # then local-by-name — the same order rates_for() prices in
+    oid = ALIASES.get(m)
+    if not oid:
+        oid = m if m in catalog else _resolve_catalog_id(m, catalog)
+    if oid and not oid.startswith(NOUS_PREFIX):
+        return oid.split("/", 1)[0].lower()
+    if lm in WEB_RATES:
+        # vendor of record per SKU block; Ollama Cloud SKUs are hosted
+        if lm.endswith(":cloud") or lm.endswith("-cloud"):
+            return "ollama-cloud"
+        if lm.startswith("gpt-"):
+            return "openai"
+        if lm.startswith("kimi-"):
+            return "moonshotai"
+        if lm.startswith("minimax-"):
+            return "minimax"
+        if lm.startswith("deepseek-"):
+            return "deepseek"
+        if lm.startswith("glm-"):
+            return "z-ai"
+        if lm.startswith("qwen"):
+            return "qwen"
+        if lm.startswith("nemotron-"):
+            return "nvidia"
+        if lm.startswith("accounts/fireworks/"):
+            return "fireworks"
+        return "ollama-cloud"
+    if is_local(m):
+        return "local"
+    return None
+
+
 def _rate_triple(p):
     try:
         r = (float(p.get("prompt") or 0), float(p.get("completion") or 0),

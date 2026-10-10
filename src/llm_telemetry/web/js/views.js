@@ -3000,9 +3000,18 @@ function priceRow(m){
   const used = (m.calls||0) > 0;
   const srcMeta = PRICE_SRC[m.source] || {label: m.source, cls: ''};
   const provs = used ? (m.providers && m.providers.length ? m.providers : (m.served_by ? [m.served_by] : [])) : [];
-  const provHtml = provs.length
-    ? provs.map(pv => { const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
-        return `<span class="pv-badge" style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.sig} ${esc(pv)}</span>`; }).join(' ')
+  // Unused rows can now carry an INFERRED serving provider (build_costs
+  // resolves it from the model's family; provenance rides in inferred_by).
+  // Shown as a dashed hint badge so an inferred provider is never confused
+  // with an observed one — the "—" only survives when nothing is knowable.
+  const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
+  const provHtml = provs.length || inf.length
+    ? (provs.length ? provs : inf).map((pv, i) => {
+        const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
+        const inferred = !provs.length;
+        return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
+          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.sig} ${esc(pv)}</span>`;
+      }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
   return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"
     data-used="${used ? '1' : '0'}" data-source="${esc(m.source)}"
