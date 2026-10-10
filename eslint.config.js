@@ -58,9 +58,11 @@ export default [
         __POWER__: 'readonly',
         __LOCAL_HOSTS__: 'readonly',
         __SCHEMA_VERSION__: 'readonly',
-        // The price sheet's injected model table (build_costs.py), same idea as
-        // the four above: it exists only in the built costs.html.
-        __CALCDATA__: 'readonly',
+        // Injected payload globals (build_dashboard.py embeds the JSON the
+        // views read): the price sheet's model table and the rankings feed,
+        // same idea as the four above — they exist only in the built page.
+        __COSTS_DATA__: 'readonly',
+        __RANKINGS_DATA__: 'readonly',
       },
     },
     rules: {

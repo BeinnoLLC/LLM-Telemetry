@@ -36,7 +36,7 @@ chk(/\.hname\{width:172px/.test(dash) || /width:172px/.test(dash), 'desktop heal
 chk(/\.hrate\{width:52px/.test(dash) || /width:52px/.test(dash), 'desktop health-row rate column still exists at its original width');
 
 // ---- Prices view (in-app rates table): sticky first column + fade edge ----
-chk(/\.pv-wrap\{position:relative\}/.test(css), 'rates table wrapper is positioned for the sticky column (.pv-wrap)');
+chk(/\.pv-wrap\{[^}]*position:relative/.test(css), 'rates table wrapper is positioned for the sticky column (.pv-wrap)');
 chk(/\.pv-wrap::after\{content:'';position:absolute;top:0;right:0;bottom:0;width:26px;\s*background:linear-gradient\(to right,transparent,var\(--card\)\)/.test(css),
     'fading right edge signalling more columns off-screen');
 chk(/\.pv-tbl th:first-child,\.pv-tbl td:first-child\{position:sticky;left:0/.test(css),

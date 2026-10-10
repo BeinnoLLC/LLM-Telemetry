@@ -1574,7 +1574,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-head > .qv-why{flex-basis:100%;margin:0;max-width:none}
 
 /* ── Prices view (the in-app price sheet, was standalone costs.html) ────── */
-.pv-wrap{overflow:auto;max-height:70vh;border:1px solid var(--border)}
 .pv-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-xs)}
 .pv-tbl th{position:sticky;top:0;background:var(--card);z-index:1;
 
@@ -1583,7 +1582,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   border-bottom:1px solid var(--border)}
 /* #19 in-app: the rates table pins its model column while scrolling wide
    (many profile columns), with a fading right edge like the old sheet. */
-.pv-wrap{position:relative}
+.pv-wrap{overflow:auto;max-height:70vh;border:1px solid var(--border);position:relative}
 .pv-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:26px;
   background:linear-gradient(to right,transparent,var(--card));
   pointer-events:none;border-radius:0 0 var(--radius,8px) 0}

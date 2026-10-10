@@ -27,11 +27,9 @@ ORDER_PATH = os.path.join(JS_DIR, "order.json")
 # stylesheets are inlined behind this file, so the dashboard and the price
 # sheet cannot drift apart.
 TOKENS_PATH = os.path.join(HERE, "web", "css", "tokens.css")
-# The row/box/KPI markup build_costs.py fills; the Python keeps only shaping.
-# #113: the OpenRouter rankings page — a standalone page like the price sheet
-# (not an SPA module, so it is deliberately absent from JS_ORDER).
-# The modules, in dependency order (main boots last and is the only one that
-# runs anything while loading).
+# The rankings payload rides in-app too (#113): no standalone page, so the
+# module list is just the SPA's, in dependency order (main boots last and is
+# the only one that runs anything while loading).
 JS_ORDER = ["palette.js", "charts.js", "views.js", "flow.js", "drawer.js",
             "live.js", "routerview.js", "quotaview.js", "router.js", "main.js"]
 # A top-level declaration: the only thing that starts a block.
@@ -43,45 +41,6 @@ def read_tokens():
     """The shared palette tokens, inlined ahead of every page's stylesheet."""
     with open(TOKENS_PATH, encoding="utf-8") as fh:
         return fh.read()
-
-
-def read_fragments(path):
-    """name -> template, parsed from one ``<!-- @frag name -->`` file."""
-    with open(path, encoding="utf-8") as fh:
-        found = _FRAG_RE.findall(fh.read())
-    names = [n for n, _ in found]
-    dupes = sorted({n for n in names if names.count(n) > 1})
-    if dupes:
-        raise ValueError(f"duplicate fragments in {path}: {dupes}")
-    return dict(found)
-
-
-def _fill(name, tpl, slots):
-    def fill(m):
-        key = m.group(1)
-        if key not in slots:
-            raise KeyError(f"fragment {name!r} needs slot {key!r}")
-        return str(slots[key])
-    return _SLOT_RE.sub(fill, tpl)
-
-
-def frag(name, /, **slots):
-    """Fill one price-sheet fragment. Values go in verbatim: escape first.
-
-    One pass, so a value that itself contains "{x}" is not re-expanded. A slot
-    the template names but the caller omits is an error, not a blank.
-    """
-    global _frags
-    if _frags is None:
-        _frags = read_costs_fragments()
-    tpl = _frags[name]
-
-    def fill(m):
-        key = m.group(1)
-        if key not in slots:
-            raise KeyError(f"fragment {name!r} needs slot {key!r}")
-        return str(slots[key])
-    return _SLOT_RE.sub(fill, tpl)
 
 
 def script_json(obj):

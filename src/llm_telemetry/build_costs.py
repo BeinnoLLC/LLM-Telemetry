@@ -17,11 +17,9 @@ import sys
 import subprocess
 import datetime
 import collections
-import html as _html
 from pathlib import Path
 
 from .config import get as _cfg
-from .webassets import frag  # noqa: F401 — payload JSON escaping helper
 
 CFG = _cfg()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,15 +75,23 @@ def _resolve_serving_provider(row):
     url = (row.get("base_url") or "").lower()
     if "fireworks.ai" in url or "openrouter.ai" in url:
         return "fireworks" if "fireworks.ai" in url else "openrouter"
-    if "opencode.ai" in url:      return "opencode-go"
-    if "api.anthropic.com" in url: return "anthropic"
-    if "nousresearch.com" in url:  return "nous"
-    if "ollama.com" in url:        return "ollama-cloud"
+    if "opencode.ai" in url:
+        return "opencode-go"
+    if "api.anthropic.com" in url:
+        return "anthropic"
+    if "nousresearch.com" in url:
+        return "nous"
+    if "ollama.com" in url:
+        return "ollama-cloud"
     model = (row.get("model") or "").strip().lower()
-    if model.startswith("gpt-"):   return "openai-codex"
-    if model.startswith(("stepfun/", "step-")) or "hermes-" in model: return "nous"
-    if "claude" in model:          return "anthropic"
-    if "glm" in model or "kimi" in model or "minimax" in model: return "opencode-go"
+    if model.startswith("gpt-"):
+        return "openai-codex"
+    if model.startswith(("stepfun/", "step-")) or "hermes-" in model:
+        return "nous"
+    if "claude" in model:
+        return "anthropic"
+    if "glm" in model or "kimi" in model or "minimax" in model:
+        return "opencode-go"
     return ""
 
 
