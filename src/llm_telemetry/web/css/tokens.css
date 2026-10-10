@@ -10,55 +10,24 @@
  * screenshot — off-white page #FBFBF9 with pure-white cards and cool
  * green-grey ink #1A201C in the light theme, and ONE muted emerald accent
  * #3F8358 (the green the reference board uses for its logo/progress marks).
- * The dark default keeps the same roles at night values: green-grey base
+ * The dark theme keeps the same roles at night values: green-grey base
  * #141A17, deep green-grey cards #1C2320, accent #5AA276. Hairline borders
  * (.12 alpha) instead of outlines; NO gradients, NO glow.
  *
- * The dark block is declared as ":root, [data-theme=dark]" — the app only
- * ever sets data-theme="light", but naming dark explicitly (tests, future
- * callers) must resolve to exactly the same values as the default.
+ * 2026-10-10 (3rd pass): LIGHT is the default (Hazem's decision), reached by
+ * toggling: dark only mounts as [data-theme="dark"]. The light block is
+ * declared as ":root, [data-theme=light]" so naming light explicitly resolves
+ * to exactly the same values as the default.
+ *
+ * The dashboard's stylesheet used to shadow this palette with its own
+ * root-level zones and a second light block; those copies are gone and any
+ * new shared token belongs HERE.
  *
  * Page-specific tokens are deliberately NOT here: the dashboard keeps its type
- * scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
+ * scale, spacing scale, gauge sizing and nav metrics; the price sheet keeps its
  * per-provider accent colours. */
 
 :root,
-[data-theme="dark"]{
-  /* base surfaces: green-grey night values, not pure neutral */
-  --bg:#141a17;
-  --card:#1c2320;
-  --fg:#e6e9e6;
-  --muted:#98a29b;
-  --border:rgba(230,233,230,.12);
-  /* the single calm accent: muted emerald, same family as the reference */
-  --accent:#5aa276;
-  --accent-ink:#0f1712;          /* text/icon on accent fills */
-  --accent-wash:rgba(90,162,118,.14);
-  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
-
-  /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
-  --wash-indigo:rgba(129,140,180,.14);
-  --wash-rose:rgba(196,124,140,.15);
-  --wash-slate:rgba(124,144,156,.15);
-  --wash-amber:rgba(196,160,110,.15);
-  --wash-mint:rgba(110,170,140,.14);
-
-  /* status hues, desaturated to match */
-  --z-ok:#5f9e6e;
-  --z-warn:#c2a15c;
-  --z-bad:#c66a6a;
-  --z-ok-fg:#dff0e4;
-  --z-warn-fg:#f4ecda;
-  --z-bad-fg:#f7e3e3;
-
-  /* solid chart pastels (fills for Chart.js) */
-  --pal-indigo:#818cb4;
-  --pal-rose:#c47c8c;
-  --pal-slate:#7c909c;
-  --pal-amber:#c4a06e;
-  --pal-mint:#6eaa8c;
-}
-
 [data-theme="light"]{
   /* the reference board look, sampled off Hazem's scorecard screenshot:
      off-white page, pure-white cards, cool green-grey ink, one muted
@@ -93,4 +62,40 @@
   --pal-slate:#71868f;
   --pal-amber:#b5905f;
   --pal-mint:#5f9e78;
+}
+
+[data-theme="dark"]{
+  /* base surfaces: green-grey night values, not pure neutral */
+  --bg:#141a17;
+  --card:#1c2320;
+  --fg:#e6e9e6;
+  --muted:#98a29b;
+  --border:rgba(230,233,230,.12);
+  /* the single calm accent: muted emerald, same family as the reference */
+  --accent:#5aa276;
+  --accent-ink:#0f1712;          /* text/icon on accent fills */
+  --accent-wash:rgba(90,162,118,.14);
+  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
+
+  /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
+  --wash-indigo:rgba(129,140,180,.14);
+  --wash-rose:rgba(196,124,140,.15);
+  --wash-slate:rgba(124,144,156,.15);
+  --wash-amber:rgba(196,160,110,.15);
+  --wash-mint:rgba(110,170,140,.14);
+
+  /* status hues, desaturated to match */
+  --z-ok:#5f9e6e;
+  --z-warn:#c2a15c;
+  --z-bad:#c66a6a;
+  --z-ok-fg:#dff0e4;
+  --z-warn-fg:#f4ecda;
+  --z-bad-fg:#f7e3e3;
+
+  /* solid chart pastels (fills for Chart.js) */
+  --pal-indigo:#818cb4;
+  --pal-rose:#c47c8c;
+  --pal-slate:#7c909c;
+  --pal-amber:#c4a06e;
+  --pal-mint:#6eaa8c;
 }

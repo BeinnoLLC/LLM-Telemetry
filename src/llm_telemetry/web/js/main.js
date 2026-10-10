@@ -147,12 +147,14 @@ export function installAll(){
 // still collected regardless of visibility. Kept in one place so the boot
 // path, the merge and the tab strip all consult it.
 export const saved = localStorage.getItem('hermes-dash-theme');
-if(saved==='light') document.documentElement.setAttribute('data-theme','light');
+// Since the light-default flip, :root IS light; dark mounts via the explicit
+// [data-theme="dark"] attribute. The saved value is honoured either way.
+if(saved==='dark') document.documentElement.setAttribute('data-theme','dark');
 $('theme').onclick = () => {
-  const light = document.documentElement.getAttribute('data-theme')==='light';
-  if(light) document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme','light');
-  localStorage.setItem('hermes-dash-theme', light?'dark':'light');
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  if(dark) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme','dark');
+  localStorage.setItem('hermes-dash-theme', dark?'light':'dark');
   readTheme(); render();
 };
 // All three cross-filters out of one hash, through the owning module's setter
