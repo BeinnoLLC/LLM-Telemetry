@@ -199,14 +199,14 @@
    "prompt": "0.000000021"
   },
   "deepseek/deepseek-v4-pro-0813": {
-   "completion": "0.0000042",
+   "completion": 3.96e-06,
    "input_cache_read": "0.000000399",
-   "prompt": "0.0000003995"
+   "prompt": 1.32e-06
   },
   "deepseek/deepseek-v4.1-flash": {
-   "completion": "0.00000029",
+   "completion": 6.6e-07,
    "input_cache_read": "0.000000001",
-   "prompt": "0.000000035"
+   "prompt": 2.2e-07
   },
   "moonshotai/kimi-k2.5": {
    "completion": "0.00000225",

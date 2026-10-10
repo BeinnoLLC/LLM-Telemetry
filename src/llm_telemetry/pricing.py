@@ -181,19 +181,25 @@ WEB_RATES = {
     "gpt-5.6-terra":   (2.00,  12.00, 0.20),
     "gpt-5.6-sol":     (4.00,  20.00, 0.40),
     "gpt-5.3-codex":   (1.75,  14.00, 0.175),
-    # Fireworks serverless SKUs
-    "accounts/fireworks/models/deepseek-v4-flash-0731":      (0.22, 0.66, 0.007),
+    # Fireworks serverless SKUs — billed-by-fireworks rates from each model's
+    # own fireworks page (cheaper than the OpenRouter proxy for the same
+    # weights; issue #131). DeepSeek V4.1 Flash's docs-table row
+    # $0.30/$0.006/$1.20 is DeepSeek/DeepInfra's first-party rate, NOT
+    # Fireworks' ($0.22/$0.007/$0.66 on the model page, Oct 2026).
+    "accounts/fireworks/models/deepseek-v4-flash-0731":       (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
+    "accounts/fireworks/models/deepseek-v4p1-flash":          (0.22, 0.66, 0.007),
+    "accounts/fireworks/models/deepseek-v4-pro-0813":         (1.32, 3.96, 0.044),
     # Ollama Cloud (issue #118) — models OpenRouter does not list at all.
     # Keyed by the tagged name so ":cloud" rows price; _resolve_catalog_id and
     # rates_for both try the bare basename too, so either spelling works.
-    "deepseek-v4.1-flash":    (0.15,  0.60,  0.003),
+    "deepseek-v4.1-flash":    (0.22,  0.66,  0.007),
     "deepseek-v4-flash":      (0.22,  0.66,  0.007),
     "deepseek-v4-pro":        (0.66,  1.98,  0.022),
     "gemma4":                 (0.14,  0.40,  0.05),
     "glm-5.3":                (1.40,  4.40,  0.26),
     "glm-5.3-flash":          (0.15,  0.50,  0.03),
-    "gpt-oss:120b":           (0.15,  0.60,  0.014),
+    "gpt-oss:120b":           (0.15,  0.60,  0.015),
     "gpt-oss:20b":            (0.07,  0.30,  0.035),
     "kimi-k3":                (3.00, 15.00,  0.30),
     "kimi-k2.7-code":         (0.95,  4.00,  0.19),
