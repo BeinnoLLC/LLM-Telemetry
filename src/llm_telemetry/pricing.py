@@ -472,6 +472,11 @@ def serving_provider_hint(model, catalog):
     lm = m.lower()
     if lm.startswith(NOUS_PREFIX.rstrip(":") + ":") or (NOUS_PREFIX + m) in catalog:
         return "nous"
+    if lm.startswith("accounts/fireworks/"):
+        # vendor-qualified id where the FIRST segment is an account root, not
+        # the vendor ("accounts/fireworks/models/x" would split to
+        # "accounts"). The vendor is the second segment.
+        return "fireworks"
     if "/" in m:
         return m.split("/", 1)[0].lower()
     # bare name: try the alias table, then the fuzzy match, then WEB_RATES,
@@ -479,6 +484,8 @@ def serving_provider_hint(model, catalog):
     oid = ALIASES.get(m)
     if not oid:
         oid = m if m in catalog else _resolve_catalog_id(m, catalog)
+    if oid and oid.lower().startswith("accounts/fireworks/"):
+        return "fireworks"
     if oid and not oid.startswith(NOUS_PREFIX):
         return oid.split("/", 1)[0].lower()
     if lm in WEB_RATES:
