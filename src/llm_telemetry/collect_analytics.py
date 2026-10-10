@@ -782,7 +782,8 @@ def _enrich_rows(rows, catalog):
             {"provider": r["provider"], "model": r["model"],
              "base_url": r.get("base_url"),
              "input_tokens": r["inp"], "output_tokens": r["outp"],
-             "cache_read": r["cread"], "calls": r.get("calls")}, catalog))
+             "cache_read": r["cread"], "cache_write": r.get("cwrite") or 0,
+             "calls": r.get("calls")}, catalog))
         # Estimated wire bytes for this row, bucketed by destination.
         # Same helper the live collector uses, so the tables and the
         # live view can never disagree about what a token costs to send.

@@ -117,6 +117,31 @@ chk("a paid Zen SKU is priced", r["priced"], True)
 chk("a paid Zen SKU is not classed free", r["cost_class"] != "free", True)
 chk("a paid Zen SKU carries a real value", r["market_value_usd"] > 0, True)
 
+# --- cache-write pricing (#150 accuracy) --------------------------------------
+# Anthropic-shaped traffic reports cache_creation (cache writes) separately;
+# providers bill writes at ~1.25x the fresh input rate. A row with writes
+# must not price them silently free, and a row without writes must be
+# unchanged (0-mult term).
+r = P.price_row({"provider": "anthropic", "model": "claude-opus-5",
+                 "base_url": "https://api.anthropic.com/v1",
+                 "calls": 1, "input_tokens": 1_000_000, "output_tokens": 0,
+                 "cache_read": 0, "cache_write": 500_000}, cat)
+chk("cache-write row is priced", r["priced"], True)
+if r["priced"] and r["market_value_usd"] <= 0:
+    FAIL.append("cache-write value: got %r, want > 0" % r["market_value_usd"])
+
+r2 = P.price_row({"provider": "anthropic", "model": "claude-opus-5",
+                  "base_url": "https://api.anthropic.com/v1",
+                  "calls": 1, "input_tokens": 1_000_000, "output_tokens": 0,
+                  "cache_read": 0, "cache_write": 0}, cat)
+same_in_base = r2["market_value_usd"]  # 1M fresh input, no writes
+# the write-bearing row must cost strictly more than the no-write twin with
+# identical fresh inputs (writes are an ADDITIONAL 1.25x-in surcharge on
+# 0.5M tokens on top of the 1M fresh input both rows share)
+if r["priced"] and r2["priced"]:
+    if not (r["market_value_usd"] > same_in_base + 0.5 * (r2["market_value_usd"] / 2)):
+        FAIL.append("cache-write surcharge: got %r vs base %r" % (r["market_value_usd"], same_in_base))
+
 if FAIL:
     print(f"test_cloud_pricing.py  {len(FAIL)} FAILED")
     for f in FAIL:

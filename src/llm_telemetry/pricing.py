@@ -604,9 +604,15 @@ def price_row(row, catalog):
     value = 0.0
     if r:
         pin, pout, pcache = r
+        # Cache WRITES cost money too on Anthropic-shaped traffic (the only
+        # family that reports cache_creation tokens): 1.25x the input rate.
+        # Omitted, every prompt that built a cache was silently free here
+        # while the provider's invoice included it.
+        cwrite_mult = 1.25 if row.get("cache_write") else 0.0
         value = (row.get("input_tokens", 0) * pin
                  + row.get("output_tokens", 0) * pout
-                 + row.get("cache_read", 0) * pcache)
+                 + row.get("cache_read", 0) * pcache
+                 + row.get("cache_write", 0) * cwrite_mult * pin)
     energy = value if cls == "local" else 0.0
     return {
         "cost_class": cls,
