@@ -210,7 +210,7 @@ def build():
             ollama = {}
     models = assemble(data, catalog, installed_local_models(ollama))
 
-    return {
+    d = {
         "models": models,
         "catalog_size": P.catalog_size(catalog),
         "catalog_source": src,
@@ -223,6 +223,11 @@ def build():
         "prefill": PREFILL_SPEEDUP,
         "cachex": CACHE_SPEEDUP,
     }
+    # Propagate the sample marker so the leak guard (examples/check_no_leaks.py)
+    # can tell the CI's committed sample payload apart from real-machine data.
+    if data.get("sample"):
+        d["sample"] = True
+    return d
 
 
 
