@@ -157,15 +157,16 @@ python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 ```
 
 The price sheet builds the same way, from a pinned sample catalogue so it
-needs no network and does not churn when OpenRouter's prices move:
+needs no network and does not churn when OpenRouter's prices move. The
+standalone `costs.html` / `rankings.html` pages are gone — the dashboard
+embeds both payloads (_prices-data_ and _rankings-data_) as in-app views:
 
 ```bash
 LLM_TELEMETRY_NO_COLLECT=1 \
 LLM_TELEMETRY_CONFIG=examples/sample-config.json \
 LLM_TELEMETRY_AGENT_HOME=examples/agent-home \
 LLM_TELEMETRY_CATALOG=examples/reports/sample-catalog.json \
-python3 -m llm_telemetry.build_costs examples/reports/costs.html
-python3 -m llm_telemetry.build_rankings examples/reports/rankings.html
+python3 -m llm_telemetry.build_dashboard examples/reports/dashboard.html
 ```
 
 `examples/make_sample_catalog.py` regenerates that catalogue from a real
@@ -197,7 +198,7 @@ number here and in that file in the same commit, or trim the page:
 |---|---|
 | `examples/reports/dashboard.html` | 920,000 |
 | `examples/reports/analytics-data.json` | 200,000 |
-| `examples/reports/costs.html` | 90,000 |
+| `examples/reports/rankings-data.json` | 2,000,000 |
 
 ### The payload contract
 

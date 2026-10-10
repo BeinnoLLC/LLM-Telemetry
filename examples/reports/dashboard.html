@@ -13,31 +13,37 @@
  * each build script, so a palette change had to be made twice and could drift
  * silently — the price sheet would quietly keep the old colours.
  *
- * 2026-10-10 rework: the calm-utility palette from Hazem's reference board —
- * warm paper light theme (#F5F2EC) with muted pastel washes and a single
- * #2F7D4F green accent; near-black ink on white cards; hairline borders
- * (.12-.14 alpha) instead of outlines; NO gradients, NO glow. The dark theme
- * (default) is its value inverse: #101418 base, neutral #1A1F26 cards, and
- * the same roles — one green accent and desaturated pastel family colours.
+ * 2026-10-10 rework (2nd pass): the reference scorecard resampled off the
+ * screenshot — off-white page #FBFBF9 with pure-white cards and cool
+ * green-grey ink #1A201C in the light theme, and ONE muted emerald accent
+ * #3F8358 (the green the reference board uses for its logo/progress marks).
+ * The dark default keeps the same roles at night values: green-grey base
+ * #141A17, deep green-grey cards #1C2320, accent #5AA276. Hairline borders
+ * (.12 alpha) instead of outlines; NO gradients, NO glow.
+ *
+ * The dark block is declared as ":root, [data-theme=dark]" — the app only
+ * ever sets data-theme="light", but naming dark explicitly (tests, future
+ * callers) must resolve to exactly the same values as the default.
  *
  * Page-specific tokens are deliberately NOT here: the dashboard keeps its type
  * scale, spacing scale, gauge zones and nav metrics; the price sheet keeps its
  * per-provider accent colours. */
 
-:root{
-  /* base surfaces */
-  --bg:#101418;
-  --card:#1a1f26;
-  --fg:#e8eaed;
-  --muted:#9aa3ad;
-  --border:rgba(232,234,237,.13);
-  /* the single calm accent: desaturated green */
-  --accent:#4ea578;
+:root,
+[data-theme="dark"]{
+  /* base surfaces: green-grey night values, not pure neutral */
+  --bg:#141a17;
+  --card:#1c2320;
+  --fg:#e6e9e6;
+  --muted:#98a29b;
+  --border:rgba(230,233,230,.12);
+  /* the single calm accent: muted emerald, same family as the reference */
+  --accent:#5aa276;
   --accent-ink:#0f1712;          /* text/icon on accent fills */
-  --accent-wash:rgba(78,165,120,.14);
+  --accent-wash:rgba(90,162,118,.14);
   --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
 
-  /* calm pastel washes (family/role colours, 3-9% desaturated tints) */
+  /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
   --wash-indigo:rgba(129,140,180,.14);
   --wash-rose:rgba(196,124,140,.15);
   --wash-slate:rgba(124,144,156,.15);
@@ -52,7 +58,7 @@
   --z-warn-fg:#f4ecda;
   --z-bad-fg:#f7e3e3;
 
-  /* solid chart pastels (dark-on-wash fills for Chart.js) */
+  /* solid chart pastels (fills for Chart.js) */
   --pal-indigo:#818cb4;
   --pal-rose:#c47c8c;
   --pal-slate:#7c909c;
@@ -61,15 +67,18 @@
 }
 
 [data-theme="light"]{
-  /* warm paper base, near-black ink, white cards — the reference board look */
-  --bg:#f5f2ec;
+  /* the reference board look, sampled off Hazem's scorecard screenshot:
+     off-white page, pure-white cards, cool green-grey ink, one muted
+     #3F8358 emerald accent; pastel tiles ride on the washes below */
+  --bg:#fbfbf9;
   --card:#ffffff;
-  --fg:#20242b;
-  --muted:#77716a;
-  --border:rgba(32,36,43,.13);
-  --accent:#2f7d4f;
+  --fg:#1a201c;
+  --muted:#6f746f;
+  --border:rgba(26,32,28,.12);
+  --accent:#3f8358;
   --accent-ink:#ffffff;
-  --accent-wash:rgba(47,125,79,.10);
+  --accent-wash:rgba(63,131,88,.11);
+  --accent2:#7d9bab;
 
   /* pastel washes on white cards */
   --wash-indigo:rgba(99,110,164,.12);
@@ -78,9 +87,9 @@
   --wash-amber:rgba(178,138,88,.13);
   --wash-mint:rgba(88,150,115,.12);
 
-  --z-ok:#2f7d4f;
+  --z-ok:#3f8358;
   --z-warn:#a58436;
-  --z-bad:#b05656;
+  --z-bad:#b3564f;
   --z-ok-fg:#e4f0e9;
   --z-warn-fg:#f4ecd7;
   --z-bad-fg:#f7e4e4;

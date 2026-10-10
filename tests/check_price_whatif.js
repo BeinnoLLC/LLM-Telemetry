@@ -4,8 +4,9 @@
 // grouped select, $ math, and "no rate available" for unpriced models (never $0).
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
-const PAGE = '/home/hazemhagrass/workspace/beinno/LLM-Telemtry/examples/reports/dashboard.html';
-const html = fs.readFileSync(PAGE, 'utf8');
+const path = require('path');
+const REPORTS = path.join(__dirname, '..', 'examples', 'reports');
+const html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8');
 let pass = 0, failN = 0;
 const chk = (ok, name, extra) => {
   if (ok) { pass++; console.log('OK  ', name); }
