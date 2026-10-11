@@ -902,6 +902,58 @@
    "name": "renderAgents"
   },
   {
+   "mod": "diffdom",
+   "name": "motionReduced"
+  },
+  {
+   "mod": "diffdom",
+   "name": "FADE_MS"
+  },
+  {
+   "mod": "diffdom",
+   "name": "planDiff"
+  },
+  {
+   "mod": "diffdom",
+   "name": "invalidate"
+  },
+  {
+   "mod": "diffdom",
+   "name": "applyDiff"
+  },
+  {
+   "mod": "diffdom",
+   "name": "GHOST"
+  },
+  {
+   "mod": "diffdom",
+   "name": "EXITY"
+  },
+  {
+   "mod": "diffdom",
+   "name": "isGhost"
+  },
+  {
+   "mod": "diffdom",
+   "name": "groupsOf"
+  },
+  {
+   "mod": "diffdom",
+   "name": "cacheFor"
+  },
+  {
+   "mod": "diffdom",
+   "name": "freshNodes"
+  },
+  {
+   "mod": "diffdom",
+   "name": "_internal"
+  },
+  {
+   "mod": "live",
+   "name": "liveGroupKeyOf"
+  },
+  {
    "mod": "live",
    "name": "renderLive"
   },

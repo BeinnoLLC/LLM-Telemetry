@@ -39,7 +39,7 @@ const EL_IDS = ['refresh','livelist','livefanout','livebw','livestamp','repolist
 function el(id){
   return {
     id, innerHTML:'', textContent:'', hidden:false, value:'', onclick:null,
-    style:{}, dataset:{}, _attrs:{}, _on:{},
+    style:{}, dataset:{}, _attrs:{}, _on:{}, children:[],
     classList:{ s:new Set(),
       add(c){ this.s.add(c); }, remove(c){ this.s.delete(c); },
       toggle(c, f){ const on = f === undefined ? !this.s.has(c) : !!f; if (on) this.s.add(c); else this.s.delete(c); return on; },
@@ -190,6 +190,21 @@ async function boot(opt = {}){
       installHelp(){ logs.installs.push('installHelp'); },
     },
     'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3 },
+    // diffdom is NOT stubbed as a no-op: unit_live asserts the rendered row
+    // HTML, so this emulates the applier contract — write-on-change only
+    // (idle polls leave innerHTML untouched, exactly like the real module).
+    'diffdom.js': {
+      applyDiff: (box, keyOf, rows) => {
+        const sig = rows.map(r => r.html).join('');
+        if (!box.dataset || box.dataset.__sig !== sig){
+          box.innerHTML = sig;
+          if (box.dataset) box.dataset.__sig = sig;
+        }
+        return { enter:0, move:0, exit:0, patch:0, keep:rows.length, __rows: rows, __keyOf: keyOf };
+      },
+      motionReduced: () => false,
+      invalidate: (box) => { if (box && box.dataset) box.dataset.difffInvalidated = '1'; },
+    },
   };
 
   const G = { window: win, document: doc, localStorage: store, setTimeout: setTimeoutStub, fetch: fetchStub };

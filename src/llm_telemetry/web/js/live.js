@@ -17,7 +17,29 @@ import {
   POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
 } from './router.js';
 import { installHelp } from './routerview.js';
+import { applyDiff, motionReduced, invalidate } from './diffdom.js';
 import { DATA, SCHEMA_VERSION } from './main.js';
+
+// A live session renders as a ROW DIV + (optionally) the lmpanel DIV, so a
+// "key" owns 1–2 consecutive nodes. Row carries data-tsession; panel carries
+// data-lmp. Anything else (empty-state block, stray nodes) keys as null →
+// treated as its own singleton group by groupsOf.
+function liveGroupKeyOf(el){
+  if (el.classList && el.classList.contains('liverow')){
+    // The row div itself carries no session id; its first action button does
+    // (title button) — the panel that follows the row is keyed by data-lmp,
+    // which matches the row's session id 1:1.
+    const btn = el.querySelector('[data-tsession]');
+    return btn ? btn.getAttribute('data-tsession') : null;
+  }
+  if (el.classList && el.classList.contains('lmpanel')){
+    // A panel FOLLOWS its row, so it belongs to the row's group (data-lmp
+    // equals the row's session id); a leading panel (its row was just
+    // removed) is a stale leftover — key it as its own group.
+    return el.getAttribute('data-lmp') || null;
+  }
+  return null;
+}
 
 export function renderLive(){
   const p = DATA.profiles[current] || {};
@@ -50,14 +72,34 @@ export function renderLive(){
   }
 
   if(!live.length){
-    box.innerHTML = emptyHTML('○', 'Nothing running right now.', 'Start an agent run and it will appear here within a few seconds.');
+    // Fade the list out (if it had content), then show the empty state.
+    // applyDiff can't do this: the empty state is not a keyed row, it is a
+    // swap of the whole box. Only rebuild when the content actually changes,
+    // so an idle poll doesn't fight the fade mid-flight.
+    const swap = (post) => {
+      box.innerHTML = emptyHTML('○', 'Nothing running right now.', 'Start an agent run and it will appear here within a few seconds.');
+      box.dataset.state = 'empty';
+      if (post) post();
+    };
+    if (box.dataset.state !== 'empty'){
+      const hadRows = box.children.length > 0;
+      if (hadRows && !motionReduced()){
+        box.classList.add('live-fadeout');
+        setTimeout(() => { swap(); box.classList.remove('live-fadeout'); }, 180);
+      } else swap();
+      invalidate(box);
+    }
   } else {
-    box.innerHTML = live.map(L=>{
+    // Keyed diff refresh (P10 presentation plane): rows are reused by session
+    // id, patched in place when their content changes, faded out when a
+    // session completes and faded in when one starts — so a 5s poll no longer
+    // tears down the whole list (hover, focus and scroll anchors survive).
+    const rows = live.map(L => {
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tools = (L.tools||[]).slice(0,5).map(t=>
         `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
-      return `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
+      return { key: L.id, html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
         <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${escA(L.category)}">${c.i}</div>
         <div class="flex-1 min-w-0 self-center">
           <div class="flex items-center gap-2 flex-wrap">
@@ -78,11 +120,15 @@ export function renderLive(){
           <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(L.idle_s) ? ago(L.idle_s) + ' ago' : '—'}</div>
         </div>
         <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
-      </div>${modelsPanel(L)}`;
-    }).join('');
+      </div>${modelsPanel(L)}` };
+    });
+    // Keyed-diff applier (P10 presentation plane). If every row's HTML is
+    // byte-identical to the last render the applier is a no-op (per-key
+    // cache) — idle polls touch zero nodes; genuine changes patch in place
+    // with fade-in (new sessions) / fade-out (completed sessions).
+    if (rows.length) applyDiff(box, liveGroupKeyOf, rows);
+    box.dataset.state = 'rows';
   }
-
-  // Open-session bandwidth total on the "In progress now" heading (#109).
   // Only sessions in `live` are summed, so it goes to zero when nothing runs.
   const lbw = $('livebw');
   if (lbw) {

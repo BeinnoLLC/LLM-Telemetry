@@ -522,6 +522,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    justify-content:center;gap:2px;align-self:stretch;margin-left:2px}
  .loecol .bw{justify-content:center;flex-wrap:wrap;gap:2px 6px;margin-top:0;
    padding-top:4px;border-top:1px solid var(--border);width:100%}
+ /* Keyed-diff refresh (P10/#38 presentation plane): removed live rows fade out
+    as pinned ghosts; new rows fade in; the whole list can fade to empty-state.
+    WAAPI path does its own animation; these rules are the CSS-only fallback.
+    Order matters: .diff-ghost inserts at opacity 1, .diff-exit transitions to 0
+    (added one frame after insertion by diffdom.js). */
+ #livelist .diff-ghost{pointer-events:none}
+ #livelist .diff-ghost.diff-exit{opacity:0;transition:opacity 240ms ease-in}
+ #livelist.live-fadeout{opacity:0;transition:opacity 180ms ease-in}
+ @media (prefers-reduced-motion:reduce){
+   #livelist .diff-ghost{transition:none}   /* instant swap, ghosts clean up */
+   #livelist.live-fadeout{transition:none;opacity:1}
+ }
  /* #7/#8/#9/#10/#12 gauge rebuild ----------------------------------------
     Single component, three size presets driven purely by --gauge-size: the
     viewBox is a fixed 100x100 square, so scaling the CSS width/height alone
