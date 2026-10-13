@@ -128,12 +128,18 @@ export function setHash(v){
   if (location.hash !== want) location.hash = want;
 }
 
+// #173: retired slugs that must keep resolving. 'live' was its own view until
+// Home became the live board; bookmarks, tests and the README all say #/live.
+export const VIEW_ALIASES = { live: 'Home' };
+
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 export function viewFromHash(){
   let raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
   try { raw = decodeURIComponent(raw); } catch { /* malformed escape: match as-is */ }
   if (!raw) return null;
+  const alias = VIEW_ALIASES[slugOf(raw)];
+  if (alias) return alias;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
 }
@@ -552,7 +558,9 @@ export const NAV_ICONS = {
 // A view with no entry falls into the trailing "More" group rather than
 // disappearing — a new view must never be silently missing from the nav.
 export const NAV_GROUPS = [
-  {name:'Overview',  views:['Home', 'Live', 'Flow', 'Router', 'Quota']},
+  // #173: 'Live' is gone from the rail — Home IS the live board. `#/live`
+  // still routes there via VIEW_ALIASES.
+  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Quota']},
   {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
@@ -615,7 +623,8 @@ export function navSync(){
   });
   const p = (typeof DATA !== 'undefined' && DATA.profiles) ? (DATA.profiles[current] || {}) : {};
   const counts = {
-    Live: (p.live || []).length,
+    // #173: the live-session count badges Home now that Home is the live board.
+    Home: (p.live || []).length,
     // Failures are the number worth surfacing on Health; 0 stays hidden so the
     // rail does not shout when nothing is wrong.
     Health: ((DATA && DATA.errors) || []).length
@@ -741,6 +750,9 @@ export function views(){
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){
+  // #173: retired view names (a stale localStorage value, an old test, an
+  // onclick string) land on their replacement instead of hiding every panel.
+  v = VIEW_ALIASES[slugOf(v)] || v;
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
   document.querySelectorAll('[data-vtab]').forEach(b=>{

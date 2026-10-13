@@ -825,7 +825,6 @@ export function renderHome(inR){
   // ReferenceError and silently left the card grid empty.
   const pass = typeof inR === 'function' ? inR : () => true;
   const rows = (p.rows || []).filter(r => pass(r.date));
-  const live = p.live || [];
 
   const sum = (f) => rows.reduce((a, r) => a + (+f(r) || 0), 0);
   const models = new Set(rows.map(r => short(r.model)));
@@ -861,8 +860,7 @@ export function renderHome(inR){
     : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
 
   const cards = [
-    ['Live', icon('play'), PAL[3], 'Sessions in flight right now',
-      live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
+    // #173: Live IS Home now; a card pointing at the page it sits on is noise.
     ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
       models.size + (models.size === 1 ? ' model' : ' models')],
     ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',

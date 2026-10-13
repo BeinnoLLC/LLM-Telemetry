@@ -160,11 +160,12 @@ __DASHBOARD_CSS__
       into Live with no explanation of what the other sections hold. Cards carry
       a real stat from the loaded payload, so this answers "what is going on"
       instead of being a menu. -->
+ <!-- Phase 15 (#173): Home IS the live board. The old landing page was a grid
+      of section cards that sat in front of the thing people open the dashboard
+      for; now the live board renders first and the cards survive as a compact
+      "Explore" strip underneath (#178). `#/live` still resolves here — the
+      router aliases it — so old bookmarks and tests keep working. -->
  <div class="view" data-view="Home">
-  <div class="grid-home" id="homecards"></div>
- </div>
-
- <div class="view" data-view="Live">
   <!-- Two columns that END TOGETHER. The session list is unbounded (it grows
        with concurrency) while the charts are fixed-content, so the right column
        used to stop short and leave a dead gap. Capping the row height and
@@ -218,6 +219,10 @@ __DASHBOARD_CSS__
    </div>
    <div id="ollama" class="olgrid"></div>
   </div>
+  <!-- #178: the former landing cards, demoted to an "Explore" strip below the
+       live board. Still real stats, still real links — just not in the way. -->
+  <div class="lbl mt-4 mb-2.5">Explore</div>
+  <div class="grid-home" id="homecards"></div>
  </div>
 
  <!-- #130: model router per profile — responsibility chart, routing matrix,

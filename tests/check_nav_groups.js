@@ -82,8 +82,9 @@ setTimeout(() => {
 
     // declared membership actually holds
     const inGroup = (g, v) => !!d.querySelector(`#navlist .navgroup[data-navgroup="${g}"] [data-nav="${v}"]`);
-    chk(inGroup('Overview', 'Home') && inGroup('Overview', 'Live') && inGroup('Overview', 'Flow'),
-        'Overview holds Home/Live/Flow');
+    chk(inGroup('Overview', 'Home') && inGroup('Overview', 'Flow'),
+        'Overview holds Home/Flow');
+    chk(!d.querySelector('#navlist [data-nav="Live"]'), 'no separate Live rail item (#173: Home is the live board)');
     chk(inGroup('Analysis', 'Usage') && inGroup('Analysis', 'Cost') && inGroup('Analysis', 'Health'),
         'Analysis holds Usage/Cost/Health');
     chk(inGroup('System', 'Settings') && inGroup('System', 'Logs'),

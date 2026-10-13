@@ -477,6 +477,9 @@ export async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    // #185: the payload is fresh from here on; record it before the repaint so
+    // a paint error cannot leave the pill claiming an older poll than the data.
+    liveUpdatedAt = Math.floor(Date.now() / 1000);
     // Merge the live slice into each profile in place, then rebuild the
     // synthetic All profile so its merged live list stays correct.
     Object.keys(fresh.profiles).forEach(n => {
@@ -516,10 +519,7 @@ export async function pollLive(){
       ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
       : `<span class="muted">●</span> 0`;
     liveFails = 0;
-    const t = $('livestamp');
-    if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
-    // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
-    stampFreshness(t, Math.floor(Date.now() / 1000), 'live');
+    tickLiveStamp();
   } catch (e) {
     // Fail quietly: a transient miss must not blank the panel the user is
     // watching. Only a sustained outage is worth reporting.
@@ -539,7 +539,31 @@ export function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 export let liveTimer = null;
+// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
+// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
+// age counts up between polls instead of freezing at the poll time. The
+// base text is rewritten every tick (via dataset.stampBase) because
+// stampFreshness caches the first text it sees — the old code set textContent
+// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+export let liveUpdatedAt = null;
+export function tickLiveStamp(now){
+  const t = $('livestamp');
+  if (!t) return null;
+  if (liveUpdatedAt == null) return null;
+  const at = now == null ? Math.floor(Date.now() / 1000) : now;
+  const age = Math.max(0, at - liveUpdatedAt);
+  t.dataset.stampBase = age < 1 ? 'live · updated just now' : `live · updated ${ago(age)} ago`;
+  // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
+  return stampFreshness(t, liveUpdatedAt, 'live', at);
+}
+// One-second tick so the age is honest even when polling is stalled (a stalled
+// poll never calls tickLiveStamp, so the stamp would otherwise lie at "4s ago").
+export let liveStampTimer = null;
+export function scheduleLiveStampTick(){
+  liveStampTimer = setTimeout(() => { tickLiveStamp(); scheduleLiveStampTick(); }, 1000);
+}
 scheduleLivePoll();
+scheduleLiveStampTick();
 installDrawer();
 installTranscriptModal();
 installSessionFinder();

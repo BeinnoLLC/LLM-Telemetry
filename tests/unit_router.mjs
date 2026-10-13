@@ -102,7 +102,7 @@ const mkEl = (tag = 'div') => {
 const els = new Map();
 const getEl = id => { if (!els.has(id)) { const e = mkEl(); e.id = id; els.set(id, e); } return els.get(id); };
 
-const BASE_VIEWS = ['Home', 'Live', 'Flow', 'Router', 'Quota', 'Usage', 'Sessions', 'Cost', 'Prices', 'Health', 'Detail', 'Logs', 'Settings'];
+const BASE_VIEWS = ['Home', 'Flow', 'Router', 'Quota', 'Usage', 'Sessions', 'Cost', 'Prices', 'Health', 'Detail', 'Logs', 'Settings'];
 const EXTRA_VIEWS = ['A B', 'A?B', 'Ünicode Ünïts'];
 const viewEls = [...BASE_VIEWS, ...EXTRA_VIEWS].map(n => {
   const e = mkEl('section');
@@ -262,7 +262,7 @@ eq(R.NAVKEY, 'hermes-dash-navcollapsed', 'NAVKEY: storage key literal');
 eq(R.NAV_FALLBACK_GROUP, 'More', 'NAV_FALLBACK_GROUP: literal');
 eq(R.PROFILE_LOGO_MAX_BYTES, 204800, 'PROFILE_LOGO_MAX_BYTES: 200 KiB');
 eq(R.NAV_GROUPS.map(g => g.name), ['Overview', 'Analysis', 'System'], 'NAV_GROUPS: group names/order');
-eq(R.NAV_GROUPS.map(g => g.views.length), [5, 6, 3], 'NAV_GROUPS: group sizes (Rankings joined Analysis)');
+eq(R.NAV_GROUPS.map(g => g.views.length), [4, 6, 3], 'NAV_GROUPS: group sizes (Live folded into Home, #173)');
 eq(Object.keys(R.NAV_ICONS).length, 14, 'NAV_ICONS: one icon per built-in view (incl. Rankings)');
 
 // ==================================================== slugOf / viewFromHash ==
@@ -277,8 +277,12 @@ loc._h = '#home';
 eq(R.viewFromHash(), 'Home', 'viewFromHash: tolerates a missing slash (#home)');
 loc._h = '#HOME';
 eq(R.viewFromHash(), 'Home', 'viewFromHash: missing slash + upper case');
+// #173: Live folded into Home; the old slug is an alias, not a 404.
 loc._h = '#/live';
-eq(R.viewFromHash(), 'Live', 'viewFromHash: #/live -> Live');
+eq(R.viewFromHash(), 'Home', 'viewFromHash: #/live -> Home (retired-slug alias)');
+loc._h = '#/LIVE?project=Alpha';
+eq(R.viewFromHash(), 'Home', 'viewFromHash: alias is case-insensitive and ignores the query');
+eq(R.VIEW_ALIASES, { live: 'Home' }, 'VIEW_ALIASES: exactly the retired slugs, nothing else');
 loc._h = '#/Settings';
 eq(R.viewFromHash(), 'Settings', 'viewFromHash: #/Settings -> Settings');
 loc._h = '#/a b';
@@ -577,7 +581,7 @@ eq(R.navGroups()[3], { name: 'More', views: EXTRA_VIEWS },
 const flat = R.navGroups().flatMap(g => g.views);
 eq(flat.slice().sort(), R.navViews().slice().sort(), 'navGroups: covers every view, none invented');
 eq(new Set(flat).size, flat.length, 'navGroups: no view appears twice');
-eq(R.navGroups()[0], { name: 'Overview', views: ['Home', 'Live', 'Flow', 'Router', 'Quota'] },
+eq(R.navGroups()[0], { name: 'Overview', views: ['Home', 'Flow', 'Router', 'Quota'] },
   'navGroups: Overview keeps the declared view list');
 const spare = viewEls.splice(0);
 viewEls.length = 0;
@@ -761,6 +765,12 @@ eq(R.viewFromHash(), 'Sessions', 'pickView: the hash it writes parses back to th
 R.pickView('Home');
 eq(R.view, 'Home', 'pickView: switches back');
 eq(R.navOpen, false, 'pickView: does not open the drawer');
+// #173: a stale localStorage 'Live' (or an old onclick string) must land on
+// Home, not hide every panel.
+R.pickView('Sessions');
+R.pickView('Live');
+eq(R.view, 'Home', 'pickView: retired view name resolves through VIEW_ALIASES');
+ok(loc.hash.startsWith('#/home'), 'pickView: and the hash says #/home, not #/live');
 R.clearCrossFilters();
 R.setHash('Home');
 

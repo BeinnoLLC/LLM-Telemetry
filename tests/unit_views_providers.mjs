@@ -785,9 +785,10 @@ const D2 = await load();
 
   D2.renderHome((d) => d !== '2026-09-01');
   const h = e.homecards.innerHTML;
-  eq(count(h, 'data-gohome='), 12, 'renderHome: ten stat cards plus bandwidth are clickable');
-  has(h, '<a class="card p-4 homecard" href="#/live" data-gohome="Live">', 'renderHome: cards are real links');
-  has(h, '<div class="hc-stat">idle</div>', 'renderHome: no live sessions reads idle');
+  eq(count(h, 'data-gohome='), 11, 'renderHome: nine stat cards plus bandwidth are clickable');
+  has(h, '<a class="card p-4 homecard" href="#/flow" data-gohome="Flow">', 'renderHome: cards are real links');
+  // #173: Home IS the live board, so there is no card pointing at itself.
+  ok(!h.includes('data-gohome="Live"'), 'renderHome: no self-referential Live card');
   has(h, '<span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Flow</span>',
     'renderHome: the Flow card is labelled');
   has(h, '<div class="hc-stat">2 models</div>', 'renderHome: distinct short model names of in-range rows');
@@ -807,7 +808,7 @@ const D2 = await load();
   has(h, '<div class="hc-stat"><span class="bwup">\u2191 150 B</span>',
     'renderHome: up bytes are live+LAN and labelled as estimated');
   has(h, '<span class="bwdown">\u2193 15 B</span>', 'renderHome: down bytes are live+LAN');
-  eq(count(h, 'data-gohome='), 12, 'renderHome: every card names its destination view');
+  eq(count(h, 'data-gohome='), 11, 'renderHome: every card names its destination view');
   eq(count(h, 'data-gohome="Detail"'), 1, 'renderHome: destination views keep their display capitalisation');
 
   D2.renderHome((d) => d === '2026-10-01');
@@ -819,7 +820,6 @@ const D2 = await load();
   p1.live = ['s1', 's2'];
   p1.failures_recent = [{}, {}];
   D2.renderHome();
-  has(e.homecards.innerHTML, '<div class="hc-stat">2 sessions</div>', 'renderHome: plural live sessions');
   has(e.homecards.innerHTML, '<div class="hc-stat">90.0% \u00B7 2 recent</div>', 'renderHome: plural recent failures');
   has(e.homecards.innerHTML, '<div class="hc-stat">3 rows</div>', 'renderHome: no filter -> every row counted');
 

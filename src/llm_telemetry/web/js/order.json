@@ -1219,6 +1219,10 @@
   },
   {
    "mod": "router",
+   "name": "VIEW_ALIASES"
+  },
+  {
+   "mod": "router",
    "name": "viewFromHash"
   },
   {
@@ -1804,6 +1808,22 @@
   {
    "mod": "live",
    "name": "liveTimer"
+  },
+  {
+   "mod": "live",
+   "name": "liveUpdatedAt"
+  },
+  {
+   "mod": "live",
+   "name": "tickLiveStamp"
+  },
+  {
+   "mod": "live",
+   "name": "liveStampTimer"
+  },
+  {
+   "mod": "live",
+   "name": "scheduleLiveStampTick"
   },
   {
    "mod": "live",

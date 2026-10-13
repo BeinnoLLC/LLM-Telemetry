@@ -70,9 +70,9 @@ setTimeout(() => {
     'still exactly one item current after navigating');
   chk(/#\/cost$/.test(w.location.hash), 'rail click updates the hash', `(${w.location.hash})`);
 
-  // Badges: present for Live, and hidden rather than showing a zero.
-  const liveBadge = d.querySelector('[data-navbadge="Live"]');
-  chk(!!liveBadge, 'Live item carries a badge element');
+  // Badges: the live-session count sits on Home (#173), hidden rather than showing a zero.
+  const liveBadge = d.querySelector('[data-navbadge="Home"]');
+  chk(!!liveBadge, 'Home item carries the live-session badge element');
   const n = (analytics.profiles[Object.keys(analytics.profiles)[0]].live || []).length;
   if (liveBadge) {
     chk(liveBadge.hidden === (Number(liveBadge.textContent) === 0),

@@ -139,6 +139,7 @@ async function boot(opt = {}){
       emptyHTML: (icon, msg, hint) => { logs.emptyHTML = [icon, msg, hint]; return `<empty>${icon}|${msg}|${hint}</empty>`; },
       esc: PAL.esc, escA: PAL.escA, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
       toolColor: () => '#0a0',
+      stampFreshness: PAL.stampFreshness,   // real: the #185 stamp test checks its classes
     },
     'charts.js': {
       agg: rows => [[String(rows.length), rows.length]],
@@ -226,7 +227,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   const h = await boot({ power: { intervals: { live_poll_interval_s: 12, analytics_rebuild_interval_s: 90 } } });
   eq(h.M.LIVE_MS, 12000, 'LIVE_MS: follows POWER.intervals.live_poll_interval_s');
   eq(h.M.REBUILD_MS, 90000, 'REBUILD_MS: follows POWER.intervals.analytics_rebuild_interval_s');
-  eq(h.timers.map(t => t.ms), [12000, 90000], 'load: arms the live timer then the rebuild timer, at the configured cadences');
+  eq(h.timers.map(t => t.ms), [12000, 1000, 90000], 'load: arms the live timer, the 1s stamp tick (#185), then the rebuild timer, at the configured cadences');
 
   const d = await boot({ power: { intervals: {} } });
   eq([d.M.LIVE_MS, d.M.REBUILD_MS, d.M.LIVE_MS_DEFAULT], [5000, 60000, 5000], 'defaults: 5s poll, 60s rebuild, LIVE_MS_DEFAULT 5000');
@@ -708,6 +709,46 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   eq([ht.M.pendingKind, ht.timers.length], ['fail', 1], 'pollLive: a completion arriving after the first poll sounds once');
 }
 
+// ── tickLiveStamp (#185): the pill counts up between polls ───────────────────
+{
+  const h = await boot({ data: { profiles: { p1: { live: [] } } }, responses: { 'live-data.json': { body: { profiles: { p1: { live: [] } } } } } });
+  h.doc.hidden = false;
+  eq(h.M.tickLiveStamp(100), null, 'tickLiveStamp: before any successful poll there is nothing to stamp');
+  eq(h.els.livestamp.textContent, '', 'tickLiveStamp: ...and the pill is left alone');
+  await h.run(() => h.M.pollLive());
+  const at = h.M.liveUpdatedAt;
+  ok(Number.isInteger(at) && Math.abs(at - Date.now() / 1000) < 5, 'pollLive: records the unix second of the successful poll');
+  // (renderLive stops at the import-binding assignment in this harness, so the
+  // in-poll tickLiveStamp() is not reached; drive it with the poll's own second.)
+  h.M.tickLiveStamp(at);
+  eq([h.els.livestamp.textContent, h.els.livestamp.dataset.stampState], ['live · updated just now', 'fresh'],
+     'tickLiveStamp: a fresh poll stamps "just now"');
+  h.M.tickLiveStamp(at + 3);
+  eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('old')], ['live · updated 3s ago', false],
+     'tickLiveStamp: the age counts up while still inside the 5s cadence');
+  h.M.tickLiveStamp(at + 7);
+  eq([h.els.livestamp.textContent, h.els.livestamp.dataset.stampState, h.els.livestamp.classList.contains('old')],
+     ['live · updated 7s ago · 7s old', 'old', true], 'tickLiveStamp: past one cadence it goes amber (old)');
+  h.M.tickLiveStamp(at + 95);
+  eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('stale')],
+     ['live · updated 2m ago · stale, 2m old', true], 'tickLiveStamp: well past it goes red (stale)');
+  await h.run(() => h.M.pollLive());
+  h.M.tickLiveStamp(h.M.liveUpdatedAt);
+  eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('stale'), h.els.livestamp.classList.contains('old')],
+     ['live · updated just now', false, false], 'tickLiveStamp: the next good poll resets the pill, no accumulated suffixes');
+  h.timers.length = 0;
+  await h.run(() => h.M.scheduleLiveStampTick());
+  eq([h.timers.length, h.timers[0].ms], [1, 1000], 'scheduleLiveStampTick: arms a 1s timer');
+  eq(h.M.liveStampTimer, h.timers[0].id, 'scheduleLiveStampTick: publishes the handle as liveStampTimer');
+  await h.run(() => h.timers[0].fn());
+  eq([h.timers.length, h.timers[1].ms, h.logs.fetch.length], [2, 1000, 2], 'scheduleLiveStampTick: a tick re-arms itself and never fetches');
+
+  const m = await boot({ missing: ['livestamp'], data: { profiles: { p1: { live: [] } } }, responses: { 'live-data.json': { body: { profiles: { p1: { live: [] } } } } } });
+  m.doc.hidden = false;
+  await m.run(() => m.M.pollLive());
+  eq(m.M.tickLiveStamp(), null, 'tickLiveStamp: no #livestamp element is a no-op, not a crash');
+}
+
 // ── doRefresh ────────────────────────────────────────────────────────────────
 {
   const busy = await boot({ responses: { 'analytics-data.json': { body: { profiles: { p1: {} } } } } });
@@ -765,8 +806,8 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
                        'installProjectDrilldown','installHelp','installProjWeight','installProjFilter','installSesstree',
                        'settingsInstall','intervalsInstall'],
      'load: every installer runs once, in the declared order');
-  eq([typeof h.els.refresh.onclick, h.logs.visibility.length, h.M.liveTimer, h.M.rebuildTimer],
-     ['function', 2, 1, 2], 'load: the refresh button is wired, both visibility listeners are attached, and both timers are held');
+  eq([typeof h.els.refresh.onclick, h.logs.visibility.length, h.M.liveTimer, h.M.liveStampTimer, h.M.rebuildTimer],
+     ['function', 2, 1, 2, 3], 'load: the refresh button is wired, both visibility listeners are attached, and all three timers are held');
 
   await h.run(() => h.els.refresh.onclick());
   await sleep(0);
