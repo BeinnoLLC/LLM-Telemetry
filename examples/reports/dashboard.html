@@ -1897,11 +1897,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       into Live with no explanation of what the other sections hold. Cards carry
       a real stat from the loaded payload, so this answers "what is going on"
       instead of being a menu. -->
+ <!-- Phase 15 (#173): Home IS the live board. The old landing page was a grid
+      of section cards that sat in front of the thing people open the dashboard
+      for; now the live board renders first and the cards survive as a compact
+      "Explore" strip underneath (#178). `#/live` still resolves here — the
+      router aliases it — so old bookmarks and tests keep working. -->
  <div class="view" data-view="Home">
-  <div class="grid-home" id="homecards"></div>
- </div>
-
- <div class="view" data-view="Live">
   <!-- Two columns that END TOGETHER. The session list is unbounded (it grows
        with concurrency) while the charts are fixed-content, so the right column
        used to stop short and leave a dead gap. Capping the row height and
@@ -1955,6 +1956,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    </div>
    <div id="ollama" class="olgrid"></div>
   </div>
+  <!-- #178: the former landing cards, demoted to an "Explore" strip below the
+       live board. Still real stats, still real links — just not in the way. -->
+  <div class="lbl mt-4 mb-2.5">Explore</div>
+  <div class="grid-home" id="homecards"></div>
  </div>
 
  <!-- #130: model router per profile — responsibility chart, routing matrix,
@@ -5234,7 +5239,6 @@ function renderHome(inR){
   // ReferenceError and silently left the card grid empty.
   const pass = typeof inR === 'function' ? inR : () => true;
   const rows = (p.rows || []).filter(r => pass(r.date));
-  const live = p.live || [];
 
   const sum = (f) => rows.reduce((a, r) => a + (+f(r) || 0), 0);
   const models = new Set(rows.map(r => short(r.model)));
@@ -5270,8 +5274,7 @@ function renderHome(inR){
     : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
 
   const cards = [
-    ['Live', icon('play'), PAL[3], 'Sessions in flight right now',
-      live.length ? live.length + (live.length === 1 ? ' session' : ' sessions') : 'idle'],
+    // #173: Live IS Home now; a card pointing at the page it sits on is noise.
     ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
       models.size + (models.size === 1 ? ' model' : ' models')],
     ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',
@@ -8888,12 +8891,18 @@ function setHash(v){
   if (location.hash !== want) location.hash = want;
 }
 
+// #173: retired slugs that must keep resolving. 'live' was its own view until
+// Home became the live board; bookmarks, tests and the README all say #/live.
+const VIEW_ALIASES = { live: 'Home' };
+
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 function viewFromHash(){
   let raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
   try { raw = decodeURIComponent(raw); } catch { /* malformed escape: match as-is */ }
   if (!raw) return null;
+  const alias = VIEW_ALIASES[slugOf(raw)];
+  if (alias) return alias;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
 }
@@ -9318,7 +9327,9 @@ const NAV_ICONS = {
 // A view with no entry falls into the trailing "More" group rather than
 // disappearing — a new view must never be silently missing from the nav.
 const NAV_GROUPS = [
-  {name:'Overview',  views:['Home', 'Live', 'Flow', 'Router', 'Quota']},
+  // #173: 'Live' is gone from the rail — Home IS the live board. `#/live`
+  // still routes there via VIEW_ALIASES.
+  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Quota']},
   {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
@@ -9381,7 +9392,8 @@ function navSync(){
   });
   const p = (typeof DATA !== 'undefined' && DATA.profiles) ? (DATA.profiles[current] || {}) : {};
   const counts = {
-    Live: (p.live || []).length,
+    // #173: the live-session count badges Home now that Home is the live board.
+    Home: (p.live || []).length,
     // Failures are the number worth surfacing on Health; 0 stays hidden so the
     // rail does not shout when nothing is wrong.
     Health: ((DATA && DATA.errors) || []).length
@@ -9712,6 +9724,9 @@ function views(){
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 function pickView(v){
+  // #173: retired view names (a stale localStorage value, an old test, an
+  // onclick string) land on their replacement instead of hiding every panel.
+  v = VIEW_ALIASES[slugOf(v)] || v;
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
   document.querySelectorAll('[data-vtab]').forEach(b=>{
@@ -10428,6 +10443,9 @@ async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    // #185: the payload is fresh from here on; record it before the repaint so
+    // a paint error cannot leave the pill claiming an older poll than the data.
+    liveUpdatedAt = Math.floor(Date.now() / 1000);
     // Merge the live slice into each profile in place, then rebuild the
     // synthetic All profile so its merged live list stays correct.
     Object.keys(fresh.profiles).forEach(n => {
@@ -10467,10 +10485,7 @@ async function pollLive(){
       ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
       : `<span class="muted">●</span> 0`;
     liveFails = 0;
-    const t = $('livestamp');
-    if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
-    // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
-    stampFreshness(t, Math.floor(Date.now() / 1000), 'live');
+    tickLiveStamp();
   } catch (e) {
     // Fail quietly: a transient miss must not blank the panel the user is
     // watching. Only a sustained outage is worth reporting.
@@ -10874,7 +10889,31 @@ function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 let liveTimer = null;
+// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
+// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
+// age counts up between polls instead of freezing at the poll time. The
+// base text is rewritten every tick (via dataset.stampBase) because
+// stampFreshness caches the first text it sees — the old code set textContent
+// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+let liveUpdatedAt = null;
+function tickLiveStamp(now){
+  const t = $('livestamp');
+  if (!t) return null;
+  if (liveUpdatedAt == null) return null;
+  const at = now == null ? Math.floor(Date.now() / 1000) : now;
+  const age = Math.max(0, at - liveUpdatedAt);
+  t.dataset.stampBase = age < 1 ? 'live · updated just now' : `live · updated ${ago(age)} ago`;
+  // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
+  return stampFreshness(t, liveUpdatedAt, 'live', at);
+}
+// One-second tick so the age is honest even when polling is stalled (a stalled
+// poll never calls tickLiveStamp, so the stamp would otherwise lie at "4s ago").
+let liveStampTimer = null;
+function scheduleLiveStampTick(){
+  liveStampTimer = setTimeout(() => { tickLiveStamp(); scheduleLiveStampTick(); }, 1000);
+}
 scheduleLivePoll();
+scheduleLiveStampTick();
 installDrawer();
 installTranscriptModal();
 installSessionFinder();
