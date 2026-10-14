@@ -113,8 +113,21 @@ def main():
         real = json.load(f)
 
     names = [n for n in real.get("profiles", {}) if n != "All"]
+    kinds = {n: ((real.get("profiles", {}) or {}).get(n) or {}).get("kind") for n in names}
+    has_kinds = any(k in ("bot", "profile") for k in kinds.values())
     for i, n in enumerate(names):
-        PROFILE_MAP[n] = ["work", "personal", "research"][i] if i < 3 else f"profile{i}"
+        # Kind rides with the name: sampled bots keep bot-shaped aliases so
+        # the fixture still exercises the Profiles/Bots tab groups (#188),
+        # human profiles keep human aliases. Legacy payloads without `kind`
+        # fall back to the plain scheme.
+        bot = kinds.get(n) == "bot"
+        if not has_kinds:
+            PROFILE_MAP[n] = ["work", "personal", "research"][i] if i < 3 else f"profile{i}"
+        elif bot:
+            PROFILE_MAP[n] = (["work-scout", "nightly-sync", "inbox-watcher"][i]
+                              if i < 3 else f"bot{i}")
+        else:
+            PROFILE_MAP[n] = ["work", "personal", "research"][i] if i < 3 else f"profile{i}"
 
     out_profiles = {}
     for n, p in real.get("profiles", {}).items():
@@ -125,6 +138,10 @@ def main():
         for r in sp.get("rows", []):
             if "profile" in r:
                 r["profile"] = PROFILE_MAP[n]
+        # The alias decides the displayed group; keep kind consistent with
+        # the bot-shaped aliases so the fixture teaches the real groups.
+        if isinstance(sp, dict) and "kind" in sp:
+            sp["kind"] = "bot" if (kinds.get(n) == "bot" and has_kinds) else "profile"
         # Jitter scaled ok/fail/total independently; re-derive total and rate
         # so a health row never claims more successes than calls.
         from fix_sample_health import fix_health
@@ -138,6 +155,19 @@ def main():
         "pricing_models": real.get("pricing_models", 0),
         "sample": True,
         "schema_version": SCHEMA_VERSION,
+        # Resolution report (P5-04): the sample build runs with an empty
+        # agent-home and `profiles: []`, so the honest report is
+        # explicit-empty with the sampled names as configured profiles and
+        # nothing failed — no warning badge, matching the fixture contract.
+        "resolution": {
+            "agent_home": "examples/agent-home (fixture, empty)",
+            "config_file": "examples/sample-config.json",
+            "mode": "explicit-empty",
+            "discovered": [],
+            "configured": list(out_profiles),
+            "excluded": [],
+            "failed": [],
+        },
     }
     # Local rows are electricity, never "free" at $0 (P7-01, #65): price them
     # through the same path a real build uses.
