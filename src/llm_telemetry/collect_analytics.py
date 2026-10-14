@@ -27,13 +27,8 @@ from .config import get as _cfg
 
 CFG = _cfg()
 REPORTS = CFG.reports_dir
-# {display name: state.db} for every profile that exists on this machine.
 PROFILES = {p.name: p.db for p in CFG.live_profiles()}
 
-# one row per (day, model, provider, task, session) — grouped further down
-# to session grain (not just title/cwd) because project resolution can
-# require walking parent_session_id (P4-03, #40), which is a per-session
-# fact, not a per-title one.
 ROWS = """
 select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        u.model, u.billing_provider, coalesce(nullif(u.task,''),'main') task,
@@ -48,15 +43,7 @@ group by d, u.model, u.billing_provider, task, u.session_id
 order by d
 """
 
-# Hour-granularity twin of ROWS, for the dashboard's sub-day range presets
-# (1h/6h/12h — #129). ROWS is DAY grain on purpose (the from/to range filter
-# used to be date-only, so day grain kept the payload small); this adds an
-# hour column on the SAME underlying table so an hour preset can filter rows
-# by real clock time instead of collapsing to "today". Scoped to the last 72
-# hours only — anything older is already covered by ROWS at day grain, and an
-# unbounded hour-grain export would balloon the payload for no UI benefit
-# (no preset needs hour precision past a couple of days back).
-HOUR_WINDOW_S = 259200  # 72h
+HOUR_WINDOW_S = 259200
 HOUR_ROWS = """
 select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        cast(strftime('%H', coalesce(u.last_seen, s.started_at),'unixepoch','localtime') as int) h,
@@ -73,13 +60,7 @@ group by d, h, u.model, u.billing_provider, task, u.session_id
 order by d, h
 """.format(window=HOUR_WINDOW_S)
 
-# All sessions' identity fields, for project resolution (P4-01/P4-03) and
-# cost attribution (P10-07, #95): one query, loaded once per profile into a
-# dict, so walking parent_session_id never re-hits the database per hop.
 SESSION_IDENTITY = "select id, title, cwd, parent_session_id, source, display_name, git_branch from sessions"
-# Context re-send per session (P9-03, #80). One row per (session, model) over
-# the last 30 days. Sessions under RESEND_MIN_CALLS calls are dropped: a
-# 3-call session has no meaningful average context.
 RESEND_MIN_CALLS = 10
 RESEND = """
 select u.session_id, coalesce(nullif(s.title,''), '') title, u.model,
@@ -94,9 +75,6 @@ order by sum(u.cache_read_tokens) desc
 limit 60
 """
 
-# Top sessions per (model, task) — powers "which chat" on the Flow graph.
-# Capped at 5 per node: 504 (model,task,session) combos exist, but a tooltip
-# can only show a handful, and shipping them all would bloat every payload.
 SESS_BY_NODE = """
 with agg as (
   select u.model m, coalesce(nullif(u.task,''),'main') t, u.session_id sid,
@@ -121,15 +99,7 @@ from session_model_usage u join sessions s on s.id = u.session_id
 group by d, h
 """
 
-# Heatmap: daily call totals for the last 90 days, BROKEN DOWN BY PROVIDER so
-# each calendar cell can be tinted with the providers actually used that day
-# (a mixed day renders as proportional bands, not one flat accent colour).
 #
-# billing_provider/billing_base_url/model are all carried through because the
-# dashboard resolves the provider with the SAME provOf(provider, model, url)
-# helper every other widget uses — resolving it here in SQL instead would give
-# the heatmap its own private notion of "provider" and let the two drift.
-# Grouping this finely costs ~71 rows over 90 days, so the payload stays small.
 HEATMAP = """
 select date(coalesce(u.last_seen, s.started_at),'unixepoch','localtime') d,
        u.billing_provider p, u.billing_base_url url, u.model m,
@@ -144,13 +114,6 @@ select date(started_at,'unixepoch','localtime') d, coalesce(nullif(source,''),'-
 from sessions group by d, src
 """
 
-# P9-04 (#81): session-lifecycle signals the Health view otherwise ignores —
-# end_reason breakdown, and compression-pressure sessions. Scoped to the last
-# 30 days, the same window RESEND uses, so it stays a "what's happening
-# lately" signal rather than growing unbounded with the DB's full history.
-# rewind_count is deliberately excluded per the ticket's own note: it is 0
-# everywhere observed, and a panel for an always-zero column is how
-# dashboards accumulate dead space.
 END_REASONS = """
 select coalesce(nullif(end_reason,''), '(none)'), count(*)
 from sessions
@@ -159,15 +122,6 @@ where ended_at is not null
 group by 1
 order by count(*) desc
 """
-# P10-03 (#91): session outcomes. `(none)` here means "ended_at is set but
-# end_reason is NULL/empty" — a session that died without saying why. That
-# is DELIBERATELY never folded into an "ok" bucket: the ticket's own words
-# are "the ones that died without saying why", and merging it into ok would
-# hide exactly the signal this ticket exists to surface. `reap` means the
-# collector itself detected an abandoned in-flight session
-# (startup_orphan_reap / ws_orphan_reap) — the agent process died mid-turn
-# with the work unaccounted for, a stronger and separately-tracked signal
-# than a plain silent end.
 OUTCOMES_BY_REASON = """
 select coalesce(nullif(end_reason,''), '(none)'), count(*)
 from sessions
@@ -199,9 +153,6 @@ where ended_at is not null
   and end_reason in ('startup_orphan_reap', 'ws_orphan_reap')
 order by ended_at desc
 """
-# Reaps per day for the trend line — same date() convention the rest of the
-# collector uses (localtime, so the trend lines up with the other day-grain
-# charts on the same page).
 OUTCOMES_REAP_TREND = """
 select date(ended_at,'unixepoch','localtime') d, count(*)
 from sessions
@@ -230,17 +181,6 @@ def build_outcomes(con):
             "silent": silent, "reaped": reaped, "reap_trend": reap_trend}
 
 
-# P10-01 (#89): sessions_tree. Selects EVERY session touched in the last 30
-# days (the same window END_REASONS/RESEND use) whose OWN activity falls in
-# range, OR whose PARENT is recent (a subagent spawned by a long-running
-# session started outside the window), OR whose CHILD is recent (an old
-# parent whose subagent just ran must still surface so that child isn't
-# orphaned at render time) — a tree built from only the first of these three
-# would silently drop real relationships. Cost comes directly from
-# sessions.estimated_cost_usd/actual_cost_usd — the same fields the
-# Detail/session-level cost figures already read — not a recomputed
-# price_row() call, so the tree can never disagree with the rest of the
-# dashboard about what a session cost.
 SESSIONS_TREE = """
 select s.id, coalesce(s.parent_session_id,''), coalesce(s.source,''),
        coalesce(nullif(s.title,''), nullif(s.display_name,''), '(untitled)'),
@@ -280,7 +220,7 @@ def build_sessions_tree(con):
     is possible — a child row can appear before or after its parent) to add
     descendant totals on top of each node's own figures. depth is not
     hardcoded to any fixed number: the DB's current data goes one level deep,
-    but nothing here assumes that stays true (P4-03, #40 hit the same trap
+    but nothing here assumes that stays true (P4-03,
     walking parent_session_id and is not repeated).
     """
     rows = [dict(zip(SESSIONS_TREE_COLS, r)) for r in con.execute(SESSIONS_TREE)]
@@ -305,9 +245,6 @@ def build_sessions_tree(con):
         else:
             roots.append(n)
 
-    # Bottom-up roll-up via post-order recursion, cycle-bounded the same way
-    # project_of_session() is (MAX_PARENT_DEPTH-equivalent): a malformed
-    # self-referential parent chain must not hang the collector.
     def rollup(node, depth=0, visited=None):
         visited = visited or set()
         if node["id"] in visited or depth > 20:
@@ -347,32 +284,17 @@ order by compression_ineffective_count desc, compression_fallback_streak desc
 limit 40
 """
 
-# P9-06 (#83): "how many agents were running at once" — the concurrency
-# question neither Live (right now) nor Usage (daily volume) answers.
-# Bucketing overlapping [started_at, ended_at] intervals into hours is
-# awkward in pure SQL (a session spanning several hours needs to count in
-# EACH of them), so this only pulls the raw intervals and does the bucketing
-# in Python (see concurrency_by_hour below) — the SQL stays a plain scan
-# with an index-friendly predicate, and the interval logic is one small,
-# independently testable function instead of a recursive CTE.
-# Scoped to the same 90-day window as HEATMAP.
 CONCURRENCY_INTERVALS = """
 select started_at, ended_at, (parent_session_id is not null)
 from sessions
 where started_at > strftime('%s','now') - 7776000
 """
-# "In progress" = open session with activity inside the window. A null ended_at
-# alone is not enough: crashed/killed sessions never get one and would inflate
-# this forever (9 open rows here, only 3 genuinely live).
 ACTIVE = """
 select count(*) from sessions
 where ended_at is null
   and coalesce(last_activity_at, started_at) > strftime('%s','now') - 600
 """
 
-# One row per genuinely-live session, with enough signal to classify what kind
-# of work it is doing: the phase text Hermes writes to last_activity_description
-# plus the tools it actually called in the last 15 minutes.
 LIVE = """
 select s.id,
        coalesce(nullif(s.title,''),'(untitled)'),
@@ -408,18 +330,8 @@ order by coalesce(s.last_activity_at, s.started_at) desc
 """
 LIVE_COLS = "id title init_model phase idle_s parent tools model nmodels base_url".split()
 
-# Token totals per (live session, endpoint), for bandwidth estimation.
 #
-# Split per ENDPOINT, not per session: a session routinely runs several models
-# (up to 6 observed), so classifying a whole session by its current model
-# attributed gigabytes of metered traffic to the LAN. The caller decides which
-# URLs are local, using config.local_host_patterns — the patterns are not
-# duplicated into this SQL.
 #
-# Upload counts cache_read because every provider here uses PREFIX caching: the
-# client re-sends the whole prompt and the server merely skips recomputation, so
-# those tokens genuinely cross the link (verified: anthropic reports
-# cache_write > 0 and ~146k cache_read tokens per call).
 LIVE_BYTES = """
 select u.session_id,
        coalesce(u.billing_base_url,''),
@@ -431,7 +343,6 @@ where s.ended_at is null
 group by u.session_id, u.billing_base_url
 """
 
-# Recent completed sessions (last 48h) for the Live tab activity table.
 RECENT_SESSIONS = """
 select s.id,
        coalesce(nullif(s.title,''),'(untitled)') title,
@@ -455,25 +366,18 @@ order by s.ended_at desc limit 40
 """
 RECENT_SESSIONS_COLS = "id title model message_count last_ts dur_s last_model base_url prov api_calls tokens".split()
 
-# Tool calls in the last hour — shows which kind of work dominates right now.
 RECENT_TOOLS = """
 select tool_name, count(*) from messages
 where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 """
-# P10-07 (#95): tokens consumed by tool RESULTS, for cost-by-tool
-# attribution — 30 days, same window as ROWS/the rest of the Cost view.
 TOOL_TOKEN_ROWS = """
 select tool_name, session_id, coalesce(token_count, 0)
 from messages
 where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 2592000
 """
-# P10-04 (#92): tool reliability. Two windows so the panel can show a
-# trend arrow — current 30 days vs the SAME-LENGTH 30 days immediately
-# before it, not "vs all history" which would bury a recent regression
-# under months of good data.
 TOOL_RESULTS_CURRENT = """
 select tool_name, session_id, timestamp, content, effect_disposition, finish_reason, token_count
 from messages
@@ -501,7 +405,7 @@ def _pXX(sorted_vals, pct):
 
 def build_tool_reliability(con):
     """Per-tool calls/fail-rate/trend/wasted-tokens + top failing terminal
-    commands + recent failing result heads, per P10-04 (#92).
+    commands + recent failing result heads, per P10-04 (
 
     tool_outcome() classifies each row from structured signals only (see
     that module's own docstring for why a substring scan is explicitly
@@ -513,9 +417,9 @@ def build_tool_reliability(con):
     """
     from .tool_outcomes import tool_outcome
 
-    by_tool = {}          # name -> {calls, fails, confident, tok_wasted, sizes:[], sessions_seen:set}
-    cmd_fails = {}         # terminal first-token -> fail count
-    fail_samples = {}      # name -> [{session, ts, head}]
+    by_tool = {}
+    cmd_fails = {}
+    fail_samples = {}
 
     for tool_name, session_id, ts, content, disp, reason, tok in con.execute(TOOL_RESULTS_CURRENT):
         b = by_tool.setdefault(tool_name, {"calls": 0, "fails": 0, "confident": 0,
@@ -534,12 +438,6 @@ def build_tool_reliability(con):
                     samples.append({"session": session_id, "ts": int(ts) if ts else None,
                                      "head": (content or "")[:300]})
                 if tool_name == "terminal":
-                    # First token of the command, from the fail sample's own
-                    # head when it looks like a command echo is not
-                    # reliable — the ticket asks for the command, which is
-                    # only in the ASSISTANT tool_calls row, not this result
-                    # row. Falling back to "(unknown)" rather than guessing
-                    # at a command from output text.
                     cmd = _terminal_command_hint(content)
                     cmd_fails[cmd] = cmd_fails.get(cmd, 0) + 1
 
@@ -565,9 +463,6 @@ def build_tool_reliability(con):
             "tok_wasted": b["tok_wasted"],
             "p50_bytes": _pXX(sizes, 50), "p95_bytes": _pXX(sizes, 95),
         })
-    # Sort by cost of failures (fails * tokens the failed results consumed)
-    # per the ticket's own stated ranking — a tool failing cheaply matters
-    # less than one failing after a 20k-token result.
     tools.sort(key=lambda t: -t["tok_wasted"])
 
     top_commands = sorted(cmd_fails.items(), key=lambda kv: -kv[1])[:10]
@@ -597,12 +492,6 @@ def _terminal_command_hint(content):
     return "(unknown)"
 
 
-# P10-05 (#93): latency. `messages` has no per-row model column, so each
-# assistant turn is attributed to the model/base_url that was MOST RECENTLY
-# active for that session as of the turn's own timestamp — the same
-# last-seen-subquery pattern RECENT_SESSIONS already uses, just bounded by
-# `u.last_seen <= m.timestamp` so a session that later switched models does
-# not retroactively relabel its earlier turns.
 ASSISTANT_TURNS = """
 select m.session_id, m.timestamp,
        coalesce(
@@ -641,10 +530,6 @@ def build_latency(con):
 COLS = "date model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 HOUR_COLS = "date hour model provider task calls inp outp cread cwrite rtok est act sessions base_url session_id".split()
 
-# Work categories. Order matters: the live phase text is checked first for
-# every category, because it says what the session is doing RIGHT NOW. The tool
-# mix is only a fallback — a session that ran `patch` ten minutes ago but is
-# currently in a terminal command is Running, not Coding.
 CATEGORIES = [
     ("Compressing", ("compression",), ()),
     ("Reviewing",   ("review", "critique"), ("delegate_task",)),
@@ -698,7 +583,7 @@ def concurrency_by_hour(intervals, now=None):
 
     Returns a dict keyed "YYYY-MM-DD HH" (local time, zero-padded hour) ->
     {"top": n, "sub": n}. Empty input returns an empty dict — the caller
-    decides what an empty range renders as (#83's own "not a broken axis"
+    decides what an empty range renders as (
     acceptance criterion), this function makes no chart-shaped assumptions.
     """
     import time as _time
@@ -710,8 +595,6 @@ def concurrency_by_hour(intervals, now=None):
             continue
         end = ended_at if ended_at is not None else now
         if end < started_at:
-            # Clock skew / bad data: a negative-duration session contributes
-            # nothing rather than silently going backwards through hours.
             continue
         first_hour = int(started_at // HOUR)
         last_hour = int(end // HOUR)
@@ -726,7 +609,7 @@ def concurrency_by_hour(intervals, now=None):
 
 def fetch_rows(con):
     """Fetch and resolve the ROWS query for one profile's connection
-    (P4-02 #39, P4-03 #40). Extracted from build() so it's directly
+    (P4-02
     testable against a fixture connection without driving build()'s full
     profile-resolution plumbing — the SQL, the COLS zip, and the
     project_of_session() resolution (including the parent-chain walk) all
@@ -739,16 +622,7 @@ def fetch_rows(con):
     }
     rows = [dict(zip(COLS, r)) for r in con.execute(ROWS)]
     for r in rows:
-        # Resolve to the single project resolver (P4-01 #56, P4-03 #40)
-        # here, once, so no consumer re-implements the stem rule or the
-        # parent-chain walk. Raw session_id is kept — every row already had
-        # a real session_id in the fetched grain and the payload does not
-        # newly expose anything by keeping it (RESEND, a separate
-        # per-session payload section, already exposes session_id).
         r["project"] = project_of_session(r["session_id"], sessions_by_id)
-        # P10-07 (#95): cost attribution needs the session's source
-        # (desktop/subagent/cron/...) on every row — joined in here, once,
-        # rather than re-joined by every consumer.
         r["source"] = (sessions_by_id.get(r["session_id"]) or {}).get("source")
     return rows
 
@@ -774,7 +648,7 @@ def fetch_hour_rows(con):
 
 def _enrich_rows(rows, catalog):
     """Price + bandwidth-enrich rows in place. Shared by the day-grain
-    (fetch_rows) and hour-grain (fetch_hour_rows, #129) paths so the two can
+    (fetch_rows) and hour-grain (fetch_hour_rows,
     never compute a different cost or wire-byte estimate for the same call.
     """
     for r in rows:
@@ -784,9 +658,6 @@ def _enrich_rows(rows, catalog):
              "input_tokens": r["inp"], "output_tokens": r["outp"],
              "cache_read": r["cread"], "cache_write": r.get("cwrite") or 0,
              "calls": r.get("calls")}, catalog))
-        # Estimated wire bytes for this row, bucketed by destination.
-        # Same helper the live collector uses, so the tables and the
-        # live view can never disagree about what a token costs to send.
         up, down, lan_up, lan_down = bandwidth.split_row(
             r.get("base_url"), r["inp"], r["outp"], r["cread"], r.get("cwrite"))
         r["up_bytes"] = up
@@ -812,18 +683,46 @@ def unreadable(db):
         return f"{type(e).__name__}: {e}"
     return None
 
+BOT_SOURCES = {"cron", "oneshot", "subagent"}
+INTERACTIVE_SOURCES = {"desktop", "tui", "cli"}
+
+def classify_profile(name, sess, home=None):
+    """Return {"kind": "bot"|"profile", "sources": {...}} for one profile.
+
+    `sess` is the per-day session rows ({"date", "source", "sessions"}).
+    Bots are automation workers: they are signalled by the profile NAME
+    ("*bot*", "pv-*" trunk bots) plus near-absent interactive traffic, or by
+    machine sources (cron/oneshot/subagent) outweighing interactive ones
+    (desktop/tui/cli).Profiles are the ones a human actually drives. When a
+    bot-named profile does accumulate real interactive traffic (>2 sessions)
+    the traffic balance decides, so a human-renamed bot does not stay
+    mislabelled forever.
+    """
+    counts = {}
+    for s in sess:
+        src = s.get("source")
+        if src:
+            counts[src] = counts.get(src, 0) + (s.get("sessions") or 0)
+    interactive = sum(counts.get(s, 0) for s in INTERACTIVE_SOURCES)
+    machine = sum(counts.get(s, 0) for s in BOT_SOURCES)
+    name_bot = "bot" in name or name.startswith("pv-")
+    if name_bot and interactive <= 2:
+        kind = "bot"
+    elif machine > interactive:
+        kind = "bot"
+    elif interactive > machine:
+        kind = "profile"
+    else:
+        kind = "bot" if name_bot else "profile"
+    return {"kind": kind, "sources": counts}
+
 def build():
     out = {"generated": datetime.datetime.now().isoformat(timespec="seconds"), "profiles": {}}
     catalog, catsrc = pricing.fetch_catalog()
     out["pricing_source"] = catsrc
     out["pricing_models"] = pricing.catalog_size(catalog)
-    # Resolution report (P5-04): how the profile list was arrived at, plus any
-    # profile whose database could not be read. Rendered in the header so a
-    # missing profile is a visible warning, never a silent omission.
     res = dict(getattr(CFG, "resolution", {}) or {})
     res["failed"] = list(res.get("failed", []))
-    # Paths go out with the home directory contracted to ~: the payload is
-    # rendered into a page, and the page has no business naming the user.
     for k in ("agent_home", "config_file"):
         if res.get(k):
             res[k] = _tilde(res[k])
@@ -840,23 +739,15 @@ def build():
         try:
             rows = fetch_rows(con)
             _enrich_rows(rows, catalog)
-            # #129: hour-grain rows for the dashboard's sub-day range
-            # presets, enriched with the SAME pricing/bandwidth helper as
-            # the day-grain rows so the two can never disagree about what a
-            # call cost or weighed on the wire.
             hour_rows = fetch_hour_rows(con)
             _enrich_rows(hour_rows, catalog)
             hours = [{"date": d, "hour": h, "calls": c} for d, h, c in con.execute(HOURS)]
-            # P4-05 (#101), part 2: repo & branch attribution, over the SAME
-            # per-row grain fetch_rows() already resolved.
             sessions_for_repo = {
                 row[0]: {"cwd": row[2], "git_branch": row[6]} for row in con.execute(SESSION_IDENTITY)
             }
             p_repo_branch = repo_branch.build_repo_branch(rows, sessions_for_repo)
             heatmap = [{"d": d, "p": p, "url": url, "m": m, "v": c}
                        for d, p, url, m, c in con.execute(HEATMAP)]
-            # Keyed "model\ttask" so the Flow graph can look a node up directly
-            # instead of scanning a flat list on every hover.
             node_sessions = {}
             for mdl, tsk, title, calls, sid in con.execute(SESS_BY_NODE):
                 node_sessions.setdefault(f"{mdl}\t{tsk}", []).append(
@@ -868,16 +759,11 @@ def build():
                 L["category"] = classify(L["phase"], L["tools"])
                 L["tools"] = [t for t in (L["tools"] or "").split(",") if t]
                 L["kind"] = "subagent" if L["parent"] else "top-level"
-                # Fall back to the initial pick only when no usage is recorded
-                # yet (a session that has not made its first call).
                 L["model"] = L["model"] or L["init_model"]
                 L["switched"] = bool(L["model"] and L["init_model"]
                                      and L["model"] != L["init_model"])
             tools_recent = [{"tool": t, "calls": n} for t, n in con.execute(RECENT_TOOLS)]
             recent_sessions = [dict(zip(RECENT_SESSIONS_COLS, r)) for r in con.execute(RECENT_SESSIONS)]
-            # Context re-send per session (P9-03, #80). Re-sent cost is the
-            # cache-read tokens priced by price_row() on a cache-only row, so
-            # it reconciles with the Cost view: no third disagreeing figure.
             resend = []
             for (sid, title, mdl, prov, url, calls, inp, cw, cr,
                  last) in con.execute(RESEND, (RESEND_MIN_CALLS,)):
@@ -892,17 +778,10 @@ def build():
                     "resend_usd": pr["market_value_usd"], "cost_class": pr["cost_class"],
                     "last": last})
             resend.sort(key=lambda x: -x["resend_usd"])
-            # P9-04 (#81): lifecycle signals for the Health view.
             end_reasons = [{"reason": r, "n": n} for r, n in con.execute(END_REASONS)]
             outcomes = build_outcomes(con)
             tool_rel = build_tool_reliability(con)
             latency = build_latency(con)
-            # P10-07 (#95): cost attribution — reuses the SAME already-priced
-            # `rows` this profile just built (market_value_usd from
-            # pricing.price_row(), never recomputed) and the same
-            # SESSION_IDENTITY sessions_by_id dict fetch_rows() built for
-            # project resolution, so the tree and cost-by-root can never
-            # disagree about parentage.
             sessions_by_id = {
                 row[0]: {"title": row[1], "cwd": row[2], "parent_session_id": row[3],
                          "source": row[4], "display_name": row[5]}
@@ -916,23 +795,15 @@ def build():
                 {"id": sid, "title": title, "fallback_streak": fb,
                  "ineffective_count": ic, "error": err or ""}
                 for sid, title, fb, ic, err in con.execute(COMPRESSION_PRESSURE)]
-            # P9-06 (#83): concurrency-by-hour. concurrency_by_hour does the
-            # interval bucketing in Python (see its own docstring for why);
-            # this just shapes the dict into the flat list the dashboard's
-            # other hour-keyed payloads (HOURS) already use.
             conc_buckets = concurrency_by_hour(con.execute(CONCURRENCY_INTERVALS))
             concurrency = [
                 {"hour": k, "top": v["top"], "sub": v["sub"]}
                 for k, v in sorted(conc_buckets.items())]
-            # Must run BEFORE the finally below closes the connection.
             deleg = delegations.collect(con)
         finally:
             con.close()
         dates = sorted({r["date"] for r in rows if r["date"]})
 
-        # Reliability: successes come from the DB (a usage row means the call
-        # returned), failures from errors.log. Both keyed by model so the
-        # matrix can show a real success rate rather than a guess.
         fail_stats, fail_recent = failures.for_profile(name)
         ok_by_model = {}
         for r in rows:
@@ -958,6 +829,7 @@ def build():
                                  "hour_rows": hour_rows,
                                  "active": active,
                                  "live": live,
+                                 **classify_profile(name, sess),
                                  "tools_recent": tools_recent,
                                  "recent_sessions": recent_sessions,
                                  "resend": resend,
@@ -979,36 +851,20 @@ def build():
                                  "repo_branch": p_repo_branch,
                                  "min_date": dates[0] if dates else None,
                                  "max_date": dates[-1] if dates else None}
-    # P8-04: persist the per-day bandwidth series. Closed days are frozen with
-    # the bytes_per_token they were computed with, so a recalibration never
-    # restates history. The page reads the series from here, not from rows.
     series = bandwidth_history.update(
         REPORTS, {n: p["rows"] for n, p in out["profiles"].items()})
     for n, p in out["profiles"].items():
         p["bandwidth_daily"] = series.get(n, [])
-    # P10-09 (#97): context & compaction — a separate module walks each
-    # profile's messages once for its own purpose (running context size,
-    # compaction yield); merged in here rather than threaded through the
-    # main per-day loop above, which has nothing to do with per-call
-    # context growth.
     from . import collect_context_compaction as CX
     context_by_profile = CX.build_context_payload()
     for n, p in out["profiles"].items():
         p["context"] = context_by_profile.get(n, {"sessions": [], "reasoning_by_model": [], "cooldowns": []})
-    # P10-10 (#98): Attention card — every rule in alerts.RULES evaluated
-    # against this SAME finished profile payload, after every other field
-    # above is already populated, so a rule can read anything (bandwidth,
-    # delegations, context, agents) the rest of the payload already built.
     from . import alerts as ALERTS
     now_ts = time.time()
     for n, p in out["profiles"].items():
         p["_now"] = now_ts
         p["alerts"] = ALERTS.build_alerts(p)
         del p["_now"]
-    # P10-12 (#100): Session finder palette -- one small row per session,
-    # no message content (full-text search is explicitly out of scope
-    # for this ticket; the existing-but-unused messages_fts index is the
-    # real follow-up).
     from . import collect_session_index as SI
     session_index_by_profile = SI.build_session_index_by_profile()
     for n, p in out["profiles"].items():
@@ -1020,7 +876,6 @@ if __name__ == "__main__":
     ap.add_argument("-o", "--out", default=str(REPORTS / "analytics-data.json"))
     a = ap.parse_args()
     data = build()
-    # Never write a payload the page cannot read (P1-02, #24).
     check("analytics", data)
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
     with open(a.out, "w") as f:
