@@ -228,6 +228,26 @@
    grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  .grid-kpi{display:grid;gap:10px;
    grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))}
+ /* #182: Home's live scorecards. Exactly four, so fixed 4-up tracks rather
+    than auto-fit (auto-fit would leave a 3+1 orphan at mid widths); 2-up on
+    tablets/phones and 1-up only on the narrowest. Calm palette (#153): the
+    number carries the weight, colour is reserved for state. */
+ .lkpis{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+ @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
+ .lkpi{position:relative;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+ .lkpi-name{font-size:var(--fs-xs);font-weight:700;color:var(--muted);letter-spacing:.01em}
+ .lkpi-num{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.015em;line-height:1.1;
+   font-variant-numeric:tabular-nums;color:inherit;text-decoration:none;white-space:nowrap;
+   overflow:hidden;text-overflow:ellipsis}
+ .lkpi-of{font-size:.6em;font-weight:600;color:var(--muted)}
+ .lkpi-sub{font-size:var(--fs-xs);color:var(--muted)}
+ .lkpi-spark{position:absolute;right:12px;top:12px;opacity:.85}
+ .lkpi-alerts{color:var(--z-warn)}
+ .lkpi-alerts.crit{color:var(--z-bad)}
+ .lkpi-clear{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:999px;
+   font-size:var(--fs-xs);font-weight:600;color:var(--z-ok);
+   background:color-mix(in srgb,var(--z-ok) 12%,transparent)}
  /* Two-up chart rows. Written as auto-fit rather than `1fr 1fr` so a narrow
     viewport reflows to one column instead of producing two ~160px tracks that
     hold a squashed canvas and force horizontal overflow. min() keeps the track
@@ -1918,6 +1938,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        "what is about to run" is asked before "what is running". Built only
        from real data: per-host waiting depth from the Ollama poller, the live
        session list, and the recent_sessions feed Analytics uses. -->
+  <!-- #181/#182: the four at-a-glance numbers, above everything else on Home —
+       sessions in flight, agents alive, calls/tokens over the last 5 minutes
+       (derived poll-to-poll from the live feed, #184), and active alerts.
+       Painted by renderLiveKpis on every live poll. -->
+  <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
   <div class="card p-4 mb-3" id="qcard" style="position:relative">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
@@ -1944,6 +1969,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
    <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
+    <!-- P10-08 (#96): agents alive — gateway backends this profile's DB has a
+         heartbeat row for, and how many mid-turn session leases each holds.
+         Hidden entirely when there are no heartbeat rows (older Hermes / a
+         DB never written by a gateway process), same convention as the
+         Cost-attribution card. #183: moved from Flow onto Home, beside the
+         session table; it stacks under the table with the rest of this column
+         when .livegrid goes single-column. Capped and self-scrolling so a large
+         fleet cannot push the charts out of the column. -->
+    <div class="card p-4" id="agentscard" style="flex:0 0 auto;max-height:40%;overflow-y:auto">
+     <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
+     <div id="agentslist"></div>
+    </div>
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">By category</div><div style="flex:1;min-height:0;position:relative"><canvas id="cLiveCat"></canvas></div></div>
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
@@ -1988,15 +2025,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     <span class="flowctl" id="flowctl"></span>
    </div>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
-  </div>
-  <!-- P10-08 (#96): agents alive — gateway backends this profile's DB has a
-       heartbeat row for, and how many mid-turn session leases each holds.
-       Hidden entirely when there are no heartbeat rows (older Hermes / a
-       DB never written by a gateway process), same convention as the
-       Cost-attribution card. -->
-  <div class="card p-4 mt-3" id="agentscard">
-   <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
-   <div id="agentslist"></div>
   </div>
  </div>
 
@@ -6879,11 +6907,125 @@ const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };function liveG
   return null;
 }
 
+// #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
+// alive, calls/tokens in the last 5 minutes, active alerts.
+//
+// The live feed carries CUMULATIVE per-session counters (models[].calls /
+// in_tok / out_tok), not a rate, so throughput is derived client-side: each
+// poll diffs every session against its previous sample and the per-poll
+// deltas land in a 5-minute ring. A session already open at the first sample
+// is a baseline (its history predates the window); one that appears later
+// started inside the window, so its whole count is in-window. Ended sessions
+// simply stop contributing. Profiles are kept apart so a profile tab shows
+// its own throughput and the merged view sums them.
+const TPUT_WINDOW_S = 300;
+let tputPrev = null;     // session id -> {c, k}; null until the first sample
+let tputRing = [];       // [{t, by: {profile: {c, k}}}], oldest first
+function sessTotals(L){
+  let c = 0, k = 0;
+  (L.models || []).forEach(m => { c += +m.calls || 0; k += (+m.in_tok || 0) + (+m.out_tok || 0); });
+  return { c, k };
+}
+function sampleThroughput(profiles, now){
+  const t = now == null ? Math.floor(Date.now() / 1000) : now;
+  const baseline = tputPrev == null;
+  const next = new Map(), by = {};
+  Object.entries(profiles || {}).forEach(([name, p]) => {
+    let c = 0, k = 0;
+    ((p && p.live) || []).forEach(L => {
+      if (!L || !L.id || next.has(L.id)) return;
+      const cur = sessTotals(L);
+      next.set(L.id, cur);
+      if (baseline) return;
+      const prev = tputPrev.get(L.id) || { c: 0, k: 0 };
+      // max(0, …): a counter that goes backwards is a restart, not negative work.
+      c += Math.max(0, cur.c - prev.c);
+      k += Math.max(0, cur.k - prev.k);
+    });
+    by[name] = { c, k };
+  });
+  tputPrev = next;
+  if (!baseline) tputRing.push({ t, by });
+  tputRing = tputRing.filter(s => t - s.t < TPUT_WINDOW_S);
+  return by;
+}
+// Window totals + per-poll series for one view. `name` is a profile key, or
+// anything not in the ring (the merged 'All' view) to sum every profile.
+function throughputFor(name, now){
+  const t = now == null ? Math.floor(Date.now() / 1000) : now;
+  const ring = tputRing.filter(s => t - s.t < TPUT_WINDOW_S);
+  const pick = s => {
+    if (name in s.by) return s.by[name];
+    return Object.values(s.by).reduce((a, v) => ({ c: a.c + v.c, k: a.k + v.k }), { c: 0, k: 0 });
+  };
+  const series = ring.map(pick);
+  return {
+    calls: series.reduce((a, v) => a + v.c, 0),
+    tokens: series.reduce((a, v) => a + v.k, 0),
+    series: series.map(v => v.c),
+    // Seconds of history actually held, so a fresh page says "last 40s"
+    // instead of passing 40 seconds of data off as five minutes.
+    span: ring.length ? Math.min(TPUT_WINDOW_S, t - ring[0].t + LIVE_MS / 1000) : 0,
+  };
+}
+// The merged 'All' key (router.js buildAll) carries the merged `live` list but
+// NOT `agents` or `alerts`, so reading them off it would claim "0/0 agents,
+// All clear" while a real profile has critical alerts. For the merged view the
+// two lists are concatenated from the real profiles instead.
+function mergedField(profiles, field){
+  return Object.entries(profiles || {})
+    .filter(([n]) => n !== 'All')
+    .flatMap(([, q]) => (q && q[field]) || []);
+}
+function liveKpis(p, name, now, profiles){
+  const seen = new Set();
+  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length;
+  const merged = name === 'All' && profiles;
+  const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
+  const alive = agents.filter(a => a && a.state === 'alive').length;
+  const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
+  return {
+    sessions, alive, agents: agents.length,
+    alerts: alerts.length,
+    critical: alerts.filter(a => a && a.severity === 'critical').length,
+    tput: throughputFor(name, now),
+  };
+}
+function renderLiveKpis(p, name, now, profiles){
+  const box = $('livekpis');
+  if (!box) return null;
+  const k = liveKpis(p, name, now, profiles);
+  const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
+    : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
+  const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
+  const alertsBody = k.alerts
+    ? `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
+       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>`
+    : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
+  const card = (key, label, body) =>
+    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
+  box.innerHTML = [
+    card('sessions', 'Sessions in flight',
+      `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
+    card('agents', 'Agents alive',
+      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
+    card('throughput', 'Calls · tokens',
+      `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
+      + `<div class="lkpi-sub">${win}</div>${spark ? `<div class="lkpi-spark">${spark}</div>` : ''}`),
+    card('alerts', 'Active alerts', alertsBody),
+  ].join('');
+  return k;
+}
+
 function renderLive(){
   const p = DATA.profiles[current] || {};
+  renderLiveKpis(p, current, undefined, DATA.profiles);
   renderOllama(DATA.ollama);
   renderQueue();
-  renderAgents(p.agents);
+  // The merged All key has no `agents` (see mergedField), which left the
+  // agents card hidden whenever 2+ profiles were on; each row names its profile.
+  renderAgents(current === 'All' ? mergedField(DATA.profiles, 'agents') : p.agents);
   // Deduplicate live sessions by ID — the All tab can merge the same session from
   // two profiles, and the 5s poll can occasionally return duplicates mid-refresh.
   const seen = new Set();
@@ -10446,6 +10588,9 @@ async function pollLive(){
     // #185: the payload is fresh from here on; record it before the repaint so
     // a paint error cannot leave the pill claiming an older poll than the data.
     liveUpdatedAt = Math.floor(Date.now() / 1000);
+    // #184: sample the RAW per-profile slices (no synthetic 'All' key) so a
+    // session is counted once, under the profile that owns it.
+    sampleThroughput(fresh.profiles, liveUpdatedAt);
     // Merge the live slice into each profile in place, then rebuild the
     // synthetic All profile so its merged live list stays correct.
     Object.keys(fresh.profiles).forEach(n => {
