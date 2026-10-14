@@ -34,7 +34,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // it stopped, and pin that stop so an unexpected one cannot hide.
 const PAL = await isolate('palette.js', {});   // the real esc/short/fmtB/ago/catOf live.js calls
 
-const EL_IDS = ['refresh','livelist','livefanout','livebw','livestamp','repolist','from','to','meta','soundtoggle'];
+const EL_IDS = ['refresh','livelist','livefanout','livebw','livestamp','repolist','from','to','meta','soundtoggle','livekpis'];
 
 function el(id){
   return {
@@ -137,7 +137,7 @@ async function boot(opt = {}){
       catOf: PAL.catOf,
       colorOf: m => { logs.colorOf.push(m); return '#abc123'; },
       emptyHTML: (icon, msg, hint) => { logs.emptyHTML = [icon, msg, hint]; return `<empty>${icon}|${msg}|${hint}</empty>`; },
-      esc: PAL.esc, escA: PAL.escA, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
+      esc: PAL.esc, escA: PAL.escA, fmt: PAL.fmt, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
       toolColor: () => '#0a0',
       stampFreshness: PAL.stampFreshness,   // real: the #185 stamp test checks its classes
     },
@@ -148,6 +148,7 @@ async function boot(opt = {}){
       loeIcon: (L, o) => { logs.loeIcon.push([L.id, o]); return '<loe>'; },   // must NOT echo L.title: it is untrusted and unescaped
       mk: (...a) => { logs.mk.push(a); },
       noLeg: {},
+      sparkSvg: vals => (vals.length >= 2 ? `<spark>${vals.join(',')}</spark>` : ''),
     },
     'views.js': {
       REPO_EXPANDED: opt.expanded || new Set(),
@@ -747,6 +748,77 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   m.doc.hidden = false;
   await m.run(() => m.M.pollLive());
   eq(m.M.tickLiveStamp(), null, 'tickLiveStamp: no #livestamp element is a no-op, not a crash');
+}
+
+// ── live KPIs (#181/#182/#184): sessions, agents, 5-min throughput, alerts ──
+{
+  const sess = (id, calls, tok) => ({ id, models: [ { calls, in_tok: tok, out_tok: 0 } ] });
+  const h = await boot({ data: { profiles: { p1: { live: [] } } } });
+  const T0 = 1_000_000;
+  // First sample is a baseline: sessions already open carry history that
+  // predates the window, so nothing is counted yet.
+  eq(h.M.sampleThroughput({ p1: { live: [ sess('a', 100, 5000) ] } }, T0), { p1: { c: 0, k: 0 } },
+     'sampleThroughput: the first sample is a baseline, not a burst');
+  eq(h.M.tputRing.length, 0, 'sampleThroughput: the baseline adds no ring entry');
+  eq(h.M.throughputFor('p1', T0), { calls: 0, tokens: 0, series: [], span: 0 },
+     'throughputFor: no history yet → zeros and a zero span');
+  // Poll 2: a grows by 3 calls; b is new (started inside the window → whole count).
+  eq(h.M.sampleThroughput({ p1: { live: [ sess('a', 103, 5600), sess('b', 2, 400) ] }, p2: { live: [ sess('c', 9, 90) ] } }, T0 + 5),
+     { p1: { c: 5, k: 1000 }, p2: { c: 9, k: 90 } },
+     'sampleThroughput: per-profile deltas; a session new since the baseline counts in full');
+  // Poll 3: a restarts (counter goes backwards) — not negative work; c ended.
+  eq(h.M.sampleThroughput({ p1: { live: [ sess('a', 1, 10), sess('b', 4, 500) ] }, p2: { live: [] } }, T0 + 10),
+     { p1: { c: 2, k: 100 }, p2: { c: 0, k: 0 } },
+     'sampleThroughput: a backwards counter clamps to 0; an ended session stops contributing');
+  eq(h.M.throughputFor('p1', T0 + 10), { calls: 7, tokens: 1100, series: [5, 2], span: 10 },
+     'throughputFor: window totals, per-poll series, and the span actually held');
+  eq([h.M.throughputFor('All', T0 + 10).calls, h.M.throughputFor('All', T0 + 10).tokens], [16, 1190],
+     'throughputFor: a name not in the ring (the merged All view) sums every profile');
+  // Five minutes on, the old samples fall out of the window.
+  h.M.sampleThroughput({ p1: { live: [ sess('a', 1, 10), sess('b', 6, 700) ] } }, T0 + 10 + 300);
+  eq(h.M.throughputFor('p1', T0 + 310), { calls: 2, tokens: 200, series: [2], span: 5 },
+     'throughputFor: samples older than 5 minutes leave the window');
+  // Duplicate session ids within one payload count once.
+  h.M.sampleThroughput({ p1: { live: [ sess('d', 1, 1) ] } }, T0 + 315);
+  eq(h.M.sampleThroughput({ p1: { live: [ sess('d', 4, 4), sess('d', 4, 4) ] } }, T0 + 320).p1, { c: 3, k: 3 },
+     'sampleThroughput: a duplicated session id is counted once');
+
+  const p = {
+    live: [ { id: 'x' }, { id: 'x' }, { id: 'y' } ],
+    agents: [ { state: 'alive' }, { state: 'alive' }, { state: 'stale' } ],
+    alerts: [ { severity: 'critical' }, { severity: 'warn' } ],
+  };
+  const k = h.M.liveKpis(p, 'p1', T0 + 320);
+  eq([k.sessions, k.alive, k.agents, k.alerts, k.critical], [2, 2, 3, 2, 1],
+     'liveKpis: deduped sessions, alive/total agents, alerts with critical count');
+  const profs = {
+    a: { agents: [ { state: 'alive' } ], alerts: [ { severity: 'critical' } ] },
+    b: { agents: [ { state: 'stale' } ], alerts: [ { severity: 'warn' }, { severity: 'warn' } ] },
+    All: { live: [ { id: 'x' } ] },   // buildAll merges live only
+  };
+  const ka = h.M.liveKpis(profs.All, 'All', T0, profs);
+  eq([ka.sessions, ka.alive, ka.agents, ka.alerts, ka.critical], [1, 1, 2, 3, 1],
+     'liveKpis: the merged All view takes agents and alerts from the real profiles, not the live-only All key');
+  eq(h.M.liveKpis(profs.a, 'a', T0, profs).alerts, 1, 'liveKpis: a single profile reads its own alerts only');
+  eq(h.M.liveKpis({}, 'nobody', T0).sessions, 0, 'liveKpis: an empty profile is all zeros, not a crash');
+
+  h.M.renderLiveKpis(p, 'p1', T0 + 320);
+  const html = h.els.livekpis.innerHTML;
+  ok(['sessions', 'agents', 'throughput', 'alerts'].every(x => html.includes(`data-kpi="${x}"`)),
+     'renderLiveKpis: paints exactly the four #181 cards');
+  has(html, '2<span class="lkpi-of">/3</span>', 'renderLiveKpis: agents read alive/total');
+  has(html, '1 not heartbeating', 'renderLiveKpis: a non-alive agent is called out');
+  has(html, 'lkpi-alerts crit', 'renderLiveKpis: a critical alert colours the count');
+  has(html, 'href="#/health"', 'renderLiveKpis: the alert count links to Health');
+  ok(!html.includes('All clear'), 'renderLiveKpis: no All-clear pill while alerts are active');
+  has(html, 'last 15s', 'renderLiveKpis: a short history is labelled with its real span, not "5 min"');
+
+  h.M.renderLiveKpis({ live: [], agents: [], alerts: [] }, 'p1', T0 + 320);
+  has(h.els.livekpis.innerHTML, 'All clear', 'renderLiveKpis: zero alerts renders a quiet All-clear pill (#181)');
+  ok(!h.els.livekpis.innerHTML.includes('lkpi-alerts'), 'renderLiveKpis: ...and no empty alert count');
+
+  const m = await boot({ missing: ['livekpis'] });
+  eq(m.M.renderLiveKpis(p, 'p1'), null, 'renderLiveKpis: no #livekpis element is a no-op');
 }
 
 // ── doRefresh ────────────────────────────────────────────────────────────────

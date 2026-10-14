@@ -955,6 +955,42 @@
   },
   {
    "mod": "live",
+   "name": "TPUT_WINDOW_S"
+  },
+  {
+   "mod": "live",
+   "name": "tputPrev"
+  },
+  {
+   "mod": "live",
+   "name": "tputRing"
+  },
+  {
+   "mod": "live",
+   "name": "sessTotals"
+  },
+  {
+   "mod": "live",
+   "name": "sampleThroughput"
+  },
+  {
+   "mod": "live",
+   "name": "throughputFor"
+  },
+  {
+   "mod": "live",
+   "name": "mergedField"
+  },
+  {
+   "mod": "live",
+   "name": "liveKpis"
+  },
+  {
+   "mod": "live",
+   "name": "renderLiveKpis"
+  },
+  {
+   "mod": "live",
    "name": "renderLive"
   },
   {
