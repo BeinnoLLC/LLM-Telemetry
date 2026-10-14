@@ -48,30 +48,22 @@ def make_home(home):
 
     now = int(time.time())
     recent = now - 3600
-    prev = now - (45 * 86400)  # inside the 30-60 day-ago previous window
+    prev = now - (45 * 86400)
 
-    # terminal: 3 ok, 2 fail (one with a command, one via effect_disposition).
     insert_msg(con, "sx", "terminal", recent, json.dumps({"output": "ok\n", "exit_code": 0}), token_count=50)
     insert_msg(con, "sx", "terminal", recent, json.dumps({"output": "done\n", "exit_code": 0, "command": "pnpm test"}), token_count=200)
     insert_msg(con, "sx", "terminal", recent, json.dumps({"output": "ok\n", "exit_code": 0}), token_count=30)
     insert_msg(con, "sx", "terminal", recent, json.dumps({"output": "fail\n", "exit_code": 1, "command": "pnpm build"}), token_count=1000)
     insert_msg(con, "sx", "terminal", recent, "unstructured but flagged bad", effect_disposition="failed", token_count=500)
 
-    # read_file: 2 ok, 1 unknown (unstructured plain text with no signal).
     insert_msg(con, "sx", "read_file", recent, json.dumps({"content": "hi", "not_found": False}))
     insert_msg(con, "sx", "read_file", recent, json.dumps({"content": "hi2", "not_found": False}))
     insert_msg(con, "sx", "read_file", recent, "plain content dump with no structure")
-    # Pad read_file with MORE calls than terminal (8 extra oks) so a sort by
-    # raw call count would rank read_file above terminal — only a sort by
-    # cost-of-failures correctly keeps terminal on top despite fewer calls.
     for _ in range(8):
         insert_msg(con, "sx", "read_file", recent, json.dumps({"content": "hi3", "not_found": False}))
 
-    # memory: 1 unknown only — confident=0, so fail_rate must be None, not 0.
     insert_msg(con, "sx", "memory", recent, "Saved 1 entry to memory.")
 
-    # Previous-period terminal: 1 ok, 1 fail (50% baseline vs this period's
-    # higher rate — sets up a real trend to assert against).
     insert_msg(con, "sx", "terminal", prev, json.dumps({"output": "ok\n", "exit_code": 0}))
     insert_msg(con, "sx", "terminal", prev, json.dumps({"output": "bad\n", "exit_code": 1}))
 
@@ -124,23 +116,16 @@ with tempfile.TemporaryDirectory() as root_dir:
         "memory fail_rate is None (zero CONFIDENT predictions — an all-unknown tool must not silently read as 0% failure)",
         mem.get("fail_rate"))
 
-    # Sort order: cost of failures (tok_wasted), not fail count or fail rate.
     tools_list = prof.get("tools", [])
     chk(tools_list[0]["name"] == "terminal",
         "the tools list is sorted by cost-of-failures (tok_wasted) — terminal (1500) ranks above read_file/memory (0)",
         [t["name"] for t in tools_list])
 
-    # Terminal command breakdown: only the command-carrying failure counts,
-    # and the effect_disposition-only failure (no command field) falls back
-    # to '(unknown)' rather than a guessed command.
     cmds = {c["cmd"]: c["n"] for c in prof.get("terminal_top_fail_commands", [])}
     chk(cmds.get("pnpm") == 1, "the 'pnpm build' failure is attributed to the 'pnpm' command", cmds)
     chk(cmds.get("(unknown)") == 1,
         "the unstructured failing terminal row (no command field) falls back to '(unknown)', not a guess", cmds)
 
-    # Fail samples: heads captured, real session id, never innerHTML-shaped
-    # (this is a payload assertion — the UI's own escaping is tested in the
-    # jsdom suite, not here).
     samples = prof.get("tool_fail_samples", {}).get("terminal", [])
     chk(len(samples) == 2, "exactly 2 terminal fail samples are recorded", len(samples))
     chk(all(s["session"] == "sx" for s in samples), "each fail sample carries the real session id")

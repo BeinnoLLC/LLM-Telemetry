@@ -35,10 +35,6 @@ def build_spans(messages, delegations=None, compactions=None):
     """
     spans = []
 
-    # Model-call lane: one span per assistant message that names a model,
-    # collapsing a run of CONSECUTIVE same-model assistant turns into one
-    # span so a 40-turn conversation on one model isn't 40 tiny slivers —
-    # only a model SWITCH starts a new span.
     run = None
     for m in messages:
         if m.get("role") != "assistant" or not m.get("model"):
@@ -53,8 +49,6 @@ def build_spans(messages, delegations=None, compactions=None):
     if run:
         spans.append(run)
 
-    # Tool-call lane: one span per tool RESULT message (the result carries
-    # the outcome; the call itself has no duration data available here).
     for m in messages:
         if m.get("role") != "tool" or not m.get("tool_name"):
             continue
@@ -63,27 +57,18 @@ def build_spans(messages, delegations=None, compactions=None):
                             failed=(m.get("outcome") == "fail"),
                             meta={"outcome": m.get("outcome")}))
 
-    # User-turn lane: instantaneous ticks.
     for m in messages:
         if m.get("role") != "user":
             continue
         ts = m["timestamp"]
         spans.append(_span("user", ts, ts, "user turn", "user"))
 
-    # Delegation lane: dispatch -> completion, still-running delegations
-    # get end=None here and are resolved to "now" by the caller (this
-    # module has no notion of wall-clock "now" — a pure function must not
-    # silently read the clock, or a test run at a different time produces
-    # a different span for the same fixture).
     for d in (delegations or []):
         spans.append(_span("delegation", d["dispatched_at"], d.get("completed_at") or d["dispatched_at"],
                             d.get("child_id") or "(delegation)", d.get("model") or "(unknown)",
                             failed=(d.get("status") not in (None, "completed")),
                             meta={"status": d.get("status")}))
 
-    # Compaction lane: the message-run bounds already computed by the
-    # caller (a run of `compacted=1` messages) — this module just wraps
-    # them into spans, it does not detect runs itself.
     for c in (compactions or []):
         spans.append(_span("compaction", c["start"], c["end"], "compaction", "compaction"))
 

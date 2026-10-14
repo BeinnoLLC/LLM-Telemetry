@@ -55,12 +55,9 @@ with tempfile.TemporaryDirectory() as root_dir:
             del sys.modules[mod]
     import socket
     real_hostname = socket.gethostname
-    socket.gethostname = lambda: "thishost"  # so pid=1 is checkable on "this host"
+    socket.gethostname = lambda: "thishost"
     try:
-        from llm_telemetry import collect_live as CL  # noqa: E402
-        # pid 1 exists forever on any real Linux box (init/systemd) so it's
-        # deterministic; pid 2 is treated as confirmed-gone via a fake proc
-        # override rather than relying on nothing-happens-to-have-that-pid.
+        from llm_telemetry import collect_live as CL
         import llm_telemetry.agents_alive as AA
 
         real_build_agents = AA.build_agents
@@ -88,7 +85,6 @@ with tempfile.TemporaryDirectory() as root_dir:
         for var in ("LLM_TELEMETRY_CONFIG", "LLM_TELEMETRY_OFFLINE"):
             os.environ.pop(var, None)
 
-    # --- negative control: empty tables -> agents == [] ---
     con = sqlite3.connect(db_path)
     con.execute("delete from gateway_heartbeats")
     con.execute("delete from session_turn_leases")
@@ -99,7 +95,7 @@ with tempfile.TemporaryDirectory() as root_dir:
     for mod in list(sys.modules):
         if mod.startswith("llm_telemetry"):
             del sys.modules[mod]
-    from llm_telemetry import collect_live as CL2  # noqa: E402
+    from llm_telemetry import collect_live as CL2
     data2 = CL2.build_live()
     profile_name2 = next(iter(data2["profiles"]))
     chk(data2["profiles"][profile_name2]["agents"] == [],

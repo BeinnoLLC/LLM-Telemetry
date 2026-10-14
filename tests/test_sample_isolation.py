@@ -64,7 +64,6 @@ with tempfile.TemporaryDirectory() as root:
     chk("decoyprofilezz" not in open(os.path.join(root, "b.html")).read(),
         "a profile in the agent home never reaches the sample page")
 
-# The committed sample dashboard: profile names are fixture names only.
 html = open(os.path.join(REPORTS, "dashboard.html")).read()
 m = re.search(r"let DATA = (\{.*?\});\n", html, re.S)
 data = json.loads(m.group(1)) if m else {}

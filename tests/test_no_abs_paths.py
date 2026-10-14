@@ -16,10 +16,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# A POSIX home path, or any Windows drive path. Matched anywhere in a line.
 BAD = re.compile(r"(/home/[a-z][\w.-]*|/Users/[A-Za-z][\w.-]*|[A-Z]:\\\\)")
 
-# Docs legitimately quote real paths when describing a deployment.
 SKIP_DIRS = ("docs/",)
 SKIP_FILES = ("tests/test_no_abs_paths.py",)
 
@@ -58,7 +56,6 @@ chk(scanned > 20, "scanned the tracked tree", f"{scanned} files")
 chk(not offenders, "no absolute/user-specific paths in tracked source",
     "; ".join(offenders[:4]) if offenders else "")
 
-# The guard must be able to fail, or it proves nothing.
 chk(bool(BAD.search("db = '/home/someone/.hermes/state.db'")), "pattern catches a POSIX home path")
 chk(bool(BAD.search('D = "/Users/dev/reports"')), "pattern catches a macOS home path")
 chk(not BAD.search('p = os.path.expanduser("~/.hermes/reports")'), "tilde paths are allowed")

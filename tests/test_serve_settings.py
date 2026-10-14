@@ -24,7 +24,6 @@ def chk(ok, label, extra=None):
         f += 1
 
 
-# --- validate(): the two new keys are real whitelist entries with real ranges ---
 clean, err = serve.validate({"live_poll_interval_s": 10, "analytics_rebuild_interval_s": 120})
 chk(err is None and clean == {"live_poll_interval_s": 10.0, "analytics_rebuild_interval_s": 120.0},
     "both new interval keys validate as real numbers within range", (clean, err))
@@ -46,7 +45,6 @@ _, err = serve.validate({"live_poll_interval_s": "5"})
 chk(err is not None and "must be a number" in err,
     "a string value is rejected, never silently coerced (same rule the existing power-model keys use)")
 
-# --- save()/current(): the real atomic-write + config round trip ---
 with tempfile.TemporaryDirectory() as tmp:
     cfg_path = os.path.join(tmp, "config.json")
     with open(cfg_path, "w") as fh:
@@ -66,7 +64,6 @@ with tempfile.TemporaryDirectory() as tmp:
     chk(values.get("live_poll_interval_s") == 15.0 and values.get("analytics_rebuild_interval_s") == 90.0,
         "current() reads the saved interval values back from disk, not a cache", values)
 
-# --- current() with NO config file at all: real Config dataclass defaults ---
 with tempfile.TemporaryDirectory() as tmp:
     missing_path = os.path.join(tmp, "does-not-exist.json")
     values = serve.current(missing_path)

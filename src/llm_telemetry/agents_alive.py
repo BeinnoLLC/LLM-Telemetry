@@ -8,9 +8,6 @@ module has zero I/O in its tests.
 from __future__ import annotations
 import time
 
-# The gateway heartbeats roughly once a minute; "alive" is anything inside
-# 2x that window (a single missed beat is normal jitter, two in a row is a
-# real signal) — same 2x-interval rule the ticket itself specifies.
 HEARTBEAT_INTERVAL_S = 60
 ALIVE_THRESHOLD_S = HEARTBEAT_INTERVAL_S * 2
 
@@ -21,7 +18,7 @@ def _default_pid_exists(pid, host, this_host):
     cannot be checked from here, so it is reported stale/dead by age
     alone, never asserted dead-by-pid across a host boundary."""
     if host != this_host:
-        return None  # unknown — cannot check
+        return None
     import os
     return os.path.exists(f"/proc/{pid}")
 
@@ -59,10 +56,6 @@ def build_agents(heartbeats, leases, this_host, now=None, pid_exists=None):
     for hb in heartbeats:
         age = now - hb["last_heartbeat"]
         state = "alive" if age <= ALIVE_THRESHOLD_S else "stale"
-        # A same-host pid that no longer exists is definitively dead — this
-        # overrides an "alive"-by-age classification too: a heartbeat can
-        # be recent because the row is stale data, but a vanished pid on
-        # THIS host is unambiguous ground truth.
         alive_check = pid_exists(hb["pid"], hb["host"])
         if alive_check is False:
             state = "dead"
@@ -75,9 +68,6 @@ def build_agents(heartbeats, leases, this_host, now=None, pid_exists=None):
             "age_s": round(age, 1),
             "state": state,
             "leases": lease_counts.get(hb["pid"], 0),
-            # A kill hint is only ever offered for a CONFIRMED-dead,
-            # same-host pid — never suggested for a live process or an
-            # unreachable remote host we cannot verify.
             "kill_hint": (f"kill {hb['pid']}" if state == "dead" else None),
         })
     agents.sort(key=lambda a: (a["state"] != "dead", a["state"] != "stale", a["age_s"]))

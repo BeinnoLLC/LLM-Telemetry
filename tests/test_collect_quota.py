@@ -17,7 +17,6 @@ import pytest
 from llm_telemetry import collect_quota as cq
 
 
-# --- the scrubber -------------------------------------------------------------
 
 @pytest.mark.parametrize("raw", [
     "sk-abcdef0123456789abcdef",
@@ -57,7 +56,6 @@ def test_scrub_passes_through_non_strings():
     assert cq.scrub({"a": 1}) is None
 
 
-# --- coercion -----------------------------------------------------------------
 
 @pytest.mark.parametrize("value", [None, True, False, "", "abc", "NaN", float("nan")])
 def test_percent_rejects_non_numbers(value):
@@ -88,7 +86,6 @@ def test_numstr_scrubs_a_secret_shaped_amount():
     assert cq._SECRET_REPLACEMENT in cq._numstr("sk-abcdef0123456789abcdef")
 
 
-# --- the whitelist ------------------------------------------------------------
 
 def test_window_keeps_only_named_fields():
     raw = {"label": "5h", "reset_at": "2026-01-01T00:00:00Z", "used_percent": 12.5,
@@ -128,8 +125,7 @@ def test_provider_drops_unknown_and_scrubs_free_text():
     assert "secret_key" not in blob
     assert "raw_response" not in blob
     assert "sk-abcdef" not in blob
-    assert cq._SECRET_REPLACEMENT in blob          # the reason it was replaced
-    # 99% clears the 90% threshold, so this fixture is itself an attention case.
+    assert cq._SECRET_REPLACEMENT in blob
     assert out["attention"] is True
     assert out["max_used_percent"] == 99.0
     assert out["windows"][0]["used_percent"] == 99
@@ -158,7 +154,6 @@ def test_provider_preserves_explicit_unavailable_reason():
     assert out["api_calls_available"] is False
 
 
-# --- the cache reader ---------------------------------------------------------
 
 def test_read_cache_missing_file_is_empty_not_an_error(tmp_path):
     """No plugin installed must not break a collection run."""
@@ -170,7 +165,6 @@ def test_profile_payload_with_no_cache_is_empty(tmp_path):
     assert out["providers"] == {}
 
 
-# --- summary + payload --------------------------------------------------------
 
 def test_summarise_counts_across_profiles():
     profiles = {
@@ -202,9 +196,8 @@ def test_history_sample_contains_no_credentials():
         "windows": [{"label": "5h", "used_percent": 10, "reset_at": None}],
         "account_balances": []})}}}}
     sample = cq.history_sample(1700000000, data)
-    assert sample is not None          # empty input yields None: nothing to ledger
+    assert sample is not None
     assert "sk-abcdef" not in json.dumps(sample)
-    # One compact row per profile/provider: {t, providers}, not the full payload.
     assert sample["t"] == 1700000000
     assert sample["providers"]["a"]["x"]["windows"]["5h"] == 10
     assert sample["providers"]["a"]["x"]["plan"] == "free"
@@ -228,7 +221,7 @@ def test_account_copies_only_whitelisted_fields():
     assert set(acct) == set(cq._ACCOUNT_FIELDS) | {
         "status", "models", "in_use", "usage", "priority", "request_count"}
     assert "access_token" not in acct and "refresh_token" not in acct
-    assert "secret_fingerprint" not in acct  # a hash of a secret is still secret-shaped
+    assert "secret_fingerprint" not in acct
     assert "unexpected" not in acct
     assert "sk-live" not in json.dumps(acct)
 
@@ -253,7 +246,6 @@ def test_in_use_marks_one_key_and_defaults_to_false():
     assert marked is not None and unmarked is not None and truthy is not None
     assert marked["in_use"] is True
     assert unmarked["in_use"] is False
-    # Only a real boolean counts -- a truthy string is not a verdict.
     assert truthy["in_use"] is False
 
 
@@ -261,7 +253,7 @@ def test_per_key_usage_is_whitelisted_and_defaults_to_empty():
     """`[]` means "not measured for this key", never "this key has no usage"."""
     acct = cq.account({"id": "a", "usage": [
         {"label": "weekly", "used_percent": 12.5, "reset_at": "2026-01-01"},
-        {"used_percent": 3},  # no label -> not a window
+        {"used_percent": 3},
         "nonsense",
     ]})
     unmeasured = cq.account({"id": "a"})
@@ -346,7 +338,6 @@ def test_summarise_counts_accounts_and_usable_ones():
     s = cq.summarise(profiles)
     assert s["accounts"] == 4
     assert s["accounts_usable"] == 2
-    # The pre-existing counters must not be disturbed by the new dimension.
     assert s["providers"] == 1 and s["available"] == 1 and s["attention"] == 0
 
 

@@ -11,7 +11,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from llm_telemetry.agents_alive import ALIVE_THRESHOLD_S, build_agents  # noqa: E402
+from llm_telemetry.agents_alive import ALIVE_THRESHOLD_S, build_agents
 
 p = f = 0
 
@@ -31,7 +31,7 @@ heartbeats = [
     {"backend_id": "default@host1:100:abc", "pid": 100, "started_at": NOW - 3600,
      "last_heartbeat": NOW - 5, "profile": "default", "host": "host1"},
     {"backend_id": "default@host1:200:def", "pid": 200, "started_at": NOW - 300000,
-     "last_heartbeat": NOW - 259200, "profile": "default", "host": "host1"},  # 3 days old
+     "last_heartbeat": NOW - 259200, "profile": "default", "host": "host1"},
 ]
 leases = [
     {"conversation_id": "c1", "holder": "pid=100:turn=abc:platform=desktop", "acquired_at": NOW - 10, "expires_at": NOW + 300},
@@ -40,7 +40,6 @@ leases = [
 
 
 def pid_exists_fresh_dead(pid, host):
-    # pid 100 alive, pid 200 confirmed gone on this host.
     return pid == 100
 
 
@@ -56,20 +55,14 @@ chk(stale["leases"] == 0, "the dead backend has zero leases (none held pid=200)"
 chk(stale["kill_hint"] == "kill 200", "a confirmed-dead same-host pid gets a copyable kill hint")
 chk(fresh["kill_hint"] is None, "a live process NEVER gets a kill hint")
 
-# Sort order: dead/stale first, alive last (most actionable at the top).
 chk(agents[0]["pid"] == 200, "the dead/actionable backend sorts before the alive one")
 
-# Age-only classification (no pid_exists override): a backend just over the
-# 2x-interval threshold is "stale", not "dead" or still "alive", when its
-# pid cannot be confirmed dead.
 hb_borderline = [{"backend_id": "b", "pid": 999, "started_at": NOW - 1000,
                   "last_heartbeat": NOW - (ALIVE_THRESHOLD_S + 1), "profile": "default", "host": "host1"}]
 agents_b = build_agents(hb_borderline, [], this_host="host1", now=NOW, pid_exists=lambda pid, host: True)
 chk(agents_b[0]["state"] == "stale",
     "a heartbeat just past the 2x-interval threshold with a CONFIRMED-alive pid is stale, not dead", agents_b[0]["state"])
 
-# Remote host: pid_exists returns None (unknown) for a different host — a
-# stale remote backend must NEVER be asserted dead across a host boundary.
 def pid_exists_remote_unknown(pid, host):
     return None if host != "host1" else True
 
@@ -80,8 +73,6 @@ chk(agents_r[0]["state"] == "stale",
     "a stale REMOTE-host backend (unverifiable pid) is reported stale, never asserted dead across a host boundary", agents_r[0]["state"])
 chk(agents_r[0]["kill_hint"] is None, "a remote unverifiable backend never gets a kill hint (would be a false-confidence suggestion)")
 
-# Empty input -> empty output (the negative control's data-layer half; the
-# UI-hiding half is covered in check_agents_alive.js).
 chk(build_agents([], [], this_host="host1", now=NOW) == [],
     "an empty heartbeats fixture produces an empty agents list")
 

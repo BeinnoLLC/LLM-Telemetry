@@ -46,15 +46,12 @@ with tempfile.TemporaryDirectory() as root_dir:
                 "values('sX','tool',?,'terminal','failed')", (base + 2,))
     con.execute("insert into async_delegations(delegation_id, origin_session, state, dispatched_at, "
                 "completed_at, updated_at) values('d1','sX','completed',?,?,?)", (base + 3, base + 10, base + 10))
-    # A session outside the 30-day window must NOT be exported.
     con.execute("insert into sessions(id, source, started_at, ended_at) values('sOld', 'cli', ?, ?)",
                 (now - 3000000, now - 2999990))
     con.commit()
     con.close()
 
     import importlib
-    # Point config at this fixture home via env, same pattern the other
-    # fixture-DB tests use.
     cfg = os.path.join(root_dir, "cfg.json")
     with open(cfg, "w") as fh:
         json.dump({"agent_home": home, "reports_dir": os.path.join(root_dir, "r")}, fh)
@@ -64,13 +61,12 @@ with tempfile.TemporaryDirectory() as root_dir:
     for mod in list(sys.modules):
         if mod.startswith("llm_telemetry"):
             del sys.modules[mod]
-    from llm_telemetry import collect_session_timeline as CST  # noqa: E402
+    from llm_telemetry import collect_session_timeline as CST
 
     out_dir = os.path.join(root_dir, "sessions_out")
     n = CST.write_session_files(out_dir, max_sessions=100)
     chk(n == 1, f"exactly 1 session file written (the old one is out of the 30-day scope) (got {n})", n)
 
-    # Find the profile subdir (name comes from config resolution).
     profile_dirs = [d for d in os.listdir(out_dir) if os.path.isdir(os.path.join(out_dir, d))]
     chk(len(profile_dirs) == 1, "one profile directory created", profile_dirs)
     session_file = os.path.join(out_dir, profile_dirs[0], "sX.json")

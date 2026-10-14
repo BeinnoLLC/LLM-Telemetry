@@ -81,8 +81,6 @@ def load(path: Path) -> list[dict]:
     except (OSError, ValueError):
         return []
     if d.get("schema_version") != SCHEMA_VERSION:
-        # A ledger in a shape this code does not understand is not silently
-        # reinterpreted; it is set aside and a fresh one started.
         try:
             os.replace(path, f"{path}.v{d.get('schema_version')}.bak")
         except OSError:
@@ -99,17 +97,12 @@ def merge(existing: list[dict], fresh: list[dict], today: str,
         k = _key(r)
         old = out.get(k)
         if old is not None and old.get("frozen"):
-            # History is not restated: bytes and the constant stay as written.
-            # Token counts do not depend on the constant, so a token column
-            # added in a later version may be backfilled into a frozen row.
             for tk in TOKEN_KEYS:
                 if tk not in old and tk in r:
                     old[tk] = r[tk]
             continue
         row = dict(r, bytes_per_token=bpt, frozen=r["date"] < today)
         out[k] = row
-    # An open row from an earlier run that the DB no longer reports for today
-    # is left alone rather than deleted: the ledger only ever grows.
     for k, r in out.items():
         if not r.get("frozen") and r.get("date", "") < today:
             r["frozen"] = True
@@ -121,7 +114,7 @@ def save(path: Path, rows: list[dict]) -> None:
     with open(tmp, "w") as f:
         json.dump({"schema_version": SCHEMA_VERSION, "rows": rows}, f,
                   separators=(",", ":"), sort_keys=True)
-    os.replace(tmp, path)          # atomic: a crash mid-write never truncates history
+    os.replace(tmp, path)
 
 
 def update(reports_dir: Path, per_profile_rows: dict[str, list[dict]],

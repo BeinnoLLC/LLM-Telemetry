@@ -39,18 +39,13 @@ from .schema import stamp
 
 CFG = _cfg()
 
-# The plugin writes this file next to the rest of a profile's state.
 CACHE_NAME = "quota_cache.json"
 DATA_NAME = "quota-data.json"
 HISTORY_NAME = "quota-history.json"
 
-# How much history the ledger keeps. Hourly collection => ~24 samples/day, so
-# 30 days is well under the cap for a normal install.
 HISTORY_DAYS = 30
 HISTORY_MAX_SAMPLES = 900
 
-# Whitelist. Named explicitly so an unexpected plugin key is dropped rather
-# than copied.
 _PROVIDER_FIELDS = (
     "label", "plan", "unavailable_reason", "api_calls_available",
     "windows", "account_balances", "details",
@@ -58,47 +53,24 @@ _PROVIDER_FIELDS = (
 _WINDOW_FIELDS = ("label", "reset_at", "used_percent")
 _BALANCE_FIELDS = ("currency", "total_balance", "granted_balance", "topped_up_balance")
 
-# Account-level fields copied from the plugin's credential pool, one entry per
-# key/account under a provider. Descriptive fields only: a pool entry also
-# carries ``access_token`` / ``refresh_token``, and their absence from this
-# tuple is the reason neither can reach a payload.
 _ACCOUNT_FIELDS = (
     "id", "label", "last_error_code", "last_error_reason", "last_error_reset_at",
     "failure_reason", "expires_at_ms", "source", "auth_type",
 )
 _ACCOUNT_NUM_FIELDS = ("priority", "request_count")
 
-# The cache normalises two pool fields, so both spellings are accepted: a cache
-# written by a different plugin version is routine, and refusing to read one
-# would blank the tab for a reason the user cannot act on.
 _STATUS_KEYS = ("status", "last_status")
 _MODELS_KEYS = ("models", "model_cooldowns")
 
-# Deliberately absent: any fingerprint of the secret. Pool ids are opaque
-# 6-hex handles minted per account (verified not derived from the token), so
-# they name an account without being one. A hash of a credential is still a
-# function of the credential, and this payload is published -- so no such field
-# is copied even if a provider starts emitting one.
 
-# The verdicts the plugin records for an account. Anything else reads as "no
-# verdict yet" rather than inventing a state the view would have to guess at.
 _ACCOUNT_STATUSES = ("ok", "exhausted", "dead")
 
-# Statuses that mean "you cannot use this account right now". The view renders
-# them as spent; the summary counts them out of the usable fleet. Kept beside
-# ``_ACCOUNT_STATUSES`` so a fourth verdict has one place to be added.
 _SPENT_STATUSES = ("exhausted", "dead")
 
-# A cooldown set is informational, not a payload; an unbounded list would let a
-# provider size this file.
 _MAX_ACCOUNT_MODELS = 8
 
-# A window at or above this reads as "about to run out" in the UI.
 ATTENTION_PERCENT = 90.0
 
-# Credential shapes worth scrubbing even out of descriptive text. The
-# whitelist is the real guarantee; this is belt-and-braces for free text a
-# provider chose to echo back at us.
 _SECRET_PATTERNS = [re.compile(p) for p in (
     r"sk-[A-Za-z0-9_\-]{8,}",
     r"gh[pousr]_[A-Za-z0-9]{16,}",
@@ -135,7 +107,7 @@ def _percent(value):
         num = float(value)
     except (TypeError, ValueError):
         return None
-    if num != num:  # NaN
+    if num != num:
         return None
     return round(num, 2)
 
@@ -215,8 +187,6 @@ def account(raw):
         status = None
     cooldowns = _first(raw, _MODELS_KEYS)
     if not isinstance(cooldowns, dict):
-        # The cache may already hold a list of names; a dict upstream maps
-        # model -> cooldown detail and only its keys are useful here.
         cooldowns = cooldowns if isinstance(cooldowns, list) else ()
     out: dict = {key: _text(raw.get(key)) for key in _ACCOUNT_FIELDS}
     out["id"] = identity
@@ -224,8 +194,6 @@ def account(raw):
     out["models"] = (
         [m for m in (_text(k) for k in cooldowns) if m][:_MAX_ACCOUNT_MODELS]
     )
-    # Whether the next request would use this key, and this key's own figures.
-    # Both are computed inside the plugin; neither is a credential.
     out["in_use"] = raw.get("in_use") is True
     usage = raw.get("usage")
     out["usage"] = [w for w in (window(x) for x in usage) if w] if isinstance(
@@ -318,9 +286,6 @@ def summarise(profiles):
                     usable += 1
     return {
         "providers": total, "available": avail, "attention": attention,
-        # ``available`` counts providers with figures; a provider can also be
-        # unusable purely because every key it holds is spent, which the account
-        # counts catch and the provider counts cannot.
         "accounts": accounts, "accounts_usable": usable,
         "accounts_spent": accounts - usable,
     }

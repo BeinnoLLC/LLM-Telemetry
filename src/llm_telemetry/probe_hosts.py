@@ -44,12 +44,7 @@ def _named_local(url: str) -> bool:
     return any(h in (url or "") for h in CFG.local_host_patterns)
 OUT = str(CFG.reports_dir / "ollama-data.json")
 
-# P3-03 (#33): SQL as named module-level constants, not embedded literals
-# inside a function body -- reviewable in a diff, visible to SQL tooling.
 
-# local_work(): recent per-base-URL task volume from the usage tables --
-# answers "what has actually been done locally", which /api/ps cannot
-# (Ollama keeps no history once a model unloads).
 LOCAL_WORK_SQL = """
 select u.billing_base_url, coalesce(nullif(u.task,''),'main') task, u.model,
        sum(u.api_call_count), sum(u.input_tokens+u.output_tokens),
@@ -59,9 +54,6 @@ where u.billing_base_url != '' and u.last_seen > strftime('%s','now') - 86400
 group by u.billing_base_url, task, u.model
 """
 
-# inflight(): requests currently open (not yet ended) with a recent
-# heartbeat, per host -- the closest thing to a queue-depth signal Ollama
-# itself does not expose (see inflight()'s own docstring).
 INFLIGHT_SQL = """
 select u.billing_base_url, count(*)
 from session_model_usage u join sessions s on s.id = u.session_id
@@ -73,8 +65,6 @@ CAPS_CACHE = str(CFG.reports_dir / ".ollama-caps.json")
 TIMEOUT = 6
 CAPS_TTL = 24 * 3600
 
-# Endpoints are discovered from the configs so a new host appears here the
-# moment it is routed to, instead of needing this list kept in sync by hand.
 CONFIGS = [str(p.config) for p in CFG.live_profiles()]
 
 
@@ -91,9 +81,6 @@ def discover():
     """
     seen, out = set(), []
     pat = re.compile(r"https?://[\w.\-]+(?::\d+)?(?=/v1|/?\s*$)")
-    # Valid URL-host identities of this box: dotted-quad IPv4 only (bare IPv6
-    # from hostname -I is not URL-safe without brackets, and link-local
-    # 169.254.* has no route, so either would produce phantom down twins).
     lan = [ip for ip in local_ips()
            if ip.count(".") == 3 and not ip.startswith("169.254.")
            and ip not in ("127.0.0.1",)]
@@ -107,7 +94,6 @@ def discover():
                 continue
             for m in pat.findall(line):
                 base = m.rstrip("/")
-                # Only Ollama-shaped endpoints: :11434 or a configured local host.
                 if ":11434" not in base and not _named_local(base):
                     continue
                 variants = [base]
@@ -179,9 +165,6 @@ def probe(base, cache):
             e["loaded"].append({
                 "name": m.get("name") or m.get("model"),
                 "size": size, "vram": vram,
-                # Residency < 100% means Ollama spilled layers to system RAM and
-                # the model is running partly on CPU — the single most useful
-                # "why is this host slow" signal Ollama exposes.
                 "res": round(vram / size * 100) if size else 0,
                 "ctx": m.get("context_length"),
                 "expires": m.get("expires_at"),
@@ -221,7 +204,6 @@ def group(endpoints):
         key = f"{e.get('fp','')}##{exp}" if e["up"] else f"down::{e['base']}"
         h = hosts.setdefault(key, {"urls": [], **{k: v for k, v in e.items()}})
         h["urls"].append({"base": e["base"], "ms": e["ms"], "up": e["up"]})
-        # Prefer the fastest URL's latency as the host's response time.
         if e["up"] and (h.get("ms") is None or (e["ms"] or 9e9) < h["ms"]):
             h["ms"] = e["ms"]
     out = []
@@ -402,7 +384,6 @@ def main():
     hosts = _collapse_loopback_twins(group(eps))
     work = local_work()
 
-    # Attach recorded work to whichever host serves that URL.
     for h in hosts:
         agg = {"calls": 0, "tokens": 0, "last": 0, "tasks": {}, "models": {}, "profiles": []}
         for u in h["urls"]:
@@ -419,10 +400,6 @@ def main():
             agg["profiles"] = sorted(set(agg["profiles"]) | set(w["profiles"]))
         h["work"] = agg
 
-    # Real queue depth + machine load. Both are attached per host: the queue is
-    # derived from what Hermes dispatched to that host's URLs, and cpu/gpu are
-    # only attached to the box we are actually running on (a remote Ollama
-    # exposes no telemetry, so those bars are omitted rather than faked).
     flying = inflight()
     mine = local_ips()
     load = machine_load()
@@ -437,7 +414,6 @@ def main():
 
     data = stamp({"ts": int(time.time()), "hosts": hosts,
                   "endpoints": len(eps), "physical": len(hosts)})
-    # Never write a payload the page cannot read (P1-02, #24).
     check("ollama", data)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     tmp = OUT + ".tmp"

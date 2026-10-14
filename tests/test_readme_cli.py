@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The README's command table and the CLI parser must agree (#142).
+"""The README's command table and the CLI parser must agree (
 
 The README table is the only command reference in the repo, so when the parser
 gained `analytics`, `logs`, `session-timeline` and `config` — and lost the
@@ -20,11 +20,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# `sub.add_parser("name", ...)` / `p_x = sub.add_parser("name", ...)`.
 PARSER = re.compile(r'add_parser\(\s*"([\w-]+)"')
-# A row of the command table: | `llm-telemetry name` | does |
 ROW = re.compile(r"^\|\s*`llm-telemetry ([\w-]+)`")
-# Matching quotes: straight or typographic, as the page uses both.
 ENABLED = re.compile(r"llm-telemetry-[\w-]+\.timer")
 
 failed = 0
@@ -49,9 +46,6 @@ readme = read("README.md")
 
 subcommands = set(PARSER.findall(cli))
 
-# Scope the table parse to the command table itself: from its header row to the
-# next top-level heading. Prose elsewhere legitimately mentions commands that
-# are not rows (`llm-telemetry router` appears in the no-systemd paragraph).
 lines = readme.splitlines()
 start = next((i for i, ln in enumerate(lines) if ln.startswith("| Command |")), None)
 chk(start is not None, "found the command table header")
@@ -74,12 +68,9 @@ chk(not (set(documented) - subcommands),
     "every documented subcommand exists in the parser",
     "not in parser: " + ", ".join(sorted(set(documented) - subcommands)))
 
-# The table must not document a name twice, and `cli.py` must not either.
 dups = sorted({n for n in documented if documented.count(n) > 1})
 chk(not dups, "no duplicated rows in the command table", ", ".join(dups))
 
-# Every timer that ships in systemd/ is enabled in the documented block: the
-# bash fence right after the `systemctl --user enable --now` line.
 en = next((i for i, ln in enumerate(lines) if "enable --now" in ln), None)
 chk(en is not None, "found the documented enable command")
 enable_block = ""
@@ -102,7 +93,6 @@ chk(not missing, "every shipped timer is enabled in the README block", ", ".join
 chk(ENABLED.search("llm-telemetry-build.timer") is not None,
     "timer pattern catches a unit name")
 
-# The gate must be able to fail, or it proves nothing.
 smoke = PARSER.search('sub.add_parser("zzz", help="x")')
 chk(smoke is not None and smoke.group(1) == "zzz", "parser pattern catches a subcommand")
 smoke_row = ROW.match("| `llm-telemetry zzz` | does |")

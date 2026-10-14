@@ -47,12 +47,10 @@ def make_home(home):
 
     con.execute("insert into sessions(id, source, started_at, model) values('sL', 'cli', ?, 'fallback-model')", (base,))
     insert_usage(con, "sL", "claude-opus", "http://api.anthropic.com/v1", base - 10)
-    # 4 assistant turns, 3 real gaps of 2s/4s/6s.
     insert_asst(con, "sL", base, 100)
     insert_asst(con, "sL", base + 2, 100)
     insert_asst(con, "sL", base + 6, 100)
     insert_asst(con, "sL", base + 12, 100)
-    # A 5th turn 700s later -> idle (over the 600s default threshold).
     insert_asst(con, "sL", base + 712, 100)
 
     con.commit()

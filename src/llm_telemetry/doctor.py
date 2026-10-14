@@ -50,7 +50,6 @@ from .schema import SCHEMA_VERSION
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 
-# artifact -> (unit whose timer writes it, cadence in seconds, required)
 ARTIFACTS = [
     ("ollama-data.json", "probe", 5, True),
     ("dashboard.html", "build", 60, True),
@@ -266,7 +265,7 @@ def check_hosts(cfg, offline=False, discover=None):
     if not endpoints:
         try:
             endpoints = list(discover())
-        except Exception as exc:                     # noqa: BLE001 - never fatal
+        except Exception as exc:
             return [check("hosts", WARN, f"could not discover endpoints: {exc}")]
         source = "discovered from the profile configs"
     if not endpoints:

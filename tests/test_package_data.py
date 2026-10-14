@@ -5,7 +5,7 @@ setuptools only packages non-.py files that `[tool.setuptools.package-data]`
 names. The builders read the page shells, the CSS, the JS modules and the
 module order from `src/llm_telemetry/web/` at build time, so a file missing
 from that list builds fine from a source checkout and crashes with
-FileNotFoundError once installed. Only the CSS used to be listed (#135).
+FileNotFoundError once installed. Only the CSS used to be listed (
 
 This checks the globs statically, with no build or network, so it runs in the
 normal suite.
@@ -18,7 +18,7 @@ import tomllib
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 PKG = os.path.join(ROOT, "src", "llm_telemetry")
 sys.path.insert(0, os.path.join(ROOT, "src"))
-from llm_telemetry import webassets as W  # noqa: E402
+from llm_telemetry import webassets as W
 
 p = f = 0
 
@@ -37,7 +37,6 @@ with open(os.path.join(ROOT, "pyproject.toml"), "rb") as fh:
 
 
 def shipped(rel):
-    # setuptools globs are matched per path; "*" does not cross "/".
     return any(fnmatch.fnmatch(rel, g) and rel.count("/") == g.count("/") for g in globs)
 
 
@@ -45,7 +44,6 @@ def rel(path):
     return os.path.relpath(os.path.abspath(path), PKG).replace(os.sep, "/")
 
 
-# Every *_PATH constant webassets reads, plus every file under web/.
 read_paths = sorted({rel(v) for k, v in vars(W).items()
                      if k.endswith("_PATH") and isinstance(v, str)})
 chk(len(read_paths) >= 4, "webassets exposes its read paths", read_paths)
@@ -57,15 +55,13 @@ web_files = []
 for dp, _dn, fns in os.walk(os.path.join(PKG, "web")):
     for fn in fns:
         r = rel(os.path.join(dp, fn))
-        if fn == "package.json":  # dev-only: ESLint's module-type hint
+        if fn == "package.json":
             continue
         web_files.append(r)
 for r in sorted(web_files):
     chk(shipped(r), f"{r} ships")
 
-# schema/*.json is data too: schema_check.py reads it at collection time, so a
-# wheel missing it fails on the first collect rather than on a page render.
-from llm_telemetry import schema_check as S  # noqa: E402
+from llm_telemetry import schema_check as S
 chk(rel(S.SCHEMA_DIR) == "schema", "schema_check points at the schema package dir",
     rel(S.SCHEMA_DIR))
 schema_files = sorted(rel(os.path.join(dp, fn))
@@ -76,7 +72,6 @@ for r in schema_files:
 for tag in S.TAGS:
     chk(shipped(rel(S.schema_path(tag))), f"schema for {tag} is covered by package-data")
 
-# Negative control: the old list (CSS only) must fail on the shells and JS.
 old = ["web/css/*.css"]
 miss = [r for r in read_paths
         if not any(fnmatch.fnmatch(r, g) and r.count("/") == g.count("/") for g in old)]

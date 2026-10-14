@@ -5,7 +5,7 @@ Reads the same config the agent reads, so the tab cannot drift from reality
 the way hand-written docs do. Per profile it reports:
 
 * primary model, fallback chain, auxiliary tasks, delegation, MoA preset
-* the tier router (#130): classifier pool, every tier's pool/fallback/mode/
+* the tier router (
   escalation, and the category x level -> tier routing matrix
 * how each provider authenticates — type, credential SOURCE and pool status.
   Only whitelisted descriptive fields are copied out of auth.json; a token,
@@ -36,7 +36,6 @@ from .schema_check import check
 
 CFG = _cfg()
 
-# Friendly explanations, keyed by auxiliary task name.
 TASK_DOC = {
     "main": "Your actual conversation - the model that reads and answers you.",
     "compression": "Summarises old turns when the context window fills up.",
@@ -51,12 +50,6 @@ TASK_DOC = {
     "delegation": "Runs subagents spawned with delegate_task.",
 }
 
-# ---- Tier router vocabulary --------------------------------------------------
-# Mirrors agent/tier_router.py in Hermes (CATEGORIES, LEVELS, DEFAULT_ROUTES and
-# the classifier's own definitions). Bundled rather than imported because the
-# collector also runs in containers where the agent package is not installed.
-# A profile's tier_router.routes is overlaid on DEFAULT_ROUTES exactly the way
-# the agent does it (unknown keys ignored).
 TIERS = ("trivial", "monitoring", "test", "automation", "research", "writing",
          "normal", "complex", "plan")
 CATEGORIES = ("coding", "test", "research", "writing", "data", "monitoring", "plan")
@@ -96,9 +89,6 @@ TIER_DOC = {
     "plan": "Architecture, design and roadmaps.",
 }
 
-# ---- Auth ---------------------------------------------------------------------
-# Env vars each provider reads when nothing is in the credential pool. Only the
-# variable NAME is ever reported, and only whether it is set.
 PROVIDER_ENV = {
     "anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN"),
     "opencode-go": ("OPENCODE_GO_API_KEY",),
@@ -112,9 +102,6 @@ PROVIDER_ENV = {
     "deepseek": ("DEEPSEEK_API_KEY",),
     "xai": ("XAI_API_KEY",),
 }
-# Descriptive credential fields that are safe to publish. Everything else in an
-# auth.json entry (access_token, refresh_token, agent_key, secret_fingerprint,
-# error messages that may echo request bodies, ...) is dropped by construction.
 _CRED_FIELDS = ("auth_type", "source", "last_status")
 _EMAIL_RE = re.compile(r"^([^@\s])[^@\s]*(@[^@\s]+)$")
 _ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
@@ -132,7 +119,6 @@ def _safe_label(label):
         return f"{m.group(1)}•••{m.group(2)}"
     if _ENV_NAME_RE.match(s):
         return s
-    # Long unbroken alphanumerics look like a key someone pasted as a label.
     if len(s) > 24 and " " not in s and re.search(r"\d", s):
         return "•••"
     return s if _SAFE_LABEL_RE.match(s) else "•••"
@@ -200,9 +186,6 @@ def _entries(items, providers):
 
 
 def _norm_providers(raw_provs):
-    # custom_providers is a DICT in one profile and a LIST of {name: {...}}
-    # entries in the other. Normalise to a dict keyed by slot name, or the URL
-    # lookup silently falls back to "" and every hop loses its endpoint.
     if isinstance(raw_provs, list):
         providers = {}
         for it in raw_provs:
@@ -216,7 +199,6 @@ def _norm_providers(raw_provs):
     return raw_provs if isinstance(raw_provs, dict) else {}
 
 
-# ---- Tier router ----------------------------------------------------------------
 
 def routes_for(tr):
     """DEFAULT_ROUTES overlaid with config tier_router.routes (unknown keys ignored)."""
@@ -237,7 +219,6 @@ def tier_router(c, providers):
     routes = routes_for(tr)
     tiers_cfg = tr.get("tiers") or {}
     tiers = []
-    # Tier order: the agent's own TIERS order, then anything config adds.
     for name in [t for t in TIERS if t in tiers_cfg] + [t for t in tiers_cfg if t not in TIERS]:
         tv = tiers_cfg.get(name) or {}
         why = [{"category": cat, "level": lv}
@@ -269,7 +250,6 @@ def tier_router(c, providers):
     }
 
 
-# ---- Auth -------------------------------------------------------------------------
 
 def _env_names(home):
     """Names (never values) of non-empty variables in the profile's .env."""
@@ -333,9 +313,6 @@ def auth_for(home, used, providers):
     return out
 
 
-# ---- Decisions (agent log) ---------------------------------------------------------
-# "2026-10-03 00:55:02,077 INFO [sid] agent.tier_router: tier_router: normal→normal
-#  (classifier:coding/medium) -> gpt-5.4-mini via openai-codex"
 _DEC_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\S* \w+ \[[^\]]*\] agent\.tier_router: "
                      r"tier_router: (\w+)→(\w+) \(([^)]*)\) -> (.+?) via (\S+)\s*$")
 _TS_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)")
@@ -403,7 +380,6 @@ def decisions(home, now=None):
     return d
 
 
-# ---- Profile ---------------------------------------------------------------------
 
 def profile_payload(path, now=None):
     with open(path) as f:
@@ -447,7 +423,6 @@ def profile_payload(path, now=None):
 
     tr = tier_router(c, providers)
 
-    # Every provider slot this profile can route to, for the auth table.
     used = {}
     hops = [primary, *chain, *tasks, *(refs or [])]
     if delegation:
@@ -493,7 +468,6 @@ def build():
 def main(dest=None):
     dest = dest or str(CFG.reports_dir / "router-data.json")
     data = build()
-    # Never write a payload the page cannot read (P1-02, #24).
     check("router", data)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     tmp = dest + ".tmp"

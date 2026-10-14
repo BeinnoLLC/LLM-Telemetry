@@ -36,7 +36,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 tmp = tempfile.mkdtemp(prefix="probe-hosts-")
 agent_home = os.path.join(tmp, "agent-home")
 os.makedirs(agent_home)
-open(os.path.join(agent_home, "state.db"), "w").close()  # live_profiles() needs it
+open(os.path.join(agent_home, "state.db"), "w").close()
 with open(os.path.join(agent_home, "config.yaml"), "w") as fh:
     fh.write(
         "providers:\n"
@@ -50,7 +50,7 @@ os.environ["LLM_TELEMETRY_CONFIG"] = os.path.join(tmp, "config.json")
 os.environ["LLM_TELEMETRY_AGENT_HOME"] = agent_home
 
 sys.path.insert(0, os.path.join(ROOT, "src"))
-from llm_telemetry import probe_hosts as PH  # noqa: E402
+from llm_telemetry import probe_hosts as PH
 
 p = f = 0
 
@@ -84,8 +84,8 @@ chk(not any("::" in b or "://169.254." in b for b in found),
 
 hosts = [
     {"up": True, "urls": [{"base": "http://127.0.0.1:11434"}]},
-    {"up": False, "urls": [{"base": "http://192.0.2.9:11434"}]},   # same box, down LAN spelling
-    {"up": False, "urls": [{"base": "http://192.0.2.77:11434"}]},  # genuinely another box, down
+    {"up": False, "urls": [{"base": "http://192.0.2.9:11434"}]},
+    {"up": False, "urls": [{"base": "http://192.0.2.77:11434"}]},
 ]
 orig = PH.local_ips
 PH.local_ips = lambda: {"127.0.0.1", "localhost", "192.0.2.9"}

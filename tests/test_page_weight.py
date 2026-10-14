@@ -18,12 +18,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# artifact -> (budget, floor). Both in bytes; the README table mirrors it.
 BUDGETS = {
-    # 840k -> 920k (#113 in-app): the OpenRouter rankings payload + the Rankings
-    # view and the Prices view's what-if calculator moved inside the single app
-    # page; rankings.html (25k) and costs.html (85k) were deleted, so the app
-    # grew by the content that used to live in separate files.
     "examples/reports/dashboard.html": (920_000, 400_000),
     "examples/reports/analytics-data.json": (200_000, 90_000),
 }
@@ -50,8 +45,6 @@ for rel, (budget, floor) in sorted(BUDGETS.items()):
         f"{size} of {budget} bytes, {size - budget:+d}")
     chk(size >= floor, f"{rel}: not truncated", f"{size} of a {floor}-byte floor")
 
-# Every committed page must carry a budget; fixture payloads are inputs and are
-# only budgeted when they are large enough to matter.
 reports = os.path.join(ROOT, "examples", "reports")
 for name in sorted(os.listdir(reports)):
     if not os.path.isfile(os.path.join(reports, name)) or name.endswith(".json"):
@@ -60,14 +53,12 @@ for name in sorted(os.listdir(reports)):
     if rel not in BUDGETS:
         chk(False, f"{rel}: has a budget", "add it to BUDGETS and the README table")
 
-# The README must carry the numbers, so a budget is discoverable before it fails.
 readme = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
 chk("Artifact weight" in readme, "the README documents the artifact budgets")
 for rel, (budget, _) in sorted(BUDGETS.items()):
     chk(f"{budget:,}" in readme or str(budget) in readme,
         f"README states the budget for {rel}", f"{budget}")
 
-# The gate must be able to fail, or it proves nothing.
 chk(800_000 > 762_038, "the dashboard budget is above today's size")
 chk(not (762_038 <= 400_000), "a truncated artifact would fail its floor")
 chk(len(BUDGETS) == len({os.path.basename(k) for k in BUDGETS}), "budget keys are unique")

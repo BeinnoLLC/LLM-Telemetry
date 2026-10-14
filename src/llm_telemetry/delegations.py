@@ -24,8 +24,6 @@ import json
 import sqlite3
 
 
-# Child statuses that count as a clean finish. Anything else burned wall-clock
-# without delivering, which is the number the user actually wants to see.
 OK_STATUS = "completed"
 
 
@@ -105,8 +103,6 @@ def summarize(rows):
                 m["wasted_s"] += dur
 
             if not good:
-                # failure_reason is None for a plain interrupt; fall back to the
-                # exit_reason so every non-completed child lands in some bucket.
                 why = entry.get("failure_reason") or entry.get("exit_reason") or status
                 reasons[why] = reasons.get(why, 0) + 1
             exits[entry.get("exit_reason") or "unknown"] = \
@@ -161,7 +157,6 @@ def summarize(rows):
         "by_model": sorted(by_model.values(), key=lambda m: (-m["n"], m["model"])),
         "reasons": dict(sorted(reasons.items(), key=lambda kv: -kv[1])),
         "exits": dict(sorted(exits.items(), key=lambda kv: -kv[1])),
-        # Measured, not inferred — see the module docstring.
         "tools": sorted(tools.values(), key=lambda t: -t["calls"]),
         "tools_measured": True,
         "recent": recent[:40],
@@ -179,11 +174,6 @@ def collect(conn):
     try:
         rows = conn.execute(SQL).fetchall()
     except sqlite3.OperationalError as e:
-        # Older Hermes builds have no async_delegations table; that is not an
-        # error, it just means this profile never delegated. Anything else
-        # (a closed connection, a renamed column) is a real bug and must not be
-        # swallowed — a bare `except` here once turned "you called the collector
-        # after closing the db" into a silent empty panel.
         if "no such table" in str(e).lower():
             return None
         raise

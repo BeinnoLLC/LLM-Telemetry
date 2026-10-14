@@ -31,9 +31,6 @@ with tempfile.TemporaryDirectory() as root:
     con.executescript(open(os.path.join(ROOT, "tests", "fixtures", "state_schema.sql")).read())
 
     now = 1790000000
-    # Two repos, three branches total: nowinv/main (2 sessions), nowinv/feat
-    # (1 session), ahwa/main (1 session). Plus one session with no cwd at
-    # all -> Unattributed repo AND Unattributed branch.
     sessions = [
         ("s1", "/srv/workspace/nowinv", "main", "claude-opus-5", 40, 0.80),
         ("s2", "/srv/workspace/nowinv", "main", "claude-opus-5", 20, 0.40),
@@ -97,8 +94,6 @@ with tempfile.TemporaryDirectory() as root:
     chk(unattr and unattr["branches"][0]["branch"] == "Unattributed",
         "a repo with no real branch data also gets its own Unattributed branch bucket (same rule, one level down)")
 
-    # Sort order: cost descending, Unattributed always last (#41's own rule),
-    # never mixed into the middle of the ranking regardless of its cost.
     order = [r["repo"] for r in rb["repos"]]
     chk(order[-1] == "Unattributed", "Unattributed always sorts last regardless of its cost rank", order)
     chk(order[0] == "nowinv", "repos are sorted by cost descending otherwise (nowinv $1.25 > ahwa $0.30)", order)

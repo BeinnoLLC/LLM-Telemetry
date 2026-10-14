@@ -15,9 +15,9 @@ os.environ.setdefault("LLM_TELEMETRY_CONFIG", os.path.join(ROOT, "examples", "sa
 os.environ.setdefault("LLM_TELEMETRY_AGENT_HOME", os.path.join(ROOT, "examples", "agent-home"))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-import yaml  # noqa: E402
+import yaml
 
-from llm_telemetry import collect_router as CR  # noqa: E402
+from llm_telemetry import collect_router as CR
 
 p = f = 0
 
@@ -46,8 +46,6 @@ CFG = {
     "auxiliary": {"compression": {"provider": "box", "model": "qwen3:14b", "fallback_chain": [{}, {}]}},
     "tier_router": {
         "enabled": True, "default_tier": "normal",
-        # A valid override, an unknown category and an unknown tier: only the
-        # first may change the matrix (same rule as the agent).
         "routes": {"plan": {"easy": "plan"}, "bogus": {"easy": "trivial"}, "coding": {"easy": "nonsense"}},
         "classifier": {"pool": [{"provider": "opencode-go", "model": "space-bunny-free"}]},
         "tiers": {

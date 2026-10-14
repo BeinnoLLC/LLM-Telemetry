@@ -42,8 +42,6 @@ tmpdir = tempfile.mkdtemp()
 db_path = os.path.join(tmpdir, "state.db")
 con = make_db(db_path)
 
-# One live session (no ended_at, recent activity) with 5 messages, one of
-# them carrying tool_calls JSON.
 NOW = time.time()
 con.execute("insert into sessions values ('live1', ?, NULL, ?)", (NOW - 300, NOW - 10))
 for i in range(5):
@@ -52,21 +50,16 @@ for i in range(5):
         ("live1", "user" if i % 2 == 0 else "assistant", f"msg {i}",
          json.dumps([{"name": "grep"}]) if i == 3 else None, NOW - 200 + i))
 
-# A second session that ended — must NOT appear, no matter how recent.
 con.execute("insert into sessions values ('done1', ?, ?, ?)", (NOW - 300, NOW - 5, NOW - 5))
 con.execute(
     "insert into messages(session_id,role,content,timestamp,active) values ('done1','user','ended session',?,1)",
     (NOW - 200,))
 
-# A third session that's "live" by ended_at but stale (last activity too
-# long ago) — must NOT appear either; #79 only wants sessions actually
-# running right now, not every never-closed session in the DB.
 con.execute("insert into sessions values ('stale1', ?, NULL, ?)", (NOW - 5000, NOW - 5000))
 con.execute(
     "insert into messages(session_id,role,content,timestamp,active) values ('stale1','user','stale session',?,1)",
     (NOW - 5000,))
 
-# A soft-deleted (active=0) message in the live session — must be excluded.
 con.execute(
     "insert into messages(session_id,role,content,timestamp,active) values ('live1','user','deleted',?,0)",
     (NOW - 195,))
@@ -92,8 +85,6 @@ chk(msgs[3].get("tool_calls") == [{"name": "grep"}],
     "tool_calls JSON is parsed into a real object, not left as a raw string")
 chk("tool_calls" not in msgs[0], "a message with no tool_calls doesn't get a spurious empty field")
 
-# Malformed tool_calls JSON must degrade to the raw string, not crash the
-# whole export — a single corrupt row should never blank out a live session.
 con = sqlite3.connect(db_path)
 con.execute(
     "insert into messages(session_id,role,content,tool_calls,timestamp,active) values ('live1','assistant','x','{not json',?,1)",
@@ -104,9 +95,6 @@ out2 = CT.build_transcripts(window=200)
 last = out2["profiles"]["test"]["live1"][-1]
 chk(last.get("tool_calls") == "{not json", "malformed tool_calls JSON degrades to the raw string instead of raising")
 
-# The window cap: WINDOW messages inserted, then WINDOW+50 more — only the
-# last WINDOW must survive (the ticket's whole reason for this file to
-# exist: a 30MB session must not appear whole).
 con = sqlite3.connect(db_path)
 con.execute("delete from messages where session_id='live1'")
 for i in range(CT.WINDOW + 50):

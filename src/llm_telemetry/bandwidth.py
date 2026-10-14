@@ -17,18 +17,8 @@ from urllib.parse import urlsplit
 
 from .config import get as _get_config
 
-# Calibrated against real data: 269 sessions, 560 MB of stored message bodies
-# against 121M in+out tokens. Reproduce with examples/recalibrate_bytes_per_token.py
-# (it drifts as the DB grows — it read 4.62 once and 4.68 later), which is why
-# P8-04 stores the constant alongside each persisted row rather than assuming
-# today's value applies to history.
 BYTES_PER_TOKEN = 4.68
 
-# Request bodies are NOT gzipped. Settled empirically in #73 by capturing a real
-# request on loopback: an 86,810-byte payload that gzips to 326 bytes went out
-# at 86,762 bytes with no Content-Encoding, through both httpx and the Anthropic
-# SDK. Reproduce with examples/probe_request_gzip.py. Do not reintroduce a
-# compression factor without re-running that probe.
 REQUEST_BODIES_COMPRESSED = False
 
 
@@ -59,8 +49,6 @@ def upload_tokens(input_tokens, cache_read, cache_write=None) -> int:
     """
     total = (input_tokens or 0) + (cache_read or 0)
     if cache_write:
-        # Written-to-cache tokens were also sent; they are usually a subset of
-        # input_tokens, so only count any excess to avoid double counting.
         total = max(total, (cache_write or 0))
     return int(total)
 

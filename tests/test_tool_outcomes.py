@@ -12,7 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from llm_telemetry.tool_outcomes import tool_outcome, LABELLED_SAMPLE  # noqa: E402
+from llm_telemetry.tool_outcomes import tool_outcome, LABELLED_SAMPLE
 
 p = f = 0
 
@@ -49,15 +49,9 @@ chk(precision >= 0.9,
     f"{correct}/{confident} correct, {unknown_count} abstained)")
 chk(not mismatches, f"every confident prediction matches its hand label (mismatches: {mismatches})")
 
-# The classifier must actually abstain on unstructured text — a precision
-# number computed over zero abstentions would just mean the substring-guess
-# problem was reintroduced under a different name.
 chk(unknown_count >= 3,
     f"the classifier abstains (returns 'unknown') on at least some unstructured rows (got {unknown_count})")
 
-# Targeted unit checks (independent of the sample, one per rule) so a
-# regression in ANY single rule is pinpointed rather than only visible as a
-# precision-number wobble.
 chk(tool_outcome({"content": '{"exit_code": 0}'}) == "ok", "bare exit_code=0 is ok")
 chk(tool_outcome({"content": '{"exit_code": 1}'}) == "fail", "bare exit_code=1 is fail")
 chk(tool_outcome({"content": '{"success": true}'}) == "ok", "bare success=true is ok")

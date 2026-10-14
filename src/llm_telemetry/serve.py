@@ -6,7 +6,7 @@ stale dashboard.html from disk cache after a rebuild — which looks exactly lik
 "the feature was never shipped". Explicit no-store headers make every reload
 fetch the current build.
 
-Settings write-through (P7-03, #67)
+Settings write-through (P7-03,
 -----------------------------------
 The dashboard is static files, so the Settings page has no backend of its own.
 This server adds exactly one write endpoint, ``POST /api/settings``, which
@@ -25,7 +25,7 @@ deliberately narrow:
 ``GET /api/settings`` returns the values in effect and where they live, so the
 page shows what is really configured rather than what it was built with.
 
-Flags (P14, #147)
+Flags (P14,
 -----------------
 ``--port``/``--bind``/``--dir``/``--open``, with defaults unchanged (config
 ``port`` 8477, ``bind`` 0.0.0.0, the reports dir) so the systemd unit and the
@@ -48,16 +48,10 @@ from . import config as C
 
 DIRECTORY = str(C.get().reports_dir)
 
-# key -> (min, max). Sanity rails, not opinions: a tariff of 0 or a 100 kW GPU
-# is a typo, and a typo here silently rewrites every local cost.
 SETTINGS = {
     "electricity_rate_kwh": (0.0001, 10.0),
     "gpu_draw_watts": (1.0, 5000.0),
     "host_overhead_watts": (0.0, 5000.0),
-    # P7-05 (#112): refresh intervals. Seconds, validated min/max so a typo
-    # (e.g. "5" meant as minutes) can't hammer the collector or a live poll
-    # into a busy-loop; the live poll's own floor (1s) still leaves plenty
-    # of headroom below the analytics rebuild's own ~1min cadence.
     "live_poll_interval_s": (1.0, 60.0),
     "analytics_rebuild_interval_s": (10.0, 600.0),
 }
@@ -139,7 +133,7 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def log_message(self, fmt, *args):
-        pass  # the journal does not need a line per poll
+        pass
 
     def _json(self, code, obj):
         data = json.dumps(obj).encode()
@@ -192,8 +186,6 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
                                 "values": current()})
 
     def do_OPTIONS(self):
-        # Never approve a cross-origin preflight: that is what keeps the
-        # custom-header requirement an effective CSRF guard.
         self.send_response(405)
         self.end_headers()
 
@@ -265,7 +257,6 @@ def main(argv=None):
     port, bind, directory = resolve(args)
     handler = partial(NoCacheHandler, directory=directory)
     with ThreadingHTTPServer((bind, port), handler) as httpd:
-        # server_address is the truth: with --port 0 only the OS knows the port.
         actual = httpd.server_address[1]
         print(f"serving {directory} on {bind}:{actual}", flush=True)
         if args.port == 0:

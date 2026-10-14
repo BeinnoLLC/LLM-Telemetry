@@ -28,11 +28,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMA_DIR = os.path.join(HERE, "schema")
 
-# tag -> schema file. The four payloads the collectors write.
 TAGS = ("analytics", "live", "ollama", "router")
 
-# Keywords the validator understands. Anything else in a schema file is an
-# error, so a typo or an unimplemented keyword cannot pass as "no constraint".
 KEYWORDS = ("type", "required", "properties", "items", "additionalProperties")
 METADATA = ("$schema", "title", "description")
 
@@ -107,7 +104,7 @@ def _walk(schema, value, path, errors, where):
         if not any(_type_ok(value, w) for w in wants):
             errors.append("%s: expected %s, found %s" % (path or "<root>",
                                                          " or ".join(wants), _kind(value)))
-            return                       # a wrong type makes children meaningless
+            return
     if isinstance(value, dict):
         for key in schema.get("required", []):
             if key not in value:
