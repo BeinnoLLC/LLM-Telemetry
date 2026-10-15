@@ -43,6 +43,8 @@ def main():
     p_serve.add_argument("port", nargs="?", default=None)
     sub.add_parser("config", help="print the resolved configuration and exit")
     sub.add_parser("doctor", help="read-only preflight: config, DBs, artifacts, timers, hosts (#143)")
+    sub.add_parser("ingest", help="ingest PI and Hermes telemetry into analytics store (LST-240/LST-241)")
+    sub.add_parser("ingest-pi", help="ingest PI agent sessions into analytics store (LST-241)")
 
     args, rest = ap.parse_known_args()
 
@@ -66,6 +68,8 @@ def main():
         "quota": "collect_quota",
         "serve": "serve",
         "doctor": "doctor",
+        "ingest": "ingest_all",
+        "ingest-pi": "ingest_pi",
     }
     argv = rest
     if args.cmd == "serve" and args.port:
