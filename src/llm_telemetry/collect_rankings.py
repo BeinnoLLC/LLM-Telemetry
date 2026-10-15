@@ -35,10 +35,7 @@ FLOOR = datetime.date(2025, 1, 1)
 WINDOW_DAYS = 30
 OTHER = "other"
 TOP_N = 10
-# view name -> days of the window it covers (ending at the source end date).
 VIEWS = {"day": 1, "week": 7, "month": 30}
-# The build cycle runs every minute but the dataset is daily: a good payload
-# younger than this is reused instead of re-fetched (override via env).
 MIN_REFETCH_S = int(os.environ.get("LLM_TELEMETRY_RANKINGS_TTL", "3600"))
 ATTRIBUTION = "Rankings data by OpenRouter, CC BY 4.0"
 ATTRIBUTION_URL = "https://openrouter.ai/docs"
@@ -87,7 +84,6 @@ def aggregate(rows, days):
     span = all_dates[-max(2, days):]
     half = len(span) // 2
     first = _sum_by_model(rows, set(span[:half])) if half else {}
-    # Equal halves: on an odd span the middle date is in neither half.
     second = _sum_by_model(rows, set(span[-half:])) if half else {}
 
     sums = _sum_by_model(rows, set(dates))

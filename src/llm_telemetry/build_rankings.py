@@ -27,7 +27,6 @@ def build(out=None, data_path=None):
     try:
         with open(data_path, encoding="utf-8") as fh:
             data = json.load(fh)
-        # Normalise through disk so the payload is exactly what the app inlines.
         tmp = out + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(data, fh, default=str)

@@ -41,9 +41,9 @@ with open(CFG, "w") as fh:
                "port": 65535}, fh)
 os.environ["LLM_TELEMETRY_CONFIG"] = CFG
 
-from llm_telemetry import doctor as D      # noqa: E402
-from llm_telemetry import config as C      # noqa: E402
-from llm_telemetry.schema import SCHEMA_VERSION   # noqa: E402
+from llm_telemetry import doctor as D
+from llm_telemetry import config as C
+from llm_telemetry.schema import SCHEMA_VERSION
 
 ALPHA_DB = os.path.join(HOME, "profiles", "alpha", "state.db")
 CFG_ = C.load(CFG)
@@ -102,7 +102,6 @@ def healthy():
                         runner=lambda u: SimpleNamespace(stdout="enabled\n"))
 
 
-# --- a healthy tree --------------------------------------------------------
 rows = healthy()
 chk(D.OK in statuses(rows).values() and not by_status(rows, D.FAIL),
     "a healthy tree has no fail rows", ", ".join(by_status(rows, D.FAIL)))
@@ -118,7 +117,6 @@ chk(len(rows) == len(D.run_checks(cfg=CFG_, offline=True, systemd=True,
                                   runner=lambda u: SimpleNamespace(stdout="enabled\n"))),
     "the doctor is deterministic in the number of rows it reports")
 
-# --- a missing DB ---------------------------------------------------------
 os.remove(ALPHA_DB)
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
 chk(statuses(rows).get("db alpha") == D.FAIL, "a configured profile with no DB fails")
@@ -127,15 +125,14 @@ chk("profiles" in statuses(rows) and statuses(rows)["profiles"] == D.FAIL,
     "the profile count row fails while a database is missing")
 chk(statuses(rows).get("timers") == D.WARN, "a non-systemd host only warns about timers")
 
-# --- a stale artifact ----------------------------------------------------
 make_db(ALPHA_DB)
-touch("dashboard.html", age=601)          # cadence 60s, fail at >3x = 180s
+touch("dashboard.html", age=601)
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
 chk(statuses(rows).get("artifact dashboard.html") == D.FAIL,
     "an artifact older than 3x its cadence fails", statuses(rows).get("artifact dashboard.html"))
 chk("is build.timer enabled?" in D.render(rows), "the detail points at the timer")
 
-touch("logs-data.json", age=120)          # cadence 60s, warn at >1.5x = 90s
+touch("logs-data.json", age=120)
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
 chk(statuses(rows).get("artifact logs-data.json") == D.WARN,
     "an artifact between 1.5x and 3x its cadence warns")
@@ -151,7 +148,6 @@ chk(statuses(rows).get("artifact rankings-data.json") == D.WARN,
     "a missing optional artifact only warns")
 touch("rankings-data.json", 0)
 
-# --- schema --------------------------------------------------------------
 write_payload("analytics-data.json", {"schema_version": "0-old"})
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
 chk(statuses(rows).get("schema analytics-data.json") == D.FAIL,
@@ -159,7 +155,6 @@ chk(statuses(rows).get("schema analytics-data.json") == D.FAIL,
 chk("0-old" in D.render(rows), "the detail shows the version it found")
 write_payload("analytics-data.json", {"schema_version": SCHEMA_VERSION})
 
-# --- an unreadable DB ----------------------------------------------------
 with open(ALPHA_DB, "wb") as fh:
     fh.write(b"this is not a database")
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=False)
@@ -168,7 +163,6 @@ chk("db alpha" in by_status(rows, D.FAIL), "the corrupt DB is reported as a fail
 os.remove(ALPHA_DB)
 make_db(ALPHA_DB)
 
-# --- timers --------------------------------------------------------------
 installed = {u: "/x/" + u for u in D.TIMER_UNITS}
 rows = D.run_checks(cfg=CFG_, offline=True, systemd=True, installed=installed,
                     runner=lambda u: SimpleNamespace(stdout="disabled\n"))
@@ -185,7 +179,6 @@ rows = D.run_checks(cfg=CFG_, offline=True, systemd=True, installed=partial_inst
 chk(statuses(rows)["timer llm-telemetry-quota.timer"] == D.WARN,
     "a unit that was never installed warns, it does not fail the run")
 
-# --- hosts, without leaving the machine ----------------------------------
 srv = socket.socket()
 srv.bind(("127.0.0.1", 0))
 srv.listen(1)
@@ -198,7 +191,6 @@ chk(statuses(rows)["host 127.0.0.1:1"] == D.WARN, "a closed port only warns")
 chk("answered in" in D.render(rows), "the ok host row carries a latency")
 CFG_.inference_endpoints = []
 
-# Without an explicit list the doctor probes what the probe would probe.
 rows = D.run_checks(cfg=CFG_, offline=False, systemd=False, installed={},
                     discover=lambda: [f"127.0.0.1:{open_port}"])
 chk("discovered from the profile configs" in D.render(rows),
@@ -217,8 +209,7 @@ chk(statuses(rows).get("hosts") == D.WARN and "could not discover" in D.render(r
     "a failing discovery is reported, not raised")
 srv.close()
 
-# --- the exit code and the two output shapes -----------------------------
-os.remove(ALPHA_DB)                        # one fail is enough to change the exit code
+os.remove(ALPHA_DB)
 out = io.StringIO()
 with contextlib.redirect_stdout(out):
     rc = D.main(["--offline"])
@@ -240,7 +231,6 @@ chk(all({"name", "status", "detail"} == set(c) for c in doc["checks"]),
 chk(all(c["status"] in (D.OK, D.WARN, D.FAIL) for c in doc["checks"]),
     "every JSON status is one of the three words")
 
-# Self-checks: the helpers must be able to disagree.
 chk(D._human(5) == "5s" and D._human(300) == "5m" and D._human(7200) == "2.0h",
     "_human formats seconds, minutes and hours")
 chk(D.ARTIFACTS[0][2] == 5 and D.ARTIFACTS[1][2] == 60,

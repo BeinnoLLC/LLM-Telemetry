@@ -7,7 +7,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from llm_telemetry.session_timeline import build_spans, build_timeline  # noqa: E402
+from llm_telemetry.session_timeline import build_spans, build_timeline
 
 p = f = 0
 
@@ -21,8 +21,6 @@ def chk(ok, label, extra=None):
         f += 1
 
 
-# 6-event fixture: 1 user turn, 1 model call (opus), 1 tool call (fail),
-# 1 delegation (completed), 1 compaction, 1 more user turn = 6 spans.
 messages = [
     {"role": "user", "timestamp": 100},
     {"role": "assistant", "timestamp": 101, "model": "claude-opus"},
@@ -59,7 +57,6 @@ user_spans = [s for s in spans if s["lane"] == "user"]
 chk(len(user_spans) == 2, "both user turns produce their own tick span", len(user_spans))
 chk(all(s["start"] == s["end"] for s in user_spans), "user-turn spans are instantaneous (start == end)")
 
-# Consecutive same-model runs collapse into ONE span, not one per message.
 messages_run = [
     {"role": "assistant", "timestamp": 200, "model": "opus"},
     {"role": "assistant", "timestamp": 205, "model": "opus"},
@@ -70,7 +67,6 @@ chk(len(spans_run) == 1, "3 consecutive same-model assistant turns collapse into
 chk(spans_run[0]["start"] == 200 and spans_run[0]["end"] == 210,
     "the collapsed run spans first to last timestamp", (spans_run[0]["start"], spans_run[0]["end"]))
 
-# A model SWITCH starts a new span.
 messages_switch = [
     {"role": "assistant", "timestamp": 300, "model": "opus"},
     {"role": "assistant", "timestamp": 305, "model": "haiku"},
@@ -78,7 +74,6 @@ messages_switch = [
 spans_switch = build_spans(messages_switch)
 chk(len(spans_switch) == 2, "a model switch produces 2 separate spans, not a merged one", len(spans_switch))
 
-# ---- build_timeline: header + axis ----
 session_running = {"id": "sR", "title": "Refactor the parser", "source": "cli",
                     "started_at": 1000, "ended_at": None, "end_reason": None,
                     "models": ["opus"]}
@@ -92,8 +87,6 @@ tl_ended = build_timeline(session_ended, [], now=5000)
 chk(tl_ended["running"] is False, "a session with a real ended_at reports running=False")
 chk(tl_ended["axis_end"] == 1200, "the axis end is the real ended_at, NOT the injected 'now', for a finished session", tl_ended["axis_end"])
 
-# now=None (no injected clock) still produces a sane axis for a running
-# session — falls back to started_at rather than crashing.
 tl_no_now = build_timeline(session_running, [])
 chk(tl_no_now["axis_end"] == 1000, "with no injected now, a running session's axis falls back to started_at, not a crash")
 

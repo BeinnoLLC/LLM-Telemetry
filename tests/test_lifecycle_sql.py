@@ -50,27 +50,19 @@ def add(sid, started_ago, ended_ago=None, end_reason=None, title="",
          end_reason, fallback, ineffective, error))
 
 
-# Clean closes, mixed reasons, within the 30-day window.
 add("s1", 2 * DAY, 1 * DAY, "agent_close")
 add("s2", 2 * DAY, 1 * DAY, "agent_close")
 add("s3", 3 * DAY, 2 * DAY, "cron_complete")
-# Abnormal: crashed without a clean close.
 add("s4", 5 * DAY, 4 * DAY, "startup_orphan_reap")
-add("s5", 5 * DAY, 4 * DAY, None)  # ended, but no end_reason recorded
-# Still running (ended_at is null) — must NOT appear in the end_reasons
-# breakdown, which is specifically about how sessions ENDED.
+add("s5", 5 * DAY, 4 * DAY, None)
 add("s6", 1 * DAY, None, None)
-# Outside the 30-day window entirely — must not count.
 add("s7", 40 * DAY, 35 * DAY, "agent_close")
 
-# Compression pressure candidates.
 add("p1", 3 * DAY, 1 * DAY, "agent_close", title="Refactor the billing parser",
     fallback=4, ineffective=12)
 add("p2", 3 * DAY, None, None, title="Long-running import", ineffective=2)
 add("p3", 3 * DAY, 1 * DAY, "agent_close", title="", error="context window exceeded")
-# Zero on every compression column — must NOT appear.
 add("p4", 3 * DAY, 1 * DAY, "agent_close", title="Clean session")
-# Outside the 30-day window — must not appear even with real pressure.
 add("p5", 40 * DAY, 35 * DAY, "agent_close", fallback=9, ineffective=9)
 
 con.commit()

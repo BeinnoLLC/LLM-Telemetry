@@ -44,7 +44,8 @@ setTimeout(() => {
   chk(broken.length === 0, 'no card points at a missing view', broken.join(',') || 'none');
 
   // Cards must cover the real sections, not an arbitrary subset.
-  for (const v of ['Live', 'Usage', 'Cost', 'Health', 'Flow', 'Detail']) {
+  // #173: Home IS the live board, so 'Live' is not a destination any more.
+  for (const v of ['Usage', 'Cost', 'Health', 'Flow', 'Detail']) {
     chk(targets.includes(v), `a card links to ${v}`);
   }
 
@@ -71,12 +72,18 @@ setTimeout(() => {
   }
 
   // Clicking a card must actually navigate.
-  const live1 = cards.find(c => c.dataset.gohome === 'Live');
-  if (live1) {
-    live1.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-    const liveView = d.querySelector('[data-view="Live"]');
-    chk(liveView && !liveView.hidden, 'clicking a card switches to that view');
+  const flow1 = cards.find(c => c.dataset.gohome === 'Flow');
+  if (flow1) {
+    flow1.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    const flowView = d.querySelector('[data-view="Flow"]');
+    chk(flowView && !flowView.hidden, 'clicking a card switches to that view');
   }
+  // #173: the live board renders inside Home and the retired #/live slug lands there.
+  chk(!!home.querySelector('#livelist, #agentsAlive, #ollama'), 'Home contains the live board');
+  chk(!d.querySelector('[data-view="Live"]'), 'no separate Live view remains');
+  w.location.hash = '#/live';
+  w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+  chk(!home.hidden, '#/live still lands on Home (retired-slug alias)');
 
   // Accessibility: cards are interactive, so they must be reachable by keyboard.
   const focusable = cards.filter(c =>

@@ -51,8 +51,6 @@ def compute_gaps(rows, idle_threshold_s=DEFAULT_IDLE_THRESHOLD_S):
             ts, model, base_url, out_tok = turns[i]
             delta = ts - prev_ts
             if delta < 0:
-                # Clock skew / out-of-order write — not a real gap either
-                # direction; skip rather than record a negative latency.
                 continue
             tok_s = (out_tok / delta) if (out_tok and delta > 0) else None
             row = {"session": sid, "ts": ts, "model": model, "base_url": base_url,

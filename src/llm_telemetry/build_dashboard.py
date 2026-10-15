@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render analytics JSON into the dashboard page.
 
-P2-03 (#37): the page shell is a real file (``web/dashboard.html``) and the JS
+P2-03 (
 is real ES modules, so editors and linters treat them as what they are. This
 module only collects -> reads assets -> injects -> writes. Seven __PLACEHOLDER__
 slots get filled: __PRICE_TTL__, __DASHBOARD_CSS__ and __DASHBOARD_JS__ in the
@@ -17,39 +17,20 @@ from .config import get as _cfg
 
 CFG = _cfg()
 DATA = str(CFG.reports_dir / "analytics-data.json")
-# The Prices view (the in-app price sheet, was standalone costs.html) reads the
-# payload build_costs.write_costs_data emits; same reports dir, one source of
-# truth. Missing file -> the view shows a hint instead of crashing the build.
 COSTS_DATA = str(CFG.reports_dir / "costs-data.json")
 OUT  = sys.argv[1] if len(sys.argv) > 1 else str(CFG.reports_dir / "dashboard.html")
-# P2-01 (#26) / P2-03 (#37) / P2-02 (#27): CSS, the page shell, and the JS are
-# real files under web/ (a lint or an editor sees a .css/.html/.js, not a
-# Python string literal), inlined back at build time so the page stays a single
-# self-contained file you can open straight off disk. webassets owns the paths.
 
-# LLM_TELEMETRY_NO_COLLECT renders from whatever JSON is already on disk.
-# Required for the sample build: the collectors would otherwise overwrite the
-# synthetic payload with real local telemetry (chat titles included) - which is
-# exactly the data the public repo must never carry.
 if os.environ.get("LLM_TELEMETRY_NO_COLLECT"):
     pass
 else:
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
-    # Router (#130) and quota (#115) data each have their own hourly job — the
-    # router collector walks every profile's agent log, and the quota collector
-    # also rewrites a 30-day history ledger, so neither belongs in a build that
-    # runs every minute. This build only re-collects as a safety net when the
-    # file is missing or older than MAX_AGE_S, so a deployment with no timer (a
-    # plain container running the build loop) still refreshes hourly. The module
-    # name is the payload name minus "-data"; both collectors take the output
-    # path as their only argument.
     MAX_AGE_S = 65 * 60
     for _name in ("router", "quota"):
         _p = CFG.reports_dir / f"{_name}-data.json"
         if not _p.exists() or time.time() - _p.stat().st_mtime > MAX_AGE_S:
             subprocess.run([sys.executable, "-m", f"llm_telemetry.collect_{_name}", str(_p)], check=True)
-from .schema import SCHEMA_VERSION  # noqa: E402
-from .webassets import inline_js, read_css, read_shell, read_tokens  # noqa: E402
+from .schema import SCHEMA_VERSION
+from .webassets import inline_js, read_css, read_shell, read_tokens
 
 
 def _load_versioned(path):
@@ -83,12 +64,7 @@ def _load_versioned_opt(path):
 data = _load_versioned(DATA)
 _rd = _load_versioned(CFG.reports_dir / "router-data.json")
 data["router"] = _rd["profiles"]
-# Router tab (#130): the shared category/level vocabulary and when the hourly
-# job last ran, so the tab can say how fresh its picture is.
 data["router_meta"] = {"vocab": _rd.get("vocab") or {}, "collected_at": _rd.get("collected_at")}
-# Quota tab (#115): provider headroom per profile, plus when the hourly job last
-# refreshed the picture. The payload is already credential-free (see
-# collect_quota's whitelist), so it passes through as-is.
 _qd = _load_versioned_opt(CFG.reports_dir / "quota-data.json")
 data["quota"] = _qd.get("profiles") or {}
 data["quota_meta"] = {"collected_at": _qd.get("collected_at"),
@@ -110,13 +86,11 @@ def _shown_path(f):
     return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
 
 
-from . import energy as _E  # noqa: E402 - after the payload load above
-from .pricing import ttl_label as _ttl_label  # noqa: E402
-from .config import Config as _Config  # noqa: E402
+from . import energy as _E
+from .pricing import ttl_label as _ttl_label
+from .config import Config as _Config
 
 _kwh, _gw, _hw = _E.tariff(CFG)
-# Defaults come from the Config dataclass itself, so the page's "Defaults"
-# button can never disagree with what an unconfigured install uses.
 _d = _Config()
 POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_overhead_watts": _hw},
          "defaults": {"electricity_rate_kwh": _d.electricity_rate_kwh,
@@ -125,23 +99,12 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
          "tps": _E.LOCAL_TPS, "tps_default": _E.LOCAL_TPS_DEFAULT,
          "prefill": _E.PREFILL_SPEEDUP, "cachex": _E.CACHE_SPEEDUP,
          "config_file": _shown_path((CFG.resolution or {}).get("config_file", "")),
-         # P7-05 (#112): the interval VALUES IN EFFECT right now (config override
-         # or default), kept out of "tariff"/"defaults" because the power-model
-         # Settings card's SET_DEFAULTS requires every key of "defaults" present in
-         # a /api/settings reply. The page reads these to seed its own live
-         # setInterval calls without waiting on a round trip.
          "intervals": {"live_poll_interval_s": getattr(CFG, "live_poll_interval_s", _d.live_poll_interval_s),
                        "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
          "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
                                 "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
-# P2-04 (#28): the palette tokens live in ONE file (web/css/tokens.css) that both
-# pages inline ahead of their own styles, so a colour change cannot land on the
-# dashboard and miss the price sheet.
 _DASHBOARD_CSS = read_tokens() + read_css()
 SHELL = read_shell()
-# Prices view feed: the JSON build_costs.write_costs_data emits (see module
-# note). A missing/stale file degrades to an empty payload — the view tells the
-# user to refresh rather than crashing the whole dashboard build.
 try:
     _costs_payload = json.dumps(json.load(open(COSTS_DATA)), default=str)
 except (OSError, ValueError):

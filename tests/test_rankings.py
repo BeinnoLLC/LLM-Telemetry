@@ -12,8 +12,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("LLM_TELEMETRY_CONFIG",
                       os.path.join(os.path.dirname(__file__), "..", "examples", "sample-config.json"))
-from llm_telemetry import collect_rankings as C  # noqa: E402
-from llm_telemetry import build_rankings as B  # noqa: E402
+from llm_telemetry import collect_rankings as C
+from llm_telemetry import build_rankings as B
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "..", "examples", "reports", "rankings-data.json")
 FAKE = "placeholder-not-a-key"
@@ -34,12 +34,10 @@ def chk(ok, label, extra=None):
 with open(FIXTURE, encoding="utf-8") as fh:
     sample = json.load(fh)
 
-# total_tokens is a string on the wire, 64-bit values included.
 chk(C.parse_tokens("1234567890") == 1234567890, "string total_tokens parsed to int")
 chk(C.parse_tokens("18446744073709551615") == 2 ** 64 - 1, "64-bit string parsed exactly")
 chk(C.parse_tokens(None) == 0 and C.parse_tokens("x") == 0, "junk tokens -> 0, not a crash")
 
-# Re-assemble the committed fixture's raw rows: views must be reproducible.
 resp = {"data": [{"date": r["date"], "model_permaslug": r["model_permaslug"],
                   "total_tokens": str(r["total_tokens"])} for r in sample["rows"]],
         "meta": sample["meta"]}
@@ -55,7 +53,6 @@ chk(all(t["model"] != C.OTHER for t in week["top"]), "reserved 'other' row never
 chk(week["other"]["tokens"] + sum(toks) == week["total"], "top + other == window total")
 chk(abs(sum(t["share"] for t in week["top"]) + week["other"]["share"] - 100) < 0.1, "shares sum to 100%")
 
-# Tiny hand-checked case: two days, one model each plus other.
 mini = {"data": [
     {"date": "2026-10-04", "model_permaslug": "a/x", "total_tokens": "100"},
     {"date": "2026-10-05", "model_permaslug": "a/x", "total_tokens": "300"},
@@ -66,44 +63,35 @@ d = m["views"]["day"]
 chk([t["model"] for t in d["top"]] == ["b/y", "a/x"] and d["total"] == 900, "day view = last date only", d["total"])
 chk(m["views"]["week"]["top"][0]["model"] == "b/y" and m["views"]["week"]["total"] == 1000, "week sums both days")
 
-# No key -> explicit unavailable with the reason; fetcher never called.
 calls = []
 u = C.collect(today=TODAY, env={}, fetcher=lambda *a: calls.append(a) or (None, "x"))
 chk(u["status"] == "unavailable" and "OPENROUTER_API_KEY" in u["reason"] and not calls,
     "no key -> unavailable, no request", u.get("reason"))
 chk(u["rows"] == [] and u["views"] == {}, "unavailable carries no guessed data")
 
-# Network failure -> unavailable (no previous) / stale previous kept.
-net = lambda *a: (None, "network error (URLError)")  # noqa: E731
+net = lambda *a: (None, "network error (URLError)")
 n = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=net)
 chk(n["status"] == "unavailable" and "network" in n["reason"], "network error -> unavailable")
 good = dict(got, fetched_at=0)
 s = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=net, previous=good)
 chk(s["status"] == "ok" and s["last_error"]["reason"].startswith("network"), "failure keeps previous snapshot + reason")
 
-# One request per run, with the key only in the header argument.
 seen = []
 ok = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=lambda *a: seen.append(a) or (mini, None))
 chk(len(seen) == 1 and ok["status"] == "ok", "exactly one fetch per run")
 chk(FAKE not in json.dumps(ok) and FAKE not in json.dumps(n) and FAKE not in json.dumps(s),
     "key never lands in the payload")
 
-# Fresh good payload is reused (per-minute cycle must not hammer the API).
 seen.clear()
 fresh = dict(ok)
 C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=lambda *a: seen.append(a) or (mini, None), previous=fresh)
 chk(not seen, "fresh payload reused within TTL")
 
-# The page renderer is gone (Rankings is an in-app view now); the collector's
-# contract is what remains testable here: statuses carry reasons, never guesses.
-# Escaping of model names on the render path is covered by
-# tests/check_rankings_inapp.js (jsdom, real renderer).
 chk('stale_banner' in json.dumps(s) or s.get("status") == "ok", "stale-previous payload keeps status ok")
 evil = C.assemble({"data": [{"date": "2026-10-05", "model_permaslug": '<img src=x onerror=alert(1)>"', "total_tokens": "5"}]},
                   "2026-10-05", "2026-10-05")
 js = json.dumps(evil)
 chk('<img src=x' in js and 'onerror' in js, "payload keeps the raw model name as DATA")
-# ...and the view escapes it: prove it with the same esc() contract the view uses.
 import html as _html
 name = evil["views"]["day"]["top"][0]["model"]
 chk(_html.escape(name) != name, "esc() would change it — escaping happens in renderRankings, covered by check_rankings_inapp.js")

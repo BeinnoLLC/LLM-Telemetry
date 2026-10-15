@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Export one session's timeline shape to its own file (#94/P10-06).
+"""Export one session's timeline shape to its own file (
 
-Same static-file architecture #79's transcripts.json already established
+Same static-file architecture
 (ADR 0001, resolved together per the ticket): a 589-message session is
 fine to compute on demand, the 72k-message one is not — so this writes
 `sessions/<id>.json` per session in scope, capped at N most recent, and
 the dashboard's on-demand fetch says "not exported" for anything older
-(mirrors #79's windowed-transcript decision exactly, on purpose, so the
+(mirrors
 two features share one mental model).
 
 All the actual span-building math lives in session_timeline.py (pure,
@@ -25,8 +25,6 @@ from .schema import stamp
 
 CFG = EA.CFG
 
-# Per the ticket's own note ("capped at N most recent") — mirrors #79's
-# WINDOW constant pattern so both are tunable in one obvious place.
 MAX_SESSIONS = 100
 
 SESSIONS_IN_SCOPE = """
@@ -58,10 +56,6 @@ where origin_session = ?
 order by dispatched_at
 """
 
-# Model attribution for assistant messages, same as latency.py's
-# ASSISTANT_TURNS pattern: the model active for the session at the time of
-# each message, from session_model_usage last_seen — NOT a per-message
-# model column, which does not exist.
 LAST_SEEN_MODEL = """
 select u.model from session_model_usage u
 where u.session_id = ? and u.last_seen <= ?
@@ -91,8 +85,6 @@ def _annotated_messages(con, session_id):
             entry["tool_name"] = tool_name
             entry["outcome"] = tool_outcome({"content": content, "effect_disposition": disp,
                                               "finish_reason": reason})
-        # Compaction run detection: a contiguous stretch of compacted=1
-        # messages becomes ONE compaction span, not one per message.
         if compacted:
             if run_start is None:
                 run_start = ts

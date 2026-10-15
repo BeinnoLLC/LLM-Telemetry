@@ -955,6 +955,42 @@
   },
   {
    "mod": "live",
+   "name": "TPUT_WINDOW_S"
+  },
+  {
+   "mod": "live",
+   "name": "tputPrev"
+  },
+  {
+   "mod": "live",
+   "name": "tputRing"
+  },
+  {
+   "mod": "live",
+   "name": "sessTotals"
+  },
+  {
+   "mod": "live",
+   "name": "sampleThroughput"
+  },
+  {
+   "mod": "live",
+   "name": "throughputFor"
+  },
+  {
+   "mod": "live",
+   "name": "mergedField"
+  },
+  {
+   "mod": "live",
+   "name": "liveKpis"
+  },
+  {
+   "mod": "live",
+   "name": "renderLiveKpis"
+  },
+  {
+   "mod": "live",
    "name": "renderLive"
   },
   {
@@ -1216,6 +1252,10 @@
   {
    "mod": "router",
    "name": "setHash"
+  },
+  {
+   "mod": "router",
+   "name": "VIEW_ALIASES"
   },
   {
    "mod": "router",
@@ -1583,6 +1623,10 @@
   },
   {
    "mod": "router",
+   "name": "botsMenu"
+  },
+  {
+   "mod": "router",
    "name": "exitHourRange"
   },
   {
@@ -1804,6 +1848,22 @@
   {
    "mod": "live",
    "name": "liveTimer"
+  },
+  {
+   "mod": "live",
+   "name": "liveUpdatedAt"
+  },
+  {
+   "mod": "live",
+   "name": "tickLiveStamp"
+  },
+  {
+   "mod": "live",
+   "name": "liveStampTimer"
+  },
+  {
+   "mod": "live",
+   "name": "scheduleLiveStampTick"
   },
   {
    "mod": "live",

@@ -3,7 +3,7 @@
 
 Builds the Prices-view payload from synthetic model lists and freshness states,
 so no network, no real agent data and no collector run are involved. The page
-side is gone (#113 consolidation): freshness and the unpriced notice render in
+side is gone (
 the dashboard's Prices view, verified there by check_price_whatif.js and the
 view checks. Here the DATA contract is what's tested: the payload carries
 exactly the fields the view needs (freshness state/age/ttl/detail, unpriced
@@ -17,8 +17,8 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("LLM_TELEMETRY_CONFIG",
                       os.path.join(os.path.dirname(__file__), "..", "examples", "sample-config.json"))
-from llm_telemetry import pricing as P  # noqa: E402
-from llm_telemetry import build_costs as B  # noqa: E402
+from llm_telemetry import pricing as P
+from llm_telemetry import build_costs as B
 
 p = f = 0
 
@@ -47,7 +47,6 @@ def payload(models, fresh, size=345):
 
 priced = [model("anthropic/claude-x", "vendor", 10), model("qwen3-coder:30b", "local", 5)]
 
-# ---- #60: TTL text comes from the constant ---------------------------------
 src = open(B.__file__).read() + open(P.__file__).read()
 chk(not re.search(r"\b24\s?h\b|\b6h\b", src.replace("ttl_label", "")),
     "no literal refresh interval in the pricing/payload source")
@@ -62,14 +61,12 @@ dh = payload(priced, fr_ok)
 chk(dh["freshness"]["ttl"] == "6h" and dh["freshness"]["age"] == "2h",
     "fresh cache travels with age + ttl (view renders them as a plain line)")
 
-# ---- #60: stale freshness travels with reason + age -------------------------
 fr = {"state": "stale", "age": "3d", "ttl": "6h", "detail": "URLError", "age_s": 3 * 86400}
 ds = payload(priced, fr)
 chk(ds["freshness"]["state"] == "stale" and ds["freshness"]["age"] == "3d"
     and ds["freshness"]["detail"] == "URLError",
     "stale freshness carries age + reason (view renders the warning box)")
 
-# ---- #61: unpriced with vs without traffic (payload contract) ---------------
 mixed = priced + [model("acme/used-1", "unpriced", 40), model("acme/used-2", "unpriced", 2),
                   model("acme/idle", "unpriced", 0)]
 dm = payload(mixed, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "age_s": 3600})
@@ -88,22 +85,13 @@ dc = payload(clean, {"state": "cache", "age": "1h", "ttl": "6h", "detail": "", "
 chk(not [m for m in dc["models"] if m["source"] == "unpriced" and (m["calls"] or 0) > 0],
     "zero unpriced-with-traffic is a clean payload state (no understated warning)")
 
-# ---- #60: cold cache + network down = 'unavailable' state -------------------
 with tempfile.TemporaryDirectory() as tmp:
-    # Both catalogues, or this is not a cold cache: the Nous list (#131) has
-    # its own cache file, and leaving it warm made this test pass on the
-    # OpenRouter failure while a list full of Nous rates came back.
     old_cache, old_url = P.CACHE, P.URL
     old_ncache, old_nurl = P.NOUS_CACHE, P.NOUS_URL
     P.CACHE = os.path.join(tmp, "none.json")
     P.NOUS_CACHE = os.path.join(tmp, "none-nous.json")
     P.URL = "http://127.0.0.1:9/nothing-listens-here"
     P.NOUS_URL = "http://127.0.0.1:9/nothing-listens-here-either"
-    # A pinned catalogue file wins over the URLs above and returns "pinned"
-    # without ever attempting a fetch, which made this test assert on the
-    # sample catalogue instead of a cold-cache failure whenever the build env
-    # was exported. Unpin for the duration: this block is about the no-network
-    # path, so it has to be the thing deciding the outcome.
     old_cat = os.environ.pop("LLM_TELEMETRY_CATALOG", None)
     try:
         cat, src_state = P.fetch_catalog(force=True)

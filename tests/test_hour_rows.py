@@ -67,17 +67,12 @@ def usage(sid, last_seen, calls=1):
         (sid, "gpt-x", "openai", "", "main", calls, 100, 50, 0, 0, 0, 0.01, 0.01, last_seen))
 
 
-# A call from 30 minutes ago must be in the window.
 sess("recent")
 usage("recent", NOW - 1800, calls=3)
 
-# A call from well inside the 72h window but a different hour bucket.
 sess("six_hours_ago")
 usage("six_hours_ago", NOW - 6 * 3600, calls=5)
 
-# Negative control: a call from BEFORE the HOUR_WINDOW_S cutoff must be
-# excluded — this is the query's whole reason to exist (bounded payload),
-# so a broken WHERE clause that dropped the bound must fail this check.
 sess("stale")
 usage("stale", NOW - HOUR_WINDOW_S - 3600, calls=99)
 
@@ -98,16 +93,9 @@ chk("hour" in r and isinstance(r["hour"], int),
 chk(0 <= r["hour"] <= 23, f"hour is a real 0-23 bucket, got {r['hour']}")
 chk(r["calls"] == 3, f"call count aggregates correctly per hour bucket, got {r['calls']}")
 
-# project_of_session resolution runs on hour rows too (same as fetch_rows) —
-# with no title/cwd/parent these all resolve to unattributed (None), just
-# confirming the field exists and the resolver was actually invoked, not
-# skipped for the hour-grain path.
 chk("project" in r, "hour rows carry the same 'project' resolution field as day rows")
 chk("source" in r, "hour rows carry the same 'source' field as day rows")
 
-# Pricing/bandwidth enrichment happens in build(), not fetch_hour_rows() —
-# confirm the raw fetch does NOT fabricate those fields, so a caller can't
-# accidentally rely on un-enriched hour rows looking already-priced.
 chk("billed_usd" not in r,
     "fetch_hour_rows() does not itself add pricing fields — that's build()'s "
     "_enrich_rows() step, kept as a separate stage")

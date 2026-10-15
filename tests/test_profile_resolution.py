@@ -10,10 +10,8 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from llm_telemetry import config as C  # noqa: E402
+from llm_telemetry import config as C
 
-# The cases below set the env var themselves where they mean to; an inherited
-# value (CI exports one for the sample build) must not leak into the rest.
 os.environ.pop("LLM_TELEMETRY_AGENT_HOME", None)
 
 p = f = 0
@@ -60,7 +58,6 @@ names = lambda cfg: [x.name for x in cfg.profiles]
 with tempfile.TemporaryDirectory() as root:
     home = make_home(root)
 
-    # ---- #50 P5-01: absent vs empty ---------------------------------------
     c = load_with(root, {"agent_home": home})
     chk(names(c) == ["default", "alpha", "beta"], "absent key autodiscovers", names(c))
     chk(c.resolution["mode"] == "discovered", "resolution says discovered")
@@ -69,7 +66,6 @@ with tempfile.TemporaryDirectory() as root:
     chk(names(c) == [], "\"profiles\": [] yields zero profiles", names(c))
     chk(c.resolution["mode"] == "explicit-empty", "resolution says explicit-empty")
 
-    # ---- #51 P5-02: merge, collision, exclude -----------------------------
     custom = os.path.join(root, "elsewhere")
     os.makedirs(custom)
     c = load_with(root, {"agent_home": home,
@@ -85,7 +81,6 @@ with tempfile.TemporaryDirectory() as root:
     ex = c.resolution["excluded"]
     chk(ex and ex[0]["name"] == "beta" and ex[0]["reason"], "exclusion is reported with a reason", ex)
 
-    # ---- #52 P5-03: agent home precedence ---------------------------------
     other = make_home(os.path.join(root, "o"), names=("default", "gamma"))
     c = load_with(root, {"agent_home": home}, env_home=other)
     chk(names(c) == ["default", "gamma"], "env var overrides config", names(c))

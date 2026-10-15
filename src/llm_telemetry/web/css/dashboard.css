@@ -54,9 +54,22 @@
    identity stays per-profile, chrome stays identical across chips. All
    state lives in [data-off]; the JS hands over --h and touches nothing
    else, so no render pass can stomp a chip's styling again (#126). */
- .tabframe{display:flex;gap:3px;align-items:center;padding:3px;
-   background:var(--card);border:1px solid var(--border);border-radius:14px}
- .tabframe .tabsub{margin-left:auto;padding-right:6px}
+ .tabframe{display:flex;gap:8px;align-items:center;padding:6px;
+   background:var(--card);border:1px solid var(--border);border-radius:14px;
+   overflow-x:auto;max-width:100%;scrollbar-width:thin}
+ .tabframe .tabsub{margin-left:auto;padding-right:6px;flex:none}
+ /* Fleet header: a label at the left of the profile list, replaced the
+    old "Profiles / Bots" section headers for a cleaner look. */
+ .tabgrouplabel{font-size:var(--fs-xs);font-weight:700;letter-spacing:.1em;
+   text-transform:uppercase;color:var(--muted);padding:0 2px;
+   white-space:nowrap;user-select:none;flex:none}
+ .tabdivider{width:1px;align-self:stretch;margin:0 4px;background:var(--border);flex:none}
+ /* Bot icons: person (👤) or robot (⚙) appears inline in each tab. */
+ .tabkind{display:inline-flex;align-items:center;justify-content:center;
+   width:14px;height:14px;font-size:10px;line-height:1;
+   color:var(--muted);flex:none;margin:0}
+ .tabseg[data-off="0"] .tabkind{color:hsl(var(--h) 55% 26%)}
+ [data-theme=dark] .tabseg[data-off="0"] .tabkind{color:hsl(var(--h) 80% 80%)}
  .tabseg{font:inherit;font-size:var(--fs-md);font-weight:500;line-height:1;
    display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:10px;
    border:none;background:transparent;color:var(--fg);cursor:pointer;
@@ -121,6 +134,26 @@
    grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  .grid-kpi{display:grid;gap:10px;
    grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))}
+ /* #182: Home's live scorecards. Exactly four, so fixed 4-up tracks rather
+    than auto-fit (auto-fit would leave a 3+1 orphan at mid widths); 2-up on
+    tablets/phones and 1-up only on the narrowest. Calm palette (#153): the
+    number carries the weight, colour is reserved for state. */
+ .lkpis{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+ @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
+ .lkpi{position:relative;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+ .lkpi-name{font-size:var(--fs-xs);font-weight:700;color:var(--muted);letter-spacing:.01em}
+ .lkpi-num{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.015em;line-height:1.1;
+   font-variant-numeric:tabular-nums;color:inherit;text-decoration:none;white-space:nowrap;
+   overflow:hidden;text-overflow:ellipsis}
+ .lkpi-of{font-size:.6em;font-weight:600;color:var(--muted)}
+ .lkpi-sub{font-size:var(--fs-xs);color:var(--muted)}
+ .lkpi-spark{position:absolute;right:12px;top:12px;opacity:.85}
+ .lkpi-alerts{color:var(--z-warn)}
+ .lkpi-alerts.crit{color:var(--z-bad)}
+ .lkpi-clear{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:999px;
+   font-size:var(--fs-xs);font-weight:600;color:var(--z-ok);
+   background:color-mix(in srgb,var(--z-ok) 12%,transparent)}
  /* Two-up chart rows. Written as auto-fit rather than `1fr 1fr` so a narrow
     viewport reflows to one column instead of producing two ~160px tracks that
     hold a squashed canvas and force horizontal overflow. min() keeps the track

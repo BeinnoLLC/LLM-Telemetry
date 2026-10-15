@@ -35,15 +35,10 @@ def _local_patterns():
 CACHE = str(_cfg().reports_dir / "pricing-cache.json")
 URL = "https://openrouter.ai/api/v1/models"
 TTL = 6 * 3600
-# Nous Portal publishes its OWN price list (#131): public, OpenRouter-shaped,
-# and not always equal to OpenRouter's (deepseek-v4-pro-0813 is 5x cheaper on
-# Nous). Merged into the catalogue under NOUS_PREFIX so Nous traffic prices at
-# what Nous charges while every other row keeps the OpenRouter rate.
 NOUS_URL = "https://inference-api.nousresearch.com/v1/models"
 NOUS_CACHE = str(_cfg().reports_dir / "nous-pricing-cache.json")
 NOUS_PREFIX = "nous:"
 
-# billing_provider -> class
 PROVIDER_CLASS = {
     "fireworks": "metered",
     "openrouter": "metered",
@@ -53,53 +48,26 @@ PROVIDER_CLASS = {
     "openai-codex": "subscription",
     "copilot": "subscription",
     "nous": "subscription",
-    # Ollama Cloud (https://ollama.com/v1) is consumption-billed: plan credits
-    # drawn per request, not a flat monthly fee. Real rows exist with the
-    # provider slot "ollama-cloud" (issue #118).
     "ollama-cloud": "metered",
-    # Local inference is "local", never "free": it costs electricity (P7-01).
     "custom": "local",
     "local": "local",
     "ollama": "local",
     "": "unknown",
 }
 
-# Models that live on local hardware: never price them, whatever the name says.
 LOCAL_HINTS = ("qwen3-coder", "gpt-oss", "qwen3:14b", "qwen3.8:latest",
                "deepseek-r1:14b", "nemotron", "qwen3:30b", "ministral",
-               # 2026-10-10 fleet additions (ollama list): ornith/ornith-1.5 are
-               # 9B qwen3.5-family chat models; clef/clef-flash (27B/9B, vision)
-               # and openjev serve SystemOne decision traffic (/v1/systemone),
-               # never cloud chat — any usage row carrying them is local hardware.
                "ornith", "clef", "openjev")
 
-# Model-name patterns that are ALWAYS pay-per-token, whatever provider slot the
-# row was recorded under. Needed because the provider field records the local
-# config slot ("custom"), not the upstream vendor: Fireworks traffic routed
-# through a custom-named slot was being classed "free" and billed at $0, which
-# silently under-reports real metered spend. Model identity is authoritative
-# here; the provider slot is not.
 METERED_MODEL_HINTS = (
-    "accounts/fireworks/models/",   # Fireworks serverless, pay per token
-    "openrouter/",                  # OpenRouter passthrough
+    "accounts/fireworks/models/",
+    "openrouter/",
 )
 
-# Rows whose "model" is really a router/ensemble preset name, not a model. The
-# per-member spend is already recorded as its own rows, so pricing the preset
-# name again would double-count. Classify it explicitly instead of leaving it
-# "unknown", which reads as "we failed to price this".
 PRESET_MODELS = ("default",)
 
-# ":free" is an OpenRouter tier suffix: real traffic, genuinely $0 per token.
 FREE_TIER_SUFFIX = ":free"
 
-# OpenCode Zen ships free SKUs under its OWN naming convention, not OpenRouter's
-# ":free" suffix — "space-bunny-free", "longcat-2.5-preview-free", or a bare
-# "big-pickle". They were falling through to the catalogue, which does not list
-# them, so 153 calls of real traffic priced at $0 and landed in "unpriced":
-# genuine $0, reported as a data gap (issue #135). Declared here as an explicit
-# $0 price so they read as a priced free tier, exactly like ":free" does.
-# Source: opencode.ai/docs/zen pricing table (Input/Output/Cached Read = Free).
 ZEN_FREE_MODELS = {
     "space-bunny-free",
     "longcat-2.5-preview-free",
@@ -130,16 +98,10 @@ def is_free_tier(model):
         return True
     if m in ZEN_FREE_MODELS:
         return True
-    # Zen free SKUs also appear with a vendor prefix ("openrouter/…", "zen/…")
-    # or an ":online" tag; match on the basename only after an exact-list miss,
-    # and never on a substring so "space-bunny-free-experimental" stays unpriced.
     base = m.rsplit("/", 1)[-1]
     return base in ZEN_FREE_MODELS
 
 
-# Known model -> billing class, used when the usage row carries no provider at
-# all (older rows predate provider recording). Without this they land in
-# "unknown", which makes a priced, well-understood model look untracked.
 MODEL_CLASS_FALLBACK = {
     "claude-": "subscription",
     "glm-": "subscription",
@@ -165,34 +127,16 @@ def metered_by_model(model):
         return False
     return any(h in m for h in METERED_MODEL_HINTS)
 
-# Explicit model -> OpenRouter id. Substring guessing is too loose (a local
-# "qwen3.8:latest" happily matches a cloud "qwen3.8-max"), so anything we care
-# about is pinned here.
-# Official vendor rates gathered from the web, USD per 1M tokens:
-#   (input, output, cache_read)
-# Used for models OpenRouter does not carry, and checked BEFORE the catalog.
-# Sources: developers.openai.com/api/docs/pricing (gpt-6-astra, gpt-5.6-luna,
-# gpt-5.3-codex), docs.fireworks.ai/serverless/pricing (DeepSeek SKUs),
-# ollama.com/pricing (Ollama Cloud SKUs, standard non-peak rates).
 WEB_RATES = {
-    # OpenAI / Codex — absent from OpenRouter
     "gpt-6-astra":     (10.00, 50.00, 1.00),
     "gpt-5.6-luna":    (0.20,  1.20,  0.02),
     "gpt-5.6-terra":   (2.00,  12.00, 0.20),
     "gpt-5.6-sol":     (4.00,  20.00, 0.40),
     "gpt-5.3-codex":   (1.75,  14.00, 0.175),
-    # Fireworks serverless SKUs — billed-by-fireworks rates from each model's
-    # own fireworks page (cheaper than the OpenRouter proxy for the same
-    # weights; issue #131). DeepSeek V4.1 Flash's docs-table row
-    # $0.30/$0.006/$1.20 is DeepSeek/DeepInfra's first-party rate, NOT
-    # Fireworks' ($0.22/$0.007/$0.66 on the model page, Oct 2026).
     "accounts/fireworks/models/deepseek-v4-flash-0731":       (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4p1-flash":          (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-pro-0813":         (1.32, 3.96, 0.044),
-    # Ollama Cloud (issue #118) — models OpenRouter does not list at all.
-    # Keyed by the tagged name so ":cloud" rows price; _resolve_catalog_id and
-    # rates_for both try the bare basename too, so either spelling works.
     "deepseek-v4.1-flash":    (0.22,  0.66,  0.007),
     "deepseek-v4-flash":      (0.22,  0.66,  0.007),
     "deepseek-v4-pro":        (0.66,  1.98,  0.022),
@@ -216,9 +160,6 @@ ALIASES = {
     "claude-opus-4-7": "anthropic/claude-opus-4.7",
     "claude-sonnet-5": "anthropic/claude-sonnet-5",
     "claude-sonnet-4-5-20250929": "anthropic/claude-sonnet-4.5",
-    # Hermes names Anthropic models with dashes and an optional date suffix;
-    # OpenRouter uses dots and no date. Without these four the models fall
-    # through to "unpriced" and silently contribute $0 to every total.
     "claude-opus-4-5-20251101": "anthropic/claude-opus-4.5",
     "claude-opus-4-5": "anthropic/claude-opus-4.5",
     "claude-opus-4-6": "anthropic/claude-opus-4.6",
@@ -238,9 +179,6 @@ ALIASES = {
     "gpt-5.6-luna": "openai/gpt-5.6-luna",
     "gpt-5.3-codex": "openai/gpt-5.3-codex",
     "gpt-6-astra": "openai/gpt-6-astra",
-    # Hermes/portal names without the vendor prefix (issue #117: 21 real calls
-    # at $0 because no alias existed). Each maps to the OpenRouter SKU the
-    # provider actually serves.
     "qwen3.8-max": "qwen/qwen3.8-max-0902",
     "qwen3.8-max-prime": "qwen/qwen3.8-max-prime",
     "qwen3.8-flash": "qwen/qwen3.8-flash",
@@ -295,12 +233,9 @@ def catalog_freshness(source, now=None):
     src = (source or "").strip()
     state = src.split(" ", 1)[0] or "unavailable"
     if state == "pinned":
-        # A fixed catalogue file (the committed sample): never refreshed, so
-        # age and TTL do not apply.
         return {"state": "pinned", "age_s": None, "age": "", "ttl": ttl_label(), "detail": ""}
     if state not in ("live", "cache", "stale", "unavailable"):
         state = "cache"
-    # An old cache is stale even when no fetch was attempted.
     if state == "cache" and age is not None and age > TTL:
         state = "stale"
     detail = src[len(state):].strip(" ()") if src.startswith(state) else ""
@@ -383,7 +318,6 @@ def _fetch_openrouter(force=False):
         json.dump({"fetched": time.time(), "models": models}, open(CACHE, "w"))
         return models, "live"
     except Exception as e:
-        # Network down: fall back to a stale cache rather than losing all pricing.
         if os.path.exists(CACHE):
             return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
         return {}, f"unavailable ({e.__class__.__name__})"
@@ -398,9 +332,6 @@ def is_local(model):
     m = (model or "").lower()
     if "/" in m:
         return False
-    # An explicit cloud marker means hosted, whatever the name says: Ollama
-    # Cloud tags are "kimi-k3:cloud", "qwen3-coder:480b-cloud", etc., and the
-    # bare name inside the tag would otherwise match LOCAL_HINTS (issue #118).
     if m.endswith(":cloud") or m.endswith("-cloud"):
         return False
     return any(h in m for h in LOCAL_HINTS)
@@ -419,26 +350,16 @@ def _resolve_catalog_id(model, catalog):
     base = (model or "").split("/")[-1].lower()
     if not base:
         return None
-    # An Ollama Cloud tag ("kimi-k3:cloud", "qwen3-coder:480b-cloud") names a
-    # hosted SKU the catalogue carries without the marker: strip it before
-    # matching, or every :cloud request lands "unpriced" (issue #118).
     base = re.sub(r"(:|-)cloud$", "", base)
-    # Batch/thinking variants bill at the base SKU (OpenRouter lists :batch as
-    # its own id only where it exists; most carry no entry at all, so a
-    # ":batch" request would otherwise land unpriced).
     variant = None
     if ":" in base:
         base, variant = base.rsplit(":", 1)
     cands = [base]
-    # claude-fable-5-1 -> claude-fable-5.1; claude-opus-4-5-20251101 keeps
-    # the date suffix as-is (that form is pinned in ALIASES anyway).
     dotted = re.sub(r"-(\d+)-(\d+)$", r"-\1.\2", base)
     if dotted != base:
         cands.append(dotted)
     for cand in cands:
         for cid in catalog:
-            # Nous entries (#131) are looked up explicitly for Nous rows only;
-            # a fuzzy match must never hand a non-Nous row a Nous rate.
             if cid.startswith(NOUS_PREFIX) or ":" in cid.split("/")[-1]:
                 continue
             if cid.split("/")[-1].lower() == cand:
@@ -473,14 +394,9 @@ def serving_provider_hint(model, catalog):
     if lm.startswith(NOUS_PREFIX.rstrip(":") + ":") or (NOUS_PREFIX + m) in catalog:
         return "nous"
     if lm.startswith("accounts/fireworks/"):
-        # vendor-qualified id where the FIRST segment is an account root, not
-        # the vendor ("accounts/fireworks/models/x" would split to
-        # "accounts"). The vendor is the second segment.
         return "fireworks"
     if "/" in m:
         return m.split("/", 1)[0].lower()
-    # bare name: try the alias table, then the fuzzy match, then WEB_RATES,
-    # then local-by-name — the same order rates_for() prices in
     oid = ALIASES.get(m)
     if not oid:
         oid = m if m in catalog else _resolve_catalog_id(m, catalog)
@@ -489,7 +405,6 @@ def serving_provider_hint(model, catalog):
     if oid and not oid.startswith(NOUS_PREFIX):
         return oid.split("/", 1)[0].lower()
     if lm in WEB_RATES:
-        # vendor of record per SKU block; Ollama Cloud SKUs are hosted
         if lm.endswith(":cloud") or lm.endswith("-cloud"):
             return "ollama-cloud"
         if lm.startswith("gpt-"):
@@ -559,28 +474,19 @@ def rates_for(model, catalog):
     OpenRouter does not list (Codex/Astra) or lists under a different SKU.
     """
     if is_local(model):
-        # Local inference is priced from the electricity model (P7-01): a
-        # local "qwen3" must never pick up a cloud qwen's catalogue price.
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)
         return (ri / 1e6, ro / 1e6, rc / 1e6)
-    # WEB_RATES is keyed on the bare model name, so try the raw name, the
-    # vendor-stripped basename, and finally the cloud-marker-stripped form —
-    # a ":cloud" request for "gpt-oss:120b-cloud" must find "gpt-oss:120b".
     base = (model or "").split("/")[-1].lower()
     bare = re.sub(r"(:|-)cloud$", "", base)
     w = (WEB_RATES.get(model) or WEB_RATES.get(base)
          or WEB_RATES.get(bare))
-    # A ":batch"/":thinking" variant bills at its base SKU when the variant
-    # itself has no published rate (see _resolve_catalog_id).
     if not w and ":" in bare:
         w = WEB_RATES.get(bare.rsplit(":", 1)[0])
     if w:
         return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
     oid = ALIASES.get(model)
     if not oid:
-        # An exact catalogue id is its own price ("openai/gpt-5:batch" is a
-        # real SKU); only a fuzzy name match must avoid the ":" variants.
         oid = model if model in catalog else _resolve_catalog_id(model, catalog)
     p = catalog.get(oid or "")
     if not p:
@@ -591,9 +497,6 @@ def rates_for(model, catalog):
              float(p.get("input_cache_read") or 0))
     except (TypeError, ValueError):
         return None
-    # OpenRouter marks router pseudo-models ("openrouter/auto") with -1: a
-    # sentinel for "depends on the model it routes to", not a price. Taking it
-    # literally would price a call at minus a dollar per token.
     if any(x < 0 for x in r):
         return None
     return r
@@ -602,8 +505,6 @@ def rates_for(model, catalog):
 def price_row(row, catalog):
     """Annotate one usage row with cost_class, real cost and market value."""
     prov = (row.get("provider") or "").strip()
-    # The endpoint actually called outranks the config slot name: Fireworks
-    # traffic recorded under a "custom" slot must not be classed as free local.
     url = (row.get("base_url") or "").lower()
     if url:
         if "fireworks.ai" in url or "openrouter.ai" in url:
@@ -615,44 +516,26 @@ def price_row(row, catalog):
         elif "nousresearch.com" in url:
             prov = "nous"
         elif "ollama.com" in url:
-            # Ollama Cloud is hosted and metered, never a LAN host: it must be
-            # matched BEFORE the local patterns (issue #118).
             prov = "ollama-cloud"
         elif any(h in url for h in _local_patterns()):
             prov = "local"
     cls = PROVIDER_CLASS.get(prov, "unknown")
     model = row.get("model")
     if (model or "").strip().lower() in PRESET_MODELS or prov == "moa":
-        # Ensemble/router preset: members are billed on their own rows.
         cls = "preset"
     elif is_free_tier(model):
-        # A published $0 tier: OpenRouter ":free" and OpenCode Zen's free SKUs
-        # are genuinely free, a different thing from local inference (rates_for
-        # is skipped below so the row can never inherit a metered SKU's price
-        # through the base-name match).
         cls = "free"
     elif is_local(model):
         cls = "local"
     elif (model or "").lower().endswith((":cloud", "-cloud")):
-        # An explicit cloud marker on the model name outranks the provider
-        # slot the row was recorded under: a ":cloud" request routed through
-        # a "custom" slot is hosted metered traffic, never the electricity
-        # model (issue #118).
         cls = "metered"
     elif metered_by_model(model):
-        # The model name proves pay-per-token, so it outranks the provider slot
-        # (Fireworks/OpenRouter traffic is often recorded under "custom").
         cls = "metered"
     elif cls == "unknown":
-        # No provider recorded: recover the class from the model name rather
-        # than reporting a well-known model as untracked.
         cls = class_from_model(model) or "unknown"
     r = None
     rate_source = ""
     if prov == "nous" and cls not in ("local", "preset"):
-        # What Nous actually charges (#131), before any OpenRouter guess. Its
-        # catalogue lists its own ":free" SKUs at 0, so it also wins over the
-        # free-tier shortcut for Nous traffic.
         calls = row.get("calls") or 0
         prompt = (row.get("input_tokens") or 0) + (row.get("cache_read") or 0)
         ppc = (prompt / calls) if calls else None
@@ -664,8 +547,6 @@ def price_row(row, catalog):
         if r:
             rate_source = "catalog"
     if cls == "local" and not is_local(model):
-        # Classed local by its endpoint (a LAN host) but not by name: still
-        # electricity, never a catalogue price and never $0 (P7-01).
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)
         r = (ri / 1e6, ro / 1e6, rc / 1e6)
@@ -673,10 +554,6 @@ def price_row(row, catalog):
     value = 0.0
     if r:
         pin, pout, pcache = r
-        # Cache WRITES cost money too on Anthropic-shaped traffic (the only
-        # family that reports cache_creation tokens): 1.25x the input rate.
-        # Omitted, every prompt that built a cache was silently free here
-        # while the provider's invoice included it.
         cwrite_mult = 1.25 if row.get("cache_write") else 0.0
         value = (row.get("input_tokens", 0) * pin
                  + row.get("output_tokens", 0) * pout
@@ -686,18 +563,9 @@ def price_row(row, catalog):
     return {
         "cost_class": cls,
         "market_value_usd": round(value, 6),
-        # Billed = money that leaves an account. Electricity is paid to the
-        # utility, not per call, so it is carried in energy_usd and never
-        # silently folded into billed spend.
         "billed_usd": round(value, 6) if cls == "metered" else 0.0,
         "energy_usd": round(energy, 6),
-        # A published $0 tier is PRICED: the rate is known, it just happens to
-        # be zero. Reporting it as "unpriced" made real traffic look like a
-        # catalogue gap and told the user their est. cost was understated when
-        # it was exact (#135).
         "priced": bool(r) or cls == "free",
-        # Which price list the rate came from: "nous" (Nous Portal's own,
-        # #131), "catalog" (OpenRouter / web rates), or "" when unpriced.
         "rate_source": rate_source,
     }
 

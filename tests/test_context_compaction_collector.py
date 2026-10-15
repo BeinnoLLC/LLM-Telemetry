@@ -42,17 +42,15 @@ with tempfile.TemporaryDirectory() as root:
     con.execute("insert into sessions(id, source, started_at, title) values('cxsess', 'desktop', 1790000000, 'Context growth demo')")
     con.execute("insert into sessions(id, source, started_at, title) values('lonely', 'desktop', 1790000000, 'No compaction here')")
 
-    # cxsess: grows, compacts (effective), grows again, compacts (barely -- ineffective).
     msg(con, "cxsess", "user", 1790000000, "short prompt")
     msg(con, "cxsess", "assistant", 1790000010, "x" * 2000)
-    msg(con, "cxsess", "assistant", 1790000020, "x" * 20000)          # big context before compaction 1
+    msg(con, "cxsess", "assistant", 1790000020, "x" * 20000)
     msg(con, "cxsess", "assistant", 1790000021, "compaction summary", compacted=1)
-    msg(con, "cxsess", "assistant", 1790000022, "x" * 300)            # after compaction 1: small
-    msg(con, "cxsess", "assistant", 1790000030, "x" * 30000)          # grows again
+    msg(con, "cxsess", "assistant", 1790000022, "x" * 300)
+    msg(con, "cxsess", "assistant", 1790000030, "x" * 30000)
     msg(con, "cxsess", "assistant", 1790000031, "barely-effective summary", compacted=1)
-    msg(con, "cxsess", "assistant", 1790000032, "x" * 29700)          # after compaction 2: barely smaller
+    msg(con, "cxsess", "assistant", 1790000032, "x" * 29700)
 
-    # lonely: grows but never compacts -- the ticket's own negative control.
     msg(con, "lonely", "assistant", 1790000000, "x" * 500)
     msg(con, "lonely", "assistant", 1790000010, "x" * 800)
 

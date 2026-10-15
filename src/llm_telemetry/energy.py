@@ -12,31 +12,20 @@ from __future__ import annotations
 
 from .config import get as _cfg
 
-# Measured generation throughput per model size band, tokens/second, on the
-# local inference box. Matched by substring on the model name, first hit wins,
-# so larger bands are listed before the smaller ones they contain ("70b" before
-# "0b" style collisions cannot happen because every band ends in "b").
 LOCAL_TPS = [
     ("70b", 11), ("72b", 11), ("34b", 26), ("32b", 28), ("30b", 30),
     ("27b", 33), ("14b", 55), ("13b", 58), ("9b", 66), ("8b", 95), ("7b", 100),
     ("4b", 150), ("3b", 170), ("1.5b", 240), ("1b", 300),
 ]
-LOCAL_TPS_DEFAULT = 40      # unknown size: assume a mid-range band
+LOCAL_TPS_DEFAULT = 40
 
-# Tag names that carry no size ("...:latest"): pinned to the size band their
-# weights actually are (ollama show / measured), so a :latest facade does not
-# bill at the 40 tok/s default.
 TPS_NAME_PINS = {
-    "ornith:latest": "9b",    # ornith-1.5:9b sibling, 5.6 GB on disk; 66 tok/s measured live
-    "clef:latest": "27b",     # 17 GB on disk (27B vision line, qwen3.5 family)
+    "ornith:latest": "9b",
+    "clef:latest": "27b",
 }
 
-# Prompt processing is one batched forward pass, not one pass per token.
-# Measured ratio of generation to prefill cost on this hardware.
 PREFILL_SPEEDUP = 12
 
-# A cache read skips the matmuls but still streams KV tensors out of VRAM with
-# the GPU powered: ~60x cheaper than generating a token, not free.
 CACHE_SPEEDUP = 60
 
 

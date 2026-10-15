@@ -25,7 +25,7 @@ ticket's own spec calls that out explicitly as the accepted fallback:
 "If Hermes cannot be made to fill it, the P4 resolver (#56) derives
 from cwd, and this ticket documents that decision." `branch` comes
 straight from `sessions.git_branch` -- real for any session recorded
-after the fix above, blank (bucketed as Unattributed, per #41's own
+after the fix above, blank (bucketed as Unattributed, per
 rule) for anything recorded before it.
 """
 from . import projects as PROJECTS
@@ -55,13 +55,13 @@ def build_repo_branch(rows, sessions_by_id):
 
     Returns {"repos": [{repo, sessions, calls, tokens, cost, tool_fails,
     delegations, branches: [{branch, sessions, calls, tokens, cost}]}]},
-    sorted by cost descending, Unattributed repo always last (#41 rule);
+    sorted by cost descending, Unattributed repo always last (
     branches within a repo sorted by cost descending, an unknown/blank
     branch bucketed under 'Unattributed' too, applying the SAME rule one
     level down rather than inventing a different label for it.
     """
-    repo_acc = {}   # repo -> {sessions:set, calls, tok, cost}
-    branch_acc = {}  # (repo, branch) -> {sessions:set, calls, tok, cost}
+    repo_acc = {}
+    branch_acc = {}
 
     for r in rows:
         sess = sessions_by_id.get(r["session_id"]) or {}

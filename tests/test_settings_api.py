@@ -30,9 +30,9 @@ with open(CFG, "w") as fh:
 os.environ["LLM_TELEMETRY_CONFIG"] = CFG
 os.environ.pop("XDG_CONFIG_HOME", None)
 
-from llm_telemetry import serve as S      # noqa: E402
-from llm_telemetry import config as C     # noqa: E402
-from llm_telemetry import energy as E     # noqa: E402
+from llm_telemetry import serve as S
+from llm_telemetry import config as C
+from llm_telemetry import energy as E
 
 p = f = 0
 
@@ -104,9 +104,8 @@ try:
     chk(code == 405, "cross-origin preflight is never approved", code)
     chk(open(CFG).read() == before, "no refused request changed the file")
 
-    # Non-loopback client: exercise the handler's guard directly.
     class Fake(S.NoCacheHandler):
-        def __init__(self):  # no socket; only the guard is under test
+        def __init__(self):
             self.client_address = ("192.168.1.50", 5000)
     lan = Fake()
     chk(lan._loopback() is False, "a LAN client is not loopback")
@@ -115,7 +114,6 @@ try:
     lan.client_address = ("::1", 1, 0, 0)
     chk(lan._loopback() is True, "::1 is loopback")
 
-    # End to end: a LAN client's POST is refused and the file is untouched.
     import io
     class LanPost(S.NoCacheHandler):
         def __init__(self, body):

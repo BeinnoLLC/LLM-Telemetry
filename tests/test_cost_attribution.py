@@ -9,7 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from llm_telemetry.cost_attribution import build_attribution, by_cron, by_root, by_source, by_tool  # noqa: E402
+from llm_telemetry.cost_attribution import build_attribution, by_cron, by_root, by_source, by_tool
 
 p = f = 0
 
@@ -28,13 +28,12 @@ def row(session_id, source, cost, inp=1000, outp=500, cread=0):
             "inp": inp, "outp": outp, "cread": cread}
 
 
-# --- by_source ---
 rows = [
     row("s1", "desktop", 1.50),
     row("s2", "desktop", 2.00),
     row("s3", "cron", 0.10),
     row("s4", "cron", 0.20),
-    row("s5", None, 0.05),  # unrecognised/missing source
+    row("s5", None, 0.05),
 ]
 bs = by_source(rows)
 total_range = sum(r["market_value_usd"] for r in rows)
@@ -47,7 +46,6 @@ desktop = next(b for b in bs if b["source"] == "desktop")
 chk(desktop["sessions"] == 2, "desktop bucket counts 2 distinct sessions", desktop["sessions"])
 chk(bs[0]["cost"] >= bs[-1]["cost"], "by_source is sorted by cost descending")
 
-# --- by_root: lonely session is its own root, own==total ---
 sessions_by_id = {
     "root1": {"title": "Root task", "parent_session_id": None},
     "child1": {"title": "Root task · sub", "parent_session_id": "root1"},
@@ -70,14 +68,13 @@ lonely_entry = next(b for b in br if b["id"] == "lonely")
 chk(lonely_entry["own"] == lonely_entry["total"] == 0.50 and lonely_entry["descendants"] == 0,
     "a lonely session with no relations is its own root: own == total, descendants == 0")
 
-# --- by_cron ---
 sessions_cron = {
     "c1": {"title": "nightly-backup"}, "c2": {"title": "nightly-backup"},
     "c3": {"title": "hourly-sync"},
 }
 rows_cron = [
     row("c1", "cron", 0.05), row("c2", "cron", 0.07), row("c3", "cron", 0.01),
-    row("d1", "desktop", 5.0),  # non-cron noise must not leak into by_cron
+    row("d1", "desktop", 5.0),
 ]
 bc = by_cron(rows_cron, sessions_cron)
 nightly = next(b for b in bc if b["name"] == "nightly-backup")
@@ -88,12 +85,10 @@ chk(abs(nightly["monthly_projection"] - nightly["total"]) < 1e-9,
     "the 30-day-window monthly projection equals the observed total for a window that IS 30 days")
 chk(not any("desktop" in str(b) for b in bc), "desktop-source rows never leak into by_cron")
 
-# NEGATIVE CONTROL (ticket's own): no cron sessions in the fixture -> empty.
 bc_empty = by_cron([row("d1", "desktop", 1.0), row("d2", "tui", 2.0)], {"d1": {}, "d2": {}})
 chk(bc_empty == [], "a fixture with zero cron sessions produces an EMPTY by_cron list (not a zero-row placeholder)")
 
-# --- by_tool ---
-rows_for_rate = [row("s1", "desktop", 2.0, inp=1000, outp=1000, cread=0)]  # $2 / 2000 tok = $0.001/tok
+rows_for_rate = [row("s1", "desktop", 2.0, inp=1000, outp=1000, cread=0)]
 tool_rows = [
     {"tool_name": "read_file", "session_id": "s1", "tokens": 30000},
     {"tool_name": "terminal", "session_id": "s1", "tokens": 500},
@@ -106,7 +101,6 @@ chk(abs(rf["cost"] - 31000 * 0.001) < 1e-6,
     f"a large read_file result is priced at the SESSION's own real $/token rate, not a flat/invented tool price (got {rf['cost']})")
 chk(bt[0]["tool"] == "read_file", "by_tool is sorted by cost descending (the expensive 30MB-log tool first)")
 
-# --- build_attribution: whole payload shape ---
 full = build_attribution(rows, sessions_by_id, [])
 chk(set(full.keys()) == {"by_source", "by_root", "by_cron", "by_tool"},
     "build_attribution returns exactly the 4 documented top-level keys", set(full.keys()))

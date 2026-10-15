@@ -16,7 +16,7 @@ os.environ.setdefault("LLM_TELEMETRY_CONFIG", os.path.join(ROOT, "examples", "sa
 os.environ.setdefault("LLM_TELEMETRY_AGENT_HOME", os.path.join(ROOT, "examples", "agent-home"))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-from llm_telemetry import pricing as P  # noqa: E402
+from llm_telemetry import pricing as P
 
 p = f = 0
 
@@ -47,7 +47,6 @@ CAT = {
     P.NOUS_PREFIX + "deepseek/deepseek-v4-pro-0813": NOUS_DS,
     P.NOUS_PREFIX + "openai/gpt-6.1-sol": NOUS_LC,
     P.NOUS_PREFIX + "stepfun/step-3.7-flash:free": {"prompt": "0", "completion": "0"},
-    # Only on Nous: a fuzzy basename match must not hand this to other rows.
     P.NOUS_PREFIX + "nousonly/secret-model": {"prompt": "0.000001", "completion": "0.000001"},
 }
 NOUS_URL = "https://inference-api.nousresearch.com/v1/"

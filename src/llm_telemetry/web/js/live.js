@@ -3,9 +3,9 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmtB, pick, short, stampFreshness, toolColor,
+  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
 } from './palette.js';
-import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
+import { agg, bwRow, current, loeIcon, mk, noLeg, sparkSvg } from './charts.js';
 import {
   REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
@@ -41,11 +41,125 @@ function liveGroupKeyOf(el){
   return null;
 }
 
+// #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
+// alive, calls/tokens in the last 5 minutes, active alerts.
+//
+// The live feed carries CUMULATIVE per-session counters (models[].calls /
+// in_tok / out_tok), not a rate, so throughput is derived client-side: each
+// poll diffs every session against its previous sample and the per-poll
+// deltas land in a 5-minute ring. A session already open at the first sample
+// is a baseline (its history predates the window); one that appears later
+// started inside the window, so its whole count is in-window. Ended sessions
+// simply stop contributing. Profiles are kept apart so a profile tab shows
+// its own throughput and the merged view sums them.
+export const TPUT_WINDOW_S = 300;
+export let tputPrev = null;     // session id -> {c, k}; null until the first sample
+export let tputRing = [];       // [{t, by: {profile: {c, k}}}], oldest first
+function sessTotals(L){
+  let c = 0, k = 0;
+  (L.models || []).forEach(m => { c += +m.calls || 0; k += (+m.in_tok || 0) + (+m.out_tok || 0); });
+  return { c, k };
+}
+export function sampleThroughput(profiles, now){
+  const t = now == null ? Math.floor(Date.now() / 1000) : now;
+  const baseline = tputPrev == null;
+  const next = new Map(), by = {};
+  Object.entries(profiles || {}).forEach(([name, p]) => {
+    let c = 0, k = 0;
+    ((p && p.live) || []).forEach(L => {
+      if (!L || !L.id || next.has(L.id)) return;
+      const cur = sessTotals(L);
+      next.set(L.id, cur);
+      if (baseline) return;
+      const prev = tputPrev.get(L.id) || { c: 0, k: 0 };
+      // max(0, …): a counter that goes backwards is a restart, not negative work.
+      c += Math.max(0, cur.c - prev.c);
+      k += Math.max(0, cur.k - prev.k);
+    });
+    by[name] = { c, k };
+  });
+  tputPrev = next;
+  if (!baseline) tputRing.push({ t, by });
+  tputRing = tputRing.filter(s => t - s.t < TPUT_WINDOW_S);
+  return by;
+}
+// Window totals + per-poll series for one view. `name` is a profile key, or
+// anything not in the ring (the merged 'All' view) to sum every profile.
+export function throughputFor(name, now){
+  const t = now == null ? Math.floor(Date.now() / 1000) : now;
+  const ring = tputRing.filter(s => t - s.t < TPUT_WINDOW_S);
+  const pick = s => {
+    if (name in s.by) return s.by[name];
+    return Object.values(s.by).reduce((a, v) => ({ c: a.c + v.c, k: a.k + v.k }), { c: 0, k: 0 });
+  };
+  const series = ring.map(pick);
+  return {
+    calls: series.reduce((a, v) => a + v.c, 0),
+    tokens: series.reduce((a, v) => a + v.k, 0),
+    series: series.map(v => v.c),
+    // Seconds of history actually held, so a fresh page says "last 40s"
+    // instead of passing 40 seconds of data off as five minutes.
+    span: ring.length ? Math.min(TPUT_WINDOW_S, t - ring[0].t + LIVE_MS / 1000) : 0,
+  };
+}
+// The merged 'All' key (router.js buildAll) carries the merged `live` list but
+// NOT `agents` or `alerts`, so reading them off it would claim "0/0 agents,
+// All clear" while a real profile has critical alerts. For the merged view the
+// two lists are concatenated from the real profiles instead.
+function mergedField(profiles, field){
+  return Object.entries(profiles || {})
+    .filter(([n]) => n !== 'All')
+    .flatMap(([, q]) => (q && q[field]) || []);
+}
+export function liveKpis(p, name, now, profiles){
+  const seen = new Set();
+  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length;
+  const merged = name === 'All' && profiles;
+  const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
+  const alive = agents.filter(a => a && a.state === 'alive').length;
+  const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
+  return {
+    sessions, alive, agents: agents.length,
+    alerts: alerts.length,
+    critical: alerts.filter(a => a && a.severity === 'critical').length,
+    tput: throughputFor(name, now),
+  };
+}
+export function renderLiveKpis(p, name, now, profiles){
+  const box = $('livekpis');
+  if (!box) return null;
+  const k = liveKpis(p, name, now, profiles);
+  const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
+    : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
+  const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
+  const alertsBody = k.alerts
+    ? `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
+       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>`
+    : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
+  const card = (key, label, body) =>
+    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
+  box.innerHTML = [
+    card('sessions', 'Sessions in flight',
+      `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
+    card('agents', 'Agents alive',
+      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
+    card('throughput', 'Calls · tokens',
+      `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
+      + `<div class="lkpi-sub">${win}</div>${spark ? `<div class="lkpi-spark">${spark}</div>` : ''}`),
+    card('alerts', 'Active alerts', alertsBody),
+  ].join('');
+  return k;
+}
+
 export function renderLive(){
   const p = DATA.profiles[current] || {};
+  renderLiveKpis(p, current, undefined, DATA.profiles);
   renderOllama(DATA.ollama);
   renderQueue();
-  renderAgents(p.agents);
+  // The merged All key has no `agents` (see mergedField), which left the
+  // agents card hidden whenever 2+ profiles were on; each row names its profile.
+  renderAgents(current === 'All' ? mergedField(DATA.profiles, 'agents') : p.agents);
   // Deduplicate live sessions by ID — the All tab can merge the same session from
   // two profiles, and the 5s poll can occasionally return duplicates mid-refresh.
   const seen = new Set();
@@ -477,6 +591,12 @@ export async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    // #185: the payload is fresh from here on; record it before the repaint so
+    // a paint error cannot leave the pill claiming an older poll than the data.
+    liveUpdatedAt = Math.floor(Date.now() / 1000);
+    // #184: sample the RAW per-profile slices (no synthetic 'All' key) so a
+    // session is counted once, under the profile that owns it.
+    sampleThroughput(fresh.profiles, liveUpdatedAt);
     // Merge the live slice into each profile in place, then rebuild the
     // synthetic All profile so its merged live list stays correct.
     Object.keys(fresh.profiles).forEach(n => {
@@ -516,10 +636,7 @@ export async function pollLive(){
       ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
       : `<span class="muted">●</span> 0`;
     liveFails = 0;
-    const t = $('livestamp');
-    if (t) t.textContent = 'live · updated ' + new Date().toLocaleTimeString();
-    // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
-    stampFreshness(t, Math.floor(Date.now() / 1000), 'live');
+    tickLiveStamp();
   } catch (e) {
     // Fail quietly: a transient miss must not blank the panel the user is
     // watching. Only a sustained outage is worth reporting.
@@ -539,7 +656,31 @@ export function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 export let liveTimer = null;
+// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
+// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
+// age counts up between polls instead of freezing at the poll time. The
+// base text is rewritten every tick (via dataset.stampBase) because
+// stampFreshness caches the first text it sees — the old code set textContent
+// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+export let liveUpdatedAt = null;
+export function tickLiveStamp(now){
+  const t = $('livestamp');
+  if (!t) return null;
+  if (liveUpdatedAt == null) return null;
+  const at = now == null ? Math.floor(Date.now() / 1000) : now;
+  const age = Math.max(0, at - liveUpdatedAt);
+  t.dataset.stampBase = age < 1 ? 'live · updated just now' : `live · updated ${ago(age)} ago`;
+  // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
+  return stampFreshness(t, liveUpdatedAt, 'live', at);
+}
+// One-second tick so the age is honest even when polling is stalled (a stalled
+// poll never calls tickLiveStamp, so the stamp would otherwise lie at "4s ago").
+export let liveStampTimer = null;
+export function scheduleLiveStampTick(){
+  liveStampTimer = setTimeout(() => { tickLiveStamp(); scheduleLiveStampTick(); }, 1000);
+}
 scheduleLivePoll();
+scheduleLiveStampTick();
 installDrawer();
 installTranscriptModal();
 installSessionFinder();

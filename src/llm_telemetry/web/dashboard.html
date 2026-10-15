@@ -160,11 +160,12 @@ __DASHBOARD_CSS__
       into Live with no explanation of what the other sections hold. Cards carry
       a real stat from the loaded payload, so this answers "what is going on"
       instead of being a menu. -->
+ <!-- Phase 15 (#173): Home IS the live board. The old landing page was a grid
+      of section cards that sat in front of the thing people open the dashboard
+      for; now the live board renders first and the cards survive as a compact
+      "Explore" strip underneath (#178). `#/live` still resolves here — the
+      router aliases it — so old bookmarks and tests keep working. -->
  <div class="view" data-view="Home">
-  <div class="grid-home" id="homecards"></div>
- </div>
-
- <div class="view" data-view="Live">
   <!-- Two columns that END TOGETHER. The session list is unbounded (it grows
        with concurrency) while the charts are fixed-content, so the right column
        used to stop short and leave a dead gap. Capping the row height and
@@ -180,6 +181,11 @@ __DASHBOARD_CSS__
        "what is about to run" is asked before "what is running". Built only
        from real data: per-host waiting depth from the Ollama poller, the live
        session list, and the recent_sessions feed Analytics uses. -->
+  <!-- #181/#182: the four at-a-glance numbers, above everything else on Home —
+       sessions in flight, agents alive, calls/tokens over the last 5 minutes
+       (derived poll-to-poll from the live feed, #184), and active alerts.
+       Painted by renderLiveKpis on every live poll. -->
+  <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
   <div class="card p-4 mb-3" id="qcard" style="position:relative">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
@@ -206,6 +212,18 @@ __DASHBOARD_CSS__
     <div id="livelist" class="flex flex-col gap-2" style="overflow-y:auto;min-height:0;flex:1;padding-right:4px"></div>
    </div>
    <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
+    <!-- P10-08 (#96): agents alive — gateway backends this profile's DB has a
+         heartbeat row for, and how many mid-turn session leases each holds.
+         Hidden entirely when there are no heartbeat rows (older Hermes / a
+         DB never written by a gateway process), same convention as the
+         Cost-attribution card. #183: moved from Flow onto Home, beside the
+         session table; it stacks under the table with the rest of this column
+         when .livegrid goes single-column. Capped and self-scrolling so a large
+         fleet cannot push the charts out of the column. -->
+    <div class="card p-4" id="agentscard" style="flex:0 0 auto;max-height:40%;overflow-y:auto">
+     <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
+     <div id="agentslist"></div>
+    </div>
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">By category</div><div style="flex:1;min-height:0;position:relative"><canvas id="cLiveCat"></canvas></div></div>
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
@@ -218,6 +236,10 @@ __DASHBOARD_CSS__
    </div>
    <div id="ollama" class="olgrid"></div>
   </div>
+  <!-- #178: the former landing cards, demoted to an "Explore" strip below the
+       live board. Still real stats, still real links — just not in the way. -->
+  <div class="lbl mt-4 mb-2.5">Explore</div>
+  <div class="grid-home" id="homecards"></div>
  </div>
 
  <!-- #130: model router per profile — responsibility chart, routing matrix,
@@ -246,15 +268,6 @@ __DASHBOARD_CSS__
     <span class="flowctl" id="flowctl"></span>
    </div>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
-  </div>
-  <!-- P10-08 (#96): agents alive — gateway backends this profile's DB has a
-       heartbeat row for, and how many mid-turn session leases each holds.
-       Hidden entirely when there are no heartbeat rows (older Hermes / a
-       DB never written by a gateway process), same convention as the
-       Cost-attribution card. -->
-  <div class="card p-4 mt-3" id="agentscard">
-   <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
-   <div id="agentslist"></div>
   </div>
  </div>
 

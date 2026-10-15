@@ -20,7 +20,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 PY = sys.executable
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-from llm_telemetry import pricing as P  # noqa: E402
+from llm_telemetry import pricing as P
 
 p = f = 0
 
@@ -34,9 +34,6 @@ def chk(ok, label, extra=None):
         f += 1
 
 
-# --- local-vs-hosted classification matrix (#32's own named acceptance:
-# "Classification tested for: bare IP, localhost, LAN hostname, and a
-# hosted API URL") -- the real price_row() function, no reimplementation ---
 CATALOG = {}
 
 
@@ -64,13 +61,6 @@ lh2 = classify("http://localhost:11434/v1")
 chk(lh2["cost_class"] == "local", "the literal hostname 'localhost' classifies as local", lh2["cost_class"])
 
 lan_host = classify("http://llmstudio1.hazemhagrass.com:11434/v1")
-# A named LAN host is NOT in the default _local_patterns() list (127.0.0.1,
-# localhost, 192.168., 10., 172.) unless configured -- so with the SHIPPED
-# defaults and no config override, a named hostname is correctly NOT
-# recognised as local BY ITS URL. It still resolves to "local" here because
-# the model name itself (qwen3-coder:30b) is in LOCAL_HINTS and is_local()
-# outranks the endpoint match (pricing.py line 408) -- proven separately
-# below with a model NOT in LOCAL_HINTS, which is the real negative case.
 chk(lan_host["cost_class"] == "local",
     "a named LAN hostname still resolves via the MODEL name being a known local model, "
     "independent of whether the endpoint URL itself matched a LAN pattern", lan_host["cost_class"])
@@ -79,29 +69,15 @@ hosted = classify_model("https://api.fireworks.ai/inference/v1", "accounts/firew
 chk(hosted["cost_class"] == "metered", "a real hosted API URL (fireworks.ai) classifies as metered, never local",
     hosted["cost_class"])
 
-# --- Ollama Cloud: hosted, must NEVER be caught by a local pattern even
-# though it's superficially similar to a LAN Ollama host (same port/API
-# shape) -- issue #118's own named regression ---
 cloud = classify_model("https://ollama.com/v1", "deepseek-v4.1-flash")
 chk(cloud["cost_class"] == "metered", "ollama.com (Ollama Cloud) classifies as metered, never local (issue #118)",
     cloud["cost_class"])
 
-# --- the REAL negative case: an unnamed/unknown model over an UNCONFIGURED
-# named LAN hostname, with NO provider slot recorded either, must NOT be
-# classified local -- neither the endpoint, the model name, nor the
-# provider slot gives it away, so it falls through to unknown/hosted
-# rather than silently costing $0.00 (P7-01's own named risk). Provider
-# slot is deliberately "" here (not "custom", which itself defaults to
-# the local class independent of endpoint -- see PROVIDER_CLASS) so this
-# isolates the URL-pattern-matching path specifically. ---
 unnamed = classify_model("http://llmstudio1.hazemhagrass.com:11434/v1", "some-unlisted-model", provider="")
 chk(unnamed["cost_class"] != "local",
     "an UNCONFIGURED named LAN hostname running an UNKNOWN model does NOT silently classify as local -- "
     "local_host_patterns must be configured for it, by design", unnamed["cost_class"])
 
-# --- with a configured LAN hostname pattern, that SAME unnamed-model host
-# now correctly resolves to local (proves the config knob, not just model-
-# name recognition, actually works end-to-end) ---
 _orig_patterns = P._local_patterns
 try:
     P._local_patterns = lambda: ["127.0.0.1", "localhost", "192.168.", "10.", "172.", "llmstudio1.hazemhagrass.com"]
@@ -112,8 +88,6 @@ try:
 finally:
     P._local_patterns = _orig_patterns
 
-# --- inflight(): real fixture DB, real query, real function (#32's own
-# named acceptance: "the inflight() queue count") ---
 with tempfile.TemporaryDirectory() as root:
     home = os.path.join(root, "agent")
     os.makedirs(home, exist_ok=True)
@@ -123,12 +97,11 @@ with tempfile.TemporaryDirectory() as root:
     import time
     now = int(time.time())
     rows = [
-        # (session_id, ended_at, base_url, last_seen_offset_s)
-        ("s_open_recent", None, "http://192.168.1.12:11434/v1", -5),   # in flight: open, seen 5s ago
-        ("s_open_recent2", None, "http://192.168.1.12:11434/v1", -10),  # same host, second in-flight call
-        ("s_open_stale", None, "http://192.168.1.12:11434/v1", -600),  # open but last_seen too old (>90s) -> excluded
-        ("s_closed", now - 30, "http://192.168.1.12:11434/v1", -5),    # ended -> excluded regardless of recency
-        ("s_other_host", None, "http://192.168.1.30:11434/v1", -3),    # a different host, its own bucket
+        ("s_open_recent", None, "http://192.168.1.12:11434/v1", -5),
+        ("s_open_recent2", None, "http://192.168.1.12:11434/v1", -10),
+        ("s_open_stale", None, "http://192.168.1.12:11434/v1", -600),
+        ("s_closed", now - 30, "http://192.168.1.12:11434/v1", -5),
+        ("s_other_host", None, "http://192.168.1.30:11434/v1", -3),
     ]
     for sid, ended, url, offset in rows:
         con.execute("insert into sessions(id, source, started_at, ended_at, title) "
@@ -147,26 +120,12 @@ with tempfile.TemporaryDirectory() as root:
         json.dump({"profiles": [{"name": "default", "home": home}],
                     "reports_dir": os.path.join(root, "r")}, fh)
 
-    # probe_hosts.py reads CFG = _cfg() at MODULE IMPORT TIME, so the config
-    # env var must be set before the module is ever imported -- run it in a
-    # fresh subprocess rather than importing it into this test's own already-
-    # initialised interpreter (which would use whatever config was live at
-    # THIS process's own import time, not the fixture).
     script = (
         "import sys; sys.path.insert(0, %r)\n"
         "from llm_telemetry import probe_hosts as PH\n"
         "import json; print(json.dumps(PH.inflight()))\n"
     ) % os.path.join(ROOT, "src")
     env = {**os.environ, "LLM_TELEMETRY_CONFIG": cfg,
-           # Isolate from any REAL ~/.hermes profiles on this box: resolve_profiles()
-           # treats a non-empty configured "profiles" list as a MODIFIER on
-           # autodiscovery, not a replacement (config.py's own docstring) --
-           # without pointing agent_home at an empty directory, autodiscover_profiles()
-           # would merge in this box's real profiles and leak real production
-           # in-flight data into the test's assertions (caught by a negative
-           # control: disabling inflight()'s own recency/ended_at filters made
-           # real background traffic show up in the result instead of the
-           # test failing cleanly on fixture data alone).
            "LLM_TELEMETRY_AGENT_HOME": os.path.join(root, "empty_agent_home")}
     os.makedirs(env["LLM_TELEMETRY_AGENT_HOME"], exist_ok=True)
     r = subprocess.run([PY, "-c", script], cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)

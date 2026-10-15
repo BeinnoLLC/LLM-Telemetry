@@ -72,7 +72,6 @@ with tempfile.TemporaryDirectory() as root:
     before = sorted((first or {}).get("profiles", {}))
     chk(before == ["default"], "fixture starts with one profile", before)
 
-    # Created AFTER the config was written; the config is not touched.
     make_profile(os.path.join(home, "profiles", "late"), calls=7)
     second = collect(cfg, out)
     after = sorted((second or {}).get("profiles", {}))
@@ -86,7 +85,6 @@ with tempfile.TemporaryDirectory() as root:
                 for r in pr.get("rows", []))
     chk(total == 12, "both profiles' traffic reaches the payload the All view merges", total)
 
-    # P5-04 (#53): a corrupt state.db is reported, not fatal and not silent.
     bad = os.path.join(home, "profiles", "broken")
     os.makedirs(bad)
     with open(os.path.join(bad, "state.db"), "wb") as fh:

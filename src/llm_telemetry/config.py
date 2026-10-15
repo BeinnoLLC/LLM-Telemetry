@@ -67,63 +67,26 @@ class Profile:
 @dataclass
 class Config:
     profiles: list[Profile] = field(default_factory=list)
-    # Inference endpoints to probe. Several URLs may front the SAME physical
-    # box; the probe fingerprints them and merges aliases, so listing every
-    # alias is correct and gives better labelling, not double counting.
     inference_endpoints: list[str] = field(default_factory=list)
-    # Substrings that mark a base_url as self-hosted. RFC1918 ranges cover most
-    # LANs; add your own hostnames here (the author's boxes were once hardcoded,
-    # which silently misclassified everyone else's hosts as remote/billable).
     local_host_patterns: list[str] = field(default_factory=lambda: [
         "127.0.0.1", "localhost", "::1",
         "192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
         "172.2", "172.30.", "172.31.", ".local", ".internal", ".lan",
     ])
-    # str going in at construction time (from JSON/config: dataclass field
-    # types aren't runtime-enforced, so a plain str still works there), Path
-    # from __post_init__ onward -- every real caller after construction sees
-    # a Path (the collectors compose report paths as `reports_dir / x`).
-    # Annotated as Path (not the construction-time str) so every one of
-    # those `/` call sites type-checks; the original plain-`str` annotation
-    # was exactly the kind of thing a type checker flags for free (P3-01,
-    # #31 -- one of the two bugs that motivated adding mypy in the first
-    # place) since the constructor reassigns it to Path unconditionally.
     reports_dir: Path = Path("~/.local/share/llm-telemetry/reports")
-    # Hostnames that resolve publicly but actually front a LAN box. A reverse
-    # proxy on a real domain is still LAN traffic: the bytes never leave the
-    # house, so counting them as metered overstates internet usage. Maps a host
-    # to the LAN endpoint it fronts, which also merges the two into one row
-    # instead of reporting the same machine twice under different names.
-    # Keys are matched against the URL's hostname, exactly.
     endpoint_aliases: dict[str, str] = field(default_factory=dict)
     port: int = 8477
     bind: str = "0.0.0.0"
-    # Used to turn local GPU wattage into a cost figure so self-hosted models
-    # can be compared against metered APIs on the same axis.
-    # The whole power model (P7-02, #66), read by energy.local_rates() and
-    # nowhere else. USD throughout; the old `currency` key was never read by
-    # anything, so it was removed rather than left as a dead setting.
     electricity_rate_kwh: float = 0.047
     gpu_draw_watts: float = 350
     host_overhead_watts: float = 90
-    # P7-05 (#112): refresh intervals, seconds. Read into __DATA__ (build_
-    # dashboard.py) so the running page respects a saved override without
-    # a rebuild; JS falls back to its own hardcoded defaults when these
-    # keys are absent (an older build still works against a newer config).
     live_poll_interval_s: float = 5.0
     analytics_rebuild_interval_s: float = 60.0
-    # Where the agent keeps its profiles (P5-03). Resolved in load():
-    # $LLM_TELEMETRY_AGENT_HOME > this key > ~/.hermes.
     agent_home: str = ""
-    # Profile names to leave out even though they exist on disk (P5-02).
     exclude: list[str] = field(default_factory=list)
-    # How the profile list was arrived at (P5-04): discovered, configured,
-    # excluded and unreadable, each with a reason. Filled by load().
     resolution: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # Path, not str: collectors compose report paths as `reports_dir / x`,
-        # and mkdir here means no collector has to guard against a missing dir.
         self.reports_dir = Path(_expand(str(self.reports_dir)))
         self.reports_dir.mkdir(parents=True, exist_ok=True)
         self.profiles = [
@@ -170,13 +133,20 @@ def autodiscover_profiles(agent_home: str = "~/.hermes") -> list[Profile]:
     """
     home = _expand(agent_home)
     found: list[Profile] = []
-    if os.path.exists(os.path.join(home, "state.db")):
+    has_root_db = os.path.exists(os.path.join(home, "state.db"))
+    if has_root_db:
         found.append(Profile(name="default", home=home))
     pdir = os.path.join(home, "profiles")
     if os.path.isdir(pdir):
         for entry in sorted(os.listdir(pdir)):
             sub = os.path.join(pdir, entry)
             if os.path.exists(os.path.join(sub, "state.db")):
+                # profiles/default/ is a stale stub when the root home
+                # already holds the real state.db — the root IS the
+                # default profile. Shadowing it with an empty DB makes
+                # every collector crash on "no such table: sessions".
+                if entry == "default" and has_root_db:
+                    continue
                 found.append(Profile(name=entry, home=sub))
     return found
 
@@ -252,23 +222,16 @@ def load(path=None):
                 raw = json.load(f)
             src = p
             break
-    # Drop comment keys and unknown fields rather than crashing with a bare
-    # TypeError. A config file is hand-edited: users add "_comment" notes, and
-    # a stale key from an older version must not make the whole tool
-    # unstartable. Unknown keys are reported so a typo is still discoverable.
     known = {f.name for f in fields(Config)}
     unknown = [k for k in raw if k not in known]
     if unknown:
         print(f"config: ignoring unknown key(s) in {src}: "
               f"{', '.join(sorted(unknown))}", file=sys.stderr)
-    # "profiles" absent -> None (discover); present -> honoured, even if [].
     configured = raw.get("profiles") if "profiles" in raw else None
     kwargs = {k: v for k, v in raw.items() if k in known and k != "profiles"}
     cfg = Config(**kwargs)
     cfg.agent_home = resolve_agent_home(raw.get("agent_home"))
     if not os.path.isdir(cfg.agent_home) and configured != []:
-        # An explicit error naming the path, not an empty profile list that
-        # looks like "no usage yet".
         print(f"config: agent home not found: {cfg.agent_home} "
               f"(set LLM_TELEMETRY_AGENT_HOME or agent_home in the config)",
               file=sys.stderr)

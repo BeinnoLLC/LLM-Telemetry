@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory() as root:
 
     msg("s_opus_patch", "patch", now - 3500)
     msg("s_opus_patch", "terminal", now - 3400)
-    msg("s_opus_patch", "patch", now - 3300)  # duplicate tool name -- must dedupe
+    msg("s_opus_patch", "patch", now - 3300)
     msg("s_glm_terminal", "terminal", now - 7100)
     con.commit()
     con.close()

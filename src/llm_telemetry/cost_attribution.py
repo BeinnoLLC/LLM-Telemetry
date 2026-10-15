@@ -8,7 +8,7 @@ it only re-groups the market_value_usd the dashboard already trusts).
 """
 from __future__ import annotations
 
-CRON_DISPLAY_MIN_RUNS = 1  # every cron job with at least one run gets a row
+CRON_DISPLAY_MIN_RUNS = 1
 
 
 def by_source(rows):
@@ -102,9 +102,6 @@ def by_cron(rows, sessions_by_id):
         out.append({
             "name": name, "runs": runs, "total": round(b["cost"], 6),
             "avg": round(avg, 6),
-            # 30-day window IS the projection base — same window ROWS is
-            # already filtered to, so "runs" already means "runs in 30
-            # days" and no separate day-count math is needed here.
             "monthly_projection": round(avg * runs, 6),
         })
     out.sort(key=lambda x: -x["total"])

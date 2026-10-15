@@ -16,9 +16,6 @@ from .bandwidth import estimate_tokens
 
 CFG = EA.CFG
 
-# Same 30-day scope as session_timeline.py's SESSIONS_IN_SCOPE, same
-# MAX_SESSIONS cap reasoning: unbounded history would make this payload
-# grow forever.
 MAX_SESSIONS = 60
 SESSIONS_IN_SCOPE = """
 select id from sessions
@@ -68,28 +65,15 @@ def _session_calls_and_compactions(con, session_id):
     run_start_ts = None
     run_end_ts = None
     run_before = None
-    runs = []  # (start_ts, end_ts, before, after)
+    runs = []
     for role, ts, content, compacted in con.execute(SESSION_MESSAGES, (session_id,)):
         if compacted:
-            # A compacted=1 message is old content already folded into a
-            # compaction summary -- it no longer occupies context, so it
-            # never adds to `running`; it only marks where a compaction
-            # run is happening. `before` is captured the moment the run
-            # starts, i.e. the running total right before anything in
-            # this run was ever added.
             if run_start_ts is None:
                 run_start_ts = ts
                 run_before = running
             run_end_ts = ts
             continue
         if run_start_ts is not None:
-            # The run just ended: everything that grew `running` up to
-            # here was summarized away. The compaction summary message
-            # itself (this row) starts a FRESH context, so the running
-            # total resets rather than keeping the pre-compaction growth
-            # baked in — the collapse IS the observable "after" size the
-            # ticket asks for, captured once this row's own size is
-            # counted (a real compaction summary is not zero bytes).
             running = 0
             running += estimate_tokens(len(content or ""))
             runs.append((run_start_ts, run_end_ts, run_before, running))
@@ -101,9 +85,6 @@ def _session_calls_and_compactions(con, session_id):
         if role == "assistant":
             calls.append((ts, running))
     if run_start_ts is not None:
-        # Session ends mid-compaction-run (no message after it yet) --
-        # still record the run with `after` equal to the pre-run baseline
-        # (nothing has grown back yet), rather than dropping it silently.
         runs.append((run_start_ts, run_end_ts, run_before, run_before))
     compactions = [(start, before, after) for start, _end, before, after in runs]
     return calls, compactions
@@ -120,9 +101,6 @@ def build_context_payload(max_sessions=MAX_SESSIONS, now=None):
         import os
         import sqlite3
         if not os.path.exists(db) or EA.unreadable(db):
-            # Same guard as the main build() loop: a corrupt/permission-
-            # denied DB is reported there and skipped here, never crashes
-            # the whole collector run.
             continue
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:

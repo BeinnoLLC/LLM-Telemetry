@@ -128,12 +128,18 @@ export function setHash(v){
   if (location.hash !== want) location.hash = want;
 }
 
+// #173: retired slugs that must keep resolving. 'live' was its own view until
+// Home became the live board; bookmarks, tests and the README all say #/live.
+export const VIEW_ALIASES = { live: 'Home' };
+
 // Resolve a hash to a real view name, case-insensitively, falling back to the
 // stored view then Home. An unknown slug must not blank the page.
 export function viewFromHash(){
   let raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0].trim();
   try { raw = decodeURIComponent(raw); } catch { /* malformed escape: match as-is */ }
   if (!raw) return null;
+  const alias = VIEW_ALIASES[slugOf(raw)];
+  if (alias) return alias;
   const names = [...document.querySelectorAll('.view')].map(el => el.dataset.view);
   return names.find(nm => slugOf(nm) === slugOf(raw)) || null;
 }
@@ -552,7 +558,9 @@ export const NAV_ICONS = {
 // A view with no entry falls into the trailing "More" group rather than
 // disappearing — a new view must never be silently missing from the nav.
 export const NAV_GROUPS = [
-  {name:'Overview',  views:['Home', 'Live', 'Flow', 'Router', 'Quota']},
+  // #173: 'Live' is gone from the rail — Home IS the live board. `#/live`
+  // still routes there via VIEW_ALIASES.
+  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Quota']},
   {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
@@ -615,7 +623,8 @@ export function navSync(){
   });
   const p = (typeof DATA !== 'undefined' && DATA.profiles) ? (DATA.profiles[current] || {}) : {};
   const counts = {
-    Live: (p.live || []).length,
+    // #173: the live-session count badges Home now that Home is the live board.
+    Home: (p.live || []).length,
     // Failures are the number worth surfacing on Health; 0 stays hidden so the
     // rail does not shout when nothing is wrong.
     Health: ((DATA && DATA.errors) || []).length
@@ -741,6 +750,9 @@ export function views(){
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){
+  // #173: retired view names (a stale localStorage value, an old test, an
+  // onclick string) land on their replacement instead of hiding every panel.
+  v = VIEW_ALIASES[slugOf(v)] || v;
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
   document.querySelectorAll('[data-vtab]').forEach(b=>{
@@ -902,20 +914,47 @@ export function pvToggle(n){
   tabs(); pick(current);
 }
 export function tabs(){
-  // #121 / #150: segmented control. One framed group; each profile is a
-  // chip that is always visible. The profile's stable hue rides in as the
-  // --h custom property and ALL on/off styling is CSS-owned (no inline
-  // style ternaries to stomp or get stomped — #126 regression class).
-  $('tabs').innerHTML=Object.keys(PV_ALL)
-    .map(n=>{
-      const h = profileHue(n);
-      const off = pvOff(n);
-      return `<button data-tab="${n}" data-off="${off?1:0}" style="--h:${h}"`
-           + ` onclick="pvToggle('${n}')"`
-           + ` oncontextmenu="pvMenu(event,'${esc(n)}')"`
-           + ` title="${off?'Off — click to turn on':'On — click to turn off'}" `
-           + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}<span>${n}</span></button>`;
-    }).join('');
+  // #121 / #150 / redesign: single "Fleet" label + person icons for profiles,
+  // robot icon + live badge for the bots pill. Flat DOM (no wrappers) keeps
+  // `#tabs > button` selection valid for tests & context menus. "kind" comes
+  // from the collector; legacy payloads fall back to name heuristic.
+  const kindOf = n => {
+    const k = PV_ALL[n] && PV_ALL[n].kind;
+    if (k === 'bot' || k === 'profile') return k;
+    return (n.includes('bot') || n.startsWith('pv-')) ? 'bot' : 'profile';
+  };
+  const profileChip = n => {
+    const h = profileHue(n);
+    const off = pvOff(n);
+    const icon = `<span class="tabkind" aria-hidden="true" title="profile">👤</span>`;
+    return `<button data-tab="${n}" data-off="${off?1:0}" data-kind="profile" style="--h:${h}"`
+         + ` onclick="pvToggle('${n}')"`
+         + ` oncontextmenu="pvMenu(event,'${esc(n)}')"` 
+         + ` title="${off?'Off — click to turn on':'On — click to turn off'}" `
+         + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}${icon}<span>${n}</span></button>`;
+  };
+  const botsChip = () => {
+    const bots = Object.keys(PV_ALL).filter(n => kindOf(n) === 'bot');
+    if (!bots.length) return '';
+    const botsOn = bots.filter(n => !pvOff(n)).length;
+    const icon = `<span class="tabkind" aria-hidden="true" title="bots">⚙</span>`;
+    const badge = botsOn > 0
+      ? `<span style="font-size:var(--fs-xs);background:hsl(var(--h) 80% 65%);color:hsl(var(--h) 60% 15%);padding:1px 6px;border-radius:6px;margin-left:2px">${botsOn}</span>`
+      : '';
+    const h = 200;
+    const allOff = botsOn === 0;
+    return `<span class="tabdivider" aria-hidden="true" style="margin-left:auto"></span>`
+         + `<button data-tab="__bots__" data-off="${allOff?1:0}" style="--h:${h}" `
+         + `onclick="event.stopPropagation();botsMenu(event)" `
+         + `title="${allOff?'All bots off — click to show':'Bots on — click to manage'}" `
+         + `class="tabseg flex items-center gap-1">${icon}<span>Bots</span>${badge}</button>`;
+  };
+  const names = Object.keys(PV_ALL);
+  const profiles = names.filter(n => kindOf(n) === 'profile');
+  $('tabs').innerHTML =
+    `<span class="tabgrouplabel">Fleet</span>`
+    + profiles.map(profileChip).join('')
+    + botsChip();
   // a compact "N/M on" readout, inside the frame (right end, after a
   // hairline divider) so the merge's extent is stated, not implied
   const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
@@ -940,6 +979,22 @@ export function pvMenu(ev, n){
     return;
   }
   pvToggle(n);
+}
+// Click the Bots chip to open a menu for toggling bots on/off as a group.
+export function botsMenu(ev){
+  ev.preventDefault();
+  const bots = Object.keys(PV_ALL).filter(n => {
+    const kind = PV_ALL[n].kind;
+    if (kind === 'bot') return true;
+    if (kind === 'profile') return false;
+    return (n.includes('bot') || n.startsWith('pv-'));
+  });
+  const botsOn = bots.filter(n => !pvOff(n));
+  // If some are off, toggle them all on. If all are on, toggle them all off.
+  const shouldBeOn = botsOn.length === 0;
+  bots.forEach(n => pvSet(n, shouldBeOn));
+  DATA.profiles = pvFilter();
+  tabs(); pick(current);
 }
 installAll();
 // Visibility filter (#121): PV_ALL captures the full set BEFORE removal, so

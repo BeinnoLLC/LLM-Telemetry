@@ -27,8 +27,6 @@ import time
 from . import failures as F
 from .schema import stamp
 
-# A preview long enough to recognise a line, short enough that 5k of them stay
-# under a megabyte. Measured: 120 chars -> ~0.83 MB at the default cap.
 PREVIEW = 120
 DEFAULT_WINDOW_H = 24
 DEFAULT_CAP = 5000
@@ -44,7 +42,6 @@ limit ?
 """
 EVENT_COLS = "ts session title role tool model preview".split()
 
-# Facets over the WHOLE window, not the capped slice.
 FACETS = {
     "tool": "select coalesce(tool_name,''), count(*) from messages "
             "where timestamp > ? and coalesce(tool_name,'') <> '' group by 1 order by 2 desc",
@@ -108,8 +105,6 @@ def collect(conn, window_h=DEFAULT_WINDOW_H, cap=DEFAULT_CAP, profile=None):
     for r in rows:
         d = dict(zip(EVENT_COLS, r))
         d["ts"] = float(d["ts"] or 0)
-        # No severity is invented for message rows: the table has no outcome
-        # column, so everything here is 'info' and errors come from errors.log.
         d["level"] = "info"
         d["kind"] = ""
         events.append(d)
@@ -138,8 +133,6 @@ def collect(conn, window_h=DEFAULT_WINDOW_H, cap=DEFAULT_CAP, profile=None):
     return {
         "events": events,
         "window_h": window_h,
-        # events_total counts the window; len(events) is what shipped. The UI
-        # must say "showing X of Y" rather than implying the cap is the truth.
         "events_total": total + len(errs),
         "events_shown": len(events),
         "errors_shown": len(errs),

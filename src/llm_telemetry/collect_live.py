@@ -19,8 +19,6 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Plain import now that the module is `collect_analytics`, not the old
-# hyphenated `export-analytics.py` that needed a spec-from-file workaround.
 from . import collect_analytics as EA
 from .schema import stamp
 from .schema_check import check
@@ -32,16 +30,9 @@ CFG = EA.CFG
 
 THIS_HOST = socket.gethostname()
 
-# P10-08 (#96): backend heartbeats + mid-turn leases. Simple selects, cheap
-# enough for the 5s poll.
 GATEWAY_HEARTBEATS = "select backend_id, pid, started_at, last_heartbeat, profile, host from gateway_heartbeats"
 SESSION_TURN_LEASES = "select conversation_id, holder, acquired_at, expires_at from session_turn_leases"
 
-# The full export's RECENT_TOOLS scans all 317k messages (157 ms on the 1.2 GB
-# default profile DB) — far too slow to poll every few seconds. Scoping it to currently
-# live sessions uses idx_messages_session instead of a full scan, and is also
-# the more honest number for a live panel: tools used by the work running now,
-# not by sessions that ended an hour ago.
 LIVE_TOOLS = """
 select m.tool_name, count(*) from messages m
 where m.session_id in (
@@ -53,11 +44,6 @@ where m.session_id in (
 group by m.tool_name order by 2 desc limit 14
 """
 
-# Live log tail — recent tool calls + assistant messages across all active sessions,
-# for the log drawer. Indexed on session_id so it stays fast even on the 1.2 GB DB.
-# Every model a live session has touched, per task. The row used to show only
-# "N models used" -- a count with no names, and one that silently ignored helper
-# tasks (compression, approval, title generation...) which also burn tokens.
 LIVE_MODELS = """
 select u.session_id, u.model, coalesce(nullif(u.task,''),'main'),
        coalesce(sum(u.api_call_count),0),
@@ -110,10 +96,6 @@ order by m.timestamp desc limit 80
 """
 LIVE_LOGS_COLS = "ts title role tool preview".split()
 
-# Sessions that ended within the last 90 seconds: two missed 5s polls of
-# margin without stretching so wide that an old close is mistaken for a
-# fresh completion. The dashboard diffs consecutive polls itself, so this
-# just needs to guarantee an ended session appears in at least one payload.
 RECENT_ENDED = """
 select id, title, ended_at, end_reason
 from sessions
@@ -122,10 +104,6 @@ where ended_at is not null
 order by ended_at desc
 """
 
-# Delegated child runs (#90) that finished in the same 90s window. state is
-# the delegation-level outcome ('completed'/'error'); good enough for a
-# completion tone -- the per-child status inside result_json is only needed
-# for the Health tab's failure-rate breakdown, not for "did something finish".
 RECENT_DELEGATIONS = """
 select delegation_id, state, completed_at
 from async_delegations
@@ -149,8 +127,6 @@ def tail_errors(limit=60, window_s=7200):
         if not path or not os.path.exists(path):
             continue
         try:
-            # Read only the tail: errors.log grows unbounded and re-reading it
-            # whole every 5s would dominate the export's runtime.
             with open(path, "rb") as fh:
                 fh.seek(0, os.SEEK_END)
                 size = fh.tell()
@@ -162,12 +138,7 @@ def tail_errors(limit=60, window_s=7200):
             kind = F.classify(line)
             if not kind:
                 continue
-            # classify() alone is too loose for a live feed: an LSP lint
-            # "timed out" WARNING matches "timeout" but is not a model failure.
-            # Require evidence the line is about a model call.
             has_model = bool(F.MODEL_ONLY.search(line))
-            # A bare 3-digit number is not a status code — an LSP port or a
-            # duration matches too. Require it to be introduced as a status.
             has_http = bool(re.search(
                 r"(?:HTTP|status|code|Error code:)\s*[:=]?\s*(4\d\d|5\d\d)\b",
                 line, re.I))
@@ -219,25 +190,14 @@ def read_ollama():
 def build_live():
     out = {
         "generated": datetime.datetime.now().isoformat(timespec="seconds"),
-        # Emitted so the UI can label bandwidth as an estimate and state the
-        # factor it used, instead of hardcoding a copy that silently diverges
-        # from the collector's.
         "bytes_per_token": BYTES_PER_TOKEN,
         "profiles": {},
-        # Failures are cross-profile and come from log files, not the DB, so
-        # they sit at the top level rather than under a single profile.
         "errors": tail_errors(),
-        # Ollama host telemetry, collected out-of-band by probe_hosts.py on a
-        # slower timer. Reading the cached file keeps this 5s export free of
-        # network I/O — probing four endpoints inline (two over HTTPS at ~450ms)
-        # would stall the whole live panel behind the slowest GPU box.
         "ollama": read_ollama(),
     }
     for name, db in EA.PROFILES.items():
         if not os.path.exists(db):
             continue
-        # Read-only, same as the full export: a polling job must never be able
-        # to write to the user's session store.
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
             active = con.execute(EA.ACTIVE).fetchone()[0]
@@ -250,12 +210,8 @@ def build_live():
                 L["switched"] = bool(
                     L["model"] and L["init_model"] and L["model"] != L["init_model"]
                 )
-                # Estimated wire bytes, filled in below from LIVE_BYTES.
                 L["up_bytes"] = L["down_bytes"] = 0
                 L["lan_up_bytes"] = L["lan_down_bytes"] = 0
-            # Bandwidth per (session, endpoint), classified here rather than in
-            # SQL so config.local_host_patterns stays the single source of truth
-            # for what counts as LAN.
             by_id = {L["id"]: L for L in live}
             for sid, url, up_tok, down_tok in con.execute(EA.LIVE_BYTES):
                 L = by_id.get(sid)
@@ -271,8 +227,6 @@ def build_live():
                     L["up_bytes"] += up
                     L["down_bytes"] += down
             for L in live:
-                # True only when EVERY byte stayed on the LAN, so a mixed session
-                # is never labelled "not metered".
                 L["bw_local"] = (L["up_bytes"] + L["down_bytes"]) == 0 and (
                     L["lan_up_bytes"] + L["lan_down_bytes"]) > 0
             models = fold_models(con.execute(LIVE_MODELS).fetchall())
@@ -292,8 +246,6 @@ def build_live():
                     for did, state, completed_at in con.execute(RECENT_DELEGATIONS)
                 ]
             except sqlite3.OperationalError as e:
-                # Same guard as delegations.py: older Hermes builds have no
-                # async_delegations table at all. That is not an error.
                 if "no such table" not in str(e).lower():
                     raise
                 recent_delegations = []
@@ -309,8 +261,6 @@ def build_live():
                 ]
                 agents = agents_alive.build_agents(heartbeats, leases, this_host=THIS_HOST)
             except sqlite3.OperationalError as e:
-                # Older Hermes builds may predate these two tables — absent,
-                # not an error, same convention as async_delegations above.
                 if "no such table" not in str(e).lower():
                     raise
                 agents = []
@@ -333,11 +283,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         out_path = sys.argv[1]
     data = build_live()
-    # Never write a payload the page cannot read (P1-02, #24).
     check("live", data)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    # Atomic replace: the dashboard polls this file every few seconds and must
-    # never read a half-written JSON document.
     tmp = out_path + ".tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, separators=(",", ":"), default=str)

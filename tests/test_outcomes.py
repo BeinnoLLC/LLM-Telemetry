@@ -44,11 +44,11 @@ def make_home(home, include_null_row=True):
 
     now = int(time.time())
     day1 = now - 3600
-    day2 = now - 90000  # a different calendar day for the reap trend, if TZ allows
+    day2 = now - 90000
 
     insert_session(con, "s_ok1", "desktop", day1, "agent_close")
     insert_session(con, "s_cron1", "cron", day1, "cron_complete")
-    insert_session(con, "s_cron_bad", "cron", day1, "agent_close")  # cron NOT ending cron_complete — the alarm case
+    insert_session(con, "s_cron_bad", "cron", day1, "agent_close")
     insert_session(con, "s_reap1", "desktop", day1, "startup_orphan_reap")
     insert_session(con, "s_reap2", "desktop", day2, "ws_orphan_reap")
     if include_null_row:
@@ -109,9 +109,6 @@ reap_trend = (outcomes or {}).get("reap_trend", [])
 chk(sum(t["n"] for t in reap_trend) == 2,
     "the reap trend sums to 2 total reaps across whatever day-buckets they fall in", reap_trend)
 
-# Negative-control setup lives in the ticket's own acceptance criterion:
-# removing the NULL row must make the silent bucket disappear (empty), not
-# secretly move that session into some other bucket.
 data2 = run_case(include_null_row=False)
 outcomes2 = ((data2 or {}).get("profiles", {}).get("default") or {}).get("outcomes")
 chk((outcomes2 or {}).get("silent") == [],

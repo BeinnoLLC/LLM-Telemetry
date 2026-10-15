@@ -18,17 +18,12 @@ from .config import get as _cfg
 
 CFG = _cfg()
 
-# Each profile has its own log tree; the default profile logs at the root.
 LOGS = {p.name: p.errors_log for p in CFG.live_profiles()}
 
-# `provider=x model=y` appears on the structured failure lines.
 KV = re.compile(r"provider=([\w.:-]+)\s+model=([^\s|]+)")
-# Fall back to a bare `model=` when the provider is absent.
 MODEL_ONLY = re.compile(r"model=([^\s|]+)")
 TS = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})")
 
-# Classify the failure. Order matters: check specific causes before generic
-# ones, because a rate-limit line also contains the word "error".
 KINDS = [
     ("rate_limit", ("429", "rate limit", "usage limit", "out of capacity", "quota")),
     ("overloaded", ("overloaded", "503", "502", "capacity")),
@@ -57,7 +52,7 @@ def parse(path: str, since_days: int = 7) -> tuple[dict, list]:
     cutoff = time.time() - since_days * 86400
     try:
         with open(path, errors="replace") as fh:
-            lines = fh.readlines()[-60000:]   # bound the work on a large log
+            lines = fh.readlines()[-60000:]
     except OSError:
         return stats, events
 
@@ -65,7 +60,6 @@ def parse(path: str, since_days: int = 7) -> tuple[dict, list]:
         kind = classify(line)
         if not kind:
             continue
-        # only count real API failures, not lint/lsp noise
         if "API call failed" not in line and "auxiliary" not in line.lower() \
            and "unhealthy" not in line.lower():
             continue
@@ -92,7 +86,6 @@ def parse(path: str, since_days: int = 7) -> tuple[dict, list]:
         s[kind] = s.get(kind, 0) + 1
         s["total"] += 1
 
-        # Trim the message down to the part that identifies the failure.
         msg = line.strip()
         for marker in ("HTTP ", "Error code: ", "error_type="):
             i = msg.find(marker)
@@ -101,9 +94,6 @@ def parse(path: str, since_days: int = 7) -> tuple[dict, list]:
                 break
         msg = msg[:150]
 
-        # Keep EVERY failure event, not just the newest per model: the Health
-        # panel shows individual incidents, so one-row-per-model would collapse
-        # a burst of twenty rate-limits into a single line and hide the burst.
         events.append({"model": model, "when": ts, "kind": kind, "msg": msg})
 
         if ts >= s["last"]:

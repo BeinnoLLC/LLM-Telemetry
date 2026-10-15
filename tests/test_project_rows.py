@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """collect_analytics: `project` dimension on the ROWS payload,
-including subagent/cron parent-chain inheritance (P4-02 #39, P4-03 #40).
+including subagent/cron parent-chain inheritance (P4-02
 
 Exercises the actual ROWS + SESSION_IDENTITY SQL against a temp sqlite
 fixture (same pattern as test_lifecycle_sql.py) through the real
@@ -68,41 +68,30 @@ def usage(sid, model="gpt-x", provider="openai", calls=1):
         (sid, model, provider, "", "main", calls, 100, 50, 0, 0, 0, 0.01, 0.01, NOW))
 
 
-# The ticket's own scenario: 25 cron-job sessions with timestamped titles
-# all doing the same model/provider work — must collapse to one project.
 for i in range(25):
     sid = f"cron{i}"
     sess(sid, title=f"ahwa-health-gate · run {i}")
     usage(sid, model="gpt-x", provider="openai")
 
-# A real project session, resolved by cwd (no title).
 sess("s_nowinv", title=None, cwd="/srv/workspace/nowinv")
 usage("s_nowinv", model="gpt-x", provider="openai")
 
-# An unattributed session — no title, denylisted cwd, no parent.
 sess("s_unattr", title=None, cwd="/opt")
 usage("s_unattr", model="gpt-x", provider="openai")
 
-# P4-03: a direct subagent (no title/cwd of its own) inherits its parent's
-# project via parent_session_id.
 sess("s_root", title="Nowinv", cwd=None)
 sess("s_sub1", title=None, cwd=None, parent="s_root")
 usage("s_sub1", model="gpt-x", provider="openai")
 
-# P4-03 acceptance: a 3-deep subagent chain resolves to the root project.
 sess("chain_root", title="ahwa", cwd=None)
 sess("chain_mid", title=None, cwd=None, parent="chain_root")
 sess("chain_leaf", title=None, cwd=None, parent="chain_mid")
 usage("chain_leaf", model="gpt-x", provider="openai")
 
-# P4-03 acceptance: a cyclic parent link terminates and returns None
-# instead of recursing forever.
 sess("cyc_a", title=None, cwd=None, parent="cyc_b")
 sess("cyc_b", title=None, cwd=None, parent="cyc_a")
 usage("cyc_a", model="gpt-x", provider="openai")
 
-# A subagent whose parent is itself unattributed stays unattributed — no
-# fallback invention.
 sess("orphan_parent", title=None, cwd="/tmp")
 sess("orphan_child", title=None, cwd=None, parent="orphan_parent")
 usage("orphan_child", model="gpt-x", provider="openai")
@@ -139,8 +128,6 @@ chk(by_sid["cyc_a"]["project"] is None,
 chk(by_sid["orphan_child"]["project"] is None,
     "a subagent whose parent is itself unattributed stays unattributed, no invented fallback")
 
-# Direct project_of_session() checks (depth cap / missing-row edge cases
-# the row-grain test above can't easily stage).
 sessions_by_id = {
     "a": {"title": None, "cwd": None, "parent_session_id": "missing"},
 }

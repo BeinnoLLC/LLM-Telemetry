@@ -48,12 +48,9 @@ def make_home(home):
     con.executescript(open(os.path.join(ROOT, "tests", "fixtures", "state_schema.sql")).read())
 
     now = int(time.time())
-    recent = now - 3600           # 1 hour ago — well inside the 30-day window
-    old = now - (60 * 86400)      # 60 days ago — outside the window on its own
+    recent = now - 3600
+    old = now - (60 * 86400)
 
-    # Root with two children, one of which failed. Actual cost known on the
-    # root and one child; the other child only has an estimate (cost_is_actual
-    # must reflect that per-node, not get smeared across the tree).
     insert_session(con, "root1", None, recent - 100, recent + 500, "completed",
                     "claude-opus", act_cost=1.00, est_cost=1.10)
     insert_session(con, "child1", "root1", recent, recent + 200, "completed",
@@ -61,19 +58,14 @@ def make_home(home):
     insert_session(con, "child2", "root1", recent + 50, recent + 300, "error: rate_limited",
                     "claude-haiku", act_cost=None, est_cost=0.05)
 
-    # A session with NO relation at all — own root, zero children.
     insert_session(con, "lonely1", None, recent - 10, recent + 10, "completed",
                     "gpt-5", act_cost=0.02, est_cost=0.02)
 
-    # Grandparent OUTSIDE the 30-day window, but its child is recent — the
-    # parent must still surface (the whole point of the OR-parent clause).
     insert_session(con, "oldparent1", None, old, old + 60, "completed",
                     "claude-opus", act_cost=5.00, est_cost=5.00)
     insert_session(con, "recentchild1", "oldparent1", recent, recent + 60, "completed",
                     "claude-haiku", act_cost=0.10, est_cost=0.10)
 
-    # A currently-running session (ended_at NULL) must not be dropped and
-    # must report "(running)", not "(none)".
     insert_session(con, "running1", None, recent, None, None, "claude-opus",
                     act_cost=None, est_cost=0.50)
 
@@ -119,8 +111,6 @@ with tempfile.TemporaryDirectory() as root_dir:
         "root1's failed_child_count is 1 (child2's end_reason contains 'error')",
         root.get("failed_child_count"))
 
-    # Cost roll-up: root's OWN actual cost (1.00) + child1's actual (0.20) +
-    # child2's cost falls back to its ESTIMATE (0.05) since it has no actual.
     expected_cost = round(1.00 + 0.20 + 0.05, 6)
     chk(abs(root.get("cost", -1) - expected_cost) < 1e-6,
         f"root1's rolled-up cost sums itself + every descendant ({expected_cost})",
@@ -131,8 +121,6 @@ with tempfile.TemporaryDirectory() as root_dir:
     chk(kids.get("child1", {}).get("cost_is_actual") is True,
         "child1's cost_is_actual is True (it had a real actual_cost_usd)")
 
-    # The out-of-window grandparent must still surface because its child is
-    # recent — this is the actual "OR parent in range" behaviour under test.
     chk("oldparent1" in by_id,
         "a 60-day-old parent still appears because its child is recent")
     old_node = by_id.get("oldparent1") or {}

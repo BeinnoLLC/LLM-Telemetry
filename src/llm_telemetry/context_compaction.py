@@ -7,14 +7,8 @@ session assistant-call token samples and the session's own
 """
 from __future__ import annotations
 
-# A compaction that recovers less than this fraction of the pre-compaction
-# context is "ineffective" -- same semantics Hermes's own
-# `compression_ineffective_count` uses, so the two never disagree.
 INEFFECTIVE_YIELD_THRESHOLD = 0.10
 
-# Downsample any session's series to at most this many points before it
-# leaves this module -- the payload asserts on this cap directly (ticket's
-# own requirement), so a 10,000-call session never balloons the page.
 MAX_SERIES_POINTS = 120
 
 
@@ -73,9 +67,6 @@ def build_reasoning_by_model(usage_rows):
         reasoning = int(r.get("reasoning_tokens") or 0)
         output = int(r.get("output_tokens") or 0)
         if reasoning == 0:
-            # Nothing to report for a model that never used reasoning
-            # tokens -- showing a permanent 0% row for every non-reasoning
-            # model would drown out the ones that matter.
             continue
         share = (reasoning / output) if output else 0.0
         out.append({

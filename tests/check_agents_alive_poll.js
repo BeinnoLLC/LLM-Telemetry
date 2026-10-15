@@ -14,6 +14,10 @@ let p = 0, f = 0;
 const chk = (c, m) => { c ? (p++, console.log('  ok  ' + m)) : (f++, console.log('FAIL ' + m)); };
 
 let currentLive = JSON.parse(JSON.stringify(live));
+// The first poll's payload carries NO agents (an older-Hermes shape). The
+// fixture does carry agents, so strip them here rather than relying on the
+// merged 'All' view dropping them — it used to, which was a bug (#183).
+Object.values(currentLive.profiles).forEach(q => { delete q.agents; });
 
 const dom = new JSDOM(html, {
   runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/dashboard.html',
