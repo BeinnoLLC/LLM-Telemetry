@@ -19,6 +19,7 @@ from pathlib import Path
 from .collect_pi_agents import ingest_pi_agents, discover_pi_agents
 from .collect_hermes_profiles import ingest_hermes_profiles, discover_hermes_profiles
 from .analytics_store import get_store
+from .detect_orchestration import resolve_orchestration_edges
 
 
 def main(argv=None):
@@ -98,6 +99,11 @@ def main(argv=None):
             logger.info(f"Ingested {hermes_events} Hermes session events")
         else:
             logger.warning("No Hermes profiles found in ~/.hermes/")
+
+    # Resolve orchestration edges
+    logger.info("Resolving orchestration edges...")
+    edges = resolve_orchestration_edges(store, verbose=args.verbose)
+    logger.info(f"Resolved {edges} orchestration edges")
 
     # Build result
     result = {
