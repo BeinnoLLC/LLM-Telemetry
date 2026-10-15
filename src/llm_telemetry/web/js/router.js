@@ -914,45 +914,47 @@ export function pvToggle(n){
   tabs(); pick(current);
 }
 export function tabs(){
-  // #121 / #150: segmented control, re-grouped (#188) into two labelled
-  // sections — interactive Profiles and headless Bots — so a dozen tabs
-  // still read at a glance. The profile's stable hue rides in as the --h
-  // custom property and ALL on/off styling is CSS-owned (no inline style
-  // ternaries to stomp or get stomped — #126 regression class). "kind"
-  // arrives from the collector payload; legacy payloads without it fall
-  // back to the same name heuristic the collector uses.
+  // #121 / #150 / redesign: single "Fleet" label + person icons for profiles,
+  // robot icon + live badge for the bots pill. Flat DOM (no wrappers) keeps
+  // `#tabs > button` selection valid for tests & context menus. "kind" comes
+  // from the collector; legacy payloads fall back to name heuristic.
   const kindOf = n => {
     const k = PV_ALL[n] && PV_ALL[n].kind;
     if (k === 'bot' || k === 'profile') return k;
     return (n.includes('bot') || n.startsWith('pv-')) ? 'bot' : 'profile';
   };
-  const chip = n => {
+  const profileChip = n => {
     const h = profileHue(n);
     const off = pvOff(n);
-    const kind = kindOf(n);
-    const label = kind === 'bot'
-      ? `<span class="tabkind" aria-hidden="true" title="bot — runs from cron / platform messages, no human at the wheel">&#9881;</span>`
-      : '';
-    return `<button data-tab="${n}" data-off="${off?1:0}" data-kind="${kind}" style="--h:${h}"`
+    const icon = `<span class="tabkind" aria-hidden="true" title="profile">👤</span>`;
+    return `<button data-tab="${n}" data-off="${off?1:0}" data-kind="profile" style="--h:${h}"`
          + ` onclick="pvToggle('${n}')"`
-         + ` oncontextmenu="pvMenu(event,'${esc(n)}')"`
+         + ` oncontextmenu="pvMenu(event,'${esc(n)}')"` 
          + ` title="${off?'Off — click to turn on':'On — click to turn off'}" `
-         + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}${label}<span>${n}</span></button>`;
+         + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}${icon}<span>${n}</span></button>`;
+  };
+  const botsChip = () => {
+    const bots = Object.keys(PV_ALL).filter(n => kindOf(n) === 'bot');
+    if (!bots.length) return '';
+    const botsOn = bots.filter(n => !pvOff(n)).length;
+    const icon = `<span class="tabkind" aria-hidden="true" title="bots">⚙</span>`;
+    const badge = botsOn > 0
+      ? `<span style="font-size:var(--fs-xs);background:hsl(var(--h) 80% 65%);color:hsl(var(--h) 60% 15%);padding:1px 6px;border-radius:6px;margin-left:2px">${botsOn}</span>`
+      : '';
+    const h = 200;
+    const allOff = botsOn === 0;
+    return `<span class="tabdivider" aria-hidden="true" style="margin-left:auto"></span>`
+         + `<button data-tab="__bots__" data-off="${allOff?1:0}" style="--h:${h}" `
+         + `onclick="event.stopPropagation();botsMenu(event)" `
+         + `title="${allOff?'All bots off — click to show':'Bots on — click to manage'}" `
+         + `class="tabseg flex items-center gap-1">${icon}<span>Bots</span>${badge}</button>`;
   };
   const names = Object.keys(PV_ALL);
   const profiles = names.filter(n => kindOf(n) === 'profile');
-  const bots = names.filter(n => kindOf(n) === 'bot');
-  // Flat sequence, not nested wrappers: labels/divider are plain spans
-  // BETWEEN the buttons, which keeps `#tabs > button` selection (tests,
-  // pvMenu) valid and the frame's flexbox ordering identical.
-  const label = title => `<span class="tabgrouplabel">${title}</span>`;
-  const section = (title, list) => list.length
-    ? label(title) + list.map(chip).join('')
-    : '';
   $('tabs').innerHTML =
-    section('Profiles', profiles)
-    + (profiles.length && bots.length ? `<span class="tabdivider" aria-hidden="true"></span>` : '')
-    + section('Bots', bots);
+    `<span class="tabgrouplabel">Fleet</span>`
+    + profiles.map(profileChip).join('')
+    + botsChip();
   // a compact "N/M on" readout, inside the frame (right end, after a
   // hairline divider) so the merge's extent is stated, not implied
   const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
@@ -977,6 +979,22 @@ export function pvMenu(ev, n){
     return;
   }
   pvToggle(n);
+}
+// Click the Bots chip to open a menu for toggling bots on/off as a group.
+export function botsMenu(ev){
+  ev.preventDefault();
+  const bots = Object.keys(PV_ALL).filter(n => {
+    const kind = PV_ALL[n].kind;
+    if (kind === 'bot') return true;
+    if (kind === 'profile') return false;
+    return (n.includes('bot') || n.startsWith('pv-'));
+  });
+  const botsOn = bots.filter(n => !pvOff(n));
+  // If some are off, toggle them all on. If all are on, toggle them all off.
+  const shouldBeOn = botsOn.length === 0;
+  bots.forEach(n => pvSet(n, shouldBeOn));
+  DATA.profiles = pvFilter();
+  tabs(); pick(current);
 }
 installAll();
 // Visibility filter (#121): PV_ALL captures the full set BEFORE removal, so

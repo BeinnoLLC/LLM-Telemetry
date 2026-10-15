@@ -133,13 +133,20 @@ def autodiscover_profiles(agent_home: str = "~/.hermes") -> list[Profile]:
     """
     home = _expand(agent_home)
     found: list[Profile] = []
-    if os.path.exists(os.path.join(home, "state.db")):
+    has_root_db = os.path.exists(os.path.join(home, "state.db"))
+    if has_root_db:
         found.append(Profile(name="default", home=home))
     pdir = os.path.join(home, "profiles")
     if os.path.isdir(pdir):
         for entry in sorted(os.listdir(pdir)):
             sub = os.path.join(pdir, entry)
             if os.path.exists(os.path.join(sub, "state.db")):
+                # profiles/default/ is a stale stub when the root home
+                # already holds the real state.db — the root IS the
+                # default profile. Shadowing it with an empty DB makes
+                # every collector crash on "no such table: sessions".
+                if entry == "default" and has_root_db:
+                    continue
                 found.append(Profile(name=entry, home=sub))
     return found
 

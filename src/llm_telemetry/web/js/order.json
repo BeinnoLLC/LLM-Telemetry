@@ -1623,6 +1623,10 @@
   },
   {
    "mod": "router",
+   "name": "botsMenu"
+  },
+  {
+   "mod": "router",
    "name": "exitHourRange"
   },
   {
