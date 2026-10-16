@@ -69,10 +69,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # ---- a live session: running a tool call right now ----------------------
     live_path = write_session(
-        tmp, "agent-sp", "--home-user-workspace-billing--", "01live",
-        "/home/user/workspace/billing",
+        tmp, "agent-sp", "--tmp-user-workspace-billing--", "01live",
+        "/tmp/user/workspace/billing",
         [
-            ev_session("sess-live", iso(now - 10), "/home/user/workspace/billing"),
+            ev_session("sess-live", iso(now - 10), "/tmp/user/workspace/billing"),
             ev_model(iso(now - 9), "pv", "claude-opus-5"),
             ev_assistant(iso(now - 5), tool="bash"),
         ],
@@ -81,10 +81,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # ---- a stale session: last touched well outside the window --------------
     stale_path = write_session(
-        tmp, "agent-pv", "--home-user-workspace-old--", "02stale",
-        "/home/user/workspace/old",
+        tmp, "agent-pv", "--tmp-user-workspace-old--", "02stale",
+        "/tmp/user/workspace/old",
         [
-            ev_session("sess-stale", iso(now - 3700), "/home/user/workspace/old"),
+            ev_session("sess-stale", iso(now - 3700), "/tmp/user/workspace/old"),
             ev_assistant(iso(now - 3600), text="done"),
         ],
         mtime=now - 3600,
@@ -92,10 +92,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # ---- a live session mid-thought (no tool call, no text yet) -------------
     thinking_path = write_session(
-        tmp, "agent-local", "--home-user-workspace-docs--", "03think",
-        "/home/user/workspace/docs",
+        tmp, "agent-local", "--tmp-user-workspace-docs--", "03think",
+        "/tmp/user/workspace/docs",
         [
-            ev_session("sess-think", iso(now - 35), "/home/user/workspace/docs"),
+            ev_session("sess-think", iso(now - 35), "/tmp/user/workspace/docs"),
             ev_model(iso(now - 34), "ollama", "qwen3-coder:30b"),
             ev_assistant(iso(now - 30), thinking="let me check"),
         ],
@@ -120,7 +120,7 @@ with tempfile.TemporaryDirectory() as tmp:
         chk(live["agent"] == "agent-sp",
             "agent name is read from the real path depth (agent-sp), not the buggy parent.parent guess",
             live["agent"])
-        chk(live["cwd"] == "/home/user/workspace/billing", "cwd comes from the session event")
+        chk(live["cwd"] == "/tmp/user/workspace/billing", "cwd comes from the session event")
         chk(live["model"] == "claude-opus-5", "model comes from the model_change event")
         chk(live["provider"] == "pv", "provider comes from the model_change event")
         chk(live["phase"] == "running bash", "phase names the in-flight tool call", live["phase"])
