@@ -991,6 +991,18 @@
   },
   {
    "mod": "live",
+   "name": "KIND_META"
+  },
+  {
+   "mod": "live",
+   "name": "kindBadge"
+  },
+  {
+   "mod": "live",
+   "name": "renderPiLive"
+  },
+  {
+   "mod": "live",
    "name": "renderLive"
   },
   {

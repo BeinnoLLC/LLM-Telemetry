@@ -152,10 +152,57 @@ export function renderLiveKpis(p, name, now, profiles){
   return k;
 }
 
+// LST-245: PI-vs-Hermes badge. Same visual pattern as views.js's pv-badge
+// (pill, signature glyph, colour via color-mix on a CSS custom prop) rather
+// than a new badge style — only the glyph/colour/label differ per kind.
+const KIND_META = {
+  pi:     { sig: '\u2699', color: 'hsl(265 55% 64%)', label: 'PI',     title: 'PI coding agent (pi-worker)' },
+  hermes: { sig: '\u25C9', color: 'hsl(199 60% 56%)', label: 'Hermes', title: 'Hermes session' },
+};
+export function kindBadge(kind){
+  const meta = KIND_META[kind] || { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
+  return `<span class="pv-badge" data-kindbadge="${kind}" title="${escA(meta.title)}"`
+    + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">`
+    + `${meta.sig} ${meta.label}</span>`;
+}
+
+// PI agent sessions carry no sqlite state collect_live.py can query (#245) —
+// their JSONL files ARE the live state — so they ride a flat top-level list
+// (DATA.pi_live) rather than living inside a Hermes profile's `live` array.
+// Rendered as its own card, right below the Hermes list, in the same row shape
+// so a reader does not have to learn a second layout to answer "what is this
+// bot doing right now".
+export function renderPiLive(list){
+  const card = $('pilivecard');
+  const box = $('pilivelist');
+  if (!box || !card) return;
+  const sessions = (list || []).filter(Boolean);
+  card.hidden = sessions.length === 0;
+  if (!sessions.length) { box.innerHTML = ''; return; }
+  box.innerHTML = sessions.map(S => {
+    const mcol = colorOf(short(S.model));
+    return `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
+      <div class="flex-1 min-w-0 self-center">
+        <div class="flex items-center gap-2 flex-wrap">
+          ${kindBadge('pi')}
+          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.cwd||'')}">${esc(S.title || S.agent || 'pi session')}</span>
+          <span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(265 40% 30%);color:hsl(265 60% 82%);border:1px solid hsl(265 35% 42%)">${esc(S.agent||'pi')}</span>
+        </div>
+        <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
+      </div>
+      <div class="metacol shrink-0">
+        <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
+        <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 export function renderLive(){
   const p = DATA.profiles[current] || {};
   renderLiveKpis(p, current, undefined, DATA.profiles);
   renderOllama(DATA.ollama);
+  renderPiLive(DATA.pi_live);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
   // agents card hidden whenever 2+ profiles were on; each row names its profile.
@@ -220,6 +267,7 @@ export function renderLive(){
             <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>
             <button type="button" class="chip lntimelinebtn text-[length:var(--fs-xs)]" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>
             <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${esc(L.category)}</span>
+            ${kindBadge('hermes')}
             ${provBadge(provOf('', L.model, L.base_url))}
             ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${esc(L.profile)}</span>` : ''}
             ${L.kind==='subagent'?'<span class="text-[length:var(--fs-xs)] muted">↳ subagent</span>':''}
@@ -612,6 +660,9 @@ export async function pollLive(){
     // Fleet telemetry is global (not per-profile): both profiles share the
     // same two GPU boxes, so it hangs off DATA, not DATA.profiles[n].
     DATA.ollama = fresh.ollama || DATA.ollama;
+    // PI agent sessions (#245): global, like ollama above -- not scoped to a
+    // Hermes profile, so there is nothing per-profile to merge it into.
+    DATA.pi_live = fresh.pi_live || [];
     // #121: re-apply the ON set. The live slice was merged INTO PV_ALL's
     // profiles above, so re-filtering keeps the toggles honoured while the
     // merge picks up the fresh live rows.
