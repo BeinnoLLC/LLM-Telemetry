@@ -14,6 +14,11 @@ import subprocess
 import time
 
 from .config import get as _cfg
+from .config import Config as _Config
+from .schema import SCHEMA_VERSION
+from .webassets import inline_js, read_css, read_shell, read_tokens
+from . import energy as _E
+from .pricing import ttl_label as _ttl_label
 
 CFG = _cfg()
 DATA = str(CFG.reports_dir / "analytics-data.json")
@@ -29,8 +34,6 @@ else:
         _p = CFG.reports_dir / f"{_name}-data.json"
         if not _p.exists() or time.time() - _p.stat().st_mtime > MAX_AGE_S:
             subprocess.run([sys.executable, "-m", f"llm_telemetry.collect_{_name}", str(_p)], check=True)
-from .schema import SCHEMA_VERSION
-from .webassets import inline_js, read_css, read_shell, read_tokens
 
 
 def _load_versioned(path):
@@ -85,10 +88,6 @@ def _shown_path(f):
     home = os.path.expanduser("~")
     return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
 
-
-from . import energy as _E
-from .pricing import ttl_label as _ttl_label
-from .config import Config as _Config
 
 _kwh, _gw, _hw = _E.tariff(CFG)
 _d = _Config()

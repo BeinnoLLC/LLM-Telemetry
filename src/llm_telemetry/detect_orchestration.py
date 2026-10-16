@@ -103,7 +103,7 @@ def detect_pi_cross_agent_calls(raw_events: list[dict], agent_name: str) -> list
     Returns:
         List of detected signals.
     """
-    signals = []
+    signals: list[OrchestrationSignal] = []
     
     if not raw_events:
         return signals

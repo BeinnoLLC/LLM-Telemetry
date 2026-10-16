@@ -20,15 +20,12 @@ import collections
 from pathlib import Path
 
 from .config import get as _cfg
+from . import pricing as P
+from . import energy as E
 
 CFG = _cfg()
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-from . import pricing as P
-
 DATA = str(CFG.reports_dir / "analytics-data.json")
-
-from . import energy as E
 
 KWH_PRICE_USD, GPU_DRAW_W, HOST_OVERHEAD_W = E.tariff(CFG)
 PREFILL_SPEEDUP = E.PREFILL_SPEEDUP

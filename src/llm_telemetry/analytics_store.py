@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -227,7 +227,7 @@ class AnalyticsStore:
                 now,
             ))
             conn.commit()
-            return cursor.lastrowid
+            return cursor.lastrowid if cursor.lastrowid is not None else -1
         except sqlite3.IntegrityError:
             return -1
 
