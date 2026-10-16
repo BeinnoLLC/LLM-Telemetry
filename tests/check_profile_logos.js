@@ -67,7 +67,7 @@ setTimeout(() => {
     const chipBefore = chips().find(c => c.dataset.tab === n);
     chk(!chipBefore.querySelector('img'),
         'with no logo set, the tab chip renders NO <img> (falls back to the initial)');
-    chk(!!chipBefore.querySelector('span[aria-hidden="true"]'),
+    chk(!!chipBefore.querySelector('span[data-profile-icon-fallback]'),
         'the tab chip renders the initial-letter fallback icon instead');
 
     // ---- Settings page: the logo uploader ----------------------------------
@@ -102,7 +102,7 @@ setTimeout(() => {
     chk(!!img, 'after setting a logo, the tab chip now renders an <img>');
     chk(!!img && img.getAttribute('src') === FAKE_LOGO,
         'the <img> src is exactly the stored data URI (not re-encoded/mangled)', img && img.getAttribute('src'));
-    chk(!chipAfter.querySelector('span[aria-hidden="true"]'),
+    chk(!chipAfter.querySelector('span[data-profile-icon-fallback]'),
         'the initial-letter fallback is gone once a real logo is set');
 
     // Settings row itself repaints with a Clear button + live preview once set.
@@ -119,7 +119,7 @@ setTimeout(() => {
         'Clear removes the stored override');
     const chipCleared = chips().find(c => c.dataset.tab === n);
     chk(!chipCleared.querySelector('img'), 'after Clear, the tab chip has no <img> again');
-    chk(!!chipCleared.querySelector('span[aria-hidden="true"]'),
+    chk(!!chipCleared.querySelector('span[data-profile-icon-fallback]'),
         'after Clear, the initial-letter fallback is back on the chip');
 
     // ---- persistence across a session (acceptance: "setting persists

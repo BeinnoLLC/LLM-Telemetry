@@ -869,7 +869,7 @@ export function profileIconHtml(n, px){
   if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
   const h = profileHue(n);
   const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
-  return `<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
+  return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
 }
 // Full, unfiltered profile map — captured once at boot so a toggled-off
 // profile can come back without refetching (DATA.profiles is the filtered set).
