@@ -228,18 +228,6 @@ __DASHBOARD_CSS__
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
   </div>
-  <!-- LST-245: PI coding-agent sessions (pi-worker), currently invisible on
-       this page -- Hermes sessions came from a profile's sqlite DB, PI agents
-       have none; their JSONL session files ARE the live state (collect_pi_live.py
-       reads ~/.pi/agent-*/sessions/*/*.jsonl mtimes). Its own card, right below
-       the Hermes live list, because it answers the same question ("what is
-       running right now") for a different kind of bot -- not a buried tab. -->
-  <div class="card p-4 mt-3" id="pilivecard" hidden>
-   <div class="lbl mb-2.5">PI workers
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">coding agents launched via pi-worker</span>
-   </div>
-   <div id="pilivelist" class="flex flex-col gap-2"></div>
-  </div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
        more work", which you ask after seeing what is running, not before. -->
   <div class="card p-4 mt-3" id="olcard" hidden>

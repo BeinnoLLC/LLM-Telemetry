@@ -28,9 +28,14 @@ function liveGroupKeyOf(el){
   if (el.classList && el.classList.contains('liverow')){
     // The row div itself carries no session id; its first action button does
     // (title button) — the panel that follows the row is keyed by data-lmp,
-    // which matches the row's session id 1:1.
+    // which matches the row's session id 1:1. PI rows carry no action
+    // button/panel (#245, merged into this list) — they key off the row's
+    // own data-pisession attribute, prefixed so a PI session id can never
+    // collide with a Hermes one.
     const btn = el.querySelector('[data-tsession]');
-    return btn ? btn.getAttribute('data-tsession') : null;
+    if (btn) return btn.getAttribute('data-tsession');
+    const pisession = el.getAttribute('data-pisession');
+    return pisession ? 'pi:' + pisession : null;
   }
   if (el.classList && el.classList.contains('lmpanel')){
     // A panel FOLLOWS its row, so it belongs to the row's group (data-lmp
@@ -161,27 +166,27 @@ const KIND_META = {
 };
 export function kindBadge(kind){
   const meta = KIND_META[kind] || { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
+  // Icon-only: the glyph carries the visible signal; the text label
+  // (meta.label) only lives in the title tooltip now — less chrome in a row
+  // that is already dense with chips, meaning still discoverable on hover.
   return `<span class="pv-badge" data-kindbadge="${kind}" title="${escA(meta.title)}"`
     + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">`
-    + `${meta.sig} ${meta.label}</span>`;
+    + `${meta.sig}</span>`;
 }
 
 // PI agent sessions carry no sqlite state collect_live.py can query (#245) —
 // their JSONL files ARE the live state — so they ride a flat top-level list
 // (DATA.pi_live) rather than living inside a Hermes profile's `live` array.
-// Rendered as its own card, right below the Hermes list, in the same row shape
-// so a reader does not have to learn a second layout to answer "what is this
-// bot doing right now".
-export function renderPiLive(list){
-  const card = $('pilivecard');
-  const box = $('pilivelist');
-  if (!box || !card) return;
-  const sessions = (list || []).filter(Boolean);
-  card.hidden = sessions.length === 0;
-  if (!sessions.length) { box.innerHTML = ''; return; }
-  box.innerHTML = sessions.map(S => {
+// Merged into '#livelist' (the same list Hermes sessions render into)
+// instead of a separate '#pilivecard' — both kinds of bot answer the
+// same question ("what is running right now") so they share one list and one
+// row shape; kindBadge('pi') is the only thing that still tells them apart.
+// Returns {key, html} entries shaped for applyDiff, keyed by the PI session
+// id (prefixed 'pi:' so it can never collide with a Hermes session id).
+function piLiveRows(list){
+  return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
-    return `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
+    return { key: 'pi:' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
       <div class="flex-1 min-w-0 self-center">
         <div class="flex items-center gap-2 flex-wrap">
           ${kindBadge('pi')}
@@ -194,15 +199,14 @@ export function renderPiLive(list){
         <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
         <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
       </div>
-    </div>`;
-  }).join('');
+    </div>` };
+  });
 }
 
 export function renderLive(){
   const p = DATA.profiles[current] || {};
   renderLiveKpis(p, current, undefined, DATA.profiles);
   renderOllama(DATA.ollama);
-  renderPiLive(DATA.pi_live);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
   // agents card hidden whenever 2+ profiles were on; each row names its profile.
@@ -211,6 +215,10 @@ export function renderLive(){
   // two profiles, and the 5s poll can occasionally return duplicates mid-refresh.
   const seen = new Set();
   const live = (p.live || []).filter(L => { if(seen.has(L.id)) return false; seen.add(L.id); return true; });
+  // PI sessions (#245) are not scoped to a Hermes profile, they have no
+  // sqlite row to filter by, so they show on every tab, merged into this
+  // same list.
+  const piRows = piLiveRows(DATA.pi_live);
   const box = $('livelist');
   if(!box) return;
 
@@ -284,6 +292,11 @@ export function renderLive(){
         <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
       </div>${modelsPanel(L)}` };
     });
+    // PI sessions (#245) are interleaved into the same keyed array — they use
+    // the SAME liverow shape (just kindBadge('pi') instead of 'hermes') and
+    // share this one applyDiff call, so a reader does not learn a second
+    // layout for a second list to answer "what is running right now".
+    rows.push(...piRows);
     // Keyed-diff applier (P10 presentation plane). If every row's HTML is
     // byte-identical to the last render the applier is a no-op (per-key
     // cache) — idle polls touch zero nodes; genuine changes patch in place
