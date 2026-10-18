@@ -122,6 +122,7 @@ def assemble(resp, start, end):
         "views": {name: aggregate(rows, n) for name, n in VIEWS.items()},
         "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
         "fetched_at": int(time.time()),
+        "ttl_s": MIN_REFETCH_S,
     }
 
 
@@ -130,7 +131,8 @@ def unavailable(reason, start=None, end=None):
             "window": {"start": str(start) if start else None,
                        "end": str(end) if end else None, "period": "day"},
             "rows": [], "views": {},
-            "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL}}
+            "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
+            "fetched_at": None, "ttl_s": MIN_REFETCH_S}
 
 
 def fetch(start, end, key, timeout=30):
@@ -168,6 +170,7 @@ def collect(today=None, env=None, fetcher=fetch, previous=None):
             reason = "response had no data list"
     if previous and previous.get("status") == "ok":
         kept = dict(previous)
+        kept.setdefault("ttl_s", MIN_REFETCH_S)
         kept["last_error"] = {"reason": reason,
                               "at": datetime.datetime.now().isoformat(timespec="seconds")}
         return kept
