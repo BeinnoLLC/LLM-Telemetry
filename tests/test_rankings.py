@@ -44,6 +44,9 @@ resp = {"data": [{"date": r["date"], "model_permaslug": r["model_permaslug"],
 start, end = sample["window"]["start"], sample["window"]["end"]
 got = C.assemble(resp, start, end)
 chk(got["status"] == "ok", "assemble -> ok")
+chk(got.get("ttl_s") == C.MIN_REFETCH_S, "assemble -> ttl_s matches MIN_REFETCH_S")
+chk(isinstance(got.get("fetched_at"), int), "assemble -> fetched_at is a timestamp")
+chk(got.get("source") == C.URL, "assemble -> source is the rankings URL")
 for name in ("day", "week", "month"):
     chk(got["views"][name]["top"] == sample["views"][name]["top"], f"{name}: top matches fixture")
 week = got["views"]["week"]
@@ -68,6 +71,8 @@ u = C.collect(today=TODAY, env={}, fetcher=lambda *a: calls.append(a) or (None, 
 chk(u["status"] == "unavailable" and "OPENROUTER_API_KEY" in u["reason"] and not calls,
     "no key -> unavailable, no request", u.get("reason"))
 chk(u["rows"] == [] and u["views"] == {}, "unavailable carries no guessed data")
+chk(u.get("ttl_s") == C.MIN_REFETCH_S, "unavailable -> ttl_s still present")
+chk(u.get("fetched_at") is None, "unavailable -> fetched_at is None (never fetched)")
 
 net = lambda *a: (None, "network error (URLError)")
 n = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=net)
@@ -75,6 +80,10 @@ chk(n["status"] == "unavailable" and "network" in n["reason"], "network error ->
 good = dict(got, fetched_at=0)
 s = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=net, previous=good)
 chk(s["status"] == "ok" and s["last_error"]["reason"].startswith("network"), "failure keeps previous snapshot + reason")
+chk(s.get("fetched_at") == 0, "failure keeps previous snapshot's original fetched_at (not refreshed)")
+stale_no_ttl = {k: v for k, v in good.items() if k != "ttl_s"}
+s2 = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=net, previous=stale_no_ttl)
+chk(s2.get("ttl_s") == C.MIN_REFETCH_S, "failure on a pre-change previous (no ttl_s) backfills ttl_s")
 
 seen = []
 ok = C.collect(today=TODAY, env={C.KEY_ENV: FAKE}, fetcher=lambda *a: seen.append(a) or (mini, None))
