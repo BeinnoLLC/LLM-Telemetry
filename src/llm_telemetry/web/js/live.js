@@ -199,6 +199,7 @@ function piLiveRows(list){
         <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
         <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
       </div>
+      <div class="loecol"></div>
     </div>` };
   });
 }
