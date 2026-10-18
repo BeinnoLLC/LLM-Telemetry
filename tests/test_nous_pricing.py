@@ -4,11 +4,13 @@ Injected catalogues only - no network. Covers the rate choice, the long-context
 override, the guard against fuzzy matches leaking Nous rates onto other rows,
 and the stale-cache fallback of the fetcher.
 """
+import io
 import json
 import os
 import sys
 import tempfile
 import time
+import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
@@ -104,9 +106,37 @@ with tempfile.TemporaryDirectory() as d:
         raise OSError("offline")
     models, src = P._fetch_cached("http://127.0.0.1:9/never", cache, boom)
     chk(models == {"nous:x": {"prompt": "1"}} and src.startswith("stale"), "network failure -> stale cache", src)
+    stamped = json.load(open(cache))
+    chk(stamped.get("ttl_s") == P.TTL, "stale write backfills ttl_s onto a pre-change cache", stamped.get("ttl_s"))
+    chk(stamped.get("status") == "stale", "stale write sets status=stale", stamped.get("status"))
+    chk("Connection refused" in (stamped.get("last_error") or "") or "offline" in (stamped.get("last_error") or ""),
+        "stale write records last_error", stamped.get("last_error"))
     os.remove(cache)
     models, src = P._fetch_cached("http://127.0.0.1:9/never", cache, boom)
     chk(models == {} and src.startswith("unavailable"), "no cache -> empty, Nous rows fall back to OpenRouter", src)
+
+    def ok_fetch(raw):
+        return {"nous:y": {"prompt": "2"}}
+
+    class FakeResp:
+        def __enter__(self):
+            return io.BytesIO(b'{"ok": true}')
+
+        def __exit__(self, *a):
+            return False
+    orig_urlopen = urllib.request.urlopen
+    urllib.request.urlopen = lambda *a, **k: FakeResp()
+    try:
+        models, src = P._fetch_cached("http://example.invalid/ok", cache, ok_fetch)
+    finally:
+        urllib.request.urlopen = orig_urlopen
+    written = json.load(open(cache))
+    chk(src == "live" and models == {"nous:y": {"prompt": "2"}}, "live fetch succeeds and returns shaped models")
+    chk(written.get("status") == "ok", "live write sets status=ok", written.get("status"))
+    chk(written.get("ttl_s") == P.TTL, "live write sets ttl_s", written.get("ttl_s"))
+    chk(written.get("source") == "http://example.invalid/ok", "live write records source URL", written.get("source"))
+    chk(written.get("last_error") is None, "live write clears last_error", written.get("last_error"))
+    chk(bool(written.get("fetched_at")), "live write sets fetched_at (ISO)", written.get("fetched_at"))
 
 print(f"\ntest_nous_pricing.py  {p} passed, {f} failed")
 sys.exit(1 if f else 0)

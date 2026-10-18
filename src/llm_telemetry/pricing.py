@@ -12,6 +12,7 @@ For subscription+free rows we still compute a MARKET-EQUIVALENT value: what the
 same tokens would have cost at public API rates. That answers "is the
 subscription worth it" without ever pretending it is money spent.
 """
+import datetime
 import json
 import os
 import re
@@ -227,7 +228,13 @@ def catalog_freshness(source, now=None):
     age = None
     if os.path.exists(CACHE):
         try:
-            age = now - float(json.load(open(CACHE)).get("fetched") or os.path.getmtime(CACHE))
+            cached = json.load(open(CACHE))
+            fetched_at = cached.get("fetched_at")
+            if fetched_at:
+                ts = datetime.datetime.fromisoformat(fetched_at).timestamp()
+            else:
+                ts = float(cached.get("fetched") or os.path.getmtime(CACHE))
+            age = now - ts
         except Exception:
             age = now - os.path.getmtime(CACHE)
     src = (source or "").strip()
@@ -241,6 +248,10 @@ def catalog_freshness(source, now=None):
     detail = src[len(state):].strip(" ()") if src.startswith(state) else ""
     return {"state": state, "age_s": age, "age": age_label(age),
             "ttl": ttl_label(), "detail": detail}
+
+
+def _iso_now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 def _fetch_cached(url, cache, shape, force=False):
@@ -257,12 +268,23 @@ def _fetch_cached(url, cache, shape, force=False):
         with urllib.request.urlopen(req, timeout=30) as r:
             models = shape(json.load(r))
         os.makedirs(os.path.dirname(cache), exist_ok=True)
-        json.dump({"fetched": time.time(), "models": models}, open(cache, "w"))
+        json.dump({"fetched": time.time(), "fetched_at": _iso_now(), "source": url,
+                   "ttl_s": TTL, "status": "ok", "last_error": None, "models": models},
+                  open(cache, "w"))
         return models, "live"
     except Exception as e:
         if os.path.exists(cache):
             try:
-                return json.load(open(cache))["models"], f"stale ({e.__class__.__name__})"
+                prior = json.load(open(cache))
+                models = prior["models"]
+                merged = dict(prior)
+                merged.setdefault("ttl_s", TTL)
+                merged["status"] = "stale"
+                merged["last_error"] = f"{e.__class__.__name__}: {e}"
+                merged["source"] = url
+                os.makedirs(os.path.dirname(cache), exist_ok=True)
+                json.dump(merged, open(cache, "w"))
+                return models, f"stale ({e.__class__.__name__})"
             except Exception:
                 pass
         return {}, f"unavailable ({e.__class__.__name__})"
