@@ -1293,8 +1293,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #livelist .liverow{flex-direction:column;align-items:flex-start;gap:6px}
    #livelist .liverow .metacol{width:100%}
    #livelist .liverow .loecol{align-self:flex-end}
-   #pilivelist .liverow{flex-direction:column;align-items:flex-start;gap:6px}
-   #pilivelist .liverow .metacol{width:100%}
 
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */

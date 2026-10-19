@@ -115,10 +115,11 @@ setTimeout(() => {
       return kids.length && kids[kids.length - 1].classList.contains('loecol');
     });
     chk(lastIsGauge, 'gauge is the last column on every card');
-    const svgs = cards.map(c => c.querySelector('.loe svg')).filter(Boolean);
-    chk(svgs.length === cards.length, 'every gauge drew an svg');
-    const needles = cards.map(c => c.querySelector('.needle')).filter(Boolean);
-    chk(needles.length === cards.length, 'every gauge has a needle');
+    const gaugeCards = cards.filter(c => !c.hasAttribute('data-pisession'));
+    const svgs = gaugeCards.map(c => c.querySelector('.loe svg')).filter(Boolean);
+    chk(svgs.length === gaugeCards.length, 'every gauge drew an svg');
+    const needles = gaugeCards.map(c => c.querySelector('.needle')).filter(Boolean);
+    chk(needles.length === gaugeCards.length, 'every gauge has a needle');
     const varsOk = needles.every(n => {
       const s = n.getAttribute('style') || '';
       return s.includes('--d:') && s.includes('--amp:') && s.includes('--spd:');

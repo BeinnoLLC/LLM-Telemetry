@@ -39,13 +39,8 @@ const dom = new JSDOM(html, {
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    // ---- the PI card is visible once the live poll has run -----------------
-    const card = d.getElementById('pilivecard');
-    chk(!!card, '#pilivecard exists in the built page');
-    chk(card && card.hidden === false, 'the PI workers card is shown once pi_live has sessions',
-        card && card.hidden);
-
-    const rows = [...d.querySelectorAll('#pilivelist [data-pisession]')];
+    // ---- PI sessions render merged into the Hermes live list (LST-245) ------
+    const rows = [...d.querySelectorAll('#livelist [data-pisession]')];
     chk(rows.length === live.pi_live.length,
         'one row per live PI session', `${rows.length}/${live.pi_live.length}`);
 
@@ -71,7 +66,7 @@ setTimeout(() => {
     chk(rows.every(r => !r.querySelector('[data-kindbadge="hermes"]')),
         'no PI row carries a Hermes badge');
 
-    const hermesRows = [...d.querySelectorAll('#livelist .liverow')];
+    const hermesRows = [...d.querySelectorAll('#livelist .liverow:not([data-pisession])')];
     chk(hermesRows.length > 0, 'the Hermes live list still renders its own rows (sanity)');
     chk(hermesRows.every(r => !!r.querySelector('[data-kindbadge="hermes"]')),
         'every Hermes row carries a Hermes badge');
@@ -79,7 +74,7 @@ setTimeout(() => {
         'no Hermes row carries a PI badge');
 
     // ---- the two badges are visually distinguishable -------------------------
-    const piBadge = d.querySelector('#pilivelist [data-kindbadge="pi"]');
+    const piBadge = d.querySelector('#livelist [data-pisession] [data-kindbadge="pi"]');
     const hermesBadge = d.querySelector('#livelist [data-kindbadge="hermes"]');
     chk(!!piBadge && !!hermesBadge, 'both badge kinds are present to compare');
     if (piBadge && hermesBadge) {
@@ -94,14 +89,13 @@ setTimeout(() => {
           'both badges reuse the existing .pv-badge class rather than a new one');
     }
 
-    // ---- empty pi_live hides the card instead of showing an empty box -------
-    chk(typeof w.renderPiLive === 'function' || true, 'sanity: page loaded past live.js');
-    w.eval('renderPiLive([])');
-    chk(d.getElementById('pilivecard').hidden === true,
-        'an empty pi_live list hides the PI workers card');
-    w.eval(`renderPiLive(${JSON.stringify(live.pi_live)})`);
-    chk(d.getElementById('pilivecard').hidden === false,
-        'rendering it again with sessions shows the card again');
+    // ---- empty pi_live renders no PI rows (merged list, no separate box) ----
+    w.eval('DATA.pi_live = []; renderLive();');
+    chk(d.querySelectorAll('#livelist [data-pisession]').length === 0,
+        'an empty pi_live list leaves no PI rows in the live list');
+    w.eval(`DATA.pi_live = ${JSON.stringify(live.pi_live)}; renderLive();`);
+    chk(d.querySelectorAll('#livelist [data-pisession]').length === live.pi_live.length,
+        'rendering it again with sessions shows the PI rows again');
   } catch (e) {
     chk(false, 'checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 8).join('\n'));
