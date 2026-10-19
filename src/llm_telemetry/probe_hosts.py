@@ -190,40 +190,80 @@ def probe(base, cache):
     return e
 
 
+def _url_host(base):
+    m = re.search(r"//([^/:]+)", base)
+    return m.group(1).lower() if m else base
+
+
 def group(endpoints):
     """Collapse endpoints that are demonstrably the same machine.
 
-    Fingerprint = installed model list + the loaded models' exact expiry
-    timestamps. Two genuinely separate boxes will not share a keep-alive expiry
-    down to the second, so this does not over-merge; when nothing is loaded it
-    falls back to the model list alone.
+    Two rules, in order:
+      1. Every URL whose host is one of THIS box's own addresses (local_ips():
+         loopback, the LAN IP, docker/libvirt bridge IPs) is the same physical
+         machine by definition, up or down, whatever the probe said. The
+         fingerprint cannot be trusted here: a single timed-out or mid-reload
+         probe used to split one box into a dozen "172.x.0.1" cards.
+      2. Everything else is fingerprinted: installed model list + the loaded
+         models' exact expiry timestamps. Two genuinely separate boxes will not
+         share a keep-alive expiry down to the second, so this does not
+         over-merge; when nothing is loaded it falls back to the model list.
     """
+    mine = {ip.lower() for ip in local_ips()}
     hosts = {}
     for e in endpoints:
-        exp = "|".join(sorted(str(m.get("expires")) for m in e["loaded"]))
-        key = f"{e.get('fp','')}##{exp}" if e["up"] else f"down::{e['base']}"
-        h = hosts.setdefault(key, {"urls": [], **{k: v for k, v in e.items()}})
+        if _url_host(e["base"]) in mine:
+            key = "self"
+        elif e["up"]:
+            exp = "|".join(sorted(str(m.get("expires")) for m in e["loaded"]))
+            key = f"{e.get('fp','')}##{exp}"
+        else:
+            key = f"down::{e['base']}"
+        h = hosts.get(key)
+        if h is None or (e["up"] and not h["up"]):
+            # first endpoint seeds the card; an up probe always beats a down seed
+            prev_urls = h["urls"] if h else []
+            h = hosts[key] = {"urls": prev_urls, **{k: v for k, v in e.items()}}
         h["urls"].append({"base": e["base"], "ms": e["ms"], "up": e["up"]})
         if e["up"] and (h.get("ms") is None or (e["ms"] or 9e9) < h["ms"]):
             h["ms"] = e["ms"]
     out = []
     for h in hosts.values():
         h.pop("base", None)
+        h["up"] = any(u["up"] for u in h["urls"])
         h["urls"].sort(key=lambda u: (not u["up"], u["ms"] if u["ms"] is not None else 9e9))
-        h["label"] = short_label(h["urls"])
+        h["label"] = short_label(h["urls"], mine)
         out.append(h)
     out.sort(key=lambda h: (not h["up"], h["label"]))
     return out
 
 
-def short_label(urls):
-    """Human name for a host: the LAN IP if we have one, else the hostname."""
+def short_label(urls, mine=None):
+    """Human name for a host: its primary LAN IP if we have one, else the hostname.
+
+    For this box, "primary" is the first address `hostname -I` reports (the real
+    LAN interface) -- never a docker/libvirt bridge like 172.18.0.1 that merely
+    happens to sort first among the card's URLs.
+    """
+    if mine:
+        for ip in _primary_ips():
+            if ip in mine and any(_url_host(u["base"]) == ip for u in urls):
+                return ip
     for u in urls:
         m = re.search(r"//(\d+\.\d+\.\d+\.\d+)", u["base"])
-        if m:
+        if m and not m.group(1).startswith("127."):
             return m.group(1)
     m = re.search(r"//([\w.\-]+)", urls[0]["base"])
     return m.group(1).split(".")[0] if m else urls[0]["base"]
+
+
+def _primary_ips():
+    """`hostname -I` order: the real LAN interface comes first, bridges after."""
+    try:
+        r = subprocess.run(["hostname", "-I"], capture_output=True, text=True, timeout=4)
+        return [ip for ip in r.stdout.split() if ip.count(".") == 3 and not ip.startswith("169.254.")]
+    except Exception:
+        return []
 
 
 def local_work():
