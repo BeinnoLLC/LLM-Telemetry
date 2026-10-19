@@ -17,7 +17,7 @@ import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
   pickView, setCrossFilter, setHash, view,
 } from './router.js';
-import { DATA, LOCAL_HOSTS, RANKINGS_DATA, SCHEMA_VERSION, css } from './main.js';
+import { COSTS_DATA, DATA, LOCAL_HOSTS, RANKINGS_DATA, SCHEMA_VERSION, css } from './main.js';
 
 export function schemaProblem(payload, name){
   if (!payload || typeof payload !== 'object') return `${name}: not a JSON object`;
@@ -50,6 +50,24 @@ export function showSchemaError(msg){
     const go = () => { showSchemaError(bad); const b = document.getElementById('boot'); if (b) b.remove(); };
     if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
     throw new Error('schema mismatch: ' + bad);   // stop this script: nothing below may render
+  }
+}
+{
+  // RANKINGS_DATA/COSTS_DATA (#189/#192): collected separately from DATA, so they
+  // carry their own schema_version and need their own guard — a stale rankings or
+  // pricing cache must not silently render as empty/wrong-shaped rows. An empty {}
+  // (collector never ran / file missing) is NOT a schema mismatch: build_dashboard.py
+  // falls back to {} on a missing file and the views' own "unavailable" states
+  // already handle that gracefully — only a non-empty payload lacking/mismatching
+  // schema_version is a real stale-payload error here.
+  const isEmpty = (p) => !p || typeof p !== 'object' || Object.keys(p).length === 0;
+  const badR = isEmpty(RANKINGS_DATA) ? '' : schemaProblem(RANKINGS_DATA, 'rankings-data.json');
+  const badC = isEmpty(COSTS_DATA) ? '' : schemaProblem(COSTS_DATA, 'costs-data.json');
+  const bad = badR || badC;
+  if (bad) {
+    const go = () => { showSchemaError(bad); const b = document.getElementById('boot'); if (b) b.remove(); };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+    throw new Error('schema mismatch: ' + bad);
   }
 }
 // ---- Profile resolution (P5-04, #53) -------------------------------------

@@ -2426,5 +2426,6 @@
  "attribution": {
   "text": "Rankings data by OpenRouter, CC BY 4.0",
   "url": "https://openrouter.ai/docs"
- }
+ },
+ "schema_version": 2
 }

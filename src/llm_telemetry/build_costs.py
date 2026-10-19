@@ -21,6 +21,7 @@ from pathlib import Path
 
 from .config import get as _cfg
 from . import pricing as P
+from .schema import stamp as _stamp
 from . import energy as E
 
 CFG = _cfg()
@@ -223,7 +224,7 @@ def build():
     }
     if data.get("sample"):
         d["sample"] = True
-    return d
+    return _stamp(d)
 
 
 
