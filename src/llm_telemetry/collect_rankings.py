@@ -28,6 +28,7 @@ import urllib.error
 import urllib.request
 
 from .config import get as _cfg
+from .schema import stamp as _stamp
 
 URL = "https://openrouter.ai/api/v1/datasets/rankings-daily"
 KEY_ENV = "OPENROUTER_API_KEY"
@@ -112,7 +113,7 @@ def assemble(resp, start, end):
     """The payload for a successful response (raw rows kept unmodified)."""
     rows = resp.get("data") or []
     meta = resp.get("meta") or {}
-    return {
+    return _stamp({
         "status": "ok",
         "source": URL,
         "window": {"start": str(start), "end": str(end), "period": "day"},
@@ -123,16 +124,16 @@ def assemble(resp, start, end):
         "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
         "fetched_at": int(time.time()),
         "ttl_s": MIN_REFETCH_S,
-    }
+    })
 
 
 def unavailable(reason, start=None, end=None):
-    return {"status": "unavailable", "reason": reason, "source": URL,
-            "window": {"start": str(start) if start else None,
-                       "end": str(end) if end else None, "period": "day"},
-            "rows": [], "views": {},
-            "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
-            "fetched_at": None, "ttl_s": MIN_REFETCH_S}
+    return _stamp({"status": "unavailable", "reason": reason, "source": URL,
+                   "window": {"start": str(start) if start else None,
+                              "end": str(end) if end else None, "period": "day"},
+                   "rows": [], "views": {},
+                   "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
+                   "fetched_at": None, "ttl_s": MIN_REFETCH_S})
 
 
 def fetch(start, end, key, timeout=30):

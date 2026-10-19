@@ -20,6 +20,7 @@ import time
 import urllib.request
 
 from .config import get as _cfg
+from .schema import stamp as _stamp
 
 
 def _local_patterns():
@@ -268,8 +269,8 @@ def _fetch_cached(url, cache, shape, force=False):
         with urllib.request.urlopen(req, timeout=30) as r:
             models = shape(json.load(r))
         os.makedirs(os.path.dirname(cache), exist_ok=True)
-        json.dump({"fetched": time.time(), "fetched_at": _iso_now(), "source": url,
-                   "ttl_s": TTL, "status": "ok", "last_error": None, "models": models},
+        json.dump(_stamp({"fetched": time.time(), "fetched_at": _iso_now(), "source": url,
+                          "ttl_s": TTL, "status": "ok", "last_error": None, "models": models}),
                   open(cache, "w"))
         return models, "live"
     except Exception as e:
@@ -283,7 +284,7 @@ def _fetch_cached(url, cache, shape, force=False):
                 merged["last_error"] = f"{e.__class__.__name__}: {e}"
                 merged["source"] = url
                 os.makedirs(os.path.dirname(cache), exist_ok=True)
-                json.dump(merged, open(cache, "w"))
+                json.dump(_stamp(merged), open(cache, "w"))
                 return models, f"stale ({e.__class__.__name__})"
             except Exception:
                 pass
