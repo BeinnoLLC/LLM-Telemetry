@@ -101,5 +101,53 @@ chk(any(h["up"] and h["urls"][0]["base"] == "http://127.0.0.1:11434" for h in ke
     and any(h["urls"][0]["base"] == "http://192.0.2.77:11434" for h in kept),
     "the surviving pair is the up loopback card plus the genuinely-down box", kept)
 
+
+
+# --- one physical box must never fan out into one card per interface ---------
+_SELF_IPS = {"127.0.0.1", "localhost", "192.168.1.11", "192.168.122.1",
+             "172.17.0.1", "172.18.0.1", "172.19.0.1", "172.20.0.1", "172.21.0.1"}
+
+
+def _ep(host, up=True, fp="fpA", expires="2026-10-19T10:00:00Z", ms=5):
+    return {
+        "base": f"http://{host}:11434", "up": up, "ms": ms if up else None, "fp": fp,
+        "loaded": [{"name": "qwen3:30b-a3b", "expires": expires}] if up else [],
+        "models": ["qwen3:30b-a3b"] if up else [],
+    }
+
+
+orig_ips, orig_prim = PH.local_ips, PH._primary_ips
+PH.local_ips = lambda: set(_SELF_IPS)
+PH._primary_ips = lambda: ["192.168.1.11", "192.168.122.1", "172.17.0.1"]
+try:
+    # Same box through 9 addresses, probed mid-reload: every keep-alive expiry
+    # differs and one probe timed out. The old fingerprint-only merge made 9 cards.
+    eps = [_ep(h, expires=f"2026-10-19T10:00:{i:02d}Z") for i, h in enumerate(sorted(_SELF_IPS))]
+    eps[3] = _ep(sorted(_SELF_IPS)[3], up=False)
+    g = PH.group(eps)
+    chk(len(g) == 1, "every local interface of this box folds into ONE card even when "
+        "fingerprints disagree or a probe is down", [h["label"] for h in g])
+    chk(g[0]["up"] is True and g[0]["models"] == ["qwen3:30b-a3b"],
+        "the merged card is seeded from an up probe, not the dead one", g[0].get("models"))
+    chk(g[0]["label"] == "192.168.1.11",
+        "the card is named after the real LAN IP, not a docker bridge or loopback", g[0]["label"])
+    chk(len(g[0]["urls"]) == len(_SELF_IPS), "all spellings are kept on the one card", len(g[0]["urls"]))
+
+    PH.local_ips = lambda: {"127.0.0.1", "localhost", "192.168.1.11"}
+    PH._primary_ips = lambda: ["192.168.1.11"]
+    eps = [_ep("localhost"), _ep("192.168.1.11"),
+           _ep("192.168.1.12", fp="fpB", expires="2026-10-19T11:00:00Z"),
+           _ep("192.168.1.13", fp="fpC", expires="2026-10-19T12:00:00Z")]
+    labels = sorted(h["label"] for h in PH.group(eps))
+    chk(labels == ["192.168.1.11", "192.168.1.12", "192.168.1.13"],
+        "genuinely remote boxes stay separate cards", labels)
+finally:
+    PH.local_ips, PH._primary_ips = orig_ips, orig_prim
+
+urls = [{"base": "http://127.0.0.1:11434", "ms": 1, "up": True},
+        {"base": "http://192.168.1.11:11434", "ms": 3, "up": True}]
+chk(PH.short_label(urls) == "192.168.1.11",
+    "short_label never picks loopback when a LAN IP exists", PH.short_label(urls))
+
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)
