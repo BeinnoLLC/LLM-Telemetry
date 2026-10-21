@@ -32,6 +32,13 @@ from .collect_pi_agents import _iso_to_unix, parse_pi_session_jsonl
 STALE_WINDOW_S = 180
 PHASE_TEXT_MAX = 80
 
+# Same window/cap Hermes' own LIVE sql uses for L.tools (collect_analytics.LIVE):
+# "what has this session touched recently" -- not its whole lifetime history,
+# which would make a long-running agent's gauge permanently pinned to Heavy
+# even after it settled into light reading/thinking work.
+TOOLS_WINDOW_S = 900
+TOOLS_LIMIT = 12
+
 
 def _agent_name_from_path(jsonl_path: Path, pi_home: Path) -> str:
     """The agent-* directory name (e.g. "agent-sp"), read from the path.
@@ -95,6 +102,51 @@ def _last_event_phase(events: list[dict[str, Any]]) -> tuple[Optional[float], st
     return last_ts, phase
 
 
+def _recent_tools(events: list[dict[str, Any]], now: float,
+                   window_s: int = TOOLS_WINDOW_S, limit: int = TOOLS_LIMIT) -> list[str]:
+    """Distinct tool names called in the last ``window_s`` seconds, same shape
+    and recency window as Hermes' own L.tools (collect_analytics.LIVE) -- so
+    loeIcon's load gauge scores a PI session the same way it scores a Hermes
+    one: by what it has actually been doing lately, not its whole history."""
+    seen: list[str] = []
+    for event in events:
+        if event.get("type") != "message":
+            continue
+        ts = event.get("timestamp")
+        if ts and now - _iso_to_unix(ts) > window_s:
+            continue
+        msg = event.get("message") or {}
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "toolCall":
+                name = item.get("name")
+                if name and name not in seen:
+                    seen.append(name)
+    return seen[:limit]
+
+
+def _model_timeline(events: list[dict[str, Any]]) -> tuple[Optional[str], bool]:
+    """(init_model, switched) -- the model the session STARTED with vs whether
+    it later changed, mirroring Hermes' L.switched (sessions.model is only the
+    initial pick there too; the router falls back mid-session). A PI agent can
+    switch model via model_change events the same way."""
+    models = [e.get("modelId") for e in events if e.get("type") == "model_change" and e.get("modelId")]
+    if not models:
+        return None, False
+    return models[0], len(set(models)) > 1 and models[0] != models[-1]
+
+
+def _started_at(session: Any) -> Optional[float]:
+    """Unix ts the session itself began, from its own "session" event -- the
+    one piece of "how long has this been running" the JSONL carries, parallel
+    to Hermes' sessions.started_at."""
+    return _iso_to_unix(session.timestamp) if session.timestamp else None
+
+
 def discover_live_jsonl(pi_home: Path, now: float, stale_window_s: int) -> list[Path]:
     """Every session JSONL file under ``pi_home`` whose mtime is within
     ``stale_window_s`` seconds of ``now`` -- the file-is-the-state convention
@@ -130,7 +182,8 @@ def build_pi_live(pi_home: Optional[os.PathLike] = None, now: Optional[float] = 
         if session is None:
             continue
         agent = _agent_name_from_path(jsonl_path, home)
-        last_ts, phase = _last_event_phase(session.raw_events or [])
+        events = session.raw_events or []
+        last_ts, phase = _last_event_phase(events)
         idle_s = round(max(0.0, now - last_ts), 1) if last_ts is not None else None
         cwd = session.cwd or ""
         title = os.path.basename(cwd.rstrip("/")) if cwd else agent
@@ -138,6 +191,9 @@ def build_pi_live(pi_home: Optional[os.PathLike] = None, now: Optional[float] = 
             mtime = jsonl_path.stat().st_mtime
         except OSError:
             mtime = None
+        init_model, switched = _model_timeline(events)
+        started_at = _started_at(session)
+        uptime_s = round(max(0.0, now - started_at), 1) if started_at else None
         out.append({
             "agent": agent,
             "session_id": session.session_id,
@@ -148,6 +204,20 @@ def build_pi_live(pi_home: Optional[os.PathLike] = None, now: Optional[float] = 
             "idle_s": idle_s,
             "phase": phase,
             "mtime": mtime,
+            # Below: LST-251 -- the same "what is this bot doing / how heavy is
+            # it / how long has it run" detail Hermes rows get from sqlite,
+            # read off the JSONL instead so PI cards get the same gauge and
+            # level of ride-along detail rather than a bare status line.
+            "tools": _recent_tools(events, now),
+            "init_model": init_model,
+            "switched": switched,
+            "started_at": started_at,
+            "uptime_s": uptime_s,
+            "in_tok": session.input_tokens,
+            "out_tok": session.output_tokens,
+            "cache_read_tok": session.cache_read_tokens,
+            "cache_write_tok": session.cache_write_tokens,
+            "cost_usd": round(session.total_cost, 4),
         })
 
     out.sort(key=lambda s: s["idle_s"] if s["idle_s"] is not None else float("inf"))
