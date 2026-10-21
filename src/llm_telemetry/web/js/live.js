@@ -265,7 +265,10 @@ export function kindBadge(kind){
 // now reads that same level of detail off the JSONL (recent tool calls,
 // init_model/switched, uptime, token/cost totals — see its module docstring),
 // so the row below renders it the same way Hermes rows do: same gauge
-// component, same tool-chip markup, same switched-model note. Bandwidth is
+// component, same tool-chip markup, same switched-model note. The gauge is
+// fed S.tools_gauge (PI tool names translated to the Hermes-named categories
+// loeIcon's heavy/light sets recognise -- see collect_pi_live.gauge_tools),
+// while the chips above it keep showing S.tools' real PI tool names. Bandwidth is
 // the one thing genuinely NOT ported — PI tracks no up/down byte counters —
 // so bwRow is skipped rather than faked.
 function piLiveRows(list){
@@ -294,7 +297,7 @@ function piLiveRows(list){
         ${usage}
         <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
       </div>
-      <div class="loecol">${loeIcon(S, {id:'pi:'+(S.session_id||''), label:(S.title&&S.title!=='pi session')?S.title:'session load'})}</div>
+      <div class="loecol">${loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), label:(S.title&&S.title!=='pi session')?S.title:'session load'})}</div>
     </div>` };
   });
 }
