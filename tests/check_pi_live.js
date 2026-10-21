@@ -60,6 +60,38 @@ setTimeout(() => {
           'row shows a real idle time, not the empty dash', metacol && metacol.textContent);
     }
 
+    // ---- LST-251: PI rows get the same gauge + detail level as Hermes rows --
+    chk(rows.every(r => !!r.querySelector('.loecol .loe')),
+        'every PI row renders the loeIcon load gauge (not an empty .loecol)');
+
+    const switched = live.pi_live.find(s => s.switched);
+    if (switched) {
+      const row = rows.find(r => r.dataset.pisession === switched.session_id);
+      chk(!!row && row.textContent.includes(switched.init_model),
+          'a switched-model PI session shows its init_model, same as the Hermes \u21af-from note');
+    }
+
+    const withTools = live.pi_live.find(s => (s.tools || []).length > 0);
+    if (withTools) {
+      const row = rows.find(r => r.dataset.pisession === withTools.session_id);
+      chk(!!row && withTools.tools.every(t => row.textContent.includes(t)),
+          'a PI session with recent tool calls shows them as chips, like a Hermes row');
+    }
+
+    const withUsage = live.pi_live.find(s => (s.in_tok || 0) + (s.out_tok || 0) > 0);
+    if (withUsage) {
+      const row = rows.find(r => r.dataset.pisession === withUsage.session_id);
+      chk(!!row && !row.textContent.includes('undefined') && !row.textContent.includes('NaN'),
+          'a PI session with token usage renders it without undefined/NaN');
+    }
+
+    const withUptime = live.pi_live.find(s => Number.isFinite(s.uptime_s));
+    if (withUptime) {
+      const row = rows.find(r => r.dataset.pisession === withUptime.session_id);
+      chk(!!row && row.textContent.includes('up '),
+          'a PI session with a known start time shows its uptime');
+    }
+
     // ---- PI rows are badged distinctly from Hermes rows ---------------------
     chk(rows.every(r => !!r.querySelector('[data-kindbadge="pi"]')),
         'every PI row carries a PI badge');
