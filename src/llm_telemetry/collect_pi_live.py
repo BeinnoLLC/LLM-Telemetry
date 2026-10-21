@@ -39,6 +39,27 @@ PHASE_TEXT_MAX = 80
 TOOLS_WINDOW_S = 900
 TOOLS_LIMIT = 12
 
+# loeIcon (web/js/charts.js) scores load off two Hermes-shaped name sets --
+# heavy = {delegate_task, execute_code, terminal, mcp__browser_exec}, light =
+# {read_file, search_files, web_search} -- because that's what Hermes'
+# collect_analytics.LIVE actually writes into L.tools. PI's own builtin tool
+# names (bash, subagent, read, ...) don't match either set by spelling, so
+# without translation almost every PI tool call falls into loeIcon's
+# default/medium bucket regardless of how heavy it really was. This table
+# maps each PI tool name to the Hermes-named category it's equivalent to, so
+# _recent_tools' gauge-facing output lands in the same heavy/light buckets a
+# Hermes session's matching behaviour would -- without touching loeIcon
+# itself, which stays the one scoring function both row types share.
+PI_TOOL_HERMES_ALIAS = {
+    "bash": "terminal",            # shell/process execution -> heavy
+    "subagent": "delegate_task",   # spawns a subagent -> heavy
+    "dispatch_relay": "delegate_task",  # hands off a whole Relay leg -> heavy
+    "read": "read_file",           # file read -> light
+    "fetch_content": "web_search",      # fetches a URL -> light
+    "source_check": "web_search",       # web research pass -> light
+    "get_search_content": "search_files",  # pages stored search/fetch results -> light
+}
+
 
 def _agent_name_from_path(jsonl_path: Path, pi_home: Path) -> str:
     """The agent-* directory name (e.g. "agent-sp"), read from the path.
@@ -104,10 +125,11 @@ def _last_event_phase(events: list[dict[str, Any]]) -> tuple[Optional[float], st
 
 def _recent_tools(events: list[dict[str, Any]], now: float,
                    window_s: int = TOOLS_WINDOW_S, limit: int = TOOLS_LIMIT) -> list[str]:
-    """Distinct tool names called in the last ``window_s`` seconds, same shape
-    and recency window as Hermes' own L.tools (collect_analytics.LIVE) -- so
-    loeIcon's load gauge scores a PI session the same way it scores a Hermes
-    one: by what it has actually been doing lately, not its whole history."""
+    """Distinct tool names called in the last ``window_s`` seconds, newest
+    first, same recency window as Hermes' own L.tools (collect_analytics.LIVE)
+    and used as-is for the tool-chip display. These are PI's own builtin tool
+    names (bash, read, ...), not Hermes' -- see gauge_tools() for the
+    Hermes-named view loeIcon's load gauge actually scores against."""
     seen: list[str] = []
     for event in events:
         if event.get("type") != "message":
@@ -126,7 +148,17 @@ def _recent_tools(events: list[dict[str, Any]], now: float,
                 name = item.get("name")
                 if name and name not in seen:
                     seen.append(name)
-    return seen[:limit]
+    recent = seen[:limit]
+    recent.reverse()  # most-recently-seen tool first, matching the chip UI's slice(0,5)
+    return recent
+
+
+def gauge_tools(tools: list[str]) -> list[str]:
+    """``tools`` translated through PI_TOOL_HERMES_ALIAS for loeIcon's gauge --
+    the raw ``tools`` list stays PI-named for the chip display, this is the
+    separate view the load gauge actually scores so a PI session's heavy/light
+    split lands in the same buckets a Hermes session's equivalent work would."""
+    return [PI_TOOL_HERMES_ALIAS.get(t, t) for t in tools]
 
 
 def _model_timeline(events: list[dict[str, Any]]) -> tuple[Optional[str], bool]:
@@ -208,7 +240,8 @@ def build_pi_live(pi_home: Optional[os.PathLike] = None, now: Optional[float] = 
             # it / how long has it run" detail Hermes rows get from sqlite,
             # read off the JSONL instead so PI cards get the same gauge and
             # level of ride-along detail rather than a bare status line.
-            "tools": _recent_tools(events, now),
+            "tools": (tools := _recent_tools(events, now)),
+            "tools_gauge": gauge_tools(tools),
             "init_model": init_model,
             "switched": switched,
             "started_at": started_at,
