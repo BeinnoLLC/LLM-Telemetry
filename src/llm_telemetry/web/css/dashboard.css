@@ -1028,8 +1028,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    in the strip — number or ring — finishes at the same baseline; the ring
    card centres its gauge+label inside that fixed-height body. */
 .kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
+/* LST-252: uppercase nowrap titles ("CACHE HIT RATE", "SUCCESS RATE") are
+   wider than the ~50px lane left of the badge at 3-up/narrow widths, so the
+   name escaped the card edge instead of truncating. min-width:0 lets the
+   flex child actually shrink; the ellipsis keeps truncation visible and the
+   title attribute in views.js carries the full label. Same recipe as the
+   home scorecards (.lkpi-num) above. */
 .kpi-name{font-size:var(--fs-xs);font-weight:700;letter-spacing:.01em;
-  color:var(--muted);text-transform:uppercase;white-space:nowrap}
+  color:var(--muted);text-transform:uppercase;white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis}
 .kpi-num{flex:1;display:flex;align-items:flex-start}
 .kpi-num > div{line-height:1}
 .kpi-big{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.015em;
