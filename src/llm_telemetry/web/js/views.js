@@ -898,43 +898,45 @@ export function renderHome(inR){
       '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
+  // LST-178: the strip card is one compact row — icon, title, one headline
+  // value, one line of blurb. The values are the SAME derived stats as the
+  // old landing cards; only the chrome shrank. rel="noopener noreferrer"
+  // ships on every card because each one is a genuine hyperlink.
   let html = cards.map(([view, ico, color, desc, stat]) => `
-    <a class="card p-4 homecard" href="#/${view.toLowerCase()}" data-gohome="${view}">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${ico}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${view}</span>
-      </div>
-      <div class="hc-stat">${stat}</div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">${desc}</div>
+    <a class="card xcard homecard" href="#/${view.toLowerCase()}" rel="noopener noreferrer" data-gohome="${view}" title="${escA(desc)}">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${ico}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">${view}</span><span class="hc-stat">${stat}</span></span>
+        <span class="xp-blurb">${desc}</span>
+      </span>
     </a>`).join('');
 
   // Bandwidth card: both directions together, because the ratio is the point.
   // Labelled "est." on the card itself — a derived number that looks measured
   // is the failure this project keeps guarding against.
   html += `
-    <a class="card p-4 homecard" href="#/usage" data-gohome="Usage">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Bandwidth (est.)</span>
-      </div>
-      <div class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
-        <span class="muted" style="font-weight:400"> / </span>
-        <span class="bwdown">\u2193 ${fmtB(downB)}</span></div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">Estimated from tokens, not measured</div>
+    <a class="card xcard homecard" href="#/usage" rel="noopener noreferrer" data-gohome="Usage" title="Estimated from tokens, not measured">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">Bandwidth (est.)</span>
+          <span class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
+            <span class="muted" style="font-weight:400"> / </span>
+            <span class="bwdown">\u2193 ${fmtB(downB)}</span></span></span>
+        <span class="xp-blurb">Estimated from tokens, not measured</span>
+      </span>
     </a>`;
 
   // Prices is an in-app view now (was the standalone costs.html page).
   html += `
-    <a class="card p-4 homecard" href="#/Prices" data-gohome="Prices">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Prices</span>
-      </div>
-      <div class="hc-stat">Price sheet</div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">Per-million-token rates &amp; spend</div>
+    <a class="card xcard homecard" href="#/Prices" rel="noopener noreferrer" data-gohome="Prices" title="Per-million-token rates &amp; spend">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">Prices</span><span class="hc-stat">Price sheet</span></span>
+        <span class="xp-blurb">Per-million-token rates &amp; spend</span>
+      </span>
     </a>`;
 
   box.innerHTML = html;

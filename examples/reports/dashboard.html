@@ -587,10 +587,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
- /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
-    tablet and 1-up on mobile needs no extra media query. */
- .grid-home{display:grid;gap:var(--gap);
-   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ /* Explore strip (LST-178): the old tall landing cards became one compact
+    row per card — icon, title, headline value, one-line blurb. auto-fit
+    keeps the strip wrapping without fixed columns on desktop; the <=480px
+    override below pins the collapse to exactly 2 columns on phones. */
+ .grid-home{display:grid;gap:8px var(--gap);
+   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
    transform .12s ease,border-color .12s ease}
@@ -600,6 +602,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .homecard .hc-ico svg{width:18px;height:18px}
  .homecard .hc-stat{font-size:19px;font-weight:650;letter-spacing:-.02em}
  @media(prefers-reduced-motion:reduce){.homecard:hover{transform:none}}
+ /* The compact card chrome (LST-178) lives further down, after the
+    .kpi-badge rules it refines — stylelint's no-descending-specificity
+    requires the base selector first. */
  .grid-2 > *,.grid-auto > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
@@ -1146,6 +1151,29 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kpi-badge{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;flex:none}
 .kpi-badge svg{width:18px;height:18px}
+/* Explore strip compact card (LST-178): a full-row flex link at least 44px
+   tall so the whole card is a tap target (Apple HIG / WCAG 2.5.5 minimum).
+   Long values and blurbs ellipsize instead of wrapping the strip into
+   uneven heights. */
+.xcard{display:flex;align-items:center;gap:10px;padding:9px 12px;
+   min-height:44px}
+.xcard .kpi-badge{width:28px;height:28px;border-radius:8px;flex:none}
+.xcard .kpi-badge svg{width:15px;height:15px}
+.xp-body{flex:1 1 auto;min-width:0}
+.xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
+.xp-title{flex:none;font-size:var(--fs-xs);font-weight:600;
+   letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.xp-blurb{display:block;margin-top:1px;font-size:var(--fs-xs);color:var(--muted);
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:480px){
+   /* Two pinned columns: auto-fit's 230px floor would drop the strip to a
+      single column at phone widths, wasting half the row for a card that
+      carries one number and one line of text. */
+   .grid-home{grid-template-columns:repeat(2,1fr);gap:8px}
+   .xcard{padding:8px 10px}
+ }
 /* Reference-card structure: badge+name header at the top (vertically
    centered with the icon), big number below it, sparkline trend underneath
    the number as a full-width footer. The card height is set so every card
@@ -5422,43 +5450,45 @@ function renderHome(inR){
       '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
+  // LST-178: the strip card is one compact row — icon, title, one headline
+  // value, one line of blurb. The values are the SAME derived stats as the
+  // old landing cards; only the chrome shrank. rel="noopener noreferrer"
+  // ships on every card because each one is a genuine hyperlink.
   let html = cards.map(([view, ico, color, desc, stat]) => `
-    <a class="card p-4 homecard" href="#/${view.toLowerCase()}" data-gohome="${view}">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${ico}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">${view}</span>
-      </div>
-      <div class="hc-stat">${stat}</div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">${desc}</div>
+    <a class="card xcard homecard" href="#/${view.toLowerCase()}" rel="noopener noreferrer" data-gohome="${view}" title="${escA(desc)}">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${ico}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">${view}</span><span class="hc-stat">${stat}</span></span>
+        <span class="xp-blurb">${desc}</span>
+      </span>
     </a>`).join('');
 
   // Bandwidth card: both directions together, because the ratio is the point.
   // Labelled "est." on the card itself — a derived number that looks measured
   // is the failure this project keeps guarding against.
   html += `
-    <a class="card p-4 homecard" href="#/usage" data-gohome="Usage">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Bandwidth (est.)</span>
-      </div>
-      <div class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
-        <span class="muted" style="font-weight:400"> / </span>
-        <span class="bwdown">\u2193 ${fmtB(downB)}</span></div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">Estimated from tokens, not measured</div>
+    <a class="card xcard homecard" href="#/usage" rel="noopener noreferrer" data-gohome="Usage" title="Estimated from tokens, not measured">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">Bandwidth (est.)</span>
+          <span class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
+            <span class="muted" style="font-weight:400"> / </span>
+            <span class="bwdown">\u2193 ${fmtB(downB)}</span></span></span>
+        <span class="xp-blurb">Estimated from tokens, not measured</span>
+      </span>
     </a>`;
 
   // Prices is an in-app view now (was the standalone costs.html page).
   html += `
-    <a class="card p-4 homecard" href="#/Prices" data-gohome="Prices">
-      <div class="flex items-center justify-between mb-2">
-        <div class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
-          <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></div>
-        <span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Prices</span>
-      </div>
-      <div class="hc-stat">Price sheet</div>
-      <div class="muted text-[length:var(--fs-xs)] mt-1">Per-million-token rates &amp; spend</div>
+    <a class="card xcard homecard" href="#/Prices" rel="noopener noreferrer" data-gohome="Prices" title="Per-million-token rates &amp; spend">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></span>
+      <span class="xp-body">
+        <span class="xp-row"><span class="xp-title">Prices</span><span class="hc-stat">Price sheet</span></span>
+        <span class="xp-blurb">Per-million-token rates &amp; spend</span>
+      </span>
     </a>`;
 
   box.innerHTML = html;
