@@ -7080,9 +7080,28 @@ function kindBadge(kind){
 // row shape; kindBadge('pi') is the only thing that still tells them apart.
 // Returns {key, html} entries shaped for applyDiff, keyed by the PI session
 // id (prefixed 'pi:' so it can never collide with a Hermes session id).
+//
+// LST-251: a PI row used to end at the basic status line above (title, agent
+// chip, phase, model, idle) while a Hermes row also got the loeIcon load
+// gauge, its tool chips, a model-switch note and bandwidth. collect_pi_live
+// now reads that same level of detail off the JSONL (recent tool calls,
+// init_model/switched, uptime, token/cost totals — see its module docstring),
+// so the row below renders it the same way Hermes rows do: same gauge
+// component, same tool-chip markup, same switched-model note. The gauge is
+// fed S.tools_gauge (PI tool names translated to the Hermes-named categories
+// loeIcon's heavy/light sets recognise -- see collect_pi_live.gauge_tools),
+// while the chips above it keep showing S.tools' real PI tool names. Bandwidth is
+// the one thing genuinely NOT ported — PI tracks no up/down byte counters —
+// so bwRow is skipped rather than faked.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
+    const tools = (S.tools||[]).slice(0,5).map(t=>
+      `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
+    const uptime = Number.isFinite(S.uptime_s) ? `<div class="muted text-[length:var(--fs-xs)]" title="running since session start">up ${ago(S.uptime_s)}</div>` : '';
+    const tok = (+S.in_tok||0) + (+S.out_tok||0);
+    const usage = (tok || S.cost_usd)
+      ? `<div class="muted text-[length:var(--fs-xs)]" title="tokens in/out and estimated cost for this session">${fmt(tok)} tok${S.cost_usd ? ` · $${(+S.cost_usd).toFixed(4)}` : ''}</div>` : '';
     return { key: 'pi:' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
       <div class="flex-1 min-w-0 self-center">
         <div class="flex items-center gap-2 flex-wrap">
@@ -7091,12 +7110,16 @@ function piLiveRows(list){
           <span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(265 40% 30%);color:hsl(265 60% 82%);border:1px solid hsl(265 35% 42%)">${esc(S.agent||'pi')}</span>
         </div>
         <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
+        <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
       </div>
       <div class="metacol shrink-0">
         <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
+        ${S.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:var(--z-warn)" title="started on ${escA(short(S.init_model))}">\u21af from ${esc(short(S.init_model))}</div>` : ''}
+        ${uptime}
+        ${usage}
         <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
       </div>
-      <div class="loecol"></div>
+      <div class="loecol">${loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), label:(S.title&&S.title!=='pi session')?S.title:'session load'})}</div>
     </div>` };
   });
 }
