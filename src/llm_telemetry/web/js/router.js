@@ -920,7 +920,7 @@ export function pvToggle(n){
 // what pvFilter()/pvSyncCurrent() derive from the on-set, as before.
 // The active filter lives on #tabs[data-kind] so live.js can read it without
 // importing this module.
-export function fbKindGet(){
+function fbKindGet(){
   const el = $('tabs');
   return (el && el.dataset.kind) || 'all';
 }
@@ -945,7 +945,7 @@ export function fbChipHtml(n, names){
   const live = ((PV_ALL[n] && PV_ALL[n].live) || []).length > 0;
   const cur = current !== 'All' && current === n;
   return `<button type="button" class="pchip" data-key="${escA(n)}" data-tab="${escA(n)}" data-off="${off ? 1 : 0}" data-kind="${pk}"`
-    + ` style="--h:${profileHue(n)}" aria-pressed="${!off}"${cur ? ' aria-current="true"' : ''} aria-label="${escA(n)}" tabindex="-1"`
+    + ` style="--h:${profileHue(n)};--k:var(--kind-hermes)" aria-pressed="${!off}"${cur ? ' aria-current="true"' : ''} aria-label="${escA(n)}${live ? ', live' : ''}" tabindex="-1"`
     + ` title="${escA(n)} — ${off ? 'Off — click to turn on' : 'On — click to turn off'}">`
     + `<span class="av">${profileIconHtml(n, 18)}</span>`
     + `<span class="name"><span class="pfx">${esc(pfx)}</span>${esc(rest)}</span>`
@@ -953,11 +953,11 @@ export function fbChipHtml(n, names){
     + (live ? '<span class="live" title="live session" role="img" aria-label="live session"></span>' : '')
     + '</button>';
 }
-export function fbKindsHtml(counts, active){
+function fbKindsHtml(counts, active){
   const seg = (k, label, glyph) => {
     const n = counts[k] || 0;
     return `<button type="button" class="kseg" data-fbkind="${k}" data-key="${k}" style="--k:var(--kind-${k})" tabindex="-1"`
-      + ` aria-pressed="${active === k}" data-empty="${n ? 0 : 1}" title="${escA(label)} — ${n} live">`
+      + ` aria-pressed="${active === k}" data-empty="${n ? 0 : 1}" aria-label="${escA(label)}, ${n} live" title="${escA(label)} — ${n} live">`
       + (glyph ? `<span class="g" aria-hidden="true">${glyph}</span>` : '')
       + `<span class="l">${esc(label)}</span><span class="n">${n}</span></button>`;
   };
@@ -1032,10 +1032,10 @@ export function tabs(){
     const sel = had.manage ? '[data-fbmanage]' : null;
     const el = sel ? bar.querySelector(sel)
       : [...bar.querySelectorAll(had.kind ? '.kseg' : '.pchip')].find(b => b.dataset.key === had.key);
-    if (el) el.focus();
+    (el || bar.querySelector('.fb-strip [tabindex="0"]') || bar).focus();
   }
 }
-export function fbKindSet(k){
+function fbKindSet(k){
   const bar = $('tabs');
   if (!bar) return;
   bar.dataset.kind = (k === 'all' || KIND_ORDER.includes(k)) ? k : 'all';
@@ -1043,15 +1043,18 @@ export function fbKindSet(k){
   renderLive();
 }
 // ---- Manage dialog: native <dialog> (focus trap + Esc + ::backdrop) -----
-export function fbDialogOpen(){
+function fbDialogOpen(){
   const d = document.getElementById('fbdialog');
   return !!(d && d.open);
 }
-export function fbDialogHtml(q){
-  const names = Object.keys(PV_ALL);
+function fbGroupList(kind, q){
   const needle = String(q || '').trim().toLowerCase();
+  return Object.keys(PV_ALL).filter(n => fbProfileKind(n) === kind && n.toLowerCase().includes(needle));
+}
+function fbDialogHtml(q){
+  const names = Object.keys(PV_ALL);
   const groups = FB_GROUPS.map(g => {
-    const list = names.filter(n => fbProfileKind(n) === g.key && n.toLowerCase().includes(needle));
+    const list = fbGroupList(g.key, q);
     if (!list.length) return '';
     const onN = list.filter(n => !pvOff(n)).length;
     const rows = list.map(n => `<div class="pk-row" data-pkrow="${escA(n)}" style="--h:${profileHue(n)}">`
@@ -1074,7 +1077,7 @@ export function fbDialogHtml(q){
     + `<div class="pk-body">${groups || '<p class="muted pk-none">No profile matches.</p>'}</div>`
     + '<div class="pk-foot muted">Checkbox shows or hides a profile · Esc closes</div>';
 }
-export function fbDialogRender(focusSel){
+function fbDialogRender(focusSel){
   const d = document.getElementById('fbdialog');
   if (!d) return;
   const q = (d.querySelector('.pk-q') || {}).value || '';
@@ -1082,7 +1085,7 @@ export function fbDialogRender(focusSel){
   d.querySelectorAll('[data-pkstate="some"]').forEach(c => { c.indeterminate = true; });
   if (focusSel){
     const el = d.querySelector(focusSel);
-    if (el) { el.focus(); if (el.setSelectionRange) { const l = el.value.length; el.setSelectionRange(l, l); } }
+    if (el) { el.focus(); if (el.matches('input[type=search],input[type=text]')) { const l = el.value.length; el.setSelectionRange(l, l); } }
   }
 }
 // Every close path ends at the native 'close' event; focus returns to Manage.
@@ -1090,22 +1093,21 @@ function fbDialogClosed(){
   const b = document.querySelector('[data-fbmanage]');
   if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
 }
-export function fbDialogToggle(open){
+function fbDialogToggle(open){
   const d = document.getElementById('fbdialog');
   if (!d) return;
   fbInstallDialog();
   const want = open === undefined ? !d.open : !!open;
   if (want && !d.open){
     fbDialogRender();
-    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+    d.showModal();
   } else if (!want && d.open){
-    if (typeof d.close === 'function') d.close(); else d.removeAttribute('open');
-    fbDialogClosed();   // synchronous; the later 'close' event repeats it harmlessly
+    d.close();
   }
   const b = document.querySelector('[data-fbmanage]');
   if (b) b.setAttribute('aria-expanded', String(fbDialogOpen()));
 }
-export function fbSetMany(list, on){
+function fbSetMany(list, on){
   const keep = pvOnProfiles().filter(n => !list.includes(n)).length + (on ? list.length : 0);
   if (keep < 1){ flash('At least one profile must stay visible.'); return false; }
   list.forEach(n => pvSet(n, !on));
@@ -1117,7 +1119,7 @@ export function fbSetMany(list, on){
 function fbOtherOverlayOpen(){
   return !!document.querySelector('dialog[open]:not(#fbdialog), [role="dialog"][aria-hidden="false"], #helpwrap.open');
 }
-export function fbInstall(){
+function fbInstall(){
   const bar = $('tabs');
   if (!bar || bar._fbInstalled) return;
   bar._fbInstalled = true;
@@ -1148,13 +1150,13 @@ export function fbInstall(){
   });
   fbInstallDialog();
 }
-export function fbInstallDialog(){
+function fbInstallDialog(){
   const d = document.getElementById('fbdialog');
   if (!d || d._fbInstalled) return;
   d._fbInstalled = true;
-  d.addEventListener('close', fbDialogClosed);
   // Filter typing is debounced and skipped mid-IME-composition.
   let qTimer = null;
+  d.addEventListener('close', () => { clearTimeout(qTimer); fbDialogClosed(); });
   const qRender = () => { clearTimeout(qTimer); fbDialogRender('.pk-q'); };
   d.addEventListener('compositionend', e => { if (e.target.classList.contains('pk-q')) qRender(); });
   d.addEventListener('click', e => {
@@ -1191,7 +1193,7 @@ export function fbInstallDialog(){
       pvToggle(n);
       fbDialogRender(`[data-pkon="${CSS.escape(n)}"]`);
     } else if (t.dataset.pkgrp) {
-      const list = Object.keys(PV_ALL).filter(n => fbProfileKind(n) === t.dataset.pkgrp);
+      const list = fbGroupList(t.dataset.pkgrp, (d.querySelector('.pk-q') || {}).value);
       fbSetMany(list, t.checked);
       fbDialogRender(`[data-pkgrp="${CSS.escape(t.dataset.pkgrp)}"]`);
     } else if (t.dataset.pklogo) {

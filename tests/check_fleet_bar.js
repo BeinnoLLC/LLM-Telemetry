@@ -32,6 +32,10 @@ function bootDOM() {
     beforeParse(w) {
       w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
       w.HTMLCanvasElement.prototype.getContext = () => null;
+      // jsdom's <dialog> lacks showModal/close; the page relies on them (no fallback shipped).
+      const DP = w.HTMLDialogElement.prototype;
+      if (!DP.showModal) DP.showModal = function () { this.setAttribute('open', ''); };
+      if (!DP.close) DP.close = function () { if (this.hasAttribute('open')) { this.removeAttribute('open'); this.dispatchEvent(new w.Event('close')); } };
       function Stub(ctx, cfg) {
         this.config = cfg; this.data = (cfg && cfg.data) || {}; this.destroy = () => {};
         this.update = () => {}; this.options = (cfg && cfg.options) || {};
@@ -156,8 +160,8 @@ setTimeout(() => {
     chk(!hl.querySelector('.ft-cost'), 'no cost_usd: the cost cell is omitted entirely (no dash)');
     chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'coding', phase:'p', idle_s:121})`).includes('data-state="idle"'), 'Hermes idle_s > 120 reads Idle');
     chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'coding', phase:'p', idle_s:120})`).includes('data-state="run"'), 'Hermes idle_s = 120 is still Running');
-    const longTip = w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'c', phase:'${'z'.repeat(200)}<b>"', idle_s:1})`);
-    chk(!/z{81}/.test(longTip) && !longTip.includes('<b>'), 'tooltip is truncated to 80 chars and escaped');
+    const longTip = w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'c', phase:'<b>"${'z'.repeat(200)}', idle_s:1})`);
+    chk(!/z{81}/.test(longTip) && !longTip.includes('<b>') && longTip.includes('&lt;b&gt;'), 'tooltip is truncated to 80 chars and escaped');
     chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'c', cost_usd:0.5, idle_s:1})`).includes('ft-cost">$0.500'), 'finite cost_usd renders the cost cell');
     chk(!w.eval(`fleetTileHtml('pi', {model:'m', phase:'bash', cost_usd:NaN})`).includes('ft-cost'), 'non-finite cost_usd omits the cell');
 
@@ -180,7 +184,7 @@ setTimeout(() => {
     const chips = () => [...d.querySelectorAll('#tabs .pchip')];
     const names = chips().map(c => c.dataset.tab);
     chk(chips().every(c => c.tagName === 'BUTTON' && c.hasAttribute('aria-pressed')), 'chips are <button aria-pressed>');
-    chk(chips().every(c => c.querySelector('.name .pfx') !== null && c.getAttribute('aria-label') === c.dataset.tab), 'chips carry a prefix span and the full name as aria-label');
+    chk(chips().every(c => c.querySelector('.name .pfx') !== null && c.getAttribute('aria-label') === c.dataset.tab + (c.querySelector('.live') ? ', live' : '')), 'chips carry a prefix span and the full name (+ ", live") as aria-label');
     chk(chips().every(c => (c.dataset.kind === 'bot') === !!c.querySelector('.kd')), 'only server-kind bot chips carry a glyph');
     chk(chips().every(c => !/^(pi|claude|codex)$/.test(c.dataset.kind)), 'no chip is classified from its name (no pi/claude/codex kind)');
     const n0 = names[0];
@@ -279,13 +283,25 @@ setTimeout(() => {
     const ks = [...d.querySelectorAll('.fb-kinds .kseg')];
     ks[0].focus(); press('ArrowRight', ks[0]);
     chk(d.activeElement === d.querySelectorAll('.fb-kinds .kseg')[1], 'ArrowRight works on the kind filter too');
+    chk([...d.querySelectorAll('.kseg')].every(b => /^.+, \d+ live$/.test(b.getAttribute('aria-label'))), 'kind buttons carry an accessible name "<label>, <n> live"');
+
+    // ---- focus: poll-driven tabs() never steals it; a removed chip falls back to the strip
+    const outside = d.createElement('input'); d.body.appendChild(outside); outside.focus();
+    w.eval('tabs()');
+    chk(d.activeElement === outside, 'a poll-driven tabs() leaves focus in an outside <input>');
+    outside.remove();
+    const lastChip = chips()[chips().length - 1];
+    lastChip.focus();
+    w.eval(`delete PV_ALL[${JSON.stringify(lastChip.dataset.tab)}]; tabs();`);
+    chk(d.activeElement && d.activeElement.closest('.fb-strip') && d.activeElement.getAttribute('tabindex') === '0', 'focused chip removed by a re-render: focus lands on the strip tabindex=0 item, not <body>');
+    w.eval(`PV_ALL[${JSON.stringify(lastChip.dataset.tab)}] = JSON.parse(JSON.stringify(PV_ALL[${JSON.stringify(n0)}])); tabs();`);
 
     // ---- hostile profile name: chip + dialog ----------------------------
     const bad = `x"><img src=x onerror="window.__pwn=1"> 'q'`;
     w.eval(`PV_ALL[${JSON.stringify(bad)}] = JSON.parse(JSON.stringify(PV_ALL[${JSON.stringify(n0)}])); tabs();`);
     const hc = [...d.querySelectorAll('.pchip')].find(c => c.dataset.tab === bad);
     chk(!!hc && !d.querySelector('#tabs img[src="x"]'), 'hostile name: chip exists and no <img> was injected');
-    chk(hc.getAttribute('aria-label') === bad && hc.querySelector('.name').textContent.includes('<img'), 'hostile name is shown as text and round-trips through the attribute');
+    chk(hc.getAttribute('aria-label').startsWith(bad) && hc.querySelector('.name').textContent.includes('<img'), 'hostile name is shown as text and round-trips through the attribute');
     w.eval('fbDialogToggle(true)');
     chk(!dlg.querySelector('img[src="x"]') && !!dlg.querySelector('.nm') && [...dlg.querySelectorAll('.nm')].some(e => e.textContent === bad), 'hostile name in the dialog is text, not markup');
     chk(w.__pwn === undefined, 'no handler from the hostile name executed');
@@ -300,7 +316,25 @@ setTimeout(() => {
     const offBefore = w.eval('pvOnProfiles().length');
     grp('bot').checked = false; grp('bot').dispatchEvent(new w.Event('change', { bubbles: true }));
     chk(w.eval(`pvOff(${JSON.stringify(h0)})`) === true, 'group checkbox switches every bot off in one click');
-    chk(d.activeElement === dlg.querySelector('[data-pkgrp="bot"]') || !dlg.querySelector('[data-pkgrp="bot"]'), 'focus stays on the group checkbox after the dialog re-renders');
+    chk(d.activeElement === dlg.querySelector('[data-pkgrp="bot"]'), 'focus stays on the group checkbox after the dialog re-renders');
+    // regression: Chrome throws on setSelectionRange for checkboxes/buttons
+    let ssr = 0;
+    const cb = dlg.querySelector('[data-pkgrp="bot"]') || dlg.querySelector('[data-pkon]');
+    const ssrOrig = w.HTMLInputElement.prototype.setSelectionRange;
+    w.HTMLInputElement.prototype.setSelectionRange = function () { if (this.type !== 'search' && this.type !== 'text') ssr++; throw new w.Error('InvalidStateError'); };
+    let thrown = null;
+    try { cb.checked = !cb.checked; cb.dispatchEvent(new w.Event('change', { bubbles: true })); } catch (e) { thrown = e; }
+    chk(ssr === 0 && !thrown, 'toggling a checkbox never calls setSelectionRange on it', thrown && thrown.message);
+    w.HTMLInputElement.prototype.setSelectionRange = ssrOrig;
+    // group checkbox acts on the search-filtered rows only
+    w.eval(`pvSet(${JSON.stringify(h0)}, true); pvSet(${JSON.stringify(h1)}, true); DATA.profiles = pvFilter(); pvSyncCurrent(); tabs()`);
+    w.eval('fbDialogToggle(false)');
+    w.eval(`PV_ALL[${JSON.stringify(h0)}].kind = 'profile'; PV_ALL[${JSON.stringify(h1)}].kind = 'profile'; fbDialogToggle(true)`);
+    const qi = dlg.querySelector('.pk-q'); qi.value = h0; w.eval("fbDialogRender('.pk-q')");
+    const pg = dlg.querySelector('[data-pkgrp="profile"]');
+    pg.checked = true; pg.dispatchEvent(new w.Event('change', { bubbles: true }));
+    chk(w.eval(`pvOff(${JSON.stringify(h0)})`) === false && w.eval(`pvOff(${JSON.stringify(h1)})`) === true, 'group checkbox only switches the search-filtered rows');
+    dlg.querySelector('.pk-q').value = '';
     w.eval('fbDialogToggle(false)');
     w.eval(`PV_ALL[${JSON.stringify(h0)}].kind = 'profile'; fbDialogToggle(true)`);
     const g = dlg.querySelector('[data-pkgrp="profile"]');

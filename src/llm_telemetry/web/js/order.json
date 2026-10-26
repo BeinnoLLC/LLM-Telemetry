@@ -1715,6 +1715,10 @@
   },
   {
    "mod": "router",
+   "name": "fbGroupList"
+  },
+  {
+   "mod": "router",
    "name": "fbDialogHtml"
   },
   {
