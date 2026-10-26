@@ -1022,18 +1022,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kpi-badge{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;flex:none}
 .kpi-badge svg{width:18px;height:18px}
-/* Reference-card structure: badge+name header at the top (vertically
-   centered with the icon), big number below it, sparkline trend underneath
-   the number as a full-width footer. The card height is set so every card
-   in the strip — number or ring — finishes at the same baseline; the ring
-   card centres its gauge+label inside that fixed-height body. */
 .kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
-/* LST-252: uppercase nowrap titles ("CACHE HIT RATE", "SUCCESS RATE") are
-   wider than the ~50px lane left of the badge at 3-up/narrow widths, so the
-   name escaped the card edge instead of truncating. min-width:0 lets the
-   flex child actually shrink; the ellipsis keeps truncation visible and the
-   title attribute in views.js carries the full label. Same recipe as the
-   home scorecards (.lkpi-num) above. */
+/* LST-252: min-width:0 lets the nowrap title shrink and ellipsise */
 .kpi-name{font-size:var(--fs-xs);font-weight:700;letter-spacing:.01em;
   color:var(--muted);text-transform:uppercase;white-space:nowrap;
   min-width:0;overflow:hidden;text-overflow:ellipsis}
