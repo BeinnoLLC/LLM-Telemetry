@@ -20,7 +20,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from . import collect_analytics as EA
-from . import collect_pi_live
+from . import collect_agent_worker_live, collect_pi_live
 from .schema import stamp
 from .schema_check import check
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
@@ -199,6 +199,15 @@ def read_pi_live():
         return []
 
 
+def read_agent_live():
+    """Live Claude Code / Codex sessions (agent-worker); failures contained to
+    an empty list for the same reason as read_pi_live."""
+    try:
+        return collect_agent_worker_live.build_agent_live()
+    except Exception:
+        return []
+
+
 def build_live():
     out = {
         "generated": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -207,6 +216,7 @@ def build_live():
         "errors": tail_errors(),
         "ollama": read_ollama(),
         "pi_live": read_pi_live(),
+        "agent_live": read_agent_live(),
     }
     for name, db in EA.PROFILES.items():
         if not os.path.exists(db):

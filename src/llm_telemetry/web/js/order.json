@@ -983,6 +983,10 @@
   },
   {
    "mod": "live",
+   "name": "dedupAgentLive"
+  },
+  {
+   "mod": "live",
    "name": "liveKpis"
   },
   {
@@ -1000,6 +1004,10 @@
   {
    "mod": "live",
    "name": "piLiveRows"
+  },
+  {
+   "mod": "live",
+   "name": "agentLiveRows"
   },
   {
    "mod": "live",

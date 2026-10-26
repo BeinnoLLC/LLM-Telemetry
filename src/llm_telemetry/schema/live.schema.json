@@ -1008,6 +1008,63 @@
     },
     "additionalProperties": true
    }
+  },
+  "agent_live": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "items": {
+    "type": [
+     "null",
+     "object"
+    ],
+    "properties": {
+     "engine": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "session_id": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "title": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "model": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "idle_s": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "phase": {
+      "type": [
+       "null",
+       "string"
+      ]
+     },
+     "mtime": {
+      "type": [
+       "null",
+       "number"
+      ]
+     }
+    },
+    "additionalProperties": true
+   }
   }
  },
  "required": [

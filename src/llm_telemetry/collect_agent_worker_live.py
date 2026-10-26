@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""Live Claude Code / Codex CLI sessions (agent-worker), for the Live view.
+
+Same "file is the state" convention as collect_pi_live.py: each CLI appends to
+one JSONL transcript per session, so a session is live exactly when its file's
+mtime is recent. Discovery globs, per engine:
+
+  claude  $LLM_TELEMETRY_CLAUDE_HOME (default ~/.claude)/projects/<slug>/<uuid>.jsonl
+  codex   $LLM_TELEMETRY_CODEX_HOME  (default ~/.codex)/sessions/Y/M/D/rollout-*.jsonl
+
+Privacy: transcripts hold prompts, replies and tool arguments. Only metadata
+is extracted -- session id, model name, last-event time and a coarse phase (a
+tool NAME, "thinking", "responding", "idle"). Message text and tool
+input/arguments are never copied into the result; the cwd is read only to
+derive the title (its basename) and the absolute path is never emitted. Models are reported only when the transcript names one (never
+guessed).
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import time
+from pathlib import Path
+from typing import Any, Iterable, Optional
+
+from .collect_pi_agents import _iso_to_unix
+
+STALE_WINDOW_S = 180
+# Only the head (session metadata) and tail (latest activity) of a transcript
+# are read; a long-running session's file can be tens of MB.
+TAIL_BYTES = 256 * 1024
+HEAD_BYTES = 64 * 1024
+_SAFE_NAME = re.compile(r"[^A-Za-z0-9_.:\-]")
+NAME_MAX = 40
+
+
+def _safe_name(name: Any) -> str:
+    """A tool name reduced to a conservative charset/length, so even a
+    pathological name cannot smuggle free text into the phase."""
+    return _SAFE_NAME.sub("", str(name))[:NAME_MAX]
+
+
+def _read_events(path: Path, head: bool = False) -> list[dict[str, Any]]:
+    """Parsed JSON objects from the head or tail of ``path``. A partial first
+    line of a tail window (cut mid-record) and unparseable lines are skipped."""
+    try:
+        size = path.stat().st_size
+        with open(path, "rb") as fh:
+            if head:
+                data = fh.read(HEAD_BYTES)
+            else:
+                start = max(0, size - TAIL_BYTES)
+                fh.seek(start)
+                data = fh.read()
+                if start > 0:
+                    data = data.split(b"\n", 1)[-1]
+    except OSError:
+        return []
+    out = []
+    for line in data.splitlines():
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+    return out
+
+
+def _ts(event: dict[str, Any]) -> Optional[float]:
+    raw = event.get("timestamp")
+    if not raw:
+        return None
+    try:
+        return _iso_to_unix(raw)
+    except Exception:
+        return None
+
+
+def _model_str(value: Any) -> Optional[str]:
+    return value.strip()[:80] if isinstance(value, str) and value.strip() else None
+
+
+# ---- Claude Code -----------------------------------------------------------
+
+def _claude_phase(event: dict[str, Any]) -> Optional[str]:
+    typ = event.get("type")
+    msg = event.get("message")
+    if not isinstance(msg, dict):
+        return None
+    content = msg.get("content")
+    if typ == "assistant":
+        if not isinstance(content, list):
+            return "responding"
+        tool = None
+        thinking = False
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") == "tool_use" and item.get("name"):
+                tool = _safe_name(item["name"])
+            elif item.get("type") == "thinking":
+                thinking = True
+        if tool:
+            return f"running {tool}"
+        return "thinking" if thinking and len(content) == 1 else "responding"
+    if typ == "user":
+        # A prompt or a tool result just arrived: the model is working on it.
+        return "thinking"
+    return None
+
+
+def parse_claude_session(path: Path) -> Optional[dict[str, Any]]:
+    tail = _read_events(path)
+    head = _read_events(path, head=True)
+    if not head and not tail:
+        return None
+    cwd = model = None
+    last_ts: Optional[float] = None
+    phase = "idle"
+    for ev in head:
+        if cwd is None and isinstance(ev.get("cwd"), str):
+            cwd = ev["cwd"]
+    for ev in tail:
+        t = _ts(ev)
+        if t is not None and (last_ts is None or t >= last_ts):
+            last_ts = t
+        if isinstance(ev.get("cwd"), str):
+            cwd = ev["cwd"]
+        msg = ev.get("message")
+        if ev.get("type") == "assistant" and isinstance(msg, dict):
+            m = _model_str(msg.get("model")) or _model_str(ev.get("requestedModel"))
+            # "<synthetic>" marks client-generated placeholder messages.
+            if m and not m.startswith("<"):
+                model = m
+        p = _claude_phase(ev)
+        if p:
+            phase = p
+        # A finished turn: the last assistant record ended with end_turn. Any
+        # later user/tool record overwrites this via _claude_phase above.
+        if (ev.get("type") == "assistant" and isinstance(msg, dict)
+                and msg.get("stop_reason") == "end_turn"):
+            phase = "idle"
+    sid = path.stem
+    return {"session_id": sid, "cwd": cwd or "", "model": model,
+            "last_ts": last_ts, "phase": phase}
+
+
+# ---- Codex CLI ------------------------------------------------------------
+
+def _codex_phase(event: dict[str, Any]) -> Optional[str]:
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    ptype = payload.get("type")
+    if event.get("type") == "response_item":
+        if ptype in ("function_call", "custom_tool_call", "local_shell_call"):
+            name = payload.get("name") or ("shell" if ptype == "local_shell_call" else None)
+            return f"running {_safe_name(name)}" if name else "running tool"
+        if ptype in ("function_call_output", "custom_tool_call_output"):
+            return "thinking"
+        if ptype == "reasoning":
+            return "thinking"
+        if ptype == "message":
+            return "thinking" if payload.get("role") == "user" else "responding"
+    elif event.get("type") == "event_msg":
+        if ptype in ("task_complete", "turn_aborted", "shutdown_complete"):
+            return "idle"
+        if ptype in ("task_started", "user_message"):
+            return "thinking"
+    return None
+
+
+def parse_codex_session(path: Path) -> Optional[dict[str, Any]]:
+    head = _read_events(path, head=True)
+    tail = _read_events(path)
+    if not head and not tail:
+        return None
+    sid = cwd = model = None
+    for ev in head:
+        payload = ev.get("payload")
+        if ev.get("type") == "session_meta" and isinstance(payload, dict):
+            sid = sid or (payload.get("id") if isinstance(payload.get("id"), str) else None)
+            cwd = cwd or (payload.get("cwd") if isinstance(payload.get("cwd"), str) else None)
+            model = model or _model_str(payload.get("model"))
+    last_ts: Optional[float] = None
+    phase = "idle"
+    for ev in tail:
+        t = _ts(ev)
+        if t is not None and (last_ts is None or t >= last_ts):
+            last_ts = t
+        payload = ev.get("payload")
+        if ev.get("type") == "turn_context" and isinstance(payload, dict):
+            model = _model_str(payload.get("model")) or model
+            if isinstance(payload.get("cwd"), str):
+                cwd = payload["cwd"]
+        p = _codex_phase(ev)
+        if p:
+            phase = p
+    if not sid:
+        m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$", path.stem)
+        sid = m.group(1) if m else path.stem
+    return {"session_id": sid, "cwd": cwd or "", "model": model,
+            "last_ts": last_ts, "phase": phase}
+
+
+# ---- discovery + assembly -------------------------------------------------
+
+def _recent(paths: Iterable[Path], now: float, stale_window_s: int) -> list[tuple[Path, float]]:
+    out = []
+    for p in paths:
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        if now - mtime <= stale_window_s:
+            out.append((p, mtime))
+    return out
+
+
+def discover_claude(home: Path, now: float, stale_window_s: int) -> list[tuple[Path, float]]:
+    return _recent(home.glob("projects/*/*.jsonl"), now, stale_window_s)
+
+
+def discover_codex(home: Path, now: float, stale_window_s: int) -> list[tuple[Path, float]]:
+    return _recent(home.glob("sessions/*/*/*/rollout-*.jsonl"), now, stale_window_s)
+
+
+def build_agent_live(claude_home: Optional[os.PathLike] = None,
+                     codex_home: Optional[os.PathLike] = None,
+                     now: Optional[float] = None,
+                     stale_window_s: int = STALE_WINDOW_S) -> list[dict[str, Any]]:
+    """Currently-live Claude Code and Codex sessions in ONE list, each tagged
+    ``engine`` ('claude' | 'codex'), most recently active first."""
+    now = now if now is not None else time.time()
+    chome = Path(claude_home) if claude_home is not None else Path(
+        os.environ.get("LLM_TELEMETRY_CLAUDE_HOME") or (Path.home() / ".claude"))
+    xhome = Path(codex_home) if codex_home is not None else Path(
+        os.environ.get("LLM_TELEMETRY_CODEX_HOME") or (Path.home() / ".codex"))
+
+    best: dict[tuple[str, str], dict[str, Any]] = {}
+    for engine, found, parse in (
+            ("claude", discover_claude(chome, now, stale_window_s), parse_claude_session),
+            ("codex", discover_codex(xhome, now, stale_window_s), parse_codex_session)):
+        for path, mtime in found:
+            s = parse(path)
+            if s is None:
+                continue
+            last = s["last_ts"] if s["last_ts"] is not None else mtime
+            cwd = s["cwd"]
+            title = os.path.basename(cwd.rstrip("/")) if cwd else ""
+            row = {
+                "engine": engine,
+                "session_id": s["session_id"],
+                "title": title or engine,
+                "model": s["model"],
+                "idle_s": round(max(0.0, now - last), 1),
+                "phase": s["phase"],
+                "mtime": mtime,
+            }
+            # One row per engine:session_id (a resumed/forked transcript can
+            # repeat an id across files): keep the most recently written.
+            key = (engine, str(s["session_id"]))
+            if key not in best or mtime > best[key]["mtime"]:
+                best[key] = row
+    out = list(best.values())
+    out.sort(key=lambda s: s["idle_s"])
+    return out
+
+
+if __name__ == "__main__":
+    print(json.dumps(build_agent_live(), indent=2, default=str))
