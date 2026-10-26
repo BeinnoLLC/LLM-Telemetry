@@ -51,13 +51,10 @@ function liveGroupKeyOf(el){
 // #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
 // alive, calls/tokens in the last 5 minutes, active alerts.
 //
-// The live feed carries CUMULATIVE per-session counters (models[].calls /
-// in_tok / out_tok), not a rate, so throughput is derived client-side: each
-// poll diffs every session against its previous sample and the per-poll
-// deltas land in a 5-minute ring. A session already open at the first sample
-// is a baseline (its history predates the window); one that appears later
-// started inside the window, so its whole count is in-window. Ended sessions
-// simply stop contributing. Profiles are kept apart so a profile tab shows
+// The live feed carries CUMULATIVE per-session counters, so throughput is
+// derived client-side: each poll diffs every session against its previous
+// sample into a 5-minute ring. A session open at the first sample is a
+// baseline; one that appears later counts whole. Ended sessions simply stop contributing. Profiles are kept apart so a profile tab shows
 // its own throughput and the merged view sums them.
 export const TPUT_WINDOW_S = 300;
 export let tputPrev = null;     // session id -> {c, k}; null until the first sample
@@ -249,28 +246,14 @@ export function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
-// PI agent sessions carry no sqlite state collect_live.py can query (#245) —
-// their JSONL files ARE the live state — so they ride a flat top-level list
-// (DATA.pi_live) rather than living inside a Hermes profile's `live` array.
-// Merged into '#livelist' (the same list Hermes sessions render into)
-// instead of a separate '#pilivecard' — both kinds of bot answer the
-// same question ("what is running right now") so they share one list and one
-// row shape; kindBadge('pi') is the only thing that still tells them apart.
-// Returns {key, html} entries shaped for applyDiff, keyed by the PI session
-// id (prefixed 'pi:' so it can never collide with a Hermes session id).
+// PI sessions (#245) have no sqlite state: their JSONL files are the live
+// state, so they ride the flat DATA.pi_live list and share '#livelist' and
+// one row shape with Hermes (kindBadge('pi') tells them apart). Returns
+// {key, html} for applyDiff, keyed 'pi:'+session id.
 //
-// LST-251: a PI row used to end at the basic status line above (title, agent
-// chip, phase, model, idle) while a Hermes row also got the loeIcon load
-// gauge, its tool chips, a model-switch note and bandwidth. collect_pi_live
-// now reads that same level of detail off the JSONL (recent tool calls,
-// init_model/switched, uptime, token/cost totals — see its module docstring),
-// so the row below renders it the same way Hermes rows do: same gauge
-// component, same tool-chip markup, same switched-model note. The gauge is
-// fed S.tools_gauge (PI tool names translated to the Hermes-named categories
-// loeIcon's heavy/light sets recognise -- see collect_pi_live.gauge_tools),
-// while the chips above it keep showing S.tools' real PI tool names. Bandwidth is
-// the one thing genuinely NOT ported — PI tracks no up/down byte counters —
-// so bwRow is skipped rather than faked.
+// LST-251: PI rows get Hermes parity -- loeIcon gauge (fed S.tools_gauge, PI
+// tool names aliased to Hermes categories), tool chips (S.tools), model-switch
+// note, uptime. Bandwidth is skipped: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
@@ -475,15 +458,6 @@ export function renderLive(){
 
 }
 
-// LOE indicator — a speedometer in its own column (#7/#8/#9/#10/#12 rebuild).
-// A 270° instrument dial: gradient progress arc (green->amber->red across the
-// whole sweep) plus a needle that TRAVELS from its previous angle to the new
-// one on every refresh (so a refresh is visibly alive, not a permanent idle
-// wobble), a small settled tremor, and a real numeric readout — legible
-// without a tooltip, and exposed to assistive tech as a proper meter.
-// Inline SVG: no canvas, no library, no layout pass. One fixed 100x100
-// viewBox scaled purely by CSS width/height (--gauge-size / .sz-sm|md|lg), so
-// every stroke/tick/font scales together instead of going spindly at 132px.
 export function mergeDelegations(list){
   const parts = (list || []).filter(Boolean);
   if (!parts.length) return null;
@@ -556,13 +530,9 @@ export async function doRefresh(silent){
     const bad = schemaProblem(fresh, 'analytics-data.json');
     if (bad) { showSchemaError(bad); throw new Error(bad); }
     if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
-    // Router data (#130) is merged into dashboard.html at BUILD time only —
-    // build_dashboard.py folds router-data.json in, analytics-data.json never
-    // carries it. Swapping DATA wholesale therefore blanked the Router tab to
-    // "No router data" on the very first refresh (the ↻ button and the 60s
-    // rebuild alike), which read like the hourly job had never run. Fetch the
-    // hourly payload here too, so a refresh carries it across AND picks up a
-    // newer collection; anything short of a good payload keeps what the page
+    // Router data (#130) is merged at BUILD time only; swapping DATA wholesale
+    // would blank the Router tab on refresh, so fetch the hourly payload too;
+    // anything short of a good payload keeps what the page
     // booted with rather than emptying the tab.
     let router = null;
     try {
