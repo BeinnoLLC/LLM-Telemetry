@@ -177,8 +177,8 @@ WEB_RATES = {
     "kimi-k2.6":              (0.95,  4.00,  0.16),
     "minimax-m3":             (0.60,  2.40,  0.12),
     "nemotron-3-nano":        (0.06,  0.24,  0.0),
-    "nemotron-3-super":       (0.015, 0.60,  0.015),
-    "nemotron-3-ultra":       (0.10,  3.00,  0.10),
+    "nemotron-3-super":       (0.30,  2.40,  0.0),
+    "nemotron-3-ultra":       (0.60,  2.40,  0.0),
     "qwen3.5:397b":           (0.60,  3.60,  0.0),
 }
 
@@ -202,6 +202,9 @@ ALIASES = {
     "accounts/fireworks/models/deepseek-v4-pro-0813": "deepseek/deepseek-v4-pro-0813",
     "accounts/fireworks/models/deepseek-v4-flash-0731": "deepseek/deepseek-v4-flash-0731",
     "accounts/fireworks/models/kimi-k3": "moonshotai/kimi-k3",
+    # no Fireworks-specific rate is recorded for this SKU, so it is priced at the
+    # generic z-ai/glm-5.3-flash catalogue rate (add a RATE_OVERRIDES line if
+    # Fireworks' own price is ever pinned)
     "accounts/fireworks/models/glm-5p3-flash": "z-ai/glm-5.3-flash",
     "gpt-5.6-luna": "openai/gpt-5.6-luna",
     "gpt-5.3-codex": "openai/gpt-5.3-codex",
@@ -213,6 +216,7 @@ ALIASES = {
     "kimi-k2.6": "moonshotai/kimi-k2.6",
     "kimi-k2.5": "moonshotai/kimi-k2.5",
     "gpt-5.1-codex": "openai/gpt-5.1-codex",
+    "minimax-m3": "minimax/minimax-m3",
     "qwen3.7-max": "qwen/qwen3.7-max",
     "qwen3.5:397b": "qwen/qwen3.5-397b-a17b",
     "nemotron-3-nano": "nvidia/nemotron-3-nano-30b-a3b",
@@ -378,7 +382,10 @@ def _fetch_openrouter(force=False):
         return models, "live"
     except Exception as e:
         if os.path.exists(CACHE):
-            return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
+            try:
+                return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
+            except Exception:
+                pass  # corrupt cache while offline: built-in rates take over
         return {}, f"unavailable ({e.__class__.__name__})"
 
 
@@ -554,6 +561,10 @@ def _live_rate(model, catalog):
         return None
     if any(x < 0 for x in r):
         return None
+    if not any(r) and not is_free_tier(model):
+        # all-zero on a non-free id is a promo/data error: fall through to the
+        # built-in rate rather than pricing the model at $0
+        return None
     return r
 
 
@@ -642,7 +653,7 @@ def price_row(row, catalog):
     if r is None:
         r = None if is_free_tier(model) else rates_for(model, catalog)
         if r:
-            rate_source = "catalog"
+            rate_source = "local" if is_local(model) else "catalog"
     if cls == "local" and not is_local(model):
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)

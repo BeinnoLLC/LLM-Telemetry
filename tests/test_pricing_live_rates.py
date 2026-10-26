@@ -64,6 +64,47 @@ chk(P.rate_origin("minimax-m3", {})[0] == "builtin" and per_m(P.rates_for("minim
 chk(per_m(P.rates_for("gpt-oss:20b-cloud", CAT))[:2] == (0.018, 0.09),
     "a cloud-tagged gpt-oss id uses the live entry")
 
+print("all-zero live entry does not win")
+ZERO = {"minimax/minimax-m3": {"prompt": "0", "completion": "0", "input_cache_read": "0"}}
+chk(per_m(P.rates_for("minimax-m3", ZERO))[:2] == (0.60, 2.40), "0/0 minimax-m3 uses the built-in 0.60/2.40",
+    per_m(P.rates_for("minimax-m3", ZERO)))
+chk(P.rate_origin("minimax-m3", ZERO)[0] == "builtin", "0/0 live entry is not a catalogue origin")
+r = P.price_row({"provider": "ollama-cloud", "base_url": "https://ollama.com/v1", "model": "minimax-m3:cloud",
+                 "input_tokens": 1_000_000, "output_tokens": 0}, ZERO)
+chk(r["priced"] and abs(r["billed_usd"] - 0.60) < 1e-9, "0/0 entry is billed at the built-in rate, not $0", r["billed_usd"])
+chk(P._live_rate("foo/bar:free", {"foo/bar:free": {"prompt": "0", "completion": "0"}}) == (0.0, 0.0, 0.0),
+    "a :free id may keep a genuine 0/0 entry")
+
+print("built-in fallbacks match the live catalogue")
+chk(per_m(P.rates_for("nemotron-3-super", {}))[:2] == (0.30, 2.40), "nemotron-3-super fallback 0.30/2.40")
+chk(per_m(P.rates_for("nemotron-3-ultra", {}))[:2] == (0.60, 2.40), "nemotron-3-ultra fallback 0.60/2.40")
+
+print("corrupt cache while offline")
+import tempfile, urllib.request
+tmp = tempfile.mkdtemp()
+_c, _u = P.CACHE, urllib.request.urlopen
+P.CACHE = os.path.join(tmp, "pricing-cache.json")
+open(P.CACHE, "w").write("{not json")
+
+
+def _boom(*a, **k):
+    raise OSError("offline")
+
+
+urllib.request.urlopen = _boom
+try:
+    models, src = P._fetch_openrouter(force=True)
+    chk(models == {} and src.startswith("unavailable"), "corrupt cache + offline -> empty catalogue, no raise", src)
+    chk(per_m(P.rates_for("minimax-m3", models))[:2] == (0.60, 2.40), "built-in rates take over")
+except Exception as ex:
+    chk(False, "corrupt cache + offline must not raise", repr(ex))
+finally:
+    P.CACHE, urllib.request.urlopen = _c, _u
+
+print("price sheet keeps cloud gpt-oss rows")
+names = {m["model"] for m in B.assemble({"profiles": {}}, CAT)}
+chk("openai/gpt-oss-20b" in names, "openai/gpt-oss-20b stays on the sheet")
+
 print("override list")
 chk(set(P.RATE_OVERRIDES) >= {"glm-5.3", "kimi-k3"}, "glm-5.3 and kimi-k3 are overrides")
 chk(per_m(P.rates_for("glm-5.3", CAT))[:2] == (1.40, 4.40), "glm-5.3 keeps 1.40/4.40 over live 0.07/1.40")
@@ -113,7 +154,7 @@ print("local / free labelling")
 for m in ("gpt-oss:20b", "qwen3.8:latest", "qwen3:14b", "qwen3-coder:30b", "deepseek-r1:14b"):
     r = P.price_row({"provider": "custom", "base_url": "http://192.168.1.5:11434/v1", "model": m,
                      "input_tokens": 1000, "output_tokens": 1000}, CAT)
-    chk(r["cost_class"] == "local" and r["priced"] and r["energy_usd"] > 0 and r["rate_source"] in ("", "catalog", "energy"),
+    chk(r["cost_class"] == "local" and r["priced"] and r["energy_usd"] > 0 and r["rate_source"] == "local",
         f"{m} is local, priced, energy-costed", r["cost_class"])
 r = P.price_row({"provider": "", "base_url": "", "model": "stepfun/step-3.7-flash:free",
                  "input_tokens": 1000, "output_tokens": 1000}, CAT)

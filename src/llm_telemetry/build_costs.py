@@ -145,7 +145,8 @@ def assemble(data, catalog, installed=()):
             universe.discard(oid)
     for w in (*P.WEB_RATES, *P.RATE_OVERRIDES):
         oid = P.ALIASES.get(w)
-        if oid and oid != w:
+        # a local/energy-priced alias ("gpt-oss:20b") must not hide the cloud id
+        if oid and oid != w and not P.is_local(w):
             universe.discard(oid)
     universe.discard("")
 
