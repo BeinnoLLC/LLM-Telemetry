@@ -12,6 +12,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 PY = sys.executable
@@ -56,6 +57,13 @@ with tempfile.TemporaryDirectory() as root:
 
     con.execute("update sessions set compression_failure_cooldown_until=?, compression_failure_error=? where id='cxsess'",
                 (9999999999, "RateLimitError: exceeded quota\nfull traceback\nmore lines"))
+    # The collector only looks at the last 30 days (now - 2592000), so fixture
+    # timestamps must be relative to now: the hardcoded epoch 1790000000
+    # (2026-09-21) aged out of that window on 2026-10-21 and broke this test.
+    # Shift every fixture timestamp so the base sits one hour in the past.
+    delta = int(time.time()) - 3600 - 1790000000
+    con.execute("update sessions set started_at = started_at + ?", (delta,))
+    con.execute("update messages set timestamp = timestamp + ?", (delta,))
     con.commit()
     con.close()
 
