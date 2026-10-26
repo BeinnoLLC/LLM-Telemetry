@@ -35,7 +35,9 @@ function liveGroupKeyOf(el){
     const btn = el.querySelector('[data-tsession]');
     if (btn) return btn.getAttribute('data-tsession');
     const pisession = el.getAttribute('data-pisession');
-    return pisession ? 'pi:' + pisession : null;
+    if (pisession) return 'pi:' + pisession;
+    const agentsession = el.getAttribute('data-agentsession');
+    return agentsession ? (el.getAttribute('data-engine') || 'agent') + ':' + agentsession : null;
   }
   if (el.classList && el.classList.contains('lmpanel')){
     // A panel FOLLOWS its row, so it belongs to the row's group (data-lmp
@@ -116,24 +118,28 @@ function mergedField(profiles, field){
     .filter(([n]) => n !== 'All')
     .flatMap(([, q]) => (q && q[field]) || []);
 }
-export function liveKpis(p, name, now, profiles){
+export function liveKpis(p, name, now, profiles, agentLive){
   const seen = new Set();
-  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length;
+  // Claude/Codex sessions (DATA.agent_live) are fleet-wide like PI's, shown on
+  // every tab. A transcript written to within the staleness window is both
+  // "in flight" and "alive", so they add to both KPI numerators/denominators.
+  const extra = (agentLive || []).filter(Boolean).length;
+  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length + extra;
   const merged = name === 'All' && profiles;
   const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
-  const alive = agents.filter(a => a && a.state === 'alive').length;
+  const alive = agents.filter(a => a && a.state === 'alive').length + extra;
   const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
   return {
-    sessions, alive, agents: agents.length,
+    sessions, alive, agents: agents.length + extra,
     alerts: alerts.length,
     critical: alerts.filter(a => a && a.severity === 'critical').length,
     tput: throughputFor(name, now),
   };
 }
-export function renderLiveKpis(p, name, now, profiles){
+export function renderLiveKpis(p, name, now, profiles, agentLive){
   const box = $('livekpis');
   if (!box) return null;
-  const k = liveKpis(p, name, now, profiles);
+  const k = liveKpis(p, name, now, profiles, agentLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
@@ -162,6 +168,8 @@ export function renderLiveKpis(p, name, now, profiles){
 // than a new badge style — only the glyph/colour/label differ per kind.
 const KIND_META = {
   pi:     { sig: '\u2699', color: 'hsl(265 55% 64%)', label: 'PI',     title: 'PI coding agent (pi-worker)' },
+  claude: { sig: '\u2735', color: 'hsl(18 70% 60%)',  label: 'Claude', title: 'Claude Code agent (agent-worker)' },
+  codex:  { sig: '\u25A3', color: 'hsl(152 50% 52%)', label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
   hermes: { sig: '\u25C9', color: 'hsl(199 60% 56%)', label: 'Hermes', title: 'Hermes session' },
 };
 export function kindBadge(kind){
@@ -204,9 +212,33 @@ function piLiveRows(list){
   });
 }
 
+// Claude Code / Codex CLI sessions (agent-worker) ride DATA.agent_live, one
+// flat fleet-wide list tagged with `engine`. Same row shape as PI rows, keyed
+// '<engine>:<session id>' so ids cannot collide across engines or with Hermes.
+function agentLiveRows(list){
+  return (list || []).filter(Boolean).map(S => {
+    const engine = S.engine === 'codex' ? 'codex' : 'claude';
+    const mcol = colorOf(short(S.model));
+    return { key: engine + ':' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}">
+      <div class="flex-1 min-w-0 self-center">
+        <div class="flex items-center gap-2 flex-wrap">
+          ${kindBadge(engine)}
+          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.cwd||'')}">${esc(S.title || engine + ' session')}</span>
+        </div>
+        <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
+      </div>
+      <div class="metacol shrink-0">
+        <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
+        <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
+      </div>
+      <div class="loecol"></div>
+    </div>` };
+  });
+}
+
 export function renderLive(){
   const p = DATA.profiles[current] || {};
-  renderLiveKpis(p, current, undefined, DATA.profiles);
+  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
@@ -220,6 +252,7 @@ export function renderLive(){
   // sqlite row to filter by, so they show on every tab, merged into this
   // same list.
   const piRows = piLiveRows(DATA.pi_live);
+  const agentRows = agentLiveRows(DATA.agent_live);
   const box = $('livelist');
   if(!box) return;
 
@@ -241,7 +274,7 @@ export function renderLive(){
     fanoutEl.hidden = fanouts.length === 0;
   }
 
-  if(!live.length){
+  if(!live.length && !piRows.length && !agentRows.length){
     // Fade the list out (if it had content), then show the empty state.
     // applyDiff can't do this: the empty state is not a keyed row, it is a
     // swap of the whole box. Only rebuild when the content actually changes,
@@ -297,7 +330,7 @@ export function renderLive(){
     // the SAME liverow shape (just kindBadge('pi') instead of 'hermes') and
     // share this one applyDiff call, so a reader does not learn a second
     // layout for a second list to answer "what is running right now".
-    rows.push(...piRows);
+    rows.push(...piRows, ...agentRows);
     // Keyed-diff applier (P10 presentation plane). If every row's HTML is
     // byte-identical to the last render the applier is a no-op (per-key
     // cache) — idle polls touch zero nodes; genuine changes patch in place
@@ -677,6 +710,8 @@ export async function pollLive(){
     // PI agent sessions (#245): global, like ollama above -- not scoped to a
     // Hermes profile, so there is nothing per-profile to merge it into.
     DATA.pi_live = fresh.pi_live || [];
+    // Claude Code / Codex agent-worker sessions: global too.
+    DATA.agent_live = fresh.agent_live || [];
     // #121: re-apply the ON set. The live slice was merged INTO PV_ALL's
     // profiles above, so re-filtering keeps the toggles honoured while the
     // merge picks up the fresh live rows.
