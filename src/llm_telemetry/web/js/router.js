@@ -920,10 +920,6 @@ export function pvToggle(n){
 // what pvFilter()/pvSyncCurrent() derive from the on-set, as before.
 // The active filter lives on #tabs[data-kind] so live.js can read it without
 // importing this module.
-// Every chip is a Hermes profile (PV_ALL is the Hermes profile map), so the
-// kind filter never hides chips: it only narrows the Live tiles. The server's
-// own `kind` (bot | profile, collect_analytics.classify_profile) is what the
-// Manage dialog groups by.
 export function fbKindGet(){
   const el = $('tabs');
   return (el && el.dataset.kind) || 'all';
@@ -935,8 +931,6 @@ const FB_GROUPS = [
   { key: 'profile', label: 'Profiles', sig: '◉' },
   { key: 'bot', label: 'Bots', sig: '⬡' },
 ];
-// "acasia-coder" -> {pfx:'acasia-', rest:'coder'} when 2+ profiles share the
-// first segment; otherwise the whole name is the rest.
 export function fbSplit(n, names){
   const head = n.split('-')[0];
   if (head !== n && names.filter(x => x === head || x.startsWith(head + '-')).length >= 2){
@@ -972,8 +966,7 @@ export function fbKindsHtml(counts, active){
     + KIND_ORDER.map(k => seg(k, kindMeta(k).label, kindMeta(k).sig)).join('')
     + '</div>';
 }
-// Roving tabindex: each of the kind filter and the chip strip is ONE Tab stop
-// (the last-focused item, else the active/first one); arrows move within it.
+// Roving tabindex: kind filter and chip strip are one Tab stop each.
 const FB_ROVE = { '.fb-kinds': null, '.fb-strip': null };
 function fbRoveApply(bar){
   Object.keys(FB_ROVE).forEach(sel => {
@@ -1017,8 +1010,6 @@ export function tabs(){
   const counts = fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live);
   const strip = bar.querySelector('.fb-strip');
   const left = strip ? strip.scrollLeft : 0;
-  // Re-rendering destroys the focused button; remember it and restore focus
-  // to its equivalent (same chip / kind / Manage) afterwards.
   const ae = document.activeElement;
   const had = ae && bar.contains(ae) ? { key: ae.dataset.key, manage: ae.hasAttribute('data-fbmanage'), kind: ae.classList.contains('kseg') } : null;
   const on = pvOnProfiles().length, tot = names.length;
@@ -1094,8 +1085,7 @@ export function fbDialogRender(focusSel){
     if (el) { el.focus(); if (el.setSelectionRange) { const l = el.value.length; el.setSelectionRange(l, l); } }
   }
 }
-// Every close path (×, Esc, F, backdrop, programmatic) ends here: the native
-// 'close' event fires for all of them, and focus goes back to Manage.
+// Every close path ends at the native 'close' event; focus returns to Manage.
 function fbDialogClosed(){
   const b = document.querySelector('[data-fbmanage]');
   if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
@@ -1115,8 +1105,6 @@ export function fbDialogToggle(open){
   const b = document.querySelector('[data-fbmanage]');
   if (b) b.setAttribute('aria-expanded', String(fbDialogOpen()));
 }
-// Bulk on/off for the dialog (group checkbox, All, None). The "at least one
-// profile visible" rule from pvToggle holds here too.
 export function fbSetMany(list, on){
   const keep = pvOnProfiles().filter(n => !list.includes(n)).length + (on ? list.length : 0);
   if (keep < 1){ flash('At least one profile must stay visible.'); return false; }
@@ -1126,7 +1114,6 @@ export function fbSetMany(list, on){
   tabs(); pick(current);
   return true;
 }
-// Another modal surface (session finder, transcript, help, drawer, ...) is up.
 function fbOtherOverlayOpen(){
   return !!document.querySelector('dialog[open]:not(#fbdialog), [role="dialog"][aria-hidden="false"], #helpwrap.open');
 }
@@ -1161,15 +1148,12 @@ export function fbInstall(){
   });
   fbInstallDialog();
 }
-// Separate from fbInstall because the <dialog> may be parsed after the script
-// that first draws the bar; it is retried whenever the dialog is opened.
 export function fbInstallDialog(){
   const d = document.getElementById('fbdialog');
   if (!d || d._fbInstalled) return;
   d._fbInstalled = true;
   d.addEventListener('close', fbDialogClosed);
-  // Typing in the filter is debounced and skipped mid-composition, so an IME
-  // is never interrupted by the dialog being rebuilt under it.
+  // Filter typing is debounced and skipped mid-IME-composition.
   let qTimer = null;
   const qRender = () => { clearTimeout(qTimer); fbDialogRender('.pk-q'); };
   d.addEventListener('compositionend', e => { if (e.target.classList.contains('pk-q')) qRender(); });

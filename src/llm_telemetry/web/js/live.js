@@ -193,11 +193,8 @@ export function kindMeta(kind){
   return m ? { ...m, color: `var(--kind-${kind})` }
            : { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
 }
-// The one list the fleet bar's count badges AND the tiles are built from, so
-// the two can never disagree: Hermes from the live rows of the profiles that
-// are ON (DATA.profiles holds only those; 'All' is the merge of the same rows
-// and is skipped), PI from DATA.pi_live, Claude/Codex from the de-duplicated
-// DATA.agent_live. Scope is the fleet, not the selected chip.
+// The one list the count badges AND the tiles are built from: Hermes live rows
+// of the ON profiles ('All' is skipped), DATA.pi_live, de-duplicated agent_live.
 export function fleetTiles(profiles, piLive, agentLive){
   const out = [];
   const seen = new Set();
@@ -211,8 +208,7 @@ export function fleetTiles(profiles, piLive, agentLive){
   dedupAgentLive(agentLive).forEach(S => out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }));
   return out;
 }
-// Zero is a real answer (the bar dims, never hides, that kind). All is the
-// sum of the tiles, so "All N" always equals the tiles shown under "All".
+// Zero dims a kind, never hides it. All = sum of the tiles.
 export function fleetKindCounts(profiles, piLive, agentLive){
   const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
   fleetTiles(profiles, piLive, agentLive).forEach(t => { c[t.kind]++; });
