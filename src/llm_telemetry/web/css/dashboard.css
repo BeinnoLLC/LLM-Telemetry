@@ -138,19 +138,22 @@
 .ft-kind{color:var(--k);font-size:12px;line-height:1}
 .ft-model{font-size:var(--fs-sm);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ft-sub{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-.ft-phase{font-size:var(--fs-xs);padding:1px 6px;border-radius:999px;background:var(--fb-surface);border:1px solid var(--border);
+.ft-phase{font-size:var(--fs-xs);padding:1px 6px;max-width:100%;border-radius:999px;background:var(--fb-surface);border:1px solid var(--border);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .ft-cost{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;align-self:flex-end}
 /* narrow tiles: phase and cost share one line instead of stacking/wrapping */
 @container (max-width:240px){.ft-sub{flex-direction:row;align-items:center;justify-content:space-between}.ft-cost{align-self:auto;flex:none}}
+.fbwrap{min-width:0}
+/* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
+@media (max-width:960px){
+  .fb-label,.fb-sep,.kseg .l{display:none}
+  .kseg{padding:0 8px}
+  .fb-count{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
 @media (max-width:600px){
   .fleetbar{height:auto;min-height:calc(var(--fb-h) + 10px);position:static}
-  .fb-label,.fb-sep{display:none}
-  .kseg{padding:0 8px}
-  .kseg .l{display:none}
   .pchip{padding:0 6px;gap:5px}
   .pchip .name{display:none}
-  .fb-count{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .pk-tiles{grid-template-columns:1fr}
   .pk-grid{grid-template-columns:1fr}
   .pk-hue{width:48px}
@@ -718,23 +721,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    box-shadow:0 24px 60px rgba(0,0,0,.5)}
  .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
  .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px}
- .hsec{margin:16px 0 8px;font-size:var(--fs-sm);font-weight:700;text-transform:uppercase;
-   letter-spacing:.06em;color:var(--muted)}
- .hnote{font-size:var(--fs-sm);color:var(--muted);margin:5px 0 9px;line-height:1.55}
- /* Each hop is a numbered row so the ORDER is unmistakable. */
- .hhop{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;
-   border:1px solid var(--border);margin-bottom:5px;font-size:var(--fs-sm);background:var(--bg)}
- .hnum{width:19px;height:19px;border-radius:50%;flex:none;display:flex;
-   align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;
-   background:var(--border);color:var(--muted)}
- .hhop.primary .hnum{background:var(--accent);color:var(--accent-ink)}
- .hmodel{font-size:var(--fs-md);font-weight:600}
- .hurl{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;font-family:ui-monospace,monospace}
- .harrow{color:var(--muted);font-size:var(--fs-md);text-align:center;margin:1px 0}
- .htask{display:flex;align-items:baseline;gap:8px;padding:5px 0;
-   border-bottom:1px dashed var(--border);font-size:var(--fs-sm)}
- .htn{width:132px;flex:none;font-weight:600;font-size:var(--fs-sm)}
- .htd{color:var(--muted);font-size:var(--fs-xs);flex:1}
  #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
    font-size:19px;line-height:1;background:none;border:none}
  #helpclose:hover{color:var(--fg)}
@@ -917,7 +903,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* #34: fire icon fires only on sustained GPU+queue pressure (~15s), not a
     single spike — a border tint gives the same signal at a glance in lists. */
  .olcard-pressure{border-color:color-mix(in srgb, var(--z-bad) 55%, transparent)}
- .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px} .olhead{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+ .olfire{display:inline-block;font-size:var(--fs-sm);line-height:1;margin-left:2px} .olhead{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:8px}
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
     width/height are ignored (the dot only looked right because of its ring). */
