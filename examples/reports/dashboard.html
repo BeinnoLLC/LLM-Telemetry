@@ -7015,19 +7015,32 @@ function mergedField(profiles, field){
     .filter(([n]) => n !== 'All')
     .flatMap(([, q]) => (q && q[field]) || []);
 }
+// One entry per engine:session_id (keep the freshest by
+// smallest idle_s), engine whitelisted to claude/codex.
+function dedupAgentLive(list){
+  const best = new Map();
+  for (const S of (list || [])){
+    if (!S) continue;
+    const key = (S.engine === 'codex' ? 'codex' : 'claude') + ':' + (S.session_id || '');
+    const cur = best.get(key);
+    const idle = Number.isFinite(S.idle_s) ? S.idle_s : Infinity;
+    if (!cur || idle < cur.idle) best.set(key, { S, idle });
+  }
+  return [...best.values()].map(v => v.S);
+}
 function liveKpis(p, name, now, profiles, agentLive){
   const seen = new Set();
-  // Claude/Codex sessions (DATA.agent_live) are fleet-wide like PI's, shown on
-  // every tab. A transcript written to within the staleness window is both
-  // "in flight" and "alive", so they add to both KPI numerators/denominators.
-  const extra = (agentLive || []).filter(Boolean).length;
+  // Claude/Codex sessions (DATA.agent_live) are fleet-wide, shown on every
+  // tab. They count as "in flight" only while not idle; "Agents alive" is the
+  // Hermes heartbeat set and deliberately excludes them.
+  const extra = dedupAgentLive(agentLive).filter(S => S.phase !== 'idle').length;
   const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length + extra;
   const merged = name === 'All' && profiles;
   const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
-  const alive = agents.filter(a => a && a.state === 'alive').length + extra;
+  const alive = agents.filter(a => a && a.state === 'alive').length;
   const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
   return {
-    sessions, alive, agents: agents.length + extra,
+    sessions, alive, agents: agents.length,
     alerts: alerts.length,
     critical: alerts.filter(a => a && a.severity === 'critical').length,
     tput: throughputFor(name, now),
@@ -7095,7 +7108,7 @@ function piLiveRows(list){
       <div class="flex-1 min-w-0 self-center">
         <div class="flex items-center gap-2 flex-wrap">
           ${kindBadge('pi')}
-          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.cwd||'')}">${esc(S.title || S.agent || 'pi session')}</span>
+          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>
           <span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(265 40% 30%);color:hsl(265 60% 82%);border:1px solid hsl(265 35% 42%)">${esc(S.agent||'pi')}</span>
         </div>
         <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
@@ -7113,14 +7126,14 @@ function piLiveRows(list){
 // flat fleet-wide list tagged with `engine`. Same row shape as PI rows, keyed
 // '<engine>:<session id>' so ids cannot collide across engines or with Hermes.
 function agentLiveRows(list){
-  return (list || []).filter(Boolean).map(S => {
+  return dedupAgentLive(list).map(S => {
     const engine = S.engine === 'codex' ? 'codex' : 'claude';
     const mcol = colorOf(short(S.model));
     return { key: engine + ':' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}">
       <div class="flex-1 min-w-0 self-center">
         <div class="flex items-center gap-2 flex-wrap">
           ${kindBadge(engine)}
-          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.cwd||'')}">${esc(S.title || engine + ' session')}</span>
+          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>
         </div>
         <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
       </div>

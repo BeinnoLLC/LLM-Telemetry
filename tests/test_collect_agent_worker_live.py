@@ -109,13 +109,13 @@ with tempfile.TemporaryDirectory() as tmp:
     chk(len(out) == 5, "5 live sessions across both engines (2 stale dropped)", len(out))
     chk({s["engine"] for s in out} == {"claude", "codex"}, "both engines present in ONE list")
     chk("cccccccc-3333" not in by, "stale claude transcript dropped")
-    chk(not any(s["cwd"] == "/work/stale" for s in out), "stale codex transcript dropped")
+    chk(not any(s["title"] == "stale" for s in out), "stale codex transcript dropped")
     chk([s["idle_s"] for s in out] == sorted(s["idle_s"] for s in out), "sorted most-recently-active first")
 
     # claude fields
     a = by["aaaaaaaa-1111"]
-    chk(a["engine"] == "claude" and a["cwd"] == "/work/alpha" and a["title"] == "alpha",
-        "claude: engine/cwd/title from transcript", (a["engine"], a["cwd"], a["title"]))
+    chk(a["engine"] == "claude" and a["title"] == "alpha",
+        "claude: engine/title from transcript", (a["engine"], a["title"]))
     chk(a["model"] == "claude-opus-4-5", "claude: model from assistant message", a["model"])
     chk(a["phase"] == "running Bash", "claude: phase is the tool NAME only", a["phase"])
     chk(9 <= a["idle_s"] <= 11, "claude: idle_s from last event timestamp", a["idle_s"])
@@ -124,13 +124,55 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # codex fields
     g = by["0199aaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]
-    chk(g["engine"] == "codex" and g["cwd"] == "/work/gamma" and g["title"] == "gamma",
-        "codex: engine/cwd/title", (g["engine"], g["cwd"], g["title"]))
+    chk(g["engine"] == "codex" and g["title"] == "gamma",
+        "codex: engine/title", (g["engine"], g["title"]))
     chk(g["model"] == "gpt-5-codex", "codex: model from turn_context", g["model"])
     chk(g["phase"] == "running shell", "codex: phase is function name only", g["phase"])
     dl = by["0199ffff-bbbb-cccc-dddd-eeeeeeeeeeee"]
     chk(dl["model"] == "o4-mini", "codex: model from session_meta when no turn_context", dl["model"])
     chk(dl["phase"] == "idle", "codex: task_complete -> idle", dl["phase"])
+
+    # privacy: no absolute path anywhere in the payload, and no cwd key
+    chk(all("cwd" not in s for s in out), "no cwd key in any row")
+    chk("/work/" not in blob, "no absolute path in payload")
+
+    # ---- finished Claude turn: end_turn -> idle; later user record -> thinking
+    def asst(t, stop):
+        return {"type": "assistant", "cwd": "/work/done", "timestamp": iso(t),
+                "message": {"role": "assistant", "model": "claude-opus-4-5", "stop_reason": stop,
+                            "content": [{"type": "text", "text": SECRET_REPLY}]}}
+    write(os.path.join(ch, "projects", "-work-done", "ffffffff-6666.jsonl"),
+          [asst(now - 20, "end_turn")], now - 5)
+    write(os.path.join(ch, "projects", "-work-resumed", "ffffffff-7777.jsonl"),
+          [asst(now - 20, "end_turn"),
+           {"type": "user", "cwd": "/work/resumed", "timestamp": iso(now - 5),
+            "message": {"role": "user", "content": SECRET_PROMPT}}], now - 5)
+    write(os.path.join(ch, "projects", "-work-mid", "ffffffff-8888.jsonl"),
+          [asst(now - 20, "tool_use")], now - 5)
+    o2 = {s["session_id"]: s for s in build_agent_live(claude_home=ch, codex_home=xh, now=now)}
+    chk(o2["ffffffff-6666"]["phase"] == "idle", "claude: stop_reason end_turn -> idle", o2["ffffffff-6666"]["phase"])
+    chk(o2["ffffffff-7777"]["phase"] == "thinking", "claude: user record after end_turn -> thinking")
+    chk(o2["ffffffff-8888"]["phase"] == "responding", "claude: non-end_turn stop_reason is not idle")
+
+    # ---- dedup by engine:session_id, keeping the most recent mtime ----------
+    for d, mt in (("-work-dupa", now - 40), ("-work-dupb", now - 2)):
+        write(os.path.join(ch, "projects", d, "dddddddd-9999.jsonl"),
+              claude_events(now, "/work/" + d[6:], [{"type": "text", "text": "x"}]), mt)
+    o3 = [s for s in build_agent_live(claude_home=ch, codex_home=xh, now=now)
+          if s["session_id"] == "dddddddd-9999"]
+    chk(len(o3) == 1, "duplicate engine:session_id collapsed to one row", len(o3))
+    chk(o3 and o3[0]["title"] == "dupb", "dedup keeps the most recent mtime", o3 and o3[0]["title"])
+
+    # ---- >256KB transcript whose tail window starts mid-line ----------------
+    big = os.path.join(ch, "projects", "-work-big", "bbbbbbbb-0000.jsonl")
+    pad = {"type": "user", "cwd": "/work/big", "timestamp": iso(now - 100),
+           "message": {"role": "user", "content": "P" * 9000}}
+    write(big, [pad] * 40 + [claude_events(now, "/work/big", [{"type": "tool_use", "name": "Edit", "id": "t9", "input": {}}])[-1]], now - 4)
+    chk(os.path.getsize(big) > 256 * 1024, "big fixture exceeds the tail window", os.path.getsize(big))
+    ob = {s["session_id"]: s for s in build_agent_live(claude_home=ch, codex_home=xh, now=now)}
+    chk(ob.get("bbbbbbbb-0000", {}).get("phase") == "running Edit",
+        "big file: partial first tail line skipped, last record parsed", ob.get("bbbbbbbb-0000"))
+    chk(ob.get("bbbbbbbb-0000", {}).get("title") == "big", "big file: title from head cwd")
 
     # privacy
     for secret in (SECRET_PROMPT, SECRET_ARG, SECRET_REPLY):
@@ -140,7 +182,7 @@ with tempfile.TemporaryDirectory() as tmp:
     os.environ["LLM_TELEMETRY_CLAUDE_HOME"] = ch
     os.environ["LLM_TELEMETRY_CODEX_HOME"] = xh
     env_out = build_agent_live(now=now, stale_window_s=180)
-    chk(len(env_out) == 5, "LLM_TELEMETRY_CLAUDE_HOME / _CODEX_HOME env overrides honoured", len(env_out))
+    chk(len(env_out) >= 5, "LLM_TELEMETRY_CLAUDE_HOME / _CODEX_HOME env overrides honoured", len(env_out))
     del os.environ["LLM_TELEMETRY_CLAUDE_HOME"], os.environ["LLM_TELEMETRY_CODEX_HOME"]
 
     # missing homes / junk

@@ -9,10 +9,10 @@ mtime is recent. Discovery globs, per engine:
   codex   $LLM_TELEMETRY_CODEX_HOME  (default ~/.codex)/sessions/Y/M/D/rollout-*.jsonl
 
 Privacy: transcripts hold prompts, replies and tool arguments. Only metadata
-is extracted -- session id, cwd, model name, last-event time and a coarse
-phase (a tool NAME, "thinking", "responding", "idle"). Message text and tool
-input/arguments are never copied into the result; the title is the cwd's
-basename. Models are reported only when the transcript names one (never
+is extracted -- session id, model name, last-event time and a coarse phase (a
+tool NAME, "thinking", "responding", "idle"). Message text and tool
+input/arguments are never copied into the result; the cwd is read only to
+derive the title (its basename) and the absolute path is never emitted. Models are reported only when the transcript names one (never
 guessed).
 """
 from __future__ import annotations
@@ -137,6 +137,11 @@ def parse_claude_session(path: Path) -> Optional[dict[str, Any]]:
         p = _claude_phase(ev)
         if p:
             phase = p
+        # A finished turn: the last assistant record ended with end_turn. Any
+        # later user/tool record overwrites this via _claude_phase above.
+        if (ev.get("type") == "assistant" and isinstance(msg, dict)
+                and msg.get("stop_reason") == "end_turn"):
+            phase = "idle"
     sid = path.stem
     return {"session_id": sid, "cwd": cwd or "", "model": model,
             "last_ts": last_ts, "phase": phase}
@@ -234,7 +239,7 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
     xhome = Path(codex_home) if codex_home is not None else Path(
         os.environ.get("LLM_TELEMETRY_CODEX_HOME") or (Path.home() / ".codex"))
 
-    out = []
+    best: dict[tuple[str, str], dict[str, Any]] = {}
     for engine, found, parse in (
             ("claude", discover_claude(chome, now, stale_window_s), parse_claude_session),
             ("codex", discover_codex(xhome, now, stale_window_s), parse_codex_session)):
@@ -245,16 +250,21 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
             last = s["last_ts"] if s["last_ts"] is not None else mtime
             cwd = s["cwd"]
             title = os.path.basename(cwd.rstrip("/")) if cwd else ""
-            out.append({
+            row = {
                 "engine": engine,
                 "session_id": s["session_id"],
-                "cwd": cwd,
                 "title": title or engine,
                 "model": s["model"],
                 "idle_s": round(max(0.0, now - last), 1),
                 "phase": s["phase"],
                 "mtime": mtime,
-            })
+            }
+            # One row per engine:session_id (a resumed/forked transcript can
+            # repeat an id across files): keep the most recently written.
+            key = (engine, str(s["session_id"]))
+            if key not in best or mtime > best[key]["mtime"]:
+                best[key] = row
+    out = list(best.values())
     out.sort(key=lambda s: s["idle_s"])
     return out
 

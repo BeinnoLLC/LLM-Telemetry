@@ -1032,12 +1032,6 @@
        "string"
       ]
      },
-     "cwd": {
-      "type": [
-       "null",
-       "string"
-      ]
-     },
      "title": {
       "type": [
        "null",

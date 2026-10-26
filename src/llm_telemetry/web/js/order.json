@@ -983,6 +983,10 @@
   },
   {
    "mod": "live",
+   "name": "dedupAgentLive"
+  },
+  {
+   "mod": "live",
    "name": "liveKpis"
   },
   {

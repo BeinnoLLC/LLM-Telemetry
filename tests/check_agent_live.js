@@ -45,6 +45,7 @@ setTimeout(() => {
     const base = {
       sessions: Number(kpi('sessions').textContent),
       alive: parseInt(kpi('agents').textContent, 10),
+      agentsText: kpi('agents').parentElement.textContent,
     };
     chk(d.querySelectorAll('#livelist [data-agentsession]').length === 0, 'no agent rows when agent_live is empty');
 
@@ -64,8 +65,35 @@ setTimeout(() => {
 
     chk(Number(kpi('sessions').textContent) === base.sessions + 2, 'Sessions in flight counts agent sessions',
         `${base.sessions} -> ${kpi('sessions').textContent}`);
-    chk(parseInt(kpi('agents').textContent, 10) === base.alive + 2, 'Agents alive counts agent sessions',
+    chk(parseInt(kpi('agents').textContent, 10) === base.alive, 'Agents alive ignores agent sessions',
         `${base.alive} -> ${kpi('agents').textContent}`);
+    chk(kpi('agents').parentElement.textContent === base.agentsText, 'Agents alive denominator unchanged',
+        `${base.agentsText} -> ${kpi('agents').parentElement.textContent}`);
+
+    // idle sessions are not "in flight"; duplicates collapse to one row/count
+    w.eval(`DATA.agent_live = ${JSON.stringify([...AGENTS, { engine: 'codex', session_id: 'x-2', title: 'done', idle_s: 5, phase: 'idle' }])}; renderLive();`);
+    chk(Number(kpi('sessions').textContent) === base.sessions + 2, 'idle agent session not counted in flight',
+        kpi('sessions').textContent);
+    chk(d.querySelectorAll('#livelist [data-agentsession]').length === 3, 'idle session still listed');
+    w.eval(`DATA.agent_live = ${JSON.stringify([AGENTS[0], { ...AGENTS[0], idle_s: 1, title: 'fresh' }])}; renderLive();`);
+    const dup = [...d.querySelectorAll('#livelist [data-agentsession]')];
+    chk(dup.length === 1 && dup[0].textContent.includes('fresh'), 'duplicate engine:session_id deduped, freshest kept', dup.length);
+    chk(Number(kpi('sessions').textContent) === base.sessions + 1, 'duplicate counted once in flight');
+
+    // cwd never reaches the DOM
+    w.eval(`DATA.agent_live = ${JSON.stringify(AGENTS)}; renderLive();`);
+    chk(!d.querySelector('#livelist').innerHTML.includes('/w/alpha'), 'absolute cwd absent from rendered rows');
+
+    // XSS: markup/quotes in title, phase, model must stay inert text
+    const XSS = '<img src=x onerror="window.__pwn=1">"\'><script>window.__pwn=1</script>';
+    w.eval(`DATA.agent_live = ${JSON.stringify([{ engine: 'claude', session_id: 'xss-1', title: XSS, model: XSS, idle_s: 1, phase: XSS },
+      { engine: 'codex', session_id: 'x"y', title: 't', idle_s: 1, phase: 'p' }])}; renderLive();`);
+    const list = d.querySelector('#livelist');
+    chk(!list.querySelector('img, script'), 'XSS: no injected elements from title/phase/model');
+    chk(!w.__pwn, 'XSS: payload never executed');
+    chk(![...list.querySelectorAll('*')].some(e => [...e.attributes].some(a => /^on/i.test(a.name))),
+        'XSS: no on* attributes injected');
+    chk(list.textContent.includes('<img'), 'XSS: payload shown as literal text');
 
     w.eval('DATA.agent_live = []; renderLive();');
     chk(d.querySelectorAll('#livelist [data-agentsession]').length === 0, 'rows disappear when sessions end');
