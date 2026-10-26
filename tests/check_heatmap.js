@@ -37,7 +37,7 @@ setTimeout(()=>{
  const mons=[...d.querySelectorAll('#heatmap .hm-mon')].filter(m=>m.textContent.trim());
  chk(mons.length>=4,'month labels present',`(${mons.map(m=>m.textContent).join(' ')})`);
  // switching profile must redraw
- const tabs=[...d.querySelectorAll('#tabs button')];
+ const tabs=[...d.querySelectorAll('#tabs .pchip')];
  if(tabs.length>1){
    const before=d.getElementById('heatsub').textContent;
    tabs[1].dispatchEvent(new w.MouseEvent('click',{bubbles:true}));

@@ -11,7 +11,7 @@ import {
 import { flash, render, renderResolution, syncProjFilterUI } from './views.js';
 import { renderFlow } from './flow.js';
 import { loadLogs, logsInstall } from './drawer.js';
-import { LIVE_MS, REBUILD_MS, renderLive } from './live.js';
+import { KIND_ORDER, LIVE_MS, REBUILD_MS, fleetKindCounts, kindMeta, renderLive } from './live.js';
 import { DATA, buildAll, installAll } from './main.js';
 
 export let view = localStorage.getItem('hermes-dash-view') || 'Home';
@@ -913,59 +913,242 @@ export function pvToggle(n){
   pvSyncCurrent();
   tabs(); pick(current);
 }
-export function tabs(){
-  // #121 / #150 / redesign: single "Fleet" label + person icons for profiles,
-  // robot icon + live badge for the bots pill. Flat DOM (no wrappers) keeps
-  // `#tabs > button` selection valid for tests & context menus. "kind" comes
-  // from the collector; legacy payloads fall back to name heuristic.
-  const kindOf = n => {
-    const k = PV_ALL[n] && PV_ALL[n].kind;
-    if (k === 'bot' || k === 'profile') return k;
-    return (n.includes('bot') || n.startsWith('pv-')) ? 'bot' : 'profile';
-  };
-  const profileChip = n => {
-    const h = profileHue(n);
-    const off = pvOff(n);
-    const icon = `<span class="tabkind" aria-hidden="true" title="profile">👤</span>`;
-    return `<button data-tab="${n}" data-off="${off?1:0}" data-kind="profile" style="--h:${h}"`
-         + ` onclick="pvToggle('${n}')"`
-         + ` oncontextmenu="pvMenu(event,'${esc(n)}')"` 
-         + ` title="${off?'Off — click to turn on':'On — click to turn off'}" `
-         + ` class="tabseg flex items-center gap-2">${profileIconHtml(n,16)}${icon}<span>${n}</span></button>`;
-  };
-  const botsChip = () => {
-    const bots = Object.keys(PV_ALL).filter(n => kindOf(n) === 'bot');
-    if (!bots.length) return '';
-    const botsOn = bots.filter(n => !pvOff(n)).length;
-    const icon = `<span class="tabkind" aria-hidden="true" title="bots">⚙</span>`;
-    const badge = botsOn > 0
-      ? `<span style="font-size:var(--fs-xs);background:hsl(var(--h) 80% 65%);color:hsl(var(--h) 60% 15%);padding:1px 6px;border-radius:6px;margin-left:2px">${botsOn}</span>`
-      : '';
-    const h = 200;
-    const allOff = botsOn === 0;
-    return `<span class="tabdivider" aria-hidden="true" style="margin-left:auto"></span>`
-         + `<button data-tab="__bots__" data-off="${allOff?1:0}" style="--h:${h}" `
-         + `onclick="event.stopPropagation();botsMenu(event)" `
-         + `title="${allOff?'All bots off — click to show':'Bots on — click to manage'}" `
-         + `class="tabseg flex items-center gap-1">${icon}<span>Bots</span>${badge}</button>`;
-  };
-  const names = Object.keys(PV_ALL);
-  const profiles = names.filter(n => kindOf(n) === 'profile');
-  $('tabs').innerHTML =
-    `<span class="tabgrouplabel">Fleet</span>`
-    + profiles.map(profileChip).join('')
-    + botsChip();
-  // a compact "N/M on" readout, inside the frame (right end, after a
-  // hairline divider) so the merge's extent is stated, not implied
-  const on = pvOnProfiles().length, tot = Object.keys(PV_ALL).length;
-  let sub = $('tabsub');
-  if (!sub) {
-    sub = document.createElement('span');
-    sub.id = 'tabsub'; sub.className = 'tabsub';
-    sub.setAttribute('aria-live', 'polite');
-    $('tabs').appendChild(sub);
+// ---- Fleet bar (replaced the old segmented tab strip) --------------------
+// One 42px row: kind filter | scrolling profile chips | N/M on | Manage.
+// The kind filter only narrows which chips (and Live tiles) are shown — it
+// never changes what is on/off, so the merged view and `current` are exactly
+// what pvFilter()/pvSyncCurrent() derive from the on-set, as before.
+// The active filter lives on #tabs[data-kind] so live.js can read it without
+// importing this module.
+export function fbKindOf(n){
+  const k = PV_ALL && PV_ALL[n] && PV_ALL[n].agent_kind;
+  if (KIND_ORDER.includes(k)) return k;
+  const nm = String(n).toLowerCase();
+  for (const kind of ['claude', 'codex', 'pi']){
+    if (new RegExp('(^|[-_])' + kind + '([-_]|$)').test(nm)) return kind;
   }
-  sub.textContent = on === tot ? `all ${tot} shown` : `${on}/${tot} on`;
+  return 'hermes';
+}
+export function fbKindGet(){
+  const el = $('tabs');
+  return (el && el.dataset.kind) || 'all';
+}
+// "acasia-coder" -> {pfx:'acasia-', rest:'coder'} when 2+ profiles share the
+// first segment; otherwise the whole name is the rest.
+export function fbSplit(n, names){
+  const head = n.split('-')[0];
+  if (head !== n && names.filter(x => x === head || x.startsWith(head + '-')).length >= 2){
+    return { pfx: head + '-', rest: n.slice(head.length + 1) };
+  }
+  return { pfx: '', rest: n };
+}
+export function fbChipHtml(n, names){
+  const off = pvOff(n);
+  const kind = fbKindOf(n);
+  const { pfx, rest } = fbSplit(n, names);
+  const meta = kindMeta(kind);
+  const live = ((PV_ALL[n] && PV_ALL[n].live) || []).length > 0;
+  const cur = current !== 'All' && current === n;
+  return `<button type="button" class="pchip" data-tab="${escA(n)}" data-off="${off ? 1 : 0}" data-kind="${escA(kind)}"`
+    + ` style="--h:${profileHue(n)};--k:${meta.color}" aria-pressed="${!off}"${cur ? ' aria-current="true"' : ''}`
+    + ` title="${escA(n)} — ${off ? 'Off — click to turn on' : 'On — click to turn off'}">`
+    + `<span class="av">${profileIconHtml(n, 18)}</span>`
+    + `<span class="name"><span class="pfx">${esc(pfx)}</span>${esc(rest)}</span>`
+    + (kind === 'hermes' ? '' : `<span class="kd" aria-hidden="true" title="${escA(meta.label)}">${meta.sig}</span>`)
+    + (live ? '<span class="live" title="live session" role="img" aria-label="live session"></span>' : '')
+    + '</button>';
+}
+export function fbKindsHtml(counts, active){
+  const seg = (k, label, glyph) => {
+    const n = counts[k] || 0;
+    return `<button type="button" class="kseg" data-fbkind="${k}" style="--k:var(--kind-${k})"`
+      + ` aria-pressed="${active === k}" data-empty="${n ? 0 : 1}" title="${escA(label)} — ${n} live">`
+      + (glyph ? `<span class="g" aria-hidden="true">${glyph}</span>` : '')
+      + `<span class="l">${esc(label)}</span><span class="n">${n}</span></button>`;
+  };
+  return '<div class="fb-kinds" role="group" aria-label="Agent kind">'
+    + seg('all', 'All', '\u25CE')
+    + KIND_ORDER.map(k => seg(k, kindMeta(k).label, kindMeta(k).sig)).join('')
+    + '</div>';
+}
+export function tabs(){
+  const bar = $('tabs');
+  if (!bar) return;
+  fbInstall();
+  const names = Object.keys(PV_ALL);
+  const active = fbKindGet();
+  const counts = fleetKindCounts(PV_ALL, DATA.pi_live, DATA.agent_live);
+  const strip = bar.querySelector('.fb-strip');
+  const left = strip ? strip.scrollLeft : 0;
+  const on = pvOnProfiles().length, tot = names.length;
+  const chips = names.filter(n => active === 'all' || fbKindOf(n) === active).map(n => fbChipHtml(n, names)).join('');
+  bar.innerHTML = '<span class="fb-label">Fleet</span>'
+    + fbKindsHtml(counts, active)
+    + '<span class="fb-sep" aria-hidden="true"></span>'
+    + `<div class="fb-strip" role="toolbar" aria-label="Profiles" data-at-start="1">${chips}</div>`
+    + `<span id="tabsub" class="fb-count" aria-live="polite">${on === tot ? `all ${tot} shown` : `${on}/${tot} on`}</span>`
+    + `<button type="button" class="fb-more" data-fbmanage="1" aria-haspopup="dialog" aria-expanded="${fbDialogOpen()}"`
+    + ` title="Manage profiles (F)">Manage <kbd>F</kbd></button>`;
+  const ns = bar.querySelector('.fb-strip');
+  if (ns){
+    ns.scrollLeft = left;
+    ns.dataset.atStart = left < 4 ? '1' : '0';
+    ns.addEventListener('scroll', () => { ns.dataset.atStart = ns.scrollLeft < 4 ? '1' : '0'; }, { passive: true });
+  }
+}
+export function fbKindSet(k){
+  const bar = $('tabs');
+  if (!bar) return;
+  bar.dataset.kind = (k === 'all' || KIND_ORDER.includes(k)) ? k : 'all';
+  tabs();
+  renderLive();
+}
+// ---- Manage dialog: native <dialog> (focus trap + Esc + ::backdrop) -----
+export function fbDialogOpen(){
+  const d = document.getElementById('fbdialog');
+  return !!(d && d.open);
+}
+export function fbDialogHtml(q){
+  const names = Object.keys(PV_ALL);
+  const needle = String(q || '').trim().toLowerCase();
+  const groups = KIND_ORDER.map(k => {
+    const list = names.filter(n => fbKindOf(n) === k && n.toLowerCase().includes(needle));
+    if (!list.length) return '';
+    const onN = list.filter(n => !pvOff(n)).length;
+    const meta = kindMeta(k);
+    const rows = list.map(n => `<div class="pk-row" data-pkrow="${escA(n)}" style="--h:${profileHue(n)}">`
+      + `<input type="checkbox" class="pk-on" data-pkon="${escA(n)}"${pvOff(n) ? '' : ' checked'} aria-label="Show ${escA(n)}">`
+      + profileIconHtml(n, 16)
+      + `<span class="nm" title="${escA(n)}">${esc(n)}</span>`
+      + `<input type="range" class="pk-hue" min="0" max="359" step="1" value="${profileHue(n)}" data-pkhue="${escA(n)}" aria-label="Colour for ${escA(n)}" title="Colour">`
+      + `<label class="pk-logo" title="Logo (max ${PROFILE_LOGO_MAX_BYTES / 1024}KB)">Logo<input type="file" accept="image/*" data-pklogo="${escA(n)}" hidden></label>`
+      + (profileLogo(n) ? `<button type="button" class="pk-clr" data-pkclr="${escA(n)}" aria-label="Clear logo for ${escA(n)}">×</button>` : '')
+      + '</div>').join('');
+    return `<section class="pk-grp" style="--k:var(--kind-${k})"><div class="pk-gh">`
+      + `<input type="checkbox" class="pk-on" data-pkgrp="${k}" data-pkstate="${onN === list.length ? 'all' : onN ? 'some' : 'none'}"${onN === list.length ? ' checked' : ''} aria-label="Show all ${escA(meta.label)} profiles">`
+      + `<span class="g" aria-hidden="true">${meta.sig}</span><span>${esc(meta.label)}</span><span class="ct">${onN}/${list.length}</span></div>`
+      + `<div class="pk-grid">${rows}</div></section>`;
+  }).join('');
+  return '<div class="pk-top"><h2 id="fbdtitle">Manage fleet</h2>'
+    + `<input type="search" class="pk-q" placeholder="Filter ${names.length} profiles…" value="${escA(q || '')}" aria-label="Filter profiles">`
+    + '<button type="button" class="pk-btn" data-pkall="1">All</button><button type="button" class="pk-btn" data-pkall="0">None</button>'
+    + '<button type="button" class="pk-btn pk-x" data-pkclose="1" aria-label="Close">×</button></div>'
+    + `<div class="pk-body">${groups || '<p class="muted pk-none">No profile matches.</p>'}</div>`
+    + '<div class="pk-foot muted">Checkbox shows or hides a profile · Esc closes</div>';
+}
+export function fbDialogRender(focusSel){
+  const d = document.getElementById('fbdialog');
+  if (!d) return;
+  const q = (d.querySelector('.pk-q') || {}).value || '';
+  d.innerHTML = fbDialogHtml(q);
+  d.querySelectorAll('[data-pkstate="some"]').forEach(c => { c.indeterminate = true; });
+  if (focusSel){
+    const el = d.querySelector(focusSel);
+    if (el) { el.focus(); if (el.setSelectionRange) { const l = el.value.length; el.setSelectionRange(l, l); } }
+  }
+}
+export function fbDialogToggle(open){
+  const d = document.getElementById('fbdialog');
+  if (!d) return;
+  fbInstallDialog();
+  const want = open === undefined ? !d.open : !!open;
+  if (want && !d.open){
+    fbDialogRender();
+    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+  } else if (!want && d.open){
+    if (typeof d.close === 'function') d.close(); else d.removeAttribute('open');
+  }
+  const b = document.querySelector('[data-fbmanage]');
+  if (b) b.setAttribute('aria-expanded', String(fbDialogOpen()));
+}
+// Bulk on/off for the dialog (group checkbox, All, None). The "at least one
+// profile visible" rule from pvToggle holds here too.
+export function fbSetMany(list, on){
+  const keep = pvOnProfiles().filter(n => !list.includes(n)).length + (on ? list.length : 0);
+  if (keep < 1){ flash('At least one profile must stay visible.'); return false; }
+  list.forEach(n => pvSet(n, !on));
+  DATA.profiles = pvFilter();
+  pvSyncCurrent();
+  tabs(); pick(current);
+  return true;
+}
+export function fbInstall(){
+  const bar = $('tabs');
+  if (!bar || bar._fbInstalled) return;
+  bar._fbInstalled = true;
+  bar.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.fbkind) return fbKindSet(t.dataset.fbkind);
+    if (t.dataset.fbmanage) return fbDialogToggle();
+    if (t.classList.contains('pchip')) pvToggle(t.dataset.tab);
+  });
+  bar.addEventListener('contextmenu', e => {
+    const t = e.target.closest && e.target.closest('.pchip');
+    if (t) pvMenu(e, t.dataset.tab);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'f' && e.key !== 'F') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    e.preventDefault();
+    fbDialogToggle();
+  });
+  fbInstallDialog();
+}
+// Separate from fbInstall because the <dialog> may be parsed after the script
+// that first draws the bar; it is retried whenever the dialog is opened.
+export function fbInstallDialog(){
+  const d = document.getElementById('fbdialog');
+  if (!d || d._fbInstalled) return;
+  d._fbInstalled = true;
+  d.addEventListener('close', () => {
+    const b = document.querySelector('[data-fbmanage]');
+    if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
+  });
+  d.addEventListener('click', e => {
+    if (e.target === d) return fbDialogToggle(false);   // the ::backdrop
+    const t = e.target.closest && e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.pkclose) return fbDialogToggle(false);
+    if (t.dataset.pkall !== undefined) {
+      const q = ((d.querySelector('.pk-q') || {}).value || '').trim().toLowerCase();
+      const list = Object.keys(PV_ALL).filter(n => n.toLowerCase().includes(q));
+      if (fbSetMany(list, t.dataset.pkall === '1')) fbDialogRender();
+    } else if (t.dataset.pkclr) {
+      profileLogoSet(t.dataset.pkclr, null);
+      tabs(); fbDialogRender();
+    }
+  });
+  d.addEventListener('input', e => {
+    if (e.target.classList.contains('pk-q')) return fbDialogRender('.pk-q');
+    const h = e.target.dataset && e.target.dataset.pkhue;
+    if (h) {                       // chips redraw; the dialog is left alone so the drag survives
+      pvHueSet(h, Number(e.target.value));
+      tabs(); renderLive();
+    }
+  });
+  d.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.pkon) {
+      const n = t.dataset.pkon;
+      pvToggle(n);
+      fbDialogRender(`[data-pkon="${CSS.escape(n)}"]`);
+    } else if (t.dataset.pkgrp) {
+      const list = Object.keys(PV_ALL).filter(n => fbKindOf(n) === t.dataset.pkgrp);
+      fbSetMany(list, t.checked);
+      fbDialogRender(`[data-pkgrp="${CSS.escape(t.dataset.pkgrp)}"]`);
+    } else if (t.dataset.pklogo) {
+      const n = t.dataset.pklogo, file = t.files && t.files[0];
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) { flash('Not an image file — ignored.'); return; }
+      if (file.size > PROFILE_LOGO_MAX_BYTES) { flash('Logo too large — max ' + PROFILE_LOGO_MAX_BYTES / 1024 + 'KB.'); return; }
+      const reader = new FileReader();
+      reader.onload = () => { profileLogoSet(n, reader.result); tabs(); fbDialogRender(); };
+      reader.readAsDataURL(file);
+    }
+  });
 }
 // Right-click a profile tab to toggle it (#119). A tiny menu explains what
 // will happen and keeps the accidental-disabled-profile footgun Behind a
@@ -979,22 +1162,6 @@ export function pvMenu(ev, n){
     return;
   }
   pvToggle(n);
-}
-// Click the Bots chip to open a menu for toggling bots on/off as a group.
-export function botsMenu(ev){
-  ev.preventDefault();
-  const bots = Object.keys(PV_ALL).filter(n => {
-    const kind = PV_ALL[n].kind;
-    if (kind === 'bot') return true;
-    if (kind === 'profile') return false;
-    return (n.includes('bot') || n.startsWith('pv-'));
-  });
-  const botsOn = bots.filter(n => !pvOff(n));
-  // If some are off, toggle them all on. If all are on, toggle them all off.
-  const shouldBeOn = botsOn.length === 0;
-  bots.forEach(n => pvSet(n, shouldBeOn));
-  DATA.profiles = pvFilter();
-  tabs(); pick(current);
 }
 installAll();
 // Visibility filter (#121): PV_ALL captures the full set BEFORE removal, so

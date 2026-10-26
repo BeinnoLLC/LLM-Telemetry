@@ -999,6 +999,22 @@
   },
   {
    "mod": "live",
+   "name": "KIND_ORDER"
+  },
+  {
+   "mod": "live",
+   "name": "kindMeta"
+  },
+  {
+   "mod": "live",
+   "name": "fleetKindCounts"
+  },
+  {
+   "mod": "live",
+   "name": "fleetTileHtml"
+  },
+  {
+   "mod": "live",
    "name": "kindBadge"
   },
   {
@@ -1008,6 +1024,10 @@
   {
    "mod": "live",
    "name": "agentLiveRows"
+  },
+  {
+   "mod": "live",
+   "name": "renderFleetTiles"
   },
   {
    "mod": "live",
@@ -1635,15 +1655,63 @@
   },
   {
    "mod": "router",
+   "name": "fbKindOf"
+  },
+  {
+   "mod": "router",
+   "name": "fbKindGet"
+  },
+  {
+   "mod": "router",
+   "name": "fbSplit"
+  },
+  {
+   "mod": "router",
+   "name": "fbChipHtml"
+  },
+  {
+   "mod": "router",
+   "name": "fbKindsHtml"
+  },
+  {
+   "mod": "router",
    "name": "tabs"
   },
   {
    "mod": "router",
-   "name": "pvMenu"
+   "name": "fbKindSet"
   },
   {
    "mod": "router",
-   "name": "botsMenu"
+   "name": "fbDialogOpen"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogHtml"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogRender"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogToggle"
+  },
+  {
+   "mod": "router",
+   "name": "fbSetMany"
+  },
+  {
+   "mod": "router",
+   "name": "fbInstall"
+  },
+  {
+   "mod": "router",
+   "name": "fbInstallDialog"
+  },
+  {
+   "mod": "router",
+   "name": "pvMenu"
   },
   {
    "mod": "router",

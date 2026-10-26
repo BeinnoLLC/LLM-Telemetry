@@ -120,7 +120,7 @@ function mergedField(profiles, field){
 }
 // One entry per engine:session_id (keep the freshest by
 // smallest idle_s), engine whitelisted to claude/codex.
-function dedupAgentLive(list){
+export function dedupAgentLive(list){
   const best = new Map();
   for (const S of (list || [])){
     if (!S) continue;
@@ -179,14 +179,56 @@ export function renderLiveKpis(p, name, now, profiles, agentLive){
 // LST-245: PI-vs-Hermes badge. Same visual pattern as views.js's pv-badge
 // (pill, signature glyph, colour via color-mix on a CSS custom prop) rather
 // than a new badge style — only the glyph/colour/label differ per kind.
+// Colours are NOT declared here: css/tokens.css owns --kind-hermes/pi/claude/
+// codex and the fleet bar reads the same tokens, so there is one palette.
+export const KIND_ORDER = ['hermes', 'pi', 'claude', 'codex'];
 const KIND_META = {
-  pi:     { sig: '\u2699', color: 'hsl(265 55% 64%)', label: 'PI',     title: 'PI coding agent (pi-worker)' },
-  claude: { sig: '\u2735', color: 'hsl(18 70% 60%)',  label: 'Claude', title: 'Claude Code agent (agent-worker)' },
-  codex:  { sig: '\u25A3', color: 'hsl(152 50% 52%)', label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
-  hermes: { sig: '\u25C9', color: 'hsl(199 60% 56%)', label: 'Hermes', title: 'Hermes session' },
+  pi:     { sig: '\u2699', label: 'PI',     title: 'PI coding agent (pi-worker)' },
+  claude: { sig: '\u2735', label: 'Claude', title: 'Claude Code agent (agent-worker)' },
+  codex:  { sig: '\u25A3', label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
+  hermes: { sig: '\u25C9', label: 'Hermes', title: 'Hermes session' },
 };
+export function kindMeta(kind){
+  const m = KIND_META[kind];
+  return m ? { ...m, color: `var(--kind-${kind})` }
+           : { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
+}
+// Live sessions per kind for the fleet bar's count badges: Hermes from each
+// profile's own `live` list, PI from DATA.pi_live, Claude/Codex from the
+// de-duplicated DATA.agent_live. Zero is a real answer (the bar dims, never
+// hides, that kind).
+export function fleetKindCounts(profiles, piLive, agentLive){
+  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+  const seen = new Set();
+  Object.keys(profiles || {}).forEach(n => {
+    if (n === 'All') return;
+    ((profiles[n] && profiles[n].live) || []).forEach(L => {
+      if (L && !seen.has(L.id)) { seen.add(L.id); c.hermes++; }
+    });
+  });
+  c.pi = (piLive || []).filter(Boolean).length;
+  dedupAgentLive(agentLive).forEach(S => { c[S.engine === 'codex' ? 'codex' : 'claude']++; });
+  c.all = c.hermes + c.pi + c.claude + c.codex;
+  return c;
+}
+// Per-agent tile, fixed scan order: status, model, phase chip, cost.
+// Only already-sanitised fields ever reach the DOM (title, short model, coarse
+// phase) — never prompts, tool arguments or paths.
+export function fleetTileHtml(kind, S){
+  const meta = kindMeta(kind);
+  const idle = S.phase === 'idle';
+  const model = short(S.model) || '\u2014';
+  const cost = Number.isFinite(S.cost_usd) ? '$' + S.cost_usd.toFixed(S.cost_usd < 1 ? 3 : 2) : '\u2014';
+  return `<div class="ftile" data-kind="${escA(kind)}" data-state="${idle ? 'idle' : 'run'}" style="--k:${meta.color}">`
+    + `<div class="ft-status"><span class="ft-dot" aria-hidden="true"></span>`
+    + `<span class="ft-kind" aria-hidden="true">${meta.sig}</span>`
+    + `<span class="ft-st">${idle ? 'Idle' : 'Running'}</span></div>`
+    + `<div class="ft-model" title="${escA(model)}">${esc(model)}</div>`
+    + `<div class="ft-sub"><span class="ft-phase">${esc(S.phase || '\u2014')}</span>`
+    + `<span class="ft-cost">${esc(cost)}</span></div></div>`;
+}
 export function kindBadge(kind){
-  const meta = KIND_META[kind] || { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
+  const meta = kindMeta(kind);
   // Icon-only: the glyph carries the visible signal; the text label
   // (meta.label) only lives in the title tooltip now — less chrome in a row
   // that is already dense with chips, meaning still discoverable on hover.
@@ -249,8 +291,26 @@ function agentLiveRows(list){
   });
 }
 
+// Tiles under the fleet bar: one per live session of the kind(s) the bar's
+// filter selects ('All' shows every kind). Hermes tiles follow the selected
+// profile view; PI and Claude/Codex are fleet-wide like their list rows.
+export function renderFleetTiles(p){
+  const box = $('livetiles');
+  if (!box) return;
+  const bar = $('tabs');
+  const want = (bar && bar.dataset.kind) || 'all';
+  const tiles = [];
+  const add = (kind, S) => { if (want === 'all' || want === kind) tiles.push(fleetTileHtml(kind, S)); };
+  const seen = new Set();
+  ((p && p.live) || []).forEach(L => { if (L && !seen.has(L.id)) { seen.add(L.id); add('hermes', L); } });
+  (DATA.pi_live || []).filter(Boolean).forEach(S => add('pi', S));
+  dedupAgentLive(DATA.agent_live).forEach(S => add(S.engine === 'codex' ? 'codex' : 'claude', S));
+  box.innerHTML = tiles.join('');
+  box.hidden = tiles.length === 0;
+}
 export function renderLive(){
   const p = DATA.profiles[current] || {};
+  renderFleetTiles(p);
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
   renderOllama(DATA.ollama);
   renderQueue();

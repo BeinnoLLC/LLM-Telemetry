@@ -53,17 +53,17 @@ const dom = bootDOM();
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    const chips = () => [...d.querySelectorAll('#tabs > button')];
+    const chips = () => [...d.querySelectorAll('#tabs .pchip')];
     const names = chips().map(c => c.dataset.tab);
     chk(names.length >= 2, 'sample dashboard has 2+ profiles', names.join(','));
 
     // ---- bug: clicking a tab must not change chip size/class -------------
-    // #150 redesign: chips are dense segmented pills styled by CSS from the
-    // --h custom property; the contract is the .tabseg base class + a --h
+    // #150 redesign: chips are fleet-bar pchips styled by CSS from the
+    // --h custom property; the contract is the .pchip base class + a --h
     // inline var (identity) — NOT the legacy px-5/fs-lg utility soup.
     const before = chips().map(c => ({ tab: c.dataset.tab, cls: c.className, style: c.getAttribute('style') }));
-    chk(before.every(b => /(^| )tabseg( |$)/.test(b.cls) && /--h:\d+/.test(b.style)),
-        'chips start as .tabseg with a --h identity', before.map(b => b.cls).join(' | '));
+    chk(before.every(b => /(^| )pchip( |$)/.test(b.cls) && /--h:\d+/.test(b.style)),
+        'chips start as .pchip with a --h identity', before.map(b => b.cls).join(' | '));
 
     // Click a real profile chip via the same handler the page wires up.
     const target = names[0];
@@ -75,8 +75,8 @@ setTimeout(() => {
     const after = chips().map(c => ({ tab: c.dataset.tab, cls: c.className, style: c.getAttribute('style') }));
     chk(after.length === before.length, 'chip count unchanged after interacting');
     after.forEach((a) => {
-      chk(/(^| )tabseg( |$)/.test(a.cls),
-          `chip "${a.tab}" keeps its .tabseg identity after render()`, a.cls);
+      chk(/(^| )pchip( |$)/.test(a.cls),
+          `chip "${a.tab}" keeps its .pchip identity after render()`, a.cls);
       // "taboff" is the chip's REAL base class name (legacy naming from before
       // #121's hue-chip redesign); the actual bug was a full className swap to
       // the flat, differently-sized "px-3 py-1 ... 12px" class — assert that
@@ -124,7 +124,7 @@ setTimeout(() => {
     // no waiting for the next poll) — a settings change with no visible
     // effect elsewhere reads as broken.
     w.eval(`pickView('Live');`); // tabs() lives in the header, visible on every view
-    const chip = d.querySelector(`#tabs > button[data-tab="${n}"]`);
+    const chip = d.querySelector(`#tabs .pchip[data-tab="${n}"]`);
     const style = chip.getAttribute('style') || '';
     chk(new RegExp(`--h:${NEW_HUE}(;|$)`).test(style),
         'the profile tab chip repaints with the new hue immediately', style);

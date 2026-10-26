@@ -60,8 +60,8 @@ function bootDOM(storageGet) {
   });
 }
 
-const tabNames = d => [...d.querySelectorAll('#tabs > button')].map(b => b.dataset.tab);
-const chipOf = (d, n) => d.querySelector(`#tabs > button[data-tab="${n}"]`);
+const tabNames = d => [...d.querySelectorAll('#tabs .pchip')].map(b => b.dataset.tab);
+const chipOf = (d, n) => d.querySelector(`#tabs .pchip[data-tab="${n}"]`);
 const hueOf = (w, n) => w.eval(`hashHue(${JSON.stringify(n)})`);
 
 // ---- pass 1: real behaviour ------------------------------------------------
@@ -73,7 +73,7 @@ setTimeout(() => {
     // ---- no All tab, ever -------------------------------------------------
     const tabs0 = tabNames(doc);
     chk(!tabs0.includes('All'), 'NO All tab exists on the tab strip', tabs0.join(','));
-    const anyAllBtn = [...doc.querySelectorAll('#tabs > button')]
+    const anyAllBtn = [...doc.querySelectorAll('#tabs .pchip')]
       .some(b => /^all$/i.test(b.textContent.trim()));
     chk(!anyAllBtn, 'no button labelled "All" in the strip');
     chk(tabs0.length >= 2, 'every real profile is rendered as a chip', tabs0.join(','));

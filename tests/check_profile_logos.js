@@ -51,7 +51,7 @@ const dom = bootDOM();
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    const chips = () => [...d.querySelectorAll('#tabs > button')];
+    const chips = () => [...d.querySelectorAll('#tabs .pchip')];
     const names = chips().map(c => c.dataset.tab);
     chk(names.length >= 2, 'sample dashboard has 2+ profiles', names.join(','));
     const n = names[0];

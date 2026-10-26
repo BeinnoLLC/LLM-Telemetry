@@ -64,6 +64,23 @@
   --pal-mint:#5f9e78;
 }
 
+/* Fleet bar (replaced the old segmented tab strip). Surfaces are derived
+   with color-mix from the theme tokens so they inherit both themes. The four
+   --kind-* colours are the ONE source of truth for agent-kind identity: live.js
+   KIND_META reads them via var(), it no longer carries its own hsl() copies.
+   Declared on :root only — they resolve per-element, so [data-theme] flips the
+   surfaces with it. */
+:root{
+  --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
+  --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
+  --fb-h:32px;
+  --fb-r:6px;
+  --kind-hermes:hsl(199 60% 56%);
+  --kind-pi:hsl(265 55% 64%);
+  --kind-claude:hsl(18 70% 60%);
+  --kind-codex:hsl(152 50% 52%);
+}
+
 [data-theme="dark"]{
   /* base surfaces: green-grey night values, not pure neutral */
   --bg:#141a17;

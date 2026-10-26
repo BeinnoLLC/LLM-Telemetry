@@ -189,7 +189,12 @@ const SUPERSET = {
   'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {} },
   'flow.js': { renderFlow: () => {} },
   'drawer.js': { loadLogs: () => {}, logsInstall: () => {} },
-  'live.js': { renderLive: () => {}, LIVE_MS: 0, REBUILD_MS: 0 },
+  'live.js': {
+    renderLive: () => {}, LIVE_MS: 0, REBUILD_MS: 0,
+    KIND_ORDER: ['hermes', 'pi', 'claude', 'codex'],
+    fleetKindCounts: () => ({ all: 0, hermes: 0, pi: 0, claude: 0, codex: 0 }),
+    kindMeta: k => ({ sig: '*', label: k, color: 'var(--kind-' + k + ')' }),
+  },
   'main.js': { DATA, buildAll, installAll: () => {} },
 };
 
@@ -717,10 +722,10 @@ R.profileLogoSet('nous', '');
 R.tabs();
 ok(getEl('tabs').innerHTML.includes('data-tab="anthropic"'), 'tabs: renders a chip per profile in PV_ALL');
 ok(!getEl('tabs').innerHTML.includes('data-tab="All"'), 'tabs: never renders the merged All key as a tab');
-eq(getEl('tabsub').textContent, 'all 2 shown', 'tabs: subtitle when all profiles are on');
+ok(getEl('tabs').innerHTML.includes('>all 2 shown<'), 'tabs: subtitle when all profiles are on');
 R.pvSet('nous', true);
 R.tabs();
-eq(getEl('tabsub').textContent, '1/2 on', 'tabs: subtitle counts the on-profiles');
+ok(getEl('tabs').innerHTML.includes('>1/2 on<'), 'tabs: subtitle counts the on-profiles');
 eq(getEl('tabs').innerHTML.includes('data-off="1"'), true, 'tabs: the off chip is marked data-off');
 R.pvSet('nous', false);
 R.tabs();
