@@ -44,11 +44,10 @@ def rate_source(model, catalog):
         return "local"
     if P.is_free_tier(model):
         return "free-tier"
-    if P.WEB_RATES.get(model) or P.WEB_RATES.get((model or "").split("/")[-1]):
-        return "vendor"
-    if P.rates_for(model, catalog):
-        return "openrouter"
-    return "unpriced"
+    origin, rt = P.rate_origin(model, catalog)
+    if not rt:
+        return "unpriced"
+    return "openrouter" if origin == "catalog" else "vendor"
 
 
 def installed_local_models(ollama):
@@ -107,6 +106,8 @@ def observed_traffic(data):
     })
     for pname, prof in (data or {}).get("profiles", {}).items():
         for r in prof.get("rows", []):
+            if P.is_dead_endpoint(r.get("base_url")):
+                continue
             e = seen[r.get("model") or ""]
             e["calls"] += r.get("calls", 0)
             e["inp"] += r.get("inp", 0)
@@ -135,16 +136,17 @@ def assemble(data, catalog, installed=()):
     """
     seen = observed_traffic(data)
     local_names = set(installed) | {m for m, a in seen.items() if a["local"]}
-    universe = set(catalog) | set(P.WEB_RATES) | local_names | set(seen)
+    universe = set(catalog) | set(P.WEB_RATES) | set(P.RATE_OVERRIDES) | local_names | set(seen)
     for m in seen:
         if m in local_names:
             continue
         oid = P.ALIASES.get(m) or P._resolve_catalog_id(m, catalog)
         if oid and oid != m:
             universe.discard(oid)
-    for w in P.WEB_RATES:
+    for w in (*P.WEB_RATES, *P.RATE_OVERRIDES):
         oid = P.ALIASES.get(w)
-        if oid and oid != w:
+        # a local/energy-priced alias ("gpt-oss:20b") must not hide the cloud id
+        if oid and oid != w and not P.is_local(w):
             universe.discard(oid)
     universe.discard("")
 

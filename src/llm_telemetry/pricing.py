@@ -66,6 +66,13 @@ METERED_MODEL_HINTS = (
     "openrouter/",
 )
 
+# Cloud-served SKUs whose names contain a LOCAL_HINTS substring ("nemotron").
+# Ollama Cloud serves these metered; they are priced from the live catalogue.
+# A row sent to a LAN endpoint is still classed local by its URL in price_row().
+CLOUD_ONLY_MODELS = frozenset({
+    "nemotron-3-nano", "nemotron-3-super", "nemotron-3-ultra",
+})
+
 PRESET_MODELS = ("default",)
 
 FREE_TIER_SUFFIX = ":free"
@@ -129,31 +136,49 @@ def metered_by_model(model):
         return False
     return any(h in m for h in METERED_MODEL_HINTS)
 
+# Rate precedence in rates_for(): local-by-name -> RATE_OVERRIDES -> live
+# catalogue (OpenRouter) -> WEB_RATES. WEB_RATES is only the fallback for models
+# the live catalogue does not list, so stale built-in numbers can no longer
+# shadow a fresh catalogue price.
+#
+# RATE_OVERRIDES is the one place a built-in rate beats a live entry. Keep it
+# small and say why each line is here:
+#   * the live entry looks wrong (a data error on the catalogue side);
+#   * the rate is provider-specific (Fireworks bills its own SKUs, which a
+#     generic catalogue entry for the same weights does not describe).
+RATE_OVERRIDES = {
+    # live 0.07/1.40 -> input far below any GLM tier; official list is 1.40/4.40
+    "glm-5.3":    (1.40, 4.40, 0.26),
+    # live 0.169/20 -> output looks like a typo; official list is 3/15
+    "kimi-k3":    (3.00, 15.00, 0.30),
+    # Fireworks-billed SKUs: Fireworks' own price, not the generic model's
+    "accounts/fireworks/models/deepseek-v4-flash-0731":       (0.22, 0.66, 0.007),
+    "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
+    "accounts/fireworks/models/deepseek-v4p1-flash":          (0.22, 0.66, 0.007),
+    "accounts/fireworks/models/deepseek-v4-pro-0813":         (1.32, 3.96, 0.044),
+    "accounts/fireworks/models/kimi-k3":                      (3.00, 15.00, 0.30),
+}
+
+# Fallback only (see precedence above): models with no live catalogue entry.
 WEB_RATES = {
     "gpt-6-astra":     (10.00, 50.00, 1.00),
     "gpt-5.6-luna":    (0.20,  1.20,  0.02),
     "gpt-5.6-terra":   (2.00,  12.00, 0.20),
     "gpt-5.6-sol":     (4.00,  20.00, 0.40),
     "gpt-5.3-codex":   (1.75,  14.00, 0.175),
-    "accounts/fireworks/models/deepseek-v4-flash-0731":       (0.22, 0.66, 0.007),
-    "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
-    "accounts/fireworks/models/deepseek-v4p1-flash":          (0.22, 0.66, 0.007),
-    "accounts/fireworks/models/deepseek-v4-pro-0813":         (1.32, 3.96, 0.044),
     "deepseek-v4.1-flash":    (0.22,  0.66,  0.007),
     "deepseek-v4-flash":      (0.22,  0.66,  0.007),
     "deepseek-v4-pro":        (0.66,  1.98,  0.022),
     "gemma4":                 (0.14,  0.40,  0.05),
-    "glm-5.3":                (1.40,  4.40,  0.26),
     "glm-5.3-flash":          (0.15,  0.50,  0.03),
     "gpt-oss:120b":           (0.15,  0.60,  0.015),
     "gpt-oss:20b":            (0.07,  0.30,  0.035),
-    "kimi-k3":                (3.00, 15.00,  0.30),
     "kimi-k2.7-code":         (0.95,  4.00,  0.19),
     "kimi-k2.6":              (0.95,  4.00,  0.16),
     "minimax-m3":             (0.60,  2.40,  0.12),
     "nemotron-3-nano":        (0.06,  0.24,  0.0),
-    "nemotron-3-super":       (0.015, 0.60,  0.015),
-    "nemotron-3-ultra":       (0.10,  3.00,  0.10),
+    "nemotron-3-super":       (0.30,  2.40,  0.0),
+    "nemotron-3-ultra":       (0.60,  2.40,  0.0),
     "qwen3.5:397b":           (0.60,  3.60,  0.0),
 }
 
@@ -177,6 +202,9 @@ ALIASES = {
     "accounts/fireworks/models/deepseek-v4-pro-0813": "deepseek/deepseek-v4-pro-0813",
     "accounts/fireworks/models/deepseek-v4-flash-0731": "deepseek/deepseek-v4-flash-0731",
     "accounts/fireworks/models/kimi-k3": "moonshotai/kimi-k3",
+    # no Fireworks-specific rate is recorded for this SKU, so it is priced at the
+    # generic z-ai/glm-5.3-flash catalogue rate (add a RATE_OVERRIDES line if
+    # Fireworks' own price is ever pinned)
     "accounts/fireworks/models/glm-5p3-flash": "z-ai/glm-5.3-flash",
     "gpt-5.6-luna": "openai/gpt-5.6-luna",
     "gpt-5.3-codex": "openai/gpt-5.3-codex",
@@ -187,6 +215,18 @@ ALIASES = {
     "kimi-k2.7-code": "moonshotai/kimi-k2.7-code",
     "kimi-k2.6": "moonshotai/kimi-k2.6",
     "kimi-k2.5": "moonshotai/kimi-k2.5",
+    "gpt-5.1-codex": "openai/gpt-5.1-codex",
+    "minimax-m3": "minimax/minimax-m3",
+    "qwen3.7-max": "qwen/qwen3.7-max",
+    "qwen3.5:397b": "qwen/qwen3.5-397b-a17b",
+    "nemotron-3-nano": "nvidia/nemotron-3-nano-30b-a3b",
+    "nemotron-3-super": "nvidia/nemotron-3-super-120b-a12b",
+    "nemotron-3-ultra": "nvidia/nemotron-3-ultra-550b-a55b",
+    # Ollama-style cloud tags ("gpt-oss:20b-cloud"); the bare tag is local by name.
+    "gpt-oss:20b": "openai/gpt-oss-20b",
+    "gpt-oss:120b": "openai/gpt-oss-120b",
+    # "gemma4" is deliberately NOT mapped: the catalogue lists gemma-4-26b-a4b-it
+    # and gemma-4-31b-it, and the bare Ollama tag does not say which size ran.
 }
 
 
@@ -342,7 +382,10 @@ def _fetch_openrouter(force=False):
         return models, "live"
     except Exception as e:
         if os.path.exists(CACHE):
-            return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
+            try:
+                return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
+            except Exception:
+                pass  # corrupt cache while offline: built-in rates take over
         return {}, f"unavailable ({e.__class__.__name__})"
 
 
@@ -356,6 +399,8 @@ def is_local(model):
     if "/" in m:
         return False
     if m.endswith(":cloud") or m.endswith("-cloud"):
+        return False
+    if m in CLOUD_ONLY_MODELS:
         return False
     return any(h in m for h in LOCAL_HINTS)
 
@@ -427,7 +472,7 @@ def serving_provider_hint(model, catalog):
         return "fireworks"
     if oid and not oid.startswith(NOUS_PREFIX):
         return oid.split("/", 1)[0].lower()
-    if lm in WEB_RATES:
+    if lm in WEB_RATES or lm in RATE_OVERRIDES:
         if lm.endswith(":cloud") or lm.endswith("-cloud"):
             return "ollama-cloud"
         if lm.startswith("gpt-"):
@@ -489,26 +534,20 @@ def nous_rates_for(model, catalog, prompt_per_call=None):
     return base
 
 
-def rates_for(model, catalog):
-    """-> (prompt, completion, cache_read) USD per token, or None.
-
-    Order: local check -> web-sourced WEB_RATES -> OpenRouter catalog.
-    WEB_RATES wins because it carries official vendor numbers for models
-    OpenRouter does not list (Codex/Astra) or lists under a different SKU.
-    """
-    if is_local(model):
-        from . import energy as E
-        (ri, ro, rc), _tps = E.local_rates(model)
-        return (ri / 1e6, ro / 1e6, rc / 1e6)
+def _builtin_rate(table, model):
+    """Look a model up in a built-in rate table by id, basename, or cloud-stripped tag."""
     base = (model or "").split("/")[-1].lower()
     bare = re.sub(r"(:|-)cloud$", "", base)
-    w = (WEB_RATES.get(model) or WEB_RATES.get(base)
-         or WEB_RATES.get(bare))
+    w = table.get(model) or table.get(base) or table.get(bare)
     if not w and ":" in bare:
-        w = WEB_RATES.get(bare.rsplit(":", 1)[0])
-    if w:
-        return (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
-    oid = ALIASES.get(model)
+        w = table.get(bare.rsplit(":", 1)[0])
+    return w
+
+
+def _live_rate(model, catalog):
+    """-> (prompt, completion, cache_read) from the live catalogue, or None."""
+    base = re.sub(r"(:|-)cloud$", "", (model or "").split("/")[-1].lower())
+    oid = ALIASES.get(model) or ALIASES.get(base)
     if not oid:
         oid = model if model in catalog else _resolve_catalog_id(model, catalog)
     p = catalog.get(oid or "")
@@ -522,7 +561,53 @@ def rates_for(model, catalog):
         return None
     if any(x < 0 for x in r):
         return None
+    if not any(r) and not is_free_tier(model):
+        # all-zero on a non-free id is a promo/data error: fall through to the
+        # built-in rate rather than pricing the model at $0
+        return None
     return r
+
+
+def rate_origin(model, catalog):
+    """-> (origin, (prompt, completion, cache_read) per token) or (None, None).
+
+    origin is "override" (RATE_OVERRIDES), "catalog" (live OpenRouter entry) or
+    "builtin" (WEB_RATES fallback for a model the catalogue does not list).
+    """
+    if is_local(model):
+        from . import energy as E
+        (ri, ro, rc), _tps = E.local_rates(model)
+        return "local", (ri / 1e6, ro / 1e6, rc / 1e6)
+    w = _builtin_rate(RATE_OVERRIDES, model)
+    if w:
+        return "override", (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
+    r = _live_rate(model, catalog)
+    if r:
+        return "catalog", r
+    w = _builtin_rate(WEB_RATES, model)
+    if w:
+        return "builtin", (w[0] / 1e6, w[1] / 1e6, w[2] / 1e6)
+    return None, None
+
+
+def rates_for(model, catalog):
+    """-> (prompt, completion, cache_read) USD per token, or None.
+
+    Order: local check -> RATE_OVERRIDES -> live catalogue -> WEB_RATES.
+    The live catalogue wins over the built-in table; see RATE_OVERRIDES for
+    the few deliberate exceptions.
+    """
+    return rate_origin(model, catalog)[1]
+
+
+def is_dead_endpoint(base_url):
+    """True for the discard-port test endpoints (127.0.0.1:9 / localhost:9).
+
+    Rows and ids that only ever hit one of these are test scaffolding, not
+    models anyone priced; pricing reports leave them out.
+    """
+    u = (base_url or "").lower()
+    return bool(re.match(r"^(?:\w+://)?(?:127\.0\.0\.1|localhost|\[::1\]):9(?:[/?#]|$)", u))
 
 
 def price_row(row, catalog):
@@ -568,7 +653,7 @@ def price_row(row, catalog):
     if r is None:
         r = None if is_free_tier(model) else rates_for(model, catalog)
         if r:
-            rate_source = "catalog"
+            rate_source = "local" if is_local(model) else "catalog"
     if cls == "local" and not is_local(model):
         from . import energy as E
         (ri, ro, rc), _tps = E.local_rates(model)

@@ -9,13 +9,9 @@ def chk(name, got, want):
     if got != want:
         FAIL.append(f"{name}: got {got!r}, want {want!r}")
 
-cat, _ = P.fetch_catalog()
-try:
-    samp = json.load(open(os.path.join(
-        os.path.dirname(__file__), "..", "examples", "reports", "sample-catalog.json")))
-    cat = samp["models"]
-except Exception:
-    pass
+# pinned sample catalogue first: never reach the network
+SAMPLE = os.path.join(os.path.dirname(__file__), "..", "examples", "reports", "sample-catalog.json")
+cat = json.load(open(SAMPLE))["models"]
 
 def cls(model, provider, url=None):
     r = P.price_row({"provider": provider, "model": model, "base_url": url,
@@ -65,8 +61,8 @@ for model, prov, card_key in CLOUD_CASES:
     r = cls(model, prov, "https://ollama.com/v1")
     chk(f"{model} classed metered", r["cost_class"], "metered")
     chk(f"{model} priced from the rate card", r["priced"], True)
-    want = (100 * P.WEB_RATES[card_key][0] / 1e6
-            + 50 * P.WEB_RATES[card_key][1] / 1e6)
+    rt = P.rates_for(model, cat)  # same lookup the row uses (cloud tag is not local)
+    want = 100 * rt[0] + 50 * rt[1]
     chk(f"{model} bills at the published rate", round(r["billed_usd"], 9), round(want, 9))
 
 r = cls("kimi-k3", "ollama-cloud", "https://ollama.com/v1")

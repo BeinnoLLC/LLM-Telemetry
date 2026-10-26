@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """rates_for() resolution order (P6-05, #63).
 
-Order: local -> WEB_RATES -> alias -> exact catalogue id -> fuzzy match -> None.
+Order: local -> RATE_OVERRIDES -> alias -> exact catalogue id -> fuzzy match
+-> WEB_RATES fallback -> None.
 Every cost number on both pages passes through this, so each step is pinned
 with a synthetic catalogue: no network and no real agent data.
 """
@@ -47,9 +48,8 @@ chk(per_m(P.rates_for("qwen3-coder:30b", CAT)) == (round(ri, 6), round(ro, 6), r
 chk(per_m(P.rates_for("qwen/qwen3-coder", CAT)) == (1.0, 2.0, 0.0),
     "  a vendor-qualified id is the cloud model, not local")
 
-w = P.WEB_RATES["gpt-6-astra"]
-chk(per_m(P.rates_for("gpt-6-astra", CAT)) == tuple(float(x) for x in w),
-    "2 WEB_RATES beats the catalogue (and the alias) for the same SKU", per_m(P.rates_for("gpt-6-astra", CAT)))
+chk(per_m(P.rates_for("gpt-6-astra", CAT)) == (99.0, 99.0, 0.0),
+    "2 a live catalogue entry beats WEB_RATES for the same SKU", per_m(P.rates_for("gpt-6-astra", CAT)))
 
 chk(per_m(P.rates_for("claude-opus-5", CAT)) == (5.0, 25.0, 0.5),
     "3 ALIASES pins the id, beating a same-basename decoy")
