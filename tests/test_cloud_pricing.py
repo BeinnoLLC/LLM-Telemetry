@@ -65,8 +65,8 @@ for model, prov, card_key in CLOUD_CASES:
     r = cls(model, prov, "https://ollama.com/v1")
     chk(f"{model} classed metered", r["cost_class"], "metered")
     chk(f"{model} priced from the rate card", r["priced"], True)
-    want = (100 * P.WEB_RATES[card_key][0] / 1e6
-            + 50 * P.WEB_RATES[card_key][1] / 1e6)
+    card = P.RATE_OVERRIDES.get(card_key) or P.WEB_RATES[card_key]
+    want = 100 * card[0] / 1e6 + 50 * card[1] / 1e6
     chk(f"{model} bills at the published rate", round(r["billed_usd"], 9), round(want, 9))
 
 r = cls("kimi-k3", "ollama-cloud", "https://ollama.com/v1")
