@@ -47,48 +47,114 @@
  .tabon{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
-/* ---- Profile tabs as a segmented control (#150 redesign) -----------------
-   The reference look: chip group lives in its own framed card, chips are
-   dense pills, the ACTIVE state is a soft tinted fill (dark theme keeps the
-   tint; light theme darkens it) tinted by the profile's own stable hue —
-   identity stays per-profile, chrome stays identical across chips. All
-   state lives in [data-off]; the JS hands over --h and touches nothing
-   else, so no render pass can stomp a chip's styling again (#126). */
- .tabframe{display:flex;gap:8px;align-items:center;padding:6px;
-   background:var(--card);border:1px solid var(--border);border-radius:14px;
-   overflow-x:auto;max-width:100%;scrollbar-width:thin}
- .tabframe .tabsub{margin-left:auto;padding-right:6px;flex:none}
- /* Fleet header: a label at the left of the profile list, replaced the
-    old "Profiles / Bots" section headers for a cleaner look. */
- .tabgrouplabel{font-size:var(--fs-xs);font-weight:700;letter-spacing:.1em;
-   text-transform:uppercase;color:var(--muted);padding:0 2px;
-   white-space:nowrap;user-select:none;flex:none}
- .tabdivider{width:1px;align-self:stretch;margin:0 4px;background:var(--border);flex:none}
- /* Bot icons: person (👤) or robot (⚙) appears inline in each tab. */
- .tabkind{display:inline-flex;align-items:center;justify-content:center;
-   width:14px;height:14px;font-size:10px;line-height:1;
-   color:var(--muted);flex:none;margin:0}
- .tabseg[data-off="0"] .tabkind{color:hsl(var(--h) 55% 26%)}
- [data-theme=dark] .tabseg[data-off="0"] .tabkind{color:hsl(var(--h) 80% 80%)}
- .tabseg{font:inherit;font-size:var(--fs-md);font-weight:500;line-height:1;
-   display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:10px;
-   border:none;background:transparent;color:var(--fg);cursor:pointer;
-   white-space:nowrap;-webkit-user-select:none;user-select:none}
- .tabseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
- .tabseg::before{content:"";width:6px;height:6px;border-radius:50%;
-   background:hsl(var(--h) 70% 55%);flex:none;
-   transition:opacity .12s ease, transform .12s ease}
- .tabseg[data-off="0"]{background:hsl(var(--h) 42% 88%);color:hsl(var(--h) 55% 24%)}
- .tabseg[data-off="0"]:hover{background:hsl(var(--h) 48% 83%)}
- .tabseg[data-off="0"]::before{background:hsl(var(--h) 55% 38%)}
- .tabseg[data-off="1"]{color:hsl(var(--h) 30% 38%)}
- .tabseg[data-off="1"]::before{opacity:.30;transform:scale(.75)}
- .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 20% 93%)}
- [data-theme=dark] .tabseg[data-off="0"]{background:hsl(var(--h) 45% 24%);color:#fff}
- [data-theme=dark] .tabseg[data-off="0"]:hover{background:hsl(var(--h) 50% 28%)}
- [data-theme=dark] .tabseg[data-off="0"]::before{background:hsl(var(--h) 80% 82%)}
- [data-theme=dark] .tabseg[data-off="1"]{color:hsl(var(--h) 12% 58%)}
- [data-theme=dark] .tabseg[data-off="1"]:hover{color:var(--fg);background:hsl(var(--h) 15% 18%)}
+/* ---- Fleet bar (replaced the old segmented tab strip) ---------------------
+   ONE 42px row: kind filter | scrolling profile chips | N/M on | Manage.
+   Identity colour (profile hue) lives only on the chip avatar; the kind
+   colour only on the kind glyph — and always paired with a glyph + label. */
+.fleetbar{display:flex;align-items:center;gap:var(--sp-2,8px);min-width:0;max-width:100%;
+  height:calc(var(--fb-h) + 10px);padding:4px;background:var(--fb-surface);
+  border:1px solid var(--border);border-radius:calc(var(--fb-r) + 4px);position:relative}
+.fb-label{font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 4px 0 8px;flex:none}
+.fb-sep{width:1px;align-self:stretch;margin:6px 0;background:var(--border);flex:none}
+.fb-kinds{display:flex;gap:2px;flex:none}
+.kseg{height:var(--fb-h);display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:var(--fb-r);
+  background:transparent;color:var(--muted);font:inherit;font-size:var(--fs-sm);cursor:pointer;white-space:nowrap}
+.kseg .g{color:var(--k,var(--muted));font-size:12px;line-height:1;width:12px;text-align:center}
+.kseg .n{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);opacity:.8}
+.kseg:hover{background:var(--fb-raise);color:var(--fg)}
+.kseg[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:0 0 0 1px var(--border) inset,0 1px 2px rgba(0,0,0,.25)}
+.kseg[data-empty="1"]{opacity:.45}
+.fb-strip{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;
+  padding:0 12px 0 4px;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%)}
+.fb-strip::-webkit-scrollbar{display:none}
+.fb-strip[data-at-start="1"]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%);
+  mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%)}
+.pchip{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border:0;
+  border-radius:var(--fb-r);background:transparent;color:var(--fg);font:inherit;font-size:var(--fs-sm);
+  cursor:pointer;white-space:nowrap;scroll-snap-align:start;position:relative}
+.pchip .av{display:inline-flex;flex:none}
+.pchip .name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pchip .pfx{color:var(--muted)}
+.pchip .kd{font-size:11px;color:var(--k);line-height:1}
+.pchip .live{width:6px;height:6px;border-radius:50%;background:var(--z-ok);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--z-ok) 25%,transparent);flex:none}
+.pchip:hover{background:var(--fb-raise)}
+.pchip[data-off="1"]{color:var(--muted)}
+.pchip[data-off="1"] .av{opacity:.5;filter:grayscale(1)}
+.pchip[data-off="1"] .name{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.pchip[aria-current="true"]{background:var(--card);box-shadow:0 0 0 1px var(--border) inset,0 1px 2px rgba(0,0,0,.25)}
+.pchip[aria-current="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:2px;border-radius:2px;background:var(--accent)}
+.pchip:focus-visible,.kseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fb-count{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;padding:0 4px}
+.fb-more{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);
+  border-radius:var(--fb-r);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+.fb-more:hover{background:var(--fb-raise)}
+.fb-more kbd{font:inherit;font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:0 4px}
+.fb-more[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent-wash);border-color:var(--accent)}
+.fb-more:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
+   the ::backdrop (the mock had none). */
+.fbdlg{padding:0;width:min(680px,92vw);max-height:min(76vh,600px);flex-direction:column;overflow:hidden;
+  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.fbdlg[open]{display:flex}
+.fbdlg::backdrop{background:rgba(0,0,0,.45)}
+.pk-top{display:flex;align-items:center;gap:var(--sp-2,8px);padding:12px;border-bottom:1px solid var(--border)}
+.pk-top h2{margin:0;font-size:var(--fs-md);font-weight:600;flex:none}
+.pk-top .pk-q{flex:1;min-width:0;height:32px;border-radius:var(--fb-r);border:1px solid var(--border);background:var(--fb-surface);color:var(--fg);padding:0 10px;font:inherit;font-size:var(--fs-sm)}
+.pk-btn{height:32px;border-radius:var(--fb-r);border:1px solid var(--border);background:transparent;color:var(--fg);font:inherit;font-size:var(--fs-sm);padding:0 10px;cursor:pointer}
+.pk-btn:hover{background:var(--fb-raise)}
+.pk-body{overflow:auto;padding:4px 0;flex:1}
+.pk-grp{padding:8px 12px 0}
+.pk-gh{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 0}
+.pk-gh .g{color:var(--k)}
+.pk-gh .ct{letter-spacing:0;font-variant-numeric:tabular-nums}
+.pk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px}
+.pk-row{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:var(--fb-r);font-size:var(--fs-sm);min-width:0}
+.pk-row:hover{background:var(--fb-raise)}
+.pk-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk-hue{width:64px;flex:none}
+.pk-logo{position:relative;flex:none;font-size:var(--fs-xs);color:var(--accent);cursor:pointer;border:1px solid var(--border);border-radius:var(--fb-r);padding:2px 6px}
+.pk-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.pk-clr{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1}
+.pk-foot{padding:8px 12px;border-top:1px solid var(--border);font-size:var(--fs-xs)}
+.pk-none{padding:12px}
+.pk-btn:focus-visible,.pk-q:focus-visible,.pk-on:focus-visible,.pk-hue:focus-visible,.pk-logo:focus-within,.pk-clr:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* on/off checkboxes: a real checked / indeterminate / unchecked treatment */
+.fbdlg input.pk-on{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;flex:none;cursor:pointer;
+  border:1.5px solid var(--muted);border-radius:4px;background:transparent;display:inline-grid;place-content:center}
+.fbdlg input.pk-on:checked{background:var(--accent);border-color:var(--accent)}
+.fbdlg input.pk-on:checked::after{content:"";width:8px;height:4px;border:2px solid var(--accent-ink);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
+.fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
+/* Per-agent tiles: status, model, phase, cost — always in that order. */
+.pk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-2,8px);margin-bottom:12px}
+.ftile{container-type:inline-size;display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;
+  background:var(--card);border:1px solid var(--border);border-left:3px solid var(--k);border-radius:var(--fb-r)}
+.ft-status{display:flex;align-items:center;gap:6px;font-size:var(--fs-sm)}
+.ft-dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);flex:none}
+.ftile[data-state="idle"] .ft-dot{background:var(--muted)}
+.ft-kind{color:var(--k);font-size:12px;line-height:1}
+.ft-model{font-size:var(--fs-sm);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ft-sub{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.ft-phase{font-size:var(--fs-xs);padding:1px 6px;border-radius:999px;background:var(--fb-surface);border:1px solid var(--border);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ft-cost{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;align-self:flex-end}
+/* narrow tiles: phase and cost share one line instead of stacking/wrapping */
+@container (max-width:240px){.ft-sub{flex-direction:row;align-items:center;justify-content:space-between}.ft-cost{align-self:auto;flex:none}}
+@media (max-width:600px){
+  .fleetbar{height:auto;min-height:calc(var(--fb-h) + 10px);position:static}
+  .fb-label,.fb-sep{display:none}
+  .kseg{padding:0 8px}
+  .kseg .l{display:none}
+  .pchip{padding:0 6px;gap:5px}
+  .pchip .name{display:none}
+  .fb-count{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .pk-tiles{grid-template-columns:1fr}
+  .pk-grid{grid-template-columns:1fr}
+  .pk-hue{width:48px}
+}
  .livehdr{display:flex;align-items:baseline;gap:4px}
  .livebw{margin-left:auto;display:flex;gap:10px;text-transform:none;letter-spacing:0;font-size:var(--fs-sm);font-weight:500;color:var(--fg)}
  [hidden]{display:none !important}

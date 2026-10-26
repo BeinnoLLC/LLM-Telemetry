@@ -44,7 +44,7 @@ const strip = s => String(s).replace(/^[^\w]*\s*/, '').trim();
 
 setTimeout(() => {
   const click = el => el && el.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-  const profiles = [...d.querySelectorAll('#tabs button')];
+  const profiles = [...d.querySelectorAll('#tabs .pchip')];
   const views = [...d.querySelectorAll('#views button')];
 
   console.log('== sweeping every profile x view ==');

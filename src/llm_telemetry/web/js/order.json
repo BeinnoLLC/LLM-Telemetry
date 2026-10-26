@@ -999,6 +999,30 @@
   },
   {
    "mod": "live",
+   "name": "KIND_ORDER"
+  },
+  {
+   "mod": "live",
+   "name": "kindMeta"
+  },
+  {
+   "mod": "live",
+   "name": "fleetTiles"
+  },
+  {
+   "mod": "live",
+   "name": "fleetKindCounts"
+  },
+  {
+   "mod": "live",
+   "name": "TILE_IDLE_S"
+  },
+  {
+   "mod": "live",
+   "name": "fleetTileHtml"
+  },
+  {
+   "mod": "live",
    "name": "kindBadge"
   },
   {
@@ -1008,6 +1032,10 @@
   {
    "mod": "live",
    "name": "agentLiveRows"
+  },
+  {
+   "mod": "live",
+   "name": "renderFleetTiles"
   },
   {
    "mod": "live",
@@ -1635,15 +1663,95 @@
   },
   {
    "mod": "router",
+   "name": "fbKindGet"
+  },
+  {
+   "mod": "router",
+   "name": "fbProfileKind"
+  },
+  {
+   "mod": "router",
+   "name": "FB_GROUPS"
+  },
+  {
+   "mod": "router",
+   "name": "fbSplit"
+  },
+  {
+   "mod": "router",
+   "name": "fbChipHtml"
+  },
+  {
+   "mod": "router",
+   "name": "fbKindsHtml"
+  },
+  {
+   "mod": "router",
+   "name": "FB_ROVE"
+  },
+  {
+   "mod": "router",
+   "name": "fbRoveApply"
+  },
+  {
+   "mod": "router",
+   "name": "fbRoveSet"
+  },
+  {
+   "mod": "router",
+   "name": "fbRoveKey"
+  },
+  {
+   "mod": "router",
    "name": "tabs"
   },
   {
    "mod": "router",
-   "name": "pvMenu"
+   "name": "fbKindSet"
   },
   {
    "mod": "router",
-   "name": "botsMenu"
+   "name": "fbDialogOpen"
+  },
+  {
+   "mod": "router",
+   "name": "fbGroupList"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogHtml"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogRender"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogClosed"
+  },
+  {
+   "mod": "router",
+   "name": "fbDialogToggle"
+  },
+  {
+   "mod": "router",
+   "name": "fbSetMany"
+  },
+  {
+   "mod": "router",
+   "name": "fbOtherOverlayOpen"
+  },
+  {
+   "mod": "router",
+   "name": "fbInstall"
+  },
+  {
+   "mod": "router",
+   "name": "fbInstallDialog"
+  },
+  {
+   "mod": "router",
+   "name": "pvMenu"
   },
   {
    "mod": "router",

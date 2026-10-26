@@ -50,6 +50,22 @@ llm-telemetry dashboard   # collect + render
 llm-telemetry serve       # http://localhost:8477/dashboard.html
 ```
 
+### Fleet bar
+
+The strip under the header is the fleet bar:
+
+- **Kind filter** (All / Hermes / PI / Claude / Codex) with live-session counts.
+  It narrows the Live tiles only; a kind with no sessions is dimmed, not hidden.
+  The counts and the tiles come from the same list (profiles that are on, plus
+  PI and Claude/Codex sessions), so "All N" is the number of tiles shown.
+- **Profile chips** are the Hermes profile selector: click to show/hide a
+  profile (at least one stays on). The kind filter and the chip strip are each a
+  single Tab stop; use Left/Right/Home/End to move within them.
+- **Manage** (or press **F**) opens a dialog that lists profiles and bots in
+  groups with a group checkbox, plus per-profile colour and logo. Esc, the close
+  button or a click outside returns focus to Manage. F is ignored while typing,
+  while another dialog is open and on key repeat.
+
 Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 `~/.config/llm-telemetry/config.json`:
 
@@ -198,7 +214,7 @@ number here and in that file in the same commit, or trim the page:
 
 | Artifact | Budget (bytes) |
 |---|---|
-| `examples/reports/dashboard.html` | 920,000 |
+| `examples/reports/dashboard.html` | 940,000 |
 | `examples/reports/analytics-data.json` | 200,000 |
 | `examples/reports/rankings-data.json` | 2,000,000 |
 
