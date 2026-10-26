@@ -193,39 +193,55 @@ export function kindMeta(kind){
   return m ? { ...m, color: `var(--kind-${kind})` }
            : { sig: '\u25CF', color: 'hsl(215 16% 55%)', label: kind || '?', title: '' };
 }
-// Live sessions per kind for the fleet bar's count badges: Hermes from each
-// profile's own `live` list, PI from DATA.pi_live, Claude/Codex from the
-// de-duplicated DATA.agent_live. Zero is a real answer (the bar dims, never
-// hides, that kind).
-export function fleetKindCounts(profiles, piLive, agentLive){
-  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+// The one list the fleet bar's count badges AND the tiles are built from, so
+// the two can never disagree: Hermes from the live rows of the profiles that
+// are ON (DATA.profiles holds only those; 'All' is the merge of the same rows
+// and is skipped), PI from DATA.pi_live, Claude/Codex from the de-duplicated
+// DATA.agent_live. Scope is the fleet, not the selected chip.
+export function fleetTiles(profiles, piLive, agentLive){
+  const out = [];
   const seen = new Set();
   Object.keys(profiles || {}).forEach(n => {
     if (n === 'All') return;
     ((profiles[n] && profiles[n].live) || []).forEach(L => {
-      if (L && !seen.has(L.id)) { seen.add(L.id); c.hermes++; }
+      if (L && !seen.has(L.id)) { seen.add(L.id); out.push({ kind: 'hermes', S: L }); }
     });
   });
-  c.pi = (piLive || []).filter(Boolean).length;
-  dedupAgentLive(agentLive).forEach(S => { c[S.engine === 'codex' ? 'codex' : 'claude']++; });
+  (piLive || []).filter(Boolean).forEach(S => out.push({ kind: 'pi', S }));
+  dedupAgentLive(agentLive).forEach(S => out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }));
+  return out;
+}
+// Zero is a real answer (the bar dims, never hides, that kind). All is the
+// sum of the tiles, so "All N" always equals the tiles shown under "All".
+export function fleetKindCounts(profiles, piLive, agentLive){
+  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+  fleetTiles(profiles, piLive, agentLive).forEach(t => { c[t.kind]++; });
   c.all = c.hermes + c.pi + c.claude + c.codex;
   return c;
 }
+// A Hermes session quiet for longer than this reads Idle (the live query
+// itself drops sessions after 600s). PI/Claude/Codex report phase 'idle'.
+export const TILE_IDLE_S = 120;
 // Per-agent tile, fixed scan order: status, model, phase chip, cost.
 // Only already-sanitised fields ever reach the DOM (title, short model, coarse
-// phase) — never prompts, tool arguments or paths.
+// phase) — never prompts, tool arguments or paths. A Hermes session's phase
+// chip is its short category token; its free-text last-activity sentence is
+// only offered as a truncated, escaped tooltip.
 export function fleetTileHtml(kind, S){
   const meta = kindMeta(kind);
-  const idle = S.phase === 'idle';
+  const hermes = kind === 'hermes';
+  const idle = hermes ? Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S : S.phase === 'idle';
   const model = short(S.model) || '\u2014';
-  const cost = Number.isFinite(S.cost_usd) ? '$' + S.cost_usd.toFixed(S.cost_usd < 1 ? 3 : 2) : '\u2014';
+  const chip = hermes ? (S.category || '\u2014') : (S.phase || '\u2014');
+  const tip = hermes && S.phase ? String(S.phase).slice(0, 80) : '';
+  const cost = Number.isFinite(S.cost_usd) ? '$' + S.cost_usd.toFixed(S.cost_usd < 1 ? 3 : 2) : '';
   return `<div class="ftile" data-kind="${escA(kind)}" data-state="${idle ? 'idle' : 'run'}" style="--k:${meta.color}">`
     + `<div class="ft-status"><span class="ft-dot" aria-hidden="true"></span>`
     + `<span class="ft-kind" aria-hidden="true">${meta.sig}</span>`
     + `<span class="ft-st">${idle ? 'Idle' : 'Running'}</span></div>`
     + `<div class="ft-model" title="${escA(model)}">${esc(model)}</div>`
-    + `<div class="ft-sub"><span class="ft-phase">${esc(S.phase || '\u2014')}</span>`
-    + `<span class="ft-cost">${esc(cost)}</span></div></div>`;
+    + `<div class="ft-sub"><span class="ft-phase"${tip ? ` title="${escA(tip)}"` : ''}>${esc(chip)}</span>`
+    + (cost ? `<span class="ft-cost">${esc(cost)}</span>` : '') + `</div></div>`;
 }
 export function kindBadge(kind){
   const meta = kindMeta(kind);
@@ -254,7 +270,7 @@ function piLiveRows(list){
         <div class="flex items-center gap-2 flex-wrap">
           ${kindBadge('pi')}
           <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>
-          <span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(265 40% 30%);color:hsl(265 60% 82%);border:1px solid hsl(265 35% 42%)">${esc(S.agent||'pi')}</span>
+          <span class="text-[length:var(--fs-xs)] px-1 rounded" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)">${esc(S.agent||'pi')}</span>
         </div>
         <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
       </div>
@@ -291,26 +307,23 @@ function agentLiveRows(list){
   });
 }
 
-// Tiles under the fleet bar: one per live session of the kind(s) the bar's
-// filter selects ('All' shows every kind). Hermes tiles follow the selected
-// profile view; PI and Claude/Codex are fleet-wide like their list rows.
-export function renderFleetTiles(p){
+// Tiles under the fleet bar: one per live session of the kind the bar's
+// filter selects ('All' shows every kind), from the same fleetTiles() list the
+// count badges use.
+export function renderFleetTiles(){
   const box = $('livetiles');
   if (!box) return;
   const bar = $('tabs');
   const want = (bar && bar.dataset.kind) || 'all';
-  const tiles = [];
-  const add = (kind, S) => { if (want === 'all' || want === kind) tiles.push(fleetTileHtml(kind, S)); };
-  const seen = new Set();
-  ((p && p.live) || []).forEach(L => { if (L && !seen.has(L.id)) { seen.add(L.id); add('hermes', L); } });
-  (DATA.pi_live || []).filter(Boolean).forEach(S => add('pi', S));
-  dedupAgentLive(DATA.agent_live).forEach(S => add(S.engine === 'codex' ? 'codex' : 'claude', S));
+  const tiles = fleetTiles(DATA.profiles, DATA.pi_live, DATA.agent_live)
+    .filter(t => want === 'all' || want === t.kind)
+    .map(t => fleetTileHtml(t.kind, t.S));
   box.innerHTML = tiles.join('');
   box.hidden = tiles.length === 0;
 }
 export function renderLive(){
   const p = DATA.profiles[current] || {};
-  renderFleetTiles(p);
+  renderFleetTiles();
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
   renderOllama(DATA.ollama);
   renderQueue();

@@ -77,10 +77,9 @@ setTimeout(() => {
     after.forEach((a) => {
       chk(/(^| )pchip( |$)/.test(a.cls),
           `chip "${a.tab}" keeps its .pchip identity after render()`, a.cls);
-      // "taboff" is the chip's REAL base class name (legacy naming from before
-      // #121's hue-chip redesign); the actual bug was a full className swap to
-      // the flat, differently-sized "px-3 py-1 ... 12px" class — assert that
-      // exact regression signature is gone, not the base-class token itself.
+      // The bug was a full className swap of a chip to the flat, differently
+      // sized "px-3 py-1 ... 12px" class — assert that exact regression
+      // signature is gone, not just that .pchip is still present.
       chk(!/px-3 py-1 rounded-md border text-\[12px\]/.test(a.cls),
           `chip "${a.tab}" was not swapped to the flat 12px on/off class`, a.cls);
     });

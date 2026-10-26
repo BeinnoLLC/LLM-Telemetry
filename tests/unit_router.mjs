@@ -82,7 +82,7 @@ const mkEl = (tag = 'div') => {
     getAttribute(k) { return k in el._attrs ? el._attrs[k] : null; },
     focus() { doc.activeElement = el; }, blur() {},
     appendChild(c) { el.children.push(c); return c; }, remove() {}, removeChild() {},
-    querySelector() { return null; }, querySelectorAll() { return []; },
+    contains() { return false; }, querySelector() { return null; }, querySelectorAll() { return []; },
     checkValidity() { return true; }, closest() { return null; },
     getBoundingClientRect() { return { top: 0, left: 0, width: 0, height: 0 }; },
   };
@@ -729,6 +729,36 @@ ok(getEl('tabs').innerHTML.includes('>1/2 on<'), 'tabs: subtitle counts the on-p
 eq(getEl('tabs').innerHTML.includes('data-off="1"'), true, 'tabs: the off chip is marked data-off');
 R.pvSet('nous', false);
 R.tabs();
+
+// fleet bar helpers (fbSplit / fbProfileKind / fbChipHtml)
+eq(R.fbSplit('acasia-coder', ['acasia-coder', 'acasia-qa', 'x']), { pfx: 'acasia-', rest: 'coder' },
+  'fbSplit: splits off the shared first segment when 2+ names share it');
+eq(R.fbSplit('acasia-coder', ['acasia-coder', 'x']), { pfx: '', rest: 'acasia-coder' },
+  'fbSplit: a prefix shared by only one name is not split');
+eq(R.fbSplit('solo', ['solo', 'solo-b']), { pfx: '', rest: 'solo' },
+  'fbSplit: a name without a dash is whole');
+eq(R.fbSplit('a-b-c', ['a-b-c', 'a-d']), { pfx: 'a-', rest: 'b-c' },
+  'fbSplit: only the first segment is the prefix');
+R.PV_ALL.nous.kind = 'bot';
+eq([R.fbProfileKind('nous'), R.fbProfileKind('anthropic'), R.fbProfileKind('nope')], ['bot', 'profile', 'profile'],
+  'fbProfileKind: the server kind, defaulting to profile; never guessed from the name');
+R.PV_ALL['pi-claude-codex'] = { rows: [], hour_rows: [] };
+eq(R.fbProfileKind('pi-claude-codex'), 'profile', 'fbProfileKind: a pi/claude/codex-looking name stays a plain profile');
+const hostile = `x"><img src=x onerror=alert(1)>`;
+R.PV_ALL[hostile] = { rows: [], hour_rows: [] };
+const chipH = R.fbChipHtml(hostile, Object.keys(R.PV_ALL));
+ok(!chipH.includes('<img') && chipH.includes('&lt;img') && chipH.includes('&quot;'),
+  'fbChipHtml: a hostile profile name is escaped in text and attributes');
+ok(chipH.includes('aria-label=') && chipH.includes('data-key=') && chipH.includes('tabindex="-1"'),
+  'fbChipHtml: carries aria-label, data-key and a roving tabindex');
+const botChip = R.fbChipHtml('nous', ['nous', 'anthropic']);
+ok(botChip.includes('data-kind="bot"') && botChip.includes('class="kd"'), 'fbChipHtml: a server-kind bot chip carries the bot glyph');
+ok(R.fbChipHtml('anthropic', ['nous', 'anthropic']).includes('data-kind="profile"'), 'fbChipHtml: a profile chip is data-kind=profile');
+R.pvSet('anthropic', true);
+ok(R.fbChipHtml('anthropic', ['nous', 'anthropic']).includes('aria-pressed="false"') && R.fbChipHtml('anthropic', ['nous']).includes('data-off="1"'),
+  'fbChipHtml: an off profile is aria-pressed=false and data-off=1');
+R.pvSet('anthropic', false);
+delete R.PV_ALL[hostile]; delete R.PV_ALL['pi-claude-codex']; delete R.PV_ALL.nous.kind;
 
 // pvSyncCurrent / pvToggle
 eq(R.pvSyncCurrent(), 'All', 'pvSyncCurrent: the merged key while 2+ are on');

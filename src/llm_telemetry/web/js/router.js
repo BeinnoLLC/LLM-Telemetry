@@ -915,24 +915,26 @@ export function pvToggle(n){
 }
 // ---- Fleet bar (replaced the old segmented tab strip) --------------------
 // One 42px row: kind filter | scrolling profile chips | N/M on | Manage.
-// The kind filter only narrows which chips (and Live tiles) are shown — it
-// never changes what is on/off, so the merged view and `current` are exactly
+// The kind filter only narrows the Live tiles (chips are always the Hermes
+// profile selector) — it never changes what is on/off, so the merged view and `current` are exactly
 // what pvFilter()/pvSyncCurrent() derive from the on-set, as before.
 // The active filter lives on #tabs[data-kind] so live.js can read it without
 // importing this module.
-export function fbKindOf(n){
-  const k = PV_ALL && PV_ALL[n] && PV_ALL[n].agent_kind;
-  if (KIND_ORDER.includes(k)) return k;
-  const nm = String(n).toLowerCase();
-  for (const kind of ['claude', 'codex', 'pi']){
-    if (new RegExp('(^|[-_])' + kind + '([-_]|$)').test(nm)) return kind;
-  }
-  return 'hermes';
-}
+// Every chip is a Hermes profile (PV_ALL is the Hermes profile map), so the
+// kind filter never hides chips: it only narrows the Live tiles. The server's
+// own `kind` (bot | profile, collect_analytics.classify_profile) is what the
+// Manage dialog groups by.
 export function fbKindGet(){
   const el = $('tabs');
   return (el && el.dataset.kind) || 'all';
 }
+export function fbProfileKind(n){
+  return (PV_ALL && PV_ALL[n] && PV_ALL[n].kind) === 'bot' ? 'bot' : 'profile';
+}
+const FB_GROUPS = [
+  { key: 'profile', label: 'Profiles', sig: '◉' },
+  { key: 'bot', label: 'Bots', sig: '⬡' },
+];
 // "acasia-coder" -> {pfx:'acasia-', rest:'coder'} when 2+ profiles share the
 // first segment; otherwise the whole name is the rest.
 export function fbSplit(n, names){
@@ -944,32 +946,67 @@ export function fbSplit(n, names){
 }
 export function fbChipHtml(n, names){
   const off = pvOff(n);
-  const kind = fbKindOf(n);
+  const pk = fbProfileKind(n);
   const { pfx, rest } = fbSplit(n, names);
-  const meta = kindMeta(kind);
   const live = ((PV_ALL[n] && PV_ALL[n].live) || []).length > 0;
   const cur = current !== 'All' && current === n;
-  return `<button type="button" class="pchip" data-tab="${escA(n)}" data-off="${off ? 1 : 0}" data-kind="${escA(kind)}"`
-    + ` style="--h:${profileHue(n)};--k:${meta.color}" aria-pressed="${!off}"${cur ? ' aria-current="true"' : ''}`
+  return `<button type="button" class="pchip" data-key="${escA(n)}" data-tab="${escA(n)}" data-off="${off ? 1 : 0}" data-kind="${pk}"`
+    + ` style="--h:${profileHue(n)}" aria-pressed="${!off}"${cur ? ' aria-current="true"' : ''} aria-label="${escA(n)}" tabindex="-1"`
     + ` title="${escA(n)} — ${off ? 'Off — click to turn on' : 'On — click to turn off'}">`
     + `<span class="av">${profileIconHtml(n, 18)}</span>`
     + `<span class="name"><span class="pfx">${esc(pfx)}</span>${esc(rest)}</span>`
-    + (kind === 'hermes' ? '' : `<span class="kd" aria-hidden="true" title="${escA(meta.label)}">${meta.sig}</span>`)
+    + (pk === 'bot' ? '<span class="kd" aria-hidden="true">⬡</span>' : '')
     + (live ? '<span class="live" title="live session" role="img" aria-label="live session"></span>' : '')
     + '</button>';
 }
 export function fbKindsHtml(counts, active){
   const seg = (k, label, glyph) => {
     const n = counts[k] || 0;
-    return `<button type="button" class="kseg" data-fbkind="${k}" style="--k:var(--kind-${k})"`
+    return `<button type="button" class="kseg" data-fbkind="${k}" data-key="${k}" style="--k:var(--kind-${k})" tabindex="-1"`
       + ` aria-pressed="${active === k}" data-empty="${n ? 0 : 1}" title="${escA(label)} — ${n} live">`
       + (glyph ? `<span class="g" aria-hidden="true">${glyph}</span>` : '')
       + `<span class="l">${esc(label)}</span><span class="n">${n}</span></button>`;
   };
-  return '<div class="fb-kinds" role="group" aria-label="Agent kind">'
-    + seg('all', 'All', '\u25CE')
+  return '<div class="fb-kinds" role="toolbar" aria-label="Agent kind">'
+    + seg('all', 'All', '◎')
     + KIND_ORDER.map(k => seg(k, kindMeta(k).label, kindMeta(k).sig)).join('')
     + '</div>';
+}
+// Roving tabindex: each of the kind filter and the chip strip is ONE Tab stop
+// (the last-focused item, else the active/first one); arrows move within it.
+const FB_ROVE = { '.fb-kinds': null, '.fb-strip': null };
+function fbRoveApply(bar){
+  Object.keys(FB_ROVE).forEach(sel => {
+    const box = bar.querySelector(sel);
+    if (!box) return;
+    const items = [...box.querySelectorAll('button')];
+    if (!items.length) return;
+    const want = items.find(b => b.dataset.key === FB_ROVE[sel])
+      || items.find(b => b.getAttribute('aria-pressed') === 'true' && sel === '.fb-kinds')
+      || items.find(b => b.hasAttribute('aria-current'))
+      || items[0];
+    items.forEach(b => b.setAttribute('tabindex', b === want ? '0' : '-1'));
+  });
+}
+function fbRoveSet(btn){
+  const box = btn.closest('.fb-kinds, .fb-strip');
+  if (!box) return;
+  const sel = box.classList.contains('fb-kinds') ? '.fb-kinds' : '.fb-strip';
+  FB_ROVE[sel] = btn.dataset.key;
+  box.querySelectorAll('button').forEach(b => b.setAttribute('tabindex', b === btn ? '0' : '-1'));
+}
+function fbRoveKey(e){
+  const t = e.target.closest && e.target.closest('.fb-kinds button, .fb-strip button');
+  if (!t || e.ctrlKey || e.metaKey || e.altKey) return;
+  const items = [...t.parentNode.querySelectorAll('button')];
+  const i = items.indexOf(t);
+  const to = e.key === 'ArrowRight' ? (i + 1) % items.length
+    : e.key === 'ArrowLeft' ? (i - 1 + items.length) % items.length
+    : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : -1;
+  if (to < 0) return;
+  e.preventDefault();
+  fbRoveSet(items[to]);
+  items[to].focus();
 }
 export function tabs(){
   const bar = $('tabs');
@@ -977,11 +1014,15 @@ export function tabs(){
   fbInstall();
   const names = Object.keys(PV_ALL);
   const active = fbKindGet();
-  const counts = fleetKindCounts(PV_ALL, DATA.pi_live, DATA.agent_live);
+  const counts = fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live);
   const strip = bar.querySelector('.fb-strip');
   const left = strip ? strip.scrollLeft : 0;
+  // Re-rendering destroys the focused button; remember it and restore focus
+  // to its equivalent (same chip / kind / Manage) afterwards.
+  const ae = document.activeElement;
+  const had = ae && bar.contains(ae) ? { key: ae.dataset.key, manage: ae.hasAttribute('data-fbmanage'), kind: ae.classList.contains('kseg') } : null;
   const on = pvOnProfiles().length, tot = names.length;
-  const chips = names.filter(n => active === 'all' || fbKindOf(n) === active).map(n => fbChipHtml(n, names)).join('');
+  const chips = names.map(n => fbChipHtml(n, names)).join('');
   bar.innerHTML = '<span class="fb-label">Fleet</span>'
     + fbKindsHtml(counts, active)
     + '<span class="fb-sep" aria-hidden="true"></span>'
@@ -994,6 +1035,13 @@ export function tabs(){
     ns.scrollLeft = left;
     ns.dataset.atStart = left < 4 ? '1' : '0';
     ns.addEventListener('scroll', () => { ns.dataset.atStart = ns.scrollLeft < 4 ? '1' : '0'; }, { passive: true });
+  }
+  fbRoveApply(bar);
+  if (had){
+    const sel = had.manage ? '[data-fbmanage]' : null;
+    const el = sel ? bar.querySelector(sel)
+      : [...bar.querySelectorAll(had.kind ? '.kseg' : '.pchip')].find(b => b.dataset.key === had.key);
+    if (el) el.focus();
   }
 }
 export function fbKindSet(k){
@@ -1011,22 +1059,21 @@ export function fbDialogOpen(){
 export function fbDialogHtml(q){
   const names = Object.keys(PV_ALL);
   const needle = String(q || '').trim().toLowerCase();
-  const groups = KIND_ORDER.map(k => {
-    const list = names.filter(n => fbKindOf(n) === k && n.toLowerCase().includes(needle));
+  const groups = FB_GROUPS.map(g => {
+    const list = names.filter(n => fbProfileKind(n) === g.key && n.toLowerCase().includes(needle));
     if (!list.length) return '';
     const onN = list.filter(n => !pvOff(n)).length;
-    const meta = kindMeta(k);
     const rows = list.map(n => `<div class="pk-row" data-pkrow="${escA(n)}" style="--h:${profileHue(n)}">`
       + `<input type="checkbox" class="pk-on" data-pkon="${escA(n)}"${pvOff(n) ? '' : ' checked'} aria-label="Show ${escA(n)}">`
       + profileIconHtml(n, 16)
       + `<span class="nm" title="${escA(n)}">${esc(n)}</span>`
       + `<input type="range" class="pk-hue" min="0" max="359" step="1" value="${profileHue(n)}" data-pkhue="${escA(n)}" aria-label="Colour for ${escA(n)}" title="Colour">`
-      + `<label class="pk-logo" title="Logo (max ${PROFILE_LOGO_MAX_BYTES / 1024}KB)">Logo<input type="file" accept="image/*" data-pklogo="${escA(n)}" hidden></label>`
+      + `<label class="pk-logo" title="Logo (max ${PROFILE_LOGO_MAX_BYTES / 1024}KB)">Logo<input type="file" class="pk-file" accept="image/*" data-pklogo="${escA(n)}" aria-label="Upload logo for ${escA(n)}"></label>`
       + (profileLogo(n) ? `<button type="button" class="pk-clr" data-pkclr="${escA(n)}" aria-label="Clear logo for ${escA(n)}">×</button>` : '')
       + '</div>').join('');
-    return `<section class="pk-grp" style="--k:var(--kind-${k})"><div class="pk-gh">`
-      + `<input type="checkbox" class="pk-on" data-pkgrp="${k}" data-pkstate="${onN === list.length ? 'all' : onN ? 'some' : 'none'}"${onN === list.length ? ' checked' : ''} aria-label="Show all ${escA(meta.label)} profiles">`
-      + `<span class="g" aria-hidden="true">${meta.sig}</span><span>${esc(meta.label)}</span><span class="ct">${onN}/${list.length}</span></div>`
+    return `<section class="pk-grp" data-pkgroup="${g.key}" style="--k:var(--kind-hermes)"><div class="pk-gh">`
+      + `<input type="checkbox" class="pk-on" data-pkgrp="${g.key}" data-pkstate="${onN === list.length ? 'all' : onN ? 'some' : 'none'}"${onN === list.length ? ' checked' : ''} aria-label="Show all ${escA(g.label)}">`
+      + `<span class="g" aria-hidden="true">${g.sig}</span><span>${esc(g.label)}</span><span class="ct">${onN}/${list.length}</span></div>`
       + `<div class="pk-grid">${rows}</div></section>`;
   }).join('');
   return '<div class="pk-top"><h2 id="fbdtitle">Manage fleet</h2>'
@@ -1047,6 +1094,12 @@ export function fbDialogRender(focusSel){
     if (el) { el.focus(); if (el.setSelectionRange) { const l = el.value.length; el.setSelectionRange(l, l); } }
   }
 }
+// Every close path (×, Esc, F, backdrop, programmatic) ends here: the native
+// 'close' event fires for all of them, and focus goes back to Manage.
+function fbDialogClosed(){
+  const b = document.querySelector('[data-fbmanage]');
+  if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
+}
 export function fbDialogToggle(open){
   const d = document.getElementById('fbdialog');
   if (!d) return;
@@ -1057,6 +1110,7 @@ export function fbDialogToggle(open){
     if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
   } else if (!want && d.open){
     if (typeof d.close === 'function') d.close(); else d.removeAttribute('open');
+    fbDialogClosed();   // synchronous; the later 'close' event repeats it harmlessly
   }
   const b = document.querySelector('[data-fbmanage]');
   if (b) b.setAttribute('aria-expanded', String(fbDialogOpen()));
@@ -1072,6 +1126,10 @@ export function fbSetMany(list, on){
   tabs(); pick(current);
   return true;
 }
+// Another modal surface (session finder, transcript, help, drawer, ...) is up.
+function fbOtherOverlayOpen(){
+  return !!document.querySelector('dialog[open]:not(#fbdialog), [role="dialog"][aria-hidden="false"], #helpwrap.open');
+}
 export function fbInstall(){
   const bar = $('tabs');
   if (!bar || bar._fbInstalled) return;
@@ -1083,15 +1141,21 @@ export function fbInstall(){
     if (t.dataset.fbmanage) return fbDialogToggle();
     if (t.classList.contains('pchip')) pvToggle(t.dataset.tab);
   });
+  bar.addEventListener('focusin', e => {
+    const t = e.target.closest && e.target.closest('.fb-kinds button, .fb-strip button');
+    if (t) fbRoveSet(t);
+  });
+  bar.addEventListener('keydown', fbRoveKey);
   bar.addEventListener('contextmenu', e => {
     const t = e.target.closest && e.target.closest('.pchip');
     if (t) pvMenu(e, t.dataset.tab);
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'f' && e.key !== 'F') return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.target;
     if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    if (fbOtherOverlayOpen()) return;
     e.preventDefault();
     fbDialogToggle();
   });
@@ -1103,10 +1167,12 @@ export function fbInstallDialog(){
   const d = document.getElementById('fbdialog');
   if (!d || d._fbInstalled) return;
   d._fbInstalled = true;
-  d.addEventListener('close', () => {
-    const b = document.querySelector('[data-fbmanage]');
-    if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
-  });
+  d.addEventListener('close', fbDialogClosed);
+  // Typing in the filter is debounced and skipped mid-composition, so an IME
+  // is never interrupted by the dialog being rebuilt under it.
+  let qTimer = null;
+  const qRender = () => { clearTimeout(qTimer); fbDialogRender('.pk-q'); };
+  d.addEventListener('compositionend', e => { if (e.target.classList.contains('pk-q')) qRender(); });
   d.addEventListener('click', e => {
     if (e.target === d) return fbDialogToggle(false);   // the ::backdrop
     const t = e.target.closest && e.target.closest('button');
@@ -1115,14 +1181,19 @@ export function fbInstallDialog(){
     if (t.dataset.pkall !== undefined) {
       const q = ((d.querySelector('.pk-q') || {}).value || '').trim().toLowerCase();
       const list = Object.keys(PV_ALL).filter(n => n.toLowerCase().includes(q));
-      if (fbSetMany(list, t.dataset.pkall === '1')) fbDialogRender();
+      if (fbSetMany(list, t.dataset.pkall === '1')) fbDialogRender(`[data-pkall="${t.dataset.pkall}"]`);
     } else if (t.dataset.pkclr) {
       profileLogoSet(t.dataset.pkclr, null);
-      tabs(); fbDialogRender();
+      tabs(); fbDialogRender(`[data-pklogo="${CSS.escape(t.dataset.pkclr)}"]`);
     }
   });
   d.addEventListener('input', e => {
-    if (e.target.classList.contains('pk-q')) return fbDialogRender('.pk-q');
+    if (e.target.classList.contains('pk-q')){
+      if (e.isComposing) return;
+      clearTimeout(qTimer);
+      qTimer = setTimeout(qRender, 150);
+      return;
+    }
     const h = e.target.dataset && e.target.dataset.pkhue;
     if (h) {                       // chips redraw; the dialog is left alone so the drag survives
       pvHueSet(h, Number(e.target.value));
@@ -1136,7 +1207,7 @@ export function fbInstallDialog(){
       pvToggle(n);
       fbDialogRender(`[data-pkon="${CSS.escape(n)}"]`);
     } else if (t.dataset.pkgrp) {
-      const list = Object.keys(PV_ALL).filter(n => fbKindOf(n) === t.dataset.pkgrp);
+      const list = Object.keys(PV_ALL).filter(n => fbProfileKind(n) === t.dataset.pkgrp);
       fbSetMany(list, t.checked);
       fbDialogRender(`[data-pkgrp="${CSS.escape(t.dataset.pkgrp)}"]`);
     } else if (t.dataset.pklogo) {
@@ -1145,7 +1216,7 @@ export function fbInstallDialog(){
       if (!file.type || !file.type.startsWith('image/')) { flash('Not an image file — ignored.'); return; }
       if (file.size > PROFILE_LOGO_MAX_BYTES) { flash('Logo too large — max ' + PROFILE_LOGO_MAX_BYTES / 1024 + 'KB.'); return; }
       const reader = new FileReader();
-      reader.onload = () => { profileLogoSet(n, reader.result); tabs(); fbDialogRender(); };
+      reader.onload = () => { profileLogoSet(n, reader.result); tabs(); fbDialogRender(`[data-pklogo="${CSS.escape(n)}"]`); };
       reader.readAsDataURL(file);
     }
   });
