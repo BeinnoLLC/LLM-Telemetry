@@ -13,12 +13,14 @@ function chk(ok, name, got) {
   else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); }
 }
 
-// .livegrid must stack at 834px and below, but NOT be forced to stack between
-// 835 and 1024px — that landscape band has the width to keep list+charts
-// side by side. The regression this ticket fixes was a max-width:1000px rule
-// that swallowed part of that landscape band.
-chk(/max-width:834px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)/.test(html),
-    '.livegrid stacks at <=834px (portrait tablet and down)');
+// .livegrid stacks at 1023px and below (#183: the agents panel rides in its
+// right column and reflows under the table below 1024px) and is side by side
+// from 1024px up. The 1000px / 900px / 1024px rules must still not exist: the
+// stack point is exactly 1023, not a rule that swallows a wider band.
+chk(/max-width:1023px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)/.test(html),
+    '.livegrid stacks at <=1023px (agents panel beside the table from 1024px)');
+chk(!/max-width:834px\)\{\s*\n\s*\.livegrid/.test(html),
+    'the old 834px livegrid rule is gone');
 chk(!/max-width:1000px\)\{\s*\n\s*\.livegrid/.test(html),
     'the old max-width:1000px livegrid rule is gone (it force-stacked 835-1000px landscape unnecessarily)');
 chk(!/max-width:900px\)\{\s*\n\s*\.livegrid/.test(html) && !/max-width:1024px\)\{\s*\n\s*\.livegrid/.test(html),
