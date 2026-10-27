@@ -308,7 +308,9 @@ export function fleetTileHtml(kind, S){
     + `<span class="ft-st">${idle ? 'Idle' : 'Running'}</span></div>`
     + `<div class="ft-model" title="${escA(model)}">${esc(model)}</div>`
     + `<div class="ft-sub"><span class="ft-phase"${tip ? ` title="${escA(tip)}"` : ''}>${esc(chip)}</span>`
-    + (cost ? `<span class="ft-cost">${esc(cost)}</span>` : '') + `</div></div>`;
+    + (cost ? (S.cost_class === 'subscription'
+      ? `<span class="ft-cost">${coveredCost(kind, cost)}</span>`
+      : `<span class="ft-cost">${esc(cost)}</span>`) : '') + `</div></div>`;
 }
 export function kindBadge(kind){
   const meta = kindMeta(kind);
@@ -338,6 +340,15 @@ export function liveState(kind, S){
   return /wait|approv|blocked|input/i.test(S.phase || '') ? 'Waiting' : 'Running';
 }
 const usd = c => '$' + (+c).toFixed(c < 1 ? 3 : 2);
+// Claude Code / Codex run on a flat Claude / ChatGPT subscription: their cost
+// is the API-price equivalent, shown muted with a "sub" badge and kept out of
+// every spend total.
+const COVERED_PLAN = { claude: 'Claude', codex: 'ChatGPT' };
+const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN[kind] || 'subscription'} subscription`;
+function coveredCost(kind, text){
+  const tip = escA(coveredTip(kind));
+  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+}
 // o: {kind, attrs, lead, title, tags, model, mcol, mextra, S, tok, cost, up, tools, gauge, bw}
 function lvRow(o){
   const S = o.S, st = liveState(o.kind, S);
@@ -355,7 +366,7 @@ function lvRow(o){
       <div class="lvc" role="cell"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span></div>
       <div class="lvc lvnum" role="cell" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</div>
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
-      <div class="lvc lvnum" role="cell" title="estimated cost for this session">${o.cost ? esc(o.cost) : '—'}</div>
+      <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
       <div class="lvc lvc-act" role="cell"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span>${tools}</div>
       <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
     </div>${o.panel || ''}`;
@@ -451,6 +462,7 @@ function agentLiveRows(list){
     const tok = (+S.in_tok||0) + (+S.out_tok||0);
     return lvRow({ kind: engine, key: engine + ':' + (S.session_id || ''), S, tok,
       costv: Number.isFinite(S.cost_usd) ? S.cost_usd : null, cost: Number.isFinite(S.cost_usd) ? usd(S.cost_usd) : '',
+      covered: S.cost_class === 'subscription',
       attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
       model: S.model, mcol: colorOf(short(S.model)),

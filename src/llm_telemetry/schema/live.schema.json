@@ -1061,6 +1061,42 @@
        "null",
        "number"
       ]
+     },
+     "in_tok": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "out_tok": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "cache_read_tok": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "cache_write_tok": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "cost_usd": {
+      "type": [
+       "null",
+       "number"
+      ]
+     },
+     "cost_class": {
+      "type": [
+       "null",
+       "string"
+      ]
      }
     },
     "additionalProperties": true

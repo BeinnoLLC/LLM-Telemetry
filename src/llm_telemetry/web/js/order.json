@@ -1103,6 +1103,18 @@
   },
   {
    "mod": "live",
+   "name": "COVERED_PLAN"
+  },
+  {
+   "mod": "live",
+   "name": "coveredTip"
+  },
+  {
+   "mod": "live",
+   "name": "coveredCost"
+  },
+  {
+   "mod": "live",
    "name": "lvRow"
   },
   {
