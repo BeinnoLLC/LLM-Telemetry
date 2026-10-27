@@ -283,7 +283,7 @@
  .grid-kpi{display:grid;gap:8px;
    grid-template-columns:repeat(auto-fit,minmax(min(144px,100%),1fr))}
  
- .lkpis{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .lkpis{display:grid;gap:8px;align-items:start;grid-template-columns:repeat(4,minmax(0,1fr))}
  @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
  @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
  .lkpi{position:relative;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -293,7 +293,15 @@
    overflow:hidden;text-overflow:ellipsis}
  .lkpi-of{font-size:.6em;font-weight:600;color:var(--muted)}
  .lkpi-sub{font-size:var(--fs-xs);color:var(--muted)}
- .lkpi-spark{position:absolute;right:12px;top:12px;opacity:.85}
+ 
+ .lkpi-spark{position:absolute;right:12px;bottom:10px;width:84px;height:30px;pointer-events:none}
+ @media(max-width:1100px){ .lkpi-spark{position:static;width:100%;height:26px;margin-top:2px} }
+ .lkpi-alist{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;min-width:0}
+ .lkpi-alist li{display:flex;gap:6px;align-items:baseline;min-width:0;font-size:var(--fs-xs);color:var(--fg)}
+ .lkpi-alist .adot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
+ .lkpi-alist .crit .adot{background:var(--z-bad)}
+ .lkpi-alist .atext{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .lkpi-alist .amore{color:var(--muted)}
  .lkpi-alerts{color:var(--z-warn)}
  .lkpi-alerts.crit{color:var(--z-bad)}
  .lkpi-clear{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:999px;
@@ -1237,11 +1245,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .livegrid{display:grid;gap:var(--gap);align-items:stretch;
    grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:834px){
+ @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    
    .livegrid > .card:first-child{max-height:none !important}
  }
+ 
+ .page[data-pageview="Home"] > .pagehead{order:-40}
+ .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
+ .page[data-pageview="Home"] > #alertscard{order:-15}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
  
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
@@ -1700,7 +1716,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
  <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><span class="nvico" aria-hidden="true">▤</span><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
- <div class="flex items-end justify-between flex-wrap gap-3">
+ <div class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <!-- Inline SVG, not a file: the dashboard is one self-contained artifact
@@ -1868,25 +1884,6 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
-  <div class="card p-4 mb-3" id="qcard" style="position:relative">
-   <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
-   </div>
-   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
-        view: the old queued/running/done lanes were removed). Depot = requests
-        waiting at an Ollama host, the line = live sessions as one coupled
-        train (loco = most recently active), the yard = finished sessions
-        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
-        a task that changes section flies across. Hover/focus a car for detail. -->
-   <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
-   </div>
-   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
-  </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
@@ -1914,10 +1911,31 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
   </div>
+  <!-- #181: the task queue sits under the live board (scorecards, then the
+       session table + agents panel) so those stay above the fold. -->
+  <div class="card p-4 mt-3" id="qcard" style="position:relative">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
+   </div>
+   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
+        view: the old queued/running/done lanes were removed). Depot = requests
+        waiting at an Ollama host, the line = live sessions as one coupled
+        train (loco = most recently active), the yard = finished sessions
+        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
+        a task that changes section flies across. Hover/focus a car for detail. -->
+   <div class="qtrain" id="qtrain">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-rail" aria-hidden="true"></div>
+   </div>
+   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
+  </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
        more work", which you ask after seeing what is running, not before. -->
-  <div class="card p-4 mt-3" id="olcard" hidden>
+  <div class="card p-4 mt-3 home-late" id="olcard" hidden>
    <div class="lbl mb-2.5">Local inference hosts
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
    </div>
@@ -1925,8 +1943,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
   </div>
   <!-- #178: the former landing cards, demoted to an "Explore" strip below the
        live board. Still real stats, still real links — just not in the way. -->
-  <div class="lbl mt-4 mb-2.5">Explore</div>
-  <div class="grid-home" id="homecards"></div>
+  <div class="lbl mt-4 mb-2.5 home-late">Explore</div>
+  <div class="grid-home home-late" id="homecards"></div>
  </div>
 
  <!-- #130: model router per profile — responsibility chart, routing matrix,
@@ -7032,10 +7050,47 @@ function liveKpis(p, name, now, profiles, agentLive, piLive){
   const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
   return {
     sessions, alive, agents: agents.length,
-    alerts: alerts.length,
+    alerts: alerts.length, list: alerts.filter(Boolean),
     critical: alerts.filter(a => a && a.severity === 'critical').length,
     tput: throughputFor(name, now),
   };
+}
+// The cards repaint through one innerHTML write, which would orphan the
+// throughput sparkline's Chart.js canvas every poll. So the canvas wrapper is
+// lifted out first and put back into the new throughput card; it is only
+// emitted as markup the first time (or after a full rebuild removed it).
+const LKPI_SPARK = '<div class="lkpi-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>';
+// One chart per page: built through mk() (which destroys any chart already
+// bound to the canvas) the first time, then fed the new window in place.
+function paintSpark(series){
+  const el = $('cLkpiSpark');
+  if (!el) return;
+  const labels = series.map((_, i) => i);
+  const have = (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+  if (have){
+    have.data.labels = labels;
+    have.data.datasets[0].data = series;
+    have.update('none');
+    return;
+  }
+  mk('cLkpiSpark', 'line', labels, [
+    {data: series, borderColor: PAL[0], backgroundColor: PAL[0] + '1a', fill: true,
+     tension: .3, pointRadius: 0, borderWidth: 1.5}],
+    {events: [], layout: {padding: 0}, ...(motionReduced() ? {animation: false} : {}),
+     plugins: {legend: {display: false}, tooltip: {enabled: false}},
+     scales: {x: {display: false}, y: {display: false, beginAtZero: true}}});
+}
+const SEV_RANK = { critical: 0, warning: 1, info: 2 };
+const ALERT_ROWS = 2;
+function alertsHtml(k){
+  const list = k.list.slice().sort((a, b) => (SEV_RANK[a.severity] ?? 9) - (SEV_RANK[b.severity] ?? 9));
+  const rows = list.slice(0, ALERT_ROWS).map(a =>
+    `<li class="${a.severity === 'critical' ? 'crit' : ''}"><span class="adot" aria-hidden="true"></span>`
+    + `<span class="atext" title="${escA(a.why || a.message || '')}">${esc(a.message || a.rule || '')}</span></li>`);
+  if (list.length > ALERT_ROWS) rows.push(`<li class="amore">+${list.length - ALERT_ROWS} more</li>`);
+  return `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
+       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>
+       <ul class="lkpi-alist">${rows.join('')}</ul>`;
 }
 function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
@@ -7043,13 +7098,13 @@ function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
-  const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
-  const alertsBody = k.alerts
-    ? `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
-       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>`
+  const alertsBody = k.alerts ? alertsHtml(k)
     : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
   const card = (key, label, body) =>
     `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
+  const had = $('cLkpiSpark');
+  const keep = had && had.parentNode;
+  if (keep && keep.parentNode) keep.parentNode.removeChild(keep);
   box.innerHTML = [
     card('sessions', 'Sessions in flight',
       `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
@@ -7058,9 +7113,11 @@ function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
       + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
     card('throughput', 'Calls · tokens',
       `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
-      + `<div class="lkpi-sub">${win}</div>${spark ? `<div class="lkpi-spark">${spark}</div>` : ''}`),
+      + `<div class="lkpi-sub">${win}</div>${keep ? '' : LKPI_SPARK}`),
     card('alerts', 'Active alerts', alertsBody),
   ].join('');
+  if (keep) box.querySelector('[data-kpi="throughput"]').appendChild(keep);
+  paintSpark(k.tput.series);
   return k;
 }
 
@@ -10142,6 +10199,9 @@ function pickView(v){
   v = VIEW_ALIASES[slugOf(v)] || v;
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
+  // #181: CSS hook on the active view (Home leads with the live board). Not
+  // data-view: `[data-view=X] > div` selectors elsewhere would match .page.
+  const pg = document.querySelector('.page'); if (pg) pg.dataset.pageview = v;
   document.querySelectorAll('[data-vtab]').forEach(b=>{
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');

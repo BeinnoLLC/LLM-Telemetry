@@ -19,7 +19,7 @@ __DASHBOARD_CSS__
  <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><span class="nvico" aria-hidden="true">▤</span><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
- <div class="flex items-end justify-between flex-wrap gap-3">
+ <div class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <!-- Inline SVG, not a file: the dashboard is one self-contained artifact
@@ -187,25 +187,6 @@ __DASHBOARD_CSS__
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
-  <div class="card p-4 mb-3" id="qcard" style="position:relative">
-   <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
-   </div>
-   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
-        view: the old queued/running/done lanes were removed). Depot = requests
-        waiting at an Ollama host, the line = live sessions as one coupled
-        train (loco = most recently active), the yard = finished sessions
-        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
-        a task that changes section flies across. Hover/focus a car for detail. -->
-   <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
-   </div>
-   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
-  </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
@@ -233,10 +214,31 @@ __DASHBOARD_CSS__
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
   </div>
+  <!-- #181: the task queue sits under the live board (scorecards, then the
+       session table + agents panel) so those stay above the fold. -->
+  <div class="card p-4 mt-3" id="qcard" style="position:relative">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
+   </div>
+   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
+        view: the old queued/running/done lanes were removed). Depot = requests
+        waiting at an Ollama host, the line = live sessions as one coupled
+        train (loco = most recently active), the yard = finished sessions
+        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
+        a task that changes section flies across. Hover/focus a car for detail. -->
+   <div class="qtrain" id="qtrain">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-rail" aria-hidden="true"></div>
+   </div>
+   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
+  </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
        more work", which you ask after seeing what is running, not before. -->
-  <div class="card p-4 mt-3" id="olcard" hidden>
+  <div class="card p-4 mt-3 home-late" id="olcard" hidden>
    <div class="lbl mb-2.5">Local inference hosts
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
    </div>
@@ -244,8 +246,8 @@ __DASHBOARD_CSS__
   </div>
   <!-- #178: the former landing cards, demoted to an "Explore" strip below the
        live board. Still real stats, still real links — just not in the way. -->
-  <div class="lbl mt-4 mb-2.5">Explore</div>
-  <div class="grid-home" id="homecards"></div>
+  <div class="lbl mt-4 mb-2.5 home-late">Explore</div>
+  <div class="grid-home home-late" id="homecards"></div>
  </div>
 
  <!-- #130: model router per profile — responsibility chart, routing matrix,
