@@ -1336,13 +1336,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     table are above the fold. Pure visual order: the DOM (and tab order inside the
     board) is unchanged; .view goes display:contents so its children can be
     ordered against the page-level bars. */
- .page[data-view="Home"] > .pagehead{order:-40}
- .page[data-view="Home"] > .view[data-view="Home"]{display:contents}
- .page[data-view="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
- .page[data-view="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
- .page[data-view="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
- .page[data-view="Home"] > #alertscard{order:-15}
- .page[data-view="Home"] > .view[data-view="Home"] > .home-late{order:5}
+ .page[data-pageview="Home"] > .pagehead{order:-40}
+ .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
+ .page[data-pageview="Home"] > #alertscard{order:-15}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
  /* Mobile */
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}

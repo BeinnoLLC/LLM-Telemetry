@@ -1015,11 +1015,7 @@
   },
   {
    "mod": "live",
-   "name": "LKPI_CARDS"
-  },
-  {
-   "mod": "live",
-   "name": "ensureKpiCards"
+   "name": "LKPI_SPARK"
   },
   {
    "mod": "live",

@@ -164,19 +164,11 @@ export function liveKpis(p, name, now, profiles, agentLive, piLive){
     tput: throughputFor(name, now),
   };
 }
-// The four cards are built once, so the throughput sparkline's canvas outlives
-// the 5s repaint (rewriting box.innerHTML would orphan its Chart instance on
-// every poll); only each card's .lkpi-body is rewritten.
-const LKPI_CARDS = [['sessions', 'Sessions in flight'], ['agents', 'Agents alive'],
-  ['throughput', 'Calls · tokens'], ['alerts', 'Active alerts']];
-function ensureKpiCards(box){
-  if (box.querySelectorAll('.lkpi').length === LKPI_CARDS.length) return;
-  box.innerHTML = LKPI_CARDS.map(([key, label]) =>
-    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div><div class="lkpi-body"></div>`
-    + (key === 'throughput'
-      ? '<div class="lkpi-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>' : '')
-    + '</div>').join('');
-}
+// The cards repaint through one innerHTML write, which would orphan the
+// throughput sparkline's Chart.js canvas every poll. So the canvas wrapper is
+// lifted out first and put back into the new throughput card; it is only
+// emitted as markup the first time (or after a full rebuild removed it).
+const LKPI_SPARK = '<div class="lkpi-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>';
 // One chart per page: built through mk() (which destroys any chart already
 // bound to the canvas) the first time, then fed the new window in place.
 function paintSpark(series){
@@ -193,7 +185,7 @@ function paintSpark(series){
   mk('cLkpiSpark', 'line', labels, [
     {data: series, borderColor: PAL[0], backgroundColor: PAL[0] + '1a', fill: true,
      tension: .3, pointRadius: 0, borderWidth: 1.5}],
-    {animation: false, events: [], layout: {padding: 0},
+    {events: [], layout: {padding: 0}, ...(motionReduced() ? {animation: false} : {}),
      plugins: {legend: {display: false}, tooltip: {enabled: false}},
      scales: {x: {display: false}, y: {display: false, beginAtZero: true}}});
 }
@@ -212,22 +204,28 @@ function alertsHtml(k){
 export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
-  ensureKpiCards(box);
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
-  const body = {
-    sessions: `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`,
-    agents: `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
-      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`,
-    throughput: `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
-      + `<div class="lkpi-sub">${win}</div>`,
-    alerts: k.alerts ? alertsHtml(k) : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`,
-  };
-  LKPI_CARDS.forEach(([key]) => {
-    const slot = box.querySelector(`[data-kpi="${key}"] .lkpi-body`);
-    if (slot && slot.innerHTML !== body[key]) slot.innerHTML = body[key];
-  });
+  const alertsBody = k.alerts ? alertsHtml(k)
+    : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
+  const card = (key, label, body) =>
+    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
+  const had = $('cLkpiSpark');
+  const keep = had && had.parentNode;
+  if (keep && keep.parentNode) keep.parentNode.removeChild(keep);
+  box.innerHTML = [
+    card('sessions', 'Sessions in flight',
+      `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
+    card('agents', 'Agents alive',
+      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
+    card('throughput', 'Calls · tokens',
+      `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
+      + `<div class="lkpi-sub">${win}</div>${keep ? '' : LKPI_SPARK}`),
+    card('alerts', 'Active alerts', alertsBody),
+  ].join('');
+  if (keep) box.querySelector('[data-kpi="throughput"]').appendChild(keep);
   paintSpark(k.tput.series);
   return k;
 }

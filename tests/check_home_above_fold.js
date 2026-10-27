@@ -27,9 +27,9 @@ css(/@media\(max-width:1023px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minma
   'agents panel column stacks under the table below 1024px');
 css(/\.livegrid\{[^}]*grid-template-columns:minmax\(0,3fr\) minmax\(280px,1fr\)/,
   'table + agents column sit side by side from 1024px');
-css(/\.page\[data-view="Home"\] > \.view\[data-view="Home"\] > \.lkpis\{order:-30\}/,
+css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.lkpis\{order:-30\}/,
   'on Home the scorecards lead (order -30)');
-css(/\.page\[data-view="Home"\] > \.view\[data-view="Home"\] > \.livegrid\{order:-20\}/,
+css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.livegrid\{order:-20\}/,
   'on Home the table + agents grid follows the scorecards (order -20)');
 css(/\.lkpis\{display:grid;gap:8px;align-items:start;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/,
   'scorecards are four tracks wide on desktop');
@@ -87,7 +87,7 @@ setTimeout(async () => {
   const w = dom.window, d = w.document;
   try {
     const cards = () => [...d.querySelectorAll('#livekpis > .lkpi')];
-    const body = k => d.querySelector(`#livekpis [data-kpi="${k}"] .lkpi-body`);
+    const body = k => d.querySelector(`#livekpis [data-kpi="${k}"]`);
     const num = k => d.querySelector(`#livekpis [data-kpi="${k}"] .lkpi-num`).textContent;
     const FOLLOWING = w.Node.DOCUMENT_POSITION_FOLLOWING;
     const after = (a, b) => !!(a.compareDocumentPosition(b) & FOLLOWING);
@@ -103,7 +103,7 @@ setTimeout(async () => {
     chk(after(d.getElementById('livelist'), d.getElementById('agentscard')),
       'agents panel follows the table (right column, stacks below at <1024px)');
     chk(after(grid, d.getElementById('qcard')), 'task queue sits under the board, not between scorecards and table');
-    chk(d.querySelector('.page').dataset.view === 'Home', 'page carries data-view=Home so the Home ordering applies');
+    chk(d.querySelector('.page').dataset.pageview === 'Home', 'page carries data-pageview=Home so the Home ordering applies');
 
     // ---- values from fixture data ------------------------------------------
     w.eval('tputPrev = null; tputRing = [];');
