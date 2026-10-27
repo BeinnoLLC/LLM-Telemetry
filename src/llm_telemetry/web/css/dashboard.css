@@ -1036,8 +1036,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .xcard .kpi-badge{width:28px;height:28px;border-radius:8px;flex:none}
 .xcard .kpi-badge svg{width:15px;height:15px}
 .xp-body{flex:1 1 auto;min-width:0}
-.xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
-.xp-row{flex-wrap:wrap}
+.xp-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;min-width:0}
 .xp-title{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs);font-weight:600;
    letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
