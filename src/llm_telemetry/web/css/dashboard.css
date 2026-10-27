@@ -817,7 +817,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,qt-shunt 3.6s ease-in-out calc(var(--i,0) * .15s) infinite}
 @keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
 /* running: ONE consist loops the line; loco leads (rightmost), couplers between */
-.qt-line .qt-cars{min-height:44px;margin-bottom:10px}
+.qt-line .qt-cars{min-height:44px;margin:24px 0 10px}
 .qt-consist{position:relative;margin-bottom:6px;display:flex;flex-direction:row-reverse;flex-wrap:wrap-reverse;
   justify-content:flex-end;gap:12px 9px;min-width:0}
 .qt-r{width:104px;height:28px;background:hsl(var(--h,142) 60% 42%);
