@@ -591,7 +591,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     row per card — icon, title, headline value, one-line blurb. auto-fit
     keeps the strip wrapping without fixed columns on desktop; the <=480px
     override below pins the collapse to exactly 2 columns on phones. */
- .grid-home{display:grid;gap:8px var(--gap);
+ .grid-home{display:grid;gap:8px var(--gap);align-items:stretch;
    grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
@@ -1160,11 +1160,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .xcard .kpi-badge{width:28px;height:28px;border-radius:8px;flex:none}
 .xcard .kpi-badge svg{width:15px;height:15px}
 .xp-body{flex:1 1 auto;min-width:0}
-.xp-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;min-width:0}
-.xp-title{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs);font-weight:600;
+.xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
+.xp-title{flex:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs);font-weight:600;
    letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.xcard .hc-stat:has(.bwup){white-space:normal;overflow-wrap:anywhere;text-align:left}
 .xp-blurb{display:block;margin-top:1px;font-size:var(--fs-xs);color:var(--muted);
    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:480px){
@@ -1173,7 +1174,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       carries one number and one line of text. */
    .grid-home{grid-template-columns:repeat(2,1fr);gap:8px}
    .xcard{padding:8px 10px}
-   .xcard[data-gohome=Usage]{grid-column:1/-1}
+   .xp-row{flex-direction:column;align-items:flex-start;gap:0}
+   .xp-title{flex:0 1 auto}
+   .xcard .hc-stat{text-align:left;max-width:100%}
+   .grid-home > .xcard:last-child:nth-child(odd){grid-column:1/-1}
    .selwrap,select.chip{max-width:100%;min-width:0}
    .fb-more kbd{display:none}
  }
