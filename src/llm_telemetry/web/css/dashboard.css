@@ -1810,11 +1810,12 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvc:not(.metacol){font-size:14px}  /* model size comes from its own rule below */
 .lvrow:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 @media(prefers-reduced-motion:reduce){.lvrow{transition:none}}
-.lvc{min-width:0;max-height:48px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
+.lvc{min-width:0;margin:-4px 0;max-height:56px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .lvc-act{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px}
 .lva1{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;min-width:0;max-width:100%}
 .lvel{font-size:13px;line-height:1.2;color:var(--muted);font-variant-numeric:tabular-nums}
 .lvc-state .lvstk{gap:2px}
+/* cells may use 4px of the row padding so a two-line cell plus a chip line never clips */
 /* the tool chips: one wrapping line of fixed height, overflow hidden, so a chip that
    cannot fit at its min-width wraps to a clipped second line and disappears whole */
 .lva2{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;row-gap:24px;height:20px;overflow:hidden;min-width:0;max-width:100%}
