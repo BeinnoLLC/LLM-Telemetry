@@ -1231,7 +1231,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  
  .livegrid{display:grid;gap:var(--gap);align-items:stretch;
-   grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}
+   grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
  .livegrid > *{min-width:0}
  @media(max-width:834px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1603,8 +1603,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 
 
 .lvscroll{overflow:auto;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;
-  --lvcols:26px minmax(220px,2.4fr) minmax(130px,1.1fr) 82px 62px 66px 66px minmax(190px,1.8fr) 152px}
-.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:8px;align-items:center;min-width:980px;padding:0 8px}
+  --lvcols:34px minmax(170px,2.6fr) minmax(84px,1fr) 74px 54px 54px 58px minmax(90px,1.2fr) 138px}
+.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:6px;align-items:center;min-width:816px;padding:0 6px}
 .lvhead{position:sticky;top:0;z-index:2;height:28px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
 .lvh{font-size:var(--fs-xs);font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
@@ -1621,8 +1621,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
 .lvc.metacol{flex-direction:row;align-self:auto;width:auto;text-align:left;gap:6px;justify-content:flex-start}
 .lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
-.lvtitle{font-weight:600;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;min-width:40px;flex:0 1 auto}
-.lvrow .chip{padding:0 6px;line-height:16px;flex:none}
+.lvtitle{font-weight:600;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;min-width:64px;flex:0 1 auto}
+.lvrow .chip{padding:0 5px;line-height:16px;flex:none;font-size:var(--fs-xs)}
 .lvrow .lmbtn{padding:0;line-height:16px;flex:none}
 .lvrow .pv-badge{flex:none}
 .lvcat{font-size:var(--fs-md);line-height:1;flex:none}
@@ -1632,7 +1632,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvtag{font-size:var(--fs-xs);padding:0 4px;border-radius:3px;flex:none}
 .lvphase{color:var(--muted);font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
 .lvtool{font-size:var(--fs-xs);padding:0 4px;border-radius:3px;background:var(--border);color:var(--muted);flex:none}
-.lvst{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-weight:600;padding:0 7px;line-height:18px;
+.lvst{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-weight:600;padding:0 6px;line-height:18px;
   border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg)}
 .lvst::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
@@ -1643,8 +1643,12 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvrow .loe .gnum,.lvrow .loe .glbl{display:none}
 .lvpct{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);min-width:26px;text-align:right}
 .lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;flex-wrap:nowrap;gap:4px}
-.lvrow + .lmpanel{margin:0;min-width:980px;border-left:0;border-right:0}
+.lvrow + .lmpanel{margin:0;min-width:816px;border-left:0;border-right:0}
 .lvbody{display:block}
+
+.lvrow .chip,.lvrow button{min-height:0;min-width:0;justify-content:flex-start;text-align:left}
+.lvrow .lvtitle{display:block}
+.lvrow button.lvtitle{min-width:64px}
 
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
