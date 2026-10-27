@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 PY = sys.executable
@@ -51,6 +52,14 @@ with tempfile.TemporaryDirectory() as root:
     usage_row(con, "cron1", "qwen3-coder:30b", "ollama", "http://127.0.0.1:11434/v1", 3, 2000, 1000, cost=0.05)
     usage_row(con, "cron2", "qwen3-coder:30b", "ollama", "http://127.0.0.1:11434/v1", 3, 2000, 1000, cost=0.06)
     usage_row(con, "sub1", "qwen3-coder:30b", "ollama", "http://127.0.0.1:11434/v1", 2, 1000, 500, cost=0.02)
+    # The collector only looks at the last 30 days (now - 2592000), so fixture
+    # timestamps must be relative to now: the hardcoded epoch 1790000000
+    # (2026-09-21) aged out of that window on 2026-10-21 and broke this test.
+    # Shift every fixture timestamp so the base sits one hour in the past.
+    delta = int(time.time()) - 3600 - 1790000000
+    con.execute("update sessions set started_at = started_at + ?", (delta,))
+    con.execute("update messages set timestamp = timestamp + ?", (delta,))
+    con.execute("update session_model_usage set last_seen = last_seen + ?", (delta,))
     con.commit()
     con.close()
 
