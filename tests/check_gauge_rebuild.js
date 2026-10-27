@@ -1,7 +1,7 @@
 // #7/#8/#9/#10/#12: gauge rebuild acceptance checks.
-//   #7  270° dial, gradient track, ticks, numeric readout, needle+hub.
+//   #7  270° arc dial: track + threshold-coloured value arc + centred readout (G2: no needle/ticks/gradient).
 //   #8  zone bands / danger pulse / configurable thresholds.
-//   #9  needle travels from its previous angle on refresh (not just tremor).
+//   #9  value arc sweeps from its previous offset on refresh (G2: no needle, no tremor).
 //   #10 --gauge-size presets (sm/md/lg), same component at every size.
 //   #12 role=meter + aria-value*/aria-label + real text + <title>.
 // Loads the BUILT dashboard from examples/reports/dashboard.html.
@@ -59,17 +59,12 @@ setTimeout(() => {
     // ---- #7: instrument dial shape --------------------------------------
     const lightHtml = w.eval(`loeIcon(${JSON.stringify(lightSession)}, {id:'g_light', label:'Light task'})`);
     chk(/role="meter"/.test(lightHtml), '#7/#12: gauge has role="meter"');
-    chk(/viewBox="0 0 100 116"/.test(lightHtml), '#7: fixed 100x100-ish viewBox');
-    chk(/linearGradient/.test(lightHtml), '#7: value arc uses a gradient');
-    chk(/stop-color="var\(--z-ok\)"/.test(lightHtml) && /stop-color="var\(--z-bad\)"/.test(lightHtml),
-        '#7: gradient runs from the ok colour to the bad colour');
-    chk((lightHtml.match(/<line/g) || []).length >= 11, '#7: 11+ tick marks drawn (every 10%)',
-        (lightHtml.match(/<line/g) || []).length);
-    chk(/>0<\/text>/.test(lightHtml) && />50<\/text>/.test(lightHtml) && />100<\/text>/.test(lightHtml),
-        '#7: major ticks are labelled 0/50/100');
-    chk(/class="needle"/.test(lightHtml), '#7: needle element present');
-    chk(/font-weight:700/.test(lightHtml) && /%<\/text>/.test(lightHtml),
-        '#7: a big numeric percentage readout exists');
+    chk(/viewBox="0 0 100 100"/.test(lightHtml), '#7: fixed square 100x100 viewBox');
+    chk(/class="gtrack"/.test(lightHtml), '#7: a 270° track arc is drawn');
+    chk(!/linearGradient/.test(lightHtml), '#7 (G2): the value arc is threshold-coloured, not a gradient');
+    chk(/fill="var\(--z-ok\)"/.test(lightHtml), '#7: a light load paints the --z-ok colour on the readout');
+    chk(/>0<tspan[^>]*>%<\/tspan><\/text>/.test(lightHtml), '#7: a big numeric percentage readout exists (number + unit)');
+    chk(!/class="needle"/.test(lightHtml) && !/<line/.test(lightHtml), '#7 (G2): no needle, no tick lines');
 
     // ---- #8: zone bands + danger pulse -----------------------------------
     const heavyHtml = w.eval(`loeIcon(${JSON.stringify(heavySession)}, {id:'g_heavy', label:'Heavy task'})`);
@@ -80,18 +75,20 @@ setTimeout(() => {
     const strictHtml = w.eval(`loeIcon(${JSON.stringify(lightSession)}, {id:'g_light2', label:'x', warnAt:0, badAt:0})`);
     chk(/gdanger/.test(strictHtml), '#8: thresholds are configurable per-metric via opts');
 
-    // ---- #9: needle travels from its previous angle on refresh ------------
-    const first = w.eval(`loeIcon(${JSON.stringify(lightSession)}, {id:'g_travel', label:'x'})`);
-    const firstFrom = (first.match(/--from:(-?[\d.]+)deg/) || [])[1];
-    const firstD = (first.match(/--d:(-?[\d.]+)deg/) || [])[1];
-    chk(firstFrom === firstD, '#9: on first paint, travel starts AT the value (no fake sweep from 0)');
-    const second = w.eval(`loeIcon(${JSON.stringify(heavySession)}, {id:'g_travel', label:'x'})`); // same id, different load
-    const secondFrom = (second.match(/--from:(-?[\d.]+)deg/) || [])[1];
-    const secondD = (second.match(/--d:(-?[\d.]+)deg/) || [])[1];
-    chk(secondFrom === firstD, '#9: the NEXT render travels FROM the previous angle', `${secondFrom} vs prior ${firstD}`);
-    chk(secondD !== secondFrom, '#9: the new angle differs from where it started (a real sweep happens)');
-    chk(/needle-travel/.test(html), '#9: needle-travel keyframe is emitted');
-    chk(/needle-travel .6s/.test(html), '#9: travel runs over ~600ms as specified');
+    // ---- #9: value arc sweeps from its previous offset on refresh ----------
+    const off = h => (h.match(/stroke-dashoffset="(-?[\d.]+)"/) || [])[1];
+    const frm = h => (h.match(/--from:(-?[\d.]+)/) || [])[1];
+    const midSession = { id:'g_mid', model:'m', title:'Mid', tools:['terminal'] };   // non-zero load: a 0% gauge draws no value arc
+    const first = w.eval(`loeIcon(${JSON.stringify(heavySession)}, {id:'g_travel', label:'x'})`);
+    chk(frm(first) === off(first), '#9: on first paint, the sweep starts AT the value (no fake sweep from 0)');
+    const second = w.eval(`loeIcon(${JSON.stringify(midSession)}, {id:'g_travel', label:'x'})`); // same id, different load
+    chk(frm(second) === off(first), '#9: the NEXT render sweeps FROM the previous offset', `${frm(second)} vs prior ${off(first)}`);
+    chk(off(second) !== frm(second), '#9: the new offset differs from where it started (a real sweep happens)');
+    chk(/@keyframes arc-sweep/.test(html), '#9: arc-sweep keyframe is emitted');
+    chk(/arc-sweep \.6s/.test(html), '#9: sweep runs over ~600ms as specified');
+    chk(/@media \(prefers-reduced-motion:reduce\)\{[^@]*?\.gval\{animation:none\}/.test(html),
+        '#9: the sweep is off under prefers-reduced-motion');
+    chk(!/needle-tremor|needle-travel/.test(html), '#9 (G2): no needle keyframes remain');
 
     // ---- #10: size presets --------------------------------------------------
     const smHtml = w.eval(`loeIcon(${JSON.stringify(lightSession)}, {id:'g_sm', label:'x', size:'sm'})`);

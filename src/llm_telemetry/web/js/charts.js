@@ -3,7 +3,7 @@
  * including the KPI ring/sparkline primitives.
  */
 import {
-  $, BD, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmtB, fmtRate, labelColor, readTheme,
+  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmtB, fmtRate, labelColor, readTheme,
 } from './palette.js';
 import { DATA } from './main.js';
 
@@ -150,10 +150,35 @@ export let projDistNormalized = false;
 
 export let projTrendStacked = false;
 
-export const GAUGE_PREV = new Map();   // stable id -> previous needle angle, for travel
+export const GAUGE_PREV = new Map();   // stable id -> previous value-arc offset, for the sweep
+
+// Grafana-style arc gauge, shared by the load dial (.loe) and the KPI rings:
+// a 270° track, a threshold-coloured value arc, the number centred with its
+// unit, a small label under it. `from` is the previous arc offset, so a
+// refresh sweeps the arc from where it was (CSS arc-sweep; off under
+// prefers-reduced-motion).
+export function arcGauge(id, frac, color, num, unit, label, title){
+  const CX = 50, CY = 50, R = 40, LEN = R * 270 * Math.PI/180;
+  const pt = a => { const r = (a - 90) * Math.PI/180;
+    return `${(CX + R*Math.cos(r)).toFixed(2)} ${(CY + R*Math.sin(r)).toFixed(2)}`; };
+  const d = `M${pt(-135)} A${R} ${R} 0 1 1 ${pt(135)}`;
+  const off = (LEN*(1-frac)).toFixed(2);
+  const from = GAUGE_PREV.has(id) ? GAUGE_PREV.get(id) : off;
+  GAUGE_PREV.set(id, off);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><title>${escA(title)}</title>
+      <path class="gtrack" d="${d}" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
+      <path class="gval" d="${d}" fill="none" stroke="${color}" stroke-width="8"
+        stroke-linecap="round" stroke-dasharray="${LEN.toFixed(2)} 999" stroke-dashoffset="${off}"
+        style="--from:${from}"/>
+      <text class="gnum" x="${CX}" y="${CY+4}" text-anchor="middle" fill="${color}"
+        style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">${num}<tspan style="font-size:12px">${unit}</tspan></text>
+      <text class="glbl" x="${CX}" y="${CY+22}" text-anchor="middle" fill="var(--muted)"
+        style="font-size:10px;font-weight:600">${escA(label)}</text>
+    </svg>`;
+}
 
 // #11: compact radial ring — the gauge's zone colours and geometry style
-// without a needle, for bounded 0-100 metrics living in the tight KPI strip
+// on the shared arcGauge, for bounded 0-100 metrics living in the tight KPI strip
 // (success rate, cache hit rate). Reuses --z-ok/--z-warn/--z-bad so "green
 // ring" means the same thing as the full instrument dial (#7/#8) everywhere
 // on the page. Deliberately NOT used for every KPI: only genuinely bounded
@@ -169,25 +194,12 @@ export function radialRing(pct, opts){
              : pct >= warnAt ? {c:'var(--z-ok)', n:'Healthy'}
              : pct >= badAt  ? {c:'var(--z-warn)', n:'Watch'}
              :                 {c:'var(--z-bad)', n:'Low'};
-  const R = 15.5, CX = 18, CY = 18;
-  const CIRC = (2*Math.PI*R).toFixed(2);
   const frac = pct == null ? 0 : Math.max(0, Math.min(1, pct/100));
-  const dash = (CIRC*frac).toFixed(2);
-  const valueText = pct == null ? '—' : `${Math.round(pct)}%`;
   const ariaText = pct == null ? `${label}: no data` : `${label} ${Math.round(pct)} percent, ${tier.n.toLowerCase()}`;
   return `<span class="kring" role="meter" aria-valuenow="${pct==null?0:Math.round(pct)}"
       aria-valuemin="0" aria-valuemax="100" aria-valuetext="${escA(ariaText)}" aria-label="${escA(label)}"
       title="${escA(ariaText)}">
-    <svg viewBox="0 0 36 36" aria-hidden="true">
-      <title>${escA(ariaText)}</title>
-      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
-        stroke="color-mix(in srgb,var(--border) 60%,transparent)" stroke-width="4"/>
-      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${tier.c}" stroke-width="4"
-        stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${(CIRC-dash).toFixed(2)}"
-        transform="rotate(-90 ${CX} ${CY})"/>
-      <text x="${CX}" y="${CY+1}" text-anchor="middle" dominant-baseline="middle"
-        fill="${tier.c}" style="font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums">${valueText}</text>
-    </svg></span>`;
+    ${arcGauge('ring:' + label, frac, tier.c, pct == null ? '—' : Math.round(pct), pct == null ? '' : '%', pct == null ? 'No data' : tier.n, ariaText)}</span>`;
 }
 
 // #11: 7-day trend sparkline for the unbounded KPI counters (API calls,
@@ -233,74 +245,12 @@ export function loeIcon(L, opts){
   const tier = pct >= badAt ? {c:'var(--z-bad)', cls:'gdanger', n:'Heavy'}
              : pct >= warnAt ? {c:'var(--z-warn)', cls:'', n:'Medium'}
              :                 {c:'var(--z-ok)', cls:'', n:'Light'};
-  // Needle sweeps a 270° arc: -135° (0%) to +135° (100%), leaving a 90° gap
-  // at the bottom for the readout — a proper instrument face, not a half-pipe.
-  const deg = (-135 + frac*270).toFixed(1);
-  const from = GAUGE_PREV.has(id) ? GAUGE_PREV.get(id) : deg;   // #9: travel FROM last angle
-  GAUGE_PREV.set(id, deg);
-  // Tremor: much smaller now that travel itself carries the "this changed"
-  // signal (#9) — the old amplitude read as permanent noise since it never
-  // stopped; this settles to a barely-there idle once travel finishes.
-  const amp = (0.4 + frac*1.2).toFixed(2);
-  const spd = (2.2 - frac*1.1).toFixed(2);
-  // Geometry: 100x100 viewBox, centre (50,58), radius 40.
-  const CX = 50, CY = 58, R = 40;
-  const SWEEP = 270 * Math.PI/180;
-  const LEN = (R * SWEEP).toFixed(2);
-  const pt = (angDeg, r) => {
-    const a = (angDeg - 90) * Math.PI/180;
-    return [(CX + r*Math.cos(a)).toFixed(2), (CY + r*Math.sin(a)).toFixed(2)];
-  };
-  const [x1,y1] = pt(-135, R), [x2,y2] = pt(135, R);
-  const arcPath = `M${x1} ${y1} A${R} ${R} 0 1 1 ${x2} ${y2}`;
-  // Minor ticks every 10% (10 gaps -> 11 ticks), major ticks (longer, labelled
-  // 0/50/100) at the ends and centre (#7).
-  const gid = `gg${id}`.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const ticks = Array.from({length:11}, (_,i)=>{
-    const a = -135 + i*27;
-    const major = (i===0 || i===5 || i===10);
-    const [tx1,ty1] = pt(a, major ? R-9 : R-5), [tx2,ty2] = pt(a, R+1);
-    return `<line x1="${tx1}" y1="${ty1}" x2="${tx2}" y2="${ty2}"
-      stroke="${BD}" stroke-width="${major?1.8:1}"/>`;
-  }).join('');
-  const majorLabels = [0,50,100].map((v,i)=>{
-    const a = -135 + i*135;
-    const [lx,ly] = pt(a, R+11);
-    return `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle"
-      fill="var(--muted)" style="font-size:7px">${v}</text>`;
-  }).join('');
-  const valueText = `${pct}%`;
   const ariaText = `${label} ${pct} percent, ${tier.n.toLowerCase()}`;
   return `<span class="loe sz-${size} ${tier.cls}" role="meter"
       aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"
       aria-valuetext="${escA(ariaText)}" aria-label="${escA(label)}"
       title="${tier.n} load — ${score}/6 (${pct}%)">
-    <svg viewBox="0 0 100 116" aria-hidden="true">
-      <title>${escA(ariaText)}</title>
-      <defs>
-        <linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
-          <stop offset="0%" stop-color="var(--z-ok)"/>
-          <stop offset="50%" stop-color="var(--z-warn)"/>
-          <stop offset="100%" stop-color="var(--z-bad)"/>
-        </linearGradient>
-      </defs>
-      ${ticks}${majorLabels}
-      <path d="${arcPath}" fill="none" stroke="color-mix(in srgb,var(--border) 60%,transparent)"
-        stroke-width="7" stroke-linecap="round"/>
-      <path class="gval" d="${arcPath}" fill="none" stroke="url(#${gid})" stroke-width="7"
-        stroke-linecap="round" stroke-dasharray="${LEN}"
-        stroke-dashoffset="${(LEN*(1-frac)).toFixed(2)}"/>
-      <g class="needle" style="--from:${from}deg;--d:${deg}deg;--amp:${amp}deg;--spd:${spd}s">
-        <line x1="${CX}" y1="${CY}" x2="${CX}" y2="${CY-R+10}" stroke="${tier.c}" stroke-width="2.6"
-          stroke-linecap="round"/>
-      </g>
-      <circle cx="${CX}" cy="${CY}" r="5" fill="${tier.c}"/>
-      <circle cx="${CX}" cy="${CY}" r="2.2" fill="var(--card)"/>
-      <text x="${CX}" y="${CY+26}" text-anchor="middle" fill="${tier.c}"
-        style="font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">${valueText}</text>
-      <text x="${CX}" y="${CY+40}" text-anchor="middle" fill="${tier.c}"
-        style="font-size:10px;font-weight:600">${tier.n}</text>
-    </svg></span>`;
+    ${arcGauge(id, frac, tier.c, pct, '%', tier.n, ariaText)}</span>`;
 }
 
 // Merge delegation payloads across profiles for the synthetic "All" tab.
