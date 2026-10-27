@@ -19,7 +19,9 @@ const gutter = pr ? Number(pr[1]) : 0;
 const TAB_W = 51, HOVER_GROW = hover ? Number(hover[1]) - 10 : 0;
 chk(gutter >= TAB_W + HOVER_GROW, `.page right gutter ${gutter}px >= tab ${TAB_W}px + hover growth ${HOVER_GROW}px`);
 chk(!/padding-right/.test(css.match(/body\.hasnav \.page\{[^}]*\}/g).join('')), 'nav rules only touch padding-left');
-chk(/\.qt-line \.qt-cars\{[^}]*mask-image:linear-gradient/.test(css), 'train edge fade present');
+chk(/\.qt-line \.qt-cars\{(?![^}]*mask-image)[^}]*\}/.test(css)
+  && /qtEdgeFade\(/.test(fs.readFileSync(path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js', 'flow.js'), 'utf8'))
+  && !/mask-image/.test(rule('.qt-line .qt-cars') || ''), 'train edge fade is car-level, no chopper mask');
 chk(!/\n\s*\.n2\{/.test(css), 'dead .n2 rule stays removed');
 chk(/\.fbwrap\{min-width:0\}/.test(css), 'fleet-bar wrapper can shrink (min-width:0)');
 chk(/\.olhead\{[^}]*flex-wrap:wrap/.test(css), '.olhead wraps long hostnames');

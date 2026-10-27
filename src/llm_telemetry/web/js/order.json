@@ -887,6 +887,14 @@
   },
   {
    "mod": "flow",
+   "name": "qtFadeRaf"
+  },
+  {
+   "mod": "flow",
+   "name": "qtEdgeFade"
+  },
+  {
+   "mod": "flow",
    "name": "paintTrain"
   },
   {
@@ -987,11 +995,31 @@
   },
   {
    "mod": "live",
+   "name": "inFlight"
+  },
+  {
+   "mod": "live",
+   "name": "inProgressHtml"
+  },
+  {
+   "mod": "live",
    "name": "liveKpis"
   },
   {
    "mod": "live",
    "name": "renderLiveKpis"
+  },
+  {
+   "mod": "live",
+   "name": "logoSvg"
+  },
+  {
+   "mod": "live",
+   "name": "KIND_LOGO"
+  },
+  {
+   "mod": "live",
+   "name": "kindLogo"
   },
   {
    "mod": "live",

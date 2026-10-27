@@ -785,7 +785,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,qt-shunt 1.8s ease-in-out calc(var(--i,0) * .15s) infinite}
 @keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
 
-.qt-line .qt-cars{height:44px;overflow:hidden;margin-bottom:10px;mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+.qt-line .qt-cars{height:44px;overflow:hidden;margin-bottom:10px}
 .qt-consist{position:absolute;left:0;bottom:6px;display:flex;flex-direction:row-reverse;gap:9px;
   animation:qt-run var(--qt-loop) linear infinite;will-change:transform}
 .qtrain:hover .qt-consist,.qtrain:focus-within .qt-consist{animation-play-state:paused}
@@ -795,6 +795,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
   background-size:200% 100%;animation:qt-glint 1.6s linear infinite}
 
+.qt-r[data-kind]:not([data-kind=hermes]){background:var(--k);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 12px color-mix(in srgb,var(--k) 55%,transparent)}
+.qt-kb{flex:none;margin-right:4px;padding:1px 3px;border-radius:3px;font-size:10px;line-height:1;
+  background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
 .qt-r + .qt-r .qt-lbl::before{content:"";position:absolute;right:-10px;top:50%;width:10px;height:3px;
   margin-top:-1px;background:var(--qt-wheel);border-radius:1px}
 .qt-loco{width:124px;border-top-right-radius:14px;padding-right:20px}
@@ -998,7 +1001,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .xp-row{flex-direction:column;align-items:flex-start;gap:0}
    .xp-title{flex:0 1 auto}
    .xcard .hc-stat{text-align:left;max-width:100%}
-   .grid-home > .xcard:last-child:nth-child(odd){grid-column:1/-1}
    .selwrap,select.chip{max-width:100%;min-width:0}
    .fb-more kbd{display:none}
  }
@@ -1594,6 +1596,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-src{font-size:var(--fs-2xs);text-transform:none;letter-spacing:0;
   color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
 .pv-src-local{color:var(--accent)}
+.kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:11px;font-weight:600;vertical-align:middle;max-width:100%}
+.kpi-kind{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--foreground,var(--fg));min-width:0}
+.kpi-dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+
+svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
+.kpi-logo{display:inline-flex;align-items:center;flex:none;font-size:12px;line-height:1}
+
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
@@ -4258,12 +4267,8 @@ function render(){
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
-  // `active` is a live count from the DB, deliberately NOT filtered by the date
-  // range — "in progress" means right now, whatever window you are looking at.
-  const live = DATA.profiles[current].active || 0;
-  const liveDot = live
-    ? `<span style="color:#5f9e6e">●</span> ${live}`
-    : `<span class="muted">●</span> 0`;
+  // Live count, deliberately NOT date-filtered: in progress means right now.
+  const liveDot = inProgressHtml(DATA.profiles[current], DATA.pi_live, DATA.agent_live);
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
   const H = DATA.profiles[current].health || [];
@@ -4528,10 +4533,10 @@ const PRICE_SRC = {
 };
 // Same muted provider set as build_costs.PROV — one calm palette, both places.
 const PROV_META = {
-  anthropic:    {sig: '\u2733', color: 'hsl(17 38% 52%)'},
+  anthropic:    {logo: 'claude', color: 'hsl(17 38% 52%)'},
   'opencode-go':{sig: '\u25C8', color: 'hsl(250 30% 68%)'},
   fireworks:    {sig: '\u2726', color: '#b07a5e'},
-  'openai-codex':{sig: '\u25C9', color: 'hsl(162 30% 42%)'},
+  'openai-codex':{logo: 'codex', color: 'hsl(162 30% 42%)'},
   local:        {sig: '\u25A3', color: 'hsl(213 28% 62%)'},
   moa:          {sig: '\u2B21', color: '#b87383'},
   cloud:        {sig: '\u2601', color: 'hsl(205 24% 58%)'},
@@ -4822,7 +4827,7 @@ function priceRow(m){
         const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
         const inferred = !provs.length;
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
-          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.sig} ${esc(pv)}</span>`;
+          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
   return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"
@@ -6263,6 +6268,11 @@ function trainCar(it){
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
+  if (it.eng && it.eng !== 'hermes'){
+    const m = kindMeta(it.eng), b = document.createElement('span');
+    b.className = 'qt-kb'; b.innerHTML = m.sig;  // trusted constant: a text glyph or a brand-mark <svg> b.title = m.label + ' agent';
+    c.appendChild(b);
+  }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
   return c;
 }
@@ -6286,7 +6296,8 @@ function paintCars(box, items, decorate){
     keep.add(c);
     const l = c.querySelector('.qt-lbl');
     if (l && l.textContent !== it.label) l.textContent = it.label;
-    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}`);
+    const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
+    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}`);
     c._qt = it;
     decorate(c, it, i);
   });
@@ -6311,7 +6322,7 @@ function carTip(it){
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
-    return head + row('model', it.model) + row('profile', it.profile)
+    return head + row('engine', it.eng === 'hermes' ? '' : kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
@@ -6322,9 +6333,7 @@ function carTip(it){
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
 }
 
-// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
-// the real car with a landing bounce. No-op without the Web Animations API,
-// without layout (rects of 0), or under prefers-reduced-motion.
+// Fade each line car whole near the frame edge; the old mask chopped labels mid-word.
 function qtFly(tr, fromRect, toEl, cls){
   if (!tr || !toEl || !fromRect || typeof toEl.animate !== 'function') return false;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
@@ -6356,6 +6365,26 @@ function qtFly(tr, fromRect, toEl, cls){
   return true;
 }
 
+let qtFadeRaf = 0;
+function qtEdgeFade(rb, consist, moving){
+  const clear = () => [...consist.children].forEach(c => { c.style.opacity = ''; });
+  if (typeof cancelAnimationFrame !== 'function' || !rb.clientWidth || !moving){ clear(); return; }
+  cancelAnimationFrame(qtFadeRaf);
+  const fade = () => {
+    const b = rb.getBoundingClientRect();
+    [...consist.children].forEach(c => {
+      const r = c.getBoundingClientRect();
+      const o = Math.min(1, Math.max(0, (r.left - b.left) / 34), Math.max(0, (b.right - r.right) / 34));
+      c.style.opacity = o >= 1 ? '' : o <= 0 ? '0' : o.toFixed(2);
+    });
+    qtFadeRaf = requestAnimationFrame(fade);
+  };
+  qtFadeRaf = requestAnimationFrame(fade);
+}
+
+// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
+// the real car with a landing bounce. No-op without the Web Animations API,
+// without layout (rects of 0), or under prefers-reduced-motion.
 function paintTrain(queuedAll, runningAll, doneAll){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
   if (!tr || !qb || !rb || !db) return;
@@ -6402,6 +6431,8 @@ function paintTrain(queuedAll, runningAll, doneAll){
   paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
   const freshR = paintCars(consist, running, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+    c.dataset.kind = it.eng;
+    c.style.setProperty('--k', kindMeta(it.eng).color);
     c.classList.toggle('qt-loco', i === 0);
   });
   const freshD = paintCars(db, done, (c, it, i) => {
@@ -6421,6 +6452,7 @@ function paintTrain(queuedAll, runningAll, doneAll){
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
+  qtEdgeFade(rb, consist, nr > 0);
 
   // "+N" past the cap, so the strip never hides real depth.
   [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {
@@ -6484,16 +6516,18 @@ function renderQueue(){
     }
   });
 
-  const seen = new Set();
-  const runningAll = (p.live || [])
-    .filter(L => !seen.has(L.id) && seen.add(L.id))
-    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active leads
-    .map(L => ({
-      key: `s:${L.id}`, kind: 'r', sid: L.id, label: titleOf(L.title, L.model),
-      model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
-      phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
-      tools: (L.tools || []).length, nmodels: L.nmodels,
-    }));
+  // Hermes rows of this profile plus the fleet-wide Pi/Claude/Codex sessions.
+  const runningAll = inFlight(p, DATA.pi_live, DATA.agent_live)
+    .sort((a, b) => (+a.S.idle_s || 0) - (+b.S.idle_s || 0)) // most recently active leads
+    .map(({ kind, S: L }) => {
+      const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
+      return {
+        key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
+        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+        phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+        tools: (L.tools || []).length, nmodels: L.nmodels,
+      };
+    });
 
   const doneAll = (p.recent_sessions || [])
     .slice()
@@ -6747,14 +6781,9 @@ const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };function liveG
   return null;
 }
 
-// #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
-// alive, calls/tokens in the last 5 minutes, active alerts.
-//
-// The live feed carries CUMULATIVE per-session counters, so throughput is
-// derived client-side: each poll diffs every session against its previous
-// sample into a 5-minute ring. A session open at the first sample is a
-// baseline; one that appears later counts whole. Ended sessions simply stop contributing. Profiles are kept apart so a profile tab shows
-// its own throughput and the merged view sums them.
+// #181/#182/#184: above-the-fold live KPIs. Throughput is derived client-side: the
+// feed carries CUMULATIVE per-session counters, so each poll diffs sessions into a
+// 5-minute ring (per profile; the merged view sums them).
 const TPUT_WINDOW_S = 300;
 let tputPrev = null;     // session id -> {c, k}; null until the first sample
 let tputRing = [];       // [{t, by: {profile: {c, k}}}], oldest first
@@ -6827,13 +6856,36 @@ function dedupAgentLive(list){
   }
   return [...best.values()].map(v => v.S);
 }
-function liveKpis(p, name, now, profiles, agentLive){
-  const seen = new Set();
-  // Claude/Codex sessions (DATA.agent_live) are fleet-wide, shown on every
-  // tab. They count as "in flight" only while not idle; "Agents alive" is the
-  // Hermes heartbeat set and deliberately excludes them.
-  const extra = dedupAgentLive(agentLive).filter(S => S.phase !== 'idle').length;
-  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length + extra;
+// Sessions working right now for profile `p`: its Hermes rows plus the
+// fleet-wide Pi and (deduped) Claude/Codex lists, which show under every
+// profile. Idle Pi/agent sessions are not "in flight".
+function inFlight(p, piLive, agentLive){
+  const seen = new Set(), out = [];
+  ((p && p.live) || []).forEach(L => { if (L && !seen.has(L.id) && seen.add(L.id)) out.push({ kind: 'hermes', S: L }); });
+  (piLive || []).forEach(S => { if (S && S.phase !== 'idle') out.push({ kind: 'pi', S }); });
+  dedupAgentLive(agentLive).forEach(S => { if (S.phase !== 'idle') out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }); });
+  return out;
+}
+// "In progress" KPI body: total plus one tinted chip per non-zero kind.
+function inProgressHtml(p, piLive, agentLive){
+  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+  inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
+  const n = c.hermes + c.pi + c.claude + c.codex;
+  // Labelled chips ("2 Claude"), dot in the kind colour, zero kinds omitted.
+  const chips = KIND_ORDER.filter(k => c[k]).map(k => {
+    const m = kindMeta(k);
+    // Claude/Codex lead with their brand mark (inherits the kind colour);
+    // PI and Hermes keep the coloured dot.
+    const mark = kindLogo(k)
+      ? `<span class="kpi-logo" aria-hidden="true" style="color:${m.color}">${kindLogo(k)}</span>`
+      : `<i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>`;
+    return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}">${mark}${c[k]} ${esc(m.label)}</span>`;
+  }).join('');
+  return `<span class="${n ? '' : 'muted'}"${n ? ' style="color:var(--z-ok)"' : ''}>\u25CF</span> ${n}`
+    + (chips ? `<span class="kpi-kinds">${chips}</span>` : '');
+}
+function liveKpis(p, name, now, profiles, agentLive, piLive){
+  const sessions = inFlight(p, piLive, agentLive).length;
   const merged = name === 'All' && profiles;
   const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
   const alive = agents.filter(a => a && a.state === 'alive').length;
@@ -6845,10 +6897,10 @@ function liveKpis(p, name, now, profiles, agentLive){
     tput: throughputFor(name, now),
   };
 }
-function renderLiveKpis(p, name, now, profiles, agentLive){
+function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
-  const k = liveKpis(p, name, now, profiles, agentLive);
+  const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
@@ -6877,13 +6929,30 @@ function renderLiveKpis(p, name, now, profiles, agentLive){
 // than a new badge style — only the glyph/colour/label differ per kind.
 // Colours are NOT declared here: css/tokens.css owns --kind-hermes/pi/claude/
 // codex and the fleet bar reads the same tokens, so there is one palette.
+function logoSvg(kind, d){
+  return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" data-kindlogo="${kind}"><path d="${d}"/></svg>`;
+}
+const KIND_LOGO = {
+  claude: logoSvg('claude', 'm4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z'),
+  codex:  logoSvg('codex', 'M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z'),
+};
+// The logo markup for a kind, or '' for kinds that keep a text glyph (PI, Hermes).
+function kindLogo(kind){
+  return KIND_LOGO[kind] || '';
+}
 const KIND_META = {
   pi:     { sig: '\u2699', label: 'PI',     title: 'PI coding agent (pi-worker)' },
-  claude: { sig: '\u2735', label: 'Claude', title: 'Claude Code agent (agent-worker)' },
-  codex:  { sig: '\u25A3', label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
+  claude: { sig: KIND_LOGO.claude, label: 'Claude', title: 'Claude Code agent (agent-worker)' },
+  codex:  { sig: KIND_LOGO.codex, label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
   hermes: { sig: '\u25C9', label: 'Hermes', title: 'Hermes session' },
 };
 const KIND_ORDER = ['hermes', 'pi', 'claude', 'codex'];
+// Brand marks for the two coding-agent engines. Path data is copied VERBATIM
+// from simple-icons (https://simpleicons.org, CC0 1.0 Universal): icon
+// "claude" from simple-icons 16.36.0 and icon "openai" from 15.22.0 (16.x
+// dropped it). Never redraw or approximate them. Defined once here and reused
+// by the KPI chips, train cars, live rows, fleet bar and the provider badges.
+// fill is currentColor, so the mark inherits the kind colour from its parent.
 function kindMeta(kind){
   const m = KIND_META[kind];
   return m ? { ...m, color: `var(--kind-${kind})` }
@@ -6945,14 +7014,10 @@ function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
-// PI sessions (#245) have no sqlite state: their JSONL files are the live
-// state, so they ride the flat DATA.pi_live list and share '#livelist' and
-// one row shape with Hermes (kindBadge('pi') tells them apart). Returns
-// {key, html} for applyDiff, keyed 'pi:'+session id.
-//
-// LST-251: PI rows get Hermes parity -- loeIcon gauge (fed S.tools_gauge, PI
-// tool names aliased to Hermes categories), tool chips (S.tools), model-switch
-// note, uptime. Bandwidth is skipped: PI tracks no byte counters.
+// PI sessions (#245) have no sqlite state; their JSONL files are the live state, so
+// they ride DATA.pi_live and share '#livelist' with Hermes rows (keyed 'pi:'+id).
+// LST-251: Hermes parity -- loeIcon gauge (S.tools_gauge), tool chips, model-switch
+// note, uptime. No bandwidth: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
@@ -7025,7 +7090,7 @@ function renderFleetTiles(){
 function renderLive(){
   const p = DATA.profiles[current] || {};
   renderFleetTiles();
-  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
+  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
@@ -8113,17 +8178,9 @@ function flowFlatten(root){
   return {nodes, links};
 }
 
-// Which chats a Flow node served.
-//
-// node_sessions is keyed by the FULL model id + task ("accounts/fireworks/
-// models/kimi-k3\tmain"), but graph nodes carry the SHORT display name, so a
-// direct lookup silently returns nothing. Each model node therefore remembers
-// its full ids (several can collapse to one short name) and we union them.
-// ---- Tool palette ---------------------------------------------------------
-// Same contract as the model palette: ONE colour per tool, everywhere, stable
-// across tabs/ranges/profiles. Tools group into families by what they do, so
-// related tools read as related (all file ops are green-ish, all execution is
-// amber-ish) while staying individually distinguishable.
+// Which chats a Flow node served: node_sessions is keyed by FULL model id + task but nodes
+// carry the SHORT name, so each model node remembers its full ids and we union them.
+// ---- Tool palette: ONE colour per tool everywhere, grouped into families by what they do.
 const TOOL_FAM = [
   {re:/^(read_file|write_file|patch|search_files|glob)$/,        h:150, s:58},
   {re:/^(terminal|execute_code|process_manage)$/,                h: 34, s:78},
@@ -8583,12 +8640,7 @@ function renderFlow(rows){
   // Double-tap/double-click resets to the fitted view.
   svg.addEventListener('dblclick', () => fitView());
 
-  // #18: responsive viewBox — a rotation or a window resize changes W/H, and
-  // the old fixed viewBox from the initial render would then either crop the
-  // graph or leave dead space. Re-run the whole layout (debounced) whenever
-  // the wrapper's own size actually changes, but only while the Flow tab is
-  // the one on screen (recomputing a force layout you cannot see is wasted
-  // work and would also un-pin nodes the user placed on a hidden tab).
+  // #18: re-run the layout (debounced) when the wrapper resizes, only while Flow is on screen.
   if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){
     wrap._flowResizeWired = true;
     let t = null;
@@ -8687,15 +8739,8 @@ function flowControls(){
   });
 }
 
-// Activity heatmap — a GitHub-style calendar. Weeks are columns, weekdays are
-// rows, so seasonality and gaps are obvious. Intensity is bucketed on quartiles
-// of the observed range rather than absolute counts, so the scale stays useful
-// whether a busy day is 200 calls or 20,000.
-// P10-01 (#89): parent -> children session tree, indented, with roll-up
-// costs shown on the parent row (own + every descendant). Rendered from
-// the SAME nested payload shape the collector emits (id/parent/source/
-// model/started/ended/end_reason/msgs/tools/tok/cost/cost_is_actual/
-// children/child_count/failed_child_count) — no re-derivation client side.
+// Activity heatmap: GitHub-style calendar, intensity bucketed on quartiles of the observed range.
+// P10-01 (#89): parent -> children session tree with roll-up costs, from the collector's nested payload.
 const SRC_BADGE = { desktop: 'Desktop', subagent: 'Subagent', cron: 'Cron',
   tui: 'TUI', oneshot: 'One-shot', cli: 'CLI', gateway: 'Gateway' };
 let sesstreeCollapsed = new Set(); // node ids explicitly collapsed by the user
@@ -10525,12 +10570,8 @@ let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
   ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 let liveBusy = false, liveFails = 0;
 
-// ---- Completion sound (#105) -----------------------------------------------
-// Off by default (localStorage remembers the choice), generated with Web
-// Audio so there is no audio file to ship (the dashboard is one
-// self-contained HTML page, ADR 0001). Browsers block audio until a user
-// gesture, so turning it on is itself the gesture -- no separate unlock step
-// is needed or possible.
+// ---- Completion sound (#105): off by default, Web Audio (no audio file to ship,
+// ADR 0001); turning it on is itself the user gesture browsers require.
 let soundOn = localStorage.getItem('lt-sound') === '1';
 let audioCtx = null;
 let soundBaseline = true;   // true until the first poll has been diffed once
@@ -10567,13 +10608,8 @@ function playTone(kind){
   });
 }
 
-// Debounce: several completions inside one poll, or across polls within 2s,
-// play as a single tone rather than a burst. `kind` escalates to 'fail' if
-// anything in the batch failed, even if most succeeded. A prior version
-// returned early once inside the 2s window WITHOUT scheduling a play, which
-// silently dropped a completion that arrived mid-window instead of merging
-// it into the next tone -- fixed by always scheduling, timed to fire no
-// sooner than the window allows.
+// Debounce: completions within 2s play as one tone; `kind` escalates to 'fail'
+// if any failed. Always schedules a play (timed past the window), never drops one.
 let pendingKind = null;
 let soundTimerPending = false;
 function scheduleTone(kind){
@@ -10889,11 +10925,7 @@ async function pollLive(){
     DATA.profiles = pvFilter();
     tabs();
     drawerSync();
-    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
-    // left the live list and the bandwidth card holding the first payload
-    // whenever any other tab was open — the numbers silently went stale, and
-    // switching back showed a jump rather than a live feed. renderLive writes
-    // into hidden nodes cheaply, so there is no reason to gate it on the view.
+    // Repaint unconditionally: gating on the Live view left it stale on other tabs.
     renderLive();
     navSync();
     // Update only the "In progress" KPI in place — the other cards depend on
@@ -10901,9 +10933,7 @@ async function pollLive(){
     // rebuild here would show wrong numbers.
     const p = DATA.profiles[current] || {};
     const card = document.querySelector('#kpis .kpi-live');
-    if (card) card.innerHTML = p.active
-      ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
-      : `<span class="muted">●</span> 0`;
+    if (card) card.innerHTML = inProgressHtml(p, DATA.pi_live, DATA.agent_live);
     liveFails = 0;
     tickLiveStamp();
   } catch (e) {
@@ -11309,12 +11339,8 @@ function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 let liveTimer = null;
-// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
-// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
-// age counts up between polls instead of freezing at the poll time. The
-// base text is rewritten every tick (via dataset.stampBase) because
-// stampFreshness caches the first text it sees — the old code set textContent
-// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+// #185: freshness pill. tickLiveStamp() rewrites it from `liveUpdatedAt` every tick,
+// via dataset.stampBase, because stampFreshness caches the first text it sees.
 let liveUpdatedAt = null;
 function tickLiveStamp(now){
   const t = $('livestamp');
