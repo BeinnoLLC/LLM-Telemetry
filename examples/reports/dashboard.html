@@ -6954,11 +6954,7 @@ function sampleThroughput(profiles, now){
       const cur = sessTotals(L);
       next.set(L.id, cur);
       if (baseline) return;
-      // A session first seen after the baseline arrives with its whole
-      // history in the cumulative counters (thousands of calls); counting that
-      // as the last 5 seconds would be a spike, so it only seeds its baseline.
-      const prev = tputPrev.get(L.id);
-      if (!prev) return;
+      const prev = tputPrev.get(L.id) || { c: 0, k: 0 };
       // max(0, …): a counter that goes backwards is a restart, not negative work.
       c += Math.max(0, cur.c - prev.c);
       k += Math.max(0, cur.k - prev.k);

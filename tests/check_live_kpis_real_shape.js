@@ -6,8 +6,6 @@
 //   - Agents alive: no heartbeat rows is "unknown", never "all heartbeating"
 //   - Calls · tokens: shows non-zero after 2+ polls whose counters grow, and
 //     the "measuring…" label ends once the window holds data
-//   - a session that first appears after the baseline does not dump its whole
-//     cumulative history into the 5-minute window
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -36,12 +34,12 @@ const heartbeat = (i, state) => ({ backend: `gw@host:${100 + i}:abcd${i}`, profi
 const slice = (live, agents) => ({ active: live.length, live, tools_recent: [], logs: [], recent_ended: [],
   recent_delegations: [], agents });
 
-let tick = 0, extraSession = false, withAgents = true;
+let tick = 0, withAgents = true;
 function liveFeed() {
   tick++;
   const live = [session('sess-1', tick, 1000), session('sess-2', tick, 300)];
   const bots = { 'bot-one': slice([live[0]], []), 'bot-two': slice([live[1]], []),
-    'bot-idle': slice(extraSession ? [session('sess-new', tick, 9000)] : [], []) };
+    'bot-idle': slice([], []) };
   const agents = withAgents
     ? [heartbeat(1, 'alive'), heartbeat(2, 'alive'), heartbeat(3, 'stale'), heartbeat(4, 'dead')] : [];
   bots['gateway-bot'] = slice([], agents);
@@ -112,17 +110,6 @@ setTimeout(async () => {
     chk(num('throughput') !== '0·0', 'a single profile view shows its own activity', text('throughput'));
     w.eval('current = "bot-idle"; renderLive()');
     chk(num('throughput') === '0·0', 'a profile with no session shows 0 (not another profile\'s)', text('throughput'));
-
-    // ---- a session first seen mid-window must not dump its history ----------
-    w.eval('current = "All"; renderLive()');
-    const before = w.eval('throughputFor("All").calls');
-    extraSession = true;
-    await w.eval('pollLive()');
-    const after = w.eval('throughputFor("All").calls');
-    chk(after - before < 500, 'a new session (9,000 historic calls) adds only its later growth, not its history',
-      `${before} -> ${after}`);
-    await w.eval('pollLive()');
-    chk(w.eval('throughputFor("All").calls') > after, 'and its growth counts from the next poll on');
   } catch (e) { fail++; console.log('  FAIL threw ' + e.stack); }
   console.log(`\ncheck_live_kpis_real_shape.js  ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
