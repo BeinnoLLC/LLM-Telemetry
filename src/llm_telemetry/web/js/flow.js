@@ -250,7 +250,7 @@ export function paintTrain(queuedAll, runningAll, doneAll){
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
-  qtEdgeFade(rb, consist, nr > 0);
+  qtEdgeFade(rb, consist, false);  // cars hold still and all stay visible: no edge fade
 
   // "+N" past the cap, so the strip never hides real depth.
   [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {
