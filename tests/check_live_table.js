@@ -1,4 +1,4 @@
-// G4: the Home live board is a compact table panel. N live sessions in -> N
+// G4 + roomy pass: the Home live board is a comfortable table panel (48px+ rows, two-line cells). N live sessions in -> N
 // rows with the right cells, brand logos kept, header sorting (click AND
 // Enter/Space) with aria-sort, the drawer action still wired, and the table
 // scrolls inside its own panel so the page never overflows sideways.
@@ -133,9 +133,31 @@ setTimeout(() => {
     const scs = w.getComputedStyle(sc);
     chk((scs.overflow === 'auto' || scs.overflowX === 'auto') && scs.minWidth === '0px', 'the table scrolls inside .lvscroll (overflow:auto, min-width:0)', `${scs.overflow}/${scs.overflowX}/${scs.minWidth}`);
     chk(sc.closest('.card') && w.getComputedStyle(sc.closest('.card')).minWidth === '0px', 'the card around it can shrink (min-width:0)');
-    chk(/\.lvhead,\.lvrow\{[^}]*min-width:816px/.test(html), 'rows and header share one min-width so they scroll together');
+    const mw = /\.lvhead,\.lvrow\{[^}]*min-width:(\d+)px/.exec(html);
+    chk(mw && +mw[1] >= 816, 'rows and header share one min-width so they scroll together', mw && mw[1]);
     chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
-    chk(parseFloat(w.getComputedStyle(rows()[0]).maxHeight) <= 32, 'row height is capped at 32px', w.getComputedStyle(rows()[0]).maxHeight);
+    const r0s = w.getComputedStyle(rows()[0]);
+    chk(parseFloat(r0s.minHeight) >= 48, 'row min-height is >= 48px', r0s.minHeight);
+    chk(parseFloat(r0s.maxHeight) <= 64 && parseFloat(r0s.maxHeight) >= parseFloat(r0s.minHeight), 'row height stays capped (<= 64px) so rows are uniform', r0s.maxHeight);
+    chk(parseFloat(r0s.paddingTop) >= 8 && parseFloat(r0s.paddingBottom) >= 8 && parseFloat(r0s.paddingLeft) >= 10 && parseFloat(r0s.paddingRight) >= 10,
+      'cell padding >= 8px vertical, >= 10px horizontal', [r0s.paddingTop, r0s.paddingRight, r0s.paddingLeft].join(' '));
+    chk(/\.lvrow\{[^}]*border-bottom:1px solid var\(--border\)/.test(html) && /\.lvrow:hover\{background:/.test(html), 'rows have a clear separator and a hover state');
+    const fsOf = (sel) => { const m = new RegExp('(?:^|\\})\\s*' + sel + '\\{[^}]*?font-size:([\\d.]+)px').exec(html); return m ? +m[1] : 0; };
+    chk(fsOf('\\.lvc:not\\(\\.metacol\\)') >= 14 && fsOf('\\.lvrow \\.lvmodel') >= 14, 'body text (cells, model id) is >= 14px', fsOf('\\.lvc:not\\(\\.metacol\\)') + '/' + fsOf('\\.lvrow \\.lvmodel'));
+    chk(fsOf('\\.lvrow \\.lvtitle') >= 14 && fsOf('\\.lvrow \\.lvtitle') <= 15 && /\.lvrow \.lvtitle\{[^}]*font-weight:600/.test(html), 'session title is 14-15px semibold', fsOf('\\.lvrow \\.lvtitle'));
+    chk([fsOf('\\.lvphase'), fsOf('\\.lvcatl,\\.lvsub,\\.lvswitch,\\.lvago'), fsOf('\\.lvtool'), fsOf('\\.lvtag')].every(n => n >= 12.5), 'secondary text (phase, time, chips, tags) is >= 12.5px', [fsOf('\\.lvphase'), fsOf('\\.lvtool'), fsOf('\\.lvtag')].join('/'));
+    const hdCss = /\.lvh\{([^}]*)\}/.exec(html)[1];
+    chk(/font-size:(12|12\.5|13)px/.test(hdCss) && /text-transform:uppercase/.test(hdCss) && /color:var\(--muted\)/.test(hdCss), 'header is 12-13px uppercase muted', hdCss.slice(0, 120));
+    chk(parseFloat(w.getComputedStyle(head).height) >= 32 || /\.lvhead\{[^}]*height:(3[2-9]|4\d)px/.test(html), 'header row is >= 32px tall');
+    chk(/@media\(prefers-reduced-motion:reduce\)\{\.lvrow\{transition:none\}\}/.test(html), 'row hover transition is switched off for prefers-reduced-motion');
+    // two-line cells: primary on line one, muted detail on line two
+    const sess2 = hm.querySelector('.lvc-sess');
+    chk(sess2.querySelector('.lvs1 .lvtitle') && sess2.querySelector('.lvs2 .lntimelinebtn') && sess2.querySelector('.lvs2 .lvtag'), 'hermes session cell: title on line one; Timeline pill and profile tag on line two');
+    chk(pi && pi.querySelector('.lvc-sess .lvs1 .lvtitle') && pi.querySelector('.lvc-sess .lvs2 .lvtag'), 'pi session cell: title on line one; agent tag on line two');
+    chk([c1, cidle, cx].every(r => r.querySelector('.lvc-sess .lvs1 .lvtitle')), 'claude/codex session cells keep the title on line one');
+    chk(cell(c1, 2).querySelector('.lvmodel') && cell(hm, 2).querySelector('.lvmodel') && cell(hm, 2).querySelectorAll('.lvmx').length === 1, 'model cell: id on line one, detail (provider / switch / models used) on line two');
+    const aA = hm.querySelector('.lvc-act');
+    chk(aA.querySelector('.lva1 .lvago') && aA.querySelector('.lva1 .lvphase') && aA.querySelectorAll('.lva2 > .lvtool').length === 2, 'last activity: time + phase on line one, tool chips on line two');
 
     // (f) names stay whole: the narrow columns shrink to their content width and
     // Last activity is the one that gives way; the model cell has no small cap
@@ -168,13 +190,22 @@ setTimeout(() => {
     // (h) no meaningless fragments: chips/tags keep >= 6ch visible or drop out whole
     const rule = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); let m, o = ''; while ((m = r.exec(html))) o += m[1] + ';'; return o; };
     const chOf = (body, prop) => { const m = new RegExp('(?:^|[;{])' + prop + ':\\s*([\\d.]+)ch').exec(body); return m ? +m[1] : 0; };
-    chk(chOf(rule('\\.lvc-act>\\.lvtool'), 'min-width') >= 6, 'activity tool chip has min-width >= 6ch', rule('\\.lvc-act>\\.lvtool'));
-    chk(/flex:1 1 6ch;min-width:6ch/.test(rule('\\.lvc-act>\\.lvphase')), 'activity phase has min-width 6ch');
-    chk(/flex:none/.test(rule('\\.lvc-act>\\.lvago')), 'the relative time never shrinks');
+    chk(chOf(rule('\\.lva2>\\.lvtool'), 'min-width') >= 6, 'activity tool chip has min-width >= 6ch', rule('\\.lva2>\\.lvtool'));
+    chk(/flex:1 1 6ch;min-width:6ch/.test(rule('\\.lva1>\\.lvphase')), 'activity phase has min-width 6ch');
+    chk(/flex:none/.test(rule('\\.lvc-act>\\.lvago,\\.lva1>\\.lvago')), 'the relative time never shrinks');
     const hideOn = sel => { const b = rule(sel); return /flex-wrap:wrap/.test(b) && /overflow:hidden/.test(b); };
-    chk(hideOn('\\.lvc-act') && hideOn('\\.lvs2') && /height:18px/.test(rule('\\.lvc-act')) && /height:16px/.test(rule('\\.lvs2')), 'activity and tag rows wrap in a fixed-height overflow:hidden box so a chip that does not fit drops out');
+    chk(hideOn('\\.lva2') && hideOn('\\.lvs2') && /height:20px/.test(rule('\\.lva2')) && /height:20px/.test(rule('\\.lvs2')), 'activity-chip and tag lines wrap in a fixed-height overflow:hidden box so a chip that does not fit drops out whole');
     chk(chOf(rule('\\.lvrow \\.lvs2>\\.lvtag,\\.lvrow \\.lvs2>\\.lvcatl'), 'min-width') >= 6 && chOf(rule('\\.lvrow \\.lvc-sess>\\.lvtag'), 'min-width') >= 6, 'agent tag and Hermes category label keep min-width >= 6ch');
     chk(/max-width:calc\(100% - \d+px\)/.test(rule('\\.lvrow \\.lvc-sess>\\.lvtitle')), 'the session title yields to the agent tag, not the other way round');
+
+    // nothing lost: five tools -> all five stay in the DOM, CSS shows the first three that fit, full list in title; no chip is a clipped fragment
+    feed([], [{ session_id: 'pi-9', agent: 'scout', title: 'Many tools', model: 'glm-5', idle_s: 5, uptime_s: 60, switched: true, init_model: 'gpt-5',
+      phase: 'reading', tools: ['read_file', 'terminal', 'grep', 'edit', 'web'], in_tok: 10, out_tok: 5 }], []);
+    const many = rows()[0], chips = [...many.querySelectorAll('.lva2 > .lvtool')];
+    chk(chips.length === 5 && chips.map(c => c.textContent).join() === 'read_file,terminal,grep,edit,web', 'tool chips: all five keep their whole name in the DOM', chips.map(c => c.textContent).join('|'));
+    chk(many.querySelector('.lva2').title === 'read_file, terminal, grep, edit, web', 'the full tool list stays in title=');
+    chk(/\.lva2>\.lvtool:nth-child\(n\+4\)\{display:none\}/.test(html) && chOf(rule('\\.lva2>\\.lvtool'), 'min-width') >= 6, 'at most three chips show (rest hidden whole) and each is at least 6ch wide');
+    chk(/↯ from gpt-5/.test(cell(many, 2).querySelector('.lvmx').textContent) && cell(many, 2).querySelector('.lvmodel').textContent === 'glm-5', 'switched model: id on line one, "↯ from X" on line two');
 
     // empty state hides the header and shows the empty block
     feed([], [], []);
