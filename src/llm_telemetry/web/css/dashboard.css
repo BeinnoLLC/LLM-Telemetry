@@ -212,7 +212,7 @@
     than auto-fit (auto-fit would leave a 3+1 orphan at mid widths); 2-up on
     tablets/phones and 1-up only on the narrowest. Calm palette (#153): the
     number carries the weight, colour is reserved for state. */
- .lkpis{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .lkpis{display:grid;gap:8px;align-items:start;grid-template-columns:repeat(4,minmax(0,1fr))}
  @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
  @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
  .lkpi{position:relative;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -222,7 +222,16 @@
    overflow:hidden;text-overflow:ellipsis}
  .lkpi-of{font-size:.6em;font-weight:600;color:var(--muted)}
  .lkpi-sub{font-size:var(--fs-xs);color:var(--muted)}
- .lkpi-spark{position:absolute;right:12px;top:12px;opacity:.85}
+ /* Throughput sparkline: a Chart.js canvas (built once through mk(), then updated
+    in place) tucked into the card's right edge; under the number once cards narrow. */
+ .lkpi-spark{position:absolute;right:12px;bottom:10px;width:84px;height:30px;pointer-events:none}
+ @media(max-width:1100px){ .lkpi-spark{position:static;width:100%;height:26px;margin-top:2px} }
+ .lkpi-alist{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;min-width:0}
+ .lkpi-alist li{display:flex;gap:6px;align-items:baseline;min-width:0;font-size:var(--fs-xs);color:var(--fg)}
+ .lkpi-alist .adot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
+ .lkpi-alist .crit .adot{background:var(--z-bad)}
+ .lkpi-alist .atext{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .lkpi-alist .amore{color:var(--muted)}
  .lkpi-alerts{color:var(--z-warn)}
  .lkpi-alerts.crit{color:var(--z-bad)}
  .lkpi-clear{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:999px;
@@ -1313,18 +1322,31 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  /* Live tab: sessions list (wide) + stacked charts (narrow). Explicit tracks,
     because auto-fit + a fixed `span 2` disagree about the column count and
-    leave dead space or a 0px track. Below 835px (tablet PORTRAIT and down,
-    #14) the charts go under the list full-width rather than squeezing into
-    an unreadable column — an 835-1024px LANDSCAPE tablet has the width to
-    keep them side by side, so it no longer gets force-stacked. */
+    leave dead space or a 0px track. Below 1024px (#183; was 835px, tablet
+    PORTRAIT and down, #14) the charts go under the list full-width rather than squeezing into
+    an unreadable column. #183: the agents panel now rides in that right
+    column, so the stack point is 1024px — at >=1024px it sits beside the
+    table, below that it reflows under it. */
  .livegrid{display:grid;gap:var(--gap);align-items:stretch;
    grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:834px){
+ @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    /* the list is height-capped for the side-by-side case; unpin it when stacked */
    .livegrid > .card:first-child{max-height:none !important}
  }
+ /* #181: on Home the live board (scorecards, table + agents) leads and the global
+    range/filter/KPI controls follow it, so the four at-a-glance numbers and the
+    table are above the fold. Pure visual order: the DOM (and tab order inside the
+    board) is unchanged; .view goes display:contents so its children can be
+    ordered against the page-level bars. */
+ .page[data-pageview="Home"] > .pagehead{order:-40}
+ .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
+ .page[data-pageview="Home"] > #alertscard{order:-15}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
  /* Mobile */
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}

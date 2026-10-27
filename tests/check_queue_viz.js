@@ -68,15 +68,20 @@ setTimeout(() => {
     chk(!d.getElementById('qitems-queued') && !d.getElementById('qcount-done'), 'no lane containers or lane counts remain');
     chk(!/\.qchip\{/.test(html) && !/@keyframes qin\b/.test(html), 'the lane chip CSS was removed with them');
 
-    // ---- #120 follow-up: the queue must sit ABOVE the in-progress grid ----
+    // ---- #181: the queue now sits BELOW the live board (scorecards, then the
+    // session table + agents panel), so those stay above the fold. It still sits
+    // ABOVE the 6h series and the Explore strip, i.e. directly under the board.
     const qcard = d.getElementById('qcard');
     const liveGrid = d.getElementById('live-grid');
     const FOLLOWING = w.Node.DOCUMENT_POSITION_FOLLOWING;
-    chk(!!liveGrid && (qcard.compareDocumentPosition(liveGrid) & FOLLOWING) !== 0,
-        'task queue renders BEFORE the in-progress grid');
+    chk(!!liveGrid && (liveGrid.compareDocumentPosition(qcard) & FOLLOWING) !== 0,
+        'task queue renders AFTER the in-progress grid (#181)');
     const inProg = [...d.querySelectorAll('.lbl')].find(el => /In progress now/i.test(el.textContent));
-    chk(!!inProg && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
-        'task queue renders before the "In progress now" heading');
+    chk(!!inProg && (inProg.compareDocumentPosition(qcard) & FOLLOWING) !== 0,
+        'task queue renders after the "In progress now" heading (#181)');
+    const series = d.getElementById('homeseries');
+    chk(!!series && (qcard.compareDocumentPosition(series) & FOLLOWING) !== 0,
+        'task queue renders before the 6h series panel');
 
     // ---- CSS: the motion really exists and is wired -----------------------
     for (const k of ['qt-shunt', 'qt-park', 'qt-depart', 'qt-land', 'qt-shunter', 'qt-newest', 'qt-sleepers'])

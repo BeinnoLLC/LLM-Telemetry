@@ -1015,6 +1015,26 @@
   },
   {
    "mod": "live",
+   "name": "LKPI_SPARK"
+  },
+  {
+   "mod": "live",
+   "name": "paintSpark"
+  },
+  {
+   "mod": "live",
+   "name": "SEV_RANK"
+  },
+  {
+   "mod": "live",
+   "name": "ALERT_ROWS"
+  },
+  {
+   "mod": "live",
+   "name": "alertsHtml"
+  },
+  {
+   "mod": "live",
    "name": "renderLiveKpis"
   },
   {
