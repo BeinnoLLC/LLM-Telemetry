@@ -1590,6 +1590,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
 svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
 .kpi-logo{display:inline-flex;align-items:center;flex:none;font-size:12px;line-height:1}
+ 
+ .lgt-wrap{overflow-x:auto;margin-top:8px}
+ .lgt{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+ .lgt th{color:var(--accent);font-weight:500;text-align:right;padding:2px 8px;border:0}
+ .lgt th:nth-child(2){text-align:left}
+ .lgt td{padding:2px 8px;text-align:right;white-space:nowrap;border-top:1px solid var(--border)}
+ .lgt td:nth-child(2){text-align:left;width:100%}
+ .lgt td:first-child,.lgt th:first-child{width:14px;padding-right:0}
+ .lgt i{display:block;width:10px;height:3px;border-radius:1px}
+ .lgt button{all:unset;cursor:pointer;color:var(--fg);border-radius:2px}
+ .lgt button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+ .lgt tr.off{opacity:.45}
+ .lgt tr.off button{text-decoration:line-through}
 
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
@@ -1814,6 +1827,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
   </div>
+  <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
        more work", which you ask after seeing what is running, not before. -->
   <div class="card p-4 mt-3" id="olcard" hidden>
@@ -3805,7 +3819,10 @@ function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
   if (prev) { try { prev.destroy(); } catch(_){} }
   // Don't skip hidden views — Chart.js handles zero-size canvases fine, and
   // skipping them means Cost/Detail charts never get per-model colors.
-  const o = {responsive:true,maintainAspectRatio:false,...opts};
+  // `lgt` is ours, not Chart.js's: per-dataset formatters for the legend table.
+  const {lgt, ...copts} = opts;
+  const o = {responsive:true,maintainAspectRatio:false,...copts};
+  if (lgt) o.plugins = {...(o.plugins||{}), legend:{display:false}};
   // After the first paint, every chart (re)build is a data refresh, not a
   // first impression — snap instead of replaying the entrance animation.
   // An explicit `opts.animation` from a caller still wins (none of the
@@ -3847,7 +3864,53 @@ function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
           return base;
         }}}};
   }
-  charts.push(new Chart(el,{type,data:{labels,datasets},options:o}));}
+  const ch = new Chart(el,{type,data:{labels,datasets},options:o});
+  charts.push(ch);
+  if (lgt) legendTable(ch, el, lgt, datasets);
+}
+
+// Grafana-style legend table (Name / Max / Mean / Last) for a multi-series
+// chart. Stats come from the chart's own dataset arrays, so the table can never
+// disagree with the plot; a series with no finite point shows an em dash.
+// `fmts` is one formatter, or one per dataset index, so each row keeps its unit.
+function seriesStats(data){
+  const v = (data||[]).filter(x => x != null && x !== '').map(Number).filter(Number.isFinite);
+  if (!v.length) return null;
+  return {max:Math.max(...v), mean:v.reduce((a,b)=>a+b,0)/v.length, last:v[v.length-1]};
+}
+function legendTable(chart, canvas, fmts, dss){
+  const box = canvas.closest('.lgt-host') || canvas.parentElement;
+  let wrap = box.nextElementSibling;
+  if (!wrap || !wrap.classList.contains('lgt-wrap')){
+    wrap = document.createElement('div'); wrap.className = 'lgt-wrap';
+    box.after(wrap);
+  }
+  const f = i => (Array.isArray(fmts) ? fmts[i] : fmts) || fmt;
+  const cell = (i, k, st) => `<td>${st ? escA(f(i)(st[k])) : '\u2014'}</td>`;
+  wrap.innerHTML = `<table class="lgt"><thead><tr><th></th><th>Name</th><th>Max</th><th>Mean</th><th>Last</th></tr></thead><tbody>` +
+    dss.map((d, i) => {
+      const st = seriesStats(d.data);
+      const c = Array.isArray(d.borderColor) ? d.borderColor[0] : (d.borderColor || d.backgroundColor);
+      const off = typeof chart.isDatasetVisible === 'function' && !chart.isDatasetVisible(i);
+      return `<tr data-i="${i}"${off ? ' class="off"' : ''}><td><i style="background:${escA(String(c))}"></i></td>` +
+        `<td><button type="button" aria-pressed="${off ? 'false' : 'true'}">${escA(d.label || 'series ' + (i+1))}</button></td>` +
+        cell(i,'max',st) + cell(i,'mean',st) + cell(i,'last',st) + `</tr>`;
+    }).join('') + `</tbody></table>`;
+  const toggle = tr => {
+    const i = +tr.dataset.i, on = !chart.isDatasetVisible(i);
+    chart.setDatasetVisibility(i, on); chart.update();
+    tr.classList.toggle('off', !on);
+    tr.querySelector('button').setAttribute('aria-pressed', on ? 'true' : 'false');
+  };
+  wrap.onclick = e => { const tr = e.target.closest('tr[data-i]'); if (tr) toggle(tr); };
+  wrap.onkeydown = e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+    e.preventDefault(); toggle(tr);
+  };
+  // Firefox fires the Space click on keyup; keydown already toggled.
+  wrap.onkeyup = e => { if (e.key === ' ') e.preventDefault(); };
+}
 
 function agg(rows, keyFn, valFn){
   const m=new Map(); rows.forEach(r=>{const k=keyFn(r); m.set(k,(m.get(k)||0)+(+valFn(r)||0));});
@@ -4000,7 +4063,7 @@ function renderBandwidthPanel(p, inR){
      borderColor:'#38bdf8', backgroundColor:'#38bdf8', pointRadius:3, tension:.3, yAxisID:'y1', order:1},
     {label:'LAN', type:'line', data:days.map(d => sum('lan_up_bytes', by(d)) + sum('lan_down_bytes', by(d))),
      borderColor:MU, backgroundColor:MU, borderDash:[4,3], pointRadius:2, tension:.3, yAxisID:'y1', order:1},
-  ], {plugins:{legend:{labels:{boxWidth:8}},
+  ], {lgt:fmtB, plugins:{legend:{labels:{boxWidth:8}},
        tooltip:{callbacks:{title:c => days[c[0].dataIndex],
                            label:c => `${c.dataset.label}: ${fmtB(c.parsed.y)}`}}},
       scales:{x:{grid:{display:false}},
@@ -4395,7 +4458,7 @@ function render(){
      borderColor:AC,backgroundColor:AC+'22',fill:true,tension:.3,yAxisID:'y'},
     {label:'tokens',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0)),
      borderColor:PAL[1],tension:.3,yAxisID:'y1'}],
-    {plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
+    {lgt:[v=>Math.round(v).toLocaleString(), fmt],plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
      y1:{position:'right',grid:{display:false},ticks:{callback:v=>fmt(v)}}}});
 
   const bt=agg(rows,r=>r.task,r=>r.calls);
@@ -5344,7 +5407,7 @@ function renderConcurrency(concurrency, fromDate, toDate){
       {label: 'queue depth (now)', data: rows.map(() => queueNow), type: 'line',
        borderColor: '#c66a6a', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
     ],
-    {plugins: {legend: {labels: {boxWidth: 8}}},
+    {lgt: v => Math.round(v).toLocaleString(), plugins: {legend: {labels: {boxWidth: 8}}},
      scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
 }
 
@@ -7207,9 +7270,14 @@ function renderLive(){
      [{data:tr.map(x=>x.calls),backgroundColor:tr.map(x=>toolColor(x.tool)),borderRadius:2}],
      {...noLeg,indexAxis:'y',scales:{x:{grid:{color:BD}},y:{grid:{display:false},ticks:{font:{size:9}}}}});
 
+  renderHomeSeries(p);
 
 }
 
+// Home time-series: calls and tokens per hour for the last 6 hours, from the
+// hour-grain rows already in the page payload (p.hour_rows, local-time buckets).
+// A bucket with no rows plots as 0 — that is what the data says. Reuses the
+// shared mk() factory and legend table; no new collector.
 const GAUGE_PREV = new Map();   // stable id -> previous value-arc offset, for the sweep
 
 // Grafana-style arc gauge, shared by the load dial (.loe) and the KPI rings:
@@ -7379,6 +7447,39 @@ function mergeDelegations(list){
 // Synthetic "All" profile: every real profile merged, so the first tab answers
 // "what is my whole setup doing / costing" without switching back and forth.
 // Built client-side from DATA so it always matches what the tabs show.
+const HOME_HOURS = 6;
+function homeSeries(p, now){
+  const end = new Date(now); end.setMinutes(0, 0, 0);
+  const keys = [], labels = [];
+  for (let k = HOME_HOURS - 1; k >= 0; k--){
+    const d = new Date(end.getTime() - k*3600e3);
+    keys.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}|${d.getHours()}`);
+    labels.push(String(d.getHours()).padStart(2,'0') + ':00');
+  }
+  const calls = keys.map(() => 0), tokens = keys.map(() => 0);
+  (p.hour_rows || []).forEach(r => {
+    const i = keys.indexOf(`${r.date}|${+r.hour}`);
+    if (i < 0) return;
+    calls[i] += +r.calls || 0;
+    tokens[i] += (+r.inp || 0) + (+r.outp || 0);
+  });
+  return {labels, calls, tokens};
+}
+function renderHomeSeries(p){
+  if (!$('cHome6h')) return;
+  const s = homeSeries(p, Date.now());
+  const fill = c => c + '1a';
+  mk('cHome6h', 'line', s.labels, [
+    {label:'Calls', data:s.calls, borderColor:PAL[0], backgroundColor:fill(PAL[0]), fill:true,
+     tension:.3, pointRadius:0, borderWidth:1.5, yAxisID:'y'},
+    {label:'Tokens', data:s.tokens, borderColor:PAL[2], backgroundColor:fill(PAL[2]), fill:true,
+     tension:.3, pointRadius:0, borderWidth:1.5, yAxisID:'y1'}],
+    {lgt:[v => Math.round(v).toLocaleString(), fmt], interaction:{mode:'index', intersect:false},
+     ...(motionReduced() ? {animation:false} : {}),
+     scales:{x:{grid:{display:false}}, y:{position:'left', beginAtZero:true, grid:{color:BD}},
+       y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{callback:v => fmt(v)}}}});
+}
+
 function buildAll(profiles){
   // Only merge real profiles — skip any already-merged 'All' key to prevent
   // the cost/call totals from doubling every time installAll is re-called.
