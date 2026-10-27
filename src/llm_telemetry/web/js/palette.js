@@ -11,10 +11,10 @@ import { DATA, css } from './main.js';
 export let AC, MU, BD, FG;
 export function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
   Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
-// Chart category palette — the calm pastel set (see tokens.css). Muted
-// washes keep long sessions of dashboard-reading calm; order spreads hues so
-// adjacent series stay distinguishable.
-export const PAL = ['#818cb4','#6eaa8c','#c4a06e','#c47c8c','#7c909c','#a8a29e','#9a86b8','#84a893','#baa984','#7fa3b5'];
+// Chart category palette — the Grafana classic set, saturated enough to read
+// on the dark panel (#181b1f) and on white. Order spreads hues so adjacent
+// series stay distinguishable.
+export const PAL = ['#5794f2','#73bf69','#ff9830','#b877d9','#f2cc0c','#8ab8ff','#f2495c','#705da0','#37872d','#fade2a'];
 
 // Small line-icon set (Feather-style paths, stroke=currentColor) for KPI/nav
 // badges — real vector glyphs read as considerably more "designed" than a

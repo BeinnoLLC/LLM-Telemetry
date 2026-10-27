@@ -14,8 +14,12 @@
  * #141A17, deep green-grey cards #1C2320, accent #5AA276. Hairline borders
  * (.12 alpha) instead of outlines; NO gradients, NO glow.
  *
- * 2026-10-10 (3rd pass): LIGHT is the default (Hazem's decision), reached by
- * toggling: dark only mounts as [data-theme="dark"]. The light block is
+ * 2026-10-27 (Grafana G1): DARK is now the default and the accent is Grafana
+ * blue (#6e9fff dark / #1f62c9 light). The :root block is still light; dark
+ * mounts as [data-theme="dark"] (set by the pre-paint script and main.js
+ * unless the saved preference is 'light'). Semantic --z-* and --kind-* are unchanged.
+ * 2026-10-10 (3rd pass, superseded): LIGHT was the default; dark only mounted as
+ * [data-theme="dark"]. The light block is
  * declared as ":root, [data-theme=light]" so naming light explicitly resolves
  * to exactly the same values as the default.
  *
@@ -37,9 +41,9 @@
   --fg:#1a201c;
   --muted:#6f746f;
   --border:rgba(26,32,28,.12);
-  --accent:#3f8358;
+  --accent:#1f62c9;
   --accent-ink:#ffffff;
-  --accent-wash:rgba(63,131,88,.11);
+  --accent-wash:rgba(31,98,201,.10);
   --accent2:#7d9bab;
 
   /* pastel washes on white cards */
@@ -74,7 +78,7 @@
   --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
   --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
   --fb-h:32px;
-  --fb-r:6px;
+  --fb-r:4px;
   --kind-hermes:hsl(199 60% 56%);
   --kind-pi:hsl(265 55% 64%);
   --kind-claude:hsl(18 70% 60%);
@@ -82,23 +86,23 @@
 }
 
 [data-theme="dark"]{
-  /* base surfaces: green-grey night values, not pure neutral */
-  --bg:#141a17;
-  --card:#1c2320;
-  --fg:#e6e9e6;
-  --muted:#98a29b;
-  --border:rgba(230,233,230,.12);
-  /* the single calm accent: muted emerald, same family as the reference */
-  --accent:#5aa276;
-  --accent-ink:#0f1712;          /* text/icon on accent fills */
-  --accent-wash:rgba(90,162,118,.14);
-  --accent2:#7d9bab;             /* muted steel blue — charts' secondary */
+  /* base surfaces: Grafana neutral blue-grey night values */
+  --bg:#111217;
+  --card:#181b1f;
+  --fg:#ccccdc;
+  --muted:#8e8f9a;
+  --border:#2c2e33;
+  /* the single calm accent: Grafana blue */
+  --accent:#6e9fff;
+  --accent-ink:#0b0c0e;          /* text/icon on accent fills */
+  --accent-wash:rgba(110,159,255,.14);
+  --accent2:#b877d9;             /* muted steel blue — charts' secondary */
 
   /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
-  --wash-indigo:rgba(129,140,180,.14);
-  --wash-rose:rgba(196,124,140,.15);
-  --wash-slate:rgba(124,144,156,.15);
-  --wash-amber:rgba(196,160,110,.15);
+  --wash-indigo:rgba(87,148,242,.14);
+  --wash-rose:rgba(242,73,92,.14);
+  --wash-slate:rgba(204,204,220,.08);
+  --wash-amber:rgba(255,152,48,.14);
   --wash-mint:rgba(110,170,140,.14);
 
   /* status hues, desaturated to match */
@@ -110,9 +114,9 @@
   --z-bad-fg:#f7e3e3;
 
   /* solid chart pastels (fills for Chart.js) */
-  --pal-indigo:#818cb4;
-  --pal-rose:#c47c8c;
-  --pal-slate:#7c909c;
-  --pal-amber:#c4a06e;
+  --pal-indigo:#5794f2;
+  --pal-rose:#f2495c;
+  --pal-slate:#8ab8ff;
+  --pal-amber:#ff9830;
   --pal-mint:#6eaa8c;
 }
