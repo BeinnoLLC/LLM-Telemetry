@@ -230,6 +230,7 @@ __DASHBOARD_CSS__
     <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
   </div>
+  <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
        more work", which you ask after seeing what is running, not before. -->
   <div class="card p-4 mt-3" id="olcard" hidden>
