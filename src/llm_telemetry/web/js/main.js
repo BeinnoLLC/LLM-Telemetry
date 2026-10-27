@@ -147,9 +147,12 @@ export function installAll(){
 // still collected regardless of visibility. Kept in one place so the boot
 // path, the merge and the tab strip all consult it.
 export const saved = localStorage.getItem('hermes-dash-theme');
-// Since the light-default flip, :root IS light; dark mounts via the explicit
-// [data-theme="dark"] attribute. The saved value is honoured either way.
-if(saved==='dark'){document.documentElement.setAttribute('data-theme','dark');readTheme()}
+// Dark is the default (Grafana look); only an explicit saved 'light' opts out.
+// :root IS light, so dark mounts via the [data-theme="dark"] attribute (the
+// pre-paint script in <head> already set it to avoid a light flash).
+if(saved==='light') document.documentElement.removeAttribute('data-theme');
+else document.documentElement.setAttribute('data-theme','dark');
+readTheme();
 $('theme').onclick = () => {
   const dark = document.documentElement.getAttribute('data-theme')==='dark';
   if(dark) document.documentElement.removeAttribute('data-theme');

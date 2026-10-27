@@ -23,7 +23,7 @@ function boot(theme) {
     },
   });
 }
-const light = boot(null), dark = boot('dark');
+const light = boot('light'), dark = boot(null);  // dark is the default (no saved theme)
 let pass = 0, fail = 0;
 const chk = (ok, label, extra) => {
   console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${label}${extra ? '  ' + extra : ''}`);
@@ -31,7 +31,7 @@ const chk = (ok, label, extra) => {
 };
 setTimeout(() => {
   const L = light.window.Chart.defaults, D = dark.window.Chart.defaults;
-  chk(dark.window.document.documentElement.getAttribute('data-theme') === 'dark', 'saved dark theme is applied on load');
+  chk(dark.window.document.documentElement.getAttribute('data-theme') === 'dark', 'dark (the default) is applied on load');
   chk(!!L.borderColor && !!D.borderColor, 'gridline colour is read in both themes', `light=${L.borderColor} dark=${D.borderColor}`);
   chk(D.borderColor !== L.borderColor, 'dark reload gridlines use the dark border, not the light one');
   chk(D.color !== L.color, 'dark reload tick colour uses the dark muted, not the light one');
