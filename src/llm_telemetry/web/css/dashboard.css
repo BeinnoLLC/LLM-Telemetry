@@ -202,7 +202,7 @@
  .grid-auto{display:grid;gap:var(--gap);
    grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  .grid-kpi{display:grid;gap:10px;
-   grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))}
+   grid-template-columns:repeat(auto-fit,minmax(min(144px,100%),1fr))}
  /* #182: Home's live scorecards. Exactly four, so fixed 4-up tracks rather
     than auto-fit (auto-fit would leave a 3+1 orphan at mid widths); 2-up on
     tablets/phones and 1-up only on the narrowest. Calm palette (#153): the
@@ -1028,8 +1028,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    in the strip — number or ring — finishes at the same baseline; the ring
    card centres its gauge+label inside that fixed-height body. */
 .kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
+/* LST-252: titles wrap inside the 36px header instead of escaping the card */
 .kpi-name{font-size:var(--fs-xs);font-weight:700;letter-spacing:.01em;
-  color:var(--muted);text-transform:uppercase;white-space:nowrap}
+  color:var(--muted);text-transform:uppercase;
+  min-width:0;overflow-wrap:anywhere;hyphens:auto;line-height:1.15}
 .kpi-num{flex:1;display:flex;align-items:flex-start}
 .kpi-num > div{line-height:1}
 .kpi-big{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.015em;
