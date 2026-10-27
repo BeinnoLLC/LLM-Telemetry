@@ -88,6 +88,13 @@ setTimeout(() => {
         kpiNameRule || 'rule not found');
     }
 
+    // Cards must not shrink so far that a bold 11-12px word (PROGRESS ~62px)
+    // no longer fits beside the 36px badge: 130px left ~53px and broke
+    // mid-word at ~1000-1024px. Keep the grid minimum >= 144px.
+    const gm = html.match(/\.grid-kpi\{[^}]*minmax\(min\((\d+)px,100%\),1fr\)/);
+    chk(!!gm && +gm[1] >= 144, '.grid-kpi card minimum >= 144px (no mid-word breaks)',
+      gm ? gm[1] + 'px' : 'rule not found');
+
     // The rendered strip: every title carries its full text as the hover
     // tooltip, so the full label is always available.
     const names = [...d.querySelectorAll('#kpis .kpi-name')];
