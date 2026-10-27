@@ -80,6 +80,28 @@ setTimeout(() => {
     chk(total === hermesN + 4, 'KPI total = Hermes + Pi + Claude + Codex', `${total} vs ${hermesN + 4}`);
     chk(chip('claude') === 2 && chip('codex') === 1 && chip('pi') === 1 && chip('hermes') === hermesN, 'KPI per-kind chips',
       ['claude', 'codex', 'pi', 'hermes'].map(chip).join('/'));
+    // Labelled chips: readable label "N Claude" etc., kind-coloured dot, KIND_ORDER, no zero kinds.
+    const chipEls = [...kpi().querySelectorAll('.kpi-kind')];
+    const chipText = e => e.textContent.replace(/\s+/g, ' ').trim();
+    const wantOrder = ['hermes', 'pi', 'claude', 'codex'].filter(k => chip(k));
+    chk(chipEls.map(e => e.dataset.kind).join(',') === wantOrder.join(','), 'chips follow KIND_ORDER, zero kinds omitted', chipEls.map(e => e.dataset.kind).join(','));
+    chk(/2\s*Claude/.test(kpi().textContent) && /1\s*Codex/.test(kpi().textContent), 'KPI chips have labelled text with counts', kpi().textContent.trim());
+    chk(chipText(chipEls[0]).match(/\d+ (Hermes|Pi)/), 'first chip is the lowest KIND_ORDER kind with words', chipText(chipEls[0]));
+    chk(chipEls.every(e => e.querySelector('.kpi-dot')), 'every chip has a kind-coloured dot');
+    chk(chipEls.every(e => e.querySelector('.kpi-dot').style.background === `var(--kind-${e.dataset.kind})`), 'dot colour follows the --kind-* token');
+    const words = /Claude/.test(kpi().textContent) && /Codex/.test(kpi().textContent) && /PI/.test(kpi().textContent) && /Hermes/.test(kpi().textContent);
+    chk(words, 'all four kind names readable in the KPI', kpi().textContent.trim());
+    // Car badges: same kindMeta glyph, kind still named for a11y; Hermes cars stay plain.
+    const badgeCar = k => cars().find(c => c.dataset.kind === k);
+    ['claude', 'codex', 'pi'].forEach(k => {
+      const car = badgeCar(k);
+      const kb = car && car.querySelector('.qt-kb');
+      chk(!!kb && kb.textContent.length > 0, `${k} car carries a kind badge`);
+      chk(!!car && new RegExp(k === 'codex' ? 'Codex' : k === 'claude' ? 'Claude' : 'PI agent').test(car.getAttribute('aria-label') || ''), `${k} car aria-label names the kind`, car && car.getAttribute('aria-label'));
+      chk(!!car && /var\(--kind-/.test(car.style.getPropertyValue('--k') || ''), `${k} car keeps its kind tint`);
+    });
+    const her = badgeCar('hermes');
+    chk(!!her && !her.querySelector('.qt-kb'), 'Hermes car has no kind badge');
     chk(/sessions/i.test(d.querySelector('#livekpis [data-kpi="sessions"]').textContent)
       && Number(d.querySelector('#livekpis [data-kpi="sessions"] .lkpi-num').textContent) === hermesN + 4, 'sessions-in-flight tile agrees');
 

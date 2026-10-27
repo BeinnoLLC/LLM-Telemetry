@@ -138,9 +138,10 @@ export function inProgressHtml(p, piLive, agentLive){
   const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
   inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
   const n = c.hermes + c.pi + c.claude + c.codex;
+  // Labelled chips ("2 Claude"), dot in the kind colour, zero kinds omitted.
   const chips = KIND_ORDER.filter(k => c[k]).map(k => {
     const m = kindMeta(k);
-    return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}" style="color:${m.color}">${m.sig} ${c[k]}</span>`;
+    return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}"><i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>${c[k]} ${esc(m.label)}</span>`;
   }).join('');
   return `<span class="${n ? '' : 'muted'}"${n ? ' style="color:var(--z-ok)"' : ''}>\u25CF</span> ${n}`
     + (chips ? `<span class="kpi-kinds">${chips}</span>` : '');

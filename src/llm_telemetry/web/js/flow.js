@@ -68,7 +68,11 @@ export function trainCar(it){
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
-  if (it.eng){ const b = document.createElement('span'); b.className = 'qt-kb'; b.textContent = kindMeta(it.eng).sig; c.appendChild(b); }
+  if (it.eng && it.eng !== 'hermes'){
+    const m = kindMeta(it.eng), b = document.createElement('span');
+    b.className = 'qt-kb'; b.textContent = m.sig; b.title = m.label + ' agent';
+    c.appendChild(b);
+  }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
   return c;
 }
@@ -90,7 +94,8 @@ export function paintCars(box, items, decorate){
     keep.add(c);
     const l = c.querySelector('.qt-lbl');
     if (l && l.textContent !== it.label) l.textContent = it.label;
-    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}`);
+    const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
+    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}`);
     c._qt = it;
     decorate(c, it, i);
   });
@@ -124,6 +129,24 @@ export function carTip(it){
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
+}
+
+// Fade each line car whole near the frame edge; the old mask chopped labels mid-word.
+let qtFadeRaf = 0;
+export function qtEdgeFade(rb, consist, moving){
+  const clear = () => [...consist.children].forEach(c => { c.style.opacity = ''; });
+  if (typeof cancelAnimationFrame !== 'function' || !rb.clientWidth || !moving){ clear(); return; }
+  cancelAnimationFrame(qtFadeRaf);
+  const fade = () => {
+    const b = rb.getBoundingClientRect();
+    [...consist.children].forEach(c => {
+      const r = c.getBoundingClientRect();
+      const o = Math.min(1, Math.max(0, (r.left - b.left) / 34), Math.max(0, (b.right - r.right) / 34));
+      c.style.opacity = o >= 1 ? '' : o <= 0 ? '0' : o.toFixed(2);
+    });
+    qtFadeRaf = requestAnimationFrame(fade);
+  };
+  qtFadeRaf = requestAnimationFrame(fade);
 }
 
 // Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
@@ -227,6 +250,7 @@ export function paintTrain(queuedAll, runningAll, doneAll){
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
+  qtEdgeFade(rb, consist, nr > 0);
 
   // "+N" past the cap, so the strip never hides real depth.
   [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {

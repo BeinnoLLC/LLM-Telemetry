@@ -887,6 +887,14 @@
   },
   {
    "mod": "flow",
+   "name": "qtFadeRaf"
+  },
+  {
+   "mod": "flow",
+   "name": "qtEdgeFade"
+  },
+  {
+   "mod": "flow",
    "name": "paintTrain"
   },
   {
