@@ -37,10 +37,29 @@ DECL_RE = re.compile(r"^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|cla
                      r"([A-Za-z_$][\w$]*)")
 
 
+# One left-to-right pass so a comment opener is only ever recognised OUTSIDE a
+# string or url(...): those alternatives are matched first and kept verbatim.
+_CSS_TOKEN_RE = re.compile(
+    r"""(?P<keep>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|url\([^)]*\))"""
+    r"""|(?P<comment>/\*.*?\*/)""", re.S | re.I)
+
+
+def strip_css_comments(text):
+    """Drop /* ... */ comments from shipped CSS; nothing else is minified.
+
+    Strings and url(...) bodies are left untouched, and /*! ... */ (license)
+    comments are kept. The source files keep their comments for maintainers.
+    """
+    def repl(m):
+        c = m.group("comment")
+        return c if c is not None and c.startswith("/*!") else (m.group("keep") or "")
+    return _CSS_TOKEN_RE.sub(repl, text)
+
+
 def read_tokens():
     """The shared palette tokens, inlined ahead of every page's stylesheet."""
     with open(TOKENS_PATH, encoding="utf-8") as fh:
-        return fh.read()
+        return strip_css_comments(fh.read())
 
 
 def script_json(obj):
@@ -51,7 +70,7 @@ def script_json(obj):
 def read_css():
     """The stylesheet, inlined into <style> so the page needs no sibling file."""
     with open(CSS_PATH, encoding="utf-8") as fh:
-        return fh.read()
+        return strip_css_comments(fh.read())
 
 
 def read_shell():

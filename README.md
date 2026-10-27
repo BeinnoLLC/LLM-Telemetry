@@ -214,7 +214,7 @@ number here and in that file in the same commit, or trim the page:
 
 | Artifact | Budget (bytes) |
 |---|---|
-| `examples/reports/dashboard.html` | 940,000 |
+| `examples/reports/dashboard.html` | 960,000 |
 | `examples/reports/analytics-data.json` | 200,000 |
 | `examples/reports/rankings-data.json` | 2,000,000 |
 

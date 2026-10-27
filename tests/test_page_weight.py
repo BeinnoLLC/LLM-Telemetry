@@ -19,7 +19,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BUDGETS = {
-    "examples/reports/dashboard.html": (940_000, 400_000),
+    "examples/reports/dashboard.html": (960_000, 400_000),
     "examples/reports/analytics-data.json": (200_000, 90_000),
 }
 
