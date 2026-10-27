@@ -1829,3 +1829,17 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvrow .chip,.lvrow button{min-height:0;min-width:0;justify-content:flex-start;text-align:left}
 .lvrow .lvtitle{display:block}
 .lvrow button.lvtitle{min-width:64px}
+/* No meaningless fragments: a tag/chip either keeps >= 6ch visible or drops out.
+   The cell is one wrapping line of fixed height with overflow hidden, so an item that
+   cannot fit at its min-width wraps to a clipped second line and disappears (its full
+   text stays in title=). The relative time is first and never shrinks. */
+.lvc-act,.lvs2{flex-wrap:wrap;align-content:flex-start;overflow:hidden}
+.lvc-act{height:18px;align-self:center;row-gap:20px}
+.lvs2{height:16px;row-gap:20px}
+.lvc-act>.lvago{flex:none}
+.lvc-act>.lvphase{flex:1 1 6ch;min-width:6ch}
+.lvc-act>.lvtool{flex:0 1 auto;min-width:6ch;max-width:12ch;overflow:hidden;text-overflow:ellipsis}
+.lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl{flex:none;min-width:6ch;max-width:14ch}
+/* beside the title the agent tag keeps >= 6ch: the title gives way, not the tag */
+.lvrow .lvc-sess>.lvtag{flex:none;min-width:6ch;max-width:14ch}
+.lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}

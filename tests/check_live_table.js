@@ -165,6 +165,17 @@ setTimeout(() => {
     chk(/:root:not\(\[data-theme="dark"\]\) \.lvrow:not\(\[data-lvstate=idle\]\) \.lvmodel\{filter:brightness\(\.[1-6]\d*\)\}/.test(html) && /class="lvmodel[^"]*" style="color:[^"]*"/.test(cell(c1, 2).innerHTML),
       'model text is darkened for light only; dark keeps the palette colour (inline colour)');
 
+    // (h) no meaningless fragments: chips/tags keep >= 6ch visible or drop out whole
+    const rule = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); let m, o = ''; while ((m = r.exec(html))) o += m[1] + ';'; return o; };
+    const chOf = (body, prop) => { const m = new RegExp('(?:^|[;{])' + prop + ':\\s*([\\d.]+)ch').exec(body); return m ? +m[1] : 0; };
+    chk(chOf(rule('\\.lvc-act>\\.lvtool'), 'min-width') >= 6, 'activity tool chip has min-width >= 6ch', rule('\\.lvc-act>\\.lvtool'));
+    chk(/flex:1 1 6ch;min-width:6ch/.test(rule('\\.lvc-act>\\.lvphase')), 'activity phase has min-width 6ch');
+    chk(/flex:none/.test(rule('\\.lvc-act>\\.lvago')), 'the relative time never shrinks');
+    const hideOn = sel => { const b = rule(sel); return /flex-wrap:wrap/.test(b) && /overflow:hidden/.test(b); };
+    chk(hideOn('\\.lvc-act,\\.lvs2') && /height:18px/.test(rule('\\.lvc-act')) && /height:16px/.test(rule('\\.lvs2')), 'activity and tag rows wrap in a fixed-height overflow:hidden box so a chip that does not fit drops out');
+    chk(chOf(rule('\\.lvrow \\.lvs2>\\.lvtag,\\.lvrow \\.lvs2>\\.lvcatl'), 'min-width') >= 6 && chOf(rule('\\.lvrow \\.lvc-sess>\\.lvtag'), 'min-width') >= 6, 'agent tag and Hermes category label keep min-width >= 6ch');
+    chk(/max-width:calc\(100% - \d+px\)/.test(rule('\\.lvrow \\.lvc-sess>\\.lvtitle')), 'the session title yields to the agent tag, not the other way round');
+
     // empty state hides the header and shows the empty block
     feed([], [], []);
     chk(d.getElementById('livehead').hidden === true, 'header hidden when nothing is running');
