@@ -54,7 +54,7 @@ setTimeout(() => {
 
     w.eval(`DATA.agent_live = ${JSON.stringify(AGENTS)}; render();`);
     const row = id => d.querySelector(`#livelist [data-agentsession="${id}"]`);
-    const cell = (id, n = 2) => row(id).querySelectorAll('.lvnum')[n];
+    const cell = (id, n = 1) => row(id).querySelectorAll('.lvnum')[n]; // tokens, cost (Elapsed moved to the State cell)
     const c = cell('c-1'), x = cell('x-1');
     chk(c.querySelector('.lvcov') && c.textContent.includes('$123.46'), 'claude cost cell shows the API-equivalent value', c.textContent);
     chk(c.querySelector('.lvsubb') && c.querySelector('.lvsubb').textContent === 'sub', 'claude cost cell carries the "sub" badge');
@@ -64,7 +64,7 @@ setTimeout(() => {
     const lbl = c.querySelector('.lvcov').getAttribute('aria-label');
     chk(/\$123\.46, API-price equivalent, covered by your Claude subscription/.test(lbl), 'aria-label reads value and coverage', lbl);
     chk(cell('c-2').textContent.trim() === '—' && !cell('c-2').querySelector('.lvsubb'), 'unpriced session shows a dash, no badge');
-    chk(cell('c-1', 1).textContent === '3.6K', 'tokens cell shows in+out (1500+2100)', cell('c-1', 1).textContent);
+    chk(cell('c-1', 0).textContent === '3.6K', 'tokens cell shows in+out (1500+2100)', cell('c-1', 0).textContent);
 
     chk(estCost() === before, 'Est. cost KPI unchanged by subscription-covered sessions', `${before} -> ${estCost()}`);
     chk(!d.getElementById('kpis').textContent.includes('123.46'), 'covered value absent from the KPI row');
