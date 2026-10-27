@@ -15,7 +15,7 @@ const grid=/\.livegrid\{([^}]*)\}/.exec(html);
 ok(!!grid,'.livegrid rule present');
 if(grid){
   ok(/display:grid/.test(grid[1]),'.livegrid is a grid');
-  ok(/grid-template-columns:minmax\(0,2fr\) minmax\(300px,1fr\)/.test(grid[1].replace(/\s+/g,' ')),
+  ok(/grid-template-columns:minmax\(0,3fr\) minmax\(280px,1fr\)/.test(grid[1].replace(/\s+/g,' ')),
      'explicit two-column tracks (not auto-fit)');
 }
 ok(/\.livegrid > \*\{min-width:0\}/.test(html),'children get min-width:0 (prevents overflow)');

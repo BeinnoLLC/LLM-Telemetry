@@ -1314,7 +1314,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     an unreadable column — an 835-1024px LANDSCAPE tablet has the width to
     keep them side by side, so it no longer gets force-stacked. */
  .livegrid{display:grid;gap:var(--gap);align-items:stretch;
-   grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}
+   grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
  .livegrid > *{min-width:0}
  @media(max-width:834px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1357,12 +1357,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    /* KPI strip: 2 columns, 1 below 400px (separate query further down). */
    .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
 
-   /* Live session rows: stack meta under the title instead of a side-by-side
-      row that has no room left once the gauge and tool chips are in it. */
+   /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
+      page itself never does. */
    .livegrid{grid-template-columns:minmax(0,1fr)}
-   #livelist .liverow{flex-direction:column;align-items:flex-start;gap:6px}
-   #livelist .liverow .metacol{width:100%}
-   #livelist .liverow .loecol{align-self:flex-end}
 
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */
@@ -1759,3 +1756,54 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
  .lgt button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
  .lgt tr.off{opacity:.45}
  .lgt tr.off button{text-decoration:line-through}
+
+/* Live board as a compact table panel (G4). The scroller owns both axes so the
+   sticky header and the rows scroll sideways together inside the card. */
+.lvscroll{overflow:auto;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;
+  --lvcols:34px minmax(170px,2.6fr) minmax(84px,1fr) 74px 54px 54px 58px minmax(90px,1.2fr) 138px}
+.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:6px;align-items:center;min-width:816px;padding:0 6px}
+.lvhead{position:sticky;top:0;z-index:2;height:28px;background:var(--card);border-bottom:1px solid var(--border)}
+.lvhead[hidden]{display:none}
+.lvh{font-size:var(--fs-xs);font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
+  display:flex;align-items:center;gap:3px;height:100%;overflow:hidden}
+.lvh.lvnum{justify-content:flex-end}
+.lvh:hover,.lvh[aria-sort]:not([aria-sort=none]){color:var(--fg)}
+.lvh:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lvarr{font-size:8px;width:8px}
+.lvrow{min-height:30px;max-height:32px;border-bottom:1px solid var(--border)}
+.lvc:not(.metacol){font-size:var(--fs-sm)}  /* model size comes from its own utility class, as before */
+.lvrow:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.lvc{min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.lvc-act{gap:6px}
+.lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
+.lvc.metacol{flex-direction:row;align-self:auto;width:auto;text-align:left;gap:6px;justify-content:flex-start}
+.lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.lvtitle{font-weight:600;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;min-width:64px;flex:0 1 auto}
+.lvrow .chip{padding:0 5px;line-height:16px;flex:none;font-size:var(--fs-xs)}
+.lvrow .lmbtn{padding:0;line-height:16px;flex:none}
+.lvrow .pv-badge{flex:none}
+.lvcat{font-size:var(--fs-md);line-height:1;flex:none}
+.lvcatl,.lvsub,.lvswitch,.lvago{font-size:var(--fs-xs);flex:none}
+.lvago{color:var(--muted);font-variant-numeric:tabular-nums}
+.lvswitch{color:var(--z-warn)}
+.lvtag{font-size:var(--fs-xs);padding:0 4px;border-radius:3px;flex:none}
+.lvphase{color:var(--muted);font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.lvtool{font-size:var(--fs-xs);padding:0 4px;border-radius:3px;background:var(--border);color:var(--muted);flex:none}
+.lvst{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-weight:600;padding:0 6px;line-height:18px;
+  border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg)}
+.lvst::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sc)}
+.lvst[data-state=running]{--sc:var(--z-ok)}
+.lvst[data-state=waiting]{--sc:var(--z-warn)}
+.lvst[data-state=idle]{--sc:var(--muted)}
+.lvrow .loecol{width:auto;flex-direction:row;justify-content:flex-end;gap:6px;align-self:auto;margin:0}
+.lvrow .loe{--gauge-size:26px}
+.lvrow .loe .gnum,.lvrow .loe .glbl{display:none}
+.lvpct{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);min-width:26px;text-align:right}
+.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;flex-wrap:nowrap;gap:4px}
+.lvrow + .lmpanel{margin:0;min-width:816px;border-left:0;border-right:0}
+.lvbody{display:block}
+/* The 44px mobile tap-target floor would balloon a 30px table row; inside the
+   table the whole row height is the target, so the floor is lifted here. */
+.lvrow .chip,.lvrow button{min-height:0;min-width:0;justify-content:flex-start;text-align:left}
+.lvrow .lvtitle{display:block}
+.lvrow button.lvtitle{min-width:64px}

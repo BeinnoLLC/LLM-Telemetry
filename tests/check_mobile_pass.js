@@ -81,8 +81,10 @@ setTimeout(() => {
         'KPI strip goes to 2 columns at <=640px');
     chk(/@media\(max-width:400px\)\{[\s\S]{0,200}?\.grid-kpi\{grid-template-columns:1fr\}/.test(html),
         'KPI strip goes to 1 column below 400px');
-    chk(/#livelist \.liverow\{flex-direction:column/.test(html),
-        'Live rows stack meta under the title at mobile width');
+    chk(/\.lvscroll\{overflow:auto;[^}]*min-width:0/.test(html),
+        'live table scrolls inside its own panel (overflow:auto, min-width:0) at every width');
+    chk(!/#livelist \.liverow\{flex-direction:column/.test(html),
+        'live rows no longer stack as cards at mobile width');
     chk(/\.olgrid\{grid-template-columns:1fr\}/.test(html),
         '.olgrid (Ollama host cards) forced to a single column at mobile width (was minmax(310px,1fr))');
     chk(/\.chip, button\{min-height:44px;min-width:44px/.test(html),
