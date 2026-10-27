@@ -463,10 +463,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  .brandmark{color:var(--accent);flex:0 0 auto}
  @media(max-width:640px){.brandmark{width:20px;height:20px}}
- /* Home cards. auto-fit rather than fixed columns so the reflow to 2-up on
-    tablet and 1-up on mobile needs no extra media query. */
- .grid-home{display:grid;gap:var(--gap);
-   grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+ /* Explore strip (LST-178): the old tall landing cards became one compact
+    row per card — icon, title, headline value, one-line blurb. auto-fit
+    keeps the strip wrapping without fixed columns on desktop; the <=480px
+    override below pins the collapse to exactly 2 columns on phones. */
+ .grid-home{display:grid;gap:8px var(--gap);align-items:stretch;
+   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
    transform .12s ease,border-color .12s ease}
@@ -476,6 +478,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .homecard .hc-ico svg{width:18px;height:18px}
  .homecard .hc-stat{font-size:19px;font-weight:650;letter-spacing:-.02em}
  @media(prefers-reduced-motion:reduce){.homecard:hover{transform:none}}
+ /* The compact card chrome (LST-178) lives further down, after the
+    .kpi-badge rules it refines — stylelint's no-descending-specificity
+    requires the base selector first. */
  .grid-2 > *,.grid-auto > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
@@ -1022,6 +1027,36 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kpi-badge{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;flex:none}
 .kpi-badge svg{width:18px;height:18px}
+/* Explore strip compact card (LST-178): a full-row flex link at least 44px
+   tall so the whole card is a tap target (Apple HIG / WCAG 2.5.5 minimum).
+   Long values and blurbs ellipsize instead of wrapping the strip into
+   uneven heights. */
+.xcard{display:flex;align-items:center;gap:10px;padding:9px 12px;
+   min-height:44px}
+.xcard .kpi-badge{width:28px;height:28px;border-radius:8px;flex:none}
+.xcard .kpi-badge svg{width:15px;height:15px}
+.xp-body{flex:1 1 auto;min-width:0}
+.xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
+.xp-title{flex:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs);font-weight:600;
+   letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.xcard .hc-stat:has(.bwup){white-space:normal;overflow-wrap:anywhere;text-align:left}
+.xp-blurb{display:block;margin-top:1px;font-size:var(--fs-xs);color:var(--muted);
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:480px){
+   /* Two pinned columns: auto-fit's 230px floor would drop the strip to a
+      single column at phone widths, wasting half the row for a card that
+      carries one number and one line of text. */
+   .grid-home{grid-template-columns:repeat(2,1fr);gap:8px}
+   .xcard{padding:8px 10px}
+   .xp-row{flex-direction:column;align-items:flex-start;gap:0}
+   .xp-title{flex:0 1 auto}
+   .xcard .hc-stat{text-align:left;max-width:100%}
+   .grid-home > .xcard:last-child:nth-child(odd){grid-column:1/-1}
+   .selwrap,select.chip{max-width:100%;min-width:0}
+   .fb-more kbd{display:none}
+ }
 /* Reference-card structure: badge+name header at the top (vertically
    centered with the icon), big number below it, sparkline trend underneath
    the number as a full-width footer. The card height is set so every card

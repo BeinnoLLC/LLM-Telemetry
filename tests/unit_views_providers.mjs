@@ -786,54 +786,55 @@ const D2 = await load();
   D2.renderHome((d) => d !== '2026-09-01');
   const h = e.homecards.innerHTML;
   eq(count(h, 'data-gohome='), 11, 'renderHome: nine stat cards plus bandwidth are clickable');
-  has(h, '<a class="card p-4 homecard" href="#/flow" data-gohome="Flow">', 'renderHome: cards are real links');
+  has(h, '<a class="card xcard homecard" href="#/flow" rel="noopener noreferrer" data-gohome="Flow"',
+    'renderHome: cards are real links (LST-178: compact strip, rel ships)');
+  eq(count(h, 'rel="noopener noreferrer"'), 11, 'renderHome: rel="noopener noreferrer" on every card');
   // #173: Home IS the live board, so there is no card pointing at itself.
   ok(!h.includes('data-gohome="Live"'), 'renderHome: no self-referential Live card');
-  has(h, '<span class="muted text-[length:var(--fs-xs)] uppercase tracking-wide">Flow</span>',
-    'renderHome: the Flow card is labelled');
-  has(h, '<div class="hc-stat">2 models</div>', 'renderHome: distinct short model names of in-range rows');
-  has(h, '<div class="hc-stat">5 calls</div>', 'renderHome: calls summed over in-range rows');
-  has(h, '<div class="hc-stat">$4.00</div>', 'renderHome: market value to two decimals');
-  has(h, '<div class="hc-stat">90.0% \u00B7 1 recent</div>', 'renderHome: success rate plus recent failures');
-  has(h, '<div class="hc-stat">2 rows</div>', 'renderHome: detail row count');
-  has(h, '<div class="hc-stat">proj-A \u00B7 25% unattributed</div>',
+  has(h, '<span class="xp-title">Flow</span>', 'renderHome: the Flow card is labelled');
+  has(h, '<span class="hc-stat">2 models</span>', 'renderHome: distinct short model names of in-range rows');
+  has(h, '<span class="hc-stat">5 calls</span>', 'renderHome: calls summed over in-range rows');
+  has(h, '<span class="hc-stat">$4.00</span>', 'renderHome: market value to two decimals');
+  has(h, '<span class="hc-stat">90.0% \u00B7 1 recent</span>', 'renderHome: success rate plus recent failures');
+  has(h, '<span class="hc-stat">2 rows</span>', 'renderHome: detail row count');
+  has(h, '<span class="hc-stat">proj-A \u00B7 25% unattributed</span>',
     'renderHome: top project and unattributed share, both derived from the in-range rows');
-  has(h, '<div class="hc-stat">$0.12 / kWh</div>', 'renderHome: tariff from POWER');
-  has(h, '<div class="hc-stat">RS</div>', 'renderHome: router card delegates to routerStat');
-  has(h, '<div class="hc-stat">QS</div>', 'renderHome: quota card delegates to qvStat');
+  has(h, '<span class="hc-stat">$0.12 / kWh</span>', 'renderHome: tariff from POWER');
+  has(h, '<span class="hc-stat">RS</span>', 'renderHome: router card delegates to routerStat');
+  has(h, '<span class="hc-stat">QS</span>', 'renderHome: quota card delegates to qvStat');
   has(h, '>Bandwidth (est.)</span>', 'renderHome: bandwidth card is explicitly an estimate');
   has(h, 'href="#/usage"', 'renderHome: bandwidth deep-links into usage');
   has(h, 'href="#/Prices"', 'renderHome: rates deep-links to the in-app Prices view');
-  has(h, '<div class="hc-stat">Price sheet</div>', 'renderHome: rates card names the price sheet');
-  has(h, '<div class="hc-stat"><span class="bwup">\u2191 150 B</span>',
+  has(h, '<span class="hc-stat">Price sheet</span>', 'renderHome: rates card names the price sheet');
+  has(h, '<span class="hc-stat"><span class="bwup">\u2191 150 B</span>',
     'renderHome: up bytes are live+LAN and labelled as estimated');
   has(h, '<span class="bwdown">\u2193 15 B</span>', 'renderHome: down bytes are live+LAN');
   eq(count(h, 'data-gohome='), 11, 'renderHome: every card names its destination view');
   eq(count(h, 'data-gohome="Detail"'), 1, 'renderHome: destination views keep their display capitalisation');
 
   D2.renderHome((d) => d === '2026-10-01');
-  has(e.homecards.innerHTML, '<div class="hc-stat">1 model</div>', 'renderHome: singular model wording');
-  has(e.homecards.innerHTML, '<div class="hc-stat">2 calls</div>', 'renderHome: the range predicate changes the totals');
-  has(e.homecards.innerHTML, '<div class="hc-stat">$1.00</div>', 'renderHome: and the cost');
-  has(e.homecards.innerHTML, '<div class="hc-stat">1 rows</div>', 'renderHome: the row count is not pluralised');
+  has(e.homecards.innerHTML, '<span class="hc-stat">1 model</span>', 'renderHome: singular model wording');
+  has(e.homecards.innerHTML, '<span class="hc-stat">2 calls</span>', 'renderHome: the range predicate changes the totals');
+  has(e.homecards.innerHTML, '<span class="hc-stat">$1.00</span>', 'renderHome: and the cost');
+  has(e.homecards.innerHTML, '<span class="hc-stat">1 rows</span>', 'renderHome: the row count is not pluralised');
 
   p1.live = ['s1', 's2'];
   p1.failures_recent = [{}, {}];
   D2.renderHome();
-  has(e.homecards.innerHTML, '<div class="hc-stat">90.0% \u00B7 2 recent</div>', 'renderHome: plural recent failures');
-  has(e.homecards.innerHTML, '<div class="hc-stat">3 rows</div>', 'renderHome: no filter -> every row counted');
+  has(e.homecards.innerHTML, '<span class="hc-stat">90.0% \u00B7 2 recent</span>', 'renderHome: plural recent failures');
+  has(e.homecards.innerHTML, '<span class="hc-stat">3 rows</span>', 'renderHome: no filter -> every row counted');
 
   DATA.profiles.p1 = {};
   D2.renderHome();
-  has(e.homecards.innerHTML, '<div class="hc-stat">0 models</div>', 'renderHome: missing profile -> zeros, not a crash');
-  has(e.homecards.innerHTML, '<div class="hc-stat">0 calls</div>', 'renderHome: zero calls');
-  has(e.homecards.innerHTML, '<div class="hc-stat">$0.00</div>', 'renderHome: zero cost');
-  has(e.homecards.innerHTML, '<div class="hc-stat">0 rows</div>', 'renderHome: zero rows');
-  has(e.homecards.innerHTML, '<div class="hc-stat">\u2014</div>',
+  has(e.homecards.innerHTML, '<span class="hc-stat">0 models</span>', 'renderHome: missing profile -> zeros, not a crash');
+  has(e.homecards.innerHTML, '<span class="hc-stat">0 calls</span>', 'renderHome: zero calls');
+  has(e.homecards.innerHTML, '<span class="hc-stat">$0.00</span>', 'renderHome: zero cost');
+  has(e.homecards.innerHTML, '<span class="hc-stat">0 rows</span>', 'renderHome: zero rows');
+  has(e.homecards.innerHTML, '<span class="hc-stat">\u2014</span>',
     'renderHome: no health samples -> an em dash, never NaN%');
-  has(e.homecards.innerHTML, '<div class="hc-stat">No data</div>',
+  has(e.homecards.innerHTML, '<span class="hc-stat">No data</span>',
     'renderHome: no spend -> No data instead of a bogus top project');
-  has(e.homecards.innerHTML, '<div class="hc-stat"><span class="bwup">\u2191 0 B</span>', 'renderHome: zero bytes');
+  has(e.homecards.innerHTML, '<span class="hc-stat"><span class="bwup">\u2191 0 B</span>', 'renderHome: zero bytes');
   DATA.profiles.p1 = p1;
 
   clicks.length = 0; picks.length = 0;
