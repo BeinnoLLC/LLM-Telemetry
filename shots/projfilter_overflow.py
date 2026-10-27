@@ -13,7 +13,7 @@ shots = sys.argv[sys.argv.index("--shots") + 1] if "--shots" in sys.argv else No
 args = [a for a in sys.argv[1:] if not a.startswith("--") and a != shots]
 page_path = args[0] if args else os.path.join(root, "examples/reports/dashboard.html")
 exe = next((p for p in ("/usr/bin/google-chrome", "/snap/bin/chromium") if os.path.exists(p)), None)
-LONG = "/home/someone/workspace/" + "very-long-project-name-" * 8 + "end"
+LONG = "workspace/" + "very-long-project-name-" * 8 + "end"
 LONG = LONG[:200]
 bad = 0
 with sync_playwright() as p:
