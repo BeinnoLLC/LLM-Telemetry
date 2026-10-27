@@ -1,10 +1,10 @@
 // LST-252: KPI stat-card titles overflowed their card boundary. `.kpi-name`
-// was `white-space:nowrap` but had no `min-width:0`/`overflow:hidden`/
-// `text-overflow:ellipsis`, so at 3-up grid widths (or narrow viewports) the
-// uppercase title ("CACHE HIT RATE", "SUCCESS RATE") escaped the card edge
-// instead of truncating. The fix truncates with an ellipsis (same recipe as
-// the home scorecards' `.lkpi-num`) and adds a `title=` attribute carrying
-// the full label. Loads the BUILT dashboard.html.
+// was `white-space:nowrap` with no `min-width:0`, so at 3-up grid widths (or
+// narrow viewports) the uppercase title ("CACHE HIT RATE", "SUCCESS RATE")
+// escaped the card edge. Cards are ~145-155px wide, narrower than the
+// longest title beside the badge, so ellipsis would hide text; the fix lets
+// the title wrap onto two lines inside the 36px header (min-width:0,
+// overflow-wrap:anywhere) and keeps a `title=` attribute with the full label. Loads the BUILT dashboard.html.
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -60,15 +60,16 @@ const dom = boot();
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    // The truncation recipe must be on the title element itself (a flex
+    // The wrap recipe must be on the title element itself (a flex
     // child needs min-width:0 to be allowed to shrink below its content
     // width — the classic CSS overflow culprit the bug was).
     chk(cssSane, '.kpi-name rule present in built dashboard CSS');
+    chk(!kpiNameRule.includes('white-space:nowrap'),
+      '.kpi-name may wrap (no white-space:nowrap)', kpiNameRule);
     const need = [
-      ['white-space:nowrap', 'titles stay single-line'],
       ['min-width:0', 'flex child may shrink below content width'],
-      ['overflow:hidden', 'text cannot escape the card box'],
-      ['text-overflow:ellipsis', 'truncation is visible (ellipsis)'],
+      ['overflow-wrap:anywhere', 'long words break instead of escaping'],
+      ['line-height:1.15', 'two wrapped lines fit the 36px header'],
     ];
     for (const [decl, why] of need) {
       chk(kpiNameRule.includes(decl), `.kpi-name has ${decl} (${why})`,
@@ -76,7 +77,7 @@ setTimeout(() => {
     }
 
     // The rendered strip: every title carries its full text as the hover
-    // tooltip, so truncation never loses information.
+    // tooltip, so the full label is always available.
     const names = [...d.querySelectorAll('#kpis .kpi-name')];
     chk(names.length >= 5, `KPI strip rendered titles (got ${names.length})`);
     let titled = 0, matches = 0;
