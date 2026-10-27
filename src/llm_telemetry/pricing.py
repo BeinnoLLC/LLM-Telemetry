@@ -389,6 +389,23 @@ def _fetch_openrouter(force=False):
         return {}, f"unavailable ({e.__class__.__name__})"
 
 
+_CAT_MEMO = {}
+
+
+def cached_catalog():
+    """The catalogue from disk only (pinned file or the OpenRouter cache,
+    stale or not), never the network: for the 5 s live poll, which must not
+    block on a fetch. {} when there is none; built-in rates then apply."""
+    path = os.environ.get("LLM_TELEMETRY_CATALOG") or CACHE
+    try:
+        mtime = os.path.getmtime(path)
+        if _CAT_MEMO.get("k") != (path, mtime):
+            _CAT_MEMO["k"], _CAT_MEMO["v"] = (path, mtime), json.load(open(path))["models"]
+        return _CAT_MEMO["v"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+
+
 def is_local(model):
     """Local by NAME. A vendor-qualified id ("openai/gpt-oss-120b",
     "qwen/qwen3-coder") is a hosted catalogue model and never local here:

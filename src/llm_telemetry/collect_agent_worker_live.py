@@ -9,7 +9,7 @@ mtime is recent. Discovery globs, per engine:
   codex   $LLM_TELEMETRY_CODEX_HOME  (default ~/.codex)/sessions/Y/M/D/rollout-*.jsonl
 
 Privacy: transcripts hold prompts, replies and tool arguments. Only metadata
-is extracted -- session id, model name, last-event time and a coarse phase (a
+is extracted -- session id, model name, last-event time, token counts and a coarse phase (a
 tool NAME, "thinking", "responding", "idle"). Message text and tool
 input/arguments are never copied into the result; the cwd is read only to
 derive the title (its basename) and the absolute path is never emitted. Models are reported only when the transcript names one (never
@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
+from . import pricing
 from .collect_pi_agents import _iso_to_unix
 
 STALE_WINDOW_S = 180
@@ -80,6 +81,113 @@ def _ts(event: dict[str, Any]) -> Optional[float]:
 
 def _model_str(value: Any) -> Optional[str]:
     return value.strip()[:80] if isinstance(value, str) and value.strip() else None
+
+
+# ---- tokens + subscription-covered API-equivalent cost ----------------------
+#
+# Claude Code and Codex are paid by flat subscription (Claude / ChatGPT plan),
+# so the cost here is the API-PRICE EQUIVALENT of the tokens, marked
+# cost_class "subscription" for the UI to label as covered, never as spend.
+ENGINE_PROVIDER = {"claude": "anthropic", "codex": "openai-codex"}
+_CLAUDE_SCAN: dict[str, dict[str, Any]] = {}
+
+
+def _usage_n(usage: dict[str, Any], key: str) -> int:
+    v = usage.get(key)
+    return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else 0
+
+
+def claude_tokens(path: Path) -> Optional[dict[str, dict[str, int]]]:
+    """Per-model token totals of a Claude Code transcript, {model: {input,
+    output, cache_read, cache_write}}. A message streams as several records
+    sharing message.id, each repeating its usage: the last one per id wins.
+    The file is read incrementally (offset kept per path) as it can be tens
+    of MB and is polled every few seconds."""
+    key = str(path)
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return None
+    st = _CLAUDE_SCAN.get(key)
+    if st is None or size < st["off"]:
+        st = _CLAUDE_SCAN[key] = {"off": 0, "msgs": {}}
+    if size > st["off"]:
+        try:
+            with open(path, "rb") as fh:
+                fh.seek(st["off"])
+                data = fh.read(size - st["off"])
+        except OSError:
+            return None
+        cut = data.rfind(b"\n") + 1
+        st["off"] += cut
+        for line in data[:cut].splitlines():
+            if b'"usage"' not in line:
+                continue
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                continue
+            msg = ev.get("message") if isinstance(ev, dict) else None
+            usage = msg.get("usage") if isinstance(msg, dict) else None
+            if ev.get("type") != "assistant" or not isinstance(usage, dict):
+                continue
+            model = _model_str(msg.get("model"))
+            if not model or model.startswith("<"):
+                continue
+            mid = msg.get("id") or ev.get("uuid") or f"@{st['off']}:{len(st['msgs'])}"
+            st["msgs"][mid] = (model, _usage_n(usage, "input_tokens"),
+                               _usage_n(usage, "output_tokens"),
+                               _usage_n(usage, "cache_read_input_tokens"),
+                               _usage_n(usage, "cache_creation_input_tokens"))
+    out: dict[str, dict[str, int]] = {}
+    for model, i, o, cr, cw in st["msgs"].values():
+        t = out.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0})
+        t["input"] += i
+        t["output"] += o
+        t["cache_read"] += cr
+        t["cache_write"] += cw
+    return out or None
+
+
+def codex_tokens(tail: list[dict[str, Any]], model: Optional[str]) -> Optional[dict[str, dict[str, int]]]:
+    """Codex logs a cumulative total_token_usage in each token_count event, so
+    the newest one in the tail is the session total. Its input_tokens include
+    the cached ones, which are split out here."""
+    for ev in reversed(tail):
+        payload = ev.get("payload")
+        if ev.get("type") != "event_msg" or not isinstance(payload, dict) or payload.get("type") != "token_count":
+            continue
+        info = payload.get("info")
+        u = info.get("total_token_usage") if isinstance(info, dict) else None
+        if isinstance(u, dict):
+            cached = _usage_n(u, "cached_input_tokens")
+            return {model or "": {"input": max(0, _usage_n(u, "input_tokens") - cached),
+                                  "output": _usage_n(u, "output_tokens"),
+                                  "cache_read": cached, "cache_write": 0}}
+    return None
+
+
+def price_tokens(engine: str, by_model: Optional[dict[str, dict[str, int]]]) -> dict[str, Any]:
+    """Row fields for a session: token counts (always when known) and the
+    API-price equivalent from the pricing table (null when a model has no
+    rate, so it never reads as a real $0)."""
+    if not by_model:
+        return {}
+    tot = {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}
+    cost, priced = 0.0, True
+    catalog = pricing.cached_catalog()
+    for model, t in by_model.items():
+        for k in tot:
+            tot[k] += t[k]
+        r = pricing.price_row({"provider": ENGINE_PROVIDER[engine], "model": model,
+                               "input_tokens": t["input"], "output_tokens": t["output"],
+                               "cache_read": t["cache_read"], "cache_write": t["cache_write"]}, catalog)
+        cost += r["market_value_usd"]
+        priced = priced and r["priced"]
+    return {"in_tok": tot["input"], "out_tok": tot["output"],
+            "cache_read_tok": tot["cache_read"], "cache_write_tok": tot["cache_write"],
+            "cost_usd": round(cost, 4) if priced else None,
+            "cost_class": "subscription"}
 
 
 # ---- Claude Code -----------------------------------------------------------
@@ -202,7 +310,7 @@ def parse_codex_session(path: Path) -> Optional[dict[str, Any]]:
         m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$", path.stem)
         sid = m.group(1) if m else path.stem
     return {"session_id": sid, "cwd": cwd or "", "model": model,
-            "last_ts": last_ts, "phase": phase}
+            "last_ts": last_ts, "phase": phase, "tokens": codex_tokens(tail, model)}
 
 
 # ---- discovery + assembly -------------------------------------------------
@@ -247,6 +355,7 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
             s = parse(path)
             if s is None:
                 continue
+            tokens = s.get("tokens") if engine == "codex" else claude_tokens(path)
             last = s["last_ts"] if s["last_ts"] is not None else mtime
             cwd = s["cwd"]
             title = os.path.basename(cwd.rstrip("/")) if cwd else ""
@@ -258,6 +367,7 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
                 "idle_s": round(max(0.0, now - last), 1),
                 "phase": s["phase"],
                 "mtime": mtime,
+                **price_tokens(engine, tokens),
             }
             # One row per engine:session_id (a resumed/forked transcript can
             # repeat an id across files): keep the most recently written.
