@@ -126,6 +126,12 @@ setTimeout(() => {
     chk(!!logoOf(rowBadge('claude')) && !!logoOf(rowBadge('codex')), 'live rows carry claude and codex logos');
     chk(!!rowBadge('pi') && !rowBadge('pi').querySelector('svg'), 'PI live row keeps its glyph');
     chk(new Set([...d.querySelectorAll('svg[data-kindlogo="claude"] path')].map(p => p.getAttribute('d'))).size === 1, 'every Claude logo uses the one shared path');
+    // Legibility: 12px logos read as blobs. Chips, car badges and live rows must render >= 15px.
+    const logoPx = svg => parseFloat(w.getComputedStyle(svg).width);
+    const sized = [['KPI chip', chipEls.filter(isLogo).map(e => e.querySelector('svg[data-kindlogo]'))],
+      ['car badge', ['claude', 'codex'].map(k => badgeCar(k).querySelector('.qt-kb svg[data-kindlogo]'))],
+      ['live row', ['claude', 'codex'].map(k => rowBadge(k).querySelector('svg[data-kindlogo]'))]];
+    sized.forEach(([what, svgs]) => chk(svgs.length === 2 && svgs.every(sv => logoPx(sv) >= 15 && parseFloat(w.getComputedStyle(sv).height) >= 15), `${what} logos render >= 15px`, svgs.map(logoPx).join(',')));
     chk(/sessions/i.test(d.querySelector('#livekpis [data-kpi="sessions"]').textContent)
       && Number(d.querySelector('#livekpis [data-kpi="sessions"] .lkpi-num').textContent) === hermesN + 4, 'sessions-in-flight tile agrees');
 
