@@ -88,7 +88,7 @@ setTimeout(() => {
     const withUptime = live.pi_live.find(s => Number.isFinite(s.uptime_s));
     if (withUptime) {
       const row = rows.find(r => r.dataset.pisession === withUptime.session_id);
-      const el = row && row.querySelector('.lvnum[title^="running since"]');
+      const el = row && row.querySelector('[title^="running since"]');
       chk(!!el && /^\d/.test(el.textContent.trim()) && !/NaN|undefined/.test(el.textContent),
           'a PI session with a known start time shows its elapsed time', el && el.textContent);
     }

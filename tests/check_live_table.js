@@ -23,9 +23,9 @@ const HERMES = [{ id: 'h-1', title: 'Hermes job', model: 'openai/gpt-5', categor
 const PI = [{ session_id: 'pi-1', agent: 'scout', title: 'Pi task', model: 'glm-5', idle_s: 45, uptime_s: 600,
   phase: 'reading', in_tok: 4000, out_tok: 1000, cost_usd: 0.0123 }];
 const AGENTS = [
-  { engine: 'claude', session_id: 'c-1', title: 'alpha', model: 'claude-opus-4-5', idle_s: 12, phase: 'running Bash', cost_usd: 1.5, in_tok: 100, out_tok: 50 },
-  { engine: 'claude', session_id: 'c-2', title: 'gamma', model: 'claude-sonnet-4-5', idle_s: 300, phase: 'idle' },
-  { engine: 'codex', session_id: 'x-1', title: 'beta', model: 'gpt-5-codex', idle_s: 30, phase: 'waiting for approval' },
+  { engine: 'claude', session_id: 'c-1', title: 'alpha', model: 'claude-opus-4-5', idle_s: 12, uptime_s: 2400, phase: 'running Bash', cost_usd: 1.5, in_tok: 100, out_tok: 50 },
+  { engine: 'claude', session_id: 'c-2', title: 'gamma', model: 'claude-sonnet-4-5', idle_s: 300, uptime_s: 7200, phase: 'idle' },
+  { engine: 'codex', session_id: 'x-1', title: 'beta', model: 'gpt-5-codex', idle_s: 30, uptime_s: 300, phase: 'waiting for approval' },
 ];
 
 const dom = new JSDOM(html, {
@@ -52,32 +52,36 @@ setTimeout(() => {
     const key = r => r.dataset.agentsession || r.dataset.pisession || 'h';
     const cell = (r, i) => r.children[i];
 
-    // (a) one row per session, nine cells, the right content in each
+    // (a) one row per session, eight cells (Elapsed on the State cell's second line), the right content in each
     chk(rows().length === 5, 'N live sessions in -> N table rows', rows().length);
-    chk(rows().every(r => r.children.length === 9 && r.getAttribute('role') === 'row'), 'every row has nine cells and role=row');
+    chk(rows().every(r => r.children.length === 8 && r.getAttribute('role') === 'row'), 'every row has eight cells and role=row');
     const head = d.getElementById('livehead');
     const heads = [...head.querySelectorAll('[role=columnheader]')];
-    chk(heads.length === 9 && !head.hidden, 'sticky header has nine column headers', heads.length);
+    chk(heads.length === 9 && !head.hidden, 'sticky header has nine sortable column headers', heads.length);
+    chk(head.children.length === 8 && head.querySelector('.lvhgrp [data-sort=state]') && head.querySelector('.lvhgrp [data-sort=elapsed]'), 'header has eight grid tracks; Elapsed sits under State in the same track', head.children.length);
     chk(heads.map(h => h.dataset.sort).join() === 'kind,session,model,state,elapsed,tokens,cost,activity,load', 'header columns in spec order');
     chk(heads.every(h => h.getAttribute('aria-sort') === 'none' && h.tabIndex === 0), 'headers start unsorted and are focusable');
     const byId = id => rows().find(r => key(r) === id);
     const c1 = byId('c-1'), cx = byId('x-1'), cidle = byId('c-2'), pi = byId('pi-1'), hm = byId('h');
     chk(c1 && cell(c1, 1).textContent.includes('alpha') && cell(c1, 2).textContent.includes('opus-4-5'), 'claude row: session + model cells');
-    chk(c1 && cell(c1, 3).textContent.trim() === 'Running' && cx && cell(cx, 3).textContent.trim() === 'Waiting'
-      && cidle && cell(cidle, 3).textContent.trim() === 'Idle', 'state pill reads Running / Waiting / Idle');
+    const elTxt = r => { const e = r && r.querySelector('.lvc-state .lvel'); return e ? e.textContent.trim() : null; };
+    const pill = r => r.querySelector('.lvst').textContent.trim();
+    chk(c1 && pill(c1) === 'Running' && cx && pill(cx) === 'Waiting'
+      && cidle && pill(cidle) === 'Idle', 'state pill reads Running / Waiting / Idle');
     chk(c1 && cell(c1, 3).querySelector('.lvst[data-state=running]') && cx.querySelector('.lvst[data-state=waiting]')
       && cidle.querySelector('.lvst[data-state=idle]'), 'state pills carry data-state for the semantic colours');
-    chk(c1 && cell(c1, 5).textContent.trim() === '150' && cell(c1, 6).textContent.trim() === '$1.50', 'claude row: tokens and cost cells', cell(c1, 5).textContent + '|' + cell(c1, 6).textContent);
-    chk(pi && cell(pi, 4).textContent.trim() === ago(600) && cell(pi, 5).textContent.trim() === '5.0K' && cell(pi, 6).textContent.trim() === '$0.0123',
-      'pi row: elapsed, tokens, cost cells', [4, 5, 6].map(i => cell(pi, i).textContent.trim()).join('|'));
-    chk(cx && cell(cx, 5).textContent.trim() === '—' && cell(cx, 6).textContent.trim() === '—', 'missing tokens/cost render as an em dash');
-    chk(hm && cell(hm, 7).textContent.includes('editing') && cell(hm, 7).textContent.includes('20s ago') && hm.querySelectorAll('.lvtool').length === 2,
-      'hermes row: last-activity cell has idle time, phase and tool chips', cell(hm, 7).textContent);
-    chk(hm && cell(hm, 5).textContent.trim() === '1.0K', 'hermes row: tokens from its model breakdown', cell(hm, 5).textContent);
-    chk(hm && cell(hm, 8).querySelector('[role=meter]') && /%$/.test(cell(hm, 8).textContent.trim()), 'hermes row: load cell keeps the gauge and a visible percent');
+    chk(c1 && cell(c1, 4).textContent.trim() === '150' && cell(c1, 5).textContent.trim() === '$1.50', 'claude row: tokens and cost cells', cell(c1, 4).textContent + '|' + cell(c1, 5).textContent);
+    chk(pi && elTxt(pi) === ago(600) && cell(pi, 4).textContent.trim() === '5.0K' && cell(pi, 5).textContent.trim() === '$0.0123',
+      'pi row: elapsed (State cell line two), tokens, cost cells', [3, 4, 5].map(i => cell(pi, i).textContent.trim()).join('|'));
+    chk(c1 && cell(c1, 3).querySelector('.lvst') && elTxt(c1) === ago(2400) && elTxt(hm) === '—', 'Elapsed shows on the second line of the State cell (muted .lvel); an em dash when unknown');
+    chk(cx && cell(cx, 4).textContent.trim() === '—' && cell(cx, 5).textContent.trim() === '—', 'missing tokens/cost render as an em dash');
+    chk(hm && cell(hm, 6).textContent.includes('editing') && cell(hm, 6).textContent.includes('20s ago') && hm.querySelectorAll('.lvtool').length === 2,
+      'hermes row: last-activity cell has idle time, phase and tool chips', cell(hm, 6).textContent);
+    chk(hm && cell(hm, 4).textContent.trim() === '1.0K', 'hermes row: tokens from its model breakdown', cell(hm, 4).textContent);
+    chk(hm && cell(hm, 7).querySelector('[role=meter]') && /%/.test(cell(hm, 7).textContent), 'hermes row: load cell keeps the gauge and a visible percent');
     chk(!/NaN|undefined|null/.test(d.getElementById('livelist').textContent), 'no NaN/undefined/null anywhere in the table');
     const num = [...rows()[0].querySelectorAll('.lvnum')];
-    chk(num.length === 3 && num.every(c => w.getComputedStyle(c).textAlign === 'right'), 'number cells are right-aligned', num.length);
+    chk(num.length === 2 && num.every(c => w.getComputedStyle(c).textAlign === 'right'), 'number cells are right-aligned', num.length);
     chk(rows().every(r => w.getComputedStyle(r).display === 'grid'), 'rows are grid rows (single line, not stacked cards)');
 
     // (b) brand logos kept at >= 15px
@@ -109,7 +113,7 @@ setTimeout(() => {
     chk([...head.querySelectorAll('[aria-sort]')].filter(h => h.getAttribute('aria-sort') !== 'none').length === 1, 'only one header carries a sort at a time');
     hd('state').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     chk(hd('tokens').getAttribute('aria-sort') === 'none' && hd('state').getAttribute('aria-sort') === 'ascending'
-      && cell(rows()[0], 3).textContent.trim() === 'Running' && cell(rows()[4], 3).textContent.trim() === 'Idle', 'sorting another column moves the sort; Running before Idle', order());
+      && pill(rows()[0]) === 'Running' && pill(rows()[4]) === 'Idle', 'sorting another column moves the sort; Running before Idle', order());
     const sortedOrder = order();
     feed(HERMES, PI, AGENTS);
     chk(order() === sortedOrder && hd('state').getAttribute('aria-sort') === 'ascending', 'a refresh keeps the active sort');
@@ -133,8 +137,14 @@ setTimeout(() => {
     const scs = w.getComputedStyle(sc);
     chk((scs.overflow === 'auto' || scs.overflowX === 'auto') && scs.minWidth === '0px', 'the table scrolls inside .lvscroll (overflow:auto, min-width:0)', `${scs.overflow}/${scs.overflowX}/${scs.minWidth}`);
     chk(sc.closest('.card') && w.getComputedStyle(sc.closest('.card')).minWidth === '0px', 'the card around it can shrink (min-width:0)');
-    const mw = /\.lvhead,\.lvrow\{[^}]*min-width:(\d+)px/.exec(html);
-    chk(mw && +mw[1] >= 816, 'rows and header share one min-width so they scroll together', mw && mw[1]);
+    // fit: no forced min-width on the table at desktop widths; only below 1024px the rows share one min-width and scroll together
+    const bare = html.replace(/@media\(max-width:1023px\)\{[^@]*?\}\}/g, '');
+    const mwAll = [...bare.matchAll(/(?:^|\})\s*(\.lvhead,\.lvrow|\.lvrow \+ \.lmpanel)\{(?:[^}]*?[;\s])?min-width:(\d+)px/gm)].map(m => m[1] + '=' + m[2]);
+    chk(mwAll.length === 0, 'no min-width on the table rows/header/panel at >= 1024px (no sideways scroll at 1280/1440)', mwAll.join());
+    const mob = /@media\(max-width:1023px\)\{\.lvhead,\.lvrow\{min-width:(\d+)px\}/.exec(html);
+    chk(mob && +mob[1] >= 600 && +mob[1] <= 900, 'below 1024px the rows and header share one min-width (<= 900px) so they scroll together inside the panel', mob && mob[1]);
+    const anyMin = [...html.matchAll(/\.lv(?:head|row|scroll|c|h)[^{}]*\{(?:[^}]*?[;\s])?min-width:(\d+)px/gm)].map(m => +m[1]);
+    chk(anyMin.every(n => n <= 900), 'no .lv* rule sets a min-width above 900px', anyMin.join());
     chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
     const r0s = w.getComputedStyle(rows()[0]);
     chk(parseFloat(r0s.minHeight) >= 48, 'row min-height is >= 48px', r0s.minHeight);
@@ -146,7 +156,7 @@ setTimeout(() => {
     chk(fsOf('\\.lvc:not\\(\\.metacol\\)') >= 14 && fsOf('\\.lvrow \\.lvmodel') >= 14, 'body text (cells, model id) is >= 14px', fsOf('\\.lvc:not\\(\\.metacol\\)') + '/' + fsOf('\\.lvrow \\.lvmodel'));
     chk(fsOf('\\.lvrow \\.lvtitle') >= 14 && fsOf('\\.lvrow \\.lvtitle') <= 15 && /\.lvrow \.lvtitle\{[^}]*font-weight:600/.test(html), 'session title is 14-15px semibold', fsOf('\\.lvrow \\.lvtitle'));
     chk([fsOf('\\.lvphase'), fsOf('\\.lvcatl,\\.lvsub,\\.lvswitch,\\.lvago'), fsOf('\\.lvtool'), fsOf('\\.lvtag')].every(n => n >= 12.5), 'secondary text (phase, time, chips, tags) is >= 12.5px', [fsOf('\\.lvphase'), fsOf('\\.lvtool'), fsOf('\\.lvtag')].join('/'));
-    const hdCss = /\.lvh\{([^}]*)\}/.exec(html)[1];
+    const hdCss = /(?:^|\})\s*\.lvh\{([^}]*)\}/m.exec(html)[1];
     chk(/font-size:(12|12\.5|13)px/.test(hdCss) && /text-transform:uppercase/.test(hdCss) && /color:var\(--muted\)/.test(hdCss), 'header is 12-13px uppercase muted', hdCss.slice(0, 120));
     chk(parseFloat(w.getComputedStyle(head).height) >= 32 || /\.lvhead\{[^}]*height:(3[2-9]|4\d)px/.test(html), 'header row is >= 32px tall');
     chk(/@media\(prefers-reduced-motion:reduce\)\{\.lvrow\{transition:none\}\}/.test(html), 'row hover transition is switched off for prefers-reduced-motion');
@@ -161,12 +171,31 @@ setTimeout(() => {
 
     // (f) names stay whole: the narrow columns shrink to their content width and
     // Last activity is the one that gives way; the model cell has no small cap
+    const rule = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); let m, o = ''; while ((m = r.exec(html))) o += m[1] + ';'; return o; };
     const cols = (/--lvcols:([^}]+)\}/.exec(html) || [, ''])[1].trim().split(/\s+(?![^(]*\))/);
     const minPx = t => { const m = /^(?:minmax\()?(\d+)px/.exec(t); return m ? +m[1] : NaN; };
-    chk(cols.length === 9, '--lvcols defines nine tracks', cols.join(' '));
-    chk([0, 3, 4, 5, 6, 8].every(i => /^\d+px$/.test(cols[i])), 'Kind/State/Elapsed/Tokens/Cost/Load are fixed to their content width', cols.join(' '));
-    chk(minPx(cols[2]) >= 132 && minPx(cols[1]) >= 164, 'Model track >= 132px (18ch) and Session track >= 164px', cols[1] + ' ' + cols[2]);
-    chk(/fr\)$/.test(cols[7]) && minPx(cols[7]) <= 80 && minPx(cols[7]) < minPx(cols[2]) && minPx(cols[7]) < minPx(cols[1]), 'Last activity is the flexible, smallest-min column (truncates first)', cols[7]);
+    chk(cols.length === 8, '--lvcols defines eight tracks (Elapsed rides on the State cell)', cols.join(' '));
+    chk([0, 3, 4, 5, 7].every(i => /^\d+px$/.test(cols[i])), 'Kind/State/Tokens/Cost/Load are fixed to their content width', cols.join(' '));
+    chk(/fr\)$/.test(cols[1]) && /fr\)$/.test(cols[2]) && /fr\)$/.test(cols[6]), 'Session, Model and Last activity are the flexible tracks (they wrap, the table does not widen)', cols.join(' '));
+    const minSum = cols.reduce((a, t) => a + minPx(t), 0) + 7 * 8 + 24;
+    chk(minSum <= 800, 'the track minimums + gaps + padding fit beside the agents panel at 1280 (<= 800px)', minSum);
+    chk(minPx(cols[2]) >= 80 && minPx(cols[1]) >= 88 && minPx(cols[6]) >= 80, 'flexible tracks keep at least 80-88px so wrapped text stays readable', cols[1] + ' ' + cols[2] + ' ' + cols[6]);
+    // wrapping instead of truncating: line-clamp 2 on the long cells, full text in title=
+    const clamp2 = sel => /-webkit-line-clamp:2/.test(rule(sel)) && /(?:^|;)line-clamp:2/.test(rule(sel)) && /overflow:hidden/.test(rule(sel));
+    chk(clamp2('\\.lvrow \\.lvtitle') && clamp2('\\.lvrow \\.lvmodel') && clamp2('\\.lvphase'), 'session title, model id and activity phase wrap to two lines (line-clamp:2) instead of one-line ellipsis');
+    chk(/-webkit-line-clamp:2/.test(rule('\\.lvmx \\.lmbtn,\\.lvmx \\.lvswitch,\\.lvmx>div')), 'the model detail line ("N models used") wraps to two lines too');
+    chk(!/white-space:nowrap/.test(rule('\\.lvrow \\.lvtitle')) && /white-space:normal/.test(rule('\\.lvphase')) && /white-space:normal/.test(rule('\\.lvrow \\.lvmodel')), 'the clamped cells opt out of the row nowrap so they can wrap');
+    chk(c1.querySelector('.lvphase').getAttribute('title') === 'running Bash' && cell(hm, 2).querySelector('.lvmodel').getAttribute('title'), 'a wrapped phase and model keep their full text in title=');
+    // Elapsed: shown on the State cell, and still sortable via its own header
+    const elHq = () => head.querySelector('[data-sort=elapsed]'), elH = elHq();
+    chk(elH && elH.getAttribute('role') === 'columnheader' && elH.tabIndex === 0 && elH.getAttribute('aria-sort') === 'none', 'Elapsed keeps its own focusable, aria-sort header');
+    elHq().dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    const elOf = elTxt;
+    chk(elHq().getAttribute('aria-sort') === 'ascending' && order() === 'x-1,pi-1,c-1,c-2,h', 'sorting by Elapsed ascending: 5m, 10m, 40m, 2h, then the row with no value', order());
+    elHq().dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    chk(elHq().getAttribute('aria-sort') === 'descending' && order() === 'c-2,c-1,pi-1,x-1,h' && elOf(rows()[0]) === ago(7200), 'Elapsed descending puts the longest session (2h) first; no-value row stays last', order());
+    elHq().dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    chk(elHq().getAttribute('aria-sort') === 'none' && order() === base, 'third click clears the Elapsed sort');
     const capOf = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); const out = []; let m; while ((m = r.exec(html))) { const c = /max-width:\s*([\d.]+)(ch|px|em|rem)?/.exec(m[1]); if (c) out.push(c[0]); } return out; };
     const capTooSmall = v => { const m = /([\d.]+)(ch|px|em|rem)?/.exec(v.replace('max-width:', '')); const n = +m[1], u = m[2]; return u === 'ch' ? n < 18 : u === 'px' ? n < 132 : (u === 'em' || u === 'rem') ? n < 9 : false; };
     chk(!capOf('\\.lvmodel').some(capTooSmall) && !capOf('\\.lvc\\.metacol').some(capTooSmall), 'the model cell has no max-width below 18ch', capOf('\\.lvmodel').concat(capOf('\\.lvc\\.metacol')).join(';'));
@@ -188,7 +217,6 @@ setTimeout(() => {
       'model text is darkened for light only; dark keeps the palette colour (inline colour)');
 
     // (h) no meaningless fragments: chips/tags keep >= 6ch visible or drop out whole
-    const rule = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); let m, o = ''; while ((m = r.exec(html))) o += m[1] + ';'; return o; };
     const chOf = (body, prop) => { const m = new RegExp('(?:^|[;{])' + prop + ':\\s*([\\d.]+)ch').exec(body); return m ? +m[1] : 0; };
     chk(chOf(rule('\\.lva2>\\.lvtool'), 'min-width') >= 6, 'activity tool chip has min-width >= 6ch', rule('\\.lva2>\\.lvtool'));
     chk(/flex:1 1 6ch;min-width:6ch/.test(rule('\\.lva1>\\.lvphase')), 'activity phase has min-width 6ch');
@@ -205,7 +233,8 @@ setTimeout(() => {
     chk(chips.length === 5 && chips.map(c => c.textContent).join() === 'read_file,terminal,grep,edit,web', 'tool chips: all five keep their whole name in the DOM', chips.map(c => c.textContent).join('|'));
     chk(many.querySelector('.lva2').title === 'read_file, terminal, grep, edit, web', 'the full tool list stays in title=');
     chk(/\.lva2>\.lvtool:nth-child\(n\+4\)\{display:none\}/.test(html) && chOf(rule('\\.lva2>\\.lvtool'), 'min-width') >= 6, 'at most three chips show (rest hidden whole) and each is at least 6ch wide');
-    chk(/↯ from gpt-5/.test(cell(many, 2).querySelector('.lvmx').textContent) && cell(many, 2).querySelector('.lvmodel').textContent === 'glm-5', 'switched model: id on line one, "↯ from X" on line two');
+    const mx = cell(many, 2).querySelector('.lvmx'), mm = cell(many, 2).querySelector('.lvmodel');
+    chk(!!mx && !!mm && /↯ from gpt-5/.test(mx.textContent) && mm.textContent === 'glm-5', 'switched model: id on line one, "↯ from X" on line two');
 
     // empty state hides the header and shows the empty block
     feed([], [], []);
