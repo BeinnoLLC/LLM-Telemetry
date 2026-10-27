@@ -13,8 +13,8 @@ function chk(ok, name) {
 
 chk(/\.dtab:hover\{color:var\(--fg\);border-color:var\(--accent\)\}/.test(html),
     'the date-range/depth chip buttons (.dtab) get a hover state, matching .chip:hover');
-chk(/\.olcard\{border:1px solid var\(--border\);border-radius:8px/.test(html),
-    'the Ollama status card now uses the same 8px radius as the base .card recipe, not a stray 9px');
+chk(/\.olcard\{border:1px solid var\(--border\);border-radius:4px/.test(html),
+    'the Ollama status card now uses the same 4px radius as the base .card recipe (Grafana G1), not a stray 9px');
 chk(/const emptyHTML = \(icon, msg, hint\) =>/.test(html),
     'a single shared emptyHTML() builder exists for empty-state markup');
 chk(/box\.innerHTML = emptyHTML\('○', 'Nothing running right now\.'/.test(html),

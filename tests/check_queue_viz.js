@@ -79,10 +79,11 @@ setTimeout(() => {
         'task queue renders before the "In progress now" heading');
 
     // ---- CSS: the motion really exists and is wired -----------------------
-    for (const k of ['qt-run', 'qt-shunt', 'qt-park', 'qt-depart', 'qt-land', 'qt-shunter', 'qt-newest', 'qt-sleepers'])
+    for (const k of ['qt-shunt', 'qt-park', 'qt-depart', 'qt-land', 'qt-shunter', 'qt-newest', 'qt-sleepers'])
       chk(new RegExp('@keyframes ' + k + '\\b').test(html), `@keyframes ${k} defined`);
-    chk(/\.qt-consist\{[^}]*animation:qt-run/.test(html), 'the whole consist runs the line as one train');
-    chk(/\.qtrain:hover \.qt-consist[^{]*\{animation-play-state:paused/.test(html), 'hovering the railway pauses the train so a car can be read');
+    // Grafana G1: the consist holds still (no qt-run slide) so every running car stays visible.
+    chk(!/@keyframes qt-run\b/.test(html) && !/\.qt-consist\{[^}]*animation/.test(html), 'the consist no longer slides across the line');
+    chk(/\.qt-consist\{[^}]*flex-wrap:wrap-reverse/.test(html), 'the consist wraps so a long train shows every car');
     chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get a still railway');
     chk(/\.qt-yard \.qt-cars\{[^}]*repeating-linear-gradient/.test(html), 'the yard draws sidings');
     chk(!!d.querySelector('.qt-yard .qt-shunter'), 'the yard has an idling shunter');
