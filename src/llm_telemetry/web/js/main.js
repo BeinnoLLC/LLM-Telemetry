@@ -149,7 +149,7 @@ export function installAll(){
 export const saved = localStorage.getItem('hermes-dash-theme');
 // Since the light-default flip, :root IS light; dark mounts via the explicit
 // [data-theme="dark"] attribute. The saved value is honoured either way.
-if(saved==='dark') document.documentElement.setAttribute('data-theme','dark');
+if(saved==='dark'){document.documentElement.setAttribute('data-theme','dark');readTheme()}
 $('theme').onclick = () => {
   const dark = document.documentElement.getAttribute('data-theme')==='dark';
   if(dark) document.documentElement.removeAttribute('data-theme');
