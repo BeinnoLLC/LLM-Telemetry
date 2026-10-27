@@ -523,8 +523,8 @@ function renderHomeSeries(p){
      tension:.3, pointRadius:0, borderWidth:1.5, yAxisID:'y1'}],
     {lgt:[v => Math.round(v).toLocaleString(), fmt], interaction:{mode:'index', intersect:false},
      ...(motionReduced() ? {animation:false} : {}),
-     scales:{x:{grid:{display:false}}, y:{position:'left', beginAtZero:true, grid:{color:BD}},
-       y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{callback:v => fmt(v)}}}});
+     scales:{x:{grid:{display:false}}, y:{position:'left', beginAtZero:true, grid:{color:BD}, ticks:{precision:0}},
+       y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{precision:0, callback:v => Number.isInteger(v) ? fmt(v) : ''}}}});
 }
 
 export function mergeDelegations(list){
