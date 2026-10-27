@@ -755,6 +755,8 @@ export function pickView(v){
   v = VIEW_ALIASES[slugOf(v)] || v;
   view=v;
   document.querySelectorAll('.view').forEach(el=>el.hidden = el.dataset.view!==v);
+  // #181: CSS hooks on the active view (Home leads with the live board).
+  const pg = document.querySelector('.page'); if (pg) pg.dataset.view = v;
   document.querySelectorAll('[data-vtab]').forEach(b=>{
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
