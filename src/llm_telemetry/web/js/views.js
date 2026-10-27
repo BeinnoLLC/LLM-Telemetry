@@ -10,7 +10,7 @@ import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
-import { inProgressHtml, renderLive } from './live.js';
+import { inProgressHtml, kindLogo, renderLive } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
 import { renderQuotaView, qvStat } from './quotaview.js';
 import {
@@ -2766,10 +2766,10 @@ const PRICE_SRC = {
 };
 // Same muted provider set as build_costs.PROV — one calm palette, both places.
 const PROV_META = {
-  anthropic:    {sig: '\u2733', color: 'hsl(17 38% 52%)'},
+  anthropic:    {logo: 'claude', color: 'hsl(17 38% 52%)'},
   'opencode-go':{sig: '\u25C8', color: 'hsl(250 30% 68%)'},
   fireworks:    {sig: '\u2726', color: '#b07a5e'},
-  'openai-codex':{sig: '\u25C9', color: 'hsl(162 30% 42%)'},
+  'openai-codex':{logo: 'codex', color: 'hsl(162 30% 42%)'},
   local:        {sig: '\u25A3', color: 'hsl(213 28% 62%)'},
   moa:          {sig: '\u2B21', color: '#b87383'},
   cloud:        {sig: '\u2601', color: 'hsl(205 24% 58%)'},
@@ -3004,7 +3004,7 @@ function priceRow(m){
         const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
         const inferred = !provs.length;
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
-          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.sig} ${esc(pv)}</span>`;
+          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
   return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"

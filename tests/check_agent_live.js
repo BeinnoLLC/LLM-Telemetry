@@ -56,9 +56,10 @@ setTimeout(() => {
     const x = rows.find(r => r.dataset.agentsession === 'x-1');
     chk(c && c.querySelector('[data-kindbadge="claude"]'), 'claude row carries the claude badge');
     chk(x && x.querySelector('[data-kindbadge="codex"]'), 'codex row carries the codex badge');
-    const glyph = r => r.querySelector('[data-kindbadge]').textContent;
+    // Claude/Codex badges are brand-mark SVGs (no text), so compare the markup.
+    const glyph = r => r.querySelector('[data-kindbadge]').innerHTML;
     chk(glyph(c) !== glyph(x), 'claude and codex glyphs differ');
-    chk(c && ['pi', 'hermes'].every(k => glyph(c) !== w.eval(`kindBadge('${k}')`).replace(/<[^>]+>/g, '')),
+    chk(c && ['pi', 'hermes'].every(k => glyph(c) !== w.eval(`kindBadge('${k}')`).replace(/^<span[^>]*>|<\/span>$/g, '')),
         'claude glyph differs from pi/hermes');
     chk(c && c.textContent.includes('alpha') && c.textContent.includes('running Bash'), 'row shows title and phase');
     chk(x && x.textContent.includes('—') && !/null|undefined/.test(x.textContent), 'unknown model renders as a dash');

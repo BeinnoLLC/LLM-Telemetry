@@ -87,8 +87,22 @@ setTimeout(() => {
     chk(chipEls.map(e => e.dataset.kind).join(',') === wantOrder.join(','), 'chips follow KIND_ORDER, zero kinds omitted', chipEls.map(e => e.dataset.kind).join(','));
     chk(/2\s*Claude/.test(kpi().textContent) && /1\s*Codex/.test(kpi().textContent), 'KPI chips have labelled text with counts', kpi().textContent.trim());
     chk(chipText(chipEls[0]).match(/\d+ (Hermes|Pi)/), 'first chip is the lowest KIND_ORDER kind with words', chipText(chipEls[0]));
-    chk(chipEls.every(e => e.querySelector('.kpi-dot')), 'every chip has a kind-coloured dot');
-    chk(chipEls.every(e => e.querySelector('.kpi-dot').style.background === `var(--kind-${e.dataset.kind})`), 'dot colour follows the --kind-* token');
+    // Claude/Codex lead with their brand mark, PI/Hermes with the kind-coloured dot.
+    const isLogo = e => e.dataset.kind === 'claude' || e.dataset.kind === 'codex';
+    chk(chipEls.filter(e => !isLogo(e)).every(e => e.querySelector('.kpi-dot')), 'PI/Hermes chips have a kind-coloured dot');
+    chk(chipEls.filter(e => !isLogo(e)).every(e => e.querySelector('.kpi-dot').style.background === `var(--kind-${e.dataset.kind})`), 'dot colour follows the --kind-* token');
+    chk(chipEls.filter(isLogo).every(e => !e.querySelector('.kpi-dot')), 'Claude/Codex chips swap the dot for the brand mark');
+    // Real brand marks: an inline svg with path data, only on claude/codex.
+    const logoOf = el => el && el.querySelector('svg[data-kindlogo] path[d]');
+    ['claude', 'codex'].forEach(k => {
+      const chipEl = chipEls.find(e => e.dataset.kind === k);
+      const svg = chipEl && chipEl.querySelector('svg[data-kindlogo]');
+      chk(!!logoOf(chipEl) && svg.getAttribute('data-kindlogo') === k, `${k} KPI chip carries its brand logo`);
+      chk(!!svg && svg.getAttribute('viewBox') === '0 0 24 24' && svg.getAttribute('fill') === 'currentColor' && svg.getAttribute('aria-hidden') === 'true', `${k} logo markup (viewBox, currentColor, aria-hidden)`);
+      chk(!!chipEl && chipEl.getAttribute('title') === (k === 'claude' ? '2 Claude' : '1 Codex'), `${k} chip title unchanged`, chipEl && chipEl.getAttribute('title'));
+    });
+    chk(['pi', 'hermes'].every(k => { const e = chipEls.find(x => x.dataset.kind === k); return e && !e.querySelector('svg[data-kindlogo]'); }), 'PI/Hermes chips have no brand logo');
+    chk(/2\s*Claude/.test(kpi().textContent) && /1\s*Codex/.test(kpi().textContent), 'KPI text still says "N Claude" / "N Codex"');
     const words = /Claude/.test(kpi().textContent) && /Codex/.test(kpi().textContent) && /PI/.test(kpi().textContent) && /Hermes/.test(kpi().textContent);
     chk(words, 'all four kind names readable in the KPI', kpi().textContent.trim());
     // Car badges: same kindMeta glyph, kind still named for a11y; Hermes cars stay plain.
@@ -96,12 +110,22 @@ setTimeout(() => {
     ['claude', 'codex', 'pi'].forEach(k => {
       const car = badgeCar(k);
       const kb = car && car.querySelector('.qt-kb');
-      chk(!!kb && kb.textContent.length > 0, `${k} car carries a kind badge`);
+      if (k === 'pi') {
+        chk(!!kb && kb.textContent.length > 0 && !kb.querySelector('svg'), `${k} car carries a text-glyph kind badge`);
+      } else {
+        chk(!!logoOf(kb) && kb.querySelector('svg[data-kindlogo]').getAttribute('data-kindlogo') === k, `${k} car badge carries the ${k} brand logo`);
+      }
       chk(!!car && new RegExp(k === 'codex' ? 'Codex' : k === 'claude' ? 'Claude' : 'PI agent').test(car.getAttribute('aria-label') || ''), `${k} car aria-label names the kind`, car && car.getAttribute('aria-label'));
       chk(!!car && /var\(--kind-/.test(car.style.getPropertyValue('--k') || ''), `${k} car keeps its kind tint`);
     });
     const her = badgeCar('hermes');
     chk(!!her && !her.querySelector('.qt-kb'), 'Hermes car has no kind badge');
+    // Live rows and the provider badges reuse the same shared logos.
+    w.eval('renderLive();');
+    const rowBadge = k => d.querySelector(`#livelist [data-kindbadge="${k}"]`);
+    chk(!!logoOf(rowBadge('claude')) && !!logoOf(rowBadge('codex')), 'live rows carry claude and codex logos');
+    chk(!!rowBadge('pi') && !rowBadge('pi').querySelector('svg'), 'PI live row keeps its glyph');
+    chk(new Set([...d.querySelectorAll('svg[data-kindlogo="claude"] path')].map(p => p.getAttribute('d'))).size === 1, 'every Claude logo uses the one shared path');
     chk(/sessions/i.test(d.querySelector('#livekpis [data-kpi="sessions"]').textContent)
       && Number(d.querySelector('#livekpis [data-kpi="sessions"] .lkpi-num').textContent) === hermesN + 4, 'sessions-in-flight tile agrees');
 

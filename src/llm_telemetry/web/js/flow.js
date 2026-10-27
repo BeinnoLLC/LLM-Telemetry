@@ -70,7 +70,7 @@ export function trainCar(it){
   c.tabIndex = 0;
   if (it.eng && it.eng !== 'hermes'){
     const m = kindMeta(it.eng), b = document.createElement('span');
-    b.className = 'qt-kb'; b.textContent = m.sig; b.title = m.label + ' agent';
+    b.className = 'qt-kb'; b.innerHTML = m.sig;  // trusted constant: a text glyph or a brand-mark <svg> b.title = m.label + ' agent';
     c.appendChild(b);
   }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
