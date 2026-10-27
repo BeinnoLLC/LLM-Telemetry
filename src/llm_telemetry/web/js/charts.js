@@ -3,7 +3,7 @@
  * including the KPI ring/sparkline primitives.
  */
 import {
-  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmtB, fmtRate, labelColor, readTheme,
+  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmt, fmtB, fmtRate, labelColor, readTheme,
 } from './palette.js';
 import { DATA } from './main.js';
 
@@ -31,7 +31,10 @@ export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)retur
   if (prev) { try { prev.destroy(); } catch(_){} }
   // Don't skip hidden views — Chart.js handles zero-size canvases fine, and
   // skipping them means Cost/Detail charts never get per-model colors.
-  const o = {responsive:true,maintainAspectRatio:false,...opts};
+  // `lgt` is ours, not Chart.js's: per-dataset formatters for the legend table.
+  const {lgt, ...copts} = opts;
+  const o = {responsive:true,maintainAspectRatio:false,...copts};
+  if (lgt) o.plugins = {...(o.plugins||{}), legend:{display:false}};
   // After the first paint, every chart (re)build is a data refresh, not a
   // first impression — snap instead of replaying the entrance animation.
   // An explicit `opts.animation` from a caller still wins (none of the
@@ -73,7 +76,53 @@ export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)retur
           return base;
         }}}};
   }
-  charts.push(new Chart(el,{type,data:{labels,datasets},options:o}));}
+  const ch = new Chart(el,{type,data:{labels,datasets},options:o});
+  charts.push(ch);
+  if (lgt) legendTable(ch, el, lgt, datasets);
+}
+
+// Grafana-style legend table (Name / Max / Mean / Last) for a multi-series
+// chart. Stats come from the chart's own dataset arrays, so the table can never
+// disagree with the plot; a series with no finite point shows an em dash.
+// `fmts` is one formatter, or one per dataset index, so each row keeps its unit.
+export function seriesStats(data){
+  const v = (data||[]).filter(x => x != null && x !== '').map(Number).filter(Number.isFinite);
+  if (!v.length) return null;
+  return {max:Math.max(...v), mean:v.reduce((a,b)=>a+b,0)/v.length, last:v[v.length-1]};
+}
+export function legendTable(chart, canvas, fmts, dss){
+  const box = canvas.closest('.lgt-host') || canvas.parentElement;
+  let wrap = box.nextElementSibling;
+  if (!wrap || !wrap.classList.contains('lgt-wrap')){
+    wrap = document.createElement('div'); wrap.className = 'lgt-wrap';
+    box.after(wrap);
+  }
+  const f = i => (Array.isArray(fmts) ? fmts[i] : fmts) || fmt;
+  const cell = (i, k, st) => `<td>${st ? escA(f(i)(st[k])) : '\u2014'}</td>`;
+  wrap.innerHTML = `<table class="lgt"><thead><tr><th></th><th>Name</th><th>Max</th><th>Mean</th><th>Last</th></tr></thead><tbody>` +
+    dss.map((d, i) => {
+      const st = seriesStats(d.data);
+      const c = Array.isArray(d.borderColor) ? d.borderColor[0] : (d.borderColor || d.backgroundColor);
+      const off = typeof chart.isDatasetVisible === 'function' && !chart.isDatasetVisible(i);
+      return `<tr data-i="${i}"${off ? ' class="off"' : ''}><td><i style="background:${escA(String(c))}"></i></td>` +
+        `<td><button type="button" aria-pressed="${off ? 'false' : 'true'}">${escA(d.label || 'series ' + (i+1))}</button></td>` +
+        cell(i,'max',st) + cell(i,'mean',st) + cell(i,'last',st) + `</tr>`;
+    }).join('') + `</tbody></table>`;
+  const toggle = tr => {
+    const i = +tr.dataset.i, on = !chart.isDatasetVisible(i);
+    chart.setDatasetVisibility(i, on); chart.update();
+    tr.classList.toggle('off', !on);
+    tr.querySelector('button').setAttribute('aria-pressed', on ? 'true' : 'false');
+  };
+  wrap.onclick = e => { const tr = e.target.closest('tr[data-i]'); if (tr) toggle(tr); };
+  wrap.onkeydown = e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+    e.preventDefault(); toggle(tr);
+  };
+  // Firefox fires the Space click on keyup; keydown already toggled.
+  wrap.onkeyup = e => { if (e.key === ' ') e.preventDefault(); };
+}
 
 export function agg(rows, keyFn, valFn){
   const m=new Map(); rows.forEach(r=>{const k=keyFn(r); m.set(k,(m.get(k)||0)+(+valFn(r)||0));});

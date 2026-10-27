@@ -3,7 +3,7 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, MU, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
+  $, BD, COLORS, MU, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
 } from './palette.js';
 import { agg, bwRow, current, loeIcon, mk, noLeg, sparkSvg } from './charts.js';
 import {
@@ -486,7 +486,45 @@ export function renderLive(){
      [{data:tr.map(x=>x.calls),backgroundColor:tr.map(x=>toolColor(x.tool)),borderRadius:2}],
      {...noLeg,indexAxis:'y',scales:{x:{grid:{color:BD}},y:{grid:{display:false},ticks:{font:{size:9}}}}});
 
+  renderHomeSeries(p);
 
+}
+
+// Home time-series: calls and tokens per hour for the last 6 hours, from the
+// hour-grain rows already in the page payload (p.hour_rows, local-time buckets).
+// A bucket with no rows plots as 0 — that is what the data says. Reuses the
+// shared mk() factory and legend table; no new collector.
+export const HOME_HOURS = 6;
+export function homeSeries(p, now){
+  const end = new Date(now); end.setMinutes(0, 0, 0);
+  const keys = [], labels = [];
+  for (let k = HOME_HOURS - 1; k >= 0; k--){
+    const d = new Date(end.getTime() - k*3600e3);
+    keys.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}|${d.getHours()}`);
+    labels.push(String(d.getHours()).padStart(2,'0') + ':00');
+  }
+  const calls = keys.map(() => 0), tokens = keys.map(() => 0);
+  (p.hour_rows || []).forEach(r => {
+    const i = keys.indexOf(`${r.date}|${+r.hour}`);
+    if (i < 0) return;
+    calls[i] += +r.calls || 0;
+    tokens[i] += (+r.inp || 0) + (+r.outp || 0);
+  });
+  return {labels, calls, tokens};
+}
+function renderHomeSeries(p){
+  if (!$('cHome6h')) return;
+  const s = homeSeries(p, Date.now());
+  const fill = c => c + '1a';
+  mk('cHome6h', 'line', s.labels, [
+    {label:'Calls', data:s.calls, borderColor:PAL[0], backgroundColor:fill(PAL[0]), fill:true,
+     tension:.3, pointRadius:0, borderWidth:1.5, yAxisID:'y'},
+    {label:'Tokens', data:s.tokens, borderColor:PAL[2], backgroundColor:fill(PAL[2]), fill:true,
+     tension:.3, pointRadius:0, borderWidth:1.5, yAxisID:'y1'}],
+    {lgt:[v => Math.round(v).toLocaleString(), fmt], interaction:{mode:'index', intersect:false},
+     ...(motionReduced() ? {animation:false} : {}),
+     scales:{x:{grid:{display:false}}, y:{position:'left', beginAtZero:true, grid:{color:BD}, ticks:{precision:0}},
+       y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{precision:0, callback:v => Number.isInteger(v) ? fmt(v) : ''}}}});
 }
 
 export function mergeDelegations(list){

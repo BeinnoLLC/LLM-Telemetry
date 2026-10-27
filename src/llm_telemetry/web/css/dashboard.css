@@ -1746,3 +1746,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    12px read as a blob), inherit the kind colour, centred on the text line. */
 svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
 .kpi-logo{display:inline-flex;align-items:center;flex:none;font-size:12px;line-height:1}
+ /* G3: Grafana legend table (Name / Max / Mean / Last) under a time chart */
+ .lgt-wrap{overflow-x:auto;margin-top:8px}
+ .lgt{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+ .lgt th{color:var(--accent);font-weight:500;text-align:right;padding:2px 8px;border:0}
+ .lgt th:nth-child(2){text-align:left}
+ .lgt td{padding:2px 8px;text-align:right;white-space:nowrap;border-top:1px solid var(--border)}
+ .lgt td:nth-child(2){text-align:left;width:100%}
+ .lgt td:first-child,.lgt th:first-child{width:14px;padding-right:0}
+ .lgt i{display:block;width:10px;height:3px;border-radius:1px}
+ .lgt button{all:unset;cursor:pointer;color:var(--fg);border-radius:2px}
+ .lgt button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+ .lgt tr.off{opacity:.45}
+ .lgt tr.off button{text-decoration:line-through}

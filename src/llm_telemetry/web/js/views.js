@@ -275,7 +275,7 @@ export function renderBandwidthPanel(p, inR){
      borderColor:'#38bdf8', backgroundColor:'#38bdf8', pointRadius:3, tension:.3, yAxisID:'y1', order:1},
     {label:'LAN', type:'line', data:days.map(d => sum('lan_up_bytes', by(d)) + sum('lan_down_bytes', by(d))),
      borderColor:MU, backgroundColor:MU, borderDash:[4,3], pointRadius:2, tension:.3, yAxisID:'y1', order:1},
-  ], {plugins:{legend:{labels:{boxWidth:8}},
+  ], {lgt:fmtB, plugins:{legend:{labels:{boxWidth:8}},
        tooltip:{callbacks:{title:c => days[c[0].dataIndex],
                            label:c => `${c.dataset.label}: ${fmtB(c.parsed.y)}`}}},
       scales:{x:{grid:{display:false}},
@@ -603,7 +603,7 @@ export function render(){
      borderColor:AC,backgroundColor:AC+'22',fill:true,tension:.3,yAxisID:'y'},
     {label:'tokens',data:days.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+r.inp+r.outp,0)),
      borderColor:PAL[1],tension:.3,yAxisID:'y1'}],
-    {plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
+    {lgt:[v=>Math.round(v).toLocaleString(), fmt],plugins:{legend:{labels:{boxWidth:8}}},scales:{y:{position:'left',grid:{color:BD}},
      y1:{position:'right',grid:{display:false},ticks:{callback:v=>fmt(v)}}}});
 
   const bt=agg(rows,r=>r.task,r=>r.calls);
@@ -1073,7 +1073,7 @@ export function renderConcurrency(concurrency, fromDate, toDate){
       {label: 'queue depth (now)', data: rows.map(() => queueNow), type: 'line',
        borderColor: '#c66a6a', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
     ],
-    {plugins: {legend: {labels: {boxWidth: 8}}},
+    {lgt: v => Math.round(v).toLocaleString(), plugins: {legend: {labels: {boxWidth: 8}}},
      scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
 }
 
