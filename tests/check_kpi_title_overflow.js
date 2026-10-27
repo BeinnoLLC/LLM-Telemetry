@@ -66,10 +66,22 @@ setTimeout(() => {
     chk(cssSane, '.kpi-name rule present in built dashboard CSS');
     chk(!kpiNameRule.includes('white-space:nowrap'),
       '.kpi-name may wrap (no white-space:nowrap)', kpiNameRule);
+    // Every rule whose selector mentions .kpi-name (media queries included,
+    // .lkpi-name excluded) must leave wrapping on.
+    const nowrapRules = [];
+    for (const r of html.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      if (/(^|[^\w-])\.kpi-name(?![\w-])/.test(r[1]) && /white-space\s*:\s*nowrap/.test(r[2])) {
+        nowrapRules.push(r[0].trim());
+      }
+    }
+    chk(nowrapRules.length === 0,
+      'no CSS rule targeting .kpi-name sets white-space:nowrap (any media query)',
+      nowrapRules.join(' | '));
     const need = [
+      ['hyphens:auto', 'forced breaks hyphenate (PRO-GRESS, not PROGRES/S)'],
       ['min-width:0', 'flex child may shrink below content width'],
       ['overflow-wrap:anywhere', 'long words break instead of escaping'],
-      ['line-height:1.15', 'two wrapped lines fit the 36px header'],
+      ['line-height:1.15', '2 lines x 1.15 x <=12px <= 36px header'],
     ];
     for (const [decl, why] of need) {
       chk(kpiNameRule.includes(decl), `.kpi-name has ${decl} (${why})`,
