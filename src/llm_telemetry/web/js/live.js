@@ -70,7 +70,11 @@ export function sampleThroughput(profiles, now){
       const cur = sessTotals(L);
       next.set(L.id, cur);
       if (baseline) return;
-      const prev = tputPrev.get(L.id) || { c: 0, k: 0 };
+      // A session first seen after the baseline arrives with its whole
+      // history in the cumulative counters (thousands of calls); counting that
+      // as the last 5 seconds would be a spike, so it only seeds its baseline.
+      const prev = tputPrev.get(L.id);
+      if (!prev) return;
       // max(0, …): a counter that goes backwards is a restart, not negative work.
       c += Math.max(0, cur.c - prev.c);
       k += Math.max(0, cur.k - prev.k);
@@ -217,9 +221,12 @@ export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   box.innerHTML = [
     card('sessions', 'Sessions in flight',
       `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
-    card('agents', 'Agents alive',
-      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
-      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
+    // No heartbeat rows (a profile without a gateway backend, or a feed that
+    // carries none) is "unknown", not "all heartbeating".
+    card('agents', 'Agents alive', k.agents
+      ? `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+        + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`
+      : `<div class="lkpi-num muted">\u2014</div><div class="lkpi-sub">no agent heartbeats reported</div>`),
     card('throughput', 'Calls · tokens',
       `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
       + `<div class="lkpi-sub">${win}</div>${keep ? '' : LKPI_SPARK}`),
