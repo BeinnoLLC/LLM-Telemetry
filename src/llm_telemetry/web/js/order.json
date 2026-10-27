@@ -987,6 +987,14 @@
   },
   {
    "mod": "live",
+   "name": "inFlight"
+  },
+  {
+   "mod": "live",
+   "name": "inProgressHtml"
+  },
+  {
+   "mod": "live",
    "name": "liveKpis"
   },
   {

@@ -115,14 +115,12 @@ setTimeout(() => {
 
 
   // LST-178 polish: no card may be forced to span the full row at <=480px
-  // (it strands its neighbour in a half-empty row). Only a lone last card
-  // (:last-child:nth-child(odd)) may span both columns.
+  // (it strands its neighbour in a half-empty row).
   const mqBody = (/@media\(max-width:480px\)\{[\s\S]*?\n\s*\}\n/.exec(html) || [''])[0];
   const spans = (mqBody.match(/[^{}]*\{[^{}]*grid-column\s*:\s*1\s*\/\s*-1[^{}]*\}/g) || [])
     .map(r => r.trim());
-  const badSpans = spans.filter(r => !/:last-child:nth-child\(odd\)\s*\{/.test(r));
-  chk(badSpans.length === 0 && spans.length >= 1,
-    '<=480px: only the lone last card spans both columns', badSpans.join(' | ') || 'ok');
+  chk(mqBody.length > 0 && spans.length === 0,
+    '<=480px: no card spans both columns', spans.join(' | ') || 'ok');
   // Cards in a row must stay flush: the grid stretches, never start/center.
   const gh = /\.grid-home\{[^}]*\}/.exec(html);
   chk(!!gh && /align-items:stretch/.test(gh[0]) && !/align-items:(start|center|end|baseline)/.test(gh[0]),

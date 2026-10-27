@@ -951,6 +951,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
   background-size:200% 100%;animation:qt-glint 1.6s linear infinite}
 /* coupler to the car behind (to the LEFT, since the consist is row-reverse) */
+.qt-r[data-kind]:not([data-kind=hermes]){background:var(--k);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 12px color-mix(in srgb,var(--k) 55%,transparent)}
+.qt-kb{flex:none;margin-right:4px;font-size:10px}
 .qt-r + .qt-r .qt-lbl::before{content:"";position:absolute;right:-10px;top:50%;width:10px;height:3px;
   margin-top:-1px;background:var(--qt-wheel);border-radius:1px}
 .qt-loco{width:124px;border-top-right-radius:14px;padding-right:20px}
@@ -1177,7 +1179,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .xp-row{flex-direction:column;align-items:flex-start;gap:0}
    .xp-title{flex:0 1 auto}
    .xcard .hc-stat{text-align:left;max-width:100%}
-   .grid-home > .xcard:last-child:nth-child(odd){grid-column:1/-1}
    .selwrap,select.chip{max-width:100%;min-width:0}
    .fb-more kbd{display:none}
  }
@@ -1879,6 +1880,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-src{font-size:var(--fs-2xs);text-transform:none;letter-spacing:0;
   color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
 .pv-src-local{color:var(--accent)}
+.kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 8px;margin-left:8px;font-size:11px;font-weight:600;vertical-align:middle}
+
 </style></head><body>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
@@ -4543,12 +4546,8 @@ function render(){
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
-  // `active` is a live count from the DB, deliberately NOT filtered by the date
-  // range — "in progress" means right now, whatever window you are looking at.
-  const live = DATA.profiles[current].active || 0;
-  const liveDot = live
-    ? `<span style="color:#5f9e6e">●</span> ${live}`
-    : `<span class="muted">●</span> 0`;
+  // Live count, deliberately NOT date-filtered: in progress means right now.
+  const liveDot = inProgressHtml(DATA.profiles[current], DATA.pi_live, DATA.agent_live);
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
   const H = DATA.profiles[current].health || [];
@@ -6548,6 +6547,7 @@ function trainCar(it){
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
+  if (it.eng){ const b = document.createElement('span'); b.className = 'qt-kb'; b.textContent = kindMeta(it.eng).sig; c.appendChild(b); }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
   return c;
 }
@@ -6596,7 +6596,7 @@ function carTip(it){
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
-    return head + row('model', it.model) + row('profile', it.profile)
+    return head + row('engine', it.eng === 'hermes' ? '' : kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
@@ -6687,6 +6687,8 @@ function paintTrain(queuedAll, runningAll, doneAll){
   paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
   const freshR = paintCars(consist, running, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+    c.dataset.kind = it.eng;
+    c.style.setProperty('--k', kindMeta(it.eng).color);
     c.classList.toggle('qt-loco', i === 0);
   });
   const freshD = paintCars(db, done, (c, it, i) => {
@@ -6769,16 +6771,18 @@ function renderQueue(){
     }
   });
 
-  const seen = new Set();
-  const runningAll = (p.live || [])
-    .filter(L => !seen.has(L.id) && seen.add(L.id))
-    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active leads
-    .map(L => ({
-      key: `s:${L.id}`, kind: 'r', sid: L.id, label: titleOf(L.title, L.model),
-      model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
-      phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
-      tools: (L.tools || []).length, nmodels: L.nmodels,
-    }));
+  // Hermes rows of this profile plus the fleet-wide Pi/Claude/Codex sessions.
+  const runningAll = inFlight(p, DATA.pi_live, DATA.agent_live)
+    .sort((a, b) => (+a.S.idle_s || 0) - (+b.S.idle_s || 0)) // most recently active leads
+    .map(({ kind, S: L }) => {
+      const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
+      return {
+        key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
+        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+        phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+        tools: (L.tools || []).length, nmodels: L.nmodels,
+      };
+    });
 
   const doneAll = (p.recent_sessions || [])
     .slice()
@@ -7032,14 +7036,9 @@ const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };function liveG
   return null;
 }
 
-// #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
-// alive, calls/tokens in the last 5 minutes, active alerts.
-//
-// The live feed carries CUMULATIVE per-session counters, so throughput is
-// derived client-side: each poll diffs every session against its previous
-// sample into a 5-minute ring. A session open at the first sample is a
-// baseline; one that appears later counts whole. Ended sessions simply stop contributing. Profiles are kept apart so a profile tab shows
-// its own throughput and the merged view sums them.
+// #181/#182/#184: above-the-fold live KPIs. Throughput is derived client-side: the
+// feed carries CUMULATIVE per-session counters, so each poll diffs sessions into a
+// 5-minute ring (per profile; the merged view sums them).
 const TPUT_WINDOW_S = 300;
 let tputPrev = null;     // session id -> {c, k}; null until the first sample
 let tputRing = [];       // [{t, by: {profile: {c, k}}}], oldest first
@@ -7112,13 +7111,30 @@ function dedupAgentLive(list){
   }
   return [...best.values()].map(v => v.S);
 }
-function liveKpis(p, name, now, profiles, agentLive){
-  const seen = new Set();
-  // Claude/Codex sessions (DATA.agent_live) are fleet-wide, shown on every
-  // tab. They count as "in flight" only while not idle; "Agents alive" is the
-  // Hermes heartbeat set and deliberately excludes them.
-  const extra = dedupAgentLive(agentLive).filter(S => S.phase !== 'idle').length;
-  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length + extra;
+// Sessions working right now for profile `p`: its Hermes rows plus the
+// fleet-wide Pi and (deduped) Claude/Codex lists, which show under every
+// profile. Idle Pi/agent sessions are not "in flight".
+function inFlight(p, piLive, agentLive){
+  const seen = new Set(), out = [];
+  ((p && p.live) || []).forEach(L => { if (L && !seen.has(L.id) && seen.add(L.id)) out.push({ kind: 'hermes', S: L }); });
+  (piLive || []).forEach(S => { if (S && S.phase !== 'idle') out.push({ kind: 'pi', S }); });
+  dedupAgentLive(agentLive).forEach(S => { if (S.phase !== 'idle') out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }); });
+  return out;
+}
+// "In progress" KPI body: total plus one tinted chip per non-zero kind.
+function inProgressHtml(p, piLive, agentLive){
+  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+  inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
+  const n = c.hermes + c.pi + c.claude + c.codex;
+  const chips = KIND_ORDER.filter(k => c[k]).map(k => {
+    const m = kindMeta(k);
+    return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}" style="color:${m.color}">${m.sig} ${c[k]}</span>`;
+  }).join('');
+  return `<span class="${n ? '' : 'muted'}"${n ? ' style="color:var(--z-ok)"' : ''}>\u25CF</span> ${n}`
+    + (chips ? `<span class="kpi-kinds">${chips}</span>` : '');
+}
+function liveKpis(p, name, now, profiles, agentLive, piLive){
+  const sessions = inFlight(p, piLive, agentLive).length;
   const merged = name === 'All' && profiles;
   const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
   const alive = agents.filter(a => a && a.state === 'alive').length;
@@ -7130,10 +7146,10 @@ function liveKpis(p, name, now, profiles, agentLive){
     tput: throughputFor(name, now),
   };
 }
-function renderLiveKpis(p, name, now, profiles, agentLive){
+function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
-  const k = liveKpis(p, name, now, profiles, agentLive);
+  const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
@@ -7230,14 +7246,10 @@ function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
-// PI sessions (#245) have no sqlite state: their JSONL files are the live
-// state, so they ride the flat DATA.pi_live list and share '#livelist' and
-// one row shape with Hermes (kindBadge('pi') tells them apart). Returns
-// {key, html} for applyDiff, keyed 'pi:'+session id.
-//
-// LST-251: PI rows get Hermes parity -- loeIcon gauge (fed S.tools_gauge, PI
-// tool names aliased to Hermes categories), tool chips (S.tools), model-switch
-// note, uptime. Bandwidth is skipped: PI tracks no byte counters.
+// PI sessions (#245) have no sqlite state; their JSONL files are the live state, so
+// they ride DATA.pi_live and share '#livelist' with Hermes rows (keyed 'pi:'+id).
+// LST-251: Hermes parity -- loeIcon gauge (S.tools_gauge), tool chips, model-switch
+// note, uptime. No bandwidth: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
@@ -7310,7 +7322,7 @@ function renderFleetTiles(){
 function renderLive(){
   const p = DATA.profiles[current] || {};
   renderFleetTiles();
-  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
+  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
@@ -8398,17 +8410,9 @@ function flowFlatten(root){
   return {nodes, links};
 }
 
-// Which chats a Flow node served.
-//
-// node_sessions is keyed by the FULL model id + task ("accounts/fireworks/
-// models/kimi-k3\tmain"), but graph nodes carry the SHORT display name, so a
-// direct lookup silently returns nothing. Each model node therefore remembers
-// its full ids (several can collapse to one short name) and we union them.
-// ---- Tool palette ---------------------------------------------------------
-// Same contract as the model palette: ONE colour per tool, everywhere, stable
-// across tabs/ranges/profiles. Tools group into families by what they do, so
-// related tools read as related (all file ops are green-ish, all execution is
-// amber-ish) while staying individually distinguishable.
+// Which chats a Flow node served: node_sessions is keyed by FULL model id + task but nodes
+// carry the SHORT name, so each model node remembers its full ids and we union them.
+// ---- Tool palette: ONE colour per tool everywhere, grouped into families by what they do.
 const TOOL_FAM = [
   {re:/^(read_file|write_file|patch|search_files|glob)$/,        h:150, s:58},
   {re:/^(terminal|execute_code|process_manage)$/,                h: 34, s:78},
@@ -8868,12 +8872,7 @@ function renderFlow(rows){
   // Double-tap/double-click resets to the fitted view.
   svg.addEventListener('dblclick', () => fitView());
 
-  // #18: responsive viewBox — a rotation or a window resize changes W/H, and
-  // the old fixed viewBox from the initial render would then either crop the
-  // graph or leave dead space. Re-run the whole layout (debounced) whenever
-  // the wrapper's own size actually changes, but only while the Flow tab is
-  // the one on screen (recomputing a force layout you cannot see is wasted
-  // work and would also un-pin nodes the user placed on a hidden tab).
+  // #18: re-run the layout (debounced) when the wrapper resizes, only while Flow is on screen.
   if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){
     wrap._flowResizeWired = true;
     let t = null;
@@ -8972,15 +8971,8 @@ function flowControls(){
   });
 }
 
-// Activity heatmap — a GitHub-style calendar. Weeks are columns, weekdays are
-// rows, so seasonality and gaps are obvious. Intensity is bucketed on quartiles
-// of the observed range rather than absolute counts, so the scale stays useful
-// whether a busy day is 200 calls or 20,000.
-// P10-01 (#89): parent -> children session tree, indented, with roll-up
-// costs shown on the parent row (own + every descendant). Rendered from
-// the SAME nested payload shape the collector emits (id/parent/source/
-// model/started/ended/end_reason/msgs/tools/tok/cost/cost_is_actual/
-// children/child_count/failed_child_count) — no re-derivation client side.
+// Activity heatmap: GitHub-style calendar, intensity bucketed on quartiles of the observed range.
+// P10-01 (#89): parent -> children session tree with roll-up costs, from the collector's nested payload.
 const SRC_BADGE = { desktop: 'Desktop', subagent: 'Subagent', cron: 'Cron',
   tui: 'TUI', oneshot: 'One-shot', cli: 'CLI', gateway: 'Gateway' };
 let sesstreeCollapsed = new Set(); // node ids explicitly collapsed by the user
@@ -10810,12 +10802,8 @@ let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
   ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 let liveBusy = false, liveFails = 0;
 
-// ---- Completion sound (#105) -----------------------------------------------
-// Off by default (localStorage remembers the choice), generated with Web
-// Audio so there is no audio file to ship (the dashboard is one
-// self-contained HTML page, ADR 0001). Browsers block audio until a user
-// gesture, so turning it on is itself the gesture -- no separate unlock step
-// is needed or possible.
+// ---- Completion sound (#105): off by default, Web Audio (no audio file to ship,
+// ADR 0001); turning it on is itself the user gesture browsers require.
 let soundOn = localStorage.getItem('lt-sound') === '1';
 let audioCtx = null;
 let soundBaseline = true;   // true until the first poll has been diffed once
@@ -10852,13 +10840,8 @@ function playTone(kind){
   });
 }
 
-// Debounce: several completions inside one poll, or across polls within 2s,
-// play as a single tone rather than a burst. `kind` escalates to 'fail' if
-// anything in the batch failed, even if most succeeded. A prior version
-// returned early once inside the 2s window WITHOUT scheduling a play, which
-// silently dropped a completion that arrived mid-window instead of merging
-// it into the next tone -- fixed by always scheduling, timed to fire no
-// sooner than the window allows.
+// Debounce: completions within 2s play as one tone; `kind` escalates to 'fail'
+// if any failed. Always schedules a play (timed past the window), never drops one.
 let pendingKind = null;
 let soundTimerPending = false;
 function scheduleTone(kind){
@@ -11174,11 +11157,7 @@ async function pollLive(){
     DATA.profiles = pvFilter();
     tabs();
     drawerSync();
-    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
-    // left the live list and the bandwidth card holding the first payload
-    // whenever any other tab was open — the numbers silently went stale, and
-    // switching back showed a jump rather than a live feed. renderLive writes
-    // into hidden nodes cheaply, so there is no reason to gate it on the view.
+    // Repaint unconditionally: gating on the Live view left it stale on other tabs.
     renderLive();
     navSync();
     // Update only the "In progress" KPI in place — the other cards depend on
@@ -11186,9 +11165,7 @@ async function pollLive(){
     // rebuild here would show wrong numbers.
     const p = DATA.profiles[current] || {};
     const card = document.querySelector('#kpis .kpi-live');
-    if (card) card.innerHTML = p.active
-      ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
-      : `<span class="muted">●</span> 0`;
+    if (card) card.innerHTML = inProgressHtml(p, DATA.pi_live, DATA.agent_live);
     liveFails = 0;
     tickLiveStamp();
   } catch (e) {
@@ -11594,12 +11571,8 @@ function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 let liveTimer = null;
-// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
-// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
-// age counts up between polls instead of freezing at the poll time. The
-// base text is rewritten every tick (via dataset.stampBase) because
-// stampFreshness caches the first text it sees — the old code set textContent
-// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+// #185: freshness pill. tickLiveStamp() rewrites it from `liveUpdatedAt` every tick,
+// via dataset.stampBase, because stampFreshness caches the first text it sees.
 let liveUpdatedAt = null;
 function tickLiveStamp(now){
   const t = $('livestamp');

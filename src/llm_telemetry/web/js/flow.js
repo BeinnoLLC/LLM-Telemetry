@@ -7,13 +7,12 @@ import { current } from './charts.js';
 import { PROV, provOf, render } from './views.js';
 import { profileHue } from './router.js';
 import { DATA, css } from './main.js';
+import { inFlight, kindMeta } from './live.js';
 
-// #140 follow-up: the queue IS the railway. The old queued/running/done lanes
-// were removed once the train carried the same facts plus hover detail.
-// Depot = requests waiting at an Ollama host (no id: "host X has N waiting"),
-// the line = live sessions as ONE coupled train (loco = most recently active),
-// the yard = finished sessions parked on sidings. Every car is keyed and
-// reused across 5s polls, so only real arrivals/departures animate.
+// #140: the queue IS the railway. Depot = requests waiting at an Ollama host, the line =
+// live sessions as ONE train (loco = most recently active; Hermes, Pi, Claude, Codex),
+// the yard = finished sessions. Cars are keyed and reused across polls, so only real
+// arrivals/departures animate.
 export function renderQueue(){
   const p = DATA.profiles[current] || {};
   const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
@@ -27,16 +26,18 @@ export function renderQueue(){
     }
   });
 
-  const seen = new Set();
-  const runningAll = (p.live || [])
-    .filter(L => !seen.has(L.id) && seen.add(L.id))
-    .sort((a, b) => (+a.idle_s || 0) - (+b.idle_s || 0)) // most recently active leads
-    .map(L => ({
-      key: `s:${L.id}`, kind: 'r', sid: L.id, label: titleOf(L.title, L.model),
-      model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
-      phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
-      tools: (L.tools || []).length, nmodels: L.nmodels,
-    }));
+  // Hermes rows of this profile plus the fleet-wide Pi/Claude/Codex sessions.
+  const runningAll = inFlight(p, DATA.pi_live, DATA.agent_live)
+    .sort((a, b) => (+a.S.idle_s || 0) - (+b.S.idle_s || 0)) // most recently active leads
+    .map(({ kind, S: L }) => {
+      const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
+      return {
+        key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
+        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+        phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+        tools: (L.tools || []).length, nmodels: L.nmodels,
+      };
+    });
 
   const doneAll = (p.recent_sessions || [])
     .slice()
@@ -67,6 +68,7 @@ export function trainCar(it){
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
+  if (it.eng){ const b = document.createElement('span'); b.className = 'qt-kb'; b.textContent = kindMeta(it.eng).sig; c.appendChild(b); }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
   return c;
 }
@@ -113,7 +115,7 @@ export function carTip(it){
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
-    return head + row('model', it.model) + row('profile', it.profile)
+    return head + row('engine', it.eng === 'hermes' ? '' : kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
@@ -204,6 +206,8 @@ export function paintTrain(queuedAll, runningAll, doneAll){
   paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
   const freshR = paintCars(consist, running, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+    c.dataset.kind = it.eng;
+    c.style.setProperty('--k', kindMeta(it.eng).color);
     c.classList.toggle('qt-loco', i === 0);
   });
   const freshD = paintCars(db, done, (c, it, i) => {
@@ -339,17 +343,9 @@ export function flowFlatten(root){
   return {nodes, links};
 }
 
-// Which chats a Flow node served.
-//
-// node_sessions is keyed by the FULL model id + task ("accounts/fireworks/
-// models/kimi-k3\tmain"), but graph nodes carry the SHORT display name, so a
-// direct lookup silently returns nothing. Each model node therefore remembers
-// its full ids (several can collapse to one short name) and we union them.
-// ---- Tool palette ---------------------------------------------------------
-// Same contract as the model palette: ONE colour per tool, everywhere, stable
-// across tabs/ranges/profiles. Tools group into families by what they do, so
-// related tools read as related (all file ops are green-ish, all execution is
-// amber-ish) while staying individually distinguishable.
+// Which chats a Flow node served: node_sessions is keyed by FULL model id + task but nodes
+// carry the SHORT name, so each model node remembers its full ids and we union them.
+// ---- Tool palette: ONE colour per tool everywhere, grouped into families by what they do.
 export function flowSessions(n){
   const ns = (DATA.profiles[current]||{}).node_sessions || {};
   const keys = [];
@@ -736,12 +732,7 @@ export function renderFlow(rows){
   // Double-tap/double-click resets to the fitted view.
   svg.addEventListener('dblclick', () => fitView());
 
-  // #18: responsive viewBox — a rotation or a window resize changes W/H, and
-  // the old fixed viewBox from the initial render would then either crop the
-  // graph or leave dead space. Re-run the whole layout (debounced) whenever
-  // the wrapper's own size actually changes, but only while the Flow tab is
-  // the one on screen (recomputing a force layout you cannot see is wasted
-  // work and would also un-pin nodes the user placed on a hidden tab).
+  // #18: re-run the layout (debounced) when the wrapper resizes, only while Flow is on screen.
   if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){
     wrap._flowResizeWired = true;
     let t = null;
@@ -840,12 +831,5 @@ export function flowControls(){
   });
 }
 
-// Activity heatmap — a GitHub-style calendar. Weeks are columns, weekdays are
-// rows, so seasonality and gaps are obvious. Intensity is bucketed on quartiles
-// of the observed range rather than absolute counts, so the scale stays useful
-// whether a busy day is 200 calls or 20,000.
-// P10-01 (#89): parent -> children session tree, indented, with roll-up
-// costs shown on the parent row (own + every descendant). Rendered from
-// the SAME nested payload shape the collector emits (id/parent/source/
-// model/started/ended/end_reason/msgs/tools/tok/cost/cost_is_actual/
-// children/child_count/failed_child_count) — no re-derivation client side.
+// Activity heatmap: GitHub-style calendar, intensity bucketed on quartiles of the observed range.
+// P10-01 (#89): parent -> children session tree with roll-up costs, from the collector's nested payload.

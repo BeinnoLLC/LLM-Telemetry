@@ -48,14 +48,9 @@ function liveGroupKeyOf(el){
   return null;
 }
 
-// #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
-// alive, calls/tokens in the last 5 minutes, active alerts.
-//
-// The live feed carries CUMULATIVE per-session counters, so throughput is
-// derived client-side: each poll diffs every session against its previous
-// sample into a 5-minute ring. A session open at the first sample is a
-// baseline; one that appears later counts whole. Ended sessions simply stop contributing. Profiles are kept apart so a profile tab shows
-// its own throughput and the merged view sums them.
+// #181/#182/#184: above-the-fold live KPIs. Throughput is derived client-side: the
+// feed carries CUMULATIVE per-session counters, so each poll diffs sessions into a
+// 5-minute ring (per profile; the merged view sums them).
 export const TPUT_WINDOW_S = 300;
 export let tputPrev = null;     // session id -> {c, k}; null until the first sample
 export let tputRing = [];       // [{t, by: {profile: {c, k}}}], oldest first
@@ -128,13 +123,30 @@ export function dedupAgentLive(list){
   }
   return [...best.values()].map(v => v.S);
 }
-export function liveKpis(p, name, now, profiles, agentLive){
-  const seen = new Set();
-  // Claude/Codex sessions (DATA.agent_live) are fleet-wide, shown on every
-  // tab. They count as "in flight" only while not idle; "Agents alive" is the
-  // Hermes heartbeat set and deliberately excludes them.
-  const extra = dedupAgentLive(agentLive).filter(S => S.phase !== 'idle').length;
-  const sessions = ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).length + extra;
+// Sessions working right now for profile `p`: its Hermes rows plus the
+// fleet-wide Pi and (deduped) Claude/Codex lists, which show under every
+// profile. Idle Pi/agent sessions are not "in flight".
+export function inFlight(p, piLive, agentLive){
+  const seen = new Set(), out = [];
+  ((p && p.live) || []).forEach(L => { if (L && !seen.has(L.id) && seen.add(L.id)) out.push({ kind: 'hermes', S: L }); });
+  (piLive || []).forEach(S => { if (S && S.phase !== 'idle') out.push({ kind: 'pi', S }); });
+  dedupAgentLive(agentLive).forEach(S => { if (S.phase !== 'idle') out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }); });
+  return out;
+}
+// "In progress" KPI body: total plus one tinted chip per non-zero kind.
+export function inProgressHtml(p, piLive, agentLive){
+  const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
+  inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
+  const n = c.hermes + c.pi + c.claude + c.codex;
+  const chips = KIND_ORDER.filter(k => c[k]).map(k => {
+    const m = kindMeta(k);
+    return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}" style="color:${m.color}">${m.sig} ${c[k]}</span>`;
+  }).join('');
+  return `<span class="${n ? '' : 'muted'}"${n ? ' style="color:var(--z-ok)"' : ''}>\u25CF</span> ${n}`
+    + (chips ? `<span class="kpi-kinds">${chips}</span>` : '');
+}
+export function liveKpis(p, name, now, profiles, agentLive, piLive){
+  const sessions = inFlight(p, piLive, agentLive).length;
   const merged = name === 'All' && profiles;
   const agents = merged ? mergedField(profiles, 'agents') : ((p && p.agents) || []);
   const alive = agents.filter(a => a && a.state === 'alive').length;
@@ -146,10 +158,10 @@ export function liveKpis(p, name, now, profiles, agentLive){
     tput: throughputFor(name, now),
   };
 }
-export function renderLiveKpis(p, name, now, profiles, agentLive){
+export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
-  const k = liveKpis(p, name, now, profiles, agentLive);
+  const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
@@ -246,14 +258,10 @@ export function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
-// PI sessions (#245) have no sqlite state: their JSONL files are the live
-// state, so they ride the flat DATA.pi_live list and share '#livelist' and
-// one row shape with Hermes (kindBadge('pi') tells them apart). Returns
-// {key, html} for applyDiff, keyed 'pi:'+session id.
-//
-// LST-251: PI rows get Hermes parity -- loeIcon gauge (fed S.tools_gauge, PI
-// tool names aliased to Hermes categories), tool chips (S.tools), model-switch
-// note, uptime. Bandwidth is skipped: PI tracks no byte counters.
+// PI sessions (#245) have no sqlite state; their JSONL files are the live state, so
+// they ride DATA.pi_live and share '#livelist' with Hermes rows (keyed 'pi:'+id).
+// LST-251: Hermes parity -- loeIcon gauge (S.tools_gauge), tool chips, model-switch
+// note, uptime. No bandwidth: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
@@ -326,7 +334,7 @@ export function renderFleetTiles(){
 export function renderLive(){
   const p = DATA.profiles[current] || {};
   renderFleetTiles();
-  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live);
+  renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
@@ -617,12 +625,8 @@ export let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
   ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 export let liveBusy = false, liveFails = 0;
 
-// ---- Completion sound (#105) -----------------------------------------------
-// Off by default (localStorage remembers the choice), generated with Web
-// Audio so there is no audio file to ship (the dashboard is one
-// self-contained HTML page, ADR 0001). Browsers block audio until a user
-// gesture, so turning it on is itself the gesture -- no separate unlock step
-// is needed or possible.
+// ---- Completion sound (#105): off by default, Web Audio (no audio file to ship,
+// ADR 0001); turning it on is itself the user gesture browsers require.
 export let soundOn = localStorage.getItem('lt-sound') === '1';
 export let audioCtx = null;
 export let soundBaseline = true;   // true until the first poll has been diffed once
@@ -659,13 +663,8 @@ export function playTone(kind){
   });
 }
 
-// Debounce: several completions inside one poll, or across polls within 2s,
-// play as a single tone rather than a burst. `kind` escalates to 'fail' if
-// anything in the batch failed, even if most succeeded. A prior version
-// returned early once inside the 2s window WITHOUT scheduling a play, which
-// silently dropped a completion that arrived mid-window instead of merging
-// it into the next tone -- fixed by always scheduling, timed to fire no
-// sooner than the window allows.
+// Debounce: completions within 2s play as one tone; `kind` escalates to 'fail'
+// if any failed. Always schedules a play (timed past the window), never drops one.
 export let pendingKind = null;
 export let soundTimerPending = false;
 export function scheduleTone(kind){
@@ -795,11 +794,7 @@ export async function pollLive(){
     DATA.profiles = pvFilter();
     tabs();
     drawerSync();
-    // Repaint unconditionally. This used to be `if (view === 'Live')`, which
-    // left the live list and the bandwidth card holding the first payload
-    // whenever any other tab was open — the numbers silently went stale, and
-    // switching back showed a jump rather than a live feed. renderLive writes
-    // into hidden nodes cheaply, so there is no reason to gate it on the view.
+    // Repaint unconditionally: gating on the Live view left it stale on other tabs.
     renderLive();
     navSync();
     // Update only the "In progress" KPI in place — the other cards depend on
@@ -807,9 +802,7 @@ export async function pollLive(){
     // rebuild here would show wrong numbers.
     const p = DATA.profiles[current] || {};
     const card = document.querySelector('#kpis .kpi-live');
-    if (card) card.innerHTML = p.active
-      ? `<span style="color:var(--z-ok)">●</span> ${p.active}`
-      : `<span class="muted">●</span> 0`;
+    if (card) card.innerHTML = inProgressHtml(p, DATA.pi_live, DATA.agent_live);
     liveFails = 0;
     tickLiveStamp();
   } catch (e) {
@@ -831,12 +824,8 @@ export function scheduleLivePoll(){
   liveTimer = setTimeout(() => { pollLive(); scheduleLivePoll(); }, LIVE_MS);
 }
 export let liveTimer = null;
-// #185: the live board's freshness pill. `liveUpdatedAt` is the unix second of
-// the last successful poll; tickLiveStamp() rewrites the pill from it, so the
-// age counts up between polls instead of freezing at the poll time. The
-// base text is rewritten every tick (via dataset.stampBase) because
-// stampFreshness caches the first text it sees — the old code set textContent
-// first and then stamped, which pinned "updated HH:MM:SS" to the first poll.
+// #185: freshness pill. tickLiveStamp() rewrites it from `liveUpdatedAt` every tick,
+// via dataset.stampBase, because stampFreshness caches the first text it sees.
 export let liveUpdatedAt = null;
 export function tickLiveStamp(now){
   const t = $('livestamp');

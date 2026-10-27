@@ -133,6 +133,11 @@ function harness(els = {}){
     },
     'router.js': { profileHue: p => 'hue:' + p },
     'main.js': { DATA, css: v => `var(${v})` },
+    // Hermes-only copy of live.js's inFlight (Pi/agent cars: check_agent_queue.js).
+    'live.js': {
+      inFlight: p => { const seen = new Set(); return ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).map(S => ({ kind: 'hermes', S })); },
+      kindMeta: k => ({ sig: '*', label: k, color: 'kc:' + k }),
+    },
   };
   return { ids, rec, DATA, stubs };
 }

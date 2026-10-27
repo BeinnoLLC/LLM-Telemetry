@@ -10,7 +10,7 @@ import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
-import { renderLive } from './live.js';
+import { inProgressHtml, renderLive } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
 import { renderQuotaView, qvStat } from './quotaview.js';
 import {
@@ -463,12 +463,8 @@ export function render(){
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
-  // `active` is a live count from the DB, deliberately NOT filtered by the date
-  // range — "in progress" means right now, whatever window you are looking at.
-  const live = DATA.profiles[current].active || 0;
-  const liveDot = live
-    ? `<span style="color:#5f9e6e">●</span> ${live}`
-    : `<span class="muted">●</span> 0`;
+  // Live count, deliberately NOT date-filtered: in progress means right now.
+  const liveDot = inProgressHtml(DATA.profiles[current], DATA.pi_live, DATA.agent_live);
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
   const H = DATA.profiles[current].health || [];
