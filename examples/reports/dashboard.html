@@ -1603,8 +1603,9 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 
 
 .lvscroll{overflow:auto;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;
-  --lvcols:34px minmax(170px,2.6fr) minmax(84px,1fr) 74px 54px 54px 58px minmax(90px,1.2fr) 138px}
-.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:6px;align-items:center;min-width:816px;padding:0 6px}
+  
+  --lvcols:34px minmax(164px,1.8fr) minmax(132px,1.2fr) 76px 56px 50px 56px minmax(70px,1fr) 134px}
+.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:4px;align-items:center;min-width:816px;padding:0 6px}
 .lvhead{position:sticky;top:0;z-index:2;height:28px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
 .lvh{font-size:var(--fs-xs);font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
@@ -1619,11 +1620,29 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvc{min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
 .lvc-act{gap:6px}
 .lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
-.lvc.metacol{flex-direction:row;align-self:auto;width:auto;text-align:left;gap:6px;justify-content:flex-start}
-.lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.lvc.metacol{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;align-self:auto;width:auto;text-align:left;gap:1px 6px;justify-content:flex-start}
+.lvprov>span{padding:0 4px;line-height:12px}
+.lvstk{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;min-width:0;max-width:100%}
+
+.lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%;flex:0 0 100%;line-height:1.1}
+.lvmx{flex:0 0 100%;display:flex;align-items:center;gap:6px;max-width:100%;min-width:0;overflow:hidden;line-height:1.1}
+.lvmx .lmbtn,.lvmx .lvswitch,.lvmx>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;line-height:1.1}
+
+:root:not([data-theme="dark"]) .lvrow:not([data-lvstate=idle]) .lvmodel{filter:brightness(.5)}
+
+.lvrow[data-lvstate=idle] .lvmodel,.lvrow[data-lvstate=idle] .lvtitle{color:var(--muted) !important}
 .lvtitle{font-weight:600;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;min-width:64px;flex:0 1 auto}
+
+.lvrow .lvc-sess>.lvtag,.lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl,.lvrow .lvrow .lvs2>.lvsub,.lvrow .lvs2>.pv-badge,.lvrow .lvc-sess>.pv-badge{flex:0 1000 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+.lvs1,.lvs2{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.lvs1{line-height:1.15}
+.lvs2{overflow:hidden;line-height:1.1}
+.lvs2>.lvtag{line-height:12px}
+.lvrow .lmsplit{display:none}
+.lvrow .chip.lntimelinebtn{font-size:10px;line-height:12px;padding:0 6px;border-radius:999px;flex:none}
 .lvrow .chip{padding:0 5px;line-height:16px;flex:none;font-size:var(--fs-xs)}
-.lvrow .lmbtn{padding:0;line-height:16px;flex:none}
+.lvrow .lmbtn{padding:0;line-height:16px;flex:0 1 auto}
 .lvrow .pv-badge{flex:none}
 .lvcat{font-size:var(--fs-md);line-height:1;flex:none}
 .lvcatl,.lvsub,.lvswitch,.lvago{font-size:var(--fs-xs);flex:none}
@@ -1642,7 +1661,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvrow .loe{--gauge-size:26px}
 .lvrow .loe .gnum,.lvrow .loe .glbl{display:none}
 .lvpct{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);min-width:26px;text-align:right}
-.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;flex-wrap:nowrap;gap:4px}
+.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;justify-items:start;gap:0 6px;line-height:1.1;min-width:0}
 .lvrow + .lmpanel{margin:0;min-width:816px;border-left:0;border-right:0}
 .lvbody{display:block}
 
@@ -7139,11 +7158,12 @@ function lvRow(o){
   const pct = (/aria-valuenow="(\d+)"/.exec(o.gauge) || [])[1];
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool">${esc(t)}</span>`).join('');
-  const html = `<div class="liverow lvrow items-center" role="row"${o.attrs}>
+  const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
-      <div class="lvc lvc-sess" role="cell">${o.lead || ''}${o.title}${o.tags || ''}</div>
+      ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
+        : `<div class="lvc lvc-sess" role="cell">${o.lead || ''}${o.title}${o.tags || ''}</div>`}
       <div class="lvc metacol" role="cell">
-        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra || ''}
+        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
       </div>
       <div class="lvc" role="cell"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span></div>
       <div class="lvc lvnum" role="cell" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</div>
@@ -7228,7 +7248,7 @@ function piLiveRows(list){
       costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
       attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
-      tags: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)">${esc(S.agent||'pi')}</span>`,
+      tags: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
       model: S.model, mcol: colorOf(short(S.model)),
       mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
@@ -7340,11 +7360,12 @@ function renderLive(){
       const mcol = colorOf(short(L.model));
       const tok = sessTotals(L).k;
       return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
+        prov: provOf('', L.model, L.base_url),
         lead: `<span class="lvcat" style="color:${c.c}" title="${escA(L.category)}">${c.i}</span>`,
-        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`
-          + `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`,
-        tags: `<span class="lvcatl" style="color:${c.c}">${esc(L.category)}</span>${provBadge(provOf('', L.model, L.base_url))}`
-          + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${esc(L.profile)}</span>` : '')
+        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
+        sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
+          + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+          + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
           + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
         mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
         gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
