@@ -133,7 +133,7 @@ setTimeout(() => {
     const scs = w.getComputedStyle(sc);
     chk((scs.overflow === 'auto' || scs.overflowX === 'auto') && scs.minWidth === '0px', 'the table scrolls inside .lvscroll (overflow:auto, min-width:0)', `${scs.overflow}/${scs.overflowX}/${scs.minWidth}`);
     chk(sc.closest('.card') && w.getComputedStyle(sc.closest('.card')).minWidth === '0px', 'the card around it can shrink (min-width:0)');
-    chk(/\.lvhead,\.lvrow\{[^}]*min-width:980px/.test(html), 'rows and header share one min-width so they scroll together');
+    chk(/\.lvhead,\.lvrow\{[^}]*min-width:816px/.test(html), 'rows and header share one min-width so they scroll together');
     chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
     chk(parseFloat(w.getComputedStyle(rows()[0]).maxHeight) <= 32, 'row height is capped at 32px', w.getComputedStyle(rows()[0]).maxHeight);
 
