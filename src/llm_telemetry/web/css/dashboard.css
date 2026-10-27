@@ -1760,8 +1760,11 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 /* Live board as a compact table panel (G4). The scroller owns both axes so the
    sticky header and the rows scroll sideways together inside the card. */
 .lvscroll{overflow:auto;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;
-  --lvcols:34px minmax(170px,2.6fr) minmax(84px,1fr) 74px 54px 54px 58px minmax(90px,1.2fr) 138px}
-.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:6px;align-items:center;min-width:816px;padding:0 6px}
+  /* Kind/State/Elapsed/Tokens/Cost/Load are fixed to their content width; the
+     slack goes to Session and Model (names stay whole) and Last activity is the
+     column that gives way first. */
+  --lvcols:34px minmax(164px,1.8fr) minmax(132px,1.2fr) 76px 56px 50px 56px minmax(70px,1fr) 134px}
+.lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:4px;align-items:center;min-width:816px;padding:0 6px}
 .lvhead{position:sticky;top:0;z-index:2;height:28px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
 .lvh{font-size:var(--fs-xs);font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
@@ -1776,11 +1779,30 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvc{min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
 .lvc-act{gap:6px}
 .lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
-.lvc.metacol{flex-direction:row;align-self:auto;width:auto;text-align:left;gap:6px;justify-content:flex-start}
-.lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.lvc.metacol{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;align-self:auto;width:auto;text-align:left;gap:1px 6px;justify-content:flex-start}
+.lvprov>span{padding:0 4px;line-height:12px}
+.lvstk{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;min-width:0;max-width:100%}
+/* model id on top, the "N models used" / switch note on a small second line */
+.lvmodel{overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%;flex:0 0 100%;line-height:1.1}
+.lvmx{flex:0 0 100%;display:flex;align-items:center;gap:6px;max-width:100%;min-width:0;overflow:hidden;line-height:1.1}
+.lvmx .lmbtn,.lvmx .lvswitch,.lvmx>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;line-height:1.1}
+/* light theme: the shared palette is tuned for dark cards (hsl 55%); darken the
+   model text for contrast on white without touching dark or the chart colours */
+:root:not([data-theme="dark"]) .lvrow:not([data-lvstate=idle]) .lvmodel{filter:brightness(.5)}
+/* an idle row is muted by colour (not opacity) so its text keeps AA contrast */
+.lvrow[data-lvstate=idle] .lvmodel,.lvrow[data-lvstate=idle] .lvtitle{color:var(--muted) !important}
 .lvtitle{font-weight:600;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;min-width:64px;flex:0 1 auto}
+/* tags beside the title shrink (and clip) well before the title does */
+.lvrow .lvc-sess>.lvtag,.lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl,.lvrow .lvrow .lvs2>.lvsub,.lvrow .lvs2>.pv-badge,.lvrow .lvc-sess>.pv-badge{flex:0 1000 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* Hermes rows: title on line one, Timeline pill + category/profile tags on a small second line */
+.lvs1,.lvs2{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.lvs1{line-height:1.15}
+.lvs2{overflow:hidden;line-height:1.1}
+.lvs2>.lvtag{line-height:12px}
+.lvrow .lmsplit{display:none}
+.lvrow .chip.lntimelinebtn{font-size:10px;line-height:12px;padding:0 6px;border-radius:999px;flex:none}
 .lvrow .chip{padding:0 5px;line-height:16px;flex:none;font-size:var(--fs-xs)}
-.lvrow .lmbtn{padding:0;line-height:16px;flex:none}
+.lvrow .lmbtn{padding:0;line-height:16px;flex:0 1 auto}
 .lvrow .pv-badge{flex:none}
 .lvcat{font-size:var(--fs-md);line-height:1;flex:none}
 .lvcatl,.lvsub,.lvswitch,.lvago{font-size:var(--fs-xs);flex:none}
@@ -1799,7 +1821,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvrow .loe{--gauge-size:26px}
 .lvrow .loe .gnum,.lvrow .loe .glbl{display:none}
 .lvpct{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);min-width:26px;text-align:right}
-.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;flex-wrap:nowrap;gap:4px}
+.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;justify-items:start;gap:0 6px;line-height:1.1;min-width:0}
 .lvrow + .lmpanel{margin:0;min-width:816px;border-left:0;border-right:0}
 .lvbody{display:block}
 /* The 44px mobile tap-target floor would balloon a 30px table row; inside the

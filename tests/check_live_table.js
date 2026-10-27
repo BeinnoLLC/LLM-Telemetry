@@ -137,6 +137,34 @@ setTimeout(() => {
     chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
     chk(parseFloat(w.getComputedStyle(rows()[0]).maxHeight) <= 32, 'row height is capped at 32px', w.getComputedStyle(rows()[0]).maxHeight);
 
+    // (f) names stay whole: the narrow columns shrink to their content width and
+    // Last activity is the one that gives way; the model cell has no small cap
+    const cols = (/--lvcols:([^}]+)\}/.exec(html) || [, ''])[1].trim().split(/\s+(?![^(]*\))/);
+    const minPx = t => { const m = /^(?:minmax\()?(\d+)px/.exec(t); return m ? +m[1] : NaN; };
+    chk(cols.length === 9, '--lvcols defines nine tracks', cols.join(' '));
+    chk([0, 3, 4, 5, 6, 8].every(i => /^\d+px$/.test(cols[i])), 'Kind/State/Elapsed/Tokens/Cost/Load are fixed to their content width', cols.join(' '));
+    chk(minPx(cols[2]) >= 132 && minPx(cols[1]) >= 164, 'Model track >= 132px (18ch) and Session track >= 164px', cols[1] + ' ' + cols[2]);
+    chk(/fr\)$/.test(cols[7]) && minPx(cols[7]) <= 80 && minPx(cols[7]) < minPx(cols[2]) && minPx(cols[7]) < minPx(cols[1]), 'Last activity is the flexible, smallest-min column (truncates first)', cols[7]);
+    const capOf = sel => { const r = new RegExp('(?:^|\\})\\s*' + sel + '\\{([^}]*)\\}', 'g'); const out = []; let m; while ((m = r.exec(html))) { const c = /max-width:\s*([\d.]+)(ch|px|em|rem)?/.exec(m[1]); if (c) out.push(c[0]); } return out; };
+    const capTooSmall = v => { const m = /([\d.]+)(ch|px|em|rem)?/.exec(v.replace('max-width:', '')); const n = +m[1], u = m[2]; return u === 'ch' ? n < 18 : u === 'px' ? n < 132 : (u === 'em' || u === 'rem') ? n < 9 : false; };
+    chk(!capOf('\\.lvmodel').some(capTooSmall) && !capOf('\\.lvc\\.metacol').some(capTooSmall), 'the model cell has no max-width below 18ch', capOf('\\.lvmodel').concat(capOf('\\.lvc\\.metacol')).join(';'));
+    chk(c1 && cell(c1, 2).querySelector('.lvmodel').getAttribute('title') === 'claude-opus-4-5', 'a truncatable model cell keeps its full text in title=');
+    chk(c1 && c1.querySelector('.lvtitle').getAttribute('title') === 'alpha', 'a truncatable session cell keeps its full text in title=');
+
+    // (g) the idle row is muted by colour, never by opacity, and the colours meet AA
+    chk(cidle && cidle.dataset.lvstate === 'idle' && c1.dataset.lvstate === 'running', 'rows carry data-lvstate for the idle styling');
+    const idleRules = [...html.matchAll(/([^{}]*data-lvstate=idle[^{}]*)\{([^}]*)\}/g)].filter(m => !/:not\(/.test(m[1]));
+    chk(idleRules.length > 0 && idleRules.every(m => !/opacity/.test(m[2]) && /color:var\(--muted\)/.test(m[2])), 'idle row rules mute with var(--muted) and use no opacity', idleRules.map(m => m[0]).join(' | '));
+    chk(!/\.liverow[^{}]*\{[^}]*opacity:\s*0?\.\d/.test(html.replace(/\.live-fade[^{}]*\{[^}]*\}/g, '')), 'no .liverow rule fades text with opacity');
+    const lumOf = hex => { const h = hex.replace('#', ''); const v = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+    const ratio = (a, b) => { const A = lumOf(a), B = lumOf(b); return (Math.max(A, B) + .05) / (Math.min(A, B) + .05); };
+    const tok = (block, n) => { const m = new RegExp(n + ':(#[0-9a-fA-F]{6})').exec(block); return m && m[1]; };
+    const lightBlock = html.slice(html.indexOf(':root,\n[data-theme="light"]{')), darkBlock = html.slice(html.indexOf('[data-theme="dark"]{'));
+    const rl = ratio(tok(lightBlock, '--muted'), tok(lightBlock, '--card')), rd = ratio(tok(darkBlock, '--muted'), tok(darkBlock, '--card'));
+    chk(rl >= 4.5 && rd >= 4.5, 'idle (--muted on --card) contrast is >= 4.5:1 in light and dark', rl.toFixed(2) + ' / ' + rd.toFixed(2));
+    chk(/:root:not\(\[data-theme="dark"\]\) \.lvrow:not\(\[data-lvstate=idle\]\) \.lvmodel\{filter:brightness\(\.[1-6]\d*\)\}/.test(html) && /class="lvmodel[^"]*" style="color:[^"]*"/.test(cell(c1, 2).innerHTML),
+      'model text is darkened for light only; dark keeps the palette colour (inline colour)');
+
     // empty state hides the header and shows the empty block
     feed([], [], []);
     chk(d.getElementById('livehead').hidden === true, 'header hidden when nothing is running');
