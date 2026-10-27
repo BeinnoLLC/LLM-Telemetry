@@ -219,8 +219,10 @@
 .ft-sub{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
 .ft-phase{font-size:var(--fs-xs);padding:1px 6px;max-width:100%;border-radius:999px;background:var(--fb-surface);border:1px solid var(--border);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.lvcov{color:var(--muted);white-space:nowrap}
-.lvsubb{margin-left:4px;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1;color:var(--muted);white-space:nowrap}
+.lvsubb{margin-top:0;padding:0 3px;border:1px solid var(--border);border-radius:3px;font-size:9px;line-height:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.ft-cost .lvcov{flex-direction:row;align-items:center;gap:4px}
+.ft-cost .lvsubb{margin-top:0}
 .ft-cost{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;align-self:flex-end}
 
 @container (max-width:240px){.ft-sub{flex-direction:row;align-items:center;justify-content:space-between}.ft-cost{align-self:auto;flex:none}}
