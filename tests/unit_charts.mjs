@@ -19,7 +19,7 @@ const bwPrev = { s1: { up: 1000, down: 0 } };
 async function charts(weight, { bwPrevAt = NOW - 10_000, DATA = {} } = {}) {
   return isolate('charts.js', {
     'palette.js': {
-      $: () => null, BD: '#333', MU: '#888', LABEL_FONT: P.LABEL_FONT, bwPrev, bwPrevAt,
+      $: () => null, MU: '#888', LABEL_FONT: P.LABEL_FONT, bwPrev, bwPrevAt,
       escA: P.escA, fmtB: P.fmtB, fmtRate: P.fmtRate, labelColor: () => null, readTheme: () => {},
     },
     'main.js': { DATA },
@@ -57,14 +57,14 @@ eq(C.radialRing(85, { label: 'Hit' }).includes('aria-valuetext="Hit 85 percent, 
 eq(C.radialRing(70).includes('var(--z-warn)'), true, 'ring 60-79 is watch');
 {
   const r = C.radialRing(59.6);
-  eq(r.includes('>60%<') && r.includes('var(--z-bad)'), true, 'ring 59.6 shows 60% but stays Low (tier from raw value)');
+  eq(r.includes('>60<tspan') && r.includes('var(--z-bad)'), true, 'ring 59.6 shows 60% but stays Low (tier from raw value)');
 }
 eq(C.radialRing(79.6).includes('var(--z-warn)'), true, 'ring 79.6 shows 80% but stays Watch');
 eq(C.radialRing(null, { label: 'X' }).includes('X: no data') && C.radialRing(null).includes('>—<'), true, 'ring null -> no data');
 eq(C.radialRing(95, { warnAt: 99, badAt: 90 }).includes('var(--z-warn)'), true, 'ring honours custom bands');
-// circumference 2*pi*15.5 = 97.39; full ring -> offset 0, empty -> full circumference, clamped.
+// 270° arc length 1.5*pi*40 = 188.50; full ring -> offset 0, empty -> full arc length, clamped.
 eq([100, 150].map(p => C.radialRing(p).match(/stroke-dashoffset="([^"]+)"/)[1]), ['0.00', '0.00'], 'ring full/over-full has zero offset');
-eq([0, -5].map(p => C.radialRing(p).match(/stroke-dashoffset="([^"]+)"/)[1]), ['97.39', '97.39'], 'ring empty/negative has full offset');
+eq([0, -5].map(p => C.radialRing(p).match(/stroke-dashoffset="([^"]+)"/)[1]), ['188.50', '188.50'], 'ring empty/negative has full offset');
 
 // ---- sparkSvg / olBar / ctxSpark geometry --------------------------------
 eq([C.sparkSvg([1, 1, 1]), C.sparkSvg([5]), C.sparkSvg(null)], ['', '', ''], 'sparkSvg is blank for flat or short series');

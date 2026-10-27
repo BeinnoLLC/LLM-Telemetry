@@ -118,17 +118,12 @@ setTimeout(() => {
     const gaugeCards = cards.filter(c => !c.hasAttribute('data-pisession'));
     const svgs = gaugeCards.map(c => c.querySelector('.loe svg')).filter(Boolean);
     chk(svgs.length === gaugeCards.length, 'every gauge drew an svg');
-    const needles = gaugeCards.map(c => c.querySelector('.needle')).filter(Boolean);
-    chk(needles.length === gaugeCards.length, 'every gauge has a needle');
-    const varsOk = needles.every(n => {
-      const s = n.getAttribute('style') || '';
-      return s.includes('--d:') && s.includes('--amp:') && s.includes('--spd:');
-    });
-    chk(varsOk, 'needles carry animation vars');
-    const angles = needles.map(n =>
-      parseFloat((n.getAttribute('style').match(/--d:(-?[\d.]+)deg/) || [])[1]));
-    chk(angles.every(a => a >= -135 && a <= 135), 'needle angles in range (270° sweep, #7)',
-        `[${Math.min(...angles).toFixed(0)}, ${Math.max(...angles).toFixed(0)}]`);
+    chk(gaugeCards.every(c => !c.querySelector('.needle')), 'no gauge has a needle (G2 arc gauge)');
+    const arcs = gaugeCards.map(c => c.querySelector('.loe .gtrack')).filter(Boolean);
+    chk(arcs.length === gaugeCards.length, 'every gauge has a 270° track arc');
+    const offs = gaugeCards.map(c => parseFloat(((c.querySelector('.loe .gval') || c.querySelector('.loe .gtrack'))
+      .getAttribute('stroke-dashoffset')) || '0'));
+    chk(offs.every(o => o >= 0 && o <= 40 * 1.5 * Math.PI + 0.01), 'value-arc offsets stay within the 270° length (#7)');
     chk(cards.every(c => c.className.includes('items-center')),
         'card contents vertically centred');
     const meta = cards.map(c => c.querySelector('.metacol')).filter(Boolean);

@@ -56,7 +56,7 @@ setTimeout(() => {
     chk(/stroke="var\(--z-bad\)"/.test(badRing), 'a low value uses the shared --z-bad colour');
     const nullRing = w.eval(`radialRing(null, {label:'Cache hit rate'})`);
     chk(/no data/.test(nullRing) || /—/.test(nullRing), 'a null/no-data value shows an explicit no-data state, not a fabricated 0%');
-    chk(!/<circle[^>]*stroke="var\(--z-bad\)"/.test(nullRing), 'a no-data ring does not paint the danger colour (that would misread as "0% healthy")');
+    chk(!/<path[^>]*stroke="var\(--z-bad\)"/.test(nullRing), 'a no-data ring does not paint the danger colour (that would misread as "0% healthy")');
 
     const spark = w.eval(`sparkSvg([10, 12, 30, 8, 40, 50, 45], '#22c55e')`);
     chk(/<polyline/.test(spark), 'sparkSvg draws a real polyline from real values');
