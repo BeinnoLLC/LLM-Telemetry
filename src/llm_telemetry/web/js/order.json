@@ -1015,6 +1015,30 @@
   },
   {
    "mod": "live",
+   "name": "LKPI_CARDS"
+  },
+  {
+   "mod": "live",
+   "name": "ensureKpiCards"
+  },
+  {
+   "mod": "live",
+   "name": "paintSpark"
+  },
+  {
+   "mod": "live",
+   "name": "SEV_RANK"
+  },
+  {
+   "mod": "live",
+   "name": "ALERT_ROWS"
+  },
+  {
+   "mod": "live",
+   "name": "alertsHtml"
+  },
+  {
+   "mod": "live",
    "name": "renderLiveKpis"
   },
   {

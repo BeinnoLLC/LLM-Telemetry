@@ -5,7 +5,7 @@
 import {
   $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
 } from './palette.js';
-import { agg, bwRow, current, loeIcon, mk, noLeg, sparkSvg } from './charts.js';
+import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
 import {
   REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
@@ -159,35 +159,76 @@ export function liveKpis(p, name, now, profiles, agentLive, piLive){
   const alerts = merged ? mergedField(profiles, 'alerts') : ((p && p.alerts) || []);
   return {
     sessions, alive, agents: agents.length,
-    alerts: alerts.length,
+    alerts: alerts.length, list: alerts.filter(Boolean),
     critical: alerts.filter(a => a && a.severity === 'critical').length,
     tput: throughputFor(name, now),
   };
 }
+// The four cards are built once, so the throughput sparkline's canvas outlives
+// the 5s repaint (rewriting box.innerHTML would orphan its Chart instance on
+// every poll); only each card's .lkpi-body is rewritten.
+const LKPI_CARDS = [['sessions', 'Sessions in flight'], ['agents', 'Agents alive'],
+  ['throughput', 'Calls · tokens'], ['alerts', 'Active alerts']];
+function ensureKpiCards(box){
+  if (box.querySelectorAll('.lkpi').length === LKPI_CARDS.length) return;
+  box.innerHTML = LKPI_CARDS.map(([key, label]) =>
+    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div><div class="lkpi-body"></div>`
+    + (key === 'throughput'
+      ? '<div class="lkpi-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>' : '')
+    + '</div>').join('');
+}
+// One chart per page: built through mk() (which destroys any chart already
+// bound to the canvas) the first time, then fed the new window in place.
+function paintSpark(series){
+  const el = $('cLkpiSpark');
+  if (!el) return;
+  const labels = series.map((_, i) => i);
+  const have = (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
+  if (have){
+    have.data.labels = labels;
+    have.data.datasets[0].data = series;
+    have.update('none');
+    return;
+  }
+  mk('cLkpiSpark', 'line', labels, [
+    {data: series, borderColor: PAL[0], backgroundColor: PAL[0] + '1a', fill: true,
+     tension: .3, pointRadius: 0, borderWidth: 1.5}],
+    {animation: false, events: [], layout: {padding: 0},
+     plugins: {legend: {display: false}, tooltip: {enabled: false}},
+     scales: {x: {display: false}, y: {display: false, beginAtZero: true}}});
+}
+const SEV_RANK = { critical: 0, warning: 1, info: 2 };
+const ALERT_ROWS = 2;
+function alertsHtml(k){
+  const list = k.list.slice().sort((a, b) => (SEV_RANK[a.severity] ?? 9) - (SEV_RANK[b.severity] ?? 9));
+  const rows = list.slice(0, ALERT_ROWS).map(a =>
+    `<li class="${a.severity === 'critical' ? 'crit' : ''}"><span class="adot" aria-hidden="true"></span>`
+    + `<span class="atext" title="${escA(a.why || a.message || '')}">${esc(a.message || a.rule || '')}</span></li>`);
+  if (list.length > ALERT_ROWS) rows.push(`<li class="amore">+${list.length - ALERT_ROWS} more</li>`);
+  return `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
+       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>
+       <ul class="lkpi-alist">${rows.join('')}</ul>`;
+}
 export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
+  ensureKpiCards(box);
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
-  const spark = sparkSvg(k.tput.series, 'var(--accent)', { w: 96, h: 22 });
-  const alertsBody = k.alerts
-    ? `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
-       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>`
-    : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
-  const card = (key, label, body) =>
-    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
-  box.innerHTML = [
-    card('sessions', 'Sessions in flight',
-      `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
-    card('agents', 'Agents alive',
-      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
-      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
-    card('throughput', 'Calls · tokens',
-      `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
-      + `<div class="lkpi-sub">${win}</div>${spark ? `<div class="lkpi-spark">${spark}</div>` : ''}`),
-    card('alerts', 'Active alerts', alertsBody),
-  ].join('');
+  const body = {
+    sessions: `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`,
+    agents: `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`,
+    throughput: `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
+      + `<div class="lkpi-sub">${win}</div>`,
+    alerts: k.alerts ? alertsHtml(k) : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`,
+  };
+  LKPI_CARDS.forEach(([key]) => {
+    const slot = box.querySelector(`[data-kpi="${key}"] .lkpi-body`);
+    if (slot && slot.innerHTML !== body[key]) slot.innerHTML = body[key];
+  });
+  paintSpark(k.tput.series);
   return k;
 }
 
