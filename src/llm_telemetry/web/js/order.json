@@ -455,6 +455,14 @@
   },
   {
    "mod": "charts",
+   "name": "seriesStats"
+  },
+  {
+   "mod": "charts",
+   "name": "legendTable"
+  },
+  {
+   "mod": "charts",
    "name": "agg"
   },
   {
@@ -1092,6 +1100,18 @@
   {
    "mod": "live",
    "name": "mergeDelegations"
+  },
+  {
+   "mod": "live",
+   "name": "HOME_HOURS"
+  },
+  {
+   "mod": "live",
+   "name": "homeSeries"
+  },
+  {
+   "mod": "live",
+   "name": "renderHomeSeries"
   },
   {
    "mod": "main",
