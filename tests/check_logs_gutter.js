@@ -11,13 +11,13 @@ const px = v => { const m = /(\d+(?:\.\d+)?)px/.exec(v || ''); return m ? Number
 
 const page = rule('.page'), btn = rule('#logbtn');
 chk(!!page && !!btn, '.page and #logbtn rules found');
-// #logbtn: padding 13px 10px + ~1.5 line glyph; hover widens right padding to 14px.
-const hover = /#logbtn:hover\{[^}]*padding-right:(\d+)px/.exec(css);
-const pr = /padding:\s*\S+\s+max\(\s*var\(--pad\)\s*,\s*(\d+)px\s*\)/.exec(page || '');
-chk(!!pr, '.page right padding is max(var(--pad), Npx)');
-const gutter = pr ? Number(pr[1]) : 0;
-const TAB_W = 51, HOVER_GROW = hover ? Number(hover[1]) - 10 : 0;
-chk(gutter >= TAB_W + HOVER_GROW, `.page right gutter ${gutter}px >= tab ${TAB_W}px + hover growth ${HOVER_GROW}px`);
+// LST-254: the tab is a fixed --logtab-w wide (hover cannot grow it) and .page
+// reserves --logtab-gutter = tab width + gap; see check_logs_tab_reserve.js.
+chk(/padding:\s*\S+\s+max\(\s*var\(--pad\)\s*,\s*var\(--logtab-gutter\)\s*\)/.test(page || ''), '.page right padding is max(var(--pad), var(--logtab-gutter))');
+const w = Number((/--logtab-w:(\d+)px/.exec(css) || [])[1]), gap = Number((/--logtab-gap:(\d+)px/.exec(css) || [])[1]);
+chk(/#logbtn\{[^}]*width:var\(--logtab-w\)/.test(css), '#logbtn width is var(--logtab-w)');
+chk(w + gap >= 51 + 4, `gutter ${w + gap}px >= old tab 51px + hover growth 4px`);
+chk(!/#logbtn:hover\{[^}]*padding/.test(css), 'hover does not change the tab footprint');
 chk(!/padding-right/.test(css.match(/body\.hasnav \.page\{[^}]*\}/g).join('')), 'nav rules only touch padding-left');
 chk(/\.qt-line \.qt-cars\{(?![^}]*mask-image)[^}]*\}/.test(css)
   && /qtEdgeFade\(/.test(fs.readFileSync(path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js', 'flow.js'), 'utf8'))

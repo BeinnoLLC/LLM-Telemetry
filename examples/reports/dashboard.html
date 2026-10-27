@@ -107,6 +107,9 @@
    --gauge-size:84px;
    
    --nav-w:232px; --rail-w:60px; --bar-h:52px;
+   
+   --logtab-w:52px; --logtab-gap:12px;
+   --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
  }
 
  *{box-sizing:border-box}
@@ -114,7 +117,7 @@
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  
- .page{width:100%;padding:var(--pad) max(var(--pad),56px) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+ .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  .card{background:var(--card);border:1px solid var(--border);border-radius:4px}
  .muted{color:var(--muted)}
 
@@ -1059,14 +1062,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  
  #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
-   display:flex;align-items:center;gap:7px;padding:13px 10px;
+   display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 0;
+   width:var(--logtab-w);box-sizing:border-box;overflow:hidden;
    border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
    background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
    font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
-   box-shadow:-4px 0 18px rgba(0,0,0,.35);transition:padding .15s ease}
- #logbtn:hover{border-color:var(--accent);padding-right:14px}
+   box-shadow:-4px 0 18px rgba(0,0,0,.35)}
+ 
+ #logbtn:hover{border-color:var(--accent)}
+ #logbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
  
  #logbtn.hidden{opacity:0;pointer-events:none}
+  
+ @media (max-width:599px){ :root{--logtab-w:44px;--logtab-gap:6px} #logbtn{padding:10px 0;gap:5px;letter-spacing:.02em} }
  #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
    font-size:var(--fs-xs);font-weight:600;line-height:1.5}
  #logbtn .n[hidden]{display:none}
@@ -2560,7 +2568,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 </div>
 <div id="lntip"></div>
 
-<button id="logbtn" title="Open live logs (L)">
+<button id="logbtn" title="Open live logs (L)" aria-keyshortcuts="L">
  <span style="color:var(--accent)">&#9776;</span> Logs
  <span class="n" id="logn" hidden>0</span>
 </button>
