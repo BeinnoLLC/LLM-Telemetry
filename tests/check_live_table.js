@@ -172,7 +172,7 @@ setTimeout(() => {
     chk(/flex:1 1 6ch;min-width:6ch/.test(rule('\\.lvc-act>\\.lvphase')), 'activity phase has min-width 6ch');
     chk(/flex:none/.test(rule('\\.lvc-act>\\.lvago')), 'the relative time never shrinks');
     const hideOn = sel => { const b = rule(sel); return /flex-wrap:wrap/.test(b) && /overflow:hidden/.test(b); };
-    chk(hideOn('\\.lvc-act,\\.lvs2') && /height:18px/.test(rule('\\.lvc-act')) && /height:16px/.test(rule('\\.lvs2')), 'activity and tag rows wrap in a fixed-height overflow:hidden box so a chip that does not fit drops out');
+    chk(hideOn('\\.lvc-act') && hideOn('\\.lvs2') && /height:18px/.test(rule('\\.lvc-act')) && /height:16px/.test(rule('\\.lvs2')), 'activity and tag rows wrap in a fixed-height overflow:hidden box so a chip that does not fit drops out');
     chk(chOf(rule('\\.lvrow \\.lvs2>\\.lvtag,\\.lvrow \\.lvs2>\\.lvcatl'), 'min-width') >= 6 && chOf(rule('\\.lvrow \\.lvc-sess>\\.lvtag'), 'min-width') >= 6, 'agent tag and Hermes category label keep min-width >= 6ch');
     chk(/max-width:calc\(100% - \d+px\)/.test(rule('\\.lvrow \\.lvc-sess>\\.lvtitle')), 'the session title yields to the agent tag, not the other way round');
 

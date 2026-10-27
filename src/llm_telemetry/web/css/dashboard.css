@@ -1777,7 +1777,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvc:not(.metacol){font-size:var(--fs-sm)}  /* model size comes from its own utility class, as before */
 .lvrow:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
 .lvc{min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
-.lvc-act{gap:6px}
+.lvc-act{gap:6px;flex-wrap:wrap;align-content:flex-start;overflow:hidden;height:18px;align-self:center;row-gap:20px}
 .lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
 .lvc.metacol{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;align-self:auto;width:auto;text-align:left;gap:1px 6px;justify-content:flex-start}
 .lvprov>span{padding:0 4px;line-height:12px}
@@ -1797,7 +1797,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 /* Hermes rows: title on line one, Timeline pill + category/profile tags on a small second line */
 .lvs1,.lvs2{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
 .lvs1{line-height:1.15}
-.lvs2{overflow:hidden;line-height:1.1}
+.lvs2{overflow:hidden;line-height:1.1;flex-wrap:wrap;align-content:flex-start;height:16px;row-gap:20px}
 .lvs2>.lvtag{line-height:12px}
 .lvrow .lmsplit{display:none}
 .lvrow .chip.lntimelinebtn{font-size:10px;line-height:12px;padding:0 6px;border-radius:999px;flex:none}
@@ -1833,9 +1833,6 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
    The cell is one wrapping line of fixed height with overflow hidden, so an item that
    cannot fit at its min-width wraps to a clipped second line and disappears (its full
    text stays in title=). The relative time is first and never shrinks. */
-.lvc-act,.lvs2{flex-wrap:wrap;align-content:flex-start;overflow:hidden}
-.lvc-act{height:18px;align-self:center;row-gap:20px}
-.lvs2{height:16px;row-gap:20px}
 .lvc-act>.lvago{flex:none}
 .lvc-act>.lvphase{flex:1 1 6ch;min-width:6ch}
 .lvc-act>.lvtool{flex:0 1 auto;min-width:6ch;max-width:12ch;overflow:hidden;text-overflow:ellipsis}
