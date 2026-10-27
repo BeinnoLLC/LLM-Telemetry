@@ -129,7 +129,7 @@ def claude_tokens(path: Path) -> Optional[dict[str, dict[str, int]]]:
                 continue
             msg = ev.get("message") if isinstance(ev, dict) else None
             usage = msg.get("usage") if isinstance(msg, dict) else None
-            if ev.get("type") != "assistant" or not isinstance(usage, dict):
+            if msg is None or ev.get("type") != "assistant" or not isinstance(usage, dict):
                 continue
             model = _model_str(msg.get("model"))
             if not model or model.startswith("<"):

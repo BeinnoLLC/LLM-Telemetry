@@ -18,6 +18,7 @@ import os
 import re
 import time
 import urllib.request
+from typing import Any
 
 from .config import get as _cfg
 from .schema import stamp as _stamp
@@ -389,7 +390,7 @@ def _fetch_openrouter(force=False):
         return {}, f"unavailable ({e.__class__.__name__})"
 
 
-_CAT_MEMO = {}
+_CAT_MEMO: dict[str, Any] = {}
 
 
 def cached_catalog():
