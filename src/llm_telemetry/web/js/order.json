@@ -1063,6 +1063,46 @@
   },
   {
    "mod": "live",
+   "name": "LV_COLS"
+  },
+  {
+   "mod": "live",
+   "name": "lvSort"
+  },
+  {
+   "mod": "live",
+   "name": "STATE_RANK"
+  },
+  {
+   "mod": "live",
+   "name": "liveState"
+  },
+  {
+   "mod": "live",
+   "name": "usd"
+  },
+  {
+   "mod": "live",
+   "name": "lvRow"
+  },
+  {
+   "mod": "live",
+   "name": "sortLiveRows"
+  },
+  {
+   "mod": "live",
+   "name": "lvHeadHtml"
+  },
+  {
+   "mod": "live",
+   "name": "orderLiveRows"
+  },
+  {
+   "mod": "live",
+   "name": "installLiveSort"
+  },
+  {
+   "mod": "live",
    "name": "piLiveRows"
   },
   {

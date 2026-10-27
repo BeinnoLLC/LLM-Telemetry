@@ -55,9 +55,9 @@ setTimeout(() => {
       chk(firstRow.textContent.includes(first.model), 'row shows the model', first.model);
       chk(firstRow.textContent.includes(first.phase), 'row shows the phase', first.phase);
       // idle_s renders via ago(); just assert it is not blank/dash.
-      const metacol = firstRow.querySelector('.metacol');
-      chk(!!metacol && !metacol.textContent.includes('—') ,
-          'row shows a real idle time, not the empty dash', metacol && metacol.textContent);
+      const act = firstRow.querySelector('.lvago');
+      chk(!!act && !act.textContent.includes('—') && /ago$/.test(act.textContent.trim()),
+          'row shows a real idle time, not the empty dash', act && act.textContent);
     }
 
     // ---- LST-251: PI rows get the same gauge + detail level as Hermes rows --
@@ -88,8 +88,9 @@ setTimeout(() => {
     const withUptime = live.pi_live.find(s => Number.isFinite(s.uptime_s));
     if (withUptime) {
       const row = rows.find(r => r.dataset.pisession === withUptime.session_id);
-      chk(!!row && row.textContent.includes('up '),
-          'a PI session with a known start time shows its uptime');
+      const el = row && row.querySelector('.lvnum[title^="running since"]');
+      chk(!!el && /^\d/.test(el.textContent.trim()) && !/NaN|undefined/.test(el.textContent),
+          'a PI session with a known start time shows its elapsed time', el && el.textContent);
     }
 
     // ---- PI rows are badged distinctly from Hermes rows ---------------------

@@ -78,14 +78,18 @@ setTimeout(() => {
       'transfer sits inside the gauge column, under the dial');
     chk(withBytes.every(c => !c.querySelector('.metacol .bw')),
       'transfer no longer sits in the meta column');
-    // Under, not beside: the gauge column must stack vertically.
+    // G4: a 30px table row has no room to stack, so the load cell is one line:
+    // dial, then percent, then the byte counts, all inside the same .loecol cell.
     const col = withBytes[0].querySelector('.loecol');
     const cs = w.getComputedStyle(col);
-    chk(cs.flexDirection === 'column', 'gauge column stacks vertically', `(${cs.flexDirection})`);
+    chk(cs.flexDirection === 'row' && cs.alignItems === 'center',
+      'load cell lays dial then bytes out on one centred line', `(${cs.flexDirection}/${cs.alignItems})`);
+    chk(col.closest('.liverow') === withBytes[0] && col.parentElement === withBytes[0],
+      'the load cell is a direct cell of its row');
     // The dial must come first in document order, the bytes after it.
     const dial = col.querySelector('svg, .loe'), bw = col.querySelector('.bw');
     chk(!!dial && !!bw && !!(dial.compareDocumentPosition(bw) & 4),
-      'the dial renders above the byte counts');
+      'the dial renders before the byte counts');
     const t = withBytes[0].querySelector('.loecol .bw').textContent;
     chk(/\u2191/.test(t) && /\u2193/.test(t),
       'row shows BOTH up and down under the gauge', `(${t.replace(/\s+/g,' ').trim().slice(0,40)})`);

@@ -3,7 +3,7 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, MU, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
+  $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
 } from './palette.js';
 import { agg, bwRow, current, loeIcon, mk, noLeg, sparkSvg } from './charts.js';
 import {
@@ -281,38 +281,125 @@ export function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
+// Live board = a compact table panel (Grafana-style). One .liverow per
+// session, nine cells in a fixed grid shared with the sticky header (#livehead):
+// kind | session | model (.metacol) | state | elapsed | tokens | cost | last
+// activity | load (.loecol). Sorting only reorders the keyed rows (applyDiff
+// moves them), so refresh behaviour is unchanged.
+export const LV_COLS = [
+  { k: 'kind', t: 'Kind', ico: true }, { k: 'session', t: 'Session' }, { k: 'model', t: 'Model' },
+  { k: 'state', t: 'State' }, { k: 'elapsed', t: 'Elapsed', num: true }, { k: 'tokens', t: 'Tokens', num: true },
+  { k: 'cost', t: 'Cost', num: true }, { k: 'activity', t: 'Last activity' }, { k: 'load', t: 'Load', num: true },
+];
+export const lvSort = { key: null, dir: 'asc' };
+const STATE_RANK = { Running: 0, Waiting: 1, Idle: 2 };
+export function liveState(kind, S){
+  if (kind === 'hermes') return Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S ? 'Idle' : 'Running';
+  if (S.phase === 'idle') return 'Idle';
+  return /wait|approv|blocked|input/i.test(S.phase || '') ? 'Waiting' : 'Running';
+}
+const usd = c => '$' + (+c).toFixed(c < 1 ? 3 : 2);
+// o: {kind, attrs, lead, title, tags, model, mcol, mextra, S, tok, cost, up, tools, gauge, bw}
+function lvRow(o){
+  const S = o.S, st = liveState(o.kind, S);
+  const ago_ = Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '—';
+  const pct = (/aria-valuenow="(\d+)"/.exec(o.gauge) || [])[1];
+  const tools = (o.tools || []).slice(0, 5).map(t =>
+    `<span class="lvtool">${esc(t)}</span>`).join('');
+  const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${o.attrs}>
+      <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
+      ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
+        : `<div class="lvc lvc-sess" role="cell">${o.lead || ''}${o.title}${o.tags || ''}</div>`}
+      <div class="lvc metacol" role="cell">
+        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
+      </div>
+      <div class="lvc" role="cell"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span></div>
+      <div class="lvc lvnum" role="cell" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</div>
+      <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
+      <div class="lvc lvnum" role="cell" title="estimated cost for this session">${o.cost ? esc(o.cost) : '—'}</div>
+      <div class="lvc lvc-act" role="cell"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span>${tools}</div>
+      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
+    </div>${o.panel || ''}`;
+  const num = v => Number.isFinite(+v) && v != null ? +v : null;
+  return { key: o.key, html, sv: {
+    kind: o.kind, session: (S.title || '').toLowerCase(), model: short(o.model).toLowerCase() || null,
+    state: STATE_RANK[st], elapsed: num(S.uptime_s), tokens: o.tok || null, cost: num(o.costv),
+    activity: num(S.idle_s), load: pct != null ? +pct : null } };
+}
+// Stable sort by the active header; missing values always sink to the bottom.
+export function sortLiveRows(rows){
+  if (!lvSort.key) return rows;
+  const d = lvSort.dir === 'desc' ? -1 : 1, k = lvSort.key;
+  return rows.map((r, i) => [r, i]).sort(([a, i], [b, j]) => {
+    const x = a.sv[k], y = b.sv[k];
+    if (x == null && y == null) return i - j;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = typeof x === 'string' ? x.localeCompare(y) : x - y;
+    return c ? c * d : i - j;
+  }).map(p => p[0]);
+}
+export function lvHeadHtml(){
+  return LV_COLS.map(c => {
+    const on = lvSort.key === c.k;
+    return `<div class="lvh${c.num ? ' lvnum' : ''}" role="columnheader" tabindex="0" data-sort="${c.k}"`
+      + ` aria-sort="${on ? (lvSort.dir === 'desc' ? 'descending' : 'ascending') : 'none'}"`
+      + ` title="Sort by ${c.t.toLowerCase()}">${c.t}<span class="lvarr" aria-hidden="true">${on ? (lvSort.dir === 'desc' ? '▼' : '▲') : ''}</span></div>`;
+  }).join('');
+}
+// applyDiff's reorder pass is built for adds/removes, not arbitrary
+// permutations, so after it runs the groups (row + optional panel) are put in
+// the wanted order here. A no-op whenever the order already matches.
+function orderLiveRows(box, rows){
+  const groups = new Map(), have = [];
+  [...box.children].forEach(el => {
+    if (el.classList.contains('diff-ghost')) return;
+    const k = liveGroupKeyOf(el);
+    if (k == null) return;
+    if (!groups.has(k)){ groups.set(k, []); have.push(k); }
+    groups.get(k).push(el);
+  });
+  const want = rows.map(r => r.key).filter(k => groups.has(k));
+  if (want.join('\u0001') === have.join('\u0001')) return;
+  want.forEach(k => groups.get(k).forEach(el => box.appendChild(el)));
+}
+// Click or Enter/Space on a header: none -> ascending -> descending -> none.
+export function installLiveSort(){
+  const head = $('livehead');
+  if (!head || head.dataset.sortInstalled) return;
+  head.dataset.sortInstalled = '1';
+  const hit = e => {
+    const h = e.target.closest && e.target.closest('[data-sort]');
+    if (!h) return;
+    const k = h.getAttribute('data-sort');
+    if (lvSort.key !== k){ lvSort.key = k; lvSort.dir = 'asc'; }
+    else if (lvSort.dir === 'asc') lvSort.dir = 'desc';
+    else lvSort.key = null;
+    renderLive();
+    const again = head.querySelector(`[data-sort="${k}"]`);
+    if (again && e.type === 'keydown') again.focus();
+  };
+  head.addEventListener('click', hit);
+  head.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); hit(e); }
+  });
+}
+
 // PI sessions (#245) have no sqlite state; their JSONL files are the live state, so
 // they ride DATA.pi_live and share '#livelist' with Hermes rows (keyed 'pi:'+id).
 // LST-251: Hermes parity -- loeIcon gauge (S.tools_gauge), tool chips, model-switch
 // note, uptime. No bandwidth: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
-    const mcol = colorOf(short(S.model));
-    const tools = (S.tools||[]).slice(0,5).map(t=>
-      `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
-    const uptime = Number.isFinite(S.uptime_s) ? `<div class="muted text-[length:var(--fs-xs)]" title="running since session start">up ${ago(S.uptime_s)}</div>` : '';
     const tok = (+S.in_tok||0) + (+S.out_tok||0);
-    const usage = (tok || S.cost_usd)
-      ? `<div class="muted text-[length:var(--fs-xs)]" title="tokens in/out and estimated cost for this session">${fmt(tok)} tok${S.cost_usd ? ` · $${(+S.cost_usd).toFixed(4)}` : ''}</div>` : '';
-    return { key: 'pi:' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
-      <div class="flex-1 min-w-0 self-center">
-        <div class="flex items-center gap-2 flex-wrap">
-          ${kindBadge('pi')}
-          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>
-          <span class="text-[length:var(--fs-xs)] px-1 rounded" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)">${esc(S.agent||'pi')}</span>
-        </div>
-        <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
-        <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
-      </div>
-      <div class="metacol shrink-0">
-        <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
-        ${S.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:var(--z-warn)" title="started on ${escA(short(S.init_model))}">\u21af from ${esc(short(S.init_model))}</div>` : ''}
-        ${uptime}
-        ${usage}
-        <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
-      </div>
-      <div class="loecol">${loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), label:(S.title&&S.title!=='pi session')?S.title:'session load'})}</div>
-    </div>` };
+    return lvRow({ kind: 'pi', key: 'pi:' + (S.session_id || ''), S, tok, tools: S.tools,
+      costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
+      attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
+      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
+      tags: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
+      model: S.model, mcol: colorOf(short(S.model)),
+      mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
+      gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
   });
 }
 
@@ -322,21 +409,13 @@ function piLiveRows(list){
 function agentLiveRows(list){
   return dedupAgentLive(list).map(S => {
     const engine = S.engine === 'codex' ? 'codex' : 'claude';
-    const mcol = colorOf(short(S.model));
-    return { key: engine + ':' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}">
-      <div class="flex-1 min-w-0 self-center">
-        <div class="flex items-center gap-2 flex-wrap">
-          ${kindBadge(engine)}
-          <span class="text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>
-        </div>
-        <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
-      </div>
-      <div class="metacol shrink-0">
-        <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
-        <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
-      </div>
-      <div class="loecol"></div>
-    </div>` };
+    const tok = (+S.in_tok||0) + (+S.out_tok||0);
+    return lvRow({ kind: engine, key: engine + ':' + (S.session_id || ''), S, tok,
+      costv: Number.isFinite(S.cost_usd) ? S.cost_usd : null, cost: Number.isFinite(S.cost_usd) ? usd(S.cost_usd) : '',
+      attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
+      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
+      model: S.model, mcol: colorOf(short(S.model)),
+      gauge: '' });
   });
 }
 
@@ -374,6 +453,14 @@ export function renderLive(){
   const agentRows = agentLiveRows(DATA.agent_live);
   const box = $('livelist');
   if(!box) return;
+  // Sticky header: only repainted when the sort changes, so a 5s poll never
+  // steals keyboard focus from a header cell.
+  const head = $('livehead');
+  if (head){
+    const sig = lvSort.key + ':' + lvSort.dir;
+    if (head.dataset.sig !== sig){ head.innerHTML = lvHeadHtml(); head.dataset.sig = sig; }
+    head.hidden = !(live.length || piRows.length || agentRows.length);
+  }
 
   // P10-01 (#89): "a fan-out is visibly a fan-out" — a collapsed strip above
   // the live list naming any parent with 2+ children currently in flight,
@@ -419,31 +506,18 @@ export function renderLive(){
     const rows = live.map(L => {
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
-      const tools = (L.tools||[]).slice(0,5).map(t=>
-        `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
-      return { key: L.id, html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}">
-        <div style="color:${c.c};font-size:var(--fs-lg);line-height:1.1" title="${escA(L.category)}">${c.i}</div>
-        <div class="flex-1 min-w-0 self-center">
-          <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" class="ttitlebtn text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>
-            <button type="button" class="chip lntimelinebtn text-[length:var(--fs-xs)]" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>
-            <span class="text-[length:var(--fs-xs)] font-medium" style="color:${c.c}">${esc(L.category)}</span>
-            ${kindBadge('hermes')}
-            ${provBadge(provOf('', L.model, L.base_url))}
-            ${L.profile ? `<span class="text-[length:var(--fs-xs)] px-1 rounded" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)">${esc(L.profile)}</span>` : ''}
-            ${L.kind==='subagent'?'<span class="text-[length:var(--fs-xs)] muted">↳ subagent</span>':''}
-          </div>
-          <div class="muted text-[length:var(--fs-xs)] truncate">${esc(L.phase||'—')}</div>
-          <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
-        </div>
-        <div class="metacol shrink-0">
-          <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(L.model))}">${esc(short(L.model))}</div>
-          ${L.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:var(--z-warn)" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</div>` : ''}
-          ${modelsBadge(L)}
-          <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(L.idle_s) ? ago(L.idle_s) + ' ago' : '—'}</div>
-        </div>
-        <div class="loecol">${loeIcon(L, {id:L.id, label:(L.title&&L.title!=='(untitled)')?L.title:'session load'})}${bwRow(L)}</div>
-      </div>${modelsPanel(L)}` };
+      const tok = sessTotals(L).k;
+      return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
+        prov: provOf('', L.model, L.base_url),
+        lead: `<span class="lvcat" style="color:${c.c}" title="${escA(L.category)}">${c.i}</span>`,
+        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
+        sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
+          + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+          + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
+          + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
+        mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
+        gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
+        panel: modelsPanel(L) });
     });
     // PI sessions (#245) are interleaved into the same keyed array — they use
     // the SAME liverow shape (just kindBadge('pi') instead of 'hermes') and
@@ -454,7 +528,9 @@ export function renderLive(){
     // byte-identical to the last render the applier is a no-op (per-key
     // cache) — idle polls touch zero nodes; genuine changes patch in place
     // with fade-in (new sessions) / fade-out (completed sessions).
-    if (rows.length) applyDiff(box, liveGroupKeyOf, rows);
+    const ordered = sortLiveRows(rows);
+    applyDiff(box, liveGroupKeyOf, ordered);
+    orderLiveRows(box, ordered);
     box.dataset.state = 'rows';
   }
   // Only sessions in `live` are summed, so it goes to zero when nothing runs.
@@ -907,6 +983,7 @@ export function scheduleLiveStampTick(){
 scheduleLivePoll();
 scheduleLiveStampTick();
 installDrawer();
+installLiveSort();
 installTranscriptModal();
 installSessionFinder();
 // P4-05 (#101), part 2: click a repo row to expand/collapse its branches.

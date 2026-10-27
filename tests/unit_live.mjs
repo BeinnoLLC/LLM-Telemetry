@@ -131,7 +131,7 @@ async function boot(opt = {}){
 
   const stubs = {
     'palette.js': {
-      $, BD:'#20242e', MU:'#8b93a7', COLORS:{}, TOOLCOLORS:{},
+      $, BD:'#20242e', COLORS:{}, TOOLCOLORS:{},
       ago: PAL.ago, allModelNames: () => ['a/x','a/y'], allToolNames: () => ['patch','read'],
       buildColors: () => ({}), buildToolColors: () => ({}), bwPrev:{}, bwPrevAt:0,
       catOf: PAL.catOf,
@@ -341,7 +341,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(html, 'title="opus-4"', 'renderLive: the model badge shows the SHORT model name');
   has(html, 'style="color:#abc123"', 'renderLive: the model badge colour comes from colorOf');
   eq(h.logs.colorOf, ['opus-4','sonnet-4'], 'renderLive: colorOf is fed exactly the short model name');
-  has(html, '>editing</div>', 'renderLive: the phase line is rendered');
+  has(html, '>editing</span>', 'renderLive: the phase line is rendered');
   has(html, '30s ago', 'renderLive: idle age rendered through ago()');
   has(html, '>patch</span>', 'renderLive: tool chips rendered');
   has(html, '>read</span>', 'renderLive: every tool chip rendered');
@@ -363,16 +363,16 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   ] } } } });
   ok(benignStop(renderErr(h2.M)), 'renderLive: the fallback rows also stop only at the import assignment');
   const h2h = h2.els.livelist.innerHTML;
-  has(h2h, '>—</div>', 'renderLive: a missing phase renders as an em dash');
+  has(h2h, 'class="lvphase" title="">—</span>', 'renderLive: a missing phase renders as an em dash');
   has(h2h, '↳ subagent', 'renderLive: a subagent row is marked as one');
   has(h2h, '↯ from glm', 'renderLive: a switched session names the SHORT model it fell back from');
   has(h2h, 'title="router fell back from glm"', 'renderLive: the fallback tooltip uses the short name');
   eq(h2.logs.loeIcon.map(x => x[1].label), ['session load','session load'], 'renderLive: absent/untitled titles fall back to "session load"');
-  times(h2h, 'rounded" style="background:#20242e;color:#8b93a7"', 5, 'renderLive: at most five tool chips are drawn');
+  times(h2h, 'class="lvtool">', 5, 'renderLive: at most five tool chips are drawn');
   has(h2h, '>e</span>', 'renderLive: ...keeping the first five');
   lacks(h2h, '>f</span>', 'renderLive: ...and dropping the rest');
   lacks(h2h, 'NaN', 'renderLive: a session with no idle_s never renders NaN (#138)');
-  has(h2h, 'muted text-[length:var(--fs-xs)]">—</div>', 'renderLive: ...it shows an em dash instead (#138)');
+  has(h2h, 'class="lvago">—</span>', 'renderLive: ...it shows an em dash instead (#138)');
 
   // dedupe
   const hd = await boot({ data: { profiles: { p1: { live: [ { id:'dup', title:'first' }, { id:'dup', title:'second' } ] } } } });
