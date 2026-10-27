@@ -1161,7 +1161,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .xcard .kpi-badge svg{width:15px;height:15px}
 .xp-body{flex:1 1 auto;min-width:0}
 .xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
-.xp-title{flex:none;font-size:var(--fs-xs);font-weight:600;
+.xp-row{flex-wrap:wrap}
+.xp-title{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs);font-weight:600;
    letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
@@ -1173,6 +1174,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       carries one number and one line of text. */
    .grid-home{grid-template-columns:repeat(2,1fr);gap:8px}
    .xcard{padding:8px 10px}
+   .xcard[data-gohome=Usage]{grid-column:1/-1}
+   .selwrap,select.chip{max-width:100%;min-width:0}
+   .fb-more kbd{display:none}
  }
 /* Reference-card structure: badge+name header at the top (vertically
    centered with the icon), big number below it, sparkline trend underneath
@@ -5450,46 +5454,27 @@ function renderHome(inR){
       '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
-  // LST-178: the strip card is one compact row — icon, title, one headline
-  // value, one line of blurb. The values are the SAME derived stats as the
-  // old landing cards; only the chrome shrank. rel="noopener noreferrer"
-  // ships on every card because each one is a genuine hyperlink.
-  let html = cards.map(([view, ico, color, desc, stat]) => `
-    <a class="card xcard homecard" href="#/${view.toLowerCase()}" rel="noopener noreferrer" data-gohome="${view}" title="${escA(desc)}">
+  // LST-178: each strip card is one compact row (icon, title, headline value,
+  // one-line blurb) with the same derived stats as before. rel on every link.
+  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view) => `
+    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}" title="${escA(desc)}">
       <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
         <span class="hc-ico" aria-hidden="true">${ico}</span></span>
       <span class="xp-body">
-        <span class="xp-row"><span class="xp-title">${view}</span><span class="hc-stat">${stat}</span></span>
+        <span class="xp-row"><span class="xp-title">${label}</span><span class="hc-stat">${stat}</span></span>
         <span class="xp-blurb">${desc}</span>
       </span>
-    </a>`).join('');
-
-  // Bandwidth card: both directions together, because the ratio is the point.
-  // Labelled "est." on the card itself — a derived number that looks measured
-  // is the failure this project keeps guarding against.
-  html += `
-    <a class="card xcard homecard" href="#/usage" rel="noopener noreferrer" data-gohome="Usage" title="Estimated from tokens, not measured">
-      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[0]} 14%,var(--card));color:${PAL[0]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[0]} 30%,transparent)">
-        <span class="hc-ico" aria-hidden="true">${icon('updown')}</span></span>
-      <span class="xp-body">
-        <span class="xp-row"><span class="xp-title">Bandwidth (est.)</span>
-          <span class="hc-stat"><span class="bwup">\u2191 ${fmtB(upB)}</span>
-            <span class="muted" style="font-weight:400"> / </span>
-            <span class="bwdown">\u2193 ${fmtB(downB)}</span></span></span>
-        <span class="xp-blurb">Estimated from tokens, not measured</span>
-      </span>
     </a>`;
+  let html = cards.map(([view, ico, color, desc, stat]) => xc(view, ico, color, desc, stat)).join('');
+
+  // Bandwidth: both directions together, labelled "est." — a derived number
+  // that looks measured is the failure this project guards against.
+  html += xc('Usage', icon('updown'), PAL[0], 'Estimated from tokens, not measured',
+    `<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
+    'Bandwidth (est.)', 'usage');
 
   // Prices is an in-app view now (was the standalone costs.html page).
-  html += `
-    <a class="card xcard homecard" href="#/Prices" rel="noopener noreferrer" data-gohome="Prices" title="Per-million-token rates &amp; spend">
-      <span class="kpi-badge" style="background:color-mix(in srgb,${PAL[8]} 14%,var(--card));color:${PAL[8]};box-shadow:inset 0 0 0 1px color-mix(in srgb,${PAL[8]} 30%,transparent)">
-        <span class="hc-ico" aria-hidden="true">${icon('scale')}</span></span>
-      <span class="xp-body">
-        <span class="xp-row"><span class="xp-title">Prices</span><span class="hc-stat">Price sheet</span></span>
-        <span class="xp-blurb">Per-million-token rates &amp; spend</span>
-      </span>
-    </a>`;
+  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'Price sheet', 'Prices', 'Prices');
 
   box.innerHTML = html;
   // Route in-page instead of relying on the hash alone, so a card works even
