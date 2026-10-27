@@ -17,7 +17,9 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("LLM_TELEMETRY_CONFIG",
                       os.path.join(os.path.dirname(__file__), "..", "examples", "sample-config.json"))
-from llm_telemetry.collect_pi_live import build_pi_live, discover_live_jsonl
+from llm_telemetry.collect_pi_live import (
+    build_pi_live, discover_live_jsonl, _model_timeline, _recent_tools, gauge_tools,
+)
 
 p = f = 0
 
@@ -53,7 +55,7 @@ def ev_model(ts, provider, model):
     return {"type": "model_change", "timestamp": ts, "provider": provider, "modelId": model}
 
 
-def ev_assistant(ts, *, tool=None, text=None, thinking=None):
+def ev_assistant(ts, *, tool=None, text=None, thinking=None, usage=None):
     content = []
     if thinking:
         content.append({"type": "thinking", "thinking": thinking})
@@ -61,20 +63,31 @@ def ev_assistant(ts, *, tool=None, text=None, thinking=None):
         content.append({"type": "toolCall", "id": "call_1", "name": tool, "arguments": {}})
     if text:
         content.append({"type": "text", "text": text})
-    return {"type": "message", "timestamp": ts, "message": {"role": "assistant", "content": content}}
+    ev = {"type": "message", "timestamp": ts, "message": {"role": "assistant", "content": content}}
+    if usage is not None:
+        ev["usage"] = usage
+    return ev
 
 
 with tempfile.TemporaryDirectory() as tmp:
     now = time.time()
 
-    # ---- a live session: running a tool call right now ----------------------
+    # ---- a live session: running a tool call right now, with a model switch,
+    # a prior tool call and real token/cost usage to exercise the LST-251
+    # gauge/detail fields (tools, init_model/switched, uptime, tokens, cost).
     live_path = write_session(
         tmp, "agent-sp", "--tmp-user-workspace-billing--", "01live",
         "/tmp/user/workspace/billing",
         [
-            ev_session("sess-live", iso(now - 10), "/tmp/user/workspace/billing"),
-            ev_model(iso(now - 9), "pv", "claude-opus-5"),
-            ev_assistant(iso(now - 5), tool="bash"),
+            ev_session("sess-live", iso(now - 600), "/tmp/user/workspace/billing"),
+            ev_model(iso(now - 599), "pv", "sage"),
+            ev_assistant(iso(now - 400), tool="read_file",
+                         usage={"input": 1000, "output": 200, "cacheRead": 50, "cacheWrite": 10,
+                                "totalTokens": 1260, "cost": {"total": 0.02}}),
+            ev_model(iso(now - 380), "pv", "claude-opus-5"),
+            ev_assistant(iso(now - 5), tool="bash",
+                         usage={"input": 500, "output": 100, "cacheRead": 0, "cacheWrite": 0,
+                                "totalTokens": 600, "cost": {"total": 0.01}}),
         ],
         mtime=now - 5,
     )
@@ -126,6 +139,35 @@ with tempfile.TemporaryDirectory() as tmp:
         chk(live["phase"] == "running bash", "phase names the in-flight tool call", live["phase"])
         chk(live["idle_s"] is not None and 4 <= live["idle_s"] <= 6,
             "idle_s is measured from the last event timestamp, not the file mtime", live["idle_s"])
+        # ---- LST-251: gauge + full-detail fields, matching the Hermes level ----
+        chk(set(live["tools"]) == {"read_file", "bash"},
+            "tools lists every distinct tool called within the recency window", live["tools"])
+        chk(live["init_model"] == "sage",
+            "init_model is the FIRST model_change, not the current one", live["init_model"])
+        chk(live["switched"] is True,
+            "switched is true when the session's model differs from its initial pick")
+        chk(live["started_at"] is not None and abs(live["started_at"] - (now - 600)) < 1,
+            "started_at reads the session event's own timestamp", live["started_at"])
+        chk(live["uptime_s"] is not None and 598 <= live["uptime_s"] <= 602,
+            "uptime_s is measured from started_at to now", live["uptime_s"])
+        chk(live["in_tok"] == 1500 and live["out_tok"] == 300,
+            "token totals are summed across every assistant message in the session",
+            (live["in_tok"], live["out_tok"]))
+        chk(live["cache_read_tok"] == 50 and live["cache_write_tok"] == 10,
+            "cache token totals are summed too",
+            (live["cache_read_tok"], live["cache_write_tok"]))
+        chk(abs(live["cost_usd"] - 0.03) < 1e-6,
+            "cost_usd sums every assistant message's cost", live["cost_usd"])
+
+    # ---- a session with only one model never reports it has switched --------
+    think_events_model = by_id.get("sess-think")
+    if think_events_model:
+        chk(think_events_model["init_model"] == "qwen3-coder:30b",
+            "init_model is set even for a session with a single model_change")
+        chk(think_events_model["switched"] is False,
+            "switched is false when there was only ever one model")
+        chk(think_events_model["tools"] == [],
+            "a session that never called a tool reports an empty tools list")
 
     think = by_id.get("sess-think")
     chk(think is not None, "the thinking session is present")
@@ -149,6 +191,36 @@ with tempfile.TemporaryDirectory() as tmp:
     out2 = build_pi_live(pi_home=tmp, now=now, stale_window_s=180)
     chk(all(s["session_id"] != "" for s in out2),
         "a session file that fails to parse is skipped, not included as a blank row")
+
+    # ---- _model_timeline / _recent_tools edge cases, unit-level ------------
+    chk(_model_timeline([]) == (None, False),
+        "no model_change events at all -> no init_model, never switched")
+    chk(_recent_tools([], now) == [],
+        "no events at all -> an empty tools list, never an error")
+    stale_tool_events = [ev_assistant(iso(now - 1000), tool="bash")]
+    chk(_recent_tools(stale_tool_events, now) == [],
+        "a tool call older than the recency window is excluded, not just the newest kept")
+    recency_events = [ev_assistant(iso(now - 100), tool="read"),
+                       ev_assistant(iso(now - 50), tool="edit"),
+                       ev_assistant(iso(now - 10), tool="bash")]
+    chk(_recent_tools(recency_events, now) == ["bash", "edit", "read"],
+        "recent tools come back most-recent-first, matching the chip UI's slice(0,5)",
+        _recent_tools(recency_events, now))
+
+    # ---- gauge_tools: PI tool names translated to loeIcon's Hermes-named ----
+    # heavy/light sets, so a PI session's load gauge scores the same way a
+    # Hermes session's equivalent activity would (the LST-251 follow-up fix).
+    chk(gauge_tools([]) == [], "gauge_tools on an empty list is an empty list")
+    chk(gauge_tools(["bash", "subagent", "dispatch_relay"]) ==
+        ["terminal", "delegate_task", "delegate_task"],
+        "bash/subagent/dispatch_relay map to loeIcon's heavy tool names",
+        gauge_tools(["bash", "subagent", "dispatch_relay"]))
+    chk(gauge_tools(["read", "fetch_content", "source_check", "get_search_content"]) ==
+        ["read_file", "web_search", "web_search", "search_files"],
+        "read/fetch_content/source_check/get_search_content map to loeIcon's light tool names",
+        gauge_tools(["read", "fetch_content", "source_check", "get_search_content"]))
+    chk(gauge_tools(["edit", "write", "get_goal"]) == ["edit", "write", "get_goal"],
+        "a PI tool with no Hermes-named equivalent passes through unchanged")
 
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)

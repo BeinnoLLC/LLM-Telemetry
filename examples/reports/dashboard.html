@@ -7017,13 +7017,10 @@ const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };function liveG
 // #181/#182/#184: above-the-fold live KPIs — sessions in flight, agents
 // alive, calls/tokens in the last 5 minutes, active alerts.
 //
-// The live feed carries CUMULATIVE per-session counters (models[].calls /
-// in_tok / out_tok), not a rate, so throughput is derived client-side: each
-// poll diffs every session against its previous sample and the per-poll
-// deltas land in a 5-minute ring. A session already open at the first sample
-// is a baseline (its history predates the window); one that appears later
-// started inside the window, so its whole count is in-window. Ended sessions
-// simply stop contributing. Profiles are kept apart so a profile tab shows
+// The live feed carries CUMULATIVE per-session counters, so throughput is
+// derived client-side: each poll diffs every session against its previous
+// sample into a 5-minute ring. A session open at the first sample is a
+// baseline; one that appears later counts whole. Ended sessions simply stop contributing. Profiles are kept apart so a profile tab shows
 // its own throughput and the merged view sums them.
 const TPUT_WINDOW_S = 300;
 let tputPrev = null;     // session id -> {c, k}; null until the first sample
@@ -7215,18 +7212,23 @@ function kindBadge(kind){
     + `${meta.sig}</span>`;
 }
 
-// PI agent sessions carry no sqlite state collect_live.py can query (#245) —
-// their JSONL files ARE the live state — so they ride a flat top-level list
-// (DATA.pi_live) rather than living inside a Hermes profile's `live` array.
-// Merged into '#livelist' (the same list Hermes sessions render into)
-// instead of a separate '#pilivecard' — both kinds of bot answer the
-// same question ("what is running right now") so they share one list and one
-// row shape; kindBadge('pi') is the only thing that still tells them apart.
-// Returns {key, html} entries shaped for applyDiff, keyed by the PI session
-// id (prefixed 'pi:' so it can never collide with a Hermes session id).
+// PI sessions (#245) have no sqlite state: their JSONL files are the live
+// state, so they ride the flat DATA.pi_live list and share '#livelist' and
+// one row shape with Hermes (kindBadge('pi') tells them apart). Returns
+// {key, html} for applyDiff, keyed 'pi:'+session id.
+//
+// LST-251: PI rows get Hermes parity -- loeIcon gauge (fed S.tools_gauge, PI
+// tool names aliased to Hermes categories), tool chips (S.tools), model-switch
+// note, uptime. Bandwidth is skipped: PI tracks no byte counters.
 function piLiveRows(list){
   return (list || []).filter(Boolean).map(S => {
     const mcol = colorOf(short(S.model));
+    const tools = (S.tools||[]).slice(0,5).map(t=>
+      `<span class="text-[length:var(--fs-xs)] px-1 py-0.5 rounded" style="background:${BD};color:${MU}">${esc(t)}</span>`).join(' ');
+    const uptime = Number.isFinite(S.uptime_s) ? `<div class="muted text-[length:var(--fs-xs)]" title="running since session start">up ${ago(S.uptime_s)}</div>` : '';
+    const tok = (+S.in_tok||0) + (+S.out_tok||0);
+    const usage = (tok || S.cost_usd)
+      ? `<div class="muted text-[length:var(--fs-xs)]" title="tokens in/out and estimated cost for this session">${fmt(tok)} tok${S.cost_usd ? ` · $${(+S.cost_usd).toFixed(4)}` : ''}</div>` : '';
     return { key: 'pi:' + (S.session_id || ''), html: `<div class="liverow flex items-center gap-2.5 p-2 rounded" style="border:1px solid ${BD}" data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}">
       <div class="flex-1 min-w-0 self-center">
         <div class="flex items-center gap-2 flex-wrap">
@@ -7235,12 +7237,16 @@ function piLiveRows(list){
           <span class="text-[length:var(--fs-xs)] px-1 rounded" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)">${esc(S.agent||'pi')}</span>
         </div>
         <div class="muted text-[length:var(--fs-xs)] truncate" title="${escA(S.phase||'')}">${esc(S.phase || '\u2014')}</div>
+        <div class="flex items-center gap-1 mt-1 flex-wrap">${tools}</div>
       </div>
       <div class="metacol shrink-0">
         <div class="text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${mcol}" title="${escA(short(S.model))}">${esc(short(S.model) || '\u2014')}</div>
+        ${S.switched ? `<div class="text-[length:var(--fs-xs)] truncate" style="color:var(--z-warn)" title="started on ${escA(short(S.init_model))}">\u21af from ${esc(short(S.init_model))}</div>` : ''}
+        ${uptime}
+        ${usage}
         <div class="muted text-[length:var(--fs-xs)]">${Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '\u2014'}</div>
       </div>
-      <div class="loecol"></div>
+      <div class="loecol">${loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), label:(S.title&&S.title!=='pi session')?S.title:'session load'})}</div>
     </div>` };
   });
 }
@@ -7418,15 +7424,6 @@ function renderLive(){
 
 }
 
-// LOE indicator — a speedometer in its own column (#7/#8/#9/#10/#12 rebuild).
-// A 270° instrument dial: gradient progress arc (green->amber->red across the
-// whole sweep) plus a needle that TRAVELS from its previous angle to the new
-// one on every refresh (so a refresh is visibly alive, not a permanent idle
-// wobble), a small settled tremor, and a real numeric readout — legible
-// without a tooltip, and exposed to assistive tech as a proper meter.
-// Inline SVG: no canvas, no library, no layout pass. One fixed 100x100
-// viewBox scaled purely by CSS width/height (--gauge-size / .sz-sm|md|lg), so
-// every stroke/tick/font scales together instead of going spindly at 132px.
 const GAUGE_PREV = new Map();   // stable id -> previous needle angle, for travel
 
 // #11: compact radial ring — the gauge's zone colours and geometry style
@@ -10708,13 +10705,9 @@ async function doRefresh(silent){
     const bad = schemaProblem(fresh, 'analytics-data.json');
     if (bad) { showSchemaError(bad); throw new Error(bad); }
     if (!fresh.profiles || !Object.keys(fresh.profiles).length) throw new Error('empty payload');
-    // Router data (#130) is merged into dashboard.html at BUILD time only —
-    // build_dashboard.py folds router-data.json in, analytics-data.json never
-    // carries it. Swapping DATA wholesale therefore blanked the Router tab to
-    // "No router data" on the very first refresh (the ↻ button and the 60s
-    // rebuild alike), which read like the hourly job had never run. Fetch the
-    // hourly payload here too, so a refresh carries it across AND picks up a
-    // newer collection; anything short of a good payload keeps what the page
+    // Router data (#130) is merged at BUILD time only; swapping DATA wholesale
+    // would blank the Router tab on refresh, so fetch the hourly payload too;
+    // anything short of a good payload keeps what the page
     // booted with rather than emptying the tab.
     let router = null;
     try {
