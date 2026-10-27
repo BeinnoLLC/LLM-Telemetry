@@ -177,13 +177,14 @@
    appearance:none; -webkit-appearance:none; -moz-appearance:none;
    background-color:var(--bg); color:var(--fg);
    padding-right:28px; cursor:pointer; position:relative;
+   max-width:100%; min-width:0; text-overflow:ellipsis;
  }
  select.chip:hover{color:var(--fg); border-color:var(--accent)}
  select.chip:focus{outline:2px solid var(--accent); outline-offset:1px}
  select.chip option{background-color:var(--card); color:var(--fg)}
  /* Chevron as a masked block (not a hardcoded-color background-image) so it
     tracks --muted across both themes instead of being baked to one hex. */
- .selwrap{position:relative; display:inline-flex}
+ .selwrap{position:relative; display:inline-flex; max-width:100%; min-width:0}
  .selwrap::after{
    content:''; position:absolute; right:10px; top:50%; width:10px; height:7px;
    transform:translateY(-50%); pointer-events:none; background:var(--muted);
@@ -1038,7 +1039,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .xp-row{flex-direction:column;align-items:flex-start;gap:0}
    .xp-title{flex:0 1 auto}
    .xcard .hc-stat{text-align:left;max-width:100%}
-   .selwrap,select.chip{max-width:100%;min-width:0}
    .fb-more kbd{display:none}
  }
 /* Reference-card structure: badge+name header at the top (vertically
