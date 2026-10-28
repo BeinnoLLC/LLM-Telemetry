@@ -357,13 +357,16 @@ function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
   return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
 }
-// Owner badge: the profile / login / agent that owns a row, tinted with the same
-// profileHue() the profile tabs use, so one colour means one owner everywhere.
-export function ownerBadge(name, what){
+// Owner badge: the profile / login / agent that owns a row. Hermes profiles are
+// tinted with the same profileHue() the profile tabs use, so one colour means one
+// profile everywhere; pi / Claude / Codex owners take their kind colour token.
+export function ownerBadge(name, what, kindColor){
   const n = name || '';
   if (!n) return '';
-  const h = profileHue(n);
-  return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
+  let style;
+  if (kindColor) style = `color:${kindColor};background:color-mix(in srgb,${kindColor} 18%,var(--card));border:1px solid color-mix(in srgb,${kindColor} 45%,transparent)`;
+  else { const h = profileHue(n); style = `background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)`; }
+  return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="${style}" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
 }
 // Short session id (last 6 chars; the full id is in title=). With `open` it is a
 // button that opens the transcript, like the title.
@@ -492,7 +495,7 @@ function piLiveRows(list){
       costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
       attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
-      sub: ownerBadge(S.agent || 'pi', 'Agent') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
+      sub: ownerBadge(S.agent || 'pi', 'Agent', 'var(--kind-pi)') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
@@ -511,7 +514,7 @@ function agentLiveRows(list){
       covered: S.cost_class === 'subscription',
       attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
-      sub: ownerBadge(S.login || engine, S.login ? 'Login' : 'Agent') + `<span class="lvsrc" title="Session source">${engine === 'codex' ? 'Codex' : 'Claude'}</span>` + sidChip(S.session_id),
+      sub: ownerBadge(S.login || engine, S.login ? 'Login' : 'Agent', `var(--kind-${engine})`) + `<span class="lvsrc" title="Session source">${engine === 'codex' ? 'Codex' : 'Claude'}</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       gauge: '' });
   });

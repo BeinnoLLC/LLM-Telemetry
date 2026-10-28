@@ -69,7 +69,10 @@ for (const [k, v] of Object.entries(KINDS)) {
   chk(new RegExp(t + ':').test(tokens), `tokens.css declares ${t}`));
 chk(!/hsl\(\s*(265|18|152|199)\b/.test(liveSrc) && !/hsl\(\s*265\b/.test(liveSrc),
     'live.js carries no hsl() literal for a kind colour (PI 265, Claude 18, Codex 152, Hermes 199)');
-chk(/--kind-pi/.test(liveSrc) && /color-mix/.test(liveSrc.slice(liveSrc.indexOf('data-piagent'))),
+// the PI row hands var(--kind-pi) to ownerBadge, which tints it with color-mix
+const piRow = liveSrc.slice(liveSrc.indexOf('data-piagent'));
+const ownerFn = liveSrc.slice(liveSrc.indexOf('export function ownerBadge'), liveSrc.indexOf('export function sidChip'));
+chk(/ownerBadge\([^)]*'var\(--kind-pi\)'\)/.test(piRow) && /color-mix/.test(ownerFn) && /kindColor/.test(ownerFn),
     'the PI agent pill uses var(--kind-pi) / color-mix');
 chk(/var\(--kind-\$\{kind\}\)/.test(liveSrc), 'live.js reads the kind colour from the token');
 chk(!/tabframe|tabseg|tabkind|tabgrouplabel/.test(css + html.replace(/\/\/.*$/gm, '')),

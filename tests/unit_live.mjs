@@ -116,7 +116,7 @@ async function boot(opt = {}){
     _l: winL };
 
   const store = {
-    _m: Object.assign({}, opt.storage),
+    _m: Object.assign({}, opt.storage === undefined ? { 'lt-sound': '0' } : opt.storage),   // sound is ON by default: tests about the muted paths start muted; pass storage:{} for the real default
     getItem(k){ return k in this._m ? this._m[k] : null; },
     setItem(k, v){ this._m[k] = String(v); logs.storage.push([k, String(v)]); },
   };
@@ -346,7 +346,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(html, '>patch</span>', 'renderLive: tool chips rendered');
   has(html, '>read</span>', 'renderLive: every tool chip rendered');
   has(html, 'hsl(42 62% 30%)', 'renderLive: the profile badge is tinted with profileHue');
-  eq(h.logs.profileHue, ['p1','p1','p1'], 'renderLive: profileHue is asked once per colour slot it fills');
+  eq(h.logs.profileHue, ['p1','p1'], 'renderLive: profileHue is asked once per owner badge (one per row), not once per colour slot');
   eq(h.logs.loeIcon.map(x => x[1].label), ['Fix the parser','Tidy docs'], 'renderLive: loeIcon gets a stable per-session label');
   eq([h.logs.bwRow, h.logs.modelsBadge, h.logs.modelsPanel], [['s1','s2'],['s1','s2'],['s1','s2']],
      'renderLive: bwRow/modelsBadge/modelsPanel are called for every row');
@@ -585,20 +585,21 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
 
 // ── soundToggleInstall ───────────────────────────────────────────────────────
 {
+  const lab = x => [x.M.soundOn, x.els.soundtoggle._attrs['aria-pressed'], x.els.soundtoggle.textContent, x.els.soundtoggle.classList.contains('on')];
   const on = await boot({ storage: { 'lt-sound': '1' } });
-  eq([on.M.soundOn, on.els.soundtoggle._attrs['aria-pressed'], on.els.soundtoggle.innerHTML, on.els.soundtoggle.classList.contains('on')],
-     [true, 'true', '&#128266;', true], 'soundToggleInstall: a remembered choice paints the button as on');
+  eq(lab(on), [true, 'true', 'Sound on', true], 'soundToggleInstall: a remembered choice paints the button as on');
 
-  const d = await boot({});
-  eq([d.M.soundOn, d.els.soundtoggle._attrs['aria-pressed'], d.els.soundtoggle.innerHTML, d.els.soundtoggle.classList.contains('on')],
-     [false, 'false', '&#128263;', false], 'soundToggleInstall: sound is off by default');
+  const d = await boot({ storage: {} });
+  eq(lab(d), [true, 'true', 'Sound on', true], 'soundToggleInstall: sound is ON by default (nothing saved)');
+  const m = await boot({ storage: { 'lt-sound': '0' } });
+  eq(lab(m), [false, 'false', 'Sound off', false], 'soundToggleInstall: negative control: a saved "0" mutes and paints "Sound off" (default is not hard-coded)');
 
-  const s = await boot({});
+  const s = await boot({ storage: { 'lt-sound': '0' } });
   s.win.soundBaseline = false;
   eq(s.M.soundBaseline, false, 'window.soundBaseline: the accessor writes through to the module binding');
   await s.run(() => s.els.soundtoggle.fire('click'));
   eq([s.M.soundOn, s.store._m['lt-sound'], s.els.soundtoggle._attrs['aria-pressed'], s.audio.notes.length],
-     [true, '1', 'true', 2], 'soundToggleInstall: clicking turns sound on, remembers it, repaints and chimes');
+     [true, '1', 'true', 2], 'soundToggleInstall: clicking a muted toggle turns sound on, remembers it, repaints and chimes');
   await s.run(() => s.els.soundtoggle.fire('click'));
   eq([s.M.soundOn, s.store._m['lt-sound'], s.els.soundtoggle._attrs['aria-pressed'], s.audio.notes.length],
      [false, '0', 'false', 2], 'soundToggleInstall: clicking again turns it off, remembers it and stays silent');
