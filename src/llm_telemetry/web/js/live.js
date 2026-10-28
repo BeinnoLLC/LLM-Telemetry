@@ -364,7 +364,7 @@ export function ownerBadge(name, what, kindColor){
   const n = name || '';
   if (!n) return '';
   let style;
-  if (kindColor) style = `color:${kindColor};background:color-mix(in srgb,${kindColor} 18%,var(--card));border:1px solid color-mix(in srgb,${kindColor} 45%,transparent)`;
+  if (kindColor) style = `color:color-mix(in srgb,${kindColor} 60%,var(--fg));background:color-mix(in srgb,${kindColor} 18%,var(--card));border:1px solid color-mix(in srgb,${kindColor} 45%,transparent)`;
   else { const h = profileHue(n); style = `background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)`; }
   return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="${style}" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
 }
