@@ -326,9 +326,9 @@ export function kindBadge(kind){
 }
 
 // Live board = a compact table panel (Grafana-style). One .liverow per
-// session, nine cells in a fixed grid shared with the sticky header (#livehead):
-// kind | session | model (.metacol) | state | elapsed | tokens | cost | last
-// activity | load (.loecol). Sorting only reorders the keyed rows (applyDiff
+// session, eight cells in a fixed grid shared with the sticky header (#livehead):
+// kind | session | model (.metacol) | state (+ elapsed on its second line) |
+// tokens | cost | last activity | load (.loecol). Sorting only reorders the keyed rows (applyDiff
 // moves them), so refresh behaviour is unchanged.
 export const LV_COLS = [
   { k: 'kind', t: 'Kind', ico: true }, { k: 'session', t: 'Session' }, { k: 'model', t: 'Model' },
@@ -357,20 +357,22 @@ function lvRow(o){
   const S = o.S, st = liveState(o.kind, S);
   const ago_ = Number.isFinite(S.idle_s) ? ago(S.idle_s) + ' ago' : '—';
   const pct = (/aria-valuenow="(\d+)"/.exec(o.gauge) || [])[1];
+  // Line two of Last activity: the tool chips (the CSS shows the first three that
+  // fit and hides the rest whole; the full list is in the cell's title=).
+  const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool">${esc(t)}</span>`).join('');
   const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
-        : `<div class="lvc lvc-sess" role="cell">${o.lead || ''}${o.title}${o.tags || ''}</div>`}
+        : `<div class="lvc lvc-sess" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div></div></div>`}
       <div class="lvc metacol" role="cell">
         <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
       </div>
-      <div class="lvc" role="cell"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span></div>
-      <div class="lvc lvnum" role="cell" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</div>
+      <div class="lvc lvc-state" role="cell"><div class="lvstk"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span><span class="lvel" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</span></div></div>
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
-      <div class="lvc lvc-act" role="cell"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span>${tools}</div>
+      <div class="lvc lvc-act" role="cell"><div class="lva1"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span></div>${tools ? `<div class="lva2" title="${allTools}">${tools}</div>` : ''}</div>
       <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
     </div>${o.panel || ''}`;
   const num = v => Number.isFinite(+v) && v != null ? +v : null;
@@ -392,13 +394,22 @@ export function sortLiveRows(rows){
     return c ? c * d : i - j;
   }).map(p => p[0]);
 }
+// Eight grid tracks, nine sortable headers: Elapsed lives on the State cell's
+// second line, so its header sits under State inside the same track.
 export function lvHeadHtml(){
-  return LV_COLS.map(c => {
+  const one = c => {
     const on = lvSort.key === c.k;
     return `<div class="lvh${c.num ? ' lvnum' : ''}" role="columnheader" tabindex="0" data-sort="${c.k}"`
       + ` aria-sort="${on ? (lvSort.dir === 'desc' ? 'descending' : 'ascending') : 'none'}"`
       + ` title="Sort by ${c.t.toLowerCase()}">${c.t}<span class="lvarr" aria-hidden="true">${on ? (lvSort.dir === 'desc' ? '▼' : '▲') : ''}</span></div>`;
-  }).join('');
+  };
+  const out = [];
+  for (let i = 0; i < LV_COLS.length; i++){
+    const c = LV_COLS[i];
+    if (c.k === 'state') out.push(`<div class="lvhgrp" role="presentation">${one(c)}${one(LV_COLS[i + 1])}</div>`);
+    else if (c.k !== 'elapsed') out.push(one(c));
+  }
+  return out.join('');
 }
 // applyDiff's reorder pass is built for adds/removes, not arbitrary
 // permutations, so after it runs the groups (row + optional panel) are put in
@@ -448,8 +459,8 @@ function piLiveRows(list){
     return lvRow({ kind: 'pi', key: 'pi:' + (S.session_id || ''), S, tok, tools: S.tools,
       costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
       attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
-      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
-      tags: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
+      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
+      sub: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
       model: S.model, mcol: colorOf(short(S.model)),
       mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
@@ -467,7 +478,7 @@ function agentLiveRows(list){
       costv: Number.isFinite(S.cost_usd) ? S.cost_usd : null, cost: Number.isFinite(S.cost_usd) ? usd(S.cost_usd) : '',
       covered: S.cost_class === 'subscription',
       attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
-      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold truncate" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
+      title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
       model: S.model, mcol: colorOf(short(S.model)),
       gauge: '' });
   });
