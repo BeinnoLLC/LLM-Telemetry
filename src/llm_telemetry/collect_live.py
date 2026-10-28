@@ -84,7 +84,13 @@ def is_generic_title(title):
 
 def clean_title(text, limit=TITLE_MAX):
     """Collapse whitespace, drop markdown/prompt chrome, cut at `limit` chars."""
-    t = re.sub(r"\s+", " ", re.sub(r"[`*_#>]+", " ", text or "")).strip()
+    text = text or ""
+    # Bot relay envelope: "Message from <emoji> Name (@handle): body" -> "Name: body".
+    text = re.sub(r"^\s*Message from \S+ (.+?) \(@[^)]*\):\s*", r"\1: ", text)
+    # Attachments / absolute paths: keep the file name, never the directory.
+    text = re.sub(r"@file:\s*", "", text)
+    text = re.sub(r"(?<![\w.])/(?:[\w.\-]+/)+([\w.\-]+)", r"\1", text)
+    t = re.sub(r"\s+", " ", re.sub(r"[`*_#>]+", " ", text)).strip()
     if len(t) > limit:
         t = t[: limit - 1].rstrip() + "\u2026"
     return t
