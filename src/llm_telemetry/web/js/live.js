@@ -3,7 +3,7 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness,,
+  $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness,
 } from './palette.js';
 import { bwRow, current, loeIcon, mk } from './charts.js';
 import {
@@ -934,18 +934,19 @@ export function armAudioUnlock(target){
 
 // A NEW critical alert (never one already present at page load) sounds the
 // failure tone once. Keyed by id/title so a 5s repaint does not repeat it.
-export let seenAlerts = new Set();
-export let alertsBaseline = true;
+// State lives on the function: renderLiveKpis runs during the first render,
+// before module-level `let`s further down are initialised (TDZ).
 export function checkCriticalAlerts(list){
+  const st = checkCriticalAlerts.st || (checkCriticalAlerts.st = { seen: new Set(), baseline: true });
   let fresh = false;
   (list || []).forEach((a, i) => {
     if (!a || a.severity !== 'critical') return;
     const key = a.id != null ? a.id : `${a.title || a.message || ''}:${a.profile || ''}:${i}`;
-    if (seenAlerts.has(key)) return;
-    seenAlerts.add(key);
-    if (!alertsBaseline) fresh = true;
+    if (st.seen.has(key)) return;
+    st.seen.add(key);
+    if (!st.baseline) fresh = true;
   });
-  alertsBaseline = false;
+  st.baseline = false;
   if (fresh) scheduleTone('fail');
   return fresh;
 }

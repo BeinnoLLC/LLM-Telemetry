@@ -1955,6 +1955,22 @@
   },
   {
    "mod": "live",
+   "name": "audioUnlocked"
+  },
+  {
+   "mod": "live",
+   "name": "unlockAudio"
+  },
+  {
+   "mod": "live",
+   "name": "armAudioUnlock"
+  },
+  {
+   "mod": "live",
+   "name": "checkCriticalAlerts"
+  },
+  {
+   "mod": "live",
    "name": "soundToggleInstall"
   },
   {
