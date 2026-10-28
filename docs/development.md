@@ -25,9 +25,9 @@ shots/                    projfilter_overflow.py (no image files at present)
 .github/workflows/ci.yml  CI pipeline
 ```
 
-Counts at `087bc44`: 45 Python modules in `src/llm_telemetry/`; 114
+Counts at `04259f1`: 45 Python modules in `src/llm_telemetry/`; 116
 `tests/check_*.js` + 1 `tests/drive_drawer.js` + 18 `tests/unit_*.mjs` JS
-suites; 57 `tests/test_*.py` Python suites.
+suites; 60 `tests/test_*.py` Python suites.
 
 ## Setup for development
 

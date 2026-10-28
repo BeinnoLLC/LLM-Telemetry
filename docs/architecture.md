@@ -125,6 +125,10 @@ residency and queue depth change inside a single request. Telemetry carries an
 - Claude/Codex/PI live collectors extract metadata only (session id, model,
   timestamps, token counts, coarse phase); message text and tool arguments are
   not copied (`collect_agent_worker_live.py`).
+- Hermes live titles may come from the first user message (only when the
+  session has no real title); credential-shaped strings are redacted before the
+  text is cleaned and cut to 80 characters (`collect_live.py` `clean_title`).
+  Claude/Codex/PI titles are the working-directory basename only.
 - `serve.py` accepts config writes only from loopback clients, requires a custom
   header, whitelists numeric keys and writes atomically.
 - `examples/check_no_leaks.py` scans committed samples, rendered pages and the
