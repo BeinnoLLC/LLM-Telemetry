@@ -355,8 +355,15 @@ def login_homes(engine: str) -> list[Path]:
 
 def login_name(home: Path) -> str:
     """Owning agent-worker login for a CLI home: ``<login>`` for
-    ~/.hermes/agent-logins/<login>/<engine>, '' for the default ~/.claude / ~/.codex."""
-    return home.parent.name if home.parent.parent.name == "agent-logins" else ""
+    <logins root>/<login>/<engine> (default root ~/.hermes/agent-logins), '' for the default ~/.claude / ~/.codex."""
+    roots = [Path.home() / ".hermes" / "agent-logins"]
+    raw = os.environ.get("LLM_TELEMETRY_AGENT_LOGINS")
+    if raw:
+        roots = [Path(r) for r in raw.split(os.pathsep) if r]
+    for root in roots:
+        if home.parent.parent == root:
+            return home.parent.name
+    return ""
 
 
 def build_agent_live(claude_home: Optional[os.PathLike] = None,

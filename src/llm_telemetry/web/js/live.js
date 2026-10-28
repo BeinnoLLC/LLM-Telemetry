@@ -1040,7 +1040,10 @@ export async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
-    if (document.hidden) { liveFails = 0; return; }   // sound-only poll: no repaint
+    if (document.hidden) {   // sound-only poll: no repaint, but critical alerts still sound
+      checkCriticalAlerts(mergedField(fresh.profiles, 'alerts').filter(Boolean));
+      liveFails = 0; return;
+    }
     // #185: the payload is fresh from here on; record it before the repaint so
     // a paint error cannot leave the pill claiming an older poll than the data.
     liveUpdatedAt = Math.floor(Date.now() / 1000);

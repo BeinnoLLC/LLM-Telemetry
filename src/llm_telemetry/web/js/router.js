@@ -24,7 +24,7 @@ export let HOUR_RANGE = null;
 // Chart.js plays a draw-in animation (bars growing, pie slices sweeping) on
 // every (re)creation. That is the right first impression on page load, but
 // mk() destroys and recreates every chart on EVERY render() call — including
-// the 60s auto-refresh poll and the 5s live tick touching cLiveCat — so
+// the 60s auto-refresh poll and the 5s live tick repainting live charts — so
 // without this flag the whole page would replay its entrance animation once
 // a minute forever. CHART_ANIM_DONE flips true once, right after the first
 // paint (bootDone()), and mk() then forces animation:false on every chart it

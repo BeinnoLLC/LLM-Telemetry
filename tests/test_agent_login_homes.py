@@ -28,6 +28,8 @@ with tempfile.TemporaryDirectory() as td:
     chk([h.name for h in W.login_homes("claude")] == ["claude"], "login_homes finds <login>/claude")
     rows = W.build_agent_live(now=now)
     chk(len(rows) == 1 and rows[0]["engine"] == "claude", "a session under a login home is reported live")
+    chk(rows[0].get("login") == "acme", "login = directory under the configured root (root named logins)")
+    chk(W.login_name(empty_default) == "", "negative control: a home outside the logins root has no login")
     chk(W.build_agent_live(claude_home=empty_default, codex_home=empty_default, now=now) == [],
         "negative control: explicit homes are authoritative (login homes not scanned)")
     os.environ["LLM_TELEMETRY_AGENT_LOGINS"] = ""

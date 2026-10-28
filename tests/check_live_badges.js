@@ -65,6 +65,23 @@ setTimeout(() => {
     chk(owner(rows.find(r => r.dataset.engine === 'claude')).textContent === 'beinno', 'claude row badge = agent-worker login');
     chk(owner(rows.find(r => r.dataset.engine === 'codex')).textContent === 'codex', 'login-less codex row falls back to the agent name');
 
+    // Hostile strings in profile / login / source / session id must be escaped, never parsed as markup.
+    const EVIL = '<img src=x onerror=window.__pwn=1>"\'';
+    const hostile = [{ ...HERMES[0], id: EVIL + 'ab12', profile: EVIL, source: EVIL, title: 'Evil' }];
+    const hAgents = [{ ...AGENTS[0], login: EVIL, session_id: 'c-' + EVIL }];
+    const hrows = paint(hostile, [], hAgents);
+    chk(hrows.length === 2, 'hostile rows still render', hrows.length);
+    chk(!d.querySelector('#livelist img') && !w.__pwn, 'no <img> element or handler injected via profile/login/source/id');
+    chk(hrows.every(r => r.querySelector('.lvowner').textContent === EVIL), 'owner badges show the hostile text literally');
+    const hsrc = hrows[0].querySelector('.lvsrc');
+    chk(!!hsrc && hsrc.textContent.includes('<img') && !hsrc.querySelector('img'), 'source tag rendered as text, not markup');
+    chk(![...d.querySelectorAll('#livelist *')].some(e => e.hasAttribute('onerror')), 'no element in the table carries an injected onerror attribute');
+    chk(hrows[0].querySelector('.lvowner').getAttribute('title') === 'Profile: ' + EVIL && hrows[0].querySelector('.lvsid').title.startsWith(EVIL.slice(0, 20)),
+      'attribute values (title=) round-trip the hostile text, i.e. were escaped, not parsed');
+    // negative control: the same fixture with plain values yields no stray text escaping artefacts
+    const calm = paint([HERMES[0]], [], []);
+    chk(calm[0].querySelector('.lvowner').textContent === 'beinno-github' && !d.querySelector('#livelist img'), 'negative control: plain values render normally');
+
     // Hermes row WITHOUT a profile field (older payload): owner resolved from the profile that holds it
     const bare = HERMES.map(x => { const c = { ...x }; delete c.profile; return c; });
     w.eval(`DATA.profiles.work.live = ${JSON.stringify(bare)};`);
