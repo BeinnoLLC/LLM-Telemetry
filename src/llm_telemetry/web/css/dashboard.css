@@ -1376,7 +1376,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
-   #theme,#soundtoggle,#helpbtn{padding:0}
+   #theme,#helpbtn{padding:0}
 
    /* Date range collapses to a single active-preset chip; tapping it reveals
       the two date inputs + full preset row beneath instead of all of them
@@ -1870,6 +1870,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
+.lvsid{font:12.5px/18px var(--mono,monospace);color:var(--muted);padding:0 4px;border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
+button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvsrc{font-size:12px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
 .lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
@@ -1898,6 +1900,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lva2>.lvtool:nth-child(n+4){display:none}
 .lva2>.lvtool{flex:0 1 auto;min-width:6ch;max-width:14ch;overflow:hidden;text-overflow:ellipsis}
 .lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl{flex:none;min-width:6ch;max-width:16ch}
+.lvrow .lvs2>.lvowner{max-width:20ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* beside the title the agent tag keeps >= 6ch: the title gives way, not the tag */
 .lvrow .lvc-sess>.lvtag{flex:none;min-width:6ch;max-width:16ch}
 .lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}

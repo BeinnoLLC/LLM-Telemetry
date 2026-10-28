@@ -281,6 +281,7 @@ def build_live():
             active = con.execute(EA.ACTIVE).fetchone()[0]
             live = [dict(zip(EA.LIVE_COLS, r)) for r in con.execute(EA.LIVE)]
             for L in live:
+                L["profile"] = name
                 L["category"] = EA.classify(L["phase"], L["tools"])
                 L["tools"] = [t for t in (L["tools"] or "").split(",") if t]
                 L["kind"] = "subagent" if L["parent"] else "top-level"

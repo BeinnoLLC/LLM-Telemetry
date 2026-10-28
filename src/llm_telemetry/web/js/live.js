@@ -357,6 +357,33 @@ function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
   return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
 }
+// Owner badge: the profile / login / agent that owns a row, tinted with the same
+// profileHue() the profile tabs use, so one colour means one owner everywhere.
+export function ownerBadge(name, what){
+  const n = name || '';
+  if (!n) return '';
+  const h = profileHue(n);
+  return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
+}
+// Short session id (last 6 chars; the full id is in title=). With `open` it is a
+// button that opens the transcript, like the title.
+export function sidChip(id, open, profile){
+  const full = String(id || '');
+  if (!full) return '';
+  const short6 = full.slice(-6);
+  return open
+    ? `<button type="button" class="lvsid ttitlebtn" data-tsession="${escA(full)}" data-tprofile="${escA(profile || '')}" title="${escA(full)} \u2014 open transcript">${esc(short6)}</button>`
+    : `<span class="lvsid" title="${escA(full)}">${esc(short6)}</span>`;
+}
+// Hermes rows from older payloads carry no `profile`; the owner is then the
+// profile whose live list holds the session.
+function profileOf(L){
+  if (L.profile) return L.profile;
+  for (const [n, q] of Object.entries(DATA.profiles || {})){
+    if (n !== 'All' && q && (q.live || []).some(x => x && x.id === L.id)) return n;
+  }
+  return current && current !== 'All' ? current : '';
+}
 // o: {kind, attrs, lead, title, tags, model, mcol, mextra, S, tok, cost, up, tools, gauge, bw}
 function lvRow(o){
   const S = o.S, st = liveState(o.kind, S);
@@ -465,7 +492,7 @@ function piLiveRows(list){
       costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
       attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
-      sub: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
+      sub: ownerBadge(S.agent || 'pi', 'Agent') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
@@ -484,6 +511,7 @@ function agentLiveRows(list){
       covered: S.cost_class === 'subscription',
       attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
+      sub: ownerBadge(S.login || engine, S.login ? 'Login' : 'Agent') + `<span class="lvsrc" title="Session source">${engine === 'codex' ? 'Codex' : 'Claude'}</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       gauge: '' });
   });
@@ -577,15 +605,17 @@ export function renderLive(){
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tok = sessTotals(L).k;
+      const prof = profileOf(L);
       return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
         prov: provOf('', L.model, L.base_url),
         lead: `<span class="lvcat" style="color:${c.c}" title="${escA(L.category)}">${c.i}</span>`,
-        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
-        sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
-          + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
+        sub: ownerBadge(prof, 'Profile')
           + (L.source ? `<span class="lvsrc" title="Session source: ${escA(L.source)}">${esc(L.source)}</span>` : '')
+          + sidChip(L.id, true, prof)
+          + `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" data-title="${escA(L.title)}" title="${escA(L.title)} \u2014 view timeline">Timeline</button>`
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
-          + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
+          + (L.kind==='subagent' ? '<span class="lvsub">\u21b3 subagent</span>' : ''),
         mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
         gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
         panel: modelsPanel(L) });
@@ -821,9 +851,10 @@ export let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
   ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 export let liveBusy = false, liveFails = 0;
 
-// ---- Completion sound (#105): off by default, Web Audio (no audio file to ship,
-// ADR 0001); turning it on is itself the user gesture browsers require.
-export let soundOn = localStorage.getItem('lt-sound') === '1';
+// ---- Completion sound (#105): ON by default (only an explicit saved 'off' mutes),
+// Web Audio (no audio file to ship, ADR 0001). Browsers keep audio locked until a
+// first click/key; armAudioUnlock() handles that.
+export let soundOn = localStorage.getItem('lt-sound') !== '0';
 export let audioCtx = null;
 export let soundBaseline = true;   // true until the first poll has been diffed once
 export let seenEnded = new Set();  // session ids already sounded for, across polls
@@ -964,11 +995,10 @@ export function soundToggleInstall(){
   const paint = () => {
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
-    btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    btn.textContent = soundOn ? 'Sound on' : 'Sound off';
     btn.title = soundOn
-      ? 'Sound on: a tone plays when a session or task finishes or a critical alert appears. Click to turn off.'
-      : 'Sound off: click to hear a tone when a session or task finishes or a critical alert appears.';
-    btn.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
+      ? 'A tone plays when a session or task finishes or a critical alert appears (needs one click or key press on the page first). Click to turn off.'
+      : 'Muted. Click to hear a tone when a session or task finishes or a critical alert appears.';
   };
   armAudioUnlock();
   paint();

@@ -1115,6 +1115,18 @@
   },
   {
    "mod": "live",
+   "name": "ownerBadge"
+  },
+  {
+   "mod": "live",
+   "name": "sidChip"
+  },
+  {
+   "mod": "live",
+   "name": "profileOf"
+  },
+  {
+   "mod": "live",
    "name": "lvRow"
   },
   {

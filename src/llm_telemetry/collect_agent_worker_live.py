@@ -353,6 +353,12 @@ def login_homes(engine: str) -> list[Path]:
     return out
 
 
+def login_name(home: Path) -> str:
+    """Owning agent-worker login for a CLI home: ``<login>`` for
+    ~/.hermes/agent-logins/<login>/<engine>, '' for the default ~/.claude / ~/.codex."""
+    return home.parent.name if home.parent.parent.name == "agent-logins" else ""
+
+
 def build_agent_live(claude_home: Optional[os.PathLike] = None,
                      codex_home: Optional[os.PathLike] = None,
                      now: Optional[float] = None,
@@ -369,14 +375,14 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
     # agent-worker login homes.
     c_all = [chome] + (login_homes("claude") if claude_home is None else [])
     x_all = [xhome] + (login_homes("codex") if codex_home is None else [])
-    claude_found = [f for h in c_all for f in discover_claude(h, now, stale_window_s)]
-    codex_found = [f for h in x_all for f in discover_codex(h, now, stale_window_s)]
+    claude_found = [(f, h) for h in c_all for f in discover_claude(h, now, stale_window_s)]
+    codex_found = [(f, h) for h in x_all for f in discover_codex(h, now, stale_window_s)]
 
     best: dict[tuple[str, str], dict[str, Any]] = {}
     for engine, found, parse in (
             ("claude", claude_found, parse_claude_session),
             ("codex", codex_found, parse_codex_session)):
-        for path, mtime in found:
+        for (path, mtime), home in found:
             s = parse(path)
             if s is None:
                 continue
@@ -386,6 +392,7 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
             title = os.path.basename(cwd.rstrip("/")) if cwd else ""
             row = {
                 "engine": engine,
+                "login": login_name(home),
                 "session_id": s["session_id"],
                 "title": title or engine,
                 "model": s["model"],
