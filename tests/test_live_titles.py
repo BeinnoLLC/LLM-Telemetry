@@ -26,7 +26,7 @@ chk(source_label("tui") == "TUI" and source_label("cli") == "CLI" and source_lab
     and source_label("kanban") == "Kanban", "source tags: TUI/CLI/Kanban; Bot Chat only when unknown")
 chk(clean_title("Message from \U0001F916 PV Pulse (@pv-pulse): User approved") == "PV Pulse: User approved",
     "bot-relay envelope becomes 'Name: body'")
-chk("/home/" not in clean_title("@file: /home/u/.hermes/profiles/x/attachments/a.png look") and "a.png" in clean_title("@file: /home/u/.hermes/profiles/x/attachments/a.png look"),
+chk("/srv/" not in clean_title("@file: /srv/data/profiles/x/attachments/a.png look") and "a.png" in clean_title("@file: /srv/data/profiles/x/attachments/a.png look"),
     "absolute paths are reduced to the file name (no path leak)")
 chk("/" in clean_title("use a/b ratio"), "negative control: a plain a/b is left alone")
 print(f"\n{p} passed, {f} failed"); sys.exit(1 if f else 0)
