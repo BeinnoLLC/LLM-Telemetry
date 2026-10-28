@@ -109,7 +109,11 @@ async function boot(opt = {}){
       return g;
     },
   });
-  const win = { AudioContext: function(){ const c = mkCtx(); audio.ctxs.push(c); return c; } };
+  const winL = {};   // event -> [listener]: the audio-unlock gesture listeners
+  const win = { AudioContext: function(){ const c = mkCtx(); audio.ctxs.push(c); return c; },
+    addEventListener(t, fn){ (winL[t] = winL[t] || []).push(fn); },
+    removeEventListener(t, fn){ winL[t] = (winL[t] || []).filter(f => f !== fn); },
+    _l: winL };
 
   const store = {
     _m: Object.assign({}, opt.storage),
@@ -138,16 +142,13 @@ async function boot(opt = {}){
       colorOf: m => { logs.colorOf.push(m); return '#abc123'; },
       emptyHTML: (icon, msg, hint) => { logs.emptyHTML = [icon, msg, hint]; return `<empty>${icon}|${msg}|${hint}</empty>`; },
       esc: PAL.esc, escA: PAL.escA, fmt: PAL.fmt, fmtB: PAL.fmtB, short: PAL.short, pick: n => { logs.pick.push(n); return {}; },
-      toolColor: () => '#0a0',
       stampFreshness: PAL.stampFreshness,   // real: the #185 stamp test checks its classes
     },
     'charts.js': {
-      agg: rows => [[String(rows.length), rows.length]],
       bwRow: L => { logs.bwRow.push(L.id); return `<bwrow>${L.id}</bwrow>`; },
       current: opt.current || 'p1',
       loeIcon: (L, o) => { logs.loeIcon.push([L.id, o]); return '<loe>'; },   // must NOT echo L.title: it is untrusted and unescaped
       mk: (...a) => { logs.mk.push(a); },
-      noLeg: {},
     },
     'views.js': {
       REPO_EXPANDED: opt.expanded || new Set(),
@@ -606,6 +607,38 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   eq(typeof n.win.soundOn, 'undefined', 'soundToggleInstall: with no button it does not touch window at all');
 }
 
+// ── audio unlock on first gesture / critical-alert tone / hidden-tab sound ───
+{
+  // Remembered "on" + a context the browser keeps suspended until a gesture:
+  // nothing is created at load, the first pointerdown creates + resumes it.
+  const u = await boot({ storage: { 'lt-sound': '1' }, ctxState: 'suspended' });
+  eq(u.audio.ctxs.length, 0, 'unlock: no AudioContext is created before any user gesture');
+  eq((u.win._l.pointerdown || []).length >= 1 && (u.win._l.keydown || []).length >= 1, true, 'unlock: pointerdown and keydown listeners are armed');
+  await u.run(() => u.win._l.pointerdown[0]());
+  eq([u.audio.ctxs.length, u.audio.ctxs[0].resumes, u.audio.ctxs[0].state], [1, 1, 'running'], 'unlock: the first gesture creates and resumes the context');
+  eq((u.win._l.pointerdown || []).length, 0, 'unlock: listeners are removed once the context is running');
+  await u.run(() => u.M.playTone('success'));
+  eq(u.audio.notes.length, 2, 'unlock: a tone after the gesture is actually scheduled on the running context');
+
+  // negative control: sound off, a gesture must not create a context
+  const off = await boot({ ctxState: 'suspended' });
+  await off.run(() => off.win._l.pointerdown[0]());
+  eq(off.audio.ctxs.length, 0, 'unlock negative control: with sound off a gesture creates no context');
+  eq((off.win._l.pointerdown || []).length >= 1, true, 'unlock negative control: ...and the listeners stay armed for the toggle');
+}
+{
+  const a = await boot();
+  a.win.soundOn = true;
+  a.timers.length = 0;
+  const crit = (id) => ({ id, severity: 'critical', title: 't' + id });
+  eq(await a.run(() => a.M.checkCriticalAlerts([crit(1)])), false, 'critical alert: one already present at load (baseline) does not sound');
+  eq(a.timers.length, 0, 'critical alert: ...and queues nothing');
+  eq(await a.run(() => a.M.checkCriticalAlerts([crit(1), { id: 2, severity: 'warning' }])), false, 'critical alert: a new non-critical alert does not sound');
+  eq(await a.run(() => a.M.checkCriticalAlerts([crit(1), crit(3)])), true, 'critical alert: a NEW critical alert sounds');
+  eq([a.timers.length, a.M.pendingKind], [1, 'fail'], 'critical alert: ...as one queued failure tone');
+  eq(await a.run(() => a.M.checkCriticalAlerts([crit(1), crit(3)])), false, 'critical alert: the same alert on the next repaint does not repeat');
+}
+
 // ── scheduleLivePoll / scheduleRebuild ───────────────────────────────────────
 {
   const h = await boot({ responses: { 'live-data.json': { body: { profiles: {} } } } });
@@ -650,6 +683,14 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   const hid = await boot({ data: { profiles: { p1: { live: 'old' } } }, responses: { 'live-data.json': { body } } });
   await hid.run(() => hid.M.pollLive());
   eq(hid.logs.fetch.length, 0, 'pollLive: a hidden document does not poll');
+
+  // Sound on + hidden tab: poll (a completion tone is wanted when nobody looks), diff
+  // for completions, but do NOT repaint the page.
+  const hs = await boot({ data: { profiles: { p1: { live: 'old' } } }, responses: { 'live-data.json': { body } } });
+  hs.win.soundOn = true;
+  await hs.run(() => hs.M.pollLive());
+  eq([hs.logs.fetch.length, hs.M.soundBaseline, hs.data.profiles.p1.live], [1, false, 'old'],
+     'pollLive: a hidden document with sound on still polls and diffs for completions, without repainting');
 
   const h = await boot({ data: { profiles: { p1: { live: 'old' } } }, responses: { 'live-data.json': { body } } });
   h.doc.hidden = false;

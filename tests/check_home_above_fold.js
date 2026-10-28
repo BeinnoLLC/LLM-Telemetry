@@ -25,8 +25,14 @@ function chk(ok, name, got) {
 const css = (re, name) => chk(re.test(html), name);
 css(/@media\(max-width:1023px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)\}/,
   'agents panel column stacks under the table below 1024px');
-css(/\.livegrid\{[^}]*grid-template-columns:minmax\(0,3fr\) minmax\(280px,1fr\)/,
-  'table + agents column sit side by side from 1024px');
+css(/\.livegrid\{[^}]*grid-template-columns:minmax\(0,1fr\)\}/,
+  'table takes the full width; the agents panel stacks under it (category/tool charts removed)');
+css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > #qcard\{order:-25\}/,
+  'on Home the task queue sits between the scorecards and the table (order -25)');
+chk(!/<canvas id="cLiveCat"/.test(html) && !/<canvas id="cTools"/.test(html),
+  'the By category donut and Tool calls chart canvases are gone');
+chk(!/By category/.test(html) && !/Tool calls · last hour/.test(html), 'their panel titles are gone');
+chk(/<canvas id="cHome6h"/.test(html), 'negative control: other Home charts (6h series) are still present');
 css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.lkpis\{order:-30\}/,
   'on Home the scorecards lead (order -30)');
 css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.livegrid\{order:-20\}/,
@@ -102,7 +108,10 @@ setTimeout(async () => {
       'the grid holds the session table and the agents panel');
     chk(after(d.getElementById('livelist'), d.getElementById('agentscard')),
       'agents panel follows the table (right column, stacks below at <1024px)');
-    chk(after(grid, d.getElementById('qcard')), 'task queue sits under the board, not between scorecards and table');
+    const qc = d.getElementById('qcard');
+    chk(after(kpis, qc) && after(qc, grid), 'task queue sits directly under the scorecards, above In progress now');
+    chk(!after(qc, kpis) && !after(grid, qc), 'negative control: queue is neither before the scorecards nor after the table');
+    chk(qc.compareDocumentPosition(d.getElementById('livetiles')) & FOLLOWING, 'nothing but the hidden tiles sits between queue and table');
     chk(d.querySelector('.page').dataset.pageview === 'Home', 'page carries data-pageview=Home so the Home ordering applies');
 
     // ---- values from fixture data ------------------------------------------
