@@ -217,9 +217,12 @@ export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   box.innerHTML = [
     card('sessions', 'Sessions in flight',
       `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
-    card('agents', 'Agents alive',
-      `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
-      + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`),
+    // No heartbeat rows (a profile without a gateway backend, or a feed that
+    // carries none) is "unknown", not "all heartbeating".
+    card('agents', 'Agents alive', k.agents
+      ? `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
+        + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`
+      : `<div class="lkpi-num muted">\u2014</div><div class="lkpi-sub">no agent heartbeats reported</div>`),
     card('throughput', 'Calls · tokens',
       `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
       + `<div class="lkpi-sub">${win}</div>${keep ? '' : LKPI_SPARK}`),
