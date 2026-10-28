@@ -7,6 +7,8 @@ routing, and a provider→model→task flow graph.
 
 ![dashboard](docs/screenshot.png)
 
+**Full documentation:** [docs/README.md](docs/README.md) — overview, architecture, data sources, dashboard guide, setup and deploy, development, glossary, roadmap.
+
 ## Why
 
 If you run models across several providers and a couple of GPU boxes, the
