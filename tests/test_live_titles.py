@@ -49,7 +49,7 @@ chk(resolve_title("Bot Chat", "Refactor the token cache and the password form") 
     "negative control: ordinary text mentioning token/password is unchanged")
 
 # ---- paths / URLs (finding 2) ----
-chk(clean_title("edit /home/u/My Docs/x.txt now") == "edit x.txt now", "path with a space reduced to the file name")
+chk(clean_title("edit /srv/app/My Docs/x.txt now") == "edit x.txt now", "path with a space reduced to the file name")
 chk(clean_title(r"open C:\Users\bob\My Docs\notes.md please") == "open notes.md please", "Windows path reduced to the file name")
 chk(clean_title("see https://host.example.com/a/b?x=1#frag ok") == "see host.example.com ok", "URL reduced to its host, query dropped")
 chk(clean_title("/a/b and then c/d") == "b and then c/d", "negative control: prose after a path is kept")
