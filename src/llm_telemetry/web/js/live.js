@@ -3,9 +3,9 @@
  * (including the completion sound).
  */
 import {
-  $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness, toolColor,
+  $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness,,
 } from './palette.js';
-import { agg, bwRow, current, loeIcon, mk, noLeg } from './charts.js';
+import { bwRow, current, loeIcon, mk } from './charts.js';
 import {
   REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
@@ -205,6 +205,7 @@ export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
+  checkCriticalAlerts(k.list);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const alertsBody = k.alerts ? alertsHtml(k)
@@ -336,9 +337,13 @@ export const LV_COLS = [
   { k: 'cost', t: 'Cost', num: true }, { k: 'activity', t: 'Last activity' }, { k: 'load', t: 'Load', num: true },
 ];
 export const lvSort = { key: null, dir: 'asc' };
-const STATE_RANK = { Running: 0, Waiting: 1, Idle: 2 };
+const STATE_RANK = { Running: 0, Compressing: 1, Waiting: 2, Idle: 3 };
 export function liveState(kind, S){
-  if (kind === 'hermes') return Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S ? 'Idle' : 'Running';
+  if (kind === 'hermes') {
+    if (Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S) return 'Idle';
+    // Compression is a state of the row, not a chart slice (Home feedback).
+    return /compress/i.test(S.phase || '') && !/completed|done|finished/i.test(S.phase || '') ? 'Compressing' : 'Running';
+  }
   if (S.phase === 'idle') return 'Idle';
   return /wait|approv|blocked|input/i.test(S.phase || '') ? 'Waiting' : 'Running';
 }
@@ -578,6 +583,7 @@ export function renderLive(){
         title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
         sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
           + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+          + (L.source ? `<span class="lvsrc" title="Session source: ${escA(L.source)}">${esc(L.source)}</span>` : '')
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
           + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
         mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
@@ -614,18 +620,6 @@ export function renderLive(){
     up:(+L.up_bytes||0)+(+L.lan_up_bytes||0),
     down:(+L.down_bytes||0)+(+L.lan_down_bytes||0)}; });
   bwPrevAt = Date.now();
-
-  const cats = agg(live, L=>L.category, ()=>1);
-  mk('cLiveCat','doughnut',cats.map(x=>x[0]),
-     [{data:cats.map(x=>x[1]),backgroundColor:cats.map(x=>catOf(x[0]).c),borderWidth:0}],
-     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:5,font:{size:9}}}},cutout:'52%'});
-
-  const tr = (p.tools_recent||[]).slice(0,8);
-  // Per-tool colour, not one flat accent: the same tool keeps its colour in the
-  // chart, its axis label and the drawer, so it is traceable across the session.
-  mk('cTools','bar',tr.map(x=>x.tool),
-     [{data:tr.map(x=>x.calls),backgroundColor:tr.map(x=>toolColor(x.tool)),borderRadius:2}],
-     {...noLeg,indexAxis:'y',scales:{x:{grid:{color:BD}},y:{grid:{display:false},ticks:{font:{size:9}}}}});
 
   renderHomeSeries(p);
 
@@ -913,6 +907,49 @@ export function checkCompletions(freshProfiles){
   return any;
 }
 
+// Browsers keep an AudioContext suspended until a user gesture. A page that
+// restores lt-sound=1 from storage has had no gesture yet, so the first tone
+// would be scheduled on a suspended context and never heard. Unlock on the
+// first real interaction (pointer / key / touch), then drop the listeners.
+export let audioUnlocked = false;
+export function unlockAudio(){
+  try {
+    const ctx = ensureAudioCtx();
+    audioUnlocked = ctx.state === 'running';
+    return ctx;
+  } catch (e) { return null; }
+}
+export function armAudioUnlock(target){
+  const t = target || window;
+  const evs = ['pointerdown', 'keydown', 'touchend', 'click'];
+  const off = () => evs.forEach(e => t.removeEventListener(e, on, true));
+  const on = () => {
+    const ctx = soundOn ? unlockAudio() : null;
+    if (!soundOn) return;            // nothing to unlock yet; the toggle click does it
+    if (ctx && ctx.state === 'running') off();
+  };
+  evs.forEach(e => t.addEventListener(e, on, true));
+  return off;
+}
+
+// A NEW critical alert (never one already present at page load) sounds the
+// failure tone once. Keyed by id/title so a 5s repaint does not repeat it.
+export let seenAlerts = new Set();
+export let alertsBaseline = true;
+export function checkCriticalAlerts(list){
+  let fresh = false;
+  (list || []).forEach((a, i) => {
+    if (!a || a.severity !== 'critical') return;
+    const key = a.id != null ? a.id : `${a.title || a.message || ''}:${a.profile || ''}:${i}`;
+    if (seenAlerts.has(key)) return;
+    seenAlerts.add(key);
+    if (!alertsBaseline) fresh = true;
+  });
+  alertsBaseline = false;
+  if (fresh) scheduleTone('fail');
+  return fresh;
+}
+
 export function soundToggleInstall(){
   const btn = $('soundtoggle');
   if (!btn) return;
@@ -927,7 +964,12 @@ export function soundToggleInstall(){
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
     btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    btn.title = soundOn
+      ? 'Sound on: a tone plays when a session or task finishes or a critical alert appears. Click to turn off.'
+      : 'Sound off: click to hear a tone when a session or task finishes or a critical alert appears.';
+    btn.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
   };
+  armAudioUnlock();
   paint();
   btn.addEventListener('click', () => {
     soundOn = !soundOn;
@@ -945,7 +987,9 @@ export function soundToggleInstall(){
 export async function pollLive(){
   // The drawer is reachable from every tab, so the feed must keep running even
   // when Live is not on screen. Only a hidden document stops it.
-  if (liveBusy || document.hidden) return;
+  // A hidden tab only keeps polling while sound is on: that is exactly when a
+  // completion tone is wanted and nobody is looking at the page.
+  if (liveBusy || (document.hidden && !soundOn)) return;
   liveBusy = true;
   try {
     const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
@@ -962,6 +1006,7 @@ export async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    if (document.hidden) { liveFails = 0; return; }   // sound-only poll: no repaint
     // #185: the payload is fresh from here on; record it before the repaint so
     // a paint error cannot leave the pill claiming an older poll than the data.
     liveUpdatedAt = Math.floor(Date.now() / 1000);

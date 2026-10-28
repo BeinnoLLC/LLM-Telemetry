@@ -1250,8 +1250,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  
- .livegrid{display:grid;gap:var(--gap);align-items:stretch;
-   grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
+ .livegrid{display:grid;gap:var(--gap);align-items:start;
+   grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
  @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1263,6 +1263,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
@@ -1696,6 +1697,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
+.lvsrc{font-size:12px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
+.lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
 .lvrow .lvc-kind .pv-badge{padding:4px;font-size:18px}
 .lvrow .lvc-kind svg[data-kindlogo]{width:18px;height:18px}
@@ -1902,6 +1905,27 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
+  <!-- Task queue: always directly under the four scorecards, above "In
+       progress now", at every width (Home feedback 2026-10-28). -->
+  <div class="card p-4" id="qcard" style="position:relative">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
+   </div>
+   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
+        view: the old queued/running/done lanes were removed). Depot = requests
+        waiting at an Ollama host, the line = live sessions as one coupled
+        train (loco = most recently active), the yard = finished sessions
+        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
+        a task that changes section flies across. Hover/focus a car for detail. -->
+   <div class="qtrain" id="qtrain">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-rail" aria-hidden="true"></div>
+   </div>
+   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
+  </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
@@ -1925,30 +1949,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
      <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
      <div id="agentslist"></div>
     </div>
-    <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">By category</div><div style="flex:1;min-height:0;position:relative"><canvas id="cLiveCat"></canvas></div></div>
-    <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
-  </div>
-  <!-- #181: the task queue sits under the live board (scorecards, then the
-       session table + agents panel) so those stay above the fold. -->
-  <div class="card p-4 mt-3" id="qcard" style="position:relative">
-   <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
-   </div>
-   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
-        view: the old queued/running/done lanes were removed). Depot = requests
-        waiting at an Ollama host, the line = live sessions as one coupled
-        train (loco = most recently active), the yard = finished sessions
-        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
-        a task that changes section flies across. Hover/focus a car for detail. -->
-   <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
-   </div>
-   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
@@ -7114,6 +7115,7 @@ function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
+  checkCriticalAlerts(k.list);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const alertsBody = k.alerts ? alertsHtml(k)
@@ -7245,9 +7247,13 @@ const LV_COLS = [
   { k: 'cost', t: 'Cost', num: true }, { k: 'activity', t: 'Last activity' }, { k: 'load', t: 'Load', num: true },
 ];
 const lvSort = { key: null, dir: 'asc' };
-const STATE_RANK = { Running: 0, Waiting: 1, Idle: 2 };
+const STATE_RANK = { Running: 0, Compressing: 1, Waiting: 2, Idle: 3 };
 function liveState(kind, S){
-  if (kind === 'hermes') return Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S ? 'Idle' : 'Running';
+  if (kind === 'hermes') {
+    if (Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S) return 'Idle';
+    // Compression is a state of the row, not a chart slice (Home feedback).
+    return /compress/i.test(S.phase || '') && !/completed|done|finished/i.test(S.phase || '') ? 'Compressing' : 'Running';
+  }
   if (S.phase === 'idle') return 'Idle';
   return /wait|approv|blocked|input/i.test(S.phase || '') ? 'Waiting' : 'Running';
 }
@@ -7487,6 +7493,7 @@ function renderLive(){
         title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
         sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
           + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+          + (L.source ? `<span class="lvsrc" title="Session source: ${escA(L.source)}">${esc(L.source)}</span>` : '')
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
           + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
         mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
@@ -7523,18 +7530,6 @@ function renderLive(){
     up:(+L.up_bytes||0)+(+L.lan_up_bytes||0),
     down:(+L.down_bytes||0)+(+L.lan_down_bytes||0)}; });
   bwPrevAt = Date.now();
-
-  const cats = agg(live, L=>L.category, ()=>1);
-  mk('cLiveCat','doughnut',cats.map(x=>x[0]),
-     [{data:cats.map(x=>x[1]),backgroundColor:cats.map(x=>catOf(x[0]).c),borderWidth:0}],
-     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:5,font:{size:9}}}},cutout:'52%'});
-
-  const tr = (p.tools_recent||[]).slice(0,8);
-  // Per-tool colour, not one flat accent: the same tool keeps its colour in the
-  // chart, its axis label and the drawer, so it is traceable across the session.
-  mk('cTools','bar',tr.map(x=>x.tool),
-     [{data:tr.map(x=>x.calls),backgroundColor:tr.map(x=>toolColor(x.tool)),borderRadius:2}],
-     {...noLeg,indexAxis:'y',scales:{x:{grid:{color:BD}},y:{grid:{display:false},ticks:{font:{size:9}}}}});
 
   renderHomeSeries(p);
 
@@ -10967,6 +10962,10 @@ function checkCompletions(freshProfiles){
   return any;
 }
 
+// Browsers keep an AudioContext suspended until a user gesture. A page that
+// restores lt-sound=1 from storage has had no gesture yet, so the first tone
+// would be scheduled on a suspended context and never heard. Unlock on the
+// first real interaction (pointer / key / touch), then drop the listeners.
 function soundToggleInstall(){
   const btn = $('soundtoggle');
   if (!btn) return;
@@ -10981,7 +10980,12 @@ function soundToggleInstall(){
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
     btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    btn.title = soundOn
+      ? 'Sound on: a tone plays when a session or task finishes or a critical alert appears. Click to turn off.'
+      : 'Sound off: click to hear a tone when a session or task finishes or a critical alert appears.';
+    btn.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
   };
+  armAudioUnlock();
   paint();
   btn.addEventListener('click', () => {
     soundOn = !soundOn;
@@ -11185,7 +11189,9 @@ function installDrawer(){
 async function pollLive(){
   // The drawer is reachable from every tab, so the feed must keep running even
   // when Live is not on screen. Only a hidden document stops it.
-  if (liveBusy || document.hidden) return;
+  // A hidden tab only keeps polling while sound is on: that is exactly when a
+  // completion tone is wanted and nobody is looking at the page.
+  if (liveBusy || (document.hidden && !soundOn)) return;
   liveBusy = true;
   try {
     const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
@@ -11202,6 +11208,7 @@ async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    if (document.hidden) { liveFails = 0; return; }   // sound-only poll: no repaint
     // #185: the payload is fresh from here on; record it before the repaint so
     // a paint error cannot leave the pill claiming an older poll than the data.
     liveUpdatedAt = Math.floor(Date.now() / 1000);

@@ -57,6 +57,55 @@ where s.ended_at is null
 group by u.session_id, u.model, 3
 """
 
+# A title that names the SURFACE the chat came from, not its content. Hermes
+# stores "Bot Chat" (title_source=user) on dashboard/bot sessions, which made
+# most live rows read identically.
+GENERIC_TITLES = {"", "(untitled)", "untitled", "bot chat", "new chat", "chat",
+                  "new session", "new conversation", "cli", "tui"}
+SOURCE_LABELS = {"tui": "TUI", "cli": "CLI", "kanban": "Kanban", "cron": "Cron",
+                 "desktop": "Desktop", "tool": "Tool", "local": "Local"}
+TITLE_MAX = 80
+
+LIVE_META = """
+select s.id, coalesce(s.source,''), coalesce(s.chat_type,''),
+       (select substr(m.content,1,600) from messages m
+         where m.session_id = s.id and m.role = 'user'
+           and coalesce(m.content,'') != ''
+         order by m.timestamp, m.id limit 1)
+from sessions s
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+"""
+
+
+def is_generic_title(title):
+    return (title or "").strip().lower() in GENERIC_TITLES
+
+
+def clean_title(text, limit=TITLE_MAX):
+    """Collapse whitespace, drop markdown/prompt chrome, cut at `limit` chars."""
+    t = re.sub(r"\s+", " ", re.sub(r"[`*_#>]+", " ", text or "")).strip()
+    if len(t) > limit:
+        t = t[: limit - 1].rstrip() + "\u2026"
+    return t
+
+
+def source_label(source, chat_type=""):
+    """Small muted tag for where a session came from; 'Bot Chat' only when the
+    source is unknown (a bot/gateway DM with no recorded surface)."""
+    if source in SOURCE_LABELS:
+        return SOURCE_LABELS[source]
+    return (source or "").title() or "Bot Chat"
+
+
+def resolve_title(raw_title, first_user):
+    """Real title if the session has one, else the cleaned first user message,
+    else the untitled marker. Never returns a surface name as the title."""
+    if not is_generic_title(raw_title):
+        return clean_title(raw_title, 120)
+    c = clean_title(first_user)
+    return c or "(untitled)"
+
 
 def fold_models(rows):
     """[(sid, model, task, calls, in, out, last, url)] -> {sid: [model dicts]}.
@@ -252,6 +301,13 @@ def build_live():
             for L in live:
                 L["bw_local"] = (L["up_bytes"] + L["down_bytes"]) == 0 and (
                     L["lan_up_bytes"] + L["lan_down_bytes"]) > 0
+            meta = {r[0]: r for r in con.execute(LIVE_META)}
+            for L in live:
+                _, src, ctype, first = meta.get(L["id"], (L["id"], "", "", None))
+                L["source"] = source_label(src, ctype)
+                L["title_raw"] = L["title"]
+                L["title"] = resolve_title(
+                    "" if L["title"] == "(untitled)" else L["title"], first)
             models = fold_models(con.execute(LIVE_MODELS).fetchall())
             for L in live:
                 L["models"] = models.get(L["id"], [])
