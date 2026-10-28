@@ -24,7 +24,7 @@ export function tintTicks(axis){
 export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
   // Chart.js refuses to bind a second chart to a canvas that still has one
   // ("Canvas is already in use"). charts[] is emptied on every render, but a
-  // chart created outside that cycle — the live poll repaints cLiveCat every
+  // chart created outside that cycle — the live poll repaints a chart every
   // few seconds — is not in the array and survives, so the next render throws
   // and the whole live feed stalls. Ask Chart.js itself what owns the canvas.
   const prev = (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;

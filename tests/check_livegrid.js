@@ -15,8 +15,9 @@ const grid=/\.livegrid\{([^}]*)\}/.exec(html);
 ok(!!grid,'.livegrid rule present');
 if(grid){
   ok(/display:grid/.test(grid[1]),'.livegrid is a grid');
-  ok(/grid-template-columns:minmax\(0,3fr\) minmax\(280px,1fr\)/.test(grid[1].replace(/\s+/g,' ')),
-     'explicit two-column tracks (not auto-fit)');
+  ok(/grid-template-columns:minmax\(0,1fr\)/.test(grid[1].replace(/\s+/g,' ')) && !/auto-fit|auto-fill/.test(grid[1]),
+     'explicit single full-width track (not auto-fit); table gets the freed width');
+  ok(!/3fr/.test(grid[1]),'negative control: the old 3fr/1fr two-column split is gone');
 }
 ok(/\.livegrid > \*\{min-width:0\}/.test(html),'children get min-width:0 (prevents overflow)');
 

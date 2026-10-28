@@ -195,5 +195,25 @@ with tempfile.TemporaryDirectory() as tmp:
     chk(all(s["session_id"] != "eeeeeeee-5555" for s in
             build_agent_live(claude_home=ch, codex_home=xh, now=now)), "unparseable transcript skipped")
 
+# owning login, read from ~/.hermes/agent-logins/<login>/<engine>
+with tempfile.TemporaryDirectory() as tmp2:
+    lroot = os.path.join(tmp2, "agent-logins")
+    lh = os.path.join(lroot, "beinno", "claude")
+    write(os.path.join(lh, "projects", "-work-login", "ffffffff-6666.jsonl"),
+          claude_events(now, "/work/login", [{"type": "tool_use", "name": "Bash", "id": "t7", "input": {}}]), now - 5)
+    os.environ["LLM_TELEMETRY_AGENT_LOGINS"] = lroot
+    try:
+        ol = {s["session_id"]: s for s in build_agent_live(codex_home=os.path.join(tmp2, "nocodex"), now=now)}
+    finally:
+        del os.environ["LLM_TELEMETRY_AGENT_LOGINS"]
+    chk(ol.get("ffffffff-6666", {}).get("login") == "beinno", "login-home session carries its owning login",
+        ol.get("ffffffff-6666", {}).get("login"))
+    dh = os.path.join(tmp2, ".claude")
+    write(os.path.join(dh, "projects", "-work-def", "99999999-7777.jsonl"),
+          claude_events(now, "/work/def", [{"type": "tool_use", "name": "Bash", "id": "t8", "input": {}}]), now - 5)
+    od = build_agent_live(claude_home=dh, codex_home=os.path.join(tmp2, "nocodex"), now=now)
+    chk(len(od) == 1 and od[0].get("login") == "",
+        "negative control: a session in an explicit/default home has an empty login", od)
+
 print(f"\n{p} passed, {f} failed")
 sys.exit(1 if f else 0)

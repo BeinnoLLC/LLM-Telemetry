@@ -756,6 +756,7 @@ def build():
             active = con.execute(ACTIVE).fetchone()[0]
             live = [dict(zip(LIVE_COLS, r)) for r in con.execute(LIVE)]
             for L in live:
+                L["profile"] = name
                 L["category"] = classify(L["phase"], L["tools"])
                 L["tools"] = [t for t in (L["tools"] or "").split(",") if t]
                 L["kind"] = "subagent" if L["parent"] else "top-level"

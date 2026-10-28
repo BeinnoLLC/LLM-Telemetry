@@ -1115,6 +1115,18 @@
   },
   {
    "mod": "live",
+   "name": "ownerBadge"
+  },
+  {
+   "mod": "live",
+   "name": "sidChip"
+  },
+  {
+   "mod": "live",
+   "name": "profileOf"
+  },
+  {
+   "mod": "live",
    "name": "lvRow"
   },
   {
@@ -1952,6 +1964,22 @@
   {
    "mod": "live",
    "name": "checkCompletions"
+  },
+  {
+   "mod": "live",
+   "name": "audioUnlocked"
+  },
+  {
+   "mod": "live",
+   "name": "unlockAudio"
+  },
+  {
+   "mod": "live",
+   "name": "armAudioUnlock"
+  },
+  {
+   "mod": "live",
+   "name": "checkCriticalAlerts"
   },
   {
    "mod": "live",

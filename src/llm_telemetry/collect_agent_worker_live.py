@@ -335,6 +335,37 @@ def discover_codex(home: Path, now: float, stale_window_s: int) -> list[tuple[Pa
     return _recent(home.glob("sessions/*/*/*/rollout-*.jsonl"), now, stale_window_s)
 
 
+def login_homes(engine: str) -> list[Path]:
+    """Per-login CLI homes the agent-worker runs under, e.g.
+    ~/.hermes/agent-logins/<login>/claude. Those sessions never touch ~/.claude,
+    so scanning only the default home reports "0 live" while workers are busy.
+    $LLM_TELEMETRY_AGENT_LOGINS (os.pathsep-separated roots) overrides the
+    default root; set it empty to disable."""
+    raw = os.environ.get("LLM_TELEMETRY_AGENT_LOGINS")
+    roots = ([Path.home() / ".hermes" / "agent-logins"] if raw is None
+             else [Path(r) for r in raw.split(os.pathsep) if r])
+    out: list[Path] = []
+    for root in roots:
+        try:
+            out.extend(sorted(d for d in root.glob(f"*/{engine}") if d.is_dir()))
+        except OSError:
+            continue
+    return out
+
+
+def login_name(home: Path) -> str:
+    """Owning agent-worker login for a CLI home: ``<login>`` for
+    <logins root>/<login>/<engine> (default root ~/.hermes/agent-logins), '' for the default ~/.claude / ~/.codex."""
+    roots = [Path.home() / ".hermes" / "agent-logins"]
+    raw = os.environ.get("LLM_TELEMETRY_AGENT_LOGINS")
+    if raw:
+        roots = [Path(r) for r in raw.split(os.pathsep) if r]
+    for root in roots:
+        if home.parent.parent == root:
+            return home.parent.name
+    return ""
+
+
 def build_agent_live(claude_home: Optional[os.PathLike] = None,
                      codex_home: Optional[os.PathLike] = None,
                      now: Optional[float] = None,
@@ -347,11 +378,18 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
     xhome = Path(codex_home) if codex_home is not None else Path(
         os.environ.get("LLM_TELEMETRY_CODEX_HOME") or (Path.home() / ".codex"))
 
+    # Explicit homes (tests, callers) are authoritative; otherwise also scan the
+    # agent-worker login homes.
+    c_all = [chome] + (login_homes("claude") if claude_home is None else [])
+    x_all = [xhome] + (login_homes("codex") if codex_home is None else [])
+    claude_found = [(f, h) for h in c_all for f in discover_claude(h, now, stale_window_s)]
+    codex_found = [(f, h) for h in x_all for f in discover_codex(h, now, stale_window_s)]
+
     best: dict[tuple[str, str], dict[str, Any]] = {}
     for engine, found, parse in (
-            ("claude", discover_claude(chome, now, stale_window_s), parse_claude_session),
-            ("codex", discover_codex(xhome, now, stale_window_s), parse_codex_session)):
-        for path, mtime in found:
+            ("claude", claude_found, parse_claude_session),
+            ("codex", codex_found, parse_codex_session)):
+        for (path, mtime), home in found:
             s = parse(path)
             if s is None:
                 continue
@@ -361,6 +399,7 @@ def build_agent_live(claude_home: Optional[os.PathLike] = None,
             title = os.path.basename(cwd.rstrip("/")) if cwd else ""
             row = {
                 "engine": engine,
+                "login": login_name(home),
                 "session_id": s["session_id"],
                 "title": title or engine,
                 "model": s["model"],

@@ -82,16 +82,11 @@ setTimeout(()=>{
   const charts=w.__charts||[];
   const toolChart=charts.find(c=>c&&c.data&&Array.isArray(c.data.labels)
     && c.data.labels.some(l=>TC[l]));
-  ok(!!toolChart,'tool chart found');
-  if(toolChart){
-    const bg=toolChart.data.datasets[0].backgroundColor;
-    ok(Array.isArray(bg),'bar colours are per-bar, not a single accent');
-    if(Array.isArray(bg)){
-      const wrong=toolChart.data.labels.filter((l,i)=>TC[l]&&bg[i]!==TC[l]);
-      ok(wrong.length===0,'each bar uses its tool colour',wrong.slice(0,3).join(','));
-      ok(new Set(bg).size>1,'bars use multiple distinct colours',`(${new Set(bg).size})`);
-    }
-  }
+  // Home feedback 2026-10-28: the "Tool calls · last hour" bar chart was removed from
+  // Home (the live table's activity column carries the current tool). The colour
+  // contract now lives in the axis label, the drawer and the live-row tool chips.
+  ok(!toolChart,'Home no longer builds a tool-calls chart');
+  ok(!w.document.getElementById('cTools'),'no #cTools canvas on the page');
 
   // 6. axis labels resolve through labelColor()
   const lc=w.eval('typeof labelColor!=="undefined"?labelColor("terminal"):null');

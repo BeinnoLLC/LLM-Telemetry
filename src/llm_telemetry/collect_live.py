@@ -25,6 +25,7 @@ from .schema import stamp
 from .schema_check import check
 from .bandwidth import BYTES_PER_TOKEN, estimate_bytes, is_lan as _is_lan
 from . import agents_alive
+from .collect_quota import _SECRET_PATTERNS, _SECRET_REPLACEMENT
 import socket
 
 CFG = EA.CFG
@@ -57,6 +58,83 @@ where s.ended_at is null
 group by u.session_id, u.model, 3
 """
 
+# A title that names the SURFACE the chat came from, not its content. Hermes
+# stores "Bot Chat" (title_source=user) on dashboard/bot sessions, which made
+# most live rows read identically.
+GENERIC_TITLES = {"", "(untitled)", "untitled", "bot chat", "new chat", "chat",
+                  "new session", "new conversation", "cli", "tui"}
+SOURCE_LABELS = {"tui": "TUI", "cli": "CLI", "kanban": "Kanban", "cron": "Cron",
+                 "desktop": "Desktop", "tool": "Tool", "local": "Local"}
+TITLE_MAX = 80
+
+LIVE_META = """
+select s.id, coalesce(s.source,''), coalesce(s.chat_type,''),
+       (select substr(m.content,1,600) from messages m
+         where m.session_id = s.id and m.role = 'user'
+           and coalesce(m.content,'') != ''
+         order by m.timestamp, m.id limit 1)
+from sessions s
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+"""
+
+
+def is_generic_title(title):
+    return (title or "").strip().lower() in GENERIC_TITLES
+
+
+_URL_RE = re.compile(r"\b[A-Za-z][A-Za-z0-9+.\-]*://(?:[^/\s?#@]*@)?([^/\s?#:]+)(?::\d+)?[^\s]*")
+_WIN_PATH_RE = re.compile(r"\b[A-Za-z]:\\(?:[\w.\- ]+\\)*([\w.\-]+)")
+_UNIX_PATH_RE = re.compile(r"(?<![\w.])/(?:[\w.\-]+(?: [\w.\-]+)?/)+([\w.\-]+)")
+_ENVELOPE_RE = re.compile(r"^\s*Message from (?:[^\w\s]+ )?(.+?) \(@[^)]*\):\s*")
+
+
+def scrub_secrets(text):
+    """Redact credential-shaped substrings (shared with the quota exporter)."""
+    out = text or ""
+    for pat in _SECRET_PATTERNS:
+        out = pat.sub(_SECRET_REPLACEMENT, out)
+    return out
+
+
+def clean_title(text, limit=TITLE_MAX):
+    """Collapse whitespace, drop markdown/prompt chrome, cut at `limit` chars.
+
+    Secrets are redacted FIRST: cleanup deletes '_' (breaking ghp_/api_key=
+    patterns) and truncating first could leave half a secret."""
+    text = scrub_secrets(text)
+    # Bot relay envelope: "Message from [emoji] Name (@handle): body" -> "Name: body".
+    text = _ENVELOPE_RE.sub(r"\1: ", text)
+    # URLs shrink to their host (no path, query or credentials).
+    text = _URL_RE.sub(r"\1", text)
+    # Attachments / absolute paths: keep the file name, never the directory.
+    text = re.sub(r"@file:\s*", "", text)
+    text = _WIN_PATH_RE.sub(r"\1", text)
+    text = _UNIX_PATH_RE.sub(r"\1", text)
+    t = re.sub(r"\s+", " ", re.sub(r"[`*_#>]+", " ", text)).strip()
+    if len(t) > limit:
+        t = t[: limit - 1].rstrip() + "\u2026"
+    return t
+
+
+def source_label(source):
+    """Small muted tag for where a session came from; 'Bot Chat' only when the
+    source is unknown (a bot/gateway DM with no recorded surface)."""
+    if source in SOURCE_LABELS:
+        return SOURCE_LABELS[source]
+    return (source or "").title() or "Bot Chat"
+
+
+def resolve_title(raw_title, first_user):
+    """Real title if the session has one, else the cleaned first user message,
+    else the untitled marker. Never returns a surface name as the title.
+    A real title is only scrubbed and trimmed, never rewritten."""
+    if not is_generic_title(raw_title):
+        t = re.sub(r"\s+", " ", scrub_secrets(raw_title)).strip()
+        return t[:119].rstrip() + "\u2026" if len(t) > 120 else t
+    c = clean_title(first_user)
+    return c or "(untitled)"
+
 
 def fold_models(rows):
     """[(sid, model, task, calls, in, out, last, url)] -> {sid: [model dicts]}.
@@ -86,7 +164,7 @@ def fold_models(rows):
 
 LIVE_LOGS = """
 select m.timestamp, s.title, m.role, coalesce(m.tool_name,'') tool,
-       substr(coalesce(m.content,''),1,200) preview
+       substr(coalesce(m.content,''),1,200) preview, m.session_id
 from messages m join sessions s on s.id=m.session_id
 where m.session_id in (
         select id from sessions
@@ -95,10 +173,14 @@ where m.session_id in (
   and m.timestamp > strftime('%s','now') - 600
 order by m.timestamp desc limit 80
 """
-LIVE_LOGS_COLS = "ts title role tool preview".split()
+LIVE_LOGS_COLS = "ts title role tool preview sid".split()
 
 RECENT_ENDED = """
-select id, title, ended_at, end_reason
+select id, title, ended_at, end_reason,
+       (select substr(m.content,1,600) from messages m
+         where m.session_id = sessions.id and m.role = 'user'
+           and coalesce(m.content,'') != ''
+         order by m.timestamp, m.id limit 1)
 from sessions
 where ended_at is not null
   and ended_at > strftime('%s','now') - 90
@@ -226,6 +308,7 @@ def build_live():
             active = con.execute(EA.ACTIVE).fetchone()[0]
             live = [dict(zip(EA.LIVE_COLS, r)) for r in con.execute(EA.LIVE)]
             for L in live:
+                L["profile"] = name
                 L["category"] = EA.classify(L["phase"], L["tools"])
                 L["tools"] = [t for t in (L["tools"] or "").split(",") if t]
                 L["kind"] = "subagent" if L["parent"] else "top-level"
@@ -252,6 +335,13 @@ def build_live():
             for L in live:
                 L["bw_local"] = (L["up_bytes"] + L["down_bytes"]) == 0 and (
                     L["lan_up_bytes"] + L["lan_down_bytes"]) > 0
+            meta = {r[0]: r for r in con.execute(LIVE_META)}
+            for L in live:
+                _, src, _ctype, first = meta.get(L["id"], (L["id"], "", "", None))
+                L["source"] = source_label(src)
+                L["title_raw"] = L["title"]
+                L["title"] = resolve_title(
+                    "" if L["title"] == "(untitled)" else L["title"], first)
             models = fold_models(con.execute(LIVE_MODELS).fetchall())
             for L in live:
                 L["models"] = models.get(L["id"], [])
@@ -259,9 +349,13 @@ def build_live():
                 {"tool": t, "calls": n} for t, n in con.execute(LIVE_TOOLS)
             ]
             logs = [dict(zip(LIVE_LOGS_COLS, r)) for r in con.execute(LIVE_LOGS)]
+            titles = {L["id"]: L["title"] for L in live}
+            for lg in logs:
+                lg["title"] = titles.get(lg["sid"]) or resolve_title(lg["title"], None)
             recent_ended = [
-                {"id": sid, "title": title, "ended_at": ended_at, "end_reason": reason}
-                for sid, title, ended_at, reason in con.execute(RECENT_ENDED)
+                {"id": sid, "title": resolve_title(title, first), "ended_at": ended_at,
+                 "end_reason": reason}
+                for sid, title, ended_at, reason, first in con.execute(RECENT_ENDED)
             ]
             try:
                 recent_delegations = [

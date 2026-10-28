@@ -1,5 +1,5 @@
 // Completion sound (#105): a short tone when a session or delegated task
-// finishes. Off by default, toggled by #soundtoggle, generated with Web
+// finishes. On by default, toggled by #soundtoggle, generated with Web
 // Audio so jsdom (which has no real audio) is stubbed with a fake
 // AudioContext that just records what would have played.
 const fs = require('fs');
@@ -75,23 +75,52 @@ const $ = id => d.getElementById(id);
 (async () => {
   await new Promise(r => setTimeout(r, 60));   // let boot + first pollLive settle
 
-  // --- off by default --------------------------------------------------
-  chk(w.soundOn === false, 'sound is off by default');
+  // --- ON by default (a saved 'off' is the only thing that mutes) -------
+  chk(w.soundOn === true, 'sound is on by default');
   const btn = $('soundtoggle');
   chk(!!btn, 'the sound toggle button exists');
-  chk(btn.getAttribute('aria-pressed') === 'false', 'toggle reports pressed=false while off');
+  chk(btn.getAttribute('aria-pressed') === 'true', 'toggle reports pressed=true while on');
+  chk(btn.textContent.trim() === 'Sound on', `toggle is labelled "Sound on" (${btn.textContent.trim()})`);
 
   // --- no tone on the very first poll (baseline), even though the fixture
-  // already carries recent_ended / recent_delegations from page load -------
+  // already carries recent_ended / recent_delegations and sound is on -------
   chk(playedNotes.length === 0, 'no tone plays on initial load (baseline snapshot)');
 
-  // Turn sound on (this is the user gesture Web Audio requires).
+  // Mute, then turn back on (the click is the user gesture Web Audio requires).
   btn.click();
-  chk(w.soundOn === true, 'clicking the toggle turns sound on');
+  chk(w.soundOn === false && btn.textContent.trim() === 'Sound off' && btn.getAttribute('aria-pressed') === 'false',
+      'clicking the toggle mutes it and relabels it "Sound off"');
+  chk(playedNotes.length === 0, 'muting plays nothing');
+  btn.click();
+  chk(w.soundOn === true, 'clicking again turns sound back on');
   chk(btn.getAttribute('aria-pressed') === 'true', 'toggle reports pressed=true once on');
   await new Promise(r => setTimeout(r, 10));
   chk(playedNotes.length === 2, 'turning the toggle on itself plays one confirmation chime (2 notes)');
   playedNotes = [];
+
+  // --- a saved "off" survives a reload; negative control: with nothing saved
+  // the same page is on, so the default really comes from the absent key ------
+  const boot = async saved => {
+    const d2 = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/dashboard.html',
+      beforeParse(x) {
+        if (saved != null) x.localStorage.setItem('lt-sound', saved);
+        x.AudioContext = FakeAudioContext;
+        x.fetch = u => Promise.resolve({ ok: true, json: () => Promise.resolve(String(u).includes('live-data.json') ? live : analytics) });
+        x.HTMLCanvasElement.prototype.getContext = () => null;
+        x.Chart = function () { return { destroy() {}, update() {}, resize() {}, data: {}, options: {} }; };
+        x.Chart.register = () => {}; x.Chart.getChart = () => null;
+        x.Chart.defaults = { font: {}, plugins: { legend: { labels: {} } }, scale: { grid: {} } };
+        x.URL.createObjectURL = () => 'blob:stub'; x.URL.revokeObjectURL = () => {};
+        x.matchMedia = q => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+      } });
+    await new Promise(r => setTimeout(r, 60));
+    const out = { on: d2.window.soundOn, label: d2.window.document.getElementById('soundtoggle').textContent.trim() };
+    d2.window.close();
+    return out;
+  };
+  const savedOff = await boot('0'), nothing = await boot(null);
+  chk(savedOff.on === false && savedOff.label === 'Sound off', 'a saved lt-sound=0 reloads muted and labelled "Sound off"');
+  chk(nothing.on === true && nothing.label === 'Sound on', 'negative control: no saved choice reloads ON (a hard-coded off would fail)');
 
   // --- profile switch must not sound -------------------------------------
   // Switching profiles re-renders from the same DATA, no new poll -- nothing

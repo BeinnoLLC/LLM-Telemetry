@@ -1337,8 +1337,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     an unreadable column. #183: the agents panel now rides in that right
     column, so the stack point is 1024px — at >=1024px it sits beside the
     table, below that it reflows under it. */
- .livegrid{display:grid;gap:var(--gap);align-items:stretch;
-   grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
+ .livegrid{display:grid;gap:var(--gap);align-items:start;
+   grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
  @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1354,6 +1354,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
@@ -1375,7 +1376,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
-   #theme,#soundtoggle,#helpbtn{padding:0}
+   #theme,#helpbtn{padding:0}
 
    /* Date range collapses to a single active-preset chip; tapping it reveals
       the two date inputs + full preset row beneath instead of all of them
@@ -1869,6 +1870,10 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
+.lvsid{font:12.5px/18px var(--mono,monospace);color:var(--muted);padding:0 4px;border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
+button.lvsid{cursor:pointer;text-decoration:underline dotted}
+.lvsrc{font-size:12px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
+.lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
 .lvrow .lvc-kind .pv-badge{padding:4px;font-size:18px}
 .lvrow .lvc-kind svg[data-kindlogo]{width:18px;height:18px}
@@ -1895,6 +1900,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lva2>.lvtool:nth-child(n+4){display:none}
 .lva2>.lvtool{flex:0 1 auto;min-width:6ch;max-width:14ch;overflow:hidden;text-overflow:ellipsis}
 .lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl{flex:none;min-width:6ch;max-width:16ch}
+.lvrow .lvs2>.lvowner{max-width:20ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* beside the title the agent tag keeps >= 6ch: the title gives way, not the tag */
 .lvrow .lvc-sess>.lvtag{flex:none;min-width:6ch;max-width:16ch}
 .lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}

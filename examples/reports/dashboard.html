@@ -1250,8 +1250,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #dfoot{padding:8px 15px;border-top:1px solid var(--border);flex-shrink:0;
    display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-xs)}
  
- .livegrid{display:grid;gap:var(--gap);align-items:stretch;
-   grid-template-columns:minmax(0,3fr) minmax(280px,1fr)}
+ .livegrid{display:grid;gap:var(--gap);align-items:start;
+   grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
  @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1263,6 +1263,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
@@ -1281,7 +1282,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
-   #theme,#soundtoggle,#helpbtn{padding:0}
+   #theme,#helpbtn{padding:0}
 
    
    #rangebar{flex-direction:column;align-items:stretch !important}
@@ -1696,6 +1697,10 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
+.lvsid{font:12.5px/18px var(--mono,monospace);color:var(--muted);padding:0 4px;border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
+button.lvsid{cursor:pointer;text-decoration:underline dotted}
+.lvsrc{font-size:12px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
+.lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
 .lvrow .lvc-kind .pv-badge{padding:4px;font-size:18px}
 .lvrow .lvc-kind svg[data-kindlogo]{width:18px;height:18px}
@@ -1718,6 +1723,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lva2>.lvtool:nth-child(n+4){display:none}
 .lva2>.lvtool{flex:0 1 auto;min-width:6ch;max-width:14ch;overflow:hidden;text-overflow:ellipsis}
 .lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl{flex:none;min-width:6ch;max-width:16ch}
+.lvrow .lvs2>.lvowner{max-width:20ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .lvrow .lvc-sess>.lvtag{flex:none;min-width:6ch;max-width:16ch}
 .lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}
@@ -1763,8 +1769,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
    <div class="fleetbar" id="tabs" data-kind="all"></div>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
-   <button id="soundtoggle" class="chip" type="button" aria-pressed="false"
-     title="Play a tone when a session or task completes (off by default)">&#128263;</button>
+   <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
+     title="Play a tone when a session or task completes">Sound on</button>
    <button id="helpbtn" title="How your work gets routed (?)">?</button>
   </div>
  </div>
@@ -1902,6 +1908,27 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
+  <!-- Task queue: always directly under the four scorecards, above "In
+       progress now", at every width (Home feedback 2026-10-28). -->
+  <div class="card p-4" id="qcard" style="position:relative">
+   <div class="lbl mb-2.5">Task queue
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
+   </div>
+   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
+        view: the old queued/running/done lanes were removed). Depot = requests
+        waiting at an Ollama host, the line = live sessions as one coupled
+        train (loco = most recently active), the yard = finished sessions
+        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
+        a task that changes section flies across. Hover/focus a car for detail. -->
+   <div class="qtrain" id="qtrain">
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-rail" aria-hidden="true"></div>
+   </div>
+   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
+  </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
@@ -1925,30 +1952,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
      <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
      <div id="agentslist"></div>
     </div>
-    <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">By category</div><div style="flex:1;min-height:0;position:relative"><canvas id="cLiveCat"></canvas></div></div>
-    <div class="card p-4 flex flex-col" style="flex:1;min-height:0"><div class="lbl mb-2.5 shrink-0">Tool calls · last hour</div><div style="flex:1;min-height:0;position:relative"><canvas id="cTools"></canvas></div></div>
    </div>
-  </div>
-  <!-- #181: the task queue sits under the live board (scorecards, then the
-       session table + agents panel) so those stay above the fold. -->
-  <div class="card p-4 mt-3" id="qcard" style="position:relative">
-   <div class="lbl mb-2.5">Task queue
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
-   </div>
-   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
-        view: the old queued/running/done lanes were removed). Depot = requests
-        waiting at an Ollama host, the line = live sessions as one coupled
-        train (loco = most recently active), the yard = finished sessions
-        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
-        a task that changes section flies across. Hover/focus a car for detail. -->
-   <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
-   </div>
-   <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
@@ -3826,7 +3830,7 @@ let HOUR_RANGE = null;
 // Chart.js plays a draw-in animation (bars growing, pie slices sweeping) on
 // every (re)creation. That is the right first impression on page load, but
 // mk() destroys and recreates every chart on EVERY render() call — including
-// the 60s auto-refresh poll and the 5s live tick touching cLiveCat — so
+// the 60s auto-refresh poll and the 5s live tick repainting live charts — so
 // without this flag the whole page would replay its entrance animation once
 // a minute forever. CHART_ANIM_DONE flips true once, right after the first
 // paint (bootDone()), and mk() then forces animation:false on every chart it
@@ -3937,7 +3941,7 @@ function tintTicks(axis){
 function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
   // Chart.js refuses to bind a second chart to a canvas that still has one
   // ("Canvas is already in use"). charts[] is emptied on every render, but a
-  // chart created outside that cycle — the live poll repaints cLiveCat every
+  // chart created outside that cycle — the live poll repaints a chart every
   // few seconds — is not in the array and survives, so the next render throws
   // and the whole live feed stalls. Ask Chart.js itself what owns the canvas.
   const prev = (typeof Chart.getChart === 'function') ? Chart.getChart(el) : null;
@@ -7114,6 +7118,7 @@ function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
   if (!box) return null;
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
+  checkCriticalAlerts(k.list);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
     : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
   const alertsBody = k.alerts ? alertsHtml(k)
@@ -7245,9 +7250,13 @@ const LV_COLS = [
   { k: 'cost', t: 'Cost', num: true }, { k: 'activity', t: 'Last activity' }, { k: 'load', t: 'Load', num: true },
 ];
 const lvSort = { key: null, dir: 'asc' };
-const STATE_RANK = { Running: 0, Waiting: 1, Idle: 2 };
+const STATE_RANK = { Running: 0, Compressing: 1, Waiting: 2, Idle: 3 };
 function liveState(kind, S){
-  if (kind === 'hermes') return Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S ? 'Idle' : 'Running';
+  if (kind === 'hermes') {
+    if (Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S) return 'Idle';
+    // Compression is a state of the row, not a chart slice (Home feedback).
+    return /compress/i.test(S.phase || '') && !/completed|done|finished/i.test(S.phase || '') ? 'Compressing' : 'Running';
+  }
   if (S.phase === 'idle') return 'Idle';
   return /wait|approv|blocked|input/i.test(S.phase || '') ? 'Waiting' : 'Running';
 }
@@ -7260,6 +7269,36 @@ const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN
 function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
   return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+}
+// Owner badge: the profile / login / agent that owns a row. Hermes profiles are
+// tinted with the same profileHue() the profile tabs use, so one colour means one
+// profile everywhere; pi / Claude / Codex owners take their kind colour token.
+function ownerBadge(name, what, kindColor){
+  const n = name || '';
+  if (!n) return '';
+  let style;
+  if (kindColor) style = `color:color-mix(in srgb,${kindColor} 60%,var(--fg));background:color-mix(in srgb,${kindColor} 18%,var(--card));border:1px solid color-mix(in srgb,${kindColor} 45%,transparent)`;
+  else { const h = profileHue(n); style = `background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)`; }
+  return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="${style}" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
+}
+// Short session id (last 6 chars; the full id is in title=). With `open` it is a
+// button that opens the transcript, like the title.
+function sidChip(id, open, profile){
+  const full = String(id || '');
+  if (!full) return '';
+  const short6 = full.slice(-6);
+  return open
+    ? `<button type="button" class="lvsid ttitlebtn" data-tsession="${escA(full)}" data-tprofile="${escA(profile || '')}" title="${escA(full)} \u2014 open transcript">${esc(short6)}</button>`
+    : `<span class="lvsid" title="${escA(full)}">${esc(short6)}</span>`;
+}
+// Hermes rows from older payloads carry no `profile`; the owner is then the
+// profile whose live list holds the session.
+function profileOf(L){
+  if (L.profile) return L.profile;
+  for (const [n, q] of Object.entries(DATA.profiles || {})){
+    if (n !== 'All' && q && (q.live || []).some(x => x && x.id === L.id)) return n;
+  }
+  return current && current !== 'All' ? current : '';
 }
 // o: {kind, attrs, lead, title, tags, model, mcol, mextra, S, tok, cost, up, tools, gauge, bw}
 function lvRow(o){
@@ -7369,7 +7408,7 @@ function piLiveRows(list){
       costv: S.cost_usd || null, cost: S.cost_usd ? '$' + (+S.cost_usd).toFixed(4) : '',
       attrs: ` data-pisession="${escA(S.session_id||'')}" data-piagent="${escA(S.agent||'')}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
-      sub: `<span class="lvtag" style="color:var(--kind-pi);background:color-mix(in srgb,var(--kind-pi) 18%,var(--card));border:1px solid color-mix(in srgb,var(--kind-pi) 45%,transparent)" title="${escA(S.agent||'pi')}">${esc(S.agent||'pi')}</span>`,
+      sub: ownerBadge(S.agent || 'pi', 'Agent', 'var(--kind-pi)') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
@@ -7388,6 +7427,7 @@ function agentLiveRows(list){
       covered: S.cost_class === 'subscription',
       attrs: ` data-agentsession="${escA(S.session_id||'')}" data-engine="${engine}"`,
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || engine + ' session')}</span>`,
+      sub: ownerBadge(S.login || engine, S.login ? 'Login' : 'Agent', `var(--kind-${engine})`) + `<span class="lvsrc" title="Session source">${engine === 'codex' ? 'Codex' : 'Claude'}</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
       gauge: '' });
   });
@@ -7481,14 +7521,17 @@ function renderLive(){
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tok = sessTotals(L).k;
+      const prof = profileOf(L);
       return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
         prov: provOf('', L.model, L.base_url),
         lead: `<span class="lvcat" style="color:${c.c}" title="${escA(L.category)}">${c.i}</span>`,
-        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
-        sub: `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(L.profile||'')}" data-title="${escA(L.title)}" title="${escA(L.title)} — view timeline">Timeline</button>`
-          + (L.profile ? `<span class="lvtag" style="background:hsl(${profileHue(L.profile)} 62% 30%);color:hsl(${profileHue(L.profile)} 80% 78%);border:1px solid hsl(${profileHue(L.profile)} 55% 42%)" title="${escA(L.profile)}">${esc(L.profile)}</span>` : '')
+        title: `<button type="button" class="ttitlebtn lvtitle text-[length:var(--fs-md)] font-semibold truncate" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" title="${escA(L.title)} — open transcript">${esc(L.title)}</button>`,
+        sub: ownerBadge(prof, 'Profile')
+          + (L.source ? `<span class="lvsrc" title="Session source: ${escA(L.source)}">${esc(L.source)}</span>` : '')
+          + sidChip(L.id, true, prof)
+          + `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" data-title="${escA(L.title)}" title="${escA(L.title)} \u2014 view timeline">Timeline</button>`
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
-          + (L.kind==='subagent' ? '<span class="lvsub">↳ subagent</span>' : ''),
+          + (L.kind==='subagent' ? '<span class="lvsub">\u21b3 subagent</span>' : ''),
         mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
         gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
         panel: modelsPanel(L) });
@@ -7523,18 +7566,6 @@ function renderLive(){
     up:(+L.up_bytes||0)+(+L.lan_up_bytes||0),
     down:(+L.down_bytes||0)+(+L.lan_down_bytes||0)}; });
   bwPrevAt = Date.now();
-
-  const cats = agg(live, L=>L.category, ()=>1);
-  mk('cLiveCat','doughnut',cats.map(x=>x[0]),
-     [{data:cats.map(x=>x[1]),backgroundColor:cats.map(x=>catOf(x[0]).c),borderWidth:0}],
-     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:5,font:{size:9}}}},cutout:'52%'});
-
-  const tr = (p.tools_recent||[]).slice(0,8);
-  // Per-tool colour, not one flat accent: the same tool keeps its colour in the
-  // chart, its axis label and the drawer, so it is traceable across the session.
-  mk('cTools','bar',tr.map(x=>x.tool),
-     [{data:tr.map(x=>x.calls),backgroundColor:tr.map(x=>toolColor(x.tool)),borderRadius:2}],
-     {...noLeg,indexAxis:'y',scales:{x:{grid:{color:BD}},y:{grid:{display:false},ticks:{font:{size:9}}}}});
 
   renderHomeSeries(p);
 
@@ -10881,9 +10912,10 @@ let LIVE_MS = (POWER.intervals && POWER.intervals.live_poll_interval_s
   ? Math.round(POWER.intervals.live_poll_interval_s * 1000) : LIVE_MS_DEFAULT);
 let liveBusy = false, liveFails = 0;
 
-// ---- Completion sound (#105): off by default, Web Audio (no audio file to ship,
-// ADR 0001); turning it on is itself the user gesture browsers require.
-let soundOn = localStorage.getItem('lt-sound') === '1';
+// ---- Completion sound (#105): ON by default (only an explicit saved 'off' mutes),
+// Web Audio (no audio file to ship, ADR 0001). Browsers keep audio locked until a
+// first click/key; armAudioUnlock() handles that.
+let soundOn = localStorage.getItem('lt-sound') !== '0';
 let audioCtx = null;
 let soundBaseline = true;   // true until the first poll has been diffed once
 let seenEnded = new Set();  // session ids already sounded for, across polls
@@ -10967,6 +10999,50 @@ function checkCompletions(freshProfiles){
   return any;
 }
 
+// Browsers keep an AudioContext suspended until a user gesture. A page that
+// restores lt-sound=1 from storage has had no gesture yet, so the first tone
+// would be scheduled on a suspended context and never heard. Unlock on the
+// first real interaction (pointer / key / touch), then drop the listeners.
+let audioUnlocked = false;
+function unlockAudio(){
+  try {
+    const ctx = ensureAudioCtx();
+    audioUnlocked = ctx.state === 'running';
+    return ctx;
+  } catch (e) { return null; }
+}
+function armAudioUnlock(target){
+  const t = target || window;
+  const evs = ['pointerdown', 'keydown', 'touchend', 'click'];
+  const off = () => evs.forEach(e => t.removeEventListener(e, on, true));
+  const on = () => {
+    const ctx = soundOn ? unlockAudio() : null;
+    if (!soundOn) return;            // nothing to unlock yet; the toggle click does it
+    if (ctx && ctx.state === 'running') off();
+  };
+  evs.forEach(e => t.addEventListener(e, on, true));
+  return off;
+}
+
+// A NEW critical alert (never one already present at page load) sounds the
+// failure tone once. Keyed by id/title so a 5s repaint does not repeat it.
+// State lives on the function: renderLiveKpis runs during the first render,
+// before module-level `let`s further down are initialised (TDZ).
+function checkCriticalAlerts(list){
+  const st = checkCriticalAlerts.st || (checkCriticalAlerts.st = { seen: new Set(), baseline: true });
+  let fresh = false;
+  (list || []).forEach((a, i) => {
+    if (!a || a.severity !== 'critical') return;
+    const key = a.id != null ? a.id : `${a.title || a.message || ''}:${a.profile || ''}:${i}`;
+    if (st.seen.has(key)) return;
+    st.seen.add(key);
+    if (!st.baseline) fresh = true;
+  });
+  st.baseline = false;
+  if (fresh) scheduleTone('fail');
+  return fresh;
+}
+
 function soundToggleInstall(){
   const btn = $('soundtoggle');
   if (!btn) return;
@@ -10980,8 +11056,12 @@ function soundToggleInstall(){
   const paint = () => {
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
-    btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    btn.textContent = soundOn ? 'Sound on' : 'Sound off';
+    btn.title = soundOn
+      ? 'A tone plays when a session or task finishes or a critical alert appears (needs one click or key press on the page first). Click to turn off.'
+      : 'Muted. Click to hear a tone when a session or task finishes or a critical alert appears.';
   };
+  armAudioUnlock();
   paint();
   btn.addEventListener('click', () => {
     soundOn = !soundOn;
@@ -11185,7 +11265,9 @@ function installDrawer(){
 async function pollLive(){
   // The drawer is reachable from every tab, so the feed must keep running even
   // when Live is not on screen. Only a hidden document stops it.
-  if (liveBusy || document.hidden) return;
+  // A hidden tab only keeps polling while sound is on: that is exactly when a
+  // completion tone is wanted and nobody is looking at the page.
+  if (liveBusy || (document.hidden && !soundOn)) return;
   liveBusy = true;
   try {
     const r = await fetch('live-data.json?t=' + Date.now(), {cache:'no-store'});
@@ -11202,6 +11284,10 @@ async function pollLive(){
     // completion the user should hear about.
     checkCompletions(fresh.profiles);
     soundBaseline = false;
+    if (document.hidden) {   // sound-only poll: no repaint, but critical alerts still sound
+      checkCriticalAlerts(mergedField(fresh.profiles, 'alerts').filter(Boolean));
+      liveFails = 0; return;
+    }
     // #185: the payload is fresh from here on; record it before the repaint so
     // a paint error cannot leave the pill claiming an older poll than the data.
     liveUpdatedAt = Math.floor(Date.now() / 1000);
