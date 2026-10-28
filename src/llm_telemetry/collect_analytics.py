@@ -755,6 +755,20 @@ def build():
             sess = [{"date": d, "source": s, "sessions": n} for d, s, n in con.execute(SESS)]
             active = con.execute(ACTIVE).fetchone()[0]
             live = [dict(zip(LIVE_COLS, r)) for r in con.execute(LIVE)]
+            # Resolve titles + source the same way collect_live.py does, so the
+            # embedded first-paint DATA matches the 5s-polled live-data.json
+            # (real titles, secret redaction, source tags). Without this, rows
+            # show "Bot Chat" until the first poll repaints them.
+            from . import collect_live as _CL
+            _meta = {r[0]: r for r in con.execute(_CL.LIVE_META)}
+            for L in live:
+                _m = _meta.get(L["id"], (L["id"], "", "", None))
+                _src = _m[1] if len(_m) > 1 else ""
+                _first = _m[3] if len(_m) > 3 else None
+                L["source"] = _CL.source_label(_src)
+                L["title_raw"] = L["title"]
+                L["title"] = _CL.resolve_title(
+                    "" if L["title"] == "(untitled)" else L["title"], _first)
             for L in live:
                 L["profile"] = name
                 L["category"] = classify(L["phase"], L["tools"])
