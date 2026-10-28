@@ -30,8 +30,8 @@ service; the only runtime dependency is PyYAML.
 | systemd units | **5 timers**, **6 services** (build, probe, router, quota, rankings, serve) |
 | Python source | 45 modules, about 9.8k lines in `src/llm_telemetry/*.py` |
 | Front end | 11 ES modules, about 9.3k lines of JS, 2 CSS files |
-| JS test suites | **133** (114 `check_*`, 1 `drive_*`, 18 `unit_*.mjs`) |
-| Python test suites | **57** (`tests/test_*.py`) |
+| JS test suites | **135** (116 `check_*`, 1 `drive_*`, 18 `unit_*.mjs`) |
+| Python test suites | **60** (`tests/test_*.py`) |
 | Runtime dependencies | **1** (PyYAML) |
 | Page-weight budget | `dashboard.html` ≤ **960,000 bytes** |
 | Refresh | page live poll 5 s; full rebuild 60 s; Ollama probe 5 s; router / quota / rankings hourly |
@@ -40,14 +40,14 @@ service; the only runtime dependency is PyYAML.
 
 ## Feature highlights
 
-1. **Live board** — sessions in flight, agents alive, 5-minute throughput, active alerts; sortable session table across Hermes / PI / Claude / Codex; a Depot → On the line → Yard "railway" task queue.
+1. **Live board** — sessions in flight, agents alive, 5-minute throughput, active alerts; a Depot → On the line → Yard "railway" task queue directly under them; a sortable session table across Hermes / PI / Claude / Codex (including agent-worker logins) where every row shows its owner, source and short session id.
 2. **Spend you can trust** — metered, subscription and local costs kept distinct. Local models are costed from electricity. Claude Code / Codex sessions show the API-price equivalent labelled *covered by subscription* and never added to Est. cost. Unpriced cloud models raise a warning instead of silently counting as $0.
 3. **Health** — success rate by model, tool reliability, session outcomes (orphan reaps, silent endings), delegated-run completion, grouped failures.
 4. **Routing and quota** — per-profile model router (tiers, fallbacks, decisions) and provider quota headroom, with no credentials ever read by the dashboard.
 5. **Fleet inventory** — GPU/VRAM/queue per physical Ollama host, de-duplicated across aliases.
 6. **Investigation tools** — Session finder (`/`), session timelines, transcript modal, searchable Logs, Live tail drawer (`L`), CSV export, project / provider / model cross-filters.
 7. **Prices and Rankings** — the exact per-1M rate behind every number, a what-if calculator, and OpenRouter's public top-model rankings.
-8. **Calm UX** — dark Grafana-style theme (light available), stable colour per model, optional completion sounds (off by default), keyboard shortcuts, responsive from 375 to 1920 px.
+8. **Calm UX** — dark Grafana-style theme (light available), stable colour per model, completion and critical-alert sounds (on by default, one-click toggle), keyboard shortcuts, responsive from 375 to 1920 px.
 
 ## Architecture in one paragraph
 
@@ -88,7 +88,7 @@ flowchart LR
 ```bash
 ls src/llm_telemetry/collect_*.py | wc -l            # 15
 grep -c 'data-view=' src/llm_telemetry/web/dashboard.html   # 13
-ls tests/check_*.js | wc -l; ls tests/unit_*.mjs | wc -l    # 114, 18
-ls tests/test_*.py | wc -l                            # 57
+ls tests/check_*.js | wc -l; ls tests/unit_*.mjs | wc -l    # 116, 18
+ls tests/test_*.py | wc -l                            # 60
 ls systemd/*.timer | wc -l; ls systemd/*.service | wc -l   # 5, 6
 ```

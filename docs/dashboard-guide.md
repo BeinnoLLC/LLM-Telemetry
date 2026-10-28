@@ -10,7 +10,7 @@ How to read each page. Source for every statement is the front end in
 | **Header stamp** | "generated … · auto-refresh every 1 min", aged by `stampFreshness` so a frozen page says so (`palette.js`). |
 | **Refresh** (↻) | Re-fetches data in place. |
 | **Theme** | Dark is the default; light is stored in `localStorage` key `hermes-dash-theme`. |
-| **Sound** (speaker icon) | Completion tone, off by default. See [Sounds](#sounds). |
+| **Sound on / Sound off** | Text toggle button, **on by default**; the choice is saved in `localStorage` key `lt-sound`. Plays a tone on completions and new critical alerts. See [Sounds](#sounds). |
 | **?** | Opens the router help overlay ("How your work gets routed"). |
 | **Range bar** | Presets `1h`, `6h`, `12h` (real hour-grain data), `24h`, `7d`, `30d`, `All`, or From/To dates. Hour presets and date pickers are mutually exclusive. On phones the bar collapses to one chip. |
 | **Filter bar** | Project, provider and model selects. They compose with the range and the profile chips (one more row-filter step), apply to Usage / Cost / Flow / Health, and show a "Filtering: …" chip when active. They ride in the URL hash. |
@@ -29,6 +29,9 @@ How to read each page. Source for every statement is the front end in
 | Calls · tokens | Calls and tokens over the last 5 minutes, derived poll-to-poll from the live feed (shows "measuring…" until 5 minutes of samples exist), with a sparkline. |
 | Active alerts | Number of tripped rules; red when any is critical; lists the two most severe plus "+N more"; "All clear" when none. Clicking opens Health. |
 
+**Task queue** sits directly under the four scorecards and above *In progress
+now*, at every width (see below).
+
 **Fleet tiles** — one tile per live session source; kind badges: Hermes (◉), PI
 (⚙), Claude and Codex (brand marks).
 
@@ -37,20 +40,32 @@ How to read each page. Source for every statement is the front end in
 | Column | Meaning |
 |---|---|
 | Kind | Hermes / PI / Claude / Codex. |
-| Session | Title (two-line cell). |
+| Session | Two-line cell. Line one: the title. Line two: an **owner badge**, a muted **source tag** and a **short session id** (last 6 characters; full id on hover). See [Session cell](#session-cell). |
 | Model | Short model name plus provider badge. |
-| State | `Running`, `Waiting` or `Idle`, with time since the session began. Hermes: idle when no activity for more than 120 s (`TILE_IDLE_S`). PI/Claude/Codex: idle when the phase is idle; waiting when the phase mentions wait, approval, blocked or input. |
+| State | `Running`, `Compressing` (Hermes only), `Waiting` or `Idle`, with time since the session began. Hermes: idle when no activity for more than 120 s (`TILE_IDLE_S`); compressing when the phase mentions compression and not completion. PI/Claude/Codex: idle when the phase is idle; waiting when the phase mentions wait, approval, blocked or input. |
 | Tokens | Input + output tokens. |
 | Cost | Estimated cost for the session. For Claude/Codex rows see [Cost policy](#cost-policy). |
 | Last activity | Time since last event, current phase (a tool name, "thinking", "responding", "idle") and up to three tool chips. |
 | Load | Context-window gauge (percent) and bandwidth. |
 
 Headers are sortable (`lvSort`). Rows are roomy (about 48–56 px, two-line cells)
-rather than dense.
+rather than dense. State and the current tool or phase are shown per row in
+**State** and **Last activity**; there are no separate state or tool-call charts.
+
+### Session cell
+
+| Part | Behaviour (`ownerBadge`, `sidChip`, `agentLiveRows`, `piLiveRows`, `js/live.js`) |
+|---|---|
+| Owner badge | Hermes rows: the profile name in that profile's colour (same hue as the profile tabs). PI rows: the agent name; Claude/Codex rows: the agent-worker **login** when known, else the engine name; these three use their kind colour. |
+| Source tag | Muted text. Hermes: the session's source (for example `TUI`, `CLI`, `Kanban`, `Cron`, `Desktop`; `Bot Chat` when the source is unknown, `collect_live.py` `source_label`). PI rows: `PI`. Claude/Codex rows: `Claude` / `Codex`. |
+| Short session id | Last 6 characters, full id in the tooltip. On Hermes rows it is a button that opens the transcript (as the title does). On PI/Claude/Codex rows it is plain text (to confirm whether that is intended). |
+| Title (Hermes) | The session's real title. If it is generic (empty, `(untitled)`, `Bot Chat`, `New chat`, `Chat`, `New session`, `New conversation`, `CLI`, `TUI`) the title is the cleaned first user message, cut at 80 characters. Credential-shaped strings are redacted **before** cleaning; URLs shrink to their host, absolute paths to the file name, and a bot relay envelope ("Message from … (@handle):") to "Name: body". With nothing usable the title is `(untitled)`. A real title is only scrubbed and trimmed (`collect_live.py` `resolve_title`, `clean_title`). |
+| Title (PI, Claude, Codex) | The basename of the session's working directory (the absolute path is never emitted); falls back to the agent or engine name. First messages are not read for these rows. |
 
 **Other Home panels:** *Agents alive* (gateway backends and mid-turn leases),
-*By category*, *Tool calls · last hour*, *Task queue*, *Calls & tokens · last 6h*,
-*Local inference hosts*, *Explore* cards.
+*Calls & tokens · last 6h*, *Local inference hosts*, *Explore* cards. The former
+*By category* donut and *Tool calls · last hour* chart were removed; that
+information is in the *In progress now* rows.
 
 **Task queue** is a railway: **Depot** = requests waiting at an Ollama host,
 **On the line** = live sessions coupled as a train (engine = most recently
@@ -206,13 +221,23 @@ thresholds are opinions.
 
 ## Sounds
 
-Off by default; turning it on is the user gesture browsers require (Web Audio,
-no audio files). Two quiet tones (gain 0.06, under 300 ms): a rising two-note
-chime (880 Hz then ≈1174.66 Hz) for success, a single low note (220 Hz) for
-failure. Completions within 2 s are debounced into one tone, escalating to the
-failure tone if any failed. A baseline snapshot, a profile switch, and an
-unfinished delegation never trigger a sound (`playTone`, `scheduleTone`,
-`checkCompletions` in `live.js`).
+**On by default**: only an explicitly saved "off" (`lt-sound` = `0`) mutes. The
+header button reads **Sound on** / **Sound off**; clicking it flips the choice,
+saves it, and (when turning on) plays a sample chime. Browsers keep Web Audio
+locked until a user gesture, so after a page load the tone is unlocked by the
+first click, key press or touch anywhere on the page (`armAudioUnlock`). Web
+Audio only, no audio files. Two quiet tones (gain 0.06, under 300 ms): a rising
+two-note chime (880 Hz then ≈1174.66 Hz) for success, a single low note
+(220 Hz) for failure. Completions within 2 s are debounced into one tone,
+escalating to the failure tone if any failed. A baseline snapshot, a profile
+switch, and an unfinished delegation never trigger a sound. A **new critical
+alert** (one not already present at page load) also plays the failure tone once.
+
+**Background tabs:** while sound is on, a hidden tab keeps polling the live feed
+without repainting, so completions and new critical alerts still sound; with
+sound off a hidden tab stops polling (`pollLive`, `checkCompletions`,
+`checkCriticalAlerts` in `live.js`). Whether a browser throttles timers in a
+long-hidden tab is outside the code (to confirm per browser).
 
 ## Keyboard shortcuts
 

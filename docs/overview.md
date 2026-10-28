@@ -37,7 +37,7 @@ filters ride in the hash so a filtered view can be shared.
 
 | View | What it shows |
 |---|---|
-| **Home** | The live board. Four scorecards (Sessions in flight, Agents alive, Calls · tokens over the last 5 min, Active alerts); fleet tiles; the **In progress now** session table; an **Agents alive** panel; **By category** and **Tool calls · last hour** charts; the **Task queue** railway (Depot → On the line → Yard); **Calls & tokens · last 6h**; **Local inference hosts**; an **Explore** strip of cards linking to other views. |
+| **Home** | The live board. Four scorecards (Sessions in flight, Agents alive, Calls · tokens over the last 5 min, Active alerts); the **Task queue** railway (Depot → On the line → Yard) directly under the scorecards at every width; fleet tiles; the **In progress now** session table (state and current tool/phase live in its rows; every row carries an owner badge, a source tag and a short session id); an **Agents alive** panel; **Calls & tokens · last 6h**; **Local inference hosts**; an **Explore** strip of cards linking to other views. |
 | **Flow** | Force-directed provider → model → task graph; draggable; shows the chats each node served. |
 | **Router** | Per profile: primary model, fallback chain, auxiliary tasks, delegation, tier router and routing matrix, background workers, provider auth table, and the last 7 days of routing decisions. |
 | **Quota** | Per profile and provider: usage windows, account balances, notes, from the Hermes quota plugin cache. |
@@ -54,7 +54,7 @@ filters ride in the hash so a filtered view can be shared.
 Global chrome (all views): the **fleet bar** (kind filter All / Hermes / PI /
 Claude / Codex and profile chips), a date **Range** bar (1h / 6h / 12h / 24h /
 7d / 30d / All presets, or From/To dates), project / provider / model filters,
-refresh, theme toggle, completion-sound toggle, a help (`?`) button, the
+refresh, theme toggle, the **Sound on / Sound off** toggle (on by default), a help (`?`) button, the
 **Session finder**, per-session **timeline** and **transcript** modals, and the
 **Live tail** drawer.
 

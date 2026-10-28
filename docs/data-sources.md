@@ -68,8 +68,15 @@ payload. The repo has 15 `collect_*.py` modules in total.
 - **Input:** `$LLM_TELEMETRY_CLAUDE_HOME` (default `~/.claude`)
   `/projects/<slug>/<uuid>.jsonl` and `$LLM_TELEMETRY_CODEX_HOME` (default
   `~/.codex`) `/sessions/Y/M/D/rollout-*.jsonl`.
-- **Rule:** live when the file mtime is within `STALE_WINDOW_S = 180` s.
-- **Output:** session id, model (only when the transcript names one), last-event
+- **Agent-worker logins:** also scans every per-login home
+  `~/.hermes/agent-logins/<login>/claude` and `…/<login>/codex` (override the
+  root list with `$LLM_TELEMETRY_AGENT_LOGINS`, path-separated; empty disables).
+  Sessions started by an agent-worker never touch `~/.claude` / `~/.codex`. Each
+  row carries `login` (the `<login>` directory name, empty for the default
+  home), shown as the row's owner badge.
+- **Rule:** live when the file mtime is within `STALE_WINDOW_S = 180` s. One row
+  per engine + session id (most recently written file wins).
+- **Output:** engine, login, session id, a cwd-basename title, model (only when the transcript names one), last-event
   time, token counts, coarse phase, and `cost_usd` with `cost_class:
   "subscription"` — the API-price equivalent from the pricing table, `null` when
   a model has no rate (so it never reads as a real $0).
