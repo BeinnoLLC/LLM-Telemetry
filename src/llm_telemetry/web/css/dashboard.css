@@ -71,11 +71,11 @@
 .kseg[data-empty="1"]{opacity:.45}
 .fb-strip{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;
   padding:0 12px 0 4px;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%);
-          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%)}
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,black 16px,black calc(100% - 28px),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,black 16px,black calc(100% - 28px),transparent 100%)}
 .fb-strip::-webkit-scrollbar{display:none}
-.fb-strip[data-at-start="1"]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%);
-  mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%)}
+.fb-strip[data-at-start="1"]{-webkit-mask-image:linear-gradient(90deg,black calc(100% - 28px),transparent 100%);
+  mask-image:linear-gradient(90deg,black calc(100% - 28px),transparent 100%)}
 .pchip{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border:0;
   border-radius:var(--fb-r);background:transparent;color:var(--fg);font:inherit;font-size:var(--fs-sm);
   cursor:pointer;white-space:nowrap;scroll-snap-align:start;position:relative}
@@ -805,7 +805,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-sleepers{to{background-position:14px 0}}
 /* a car: a titled box on wheels */
 .qt-car{flex:none;position:relative;display:flex;align-items:center;height:26px;padding:0 7px;
-  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:#fff;cursor:default;
+  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:white;cursor:default;
   box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);outline-offset:2px;
   --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--card))}
 .qt-car:focus-visible{outline:2px solid var(--accent)}
@@ -838,7 +838,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-loco::before{inset:5px 6px auto auto;width:9px;height:9px;border-radius:2px;
   background:rgba(255,255,255,.85);animation:qt-lamp 2.8s ease-in-out infinite}
 @keyframes qt-glint{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes qt-lamp{50%{opacity:.7;box-shadow:0 0 4px #fff}}
+@keyframes qt-lamp{50%{opacity:.7;box-shadow:0 0 4px white}}
 /* yard: sidings (one rail per row) with finished sessions parked on them */
 .qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:12px 5px;max-height:84px;overflow:hidden;
   padding-bottom:2px;margin-bottom:14px;
@@ -862,7 +862,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
 /* a task changing section: a ghost car flies the arc, the real one lands */
 .qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:5px;transform-origin:0 0;
-  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:#fff;
+  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:white;
   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 .qt-ghost.qt-fly-yard{background:hsl(var(--h,215) 45% 45%)}
 .qt-ghost.qt-fly-line{background:var(--z-warn)}
