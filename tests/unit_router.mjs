@@ -271,8 +271,9 @@ eq(R.NAV_GROUPS.map(g => g.views.length), [4, 6, 3], 'NAV_GROUPS: group sizes (L
 eq(Object.keys(R.NAV_ICONS).length, 14, 'NAV_ICONS: one icon per built-in view (incl. Rankings)');
 
 // ==================================================== slugOf / viewFromHash ==
-eq(R.NAV_ICONS.Home, '\u2302', 'NAV_ICONS: Home icon code point');
-eq(R.NAV_ICONS.Settings, '\u2699', 'NAV_ICONS: Settings icon code point');
+eq(R.NAV_ICONS.Home, 'Home', 'NAV_ICONS: Home icon id');
+eq(R.NAV_ICONS.Settings, 'Settings', 'NAV_ICONS: Settings icon id');
+ok(!Object.values(R.NAV_ICONS).some(v => /[\u2302\u2699\u00A4\u2211]/.test(v)), 'NAV_ICONS: no legacy glyph code points remain (LST-217)');
 
 loc._h = '#/home';
 eq(R.viewFromHash(), 'Home', 'viewFromHash: #/home -> Home');

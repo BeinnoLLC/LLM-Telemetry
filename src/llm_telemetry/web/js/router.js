@@ -549,8 +549,8 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Router:'\u2442', Quota:'\u25F0', Usage:'\u2211', Sessions:'\u25A6',
-  Cost:'$', Prices:'\u00A4', Rankings:'\u2211', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
+  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
 // Grouped sections (#122). The rail is grouped by what a view is FOR, so the
@@ -592,7 +592,7 @@ export function renderNav(){
   const groups = navGroups();
   const item = v => `
     <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}">
-      <span class="nvico" aria-hidden="true">${NAV_ICONS[v] || '\u2022'}</span>
+      <svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-${NAV_ICONS[v] || 'Home'}"/></svg>
       <span class="nvlabel">${v}</span>
       <span class="nvbadge" data-navbadge="${v}" hidden></span>
     </a>`;

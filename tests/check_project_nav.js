@@ -45,8 +45,8 @@ setTimeout(() => {
     const navItem = d.querySelector('[data-nav="Sessions"]');
     chk(!!navItem, 'a "Sessions" drawer nav entry exists');
     chk(navItem.getAttribute('href') === '#/sessions', 'the nav entry links to #/sessions');
-    chk(navItem.querySelector('.nvico') && navItem.querySelector('.nvico').textContent.trim().length > 0,
-        'the nav entry has an icon');
+    chk(navItem.querySelector('.nvico svg, svg.nvico') && navItem.querySelector('svg use'),
+        'the nav entry has an svg icon (LST-217)');
 
     // No 7th chip added to #tabs (explicit "do not" in the ticket — #4
     // deletes the chip row, and the ticket forbids re-adding to it). The
