@@ -45,7 +45,7 @@ start, end = sample["window"]["start"], sample["window"]["end"]
 got = C.assemble(resp, start, end)
 chk(got["status"] == "ok", "assemble -> ok")
 chk(got.get("ttl_s") == C.MIN_REFETCH_S, "assemble -> ttl_s matches MIN_REFETCH_S")
-chk(isinstance(got.get("fetched_at"), int), "assemble -> fetched_at is a timestamp")
+chk(isinstance(got.get("fetched_at"), str) and got.get("fetched_at"), "assemble -> fetched_at is a UTC ISO timestamp")
 chk(got.get("source") == C.URL, "assemble -> source is the rankings URL")
 for name in ("day", "week", "month"):
     chk(got["views"][name]["top"] == sample["views"][name]["top"], f"{name}: top matches fixture")

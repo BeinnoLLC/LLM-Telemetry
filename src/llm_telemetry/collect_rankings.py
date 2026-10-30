@@ -122,7 +122,7 @@ def assemble(resp, start, end):
         "rows": rows,
         "views": {name: aggregate(rows, n) for name, n in VIEWS.items()},
         "attribution": {"text": ATTRIBUTION, "url": ATTRIBUTION_URL},
-        "fetched_at": int(time.time()),
+        "fetched_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "ttl_s": MIN_REFETCH_S,
     })
 
@@ -156,9 +156,18 @@ def fetch(start, end, key, timeout=30):
 def collect(today=None, env=None, fetcher=fetch, previous=None):
     env = os.environ if env is None else env
     start, end = window(today)
+    def _as_ts(v):
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return datetime.datetime.fromisoformat(v).timestamp()
+            except ValueError:
+                return 0.0
+        return 0.0
     if (previous and previous.get("status") == "ok" and not previous.get("sample")
             and not previous.get("last_error")
-            and time.time() - int(previous.get("fetched_at") or 0) < MIN_REFETCH_S):
+            and time.time() - _as_ts(previous.get("fetched_at")) < MIN_REFETCH_S):
         return previous
     key = (env.get(KEY_ENV) or "").strip()
     if not key:

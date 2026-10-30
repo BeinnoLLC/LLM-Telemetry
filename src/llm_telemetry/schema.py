@@ -8,7 +8,7 @@ Bump SCHEMA_VERSION whenever a payload's shape changes in a way an older page
 (or an older collector) would misread.
 """
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def stamp(payload):

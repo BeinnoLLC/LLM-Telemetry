@@ -27,7 +27,7 @@
 | **Quota cache** | `quota_cache.json` maintained by the Hermes quota plugin; the only source for the Quota view. |
 | **Reports dir** | Where payloads and `dashboard.html` are written (`reports_dir`, default `~/.local/share/llm-telemetry/reports`). |
 | **Router** | The Hermes model router: tiers, routing matrix, fallbacks, auxiliary tasks. |
-| **Schema version** | `SCHEMA_VERSION` (currently 2) stamped on every payload and baked into the page. |
+| **Schema version** | `SCHEMA_VERSION` (currently 3) stamped on every payload and baked into the page. |
 | **Session finder** | `/` palette searching a per-session index (model, source, tool, cost, duration). |
 | **Single-file artifact** | `dashboard.html` with CSS, JS and data inlined; opens from `file://`. |
 | **Golden fixtures** | Frozen structural signatures of sample payloads in `tests/fixtures/golden/`, checked by `bless.js`. |
