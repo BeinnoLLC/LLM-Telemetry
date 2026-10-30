@@ -17,7 +17,7 @@ can show the result.
 | Collectors | `src/llm_telemetry/collect_*.py` (15 modules), `probe_hosts.py`, `pricing.py` | Read sources, write JSON payloads to the reports dir |
 | Pure helpers | `alerts.py`, `bandwidth.py`, `context_compaction.py`, `cost_attribution.py`, `delegations.py`, `energy.py`, `failures.py`, `latency.py`, `session_timeline.py`, `tool_outcomes.py`, `agents_alive.py`, `projects.py` | Math and rules, unit-tested without a database |
 | Analytics store | `analytics_store.py`, `ingest_all.py`, `ingest_pi.py` | Durable SQLite store filled by the `ingest` commands |
-| Schema | `src/llm_telemetry/schema.py`, `schema/*.schema.json`, `schema_check.py` | `SCHEMA_VERSION = 2`; JSON-schema subset validated at write time |
+| Schema | `src/llm_telemetry/schema.py`, `schema/*.schema.json`, `schema_check.py` | `SCHEMA_VERSION = 3`; JSON-schema subset validated at write time |
 | Builder | `build_dashboard.py`, `webassets.py` | Inlines CSS, JS and payloads into one HTML file |
 | Front end | `src/llm_telemetry/web/` (`dashboard.html` shell, `css/`, `js/`) | Static assets; 11 ES modules in `web/js/` |
 | Server | `serve.py` | Static server with no-store headers and one settings write endpoint |

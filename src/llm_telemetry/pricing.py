@@ -367,24 +367,36 @@ def fetch_catalog(force=False):
 
 def _fetch_openrouter(force=False):
     if not force and os.path.exists(CACHE):
-        age = time.time() - os.path.getmtime(CACHE)
-        if age < TTL:
-            try:
-                return json.load(open(CACHE))["models"], "cache"
-            except Exception:
-                pass
+        try:
+            cached = json.load(open(CACHE))
+            if time.time() - float(cached.get("fetched") or os.path.getmtime(CACHE)) < TTL:
+                return cached["models"], "cache"
+        except Exception:
+            pass
     try:
         req = urllib.request.Request(URL, headers={"User-Agent": "hermes-analytics"})
         with urllib.request.urlopen(req, timeout=30) as r:
             raw = json.load(r)
         models = {m["id"]: m.get("pricing", {}) for m in raw.get("data", [])}
         os.makedirs(os.path.dirname(CACHE), exist_ok=True)
-        json.dump({"fetched": time.time(), "models": models}, open(CACHE, "w"))
+        json.dump(_stamp({"fetched": time.time(), "fetched_at": _iso_now(), "source": URL,
+                          "ttl_s": TTL, "status": "ok", "last_error": None, "models": models}),
+                  open(CACHE, "w"))
         return models, "live"
     except Exception as e:
         if os.path.exists(CACHE):
             try:
-                return json.load(open(CACHE))["models"], f"stale ({e.__class__.__name__})"
+                prior = json.load(open(CACHE))
+                models = prior["models"]
+                merged = dict(prior)
+                merged.setdefault("ttl_s", TTL)
+                merged["status"] = "stale"
+                merged["last_error"] = f"{e.__class__.__name__}: {e}"
+                merged["source"] = URL
+                merged["fetched_at"] = merged.get("fetched_at") or _iso_now()
+                os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+                json.dump(_stamp(merged), open(CACHE, "w"))
+                return models, f"stale ({e.__class__.__name__})"
             except Exception:
                 pass  # corrupt cache while offline: built-in rates take over
         return {}, f"unavailable ({e.__class__.__name__})"

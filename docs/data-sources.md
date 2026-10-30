@@ -116,6 +116,13 @@ payload. The repo has 15 `collect_*.py` modules in total.
 - **Input:** OpenRouter model catalogue (`https://openrouter.ai/api/v1/models`),
   Nous catalogue, cached in `pricing-cache.json` with `TTL = 6 h`.
   `LLM_TELEMETRY_CATALOG` pins a catalogue file (used for reproducible samples).
+- **Freshness contract (LST-189):** every pricing cache file (`pricing-cache.json`,
+  `nous-pricing-cache.json`) and `rankings-data.json` carries a uniform set of
+  fields: `fetched_at` (UTC ISO-8601 timestamp of the last successful fetch),
+  `source` (the URL fetched), `ttl_s` (cache time-to-live in seconds), `status`
+  (`ok` / `cache` / `stale` / `unavailable`) and `last_error` (error detail when
+  the last fetch failed, else `null`). The page computes payload age from
+  `fetched_at` and applies the stale-payload guard from `schema_version`.
 - **Classification (`PROVIDER_CLASS`):** `metered` (fireworks, openrouter,
   deepseek, ollama-cloud), `subscription` (anthropic, opencode-go, openai-codex,
   copilot, nous), `local` (custom, local, ollama), `unknown`. A market-equivalent

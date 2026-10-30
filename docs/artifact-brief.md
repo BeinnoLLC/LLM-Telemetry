@@ -26,7 +26,7 @@ service; the only runtime dependency is PyYAML.
 | Agent sources shown live | **4** kinds: Hermes, PI, Claude Code, Codex (+ Ollama hosts) |
 | CLI commands | **16** (`config`, `doctor`, `dashboard`, `costs`, `rankings`, `live`, `transcripts`, `session-timeline`, `logs`, `probe`, `analytics`, `router`, `quota`, `serve`, `ingest`, `ingest-pi`) |
 | Alert rules | **8** (`alerts.py`) |
-| Payload schemas | **4** (analytics, live, ollama, router); `SCHEMA_VERSION = 2` |
+| Payload schemas | **4** (analytics, live, ollama, router); `SCHEMA_VERSION = 3` |
 | systemd units | **5 timers**, **6 services** (build, probe, router, quota, rankings, serve) |
 | Python source | 45 modules, about 9.8k lines in `src/llm_telemetry/*.py` |
 | Front end | 11 ES modules, about 9.3k lines of JS, 2 CSS files |
