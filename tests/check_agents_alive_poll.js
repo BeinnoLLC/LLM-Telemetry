@@ -55,10 +55,11 @@ const w = dom.window, d = w.document;
   w.eval("current = Object.keys(DATA.profiles)[0]; view = 'Live';");
   const profileName = w.eval('current');
 
-  // First poll's fixture carries NO agents (matches today's live-data.json
-  // shape before this ticket, and any older-Hermes payload) -> card hidden.
-  chk(d.getElementById('agentscard').hidden !== false || d.getElementById('agentslist').innerHTML === '',
-      'before any agents-bearing payload, the card is not showing stale content');
+  // LST-258: the standalone Agents alive card is gone from the markup. Keep the
+  // data-path assertions below (pollLive still has to merge agents into DATA) and
+  // pin the removal so a re-added legacy panel fails this suite.
+  chk(d.getElementById('agentscard') === null && d.getElementById('agentslist') === null,
+      'legacy agents card/container are absent from the markup (LST-258)');
 
   // Next poll's fixture DOES carry agents -> pollLive's merge picks them up
   // and renderLive paints them, with zero test-side DOM manipulation.
@@ -71,10 +72,8 @@ const w = dom.window, d = w.document;
   await w.pollLive();
   await new Promise(r => setTimeout(r, 10));
 
-  chk(d.getElementById('agentscard').hidden === false,
-      'a real pollLive() network response carrying agents shows the card, no manual eval needed');
-  chk(d.getElementById('agentslist').textContent.includes('pollhost'),
-      'the real fetched host name renders after a live poll');
+  chk(d.getElementById('agentscard') === null,
+      'a real pollLive() network response carrying agents does not resurrect the removed card');
   chk(w.eval(`DATA.profiles['${profileName}'].agents.length`) === 1,
       'pollLive() actually merged the agents array into DATA (not just painted the old array)');
 

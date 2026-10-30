@@ -104,10 +104,11 @@ setTimeout(async () => {
     chk(cards().map(c => c.dataset.kpi).join() === 'sessions,agents,throughput,alerts',
       'scorecards are sessions, agents, throughput, alerts in that order');
     chk(after(kpis, grid), 'scorecards come before the table + agents grid');
-    chk(grid.contains(d.getElementById('livelist')) && grid.contains(d.getElementById('agentscard')),
-      'the grid holds the session table and the agents panel');
-    chk(after(d.getElementById('livelist'), d.getElementById('agentscard')),
-      'agents panel follows the table (right column, stacks below at <1024px)');
+    chk(grid.contains(d.getElementById('livelist')),
+      'the grid holds the session table');
+    // LST-258: the standalone agents panel was folded into the In progress now table.
+    chk(d.getElementById('agentscard') === null,
+      'negative control: no standalone agents panel sits in the grid (LST-258)');
     const qc = d.getElementById('qcard');
     chk(after(kpis, qc) && after(qc, grid), 'task queue sits directly under the scorecards, above In progress now');
     chk(!after(qc, kpis) && !after(grid, qc), 'negative control: queue is neither before the scorecards nor after the table');

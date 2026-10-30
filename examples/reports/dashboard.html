@@ -1939,20 +1939,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
      <div id="livelist" class="lvbody" role="rowgroup"></div>
     </div>
    </div>
-   <div class="flex flex-col gap-3" style="max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-width:0">
-    <!-- P10-08 (#96): agents alive — gateway backends this profile's DB has a
-         heartbeat row for, and how many mid-turn session leases each holds.
-         Hidden entirely when there are no heartbeat rows (older Hermes / a
-         DB never written by a gateway process), same convention as the
-         Cost-attribution card. #183: moved from Flow onto Home, beside the
-         session table; it stacks under the table with the rest of this column
-         when .livegrid goes single-column. Capped and self-scrolling so a large
-         fleet cannot push the charts out of the column. -->
-    <div class="card p-4" id="agentscard" style="flex:0 0 auto;max-height:40%;overflow-y:auto">
-     <div class="lbl mb-2.5">Agents alive <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">gateway backends &amp; mid-turn leases</span></div>
-     <div id="agentslist"></div>
-    </div>
-   </div>
+
   </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <!-- Ollama fleet: below the live grid because it answers "can the fleet take
