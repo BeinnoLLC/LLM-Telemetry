@@ -1030,6 +1030,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .hsuml{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
  .hsums{font-size:var(--fs-xs);margin-top:2px}
  .hhdr{display:flex;align-items:baseline;gap:8px}
+ .dsrc-wrap{overflow-x:auto}
+ .dsrc{width:100%;border-collapse:collapse;font-size:14px}
+ .dsrc th{text-align:left;font-weight:600;color:var(--muted);padding:0 12px 6px 0}
+ .dsrc td{height:48px;padding:0 12px 0 0;border-top:1px solid var(--border)}
+ .dsrc tr[data-fresh-state=stale] .dsrc-age{color:var(--z-bad)}
+ .stale-note{color:var(--z-warn);font-size:14px}
  .hsub{text-transform:none;letter-spacing:0;font-weight:400;font-size:var(--fs-xs)}
  .hrow.hthin{opacity:.5}
  .ffwrap{display:flex;flex-direction:column;gap:6px}

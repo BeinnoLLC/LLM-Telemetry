@@ -93,7 +93,7 @@ def read_utilities():
 def read_shell():
     """The HTML page with __PLACEHOLDER__ slots (including __DASHBOARD_JS__)."""
     with open(SHELL_PATH, encoding="utf-8") as fh:
-        return fh.read()
+        return re.sub(r"<!--(?!\[).*?-->\s*", "", fh.read(), flags=re.S)
 
 
 def split_blocks(text):

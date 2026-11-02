@@ -1239,6 +1239,14 @@
   },
   {
    "mod": "views",
+   "name": "STALE_LABELS"
+  },
+  {
+   "mod": "views",
+   "name": "renderStalePolicy"
+  },
+  {
+   "mod": "views",
    "name": "renderLifecycle"
   },
   {

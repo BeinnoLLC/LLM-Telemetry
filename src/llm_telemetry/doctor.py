@@ -46,6 +46,7 @@ import time
 import urllib.parse
 
 from . import config as C
+from . import stale as S
 from .schema import SCHEMA_VERSION
 
 OK, WARN, FAIL = "ok", "warn", "fail"
@@ -224,6 +225,31 @@ def check_timers(units=None, systemd=None, runner=None, installed=None):
     return out
 
 
+def check_freshness(cfg, now=None, env=None):
+    """Data freshness against the stale-rate policy (LST-207).
+
+    Unlike an artifact's file mtime, this reads the timestamp the collector
+    stamped inside the payload, so a rewritten-but-not-refreshed file still
+    reads as stale. A stale source is a `fail`: the dashboard is showing
+    numbers older than the policy allows.
+    """
+    out = []
+    for name, row in S.compute(cfg.reports_dir, now=now, env=env).items():
+        policy = _human(row["policy_s"])
+        err = f" -- last error: {row['last_error']}" if row["last_error"] else ""
+        if row["age_s"] is None:
+            out.append(check(f"freshness {name}", WARN if row["last_error"] else OK,
+                             f"no timestamp (policy {policy}){err}"))
+        elif row["stale"]:
+            out.append(check(f"freshness {name}", FAIL,
+                             f"{_human(row['age_s'])} old, policy {policy} "
+                             f"-- check {row['timer']}{err}"))
+        else:
+            out.append(check(f"freshness {name}", OK,
+                             f"{_human(row['age_s'])} old, policy {policy}{err}"))
+    return out
+
+
 def check_schema(cfg):
     """A payload built by an older collector must not be read as current."""
     reports = cfg.reports_dir
@@ -293,6 +319,7 @@ def run_checks(cfg=None, offline=False, now=None, systemd=None, units=None, runn
     out += check_agent_dbs(cfg)
     out += check_artifacts(cfg, now=now)
     out += check_timers(units=units, systemd=systemd, runner=runner, installed=installed)
+    out += check_freshness(cfg, now=now)
     out += check_schema(cfg)
     out += check_hosts(cfg, offline=offline, discover=discover)
     return out
