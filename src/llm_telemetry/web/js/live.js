@@ -998,10 +998,10 @@ export function soundToggleInstall(){
   const paint = () => {
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
-    btn.textContent = soundOn ? 'Sound on' : 'Sound off';
-    btn.title = soundOn
-      ? 'A tone plays when a session or task finishes or a critical alert appears (needs one click or key press on the page first). Click to turn off.'
-      : 'Muted. Click to hear a tone when a session or task finishes or a critical alert appears.';
+    btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    const label = soundOn ? 'Sound on \u2014 click to mute' : 'Sound off \u2014 click to unmute';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
   };
   armAudioUnlock();
   paint();
