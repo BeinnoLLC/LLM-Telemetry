@@ -76,6 +76,7 @@ const SHEET = {
 };
 
 const D = await isolate('views.js', {
+  'table.js': { TABLE_SORT: {}, enhanceTable: () => {}, sortValues: (a, b) => (a < b ? -1 : a > b ? 1 : 0) },
   'palette.js': {
     $: id => (registry[id] ||= mkEl()), esc: s => String(s), escA: s => String(s),
     fmt: v => String(v), fmtB: v => String(v), short: v => String(v),

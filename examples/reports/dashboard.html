@@ -1893,6 +1893,35 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvrow .lvc-sess>.lvtag{flex:none;min-width:6ch;max-width:16ch}
 .lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}
 
+
+.dt{--dt-row:52px;--dt-fs:14px}
+:root[data-density=compact] .dt{--dt-row:36px;--dt-fs:13px}
+.dt th,.dt td{font-size:var(--dt-fs);height:var(--dt-row);padding:6px 12px;vertical-align:middle;box-sizing:border-box}
+.dt th{position:sticky;top:0;z-index:3;background:var(--card);color:var(--muted);font-weight:600;white-space:nowrap;
+  text-align:left;border-bottom:1px solid var(--border);height:auto;padding-top:8px;padding-bottom:8px}
+.dt th.num,.dt td.num{text-align:right;font-variant-numeric:tabular-nums}
+.dt tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--fg) 3.5%,transparent)}
+.dt tbody tr:hover td{background:var(--accent-wash)}
+.dt-sort{all:unset;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:inherit;font:inherit;border-radius:4px;padding:2px 4px;margin:-2px -4px}
+.dt-sort:hover{color:var(--fg)}
+.dt-sort:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.dt-ar{font-size:10px;opacity:.55}
+.dt th[aria-sort=ascending] .dt-ar,.dt th[aria-sort=descending] .dt-ar,.fsort [aria-sort=ascending] .dt-ar,.fsort [aria-sort=descending] .dt-ar{opacity:1;color:var(--accent)}
+.dt-cap{caption-side:top;text-align:right;padding:0 0 8px}
+.dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:12px;color:var(--muted)}
+.dt-dens button.on{background:var(--accent-wash);color:var(--fg)}
+.dt-dens button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pv-tbl.dt th:first-child,.pv-tbl.dt td:first-child{z-index:4}
+.pv-tbl.dt td{padding:6px 12px}
+#tbl.dt,#tblProv.dt,#resendtbl.dt{border-collapse:collapse}
+.fsort{display:flex;gap:18px;padding:0 8px 6px;color:var(--muted);font-size:13px;font-weight:600}
+.fsort:empty{display:none}
+#faillist .frow{min-height:52px;align-items:center;padding:8px}
+#faillist .frow .fmsg,#faillist .frow .fwhen,#faillist .frow .fmodel,#faillist .frow .fkind{font-size:14px}
+:root[data-density=compact] #faillist .frow{min-height:36px;padding:4px 8px}
+:root[data-density=compact] #faillist .frow .fmsg,:root[data-density=compact] #faillist .frow .fwhen,:root[data-density=compact] #faillist .frow .fmodel{font-size:13px}
+
 </style></head><body>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
@@ -2226,6 +2255,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <button id="tolog" class="chip" style="margin-left:auto;font-size:var(--fs-xs);text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
    </div>
    <div id="failfilters" class="ffwrap mb-2.5"></div>
+   <div id="failsort" class="fsort" role="row"></div>
    <div id="faillist" class="flex flex-col gap-1.5"
      style="max-height:clamp(260px,38vh,520px);overflow-y:auto;padding-right:4px"></div>
    <div id="failcount" class="muted text-[length:var(--fs-xs)] mt-2"></div>
@@ -4304,6 +4334,7 @@ function renderResend(p, inR){
       <td class="pl-3 rsx" style="width:18%"><div style="height:4px;border-radius:2px;background:var(--accent);width:${Math.max(2, (r.resend_usd||0) / mx * 100)}%"></div></td>
     </tr>`;
   }).join('');
+  enhanceTable(tbl, 'resendtbl');
 }
 
 const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
@@ -4660,6 +4691,7 @@ function render(){
         <td class="text-right text-[length:var(--fs-xs)]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
       </tr>`;}).join('');
+    enhanceTable(ptbl,'tblProv');
   }
 
   const t={};
@@ -4685,6 +4717,7 @@ function render(){
         <td class="text-right">${costCell(v.mkt, v.local, v.freetier ? 'freetier' : (!v.priced && !v.local) ? 'unpriced' : '')}</td>
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[length:var(--fs-xs)] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
+  enhanceTable($('tbl'),'tbl');
 }
 
 const PRICE_SRC = {
@@ -4805,6 +4838,7 @@ function renderPriceTable(data){
   ${rows.map(m => priceRow(m)).join('') || '<tr><td colspan="9" class="muted" style="padding:1rem">No models match.</td></tr>'}
   </tbody></table>
   <div class="muted p-2" style="font-size:var(--fs-xs)">${rows.length} shown of ${data.models.length}</div>`;
+  enhanceTable(wrap.querySelector('table'), 'pv-tbl');
 }
 
 function priceWhatIfShell(){
@@ -5009,7 +5043,7 @@ function renderRankings(){
     `<td class="num">${tr(r.trend)}</td></tr>`).join('');
   const oth = cur.other || {};
   if (oth && oth.tokens) {
-    body += `<tr class="rk-other"><td class="muted">&mdash;</td>` +
+    body += `<tr class="rk-other" data-pin="end"><td class="muted">&mdash;</td>` +
       `<td class="muted">Other <span title="${oth.models || 0} more ranked models plus the long tail, outside this board's top ${ntop}">(${oth.models || 0} more)</span></td>` +
       `<td class="num">${fmt(oth.tokens)}</td>` +
       `<td><span class="bar"><span class="muted" style="width:${Math.min(100, oth.share || 0).toFixed(1)}%;background:var(--pal-slate)"></span></span> ${(oth.share || 0).toFixed(1)}%</td>` +
@@ -5032,6 +5066,7 @@ function renderRankings(){
     </table>
     <div class="muted" style="font-size:var(--fs-xs);margin-top:8px">${esc((d.attribution || {}).url || '')}</div>
   </div>`;
+  enhanceTable(host.querySelector('table'), 'rankings');
   host.querySelectorAll('[data-rk-window]').forEach(b =>
     b.addEventListener('click', () => {
       RANKINGS_STATE.window = b.dataset.rkWindow;
@@ -8394,6 +8429,34 @@ function renderFailures(F){
     (failModel === 'all' || short(f.model) === failModel));
   const groups = groupFailures(rows);
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const fs = TABLE_SORT.faillist;
+  const FKEY = {Kind: g => g.kind, Model: g => short(g.model), When: g => g.last, Count: g => g.n};
+  if (fs && FKEY[fs.label]){
+    const key = FKEY[fs.label], sign = fs.dir === 'asc' ? 1 : -1;
+    groups.sort((a, b) => sign * sortValues(key(a), key(b), fs.label === 'Count'));
+  }
+  const fsb = $('failsort');
+  if (fsb){
+    fsb.innerHTML = groups.length
+      ? Object.keys(FKEY).map(l => {
+          const on = fs && fs.label === l;
+          const st = on ? (fs.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+          return `<span role="columnheader" aria-sort="${st}"><button type="button" class="dt-sort" data-fsort="${l}">${l}<span class="dt-ar" aria-hidden="true">${st === 'ascending' ? '\u25B2' : st === 'descending' ? '\u25BC' : '\u2195'}</span></button></span>`;
+        }).join('')
+      : '';
+    fsb.querySelectorAll('[data-fsort]').forEach(b => {
+      const fire = () => {
+        const cur = TABLE_SORT.faillist;
+        TABLE_SORT.faillist = {label: b.dataset.fsort, dir: cur && cur.label === b.dataset.fsort && cur.dir === 'asc' ? 'desc' : 'asc'};
+        renderFailures(F);
+        const again = $('failsort').querySelector(`[data-fsort="${b.dataset.fsort}"]`);
+        if (again) again.focus();
+      };
+      b.addEventListener('click', fire);
+      b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fire(); } });
+      b.addEventListener('keyup', e => { if (e.key === ' ') e.preventDefault(); });
+    });
+  }
 
   fl.innerHTML = !groups.length
     ? emptyHTML('✓', F.length ? 'No failures match this filter.' : 'No failures recorded in the last 7 days.',
@@ -9548,6 +9611,177 @@ const FEEDER = {
 // for every node under jsdom and inside a transformed ancestor, which emptied
 // the list and silently disabled the trap — the nav rail hit exactly that
 // (router.js) and the two copies had already drifted apart. One list, one rule.
+const DENSITY_KEY = 'llmt.density';
+const TABLE_SORT = {};
+
+function getDensity(){
+  try { return localStorage.getItem(DENSITY_KEY) === 'compact' ? 'compact' : 'comfortable'; }
+  catch (e) { return 'comfortable'; }
+}
+
+function applyDensity(){
+  const v = getDensity();
+  if (typeof document === 'undefined') return v;
+  if (document.documentElement) document.documentElement.dataset.density = v;
+  document.querySelectorAll('.dt-dens button').forEach(b => {
+    const on = b.dataset.dens === v;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('on', on);
+  });
+  return v;
+}
+
+function setDensity(d){
+  const v = d === 'compact' ? 'compact' : 'comfortable';
+  try { localStorage.setItem(DENSITY_KEY, v); } catch (e) { /* private mode: not persisted */ }
+  return applyDensity() || v;
+}
+
+const NUM_RE = /^([+\-−])?\$?(\d[\d,]*\.?\d*|\.\d+)(K|M|B|T)?(?:\s?(KB|MB|GB|TB|B))?\s*(%|pp)?(?:\s[A-Za-z][A-Za-z ]*)?$/;
+const MULT = {K: 1e3, M: 1e6, B: 1e9, T: 1e12, KB: 1024, MB: 1048576, GB: 1073741824, TB: 1099511627776};
+
+function parseNum(s){
+  let t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim().replace(/^[~≈]\s*/, '');
+  let sign = 1;
+  const arrow = t.charAt(0);
+  if (arrow === '↑' || arrow === '↓'){ sign = arrow === '↓' ? -1 : 1; t = t.slice(1).trim(); }
+  const m = NUM_RE.exec(t);
+  if (!m) return null;
+  let n = parseFloat(m[2].replace(/,/g, ''));
+  if (!isFinite(n)) return null;
+  n *= MULT[m[4] || m[3]] || 1;
+  if (m[1] === '-' || m[1] === '−') sign = -sign;
+  return sign * n;
+}
+
+function sortValues(a, b, numeric){
+  const ea = a == null || a === '', eb = b == null || b === '';
+  if (ea || eb) return ea === eb ? 0 : ea ? 1 : -1;
+  if (numeric) return a - b;
+  return String(a).localeCompare(String(b), undefined, {numeric: true, sensitivity: 'base'});
+}
+
+function cellValue(td){
+  if (!td) return null;
+  if (td.dataset && td.dataset.v != null) return td.dataset.v;
+  return (td.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function isRightAligned(th){
+  const c = th.className || '';
+  return /(^|\s)(num|text-right)(\s|$)/.test(c) || /text-align:\s*right/.test(th.getAttribute('style') || '');
+}
+
+function headerAndRows(tbl){
+  let head = tbl.querySelector('thead tr');
+  let rows;
+  if (head) rows = Array.from(tbl.querySelectorAll('tbody tr'));
+  else {
+    const all = Array.from(tbl.querySelectorAll('tr'));
+    head = all[0];
+    rows = all.slice(1);
+  }
+  return {head, rows};
+}
+
+function densityBar(){
+  const v = getDensity();
+  const b = (k, label) =>
+    `<button type="button" data-dens="${k}" class="${v === k ? 'on' : ''}" aria-pressed="${v === k}">${label}</button>`;
+  return `<span class="dt-dens" role="group" aria-label="Row density">${b('comfortable', 'Comfortable')}${b('compact', 'Compact')}</span>`;
+}
+
+function sortGlyph(state){
+  return state === 'ascending' ? '▲' : state === 'descending' ? '▼' : '↕';
+}
+
+function applySort(tbl, id){
+  const {head, rows} = headerAndRows(tbl);
+  if (!head || !rows.length) return;
+  const ths = Array.from(head.children);
+  const st = TABLE_SORT[id];
+  const col = st ? ths.findIndex(th => th.dataset.dtLabel === st.label) : -1;
+  ths.forEach((th, i) => {
+    if (!th.dataset.dtSortable) return;
+    const state = i === col ? (st.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    th.setAttribute('aria-sort', state);
+    const g = th.querySelector('.dt-ar');
+    if (g) g.textContent = sortGlyph(state);
+  });
+  if (col < 0) return;
+  const numeric = ths[col].dataset.dtNum === '1';
+  const pinned = rows.filter(r => r.dataset.pin === 'end');
+  const body = rows.filter(r => r.dataset.pin !== 'end');
+  const keyed = body.map((r, i) => {
+    const raw = cellValue(r.children[col]);
+    return {r, i, v: numeric ? parseNum(raw) : raw};
+  });
+  const sign = st.dir === 'asc' ? 1 : -1;
+  keyed.sort((x, y) => {
+    const xe = x.v == null || x.v === '', ye = y.v == null || y.v === '';
+    if (xe || ye) return sortValues(x.v, y.v, numeric) || x.i - y.i;
+    return sign * sortValues(x.v, y.v, numeric) || x.i - y.i;
+  });
+  const parent = body.length ? body[0].parentNode : null;
+  if (!parent) return;
+  const anchor = pinned.length ? pinned[0] : null;
+  keyed.forEach(k => parent.insertBefore(k.r, anchor));
+}
+
+function sortBy(tbl, id, label){
+  const cur = TABLE_SORT[id];
+  TABLE_SORT[id] = {label, dir: cur && cur.label === label && cur.dir === 'asc' ? 'desc' : 'asc'};
+  applySort(tbl, id);
+  return TABLE_SORT[id];
+}
+
+function enhanceTable(tbl, id){
+  if (!tbl || !tbl.querySelectorAll) return;
+  tbl.classList.add('dt');
+  const {head, rows} = headerAndRows(tbl);
+  if (head){
+    Array.from(head.children).forEach((th, i) => {
+      const label = (th.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!label || th.dataset.nosort != null) return;
+      const vals = rows.map(r => cellValue(r.children[i])).filter(v => v != null && v !== '');
+      const numeric = isRightAligned(th) || (vals.length > 0 && vals.every(v => parseNum(v) != null));
+      th.dataset.dtLabel = label;
+      th.dataset.dtSortable = '1';
+      th.dataset.dtNum = numeric ? '1' : '0';
+      th.setAttribute('aria-sort', 'none');
+      if (numeric){
+        th.classList.add('num');
+        rows.forEach(r => { if (r.children[i]) r.children[i].classList.add('num'); });
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dt-sort';
+      while (th.firstChild) btn.appendChild(th.firstChild);
+      const ar = document.createElement('span');
+      ar.className = 'dt-ar';
+      ar.setAttribute('aria-hidden', 'true');
+      ar.textContent = sortGlyph('none');
+      btn.appendChild(ar);
+      const fire = () => sortBy(tbl, id, label);
+      btn.addEventListener('click', fire);
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fire(); }
+      });
+      btn.addEventListener('keyup', e => { if (e.key === ' ') e.preventDefault(); });
+      th.appendChild(btn);
+    });
+  }
+  let cap = tbl.querySelector('caption.dt-cap');
+  if (!cap){
+    cap = document.createElement('caption');
+    cap.className = 'dt-cap';
+    tbl.insertBefore(cap, tbl.firstChild);
+  }
+  cap.innerHTML = densityBar();
+  cap.querySelectorAll('button').forEach(b => b.addEventListener('click', () => setDensity(b.dataset.dens)));
+  applySort(tbl, id);
+  applyDensity();
+}
 let PROJECT_FILTER = '';
 // Provider and model cross-filters, alongside project (#130). Same discipline:
 // ONE piece of state each, applied as a row-filter step that COMPOSES with the

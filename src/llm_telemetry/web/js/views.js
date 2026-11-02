@@ -6,6 +6,7 @@
 import {
   $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
 } from './palette.js';
+import { TABLE_SORT, enhanceTable, sortValues } from './table.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
 } from './charts.js';
@@ -388,6 +389,7 @@ export function renderResend(p, inR){
       <td class="pl-3 rsx" style="width:18%"><div style="height:4px;border-radius:2px;background:var(--accent);width:${Math.max(2, (r.resend_usd||0) / mx * 100)}%"></div></td>
     </tr>`;
   }).join('');
+  enhanceTable(tbl, 'resendtbl');
 }
 
 export const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
@@ -692,6 +694,7 @@ export function render(){
         <td class="text-right text-[length:var(--fs-xs)]">${v.models.size}</td>
         <td class="pl-3"><div style="height:5px;border-radius:2px;background:${s.fg};width:${barW}%;opacity:.7"></div></td>
       </tr>`;}).join('');
+    enhanceTable(ptbl,'tblProv');
   }
 
   const t={};
@@ -717,6 +720,7 @@ export function render(){
         <td class="text-right">${costCell(v.mkt, v.local, v.freetier ? 'freetier' : (!v.priced && !v.local) ? 'unpriced' : '')}</td>
         <td class="pl-3"><div style="height:4px;border-radius:2px;background:${colorOf(m)};width:${Math.max(3,v.calls/mx*100)}%"></div>
         <span class="text-[length:var(--fs-xs)] muted">${[...v.tasks].join(', ')}</span></td></tr>`;}).join('');
+  enhanceTable($('tbl'),'tbl');
 }
 
 export let XF_SEEN = false;
@@ -2365,6 +2369,34 @@ export function renderFailures(F){
     (failModel === 'all' || short(f.model) === failModel));
   const groups = groupFailures(rows);
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const fs = TABLE_SORT.faillist;
+  const FKEY = {Kind: g => g.kind, Model: g => short(g.model), When: g => g.last, Count: g => g.n};
+  if (fs && FKEY[fs.label]){
+    const key = FKEY[fs.label], sign = fs.dir === 'asc' ? 1 : -1;
+    groups.sort((a, b) => sign * sortValues(key(a), key(b), fs.label === 'Count'));
+  }
+  const fsb = $('failsort');
+  if (fsb){
+    fsb.innerHTML = groups.length
+      ? Object.keys(FKEY).map(l => {
+          const on = fs && fs.label === l;
+          const st = on ? (fs.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+          return `<span role="columnheader" aria-sort="${st}"><button type="button" class="dt-sort" data-fsort="${l}">${l}<span class="dt-ar" aria-hidden="true">${st === 'ascending' ? '\u25B2' : st === 'descending' ? '\u25BC' : '\u2195'}</span></button></span>`;
+        }).join('')
+      : '';
+    fsb.querySelectorAll('[data-fsort]').forEach(b => {
+      const fire = () => {
+        const cur = TABLE_SORT.faillist;
+        TABLE_SORT.faillist = {label: b.dataset.fsort, dir: cur && cur.label === b.dataset.fsort && cur.dir === 'asc' ? 'desc' : 'asc'};
+        renderFailures(F);
+        const again = $('failsort').querySelector(`[data-fsort="${b.dataset.fsort}"]`);
+        if (again) again.focus();
+      };
+      b.addEventListener('click', fire);
+      b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fire(); } });
+      b.addEventListener('keyup', e => { if (e.key === ' ') e.preventDefault(); });
+    });
+  }
 
   fl.innerHTML = !groups.length
     ? emptyHTML('✓', F.length ? 'No failures match this filter.' : 'No failures recorded in the last 7 days.',
@@ -3046,6 +3078,7 @@ function renderPriceTable(data){
   ${rows.map(m => priceRow(m)).join('') || '<tr><td colspan="9" class="muted" style="padding:1rem">No models match.</td></tr>'}
   </tbody></table>
   <div class="muted p-2" style="font-size:var(--fs-xs)">${rows.length} shown of ${data.models.length}</div>`;
+  enhanceTable(wrap.querySelector('table'), 'pv-tbl');
 }
 
 function priceRow(m){
@@ -3192,7 +3225,7 @@ function renderRankings(){
     `<td class="num">${tr(r.trend)}</td></tr>`).join('');
   const oth = cur.other || {};
   if (oth && oth.tokens) {
-    body += `<tr class="rk-other"><td class="muted">&mdash;</td>` +
+    body += `<tr class="rk-other" data-pin="end"><td class="muted">&mdash;</td>` +
       `<td class="muted">Other <span title="${oth.models || 0} more ranked models plus the long tail, outside this board's top ${ntop}">(${oth.models || 0} more)</span></td>` +
       `<td class="num">${fmt(oth.tokens)}</td>` +
       `<td><span class="bar"><span class="muted" style="width:${Math.min(100, oth.share || 0).toFixed(1)}%;background:var(--pal-slate)"></span></span> ${(oth.share || 0).toFixed(1)}%</td>` +
@@ -3215,6 +3248,7 @@ function renderRankings(){
     </table>
     <div class="muted" style="font-size:var(--fs-xs);margin-top:8px">${esc((d.attribution || {}).url || '')}</div>
   </div>`;
+  enhanceTable(host.querySelector('table'), 'rankings');
   host.querySelectorAll('[data-rk-window]').forEach(b =>
     b.addEventListener('click', () => {
       RANKINGS_STATE.window = b.dataset.rkWindow;
