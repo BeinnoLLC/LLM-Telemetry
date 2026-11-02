@@ -907,42 +907,51 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
 
-.qtrain{position:relative;display:grid;gap:16px;align-items:start;
+.qtrain{position:relative;display:grid;gap:18px;align-items:stretch;
   grid-template-columns:repeat(3,minmax(0,1fr))}
-.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;gap:8px}
-.qt-name{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
-  letter-spacing:.06em;color:var(--muted)}
-.qt-n{font-weight:600;letter-spacing:0;padding:0 7px;line-height:18px;border-radius:999px;
-  border:1px solid var(--border);background:var(--card);color:var(--fg)}
-.qt-jar{position:relative;margin:0 6px;padding:14px 8px 8px;border:1px solid var(--border);
-  border-radius:8px 8px 22px 22px;background:linear-gradient(180deg,color-mix(in srgb,var(--fg) 4%,transparent),color-mix(in srgb,var(--fg) 1%,transparent));
-  box-shadow:inset 6px 0 10px -8px color-mix(in srgb,var(--fg) 25%,transparent),inset 0 -10px 14px -12px color-mix(in srgb,var(--fg) 20%,transparent)}
-.qt-jar::before{content:"";position:absolute;left:-7px;right:-7px;top:-6px;height:8px;border:1px solid var(--border);
-  border-radius:4px;background:var(--card)}
-.qt-depot .qt-jar{border-color:color-mix(in srgb,var(--muted) 35%,var(--border))}
-.qt-line .qt-jar{border-color:color-mix(in srgb,var(--z-ok) 40%,var(--border))}
-.qt-yard .qt-jar{border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
-.qt-cars{position:relative;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
-  gap:6px;align-content:start;min-height:120px;max-height:250px;overflow-y:auto;padding:2px;scrollbar-width:thin}
+.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
+.qt-line{--jc:var(--z-ok)}
+.qt-yard{--jc:var(--accent)}
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 7px}
+.qt-lid{position:relative;z-index:1;margin:0 -1px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:7px 12px;border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));border-radius:9px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,var(--card)),color-mix(in srgb,var(--jc) 7%,var(--card)));
+  box-shadow:0 2px 5px -2px rgba(0,0,0,.35),inset 0 1px 0 color-mix(in srgb,var(--fg) 12%,transparent)}
+.qt-name{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--fg)}
+.qt-n{font-weight:600;font-size:var(--fs-xs);padding:0 8px;line-height:19px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));background:var(--card);color:var(--fg)}
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px 3px 0;padding:14px 8px 12px;
+  border:1px solid color-mix(in srgb,var(--jc) 38%,var(--border));border-top:0;border-radius:0 0 30px 30px;overflow:hidden;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--fg) 7%,transparent),transparent 18%,transparent 82%,color-mix(in srgb,var(--fg) 4%,transparent)),
+    linear-gradient(180deg,color-mix(in srgb,var(--fg) 4%,transparent),color-mix(in srgb,var(--fg) 1%,transparent));
+  box-shadow:inset 3px 0 0 -1px color-mix(in srgb,var(--fg) 14%,transparent),inset 0 -12px 16px -14px color-mix(in srgb,var(--jc) 50%,transparent)}
+.qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 3%,transparent),color-mix(in srgb,var(--jc) 14%,transparent));
+  transition:height .6s ease}
+.qt-cars{position:relative;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:170px;max-height:330px;overflow-y:auto;padding:3px;scrollbar-width:thin}
 .qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);grid-column:1/-1;align-self:center;text-align:center;
-  padding:14px 10px;color:var(--muted);font-size:var(--fs-sm)}
+  padding:18px 22px;color:var(--muted);font-size:var(--fs-sm);border:1px dashed color-mix(in srgb,var(--jc) 40%,var(--border));border-radius:8px}
 .qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
-.qt-car{position:relative;display:flex;flex-direction:column;gap:3px;min-height:56px;padding:6px 8px;
-  border-radius:5px;min-width:0;border:1px solid var(--border);border-left:3px solid hsl(var(--h,215) 55% 50%);
-  background:var(--card);color:var(--fg);font-size:var(--fs-xs);line-height:1.3;cursor:default;outline-offset:2px}
-.qt-car:focus-visible{outline:2px solid var(--accent)}
+.qt-car{position:relative;display:flex;flex-direction:column;gap:4px;min-height:64px;padding:8px 10px;
+  border-radius:6px;min-width:0;border:1px solid var(--border);border-left:4px solid hsl(var(--h,215) 55% 50%);
+  background:var(--card);color:var(--fg);font-size:12.5px;line-height:1.35;cursor:default;outline-offset:2px}
+.qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
-.qt-lbl{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
-  font-size:var(--fs-sm);font-weight:600;overflow-wrap:anywhere}
-.qt-meta{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);font-size:var(--fs-xs);margin-top:auto}
-.qt-kb{position:absolute;top:4px;right:4px;padding:1px 4px;border-radius:3px;font-size:10px;line-height:1.2;
+.qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:14px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+.qt-meta{flex:none;color:color-mix(in srgb,var(--fg) 72%,var(--card));font-size:12.5px;line-height:1.35;margin-top:auto;overflow-wrap:anywhere}
+.qt-legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;color:var(--muted);font-size:12.5px}
+.qt-legend span{display:inline-flex;align-items:center;gap:6px}
+.qt-sw{width:4px;height:12px;border-radius:2px;background:hsl(215 55% 50%)}
+.qt-dot{width:8px;height:8px;border-radius:50%;background:var(--z-ok)}
+.qt-kb{position:absolute;top:5px;right:5px;padding:1px 4px;border-radius:3px;font-size:11px;line-height:1.2;
   background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
-.qt-kb+.qt-lbl{padding-right:22px}
+.qt-kb+.qt-lbl{padding-right:24px}
 .qt-q{border-left-color:var(--z-warn);animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both}
-.qt-r[data-kind]:not([data-kind=hermes]){border-left-color:var(--k)}
-.qt-r::after{content:"";position:absolute;right:6px;bottom:7px;width:7px;height:7px;border-radius:50%;
+.qt-r::after{content:"";position:absolute;right:8px;bottom:9px;width:7px;height:7px;border-radius:50%;
   background:var(--z-ok);animation:qt-pulse 1.6s ease-in-out infinite}
-.qt-r .qt-meta{padding-right:14px}
+.qt-r .qt-meta{padding-right:16px}
 .qt-r[data-state=compressing]::after{background:var(--accent);border-radius:2px;animation-duration:.9s}
 .qt-r[data-state=waiting]::after{background:var(--z-warn);animation:none}
 .qt-d{opacity:.88;animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
@@ -958,12 +967,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-land{0%{transform:scale(1.06)}100%{transform:none}}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;z-index:60}
+.qtip{position:fixed;max-width:300px;z-index:80;pointer-events:none}
 @media (max-width:1100px){.qtrain{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
   .qtrain *, .qtrain{animation:none !important}
   .qt-car{opacity:1}
   .qt-ghost{display:none}
+  .qt-body::before{transition:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
@@ -1972,10 +1982,11 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
    <div class="qtrain" id="qtrain">
-    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></section>
-    <section class="qt-sec qt-line" aria-label="On the line: running"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></section>
-    <section class="qt-sec qt-yard" aria-label="Yard: done"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></section>
+    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Depot</span><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></div></section>
+    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">On the line</span><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></div></section>
+    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Yard</span><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></div></section>
    </div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw"></i>Stripe colour = model</span><span><i class="qt-dot"></i>Pulsing dot = live now (square: compressing, amber: waiting)</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
@@ -6549,7 +6560,7 @@ function carMeta(it){
   const at = it.kind === 'd' ? (it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     : it.idle_s != null ? ago(+it.idle_s) + ' ago' : '';
   if (it.kind === 'q') return `${it.host} \u00b7 ${it.pos} of ${it.depth}`;
-  return [at, it.kind === 'r' ? it.profile : it.model, id].filter(Boolean).join(' \u00b7 ');
+  return [at, it.profile, id].filter(Boolean).join(' \u00b7 ');
 }
 
 // Hover/focus card for one car. Only fields the feeds really carry.
@@ -6627,6 +6638,11 @@ function paintTrain(queued, running, done){
     .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
     .map(c => c.getBoundingClientRect());
 
+  [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
+    const jar = box.closest && box.closest('.qt-jar');
+    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + n * 8) + '%' : '0%');
+  });
+
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
@@ -6667,25 +6683,36 @@ function paintTrain(queued, running, done){
 function qtTipWire(tr){
   const tip = $('qtip');
   if (!tip) return;
-  const hide = () => tip.classList.remove('on');
+  let cur = null;
+  const hide = () => { tip.classList.remove('on'); if (cur) cur.classList.remove('qt-tip-on'); cur = null; };
+  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const show = c => {
     if (!c || !c._qt) return;
+    if (cur && cur !== c) cur.classList.remove('qt-tip-on');
+    cur = c; c.classList.add('qt-tip-on');
     tip.innerHTML = carTip(c._qt);
     tip.classList.add('on');
-    // position:fixed, so no card overflow can clip it; above the car when
-    // there is room in the viewport, else below.
-    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024;
-    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80;
-    const x = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
-    const y = r.top - hgt - 10;
+    // position:fixed beside the tile: below, else above, right, left; the first spot that
+    // stays inside the viewport without covering the jar's own lid.
+    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80, g = 8;
+    const lid = c.closest('.qt-jar') && c.closest('.qt-jar').querySelector('.qt-lid');
+    const lr = lid ? lid.getBoundingClientRect() : null;
+    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+    const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+    const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
+      && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
+    const [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
-    tip.style.top = (y < 6 ? r.bottom + 10 : y) + 'px';
+    tip.style.top = y + 'px';
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
   tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
   tr.addEventListener('focusin', e => show(carOf(e.target)));
   tr.addEventListener('focusout', hide);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed
@@ -6711,7 +6738,7 @@ function renderQueue(){
       const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
       return {
         key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
-        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+        model: short(L.model) || '', profile: L.profile || '', hue: hashHue(L.model || ''),
         phase: L.phase || '', state: /compress/i.test(L.phase || '') ? 'compressing' : /wait|approv|blocked|input/i.test(L.phase || '') ? 'waiting' : 'running',
         category: L.category || '', idle_s: L.idle_s,
         tools: (L.tools || []).length, nmodels: L.nmodels,

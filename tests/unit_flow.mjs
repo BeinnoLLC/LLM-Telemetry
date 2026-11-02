@@ -131,7 +131,6 @@ function harness(els = {}){
       provOf: (p, _m, u) => String(u || '').includes('fireworks') ? 'fireworks' : (p || 'local'),
       render: () => { rec.render++; },
     },
-    'router.js': { profileHue: p => 'hue:' + p },
     'main.js': { DATA, css: v => `var(${v})` },
     // Hermes-only copy of live.js's inFlight (Pi/agent cars: check_agent_queue.js).
     'live.js': {
@@ -396,7 +395,7 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
   eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
   eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: tiles carry a live state');
-  eq(run[1].style['--h'], 'hue:work', 'line: car hue comes from the profile');
+  eq(run[1].style['--h'], 'mh:accounts/fireworks/models/kimi-k3', 'line: tile hue comes from the model');
   eq(run[0].attrs['aria-label'], 'running: Fix parser · m2', 'line: car has an accessible label');
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
   ok(h.ids.get('qtrain').classList.contains('moving'), 'line: flagged as moving');

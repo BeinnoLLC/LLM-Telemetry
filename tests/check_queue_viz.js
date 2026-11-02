@@ -135,10 +135,10 @@ setTimeout(() => {
     chk(run.map(lbl).join('|') === 'one|two|gpt-5', 'line: titles lead, untitled falls back to the model', run.map(lbl).join('|'));
     chk(run.every(c => c.dataset.state === 'running') && run.some(c => c.dataset.state), 'line: tiles carry a live state');
     chk(n('qt-n-running') === '3', 'line: count badge');
-    chk(Number(run[0].style.getPropertyValue('--h')) === w.eval(`profileHue('work')`), 'line: car colour comes from the profile hue');
+    chk(Number(run[0].style.getPropertyValue('--h')) === w.eval(`hashHue('qwen3-coder:30b')`), 'line: stripe colour comes from the model hue');
     run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
-    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:3/.test(html) && /\.qt-car\{[^}]*min-height:56px/.test(html), 'tiles wrap titles to three lines');
+    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:3/.test(html) && /\.qt-car\{[^}]*min-height:64px/.test(html), 'tiles wrap titles to three lines');
     chk(!!run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent.length > 0, 'a car carries a meta line (age, owner, short id)', run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent);
     chk(w.eval(`carMeta({kind:'q',host:'box-a',pos:2,depth:5})`) === 'box-a \u00b7 2 of 5', 'depot car meta: host and position');
     chk(w.eval(`carMeta({kind:'r',profile:'p1',idle_s:90,sid:'abcdef123456'})`) === '2m ago \u00b7 p1 \u00b7 #123456', 'line car meta: age, profile and short id tell duplicate titles apart');

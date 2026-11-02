@@ -139,8 +139,8 @@ setTimeout(() => {
     w.eval('renderQueue()');
     const qcar = d.querySelector(`#qt-running .qt-car[data-key="s:sx"]`);
     chk(!!qcar, 'the running train car for that session exists');
-    chk(qcar.style.getPropertyValue('--h') === String(NEW_HUE),
-        'the train car also picks up the overridden hue', qcar.getAttribute('style'));
+    chk(qcar.style.getPropertyValue('--h') === String(w.eval(`hashHue('claude-opus-5')`)),
+        'the queue tile stripe follows the model hue, not the profile hue', qcar.getAttribute('style'));
 
     // ---- reset restores the deterministic default --------------------------
     w.eval(`pickView('Settings');`);

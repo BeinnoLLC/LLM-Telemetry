@@ -5,7 +5,6 @@
 import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, provOf, render } from './views.js';
-import { profileHue } from './router.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 
@@ -33,7 +32,7 @@ export function renderQueue(){
       const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
       return {
         key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
-        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
+        model: short(L.model) || '', profile: L.profile || '', hue: hashHue(L.model || ''),
         phase: L.phase || '', state: /compress/i.test(L.phase || '') ? 'compressing' : /wait|approv|blocked|input/i.test(L.phase || '') ? 'waiting' : 'running',
         category: L.category || '', idle_s: L.idle_s,
         tools: (L.tools || []).length, nmodels: L.nmodels,
@@ -116,7 +115,7 @@ export function carMeta(it){
   const at = it.kind === 'd' ? (it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     : it.idle_s != null ? ago(+it.idle_s) + ' ago' : '';
   if (it.kind === 'q') return `${it.host} \u00b7 ${it.pos} of ${it.depth}`;
-  return [at, it.kind === 'r' ? it.profile : it.model, id].filter(Boolean).join(' \u00b7 ');
+  return [at, it.profile, id].filter(Boolean).join(' \u00b7 ');
 }
 
 // Hover/focus card for one car. Only fields the feeds really carry.
@@ -194,6 +193,11 @@ export function paintTrain(queued, running, done){
     .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
     .map(c => c.getBoundingClientRect());
 
+  [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
+    const jar = box.closest && box.closest('.qt-jar');
+    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + n * 8) + '%' : '0%');
+  });
+
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
@@ -234,25 +238,36 @@ export function paintTrain(queued, running, done){
 export function qtTipWire(tr){
   const tip = $('qtip');
   if (!tip) return;
-  const hide = () => tip.classList.remove('on');
+  let cur = null;
+  const hide = () => { tip.classList.remove('on'); if (cur) cur.classList.remove('qt-tip-on'); cur = null; };
+  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const show = c => {
     if (!c || !c._qt) return;
+    if (cur && cur !== c) cur.classList.remove('qt-tip-on');
+    cur = c; c.classList.add('qt-tip-on');
     tip.innerHTML = carTip(c._qt);
     tip.classList.add('on');
-    // position:fixed, so no card overflow can clip it; above the car when
-    // there is room in the viewport, else below.
-    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024;
-    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80;
-    const x = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
-    const y = r.top - hgt - 10;
+    // position:fixed beside the tile: below, else above, right, left; the first spot that
+    // stays inside the viewport without covering the jar's own lid.
+    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80, g = 8;
+    const lid = c.closest('.qt-jar') && c.closest('.qt-jar').querySelector('.qt-lid');
+    const lr = lid ? lid.getBoundingClientRect() : null;
+    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+    const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+    const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
+      && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
+    const [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
-    tip.style.top = (y < 6 ? r.bottom + 10 : y) + 'px';
+    tip.style.top = y + 'px';
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
   tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
   tr.addEventListener('focusin', e => show(carOf(e.target)));
   tr.addEventListener('focusout', hide);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed
