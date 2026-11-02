@@ -9,14 +9,8 @@ import { DATA } from './main.js';
 
 export let charts = [], current = null;
 export let CHART_ANIM_DONE = false;
-// Chart.js comes from a CDN. When that request fails — a blocked CDN, an
-// offline LAN viewer, a firewall — `Chart` is undefined and this line used to
-// throw at MODULE scope, which aborted the whole bundle: no KPI strip, no nav,
-// no live table, no tables. The page still rendered, just as an empty shell,
-// which reads as "the dashboard is broken/unorganised" rather than "one CDN
-// didn't load". Charts are a progressive enhancement here: if the library is
-// missing we stub the defaults object so every other view still renders, and
-// mk() returns null so callers skip drawing instead of throwing.
+// Chart.js is a CDN script; if it fails to load, stub it so the rest of the
+// bundle still runs (it used to abort the whole page). See utilities.css.
 export const HAS_CHART = typeof Chart !== 'undefined' && !!Chart;
 if (!HAS_CHART) {
   globalThis.Chart = {
@@ -27,12 +21,8 @@ if (!HAS_CHART) {
   };
 }
 Chart.defaults.font.size = 10; readTheme();
-// A visible, honest note where the charts would be, so a blank canvas is
-// explained in the page instead of looking like missing data.
 export const CHART_MISSING_NOTE =
-  'Charts unavailable: the Chart.js library could not be loaded from its CDN. '
-  + 'Every table and number on this page is still live; start `llm-telemetry serve` '
-  + 'with network access, or vendored chart.js, to restore the graphs.';
+  'Charts unavailable: Chart.js could not load from its CDN. Tables and numbers are still live.';
 export const noLeg = {plugins:{legend:{display:false}}};
 
 export const bounds = p => {
@@ -45,9 +35,6 @@ export function tintTicks(axis){
 }
 
 export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
-  // No Chart.js: say so where the graph should be, once per canvas, and stop.
-  // Returning null lets every caller keep going instead of throwing inside the
-  // render pass that also builds the tables and KPI cards.
   if (!HAS_CHART) {
     if (!el.dataset.chartMissing) {
       el.dataset.chartMissing = '1';

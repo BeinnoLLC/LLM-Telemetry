@@ -16,7 +16,10 @@
 
    Keep it honest: if a new utility class is used in the markup, add it here.
    tests/check_vendored_utilities.js fails when a class is used but not defined,
-   so this file cannot silently rot behind the markup. */
+   so this file cannot silently rot behind the markup.
+
+   Chart.js stays a CDN script because charts are an optional enhancement:
+   charts.js stubs Chart when it is absent instead of throwing at module scope. */
 
 /* ---- layout ------------------------------------------------------------- */
 .flex{display:flex}
