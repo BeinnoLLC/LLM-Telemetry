@@ -80,7 +80,7 @@ const $ = id => d.getElementById(id);
   const btn = $('soundtoggle');
   chk(!!btn, 'the sound toggle button exists');
   chk(btn.getAttribute('aria-pressed') === 'true', 'toggle reports pressed=true while on');
-  chk(btn.textContent.trim() === 'Sound on', `toggle is labelled "Sound on" (${btn.textContent.trim()})`);
+  chk(btn.getAttribute('aria-label').startsWith('Sound on') && btn.textContent.trim() === '\u{1F50A}', `toggle is an icon labelled "Sound on" (${btn.getAttribute('aria-label')})`);
 
   // --- no tone on the very first poll (baseline), even though the fixture
   // already carries recent_ended / recent_delegations and sound is on -------
@@ -88,7 +88,7 @@ const $ = id => d.getElementById(id);
 
   // Mute, then turn back on (the click is the user gesture Web Audio requires).
   btn.click();
-  chk(w.soundOn === false && btn.textContent.trim() === 'Sound off' && btn.getAttribute('aria-pressed') === 'false',
+  chk(w.soundOn === false && btn.getAttribute('aria-label').startsWith('Sound off') && btn.textContent.trim() === '\u{1F507}' && btn.getAttribute('aria-pressed') === 'false',
       'clicking the toggle mutes it and relabels it "Sound off"');
   chk(playedNotes.length === 0, 'muting plays nothing');
   btn.click();
@@ -114,7 +114,7 @@ const $ = id => d.getElementById(id);
         x.matchMedia = q => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
       } });
     await new Promise(r => setTimeout(r, 60));
-    const out = { on: d2.window.soundOn, label: d2.window.document.getElementById('soundtoggle').textContent.trim() };
+    const out = { on: d2.window.soundOn, label: d2.window.document.getElementById('soundtoggle').getAttribute('aria-label').split(' ')[0] + ' ' + d2.window.document.getElementById('soundtoggle').getAttribute('aria-label').split(' ')[1] };
     d2.window.close();
     return out;
   };

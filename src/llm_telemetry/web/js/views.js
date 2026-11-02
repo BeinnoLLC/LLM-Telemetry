@@ -4,7 +4,7 @@
  * own container and reads the profile payload.
  */
 import {
-  $, AC, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
+  $, AC, AGE_CUTS, buildCuts, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
 } from './palette.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
@@ -456,10 +456,12 @@ export function render(){
   renderUnpriced(rows);
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
-  $('meta').textContent=`generated ${DATA.generated.replace('T',' ')} · auto-refresh every 1 min`;
-  // #149: the header stamp ages the analytics payload itself, on its own
-  // cadence, so a frozen dashboard.html says so instead of looking re-painted.
-  stampFreshness($('meta'), DATA.generated, 'dashboard');
+  $('meta').textContent=`updated ${DATA.generated.replace('T',' ')}`;
+  // #149: the header stamp ages the analytics payload itself, so a frozen
+  // dashboard.html says so; amber/red only past the build-interval cuts.
+  AGE_CUTS.dashboard = buildCuts(DATA.build_interval_s);
+  const hf = stampFreshness($('meta'), DATA.generated, 'dashboard');
+  if (hf && hf.age != null) $('meta').textContent = `updated ${ago(hf.age)} ago${hf.state === 'stale' ? ' \u00b7 stale' : ''}`;
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
@@ -2809,8 +2811,8 @@ let priceTouched = false; // search keeps its text when re-rendering
 // amber past 24 h, red past 72 h — not the generic cadence multiples. A price
 // sheet that is four days old silently produces wrong cost figures, so it has
 // to say so in colour before anyone reads a number off it.
-const PRICE_CUTS = {warn: 24 * 3600, bad: 72 * 3600};
 export function priceFreshness(fresh){
+  const PRICE_CUTS = {warn: 24 * 3600, bad: 72 * 3600};
   const f = fresh || {};
   const ageS = f.age_s == null ? null : Math.max(0, Math.round(f.age_s));
   if (ageS == null) {

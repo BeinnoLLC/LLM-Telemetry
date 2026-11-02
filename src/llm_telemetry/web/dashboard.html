@@ -48,7 +48,7 @@ __DASHBOARD_CSS__
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
-     title="Play a tone when a session or task completes">Sound on</button>
+     aria-label="Sound on — click to mute" title="Sound on — click to mute">&#128266;</button>
    <button id="helpbtn" title="How your work gets routed (?)">?</button>
   </div>
  </div>
@@ -199,10 +199,10 @@ __DASHBOARD_CSS__
         parked on sidings. Cars are keyed so a 5s poll never restarts motion;
         a task that changes section flies across. Hover/focus a car for detail. -->
    <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued"></div></div>
+    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued" data-empty="Nothing waiting"></div></div>
     <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done"></div><i class="qt-shunter" aria-hidden="true"></i></div>
+    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running" data-empty="No live sessions"></div></div>
+    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done" data-empty="No finished sessions"></div><i class="qt-shunter" aria-hidden="true"></i></div>
     <div class="qt-rail" aria-hidden="true"></div>
    </div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
@@ -701,12 +701,6 @@ __DASHBOARD_CSS__
    <div class="card p-4"><div class="lbl mb-2.5">Calls by task</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTasks"></canvas></div></div>
   </div>
 
-  <div class="view" data-view="Prices" hidden>
-    <div id="view-prices-container"></div>
-  </div>
-  <div class="view" data-view="Rankings" hidden>
-    <div id="view-rankings-container"></div>
-  </div>
   <!-- Row 2: Cost by model + Provider mix -->
   <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Cost by model</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cModelCost"></canvas></div></div>
@@ -752,6 +746,12 @@ __DASHBOARD_CSS__
    <div class="muted text-[length:var(--fs-xs)] mt-3" id="attribfooter"></div>
   </div>
  </div>
+  <div class="view" data-view="Prices" hidden>
+    <div id="view-prices-container"></div>
+  </div>
+  <div class="view" data-view="Rankings" hidden>
+    <div id="view-rankings-container"></div>
+  </div>
 
  <div class="view" data-view="Detail" hidden>
   <!-- Activity heatmap lives here rather than as a global band: it is a
@@ -793,7 +793,8 @@ __DASHBOARD_CSS__
   </div>
   </div>
 
- <div class="text-[length:var(--fs-xs)] muted border-l-2 pl-3" style="border-color:var(--accent)">
+ <details class="costhow text-[length:var(--fs-sm)] muted border-l-2 pl-3" style="border-color:var(--accent)">
+  <summary>How Est. cost is calculated</summary>
   <b>Est. cost</b> is what every request would cost at public API rates, priced per token (input,
   output and cache-read rated separately) from the OpenRouter catalogue (cached __PRICE_TTL__), plus
   official vendor rates for models OpenRouter does not list (Codex/Astra, some Fireworks SKUs).
@@ -804,7 +805,7 @@ __DASHBOARD_CSS__
   consumed rather than money leaving your account. Only Fireworks is genuinely pay-per-token.
   Live Claude Code and Codex sessions count their tokens and show the same API-price equivalent
   with a <b>sub</b> badge (covered by your Claude / ChatGPT subscription); it is never added to Est. cost.
- </div>
+ </details>
 </div><!-- /.page — the drawer must live OUTSIDE it, as a direct child of
      <body>: a position:fixed element is trapped by any ancestor with a
      transform/filter/contain, and .page is exactly the kind of container that

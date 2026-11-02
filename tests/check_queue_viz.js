@@ -86,13 +86,13 @@ setTimeout(() => {
         'task queue renders before the 6h series panel');
 
     // ---- CSS: the motion really exists and is wired -----------------------
-    for (const k of ['qt-shunt', 'qt-park', 'qt-depart', 'qt-land', 'qt-shunter', 'qt-newest', 'qt-sleepers'])
+    for (const k of ['qt-arrive', 'qt-park', 'qt-depart', 'qt-land'])
       chk(new RegExp('@keyframes ' + k + '\\b').test(html), `@keyframes ${k} defined`);
     // Grafana G1: the consist holds still (no qt-run slide) so every running car stays visible.
     chk(!/@keyframes qt-run\b/.test(html) && !/\.qt-consist\{[^}]*animation/.test(html), 'the consist no longer slides across the line');
-    chk(/\.qt-consist\{[^}]*flex-wrap:wrap-reverse/.test(html), 'the consist wraps so a long train shows every car');
+    chk(/\.qt-cars,\.qt-consist\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the consist wraps so a long train shows every car');
     chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get a still railway');
-    chk(/\.qt-yard \.qt-cars\{[^}]*repeating-linear-gradient/.test(html), 'the yard draws sidings');
+    chk(/\.qt-cars:not\(:has\(\.qt-car\)\)::after\{content:attr\(data-empty\)/.test(html) && !!d.getElementById('qt-done').dataset.empty, 'an empty section says so instead of drawing nothing');
     chk(!!d.querySelector('.qt-yard .qt-shunter'), 'the yard has an idling shunter');
 
     // ---- empty: patrol car on a clear line --------------------------------
@@ -143,7 +143,10 @@ setTimeout(() => {
     chk(/^\d+s$/.test(tr.style.getPropertyValue('--qt-loop')), 'line: a loop duration is set', tr.style.getPropertyValue('--qt-loop'));
     run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
-    chk(run[0].offsetWidth !== undefined && /\.qt-r\{width:104px/.test(html), 'cars are wide enough to carry a title');
+    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:2/.test(html) && /\.qt-car\{[^}]*min-height:52px/.test(html), 'cars are two-line cards, not squeezed pills');
+    chk(!!run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent.length > 0, 'a car carries a meta line (age, owner, short id)', run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent);
+    chk(w.eval(`carMeta({kind:'q',host:'box-a',pos:2,depth:5})`) === 'box-a \u00b7 2 of 5', 'depot car meta: host and position');
+    chk(w.eval(`carMeta({kind:'r',profile:'p1',idle_s:90,sid:'abcdef123456'})`) === '2m ago \u00b7 p1 \u00b7 #123456', 'line car meta: age, profile and short id tell duplicate titles apart');
 
     // ---- line -> yard: the session parks under the same key ---------------
     const t1 = run[0];
