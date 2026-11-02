@@ -30,6 +30,10 @@ def main():
 
     sub.add_parser("dashboard", help="build dashboard.html (runs the collectors)")
     sub.add_parser("costs", help="refresh the price payload for the app's Prices view")
+    # LST-209: the catalogue refresh needs its own entry point so a timer can own
+    # the cadence. `pricing --force` refreshes the OpenRouter cache in place; the
+    # next build then prices against the new sheet.
+    sub.add_parser("pricing", help="refresh the OpenRouter price catalogue cache (--force to bypass the TTL)")
     sub.add_parser("rankings", help="fetch OpenRouter rankings -> rankings-data.json, shown by the dashboard Rankings view (#113)")
     sub.add_parser("live", help="write live-data.json (fast poll feed)")
     sub.add_parser("transcripts", help="write transcripts.json (windowed live-session chat, #79)")
@@ -57,6 +61,7 @@ def main():
     mods = {
         "dashboard": "build_dashboard",
         "costs": "build_costs",
+        "pricing": "pricing",
         "rankings": "build_rankings",
         "live": "collect_live",
         "transcripts": "collect_transcripts",

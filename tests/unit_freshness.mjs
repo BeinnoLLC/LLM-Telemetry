@@ -21,8 +21,11 @@ const P = await isolate('palette.js', { 'main.js': { DATA: {} }, 'views.js': { P
 // ---- the one cadence table --------------------------------------------
 eq(P.CADENCE.probe, 5, 'the probe cadence is 5s');
 eq(P.CADENCE.dashboard, 60, 'the dashboard build cadence is 60s');
-eq([P.CADENCE.router, P.CADENCE.quota, P.CADENCE.rankings], [3600, 3600, 3600],
+eq([P.CADENCE.router, P.CADENCE.quota], [3600, 3600],
    'the hourly artifacts share one cadence');
+// LST-209: rankings moved off the hourly group to 6h, so it must NOT be counted
+// with them — the old assertion would have quietly pinned the old cadence.
+eq(P.CADENCE.rankings, 21600, 'rankings is the 6h outlier, not an hourly artifact');
 eq(P.STALE_FACTOR, 2, 'stale begins at 2x the cadence');
 chk(['live', 'logs', 'dashboard', 'probe', 'router', 'quota', 'rankings'].every(k => P.CADENCE[k] > 0),
     'every section the page shows has a cadence');
@@ -43,7 +46,15 @@ eq(P.CADENCE.router, timerCadence('llm-telemetry-router.timer'), 'the router cad
 chk(/OnCalendar=hourly|OnUnitActiveSec=(3600|1h)/.test(timerText('llm-telemetry-quota.timer')),
     'the quota timer really is hourly', 'see systemd/llm-telemetry-quota.timer');
 eq(P.CADENCE.quota, timerCadence('llm-telemetry-quota.timer'), 'the quota cadence matches its timer');
+// LST-209 moved the rankings timer to 6h with jitter; the CADENCE constant is the
+// promise the UI ages against, so it has to move with the unit or every rankings
+// stamp would read stale for five hours of a six-hour cycle.
 eq(P.CADENCE.rankings, timerCadence('llm-telemetry-rankings.timer'), 'the rankings cadence matches its timer');
+eq(P.CADENCE.rankings, 6 * 3600, 'the rankings cadence is 6h, the ticket cut');
+chk(/RandomizedDelaySec=\d+/.test(timerText('llm-telemetry-rankings.timer')),
+    'the rankings timer jitters its fire time', 'see systemd/llm-telemetry-rankings.timer');
+chk(/Persistent=true/.test(timerText('llm-telemetry-rankings.timer')),
+    'the rankings timer catches up a missed run');
 
 // ---- the bands, at the boundaries -------------------------------------
 const NOW = 1_700_000_000;
@@ -69,7 +80,9 @@ eq([at(90).age, at(90).cadence], [90, 60], 'the age and cadence are reported');
 eq(at(90).label, '2m old', 'the label formats the age through ago()');
 eq(at(180).label, '3m old', 'a stale label is still a plain age');
 eq(at(7200, 'router').label, '2h old', 'an hours-old section reads in hours');
-chk(at(180).hint.includes('expected every 1m'), 'the hint states the expected cadence', at(180).hint);
+// LST-185: a hint that only repeats "expected every 1m" tells you the section is
+// late but not what to look at. It now names the systemd unit that feeds it.
+chk(at(180).hint.includes('llm-telemetry-build.timer'), 'the hint names the feeder timer', at(180).hint);
 chk(at(180).hint.includes('last update 3m ago'), 'the hint states the observed age', at(180).hint);
 eq(at(90).hint === undefined, false, 'old and stale both carry a hint');
 
@@ -117,7 +130,7 @@ P.stampFreshness(late, NOW - 90, 'dashboard', NOW);
 eq([late.dataset.stampState, late._cls.has('old'), late._cls.has('stale')], ['old', true, false],
    'a late stamp gets .old and only .old');
 eq(late.textContent, 'live · updated 12:00:00 · 2m old', 'the late stamp appends its age');
-chk(late.title.includes('expected every 1m'), 'the late stamp explains itself in the title', late.title);
+chk(late.title.includes('llm-telemetry-build.timer'), 'the late stamp names the feeder timer in its title', late.title);
 
 const stale = mkStamp('live · updated 12:00:00');
 P.stampFreshness(stale, NOW - 180, 'dashboard', NOW);

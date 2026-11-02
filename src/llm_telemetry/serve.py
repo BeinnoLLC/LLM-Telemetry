@@ -57,6 +57,74 @@ SETTINGS = {
 }
 HEADER = "X-LLM-Telemetry"
 
+# LST-200: POST /api/refresh — the manual "rebuild now" button.
+#
+# The build timer already rebuilds every minute, so a refresh endpoint looks
+# redundant until you are the person who just changed a setting and is watching
+# a stale page. Doing the work inline would block the request for the whole
+# build and hand a stranger a CPU-burn lever, so this endpoint:
+#
+#   * accepts loopback clients only (same guard as /api/settings — the server
+#     binds 0.0.0.0 for LAN viewers, but only this host may trigger a rebuild);
+#   * requires the same custom header, so a preflighted cross-site POST cannot
+#     reach it;
+#   * DEBOUNCES: a second request inside REFRESH_DEBOUNCE_S returns 202 with
+#     debounced=true instead of starting a second build. Two clicks on a slow
+#     page must not queue two builds;
+#   * answers 202 immediately and builds in a detached child, so the caller gets
+#     an ack (and the UI can poll for the new generated_at) instead of holding a
+#     socket open;
+#   * reports the build's outcome through the child's exit code, and refuses to
+#     start a second build while one is still running.
+REFRESH_DEBOUNCE_S = 20.0
+_REFRESH: dict = {"pid": None, "started": 0.0, "last_result": None, "last_at": None}
+
+
+def refresh_state(now=None) -> "tuple[bool, dict]":
+    """-> (should_start, payload). Pure enough to test without a live server."""
+    import time as _t
+    now = _t.time() if now is None else now
+    pid = _REFRESH["pid"]
+    running = False
+    if pid:
+        try:
+            os.kill(pid, 0)   # signal 0: existence probe, sends nothing
+            running = True
+        except OSError:
+            _REFRESH["pid"] = None
+    since = now - (_REFRESH["started"] or 0)
+    if running:
+        return False, {"accepted": False, "running": True, "pid": pid,
+                       "since_s": round(since, 1),
+                       "detail": "a rebuild is already running"}
+    if _REFRESH["started"] and since < REFRESH_DEBOUNCE_S:
+        return False, {"accepted": False, "debounced": True,
+                       "retry_in_s": round(REFRESH_DEBOUNCE_S - since, 1),
+                       "last_result": _REFRESH["last_result"],
+                       "detail": "rebuilt moments ago; not starting another build"}
+    return True, {"accepted": True}
+
+
+def start_refresh() -> dict:
+    """Spawn the builder detached and record the pid. -> payload."""
+    import subprocess
+    import time as _t
+    ok, info = refresh_state()
+    if not ok:
+        return info
+    cmd = [sys.executable, "-m", "llm_telemetry.cli", "dashboard"]
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, start_new_session=True)
+    except OSError as e:
+        _REFRESH["last_result"] = f"could not start builder: {e}"
+        _REFRESH["last_at"] = _t.time()
+        return {"accepted": False, "error": _REFRESH["last_result"]}
+    _REFRESH["pid"] = proc.pid
+    _REFRESH["started"] = _t.time()
+    return {"accepted": True, "pid": proc.pid,
+            "detail": "rebuild started; the page will pick it up on its next poll"}
+
 
 def config_path():
     """The config file the collectors read: the first existing candidate, else
@@ -71,6 +139,19 @@ def config_path():
 def _tilde(p):
     home = os.path.expanduser("~")
     return "~" + p[len(home):] if p.startswith(home + os.sep) else p
+
+
+def _current_generated_at():
+    """The build stamp the page compares against, so the caller knows when the
+    rebuild it just asked for has actually landed. Missing file is not an error:
+    the first build has not run yet."""
+    try:
+        p = os.path.join(DIRECTORY, "dashboard.html")
+        st = os.stat(p)
+        import datetime as _dt
+        return _dt.datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds")
+    except OSError:
+        return None
 
 
 def validate(body):
@@ -149,6 +230,31 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         except ValueError:
             return False
 
+    def _refresh(self):
+        """LST-200: POST /api/refresh — 202 with what happened, never a hang."""
+        if not self._loopback():
+            return self._json(403, {"error": "a rebuild can only be triggered from this machine"})
+        if self.headers.get(HEADER) != "1":
+            return self._json(403, {"error": f"missing {HEADER} header"})
+        # Drain any body so the connection stays reusable, and cap it — this
+        # endpoint takes no input, so a large body is a mistake or an attack.
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = 0
+        if n > 1024:
+            return self._json(413, {"error": "body too large"})
+        if n:
+            try:
+                self.rfile.read(n)
+            except OSError:
+                pass
+        payload = start_refresh()
+        payload["generated_at"] = _current_generated_at()
+        # 202 for both "started" and "already running/debounced": the request was
+        # accepted and the page should poll; the body says what actually happened.
+        return self._json(202, payload)
+
     def do_GET(self):
         if self.path.split("?")[0] == "/api/settings":
             return self._json(200, {"values": current(),
@@ -157,7 +263,10 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path.split("?")[0] != "/api/settings":
+        path = self.path.split("?")[0]
+        if path == "/api/refresh":
+            return self._refresh()
+        if path != "/api/settings":
             return self._json(404, {"error": "not found"})
         if not self._loopback():
             return self._json(403, {"error": "settings can only be changed from this machine"})

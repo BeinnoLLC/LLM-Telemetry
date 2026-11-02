@@ -15,7 +15,7 @@ import { renderRouterView, routerStat } from './routerview.js';
 import { renderQuotaView, qvStat } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
-  pickView, setCrossFilter, setHash, view,
+  hydrateViewParams, pickView, setCrossFilter, setHash, setViewParam, view,
 } from './router.js';
 import { COSTS_DATA, DATA, LOCAL_HOSTS, RANKINGS_DATA, SCHEMA_VERSION, css } from './main.js';
 
@@ -2778,6 +2778,22 @@ const PROV_META = {
 let priceState = {q: '', tab: 'all'};
 let priceTouched = false; // search keeps its text when re-rendering
 
+// LST-193: the Prices header is a freshness pill with the ticket's own cuts —
+// amber past 24 h, red past 72 h — not the generic cadence multiples. A price
+// sheet that is four days old silently produces wrong cost figures, so it has
+// to say so in colour before anyone reads a number off it.
+const PRICE_CUTS = {warn: 24 * 3600, bad: 72 * 3600};
+export function priceFreshness(fresh){
+  const f = fresh || {};
+  const ageS = f.age_s == null ? null : Math.max(0, Math.round(f.age_s));
+  if (ageS == null) {
+    return {state: 'unknown', age_s: null, label: f.state ? String(f.state) : 'age unknown', hint: ''};
+  }
+  const state = ageS < PRICE_CUTS.warn ? 'fresh' : ageS < PRICE_CUTS.bad ? 'old' : 'stale';
+  return {state, age_s: ageS, label: `${ago(ageS)} old`,
+          hint: `catalogue fetched ${ago(ageS)} ago · amber past 24h, red past 72h · fed by llm-telemetry-build.timer`};
+}
+
 export function renderPrices(){
   const el = $('view-prices-container');
   const data = window.COSTS_DATA;
@@ -2800,15 +2816,23 @@ function pricesShell(data){
   const used = data.models.filter(m => (m.calls||0) > 0).length;
   const src = PRICE_SRC[data.catalog_source] ? data.catalog_source : 'openrouter';
   const fresh = data.freshness || {};
-  const freshLabel = fresh.age_hours != null ? `${Math.round(fresh.age_hours)}h old` : (data.catalog_source || '');
+  const pf = priceFreshness(fresh);
+  // LST-193: one pill carrying both halves of the question — how old the sheet
+  // is and where the rates came from — so a reader never has to scroll to find
+  // out whether the number they are about to trust is current.
+  const srcLabel = (PRICE_SRC[src] || {label: data.catalog_source || 'catalogue'}).label;
+  const pillCls = pf.state === 'stale' ? 'stamp stale' : pf.state === 'old' ? 'stamp old' : 'stamp';
   return `
   <div class="pt-4 pb-2 flex items-end justify-between flex-wrap gap-3" data-cat-state="${esc(src)}">
     <div>
-      <div class="muted uppercase tracking-wide" style="font-size:var(--fs-xs)">Price sheet</div>
-      <div class="muted pv-shell-sub" style="font-size:var(--fs-xs)">${data.catalog_size.toLocaleString()} models in catalogue \u00b7 ${used} with observed traffic \u00b7 generated ${esc((data.generated||'').replace('T',' '))} \u00b7 ${esc(freshLabel)}</div>
+      <div class="muted uppercase tracking-wide" style="font-size:var(--fs-xs)">Price sheet
+        <span class="pv-freshpill ${pillCls}" data-fresh-state="${pf.state}"
+              title="${escA(pf.hint)}">\u00b7 updated ${esc(pf.label)} \u00b7 ${esc(srcLabel)}</span>
+      </div>
+      <div class="muted pv-shell-sub" style="font-size:var(--fs-xs)">${data.catalog_size.toLocaleString()} models in catalogue \u00b7 ${used} with observed traffic \u00b7 generated ${esc((data.generated||'').replace('T',' '))}</div>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <input id="priceSearch" class="chip" placeholder="Search models\u2026" value="${esc(priceState.q)}" style="min-width:220px;font-size:var(--fs-xs)">
+      <input id="priceSearch" class="chip" placeholder="Search model, provider or source\u2026" value="${esc(priceState.q)}" style="min-width:220px;font-size:var(--fs-xs)">
       <div id="priceTabs" class="flex gap-1">
         ${[['all','All'],['used','Used'],['local','Local'],['vendor','Vendor'],['openrouter','OpenRouter'],['unpriced','Unpriced']]
           .map(([k,l]) => `<button type="button" class="chip pt-tab${priceState.tab===k?' on':''}" data-tab="${k}" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">${l}</button>`).join('')}
@@ -2977,7 +3001,15 @@ function renderPriceTable(data){
   if (!wrap) return;
   const q = priceState.q.trim().toLowerCase();
   let rows = priceTabsRow(data.models);
-  if (q) rows = rows.filter(m => (m.model||'').toLowerCase().includes(q));
+  // LST-193: search reaches the provider and the rate source too, not just the
+  // model name — "fireworks" or "local" are the questions people actually ask
+  // of a price sheet, and a name-only filter made that a manual scroll.
+  if (q) rows = rows.filter(m => {
+    const provs = (m.providers || []).join(' ') + ' ' + (m.served_by || '') + ' ' + (m.inferred_by || '');
+    const srcLabel = (PRICE_SRC[m.source] || {label: m.source || ''}).label;
+    return (m.model||'').toLowerCase().includes(q)
+        || provs.toLowerCase().includes(q) || srcLabel.toLowerCase().includes(q);
+  });
   rows = rows.slice().sort((a,b) => (b.calls||0)-(a.calls||0) || (b.cost||0)-(a.cost||0));
   wrap.innerHTML = `
   <table class="pv-tbl"><thead><tr>
@@ -3007,12 +3039,28 @@ function priceRow(m){
           + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
+  // LST-193: the chip now carries the provenance the reviewer asked for — a
+  // manual override is visibly tagged (its number is a human decision, not a
+  // fetched price), and every row's tooltip states the rate's origin and the
+  // age of the sheet it came from, so no figure is trusted blind.
+  const originTip = {
+    catalog: 'live OpenRouter catalogue rate',
+    override: 'manual override from pricing.RATE_OVERRIDES — beats the live catalogue on purpose',
+    builtin: 'built-in vendor rate table (the catalogue does not list this model)',
+    local: 'local model — electricity cost, never a vendor rate',
+    'free-tier': 'free tier — $0 by contract',
+  }[m.rate_origin] || 'no rate on record';
+  const sheetAge = (window.COSTS_DATA && window.COSTS_DATA.freshness || {}).age_s;
+  const ageTip = sheetAge == null ? '' : ` · sheet fetched ${ago(Math.round(sheetAge))} ago`;
+  const overrideTag = m.rate_origin === 'override'
+    ? '<span class="pv-src pv-src-override" title="Manual override, not a fetched rate">override</span> '
+    : '';
   return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"
     data-used="${used ? '1' : '0'}" data-source="${esc(m.source)}"
     ${m.oid ? `data-oid="${esc(m.oid)}"` : ''}>
     <td>${esc(m.model)}</td>
     <td class="num">${rate(m.in_1m)}</td><td class="num">${rate(m.out_1m)}</td><td class="num">${rate(m.cache_1m)}</td>
-    <td><span class="pv-src ${srcMeta.cls}">${esc(srcMeta.label)}</span></td>
+    <td>${overrideTag}<span class="pv-src ${srcMeta.cls}" title="${escA(originTip)}${escA(ageTip)}">${esc(srcMeta.label)}</span></td>
     <td class="num">${used ? (m.calls||0).toLocaleString() : '<span class="muted">\u2014</span>'}</td>
     <td class="num">${used ? fmtN(m.outp) : '<span class="muted">\u2014</span>'}</td>
     <td class="num">${used ? fmtMoney(m.cost) : '<span class="muted">\u2014</span>'}</td>
@@ -3055,22 +3103,58 @@ function renderRankings(){
   const host = document.getElementById('view-rankings-container');
   if (!host) return;
   const d = RANKINGS_DATA || {};
+  // LST-196: an unavailable board must say which timer to inspect and why it
+  // failed — otherwise the only recovery is guessing at units. The hint names
+  // the real unit, and last_error carries the collector's own reason.
+  const timerHint = 'systemctl --user status llm-telemetry-rankings.timer';
   if (!d || d.status !== 'ok' || !d.views) {
-    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.')}` +
-      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') + `</div>`;
+    const le = d && d.last_error;
+    const why = le ? `${esc(le.reason || 'collector failed')}${le.at ? ` (at ${esc(le.at)})` : ''}`
+                   : esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.');
+    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${why}` +
+      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') +
+      `<div class="muted mt-2" style="font-size:var(--fs-xs)">Check the collector: <code>${esc(timerHint)}</code></div></div>`;
     return;
   }
   const wins = ['day', 'week', 'month'].filter(k => d.views[k]);
+  // LST-196: the window lives in the URL (#/rankings?span=week) so a link
+  // restores it. Seed from the hash first, then validate against what the
+  // payload actually carries.
+  const rkParams = hydrateViewParams('Rankings', ['span']);
+  const fromUrl = rkParams.get('span');
+  if (fromUrl && wins.includes(fromUrl)) RANKINGS_STATE.window = fromUrl;
   if (!wins.includes(RANKINGS_STATE.window)) RANKINGS_STATE.window = wins[0];
+  setViewParam('Rankings', 'span', RANKINGS_STATE.window);
   const cur = d.views[RANKINGS_STATE.window] || { top: [], other: {}, total: 0, start: '', end: '', days: 0 };
   const lbl = { day: 'Day', week: 'Week', month: 'Month' };
+  // A proper segmented control: one role=group, buttons with aria-pressed, a
+  // visible active state, and arrow-key movement — the old .tab buttons were
+  // three unrelated buttons that looked like tabs.
   const wv = wins.map(k =>
-    `<button type="button" class="tab${k === RANKINGS_STATE.window ? ' tabon' : ''}" data-rk-window="${k}" aria-pressed="${k === RANKINGS_STATE.window}">${lbl[k] || k}</button>`).join('');
+    `<button type="button" class="seg-btn${k === RANKINGS_STATE.window ? ' on' : ''}" role="radio"
+      aria-checked="${k === RANKINGS_STATE.window}" tabindex="${k === RANKINGS_STATE.window ? '0' : '-1'}"
+      data-rk-window="${k}">${lbl[k] || k}</button>`).join('');
+  // LST-196: the freshness pill carries both halves a reader needs — the
+  // window the board covers and how long ago it was fetched. Amber past 48 h,
+  // the ticket's cut, because a two-day-old leaderboard answers yesterday's
+  // question.
+  const rAge = (() => {
+    const ts = d.fetched_at ? Date.parse(d.fetched_at) : null;
+    return ts && isFinite(ts) ? Math.max(0, Math.round((Date.now() - ts) / 1000)) : null;
+  })();
+  const rState = rAge == null ? 'unknown' : rAge < 48 * 3600 ? 'fresh' : 'old';
+  const rPill = `<span class="pv-freshpill" data-fresh-state="${rState}"
+      title="usable window ${esc(cur.start)} → ${esc(cur.end)} · fetched ${rAge == null ? 'unknown' : ago(rAge) + ' ago'} · amber past 48h · fed by llm-telemetry-rankings.timer"
+      >· ${esc(cur.start)} → ${esc(cur.end)} · fetched ${rAge == null ? 'unknown' : esc(ago(rAge)) + ' ago'}</span>`;
+  // LST-196: the trend needs to say what it is. "7d trend" was a lie on a
+  // Day board — the number is share-of-tokens percentage points, second half
+  // of the selected window vs its first half, so the tooltip states the actual
+  // comparison and the header carries the same definition once.
   const tr = (t) => {
     if (t == null || t === 0) return '<span class="muted" title="no earlier usage to compare against">\u2014</span>';
     const up = t > 0;
     const tone = up ? 'color:var(--z-ok)' : 'color:var(--z-bad)';
-    return `<span style="${tone}" title="share of tokens vs the same window before: ${t > 0 ? '+' : ''}${t.toFixed(1)} pp">${up ? '\u2191' : '\u2193'} ${Math.abs(t).toFixed(1)}</span>`;
+    return `<span style="${tone}" title="share of tokens in the second half of this window vs its first half: ${t > 0 ? '+' : ''}${t.toFixed(1)} percentage points">${up ? '\u2191' : '\u2193'} ${Math.abs(t).toFixed(1)}</span>`;
   };
   const ntop = cur.top.length;
   let body = cur.top.map(r =>
@@ -3091,17 +3175,37 @@ function renderRankings(){
   <div class="card p-4">
     <div class="flex items-end justify-between flex-wrap gap-3 mb-2.5">
       <div>
-        <div class="lbl">OpenRouter rankings \u00b7 ${esc(lbl[RANKINGS_STATE.window] || RANKINGS_STATE.window)} (${cur.days}d)</div>
-        <div class="muted" style="font-size:var(--fs-xs)">${esc(cur.start)} \u2192 ${esc(cur.end)} \u00b7 ${fmt(cur.total)} tokens total \u00b7 ${esc(d.source || '')}</div>
+        <div class="lbl">OpenRouter rankings · ${esc(lbl[RANKINGS_STATE.window] || RANKINGS_STATE.window)} (${cur.days}d)${rPill}</div>
+        <div class="muted" style="font-size:var(--fs-xs)">${esc(cur.start)} → ${esc(cur.end)} · ${fmt(cur.total)} tokens total · ${esc(d.source || '')}</div>
       </div>
-      <div class="tabs" role="group" aria-label="Ranking window">${wv}</div>
+      <div class="seg" role="radiogroup" aria-label="Ranking window">${wv}</div>
     </div>
     <table class="w-full" style="border-collapse:collapse">
-      <thead><tr><th class="lbl" style="text-align:left">#</th><th class="lbl" style="text-align:left">Model</th><th class="lbl" style="text-align:right">Tokens</th><th class="lbl" style="text-align:left">Share</th><th class="lbl" style="text-align:right">7d trend</th></tr></thead>
+      <thead><tr><th class="lbl" style="text-align:left">#</th><th class="lbl" style="text-align:left">Model</th><th class="lbl" style="text-align:right">Tokens</th><th class="lbl" style="text-align:left">Share</th><th class="lbl" style="text-align:right"><span
+        title="Each row compares the second half of the selected window against its first half, in share-of-tokens percentage points — that is what collect_rankings.py computes, so it is not always a 7-day trend."
+        style="cursor:help;border-bottom:1px dotted currentColor">Trend \u24d8</span></th></tr></thead>
       <tbody>${body}</tbody>
     </table>
     <div class="muted" style="font-size:var(--fs-xs);margin-top:8px">${esc((d.attribution || {}).url || '')}</div>
   </div>`;
   host.querySelectorAll('[data-rk-window]').forEach(b =>
-    b.addEventListener('click', () => { RANKINGS_STATE.window = b.dataset.rkWindow; renderRankings(); }));
+    b.addEventListener('click', () => {
+      RANKINGS_STATE.window = b.dataset.rkWindow;
+      setViewParam('Rankings', 'span', RANKINGS_STATE.window);
+      setHash('Rankings');
+      renderRankings();
+    }));
+  // Arrow keys move between segments, as a real radio group does — the
+  // segmented control is one tab stop, not three.
+  const seg = host.querySelector('.seg');
+  if (seg) seg.addEventListener('keydown', (ev) => {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
+    if (!keys.includes(ev.key)) return;
+    ev.preventDefault();
+    const btns = [...seg.querySelectorAll('[data-rk-window]')];
+    const i = btns.findIndex(b => b.dataset.rkWindow === RANKINGS_STATE.window);
+    const dir = (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') ? 1 : -1;
+    const next = btns[(i + dir + btns.length) % btns.length];
+    if (next) next.click();
+  });
 }

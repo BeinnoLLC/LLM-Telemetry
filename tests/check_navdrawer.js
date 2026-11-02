@@ -81,7 +81,14 @@ setTimeout(() => {
   }
 
   // Secondary entries complete the nav.
-  chk(!!d.querySelector('#navdrawer a[href="#/Prices"]'), 'rail links to the in-app price sheet');
+  // The rail links with the router's own slug convention (#/prices), the same
+  // form every other nav entry uses and the form #/sessions is asserted with in
+  // check_project_nav. Matching the literal "#/Prices" pinned this one entry to
+  // a capitalisation the router never emits, so it failed as soon as the sample
+  // page was rebuilt from source.
+  chk(!!d.querySelector('#navdrawer a[data-nav="Prices"]'),
+      'rail links to the in-app price sheet',
+      (d.querySelector('#navdrawer a[data-nav="Prices"]') || {}).href);
   // Logs is a full view now (#104), so it comes from the .view list like every
   // other section; the drawer keeps its own entry as the live tail.
   chk(!!d.querySelector('#navdrawer [data-nav="Logs"]'), 'rail has a Logs view entry');

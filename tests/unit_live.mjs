@@ -768,12 +768,22 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   h.M.tickLiveStamp(at + 3);
   eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('old')], ['live · updated 3s ago', false],
      'tickLiveStamp: the age counts up while still inside the 5s cadence');
+  // LST-185: the live board ages against the ticket's ABSOLUTE cuts (green under
+  // 30s, amber 30-90s, red past 90s), not the 5s poll cadence. Two missed polls
+  // are a healthy feed, so 7s must stay green — the old assertion pinned the
+  // cadence-multiple behaviour that painted a fine board amber.
   h.M.tickLiveStamp(at + 7);
   eq([h.els.livestamp.textContent, h.els.livestamp.dataset.stampState, h.els.livestamp.classList.contains('old')],
-     ['live · updated 7s ago · 7s old', 'old', true], 'tickLiveStamp: past one cadence it goes amber (old)');
+     ['live · updated 7s ago', 'fresh', false], 'tickLiveStamp: two missed polls are still green (absolute cuts)');
+  h.M.tickLiveStamp(at + 29);
+  eq([h.els.livestamp.dataset.stampState, h.els.livestamp.classList.contains('old')],
+     ['fresh', false], 'tickLiveStamp: 29s is still inside the 30s green cut');
+  h.M.tickLiveStamp(at + 31);
+  eq([h.els.livestamp.textContent, h.els.livestamp.dataset.stampState, h.els.livestamp.classList.contains('old')],
+     ['live · updated 31s ago · 31s old', 'old', true], 'tickLiveStamp: past 30s it goes amber (old)');
   h.M.tickLiveStamp(at + 95);
   eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('stale')],
-     ['live · updated 2m ago · stale, 2m old', true], 'tickLiveStamp: well past it goes red (stale)');
+     ['live · updated 2m ago · stale, 2m old', true], 'tickLiveStamp: past 90s it goes red (stale)');
   await h.run(() => h.M.pollLive());
   h.M.tickLiveStamp(h.M.liveUpdatedAt);
   eq([h.els.livestamp.textContent, h.els.livestamp.classList.contains('stale'), h.els.livestamp.classList.contains('old')],

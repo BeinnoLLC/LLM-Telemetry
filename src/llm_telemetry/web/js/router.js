@@ -124,9 +124,27 @@ export function setHash(v){
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
+  // LST-196: view-owned params (?span=week) ride along with the cross-filters,
+  // so a Rankings link restores the window the user was looking at.
+  const own = VIEW_PARAMS.get(slugOf(v));
+  if (own) for (const [k, val] of own) p.push(encodeURIComponent(k) + '=' + encodeURIComponent(val));
   const want = '#/' + encodeURIComponent(slugOf(v)) + (p.length ? '?' + p.join('&') : '');
   if (location.hash !== want) location.hash = want;
 }
+
+// LST-196: a view can need its own query param that survives a slug change
+// (Rankings' ?span=week is the first). Written through here so setHash never
+// has to know about individual views, and so the param round-trips on reload
+// and on a pasted link — which is the whole point of putting it in the URL.
+// LST-196: exported because the page builder inlines ONLY the declarations named
+// in order.json — a module-private const here is silently dropped from the built
+// page and the first setHash() throws ReferenceError.
+export const VIEW_PARAMS = new Map();
+export function setViewParam(view, key, value){
+  let p = VIEW_PARAMS.get(slugOf(view));
+  if (!p) { p = new Map(); VIEW_PARAMS.set(slugOf(view), p); }
+  if (value == null || value === '') p.delete(key); else p.set(key, String(value));
+} 
 
 // #173: retired slugs that must keep resolving. 'live' was its own view until
 // Home became the live board; bookmarks, tests and the README all say #/live.
@@ -178,6 +196,20 @@ export function filterFromHash(key){
   try {
     return new URLSearchParams(raw.slice(qIdx + 1)).get(key) || '';
   } catch (e) { return ''; }
+}
+
+// LST-196: read a view's own param (span=week) back out of the hash and seed
+// the in-memory map, so the FIRST render after a reload or a pasted link shows
+// the window the URL names instead of the default.
+export function hydrateViewParams(view, keys){
+  const slug = slugOf(view);
+  let p = VIEW_PARAMS.get(slug);
+  if (!p) { p = new Map(); VIEW_PARAMS.set(slug, p); }
+  (keys || []).forEach(k => {
+    const v = filterFromHash(k);
+    if (v) p.set(k, v);
+  });
+  return p;
 }
 
 window.addEventListener('hashchange', () => {
@@ -444,11 +476,72 @@ export async function saveSettings(){
     if (!r.ok) return setMsg(j.error || ('Save failed (' + r.status + ')'), 'err');
     setState.values = j.values; setState.file = j.config_file || setState.file;
     setWrite(setState.values);
-    setMsg('Saved to ' + setState.file + '. Costs update on the next refresh (about a minute).', 'ok');
+    const where = 'Saved to ' + setState.file + '.';
+    setMsg(where + ' Rebuilding now\u2026', 'ok');
     renderSetDeriv();
+    // LST-200: a saved setting is inert until the next build. Ask for one
+    // immediately so the person who just changed a number sees it take effect,
+    // and say plainly whether the build started or was already covered. `where`
+    // is passed through so EVERY outcome still says where it was saved — the
+    // original single message did, and losing that on the refresh path would
+    // make a successful save look ambiguous.
+    triggerRefresh(setMsg, where);
   } catch (e) {
     setMsg('Save failed: ' + e.message, 'err');
   }
+}
+
+// LST-200: POST /api/refresh. The server answers 202 for "accepted" AND for
+// "already running" or "debounced", so the message has to come from the body,
+// not the status code. A LAN viewer is told the truth (403) rather than being
+// shown a button that silently does nothing.
+export async function triggerRefresh(msgFn, where){
+  const say = msgFn || (() => {});
+  const prefix = where ? where + ' ' : '';
+  try {
+    const r = await fetch('api/refresh', {method: 'POST', cache: 'no-store',
+      headers: {'Content-Type': 'application/json', 'X-LLM-Telemetry': '1'}, body: '{}'});
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 403) {
+      say(prefix + 'A rebuild can only be triggered from the machine serving this dashboard \u2014 the timer will pick it up within a minute.', 'info');
+      return {accepted: false, detail: j.error || 'not permitted from this host'};
+    }
+    if (r.status === 413) { say(prefix + 'The refresh request was refused as malformed; the timer will pick it up within a minute.', 'err'); return j; }
+    if (j.accepted) {
+      say(prefix + 'Rebuilding now \u2014 figures refresh in a few seconds.', 'ok');
+      scheduleReloadAfter(j.generated_at);
+    } else if (j.running) {
+      say(prefix + 'A rebuild is already running; the page will pick it up.', 'info');
+      scheduleReloadAfter(j.generated_at);
+    } else if (j.debounced) {
+      say(prefix + `Just rebuilt ${j.retry_in_s}s ago \u2014 reload in a moment.`, 'info');
+      scheduleReloadAfter(j.generated_at);
+    } else {
+      say(prefix + 'The refresh request was not accepted' + (j.error ? ': ' + j.error : '.'), 'err');
+    }
+    return j;
+  } catch (e) {
+    say(prefix + 'Could not trigger a rebuild (' + e.message + '); the timer will pick it up within a minute.', 'info');
+    return {accepted: false, detail: e.message};
+  }
+}
+
+// Poll the build stamp rather than reloading blind: reload when dashboard.html
+// is newer than the build we were looking at, give up after ~20 s with a plain
+// "reload" message instead of spinning forever.
+let _reloadTimer = null;
+function scheduleReloadAfter(beforeStamp){
+  if (_reloadTimer) clearInterval(_reloadTimer);
+  const started = Date.now();
+  const before = Date.parse(beforeStamp || '') || 0;
+  _reloadTimer = setInterval(async () => {
+    if (Date.now() - started > 20000) { clearInterval(_reloadTimer); _reloadTimer = null; return; }
+    try {
+      const r = await fetch('dashboard.html', {method: 'HEAD', cache: 'no-store'});
+      const lm = Date.parse(r.headers.get('last-modified') || '') || 0;
+      if (lm && lm > before) { clearInterval(_reloadTimer); _reloadTimer = null; location.reload(); }
+    } catch (e) { /* keep polling; the timer is the backstop */ }
+  }, 1500);
 }
 
 export const INTERVAL_DEFAULTS = {

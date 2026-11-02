@@ -41,6 +41,15 @@
   --pal-slate:#71868f;
   --pal-amber:#b5905f;
   --pal-mint:#5f9e78;
+
+  
+  --elev-0:none;--elev-1:0 1px 2px rgba(0,0,0,.06),0 1px 1px rgba(0,0,0,.04);
+  --elev-2:0 2px 6px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --elev-3:0 6px 16px rgba(0,0,0,.10),0 2px 4px rgba(0,0,0,.06);
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:32px;--sp-8:40px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;
+  --motion-fast:120ms;--motion-normal:200ms;
+  --state-hover:rgba(0,0,0,.04);--state-pressed:rgba(0,0,0,.08);--state-focus:rgba(31,98,201,.25);
 }
 
 
@@ -89,7 +98,14 @@
   --pal-slate:#8ab8ff;
   --pal-amber:#ff9830;
   --pal-mint:#6eaa8c;
-} 
+
+  
+  --elev-1:0 1px 2px rgba(0,0,0,.30),0 1px 1px rgba(0,0,0,.20);
+  --elev-2:0 2px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
+  --elev-3:0 6px 16px rgba(0,0,0,.40),0 2px 4px rgba(0,0,0,.30);
+  --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(110,159,255,.30);
+}
+ 
 :root{
    --fs:14px; --gap:8px; --pad:16px;
    
@@ -118,7 +134,18 @@
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  
  .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
- .card{background:var(--card);border:1px solid var(--border);border-radius:4px}
+ 
+ .card{background:var(--card);border:1px solid var(--border);border-radius:4px;box-shadow:var(--elev-1)}
+ .card-hover{transition:box-shadow .15s ease,transform .15s ease;will-change:box-shadow}
+ .card-hover:hover{box-shadow:var(--elev-2);transform:translateY(-1px)}
+ .card-hover:focus-within{box-shadow:var(--elev-2);outline:2px solid var(--state-focus);outline-offset:1px}
+ .card-hover:active{box-shadow:var(--elev-1);transform:translateY(0);background:var(--state-pressed)}
+ a.card{color:inherit;text-decoration:none;display:block}
+ a.card:focus-visible{outline:2px solid var(--state-focus);outline-offset:2px}
+ @media(prefers-reduced-motion:reduce){
+   .card-hover{transition:none}
+   .card-hover:hover,.card-hover:active{transform:none}
+ }
  .muted{color:var(--muted)}
 
 
@@ -130,7 +157,27 @@
 .stamp.old{color:var(--z-warn)}
 .stamp.stale{color:var(--z-bad);opacity:.75}
 .stamp.stale::before{content:"⚠ ";font-size:.9em}
+
+.stamp[data-stamp-state="fresh"]{color:var(--z-ok)}
+.stamp-health{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.stamp-health:hover{color:var(--fg)}
+.stamp-health:focus-visible{outline:2px solid var(--state-focus);outline-offset:2px;border-radius:2px}
+
+.stamp[data-stamp-state="fresh"]::after{content:"";display:inline-block;width:5px;height:5px;
+  margin-left:5px;border-radius:50%;background:var(--z-ok);vertical-align:middle;
+  animation:p 2s infinite}
+@media(prefers-reduced-motion:reduce){.stamp[data-stamp-state="fresh"]::after{animation:none}}
  .tabon{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+ 
+ .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)}
+ .seg-btn{appearance:none;background:transparent;border:0;border-right:1px solid var(--border);
+   color:var(--muted);font:inherit;font-size:var(--fs-xs);font-weight:600;
+   padding:.34rem .7rem;min-height:30px;cursor:pointer;transition:background .12s,color .12s}
+ .seg-btn:last-child{border-right:0}
+ .seg-btn:hover{color:var(--fg);background:var(--accent-wash)}
+ .seg-btn.on{background:var(--accent);color:var(--accent-ink)}
+ .seg-btn:focus-visible{outline:2px solid var(--state-focus);outline-offset:-2px}
+ @media(pointer:coarse){.seg-btn{min-height:44px;padding:.5rem .9rem}}
  .taboff{background:transparent;border:1px solid var(--border);color:var(--muted)}
  .taboff:hover{color:var(--fg);border-color:var(--accent)}
 
@@ -149,11 +196,11 @@
 .kseg[data-empty="1"]{opacity:.45}
 .fb-strip{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;
   padding:0 12px 0 4px;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%);
-          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 28px),transparent 100%)}
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,black 16px,black calc(100% - 28px),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,black 16px,black calc(100% - 28px),transparent 100%)}
 .fb-strip::-webkit-scrollbar{display:none}
-.fb-strip[data-at-start="1"]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%);
-  mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent 100%)}
+.fb-strip[data-at-start="1"]{-webkit-mask-image:linear-gradient(90deg,black calc(100% - 28px),transparent 100%);
+  mask-image:linear-gradient(90deg,black calc(100% - 28px),transparent 100%)}
 .pchip{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border:0;
   border-radius:var(--fb-r);background:transparent;color:var(--fg);font:inherit;font-size:var(--fs-sm);
   cursor:pointer;white-space:nowrap;scroll-snap-align:start;position:relative}
@@ -776,7 +823,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-sleepers{to{background-position:14px 0}}
 
 .qt-car{flex:none;position:relative;display:flex;align-items:center;height:26px;padding:0 7px;
-  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:#fff;cursor:default;
+  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:white;cursor:default;
   box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);outline-offset:2px;
   --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--card))}
 .qt-car:focus-visible{outline:2px solid var(--accent)}
@@ -809,7 +856,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-loco::before{inset:5px 6px auto auto;width:9px;height:9px;border-radius:2px;
   background:rgba(255,255,255,.85);animation:qt-lamp 2.8s ease-in-out infinite}
 @keyframes qt-glint{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes qt-lamp{50%{opacity:.7;box-shadow:0 0 4px #fff}}
+@keyframes qt-lamp{50%{opacity:.7;box-shadow:0 0 4px white}}
 
 .qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:12px 5px;max-height:84px;overflow:hidden;
   padding-bottom:2px;margin-bottom:14px;
@@ -833,7 +880,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
 
 .qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:5px;transform-origin:0 0;
-  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:#fff;
+  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:white;
   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 .qt-ghost.qt-fly-yard{background:hsl(var(--h,215) 45% 45%)}
 .qt-ghost.qt-fly-line{background:var(--z-warn)}
@@ -987,6 +1034,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
 .xcard{display:flex;align-items:center;gap:10px;padding:9px 12px;
    min-height:44px}
+
+.xcard:hover{box-shadow:var(--elev-2);transform:translateY(-1px);border-color:var(--accent)}
+.xcard:active{transform:translateY(0);background:var(--state-pressed)}
+.xcard:focus-visible{outline:2px solid var(--state-focus);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.xcard:hover,.xcard:active{transform:none}}
 .xcard .kpi-badge{width:28px;height:28px;border-radius:4px;flex:none}
 .xcard .kpi-badge svg{width:15px;height:15px}
 .xp-body{flex:1 1 auto;min-width:0}
@@ -1610,6 +1662,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-src{font-size:var(--fs-2xs);text-transform:none;letter-spacing:0;
   color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
 .pv-src-local{color:var(--accent)}
+
+.pv-src-override{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 45%,transparent);
+  background:color-mix(in srgb,var(--z-warn) 10%,transparent);margin-right:.25rem}
+
+.pv-freshpill{text-transform:none;letter-spacing:0;font-size:var(--fs-2xs);margin-left:.4rem;
+  padding:.05rem .4rem;border:1px solid var(--border);border-radius:99px;color:var(--muted);white-space:nowrap}
+.pv-freshpill[data-fresh-state="fresh"]{color:var(--z-ok);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}
+.pv-freshpill[data-fresh-state="old"]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
+.pv-freshpill[data-fresh-state="stale"]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 50%,transparent);
+  background:color-mix(in srgb,var(--z-bad) 9%,transparent)}
 .kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:11px;font-weight:600;vertical-align:middle;max-width:100%}
 .kpi-kind{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--foreground,var(--fg));min-width:0}
 .kpi-dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
@@ -1729,6 +1791,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvrow .lvc-sess>.lvtitle{max-width:calc(100% - 64px)}
 
 </style></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
 <div id="navscrim"></div>
@@ -1736,8 +1799,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="navbrand"><span style="color:var(--accent)">◈</span><span class="brandword"> LLM Telemetry</span><button id="navcollapse" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Expand navigation">&#187;</button></div>
  <div id="navlist"></div>
  <div class="navsep"></div>
- <a class="navitem" href="#/Prices" data-tip="Prices"><span class="nvico" aria-hidden="true">$</span><span class="nvlabel">Prices</span></a>
- <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><span class="nvico" aria-hidden="true">▤</span><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+ <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <div class="page flex flex-col gap-4">
  <div class="flex items-end justify-between flex-wrap gap-3 pagehead">
@@ -4712,6 +4774,10 @@ const PROV_META = {
 let priceState = {q: '', tab: 'all'};
 let priceTouched = false; // search keeps its text when re-rendering
 
+// LST-193: the Prices header is a freshness pill with the ticket's own cuts —
+// amber past 24 h, red past 72 h — not the generic cadence multiples. A price
+// sheet that is four days old silently produces wrong cost figures, so it has
+// to say so in colour before anyone reads a number off it.
 function renderPrices(){
   const el = $('view-prices-container');
   const data = window.COSTS_DATA;
@@ -4734,15 +4800,23 @@ function pricesShell(data){
   const used = data.models.filter(m => (m.calls||0) > 0).length;
   const src = PRICE_SRC[data.catalog_source] ? data.catalog_source : 'openrouter';
   const fresh = data.freshness || {};
-  const freshLabel = fresh.age_hours != null ? `${Math.round(fresh.age_hours)}h old` : (data.catalog_source || '');
+  const pf = priceFreshness(fresh);
+  // LST-193: one pill carrying both halves of the question — how old the sheet
+  // is and where the rates came from — so a reader never has to scroll to find
+  // out whether the number they are about to trust is current.
+  const srcLabel = (PRICE_SRC[src] || {label: data.catalog_source || 'catalogue'}).label;
+  const pillCls = pf.state === 'stale' ? 'stamp stale' : pf.state === 'old' ? 'stamp old' : 'stamp';
   return `
   <div class="pt-4 pb-2 flex items-end justify-between flex-wrap gap-3" data-cat-state="${esc(src)}">
     <div>
-      <div class="muted uppercase tracking-wide" style="font-size:var(--fs-xs)">Price sheet</div>
-      <div class="muted pv-shell-sub" style="font-size:var(--fs-xs)">${data.catalog_size.toLocaleString()} models in catalogue \u00b7 ${used} with observed traffic \u00b7 generated ${esc((data.generated||'').replace('T',' '))} \u00b7 ${esc(freshLabel)}</div>
+      <div class="muted uppercase tracking-wide" style="font-size:var(--fs-xs)">Price sheet
+        <span class="pv-freshpill ${pillCls}" data-fresh-state="${pf.state}"
+              title="${escA(pf.hint)}">\u00b7 updated ${esc(pf.label)} \u00b7 ${esc(srcLabel)}</span>
+      </div>
+      <div class="muted pv-shell-sub" style="font-size:var(--fs-xs)">${data.catalog_size.toLocaleString()} models in catalogue \u00b7 ${used} with observed traffic \u00b7 generated ${esc((data.generated||'').replace('T',' '))}</div>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <input id="priceSearch" class="chip" placeholder="Search models\u2026" value="${esc(priceState.q)}" style="min-width:220px;font-size:var(--fs-xs)">
+      <input id="priceSearch" class="chip" placeholder="Search model, provider or source\u2026" value="${esc(priceState.q)}" style="min-width:220px;font-size:var(--fs-xs)">
       <div id="priceTabs" class="flex gap-1">
         ${[['all','All'],['used','Used'],['local','Local'],['vendor','Vendor'],['openrouter','OpenRouter'],['unpriced','Unpriced']]
           .map(([k,l]) => `<button type="button" class="chip pt-tab${priceState.tab===k?' on':''}" data-tab="${k}" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">${l}</button>`).join('')}
@@ -4777,7 +4851,15 @@ function renderPriceTable(data){
   if (!wrap) return;
   const q = priceState.q.trim().toLowerCase();
   let rows = priceTabsRow(data.models);
-  if (q) rows = rows.filter(m => (m.model||'').toLowerCase().includes(q));
+  // LST-193: search reaches the provider and the rate source too, not just the
+  // model name — "fireworks" or "local" are the questions people actually ask
+  // of a price sheet, and a name-only filter made that a manual scroll.
+  if (q) rows = rows.filter(m => {
+    const provs = (m.providers || []).join(' ') + ' ' + (m.served_by || '') + ' ' + (m.inferred_by || '');
+    const srcLabel = (PRICE_SRC[m.source] || {label: m.source || ''}).label;
+    return (m.model||'').toLowerCase().includes(q)
+        || provs.toLowerCase().includes(q) || srcLabel.toLowerCase().includes(q);
+  });
   rows = rows.slice().sort((a,b) => (b.calls||0)-(a.calls||0) || (b.cost||0)-(a.cost||0));
   wrap.innerHTML = `
   <table class="pv-tbl"><thead><tr>
@@ -4929,22 +5011,58 @@ function renderRankings(){
   const host = document.getElementById('view-rankings-container');
   if (!host) return;
   const d = RANKINGS_DATA || {};
+  // LST-196: an unavailable board must say which timer to inspect and why it
+  // failed — otherwise the only recovery is guessing at units. The hint names
+  // the real unit, and last_error carries the collector's own reason.
+  const timerHint = 'systemctl --user status llm-telemetry-rankings.timer';
   if (!d || d.status !== 'ok' || !d.views) {
-    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.')}` +
-      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') + `</div>`;
+    const le = d && d.last_error;
+    const why = le ? `${esc(le.reason || 'collector failed')}${le.at ? ` (at ${esc(le.at)})` : ''}`
+                   : esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.');
+    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${why}` +
+      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') +
+      `<div class="muted mt-2" style="font-size:var(--fs-xs)">Check the collector: <code>${esc(timerHint)}</code></div></div>`;
     return;
   }
   const wins = ['day', 'week', 'month'].filter(k => d.views[k]);
+  // LST-196: the window lives in the URL (#/rankings?span=week) so a link
+  // restores it. Seed from the hash first, then validate against what the
+  // payload actually carries.
+  const rkParams = hydrateViewParams('Rankings', ['span']);
+  const fromUrl = rkParams.get('span');
+  if (fromUrl && wins.includes(fromUrl)) RANKINGS_STATE.window = fromUrl;
   if (!wins.includes(RANKINGS_STATE.window)) RANKINGS_STATE.window = wins[0];
+  setViewParam('Rankings', 'span', RANKINGS_STATE.window);
   const cur = d.views[RANKINGS_STATE.window] || { top: [], other: {}, total: 0, start: '', end: '', days: 0 };
   const lbl = { day: 'Day', week: 'Week', month: 'Month' };
+  // A proper segmented control: one role=group, buttons with aria-pressed, a
+  // visible active state, and arrow-key movement — the old .tab buttons were
+  // three unrelated buttons that looked like tabs.
   const wv = wins.map(k =>
-    `<button type="button" class="tab${k === RANKINGS_STATE.window ? ' tabon' : ''}" data-rk-window="${k}" aria-pressed="${k === RANKINGS_STATE.window}">${lbl[k] || k}</button>`).join('');
+    `<button type="button" class="seg-btn${k === RANKINGS_STATE.window ? ' on' : ''}" role="radio"
+      aria-checked="${k === RANKINGS_STATE.window}" tabindex="${k === RANKINGS_STATE.window ? '0' : '-1'}"
+      data-rk-window="${k}">${lbl[k] || k}</button>`).join('');
+  // LST-196: the freshness pill carries both halves a reader needs — the
+  // window the board covers and how long ago it was fetched. Amber past 48 h,
+  // the ticket's cut, because a two-day-old leaderboard answers yesterday's
+  // question.
+  const rAge = (() => {
+    const ts = d.fetched_at ? Date.parse(d.fetched_at) : null;
+    return ts && isFinite(ts) ? Math.max(0, Math.round((Date.now() - ts) / 1000)) : null;
+  })();
+  const rState = rAge == null ? 'unknown' : rAge < 48 * 3600 ? 'fresh' : 'old';
+  const rPill = `<span class="pv-freshpill" data-fresh-state="${rState}"
+      title="usable window ${esc(cur.start)} → ${esc(cur.end)} · fetched ${rAge == null ? 'unknown' : ago(rAge) + ' ago'} · amber past 48h · fed by llm-telemetry-rankings.timer"
+      >· ${esc(cur.start)} → ${esc(cur.end)} · fetched ${rAge == null ? 'unknown' : esc(ago(rAge)) + ' ago'}</span>`;
+  // LST-196: the trend needs to say what it is. "7d trend" was a lie on a
+  // Day board — the number is share-of-tokens percentage points, second half
+  // of the selected window vs its first half, so the tooltip states the actual
+  // comparison and the header carries the same definition once.
   const tr = (t) => {
     if (t == null || t === 0) return '<span class="muted" title="no earlier usage to compare against">\u2014</span>';
     const up = t > 0;
     const tone = up ? 'color:var(--z-ok)' : 'color:var(--z-bad)';
-    return `<span style="${tone}" title="share of tokens vs the same window before: ${t > 0 ? '+' : ''}${t.toFixed(1)} pp">${up ? '\u2191' : '\u2193'} ${Math.abs(t).toFixed(1)}</span>`;
+    return `<span style="${tone}" title="share of tokens in the second half of this window vs its first half: ${t > 0 ? '+' : ''}${t.toFixed(1)} percentage points">${up ? '\u2191' : '\u2193'} ${Math.abs(t).toFixed(1)}</span>`;
   };
   const ntop = cur.top.length;
   let body = cur.top.map(r =>
@@ -4965,19 +5083,39 @@ function renderRankings(){
   <div class="card p-4">
     <div class="flex items-end justify-between flex-wrap gap-3 mb-2.5">
       <div>
-        <div class="lbl">OpenRouter rankings \u00b7 ${esc(lbl[RANKINGS_STATE.window] || RANKINGS_STATE.window)} (${cur.days}d)</div>
-        <div class="muted" style="font-size:var(--fs-xs)">${esc(cur.start)} \u2192 ${esc(cur.end)} \u00b7 ${fmt(cur.total)} tokens total \u00b7 ${esc(d.source || '')}</div>
+        <div class="lbl">OpenRouter rankings · ${esc(lbl[RANKINGS_STATE.window] || RANKINGS_STATE.window)} (${cur.days}d)${rPill}</div>
+        <div class="muted" style="font-size:var(--fs-xs)">${esc(cur.start)} → ${esc(cur.end)} · ${fmt(cur.total)} tokens total · ${esc(d.source || '')}</div>
       </div>
-      <div class="tabs" role="group" aria-label="Ranking window">${wv}</div>
+      <div class="seg" role="radiogroup" aria-label="Ranking window">${wv}</div>
     </div>
     <table class="w-full" style="border-collapse:collapse">
-      <thead><tr><th class="lbl" style="text-align:left">#</th><th class="lbl" style="text-align:left">Model</th><th class="lbl" style="text-align:right">Tokens</th><th class="lbl" style="text-align:left">Share</th><th class="lbl" style="text-align:right">7d trend</th></tr></thead>
+      <thead><tr><th class="lbl" style="text-align:left">#</th><th class="lbl" style="text-align:left">Model</th><th class="lbl" style="text-align:right">Tokens</th><th class="lbl" style="text-align:left">Share</th><th class="lbl" style="text-align:right"><span
+        title="Each row compares the second half of the selected window against its first half, in share-of-tokens percentage points — that is what collect_rankings.py computes, so it is not always a 7-day trend."
+        style="cursor:help;border-bottom:1px dotted currentColor">Trend \u24d8</span></th></tr></thead>
       <tbody>${body}</tbody>
     </table>
     <div class="muted" style="font-size:var(--fs-xs);margin-top:8px">${esc((d.attribution || {}).url || '')}</div>
   </div>`;
   host.querySelectorAll('[data-rk-window]').forEach(b =>
-    b.addEventListener('click', () => { RANKINGS_STATE.window = b.dataset.rkWindow; renderRankings(); }));
+    b.addEventListener('click', () => {
+      RANKINGS_STATE.window = b.dataset.rkWindow;
+      setViewParam('Rankings', 'span', RANKINGS_STATE.window);
+      setHash('Rankings');
+      renderRankings();
+    }));
+  // Arrow keys move between segments, as a real radio group does — the
+  // segmented control is one tab stop, not three.
+  const seg = host.querySelector('.seg');
+  if (seg) seg.addEventListener('keydown', (ev) => {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
+    if (!keys.includes(ev.key)) return;
+    ev.preventDefault();
+    const btns = [...seg.querySelectorAll('[data-rk-window]')];
+    const i = btns.findIndex(b => b.dataset.rkWindow === RANKINGS_STATE.window);
+    const dir = (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') ? 1 : -1;
+    const next = btns[(i + dir + btns.length) % btns.length];
+    if (next) next.click();
+  });
 }
 function priceRow(m){
   const rate = r => r == null ? '<span class="muted">\u2014</span>' : ('$' + (r < 0.01 ? r.toFixed(4) : r < 1 ? r.toFixed(3) : r.toLocaleString(undefined,{maximumFractionDigits:2})));
@@ -4997,12 +5135,28 @@ function priceRow(m){
           + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
+  // LST-193: the chip now carries the provenance the reviewer asked for — a
+  // manual override is visibly tagged (its number is a human decision, not a
+  // fetched price), and every row's tooltip states the rate's origin and the
+  // age of the sheet it came from, so no figure is trusted blind.
+  const originTip = {
+    catalog: 'live OpenRouter catalogue rate',
+    override: 'manual override from pricing.RATE_OVERRIDES — beats the live catalogue on purpose',
+    builtin: 'built-in vendor rate table (the catalogue does not list this model)',
+    local: 'local model — electricity cost, never a vendor rate',
+    'free-tier': 'free tier — $0 by contract',
+  }[m.rate_origin] || 'no rate on record';
+  const sheetAge = (window.COSTS_DATA && window.COSTS_DATA.freshness || {}).age_s;
+  const ageTip = sheetAge == null ? '' : ` · sheet fetched ${ago(Math.round(sheetAge))} ago`;
+  const overrideTag = m.rate_origin === 'override'
+    ? '<span class="pv-src pv-src-override" title="Manual override, not a fetched rate">override</span> '
+    : '';
   return `<tr class="${used ? '' : 'pv-unused'}" data-model="${esc(m.model)}"
     data-used="${used ? '1' : '0'}" data-source="${esc(m.source)}"
     ${m.oid ? `data-oid="${esc(m.oid)}"` : ''}>
     <td>${esc(m.model)}</td>
     <td class="num">${rate(m.in_1m)}</td><td class="num">${rate(m.out_1m)}</td><td class="num">${rate(m.cache_1m)}</td>
-    <td><span class="pv-src ${srcMeta.cls}">${esc(srcMeta.label)}</span></td>
+    <td>${overrideTag}<span class="pv-src ${srcMeta.cls}" title="${escA(originTip)}${escA(ageTip)}">${esc(srcMeta.label)}</span></td>
     <td class="num">${used ? (m.calls||0).toLocaleString() : '<span class="muted">\u2014</span>'}</td>
     <td class="num">${used ? fmtN(m.outp) : '<span class="muted">\u2014</span>'}</td>
     <td class="num">${used ? fmtMoney(m.cost) : '<span class="muted">\u2014</span>'}</td>
@@ -5076,21 +5230,16 @@ const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.round(s/360
 // `llm-telemetry doctor` command reads the same numbers from the unit files.
 const CADENCE = {
   dashboard: 60, live: 5, logs: 60, costs: 60, transcripts: 60,
-  probe: 5, router: 3600, quota: 3600, rankings: 3600,
+  probe: 5, router: 3600, quota: 3600, rankings: 6 * 3600,
 };
 // Past 1x the cadence a section is late; past 2x it is stale and gets greyed
 // with a hint rather than quietly showing yesterday's numbers.
 const STALE_FACTOR = 2;
-
-// ---- one focus trap for every overlay (P14, #146) ----------------------
-// Six overlays shipped four different amounts of keyboard support: two trapped
-// Tab with a copy of the same code, four did not, and one had no wiring at all.
-// A dialog that lets Tab wander into the page behind it "loses" the user.
-//
-// The selector deliberately has NO visibility filter. `offsetParent` is null
-// for every node under jsdom and inside a transformed ancestor, which emptied
-// the list and silently disabled the trap — the nav rail hit exactly that
-// (router.js) and the two copies had already drifted apart. One list, one rule.
+// LST-185: the Home live board ages against ABSOLUTE cuts the ticket pins —
+// green under 30 s, amber 30-90 s, red past 90 s — not against the 5 s poll
+// cadence. A 5 s poll is the transport, not the promise to the user: two
+// missed polls (10 s) is still a healthy feed, so cadence multiples screamed
+// "stale" at a board that was fine. `cuts` wins over cadence when present.
 function freshness(ts, key, now){
   let t = ts;
   if (t == null || t === '') t = null;
@@ -5098,18 +5247,27 @@ function freshness(ts, key, now){
   if (typeof t === 'number') t = t > 1e12 ? Math.floor(t / 1000) : t;
   else if (typeof t === 'string'){ const ms = Date.parse(t); t = isNaN(ms) ? null : Math.floor(ms / 1000); }
   const cadence = CADENCE[key];
+  const cuts = AGE_CUTS[key];
   const at = now == null ? Math.floor(Date.now() / 1000) : now;
-  if (t == null || !cadence) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
+  if (t == null || (!cadence && !cuts)) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
   const age = Math.max(0, Math.round(at - t));
-  const state = age < cadence ? 'fresh' : age < cadence * STALE_FACTOR ? 'old' : 'stale';
-  return {state, key, cadence, age, label: ago(age) + ' old',
-          hint: `last update ${ago(age)} ago · expected every ${ago(cadence)}`};
+  // LST-185: absolute cuts (30 s / 90 s) beat the cadence multiples when a
+  // ticket pins a user-facing promise; otherwise age against the poll cadence.
+  const warnAt = cuts ? cuts.warn : cadence;
+  const badAt = cuts ? cuts.bad : cadence * STALE_FACTOR;
+  const state = age < warnAt ? 'fresh' : age < badAt ? 'old' : 'stale';
+  const feeder = FEEDER[key];
+  const hint = feeder
+    ? `last update ${ago(age)} ago · fed by ${feeder}`
+    : `last update ${ago(age)} ago · expected every ${ago(cadence || warnAt)}`;
+  return {state, key, cadence: cadence || null, age, feeder: feeder || null,
+          label: ago(age) + ' old', hint};
 }
 
 // Writes the state onto the element: a class the CSS can grey, and (for a late
 // or stale section) a suffix on the existing text. The original text is kept in
 // one place, so a section that recovers does not accumulate suffixes.
-function stampFreshness(el, ts, key, now){
+function stampFreshness(el, ts, key, now, opts){
   if (!el) return null;
   const r = freshness(ts, key, now);
   if (el.dataset.stampBase === undefined) el.dataset.stampBase = el.dataset.stampBase || el.textContent || '';
@@ -5123,6 +5281,18 @@ function stampFreshness(el, ts, key, now){
   else {
     const sep = el.dataset.stampBase ? ' · ' : '';
     el.textContent = `${el.dataset.stampBase}${sep}${r.state === 'stale' ? 'stale, ' : ''}${r.label}`;
+  }
+  // A red stamp is a dead end unless it says where to look: the ticket asks for
+  // the stale state to route to Health, where the failing collector and timer
+  // live. Building it as a real anchor keeps it keyboard-reachable, and the
+  // text reset above removes it as soon as the feed recovers.
+  if (r.state === 'stale' && opts && opts.health && el.ownerDocument) {
+    const a = el.ownerDocument.createElement('a');
+    a.href = '#/health';
+    a.className = 'stamp-health';
+    a.textContent = ' check Health';
+    a.title = r.hint || r.label;
+    el.appendChild(a);
   }
   if ('title' in el) el.title = r.state === 'fresh' ? '' : (r.hint || r.label);
   return r;
@@ -9378,12 +9548,44 @@ document.addEventListener('click', e => {
   if (e.target && e.target.id === 'csvexport') exportTableCsv();
 });
 
+function priceFreshness(fresh){
+  const f = fresh || {};
+  const ageS = f.age_s == null ? null : Math.max(0, Math.round(f.age_s));
+  if (ageS == null) {
+    return {state: 'unknown', age_s: null, label: f.state ? String(f.state) : 'age unknown', hint: ''};
+  }
+  const state = ageS < PRICE_CUTS.warn ? 'fresh' : ageS < PRICE_CUTS.bad ? 'old' : 'stale';
+  return {state, age_s: ageS, label: `${ago(ageS)} old`,
+          hint: `catalogue fetched ${ago(ageS)} ago · amber past 24h, red past 72h · fed by llm-telemetry-build.timer`};
+}
+
 function slugOf(v){ return String(v).toLowerCase(); }
 
 // P4-09 (#46): the project filter lives in the SAME hash as the view
 // (#/usage?project=Nowinv), not a second piece of state, so a filtered
 // view is one shareable/reloadable URL rather than "the right tab plus a
 // setting you have to also remember to set".
+const AGE_CUTS = { liveboard: {warn: 30, bad: 90} };
+// Which systemd timer feeds each section, so a red stamp can name the unit to
+// inspect instead of leaving the user to guess.
+const FEEDER = {
+  liveboard: 'llm-telemetry-probe.timer',
+  dashboard: 'llm-telemetry-build.timer',
+  costs: 'llm-telemetry-build.timer',
+  rankings: 'llm-telemetry-rankings.timer',
+  router: 'llm-telemetry-router.timer',
+  quota: 'llm-telemetry-quota.timer',
+};
+
+// ---- one focus trap for every overlay (P14, #146) ----------------------
+// Six overlays shipped four different amounts of keyboard support: two trapped
+// Tab with a copy of the same code, four did not, and one had no wiring at all.
+// A dialog that lets Tab wander into the page behind it "loses" the user.
+//
+// The selector deliberately has NO visibility filter. `offsetParent` is null
+// for every node under jsdom and inside a transformed ancestor, which emptied
+// the list and silently disabled the trap — the nav rail hit exactly that
+// (router.js) and the two copies had already drifted apart. One list, one rule.
 let PROJECT_FILTER = '';
 // Provider and model cross-filters, alongside project (#130). Same discipline:
 // ONE piece of state each, applied as a row-filter step that COMPOSES with the
@@ -9397,6 +9599,7 @@ let MODEL_FILTER = '';
 // Written by pickView. No timing flag: compare the hash to the view that is
 // already showing. A timer-based guard raced with jsdom's async hashchange and
 // let a redundant re-render wipe the live list mid-update.
+const VIEW_PARAMS = new Map();
 function setHash(v){
   // No view to name: leave the current hash alone rather than write #/null or #/.
   if (v == null || String(v).trim() === '') return;
@@ -9404,12 +9607,21 @@ function setHash(v){
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
+  // LST-196: view-owned params (?span=week) ride along with the cross-filters,
+  // so a Rankings link restores the window the user was looking at.
+  const own = VIEW_PARAMS.get(slugOf(v));
+  if (own) for (const [k, val] of own) p.push(encodeURIComponent(k) + '=' + encodeURIComponent(val));
   const want = '#/' + encodeURIComponent(slugOf(v)) + (p.length ? '?' + p.join('&') : '');
   if (location.hash !== want) location.hash = want;
 }
 
-// #173: retired slugs that must keep resolving. 'live' was its own view until
-// Home became the live board; bookmarks, tests and the README all say #/live.
+// LST-196: a view can need its own query param that survives a slug change
+// (Rankings' ?span=week is the first). Written through here so setHash never
+// has to know about individual views, and so the param round-trips on reload
+// and on a pasted link — which is the whole point of putting it in the URL.
+// LST-196: exported because the page builder inlines ONLY the declarations named
+// in order.json — a module-private const here is silently dropped from the built
+// page and the first setHash() throws ReferenceError.
 const VIEW_ALIASES = { live: 'Home' };
 
 // Resolve a hash to a real view name, case-insensitively, falling back to the
@@ -9444,22 +9656,9 @@ function filterFromHash(key){
   } catch (e) { return ''; }
 }
 
-window.addEventListener('hashchange', () => {
-  const v = viewFromHash();
-  setFiltersFromHash();
-  syncProjFilterUI();
-  // Back/forward land here, and so does pickView's own hash write. Comparing
-  // against the visible view makes the self-write a no-op, so a view change
-  // renders exactly once.
-  if (v && v !== view) pickView(v);
-  else render();
-});
-
-// ---- Settings (P7-03, #67) -------------------------------------------------
-// POWER is embedded at build time from energy.py (tariff as configured when
-// the page was built, plus the read-only measured facts). The live values
-// come from GET /api/settings when the serve process is present, so the page
-// shows what is in effect *now*, not what it was built with.
+// LST-196: read a view's own param (span=week) back out of the hash and seed
+// the in-memory map, so the FIRST render after a reload or a pasted link shows
+// the window the URL names instead of the default.
 function setCrossFilter(key, value){
   if (key === 'project') PROJECT_FILTER = value || '';
   else if (key === 'provider') PROVIDER_FILTER = value || '';
@@ -9730,13 +9929,25 @@ async function saveSettings(){
     if (!r.ok) return setMsg(j.error || ('Save failed (' + r.status + ')'), 'err');
     setState.values = j.values; setState.file = j.config_file || setState.file;
     setWrite(setState.values);
-    setMsg('Saved to ' + setState.file + '. Costs update on the next refresh (about a minute).', 'ok');
+    const where = 'Saved to ' + setState.file + '.';
+    setMsg(where + ' Rebuilding now\u2026', 'ok');
     renderSetDeriv();
+    // LST-200: a saved setting is inert until the next build. Ask for one
+    // immediately so the person who just changed a number sees it take effect,
+    // and say plainly whether the build started or was already covered. `where`
+    // is passed through so EVERY outcome still says where it was saved — the
+    // original single message did, and losing that on the refresh path would
+    // make a successful save look ambiguous.
+    triggerRefresh(setMsg, where);
   } catch (e) {
     setMsg('Save failed: ' + e.message, 'err');
   }
 }
 
+// LST-200: POST /api/refresh. The server answers 202 for "accepted" AND for
+// "already running" or "debounced", so the message has to come from the body,
+// not the status code. A LAN viewer is told the truth (403) rather than being
+// shown a button that silently does nothing.
 const INTERVAL_DEFAULTS = {
   live_poll_interval_s: (POWER.interval_defaults && POWER.interval_defaults.live_poll_interval_s) || 5,
   analytics_rebuild_interval_s: (POWER.interval_defaults && POWER.interval_defaults.analytics_rebuild_interval_s) || 60,
@@ -9835,8 +10046,8 @@ function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 const NAV_ICONS = {
-  Home:'\u2302', Live:'\u25C9', Flow:'\u21C4', Router:'\u2442', Quota:'\u25F0', Usage:'\u2211', Sessions:'\u25A6',
-  Cost:'$', Prices:'\u00A4', Rankings:'\u2211', Health:'\u2713', Detail:'\u2261', Logs:'\u2630', Settings:'\u2699'
+  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
 // Grouped sections (#122). The rail is grouped by what a view is FOR, so the
@@ -9878,7 +10089,7 @@ function renderNav(){
   const groups = navGroups();
   const item = v => `
     <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}">
-      <span class="nvico" aria-hidden="true">${NAV_ICONS[v] || '\u2022'}</span>
+      <svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-${NAV_ICONS[v] || 'Home'}"/></svg>
       <span class="nvlabel">${v}</span>
       <span class="nvbadge" data-navbadge="${v}" hidden></span>
     </a>`;
@@ -10763,6 +10974,75 @@ if ($('projtrendstack')) $('projtrendstack').onchange = function(){
   render();
 };
 
+function setViewParam(view, key, value){
+  let p = VIEW_PARAMS.get(slugOf(view));
+  if (!p) { p = new Map(); VIEW_PARAMS.set(slugOf(view), p); }
+  if (value == null || value === '') p.delete(key); else p.set(key, String(value));
+} 
+
+// #173: retired slugs that must keep resolving. 'live' was its own view until
+// Home became the live board; bookmarks, tests and the README all say #/live.
+function hydrateViewParams(view, keys){
+  const slug = slugOf(view);
+  let p = VIEW_PARAMS.get(slug);
+  if (!p) { p = new Map(); VIEW_PARAMS.set(slug, p); }
+  (keys || []).forEach(k => {
+    const v = filterFromHash(k);
+    if (v) p.set(k, v);
+  });
+  return p;
+}
+
+window.addEventListener('hashchange', () => {
+  const v = viewFromHash();
+  setFiltersFromHash();
+  syncProjFilterUI();
+  // Back/forward land here, and so does pickView's own hash write. Comparing
+  // against the visible view makes the self-write a no-op, so a view change
+  // renders exactly once.
+  if (v && v !== view) pickView(v);
+  else render();
+});
+
+// ---- Settings (P7-03, #67) -------------------------------------------------
+// POWER is embedded at build time from energy.py (tariff as configured when
+// the page was built, plus the read-only measured facts). The live values
+// come from GET /api/settings when the serve process is present, so the page
+// shows what is in effect *now*, not what it was built with.
+async function triggerRefresh(msgFn, where){
+  const say = msgFn || (() => {});
+  const prefix = where ? where + ' ' : '';
+  try {
+    const r = await fetch('api/refresh', {method: 'POST', cache: 'no-store',
+      headers: {'Content-Type': 'application/json', 'X-LLM-Telemetry': '1'}, body: '{}'});
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 403) {
+      say(prefix + 'A rebuild can only be triggered from the machine serving this dashboard \u2014 the timer will pick it up within a minute.', 'info');
+      return {accepted: false, detail: j.error || 'not permitted from this host'};
+    }
+    if (r.status === 413) { say(prefix + 'The refresh request was refused as malformed; the timer will pick it up within a minute.', 'err'); return j; }
+    if (j.accepted) {
+      say(prefix + 'Rebuilding now \u2014 figures refresh in a few seconds.', 'ok');
+      scheduleReloadAfter(j.generated_at);
+    } else if (j.running) {
+      say(prefix + 'A rebuild is already running; the page will pick it up.', 'info');
+      scheduleReloadAfter(j.generated_at);
+    } else if (j.debounced) {
+      say(prefix + `Just rebuilt ${j.retry_in_s}s ago \u2014 reload in a moment.`, 'info');
+      scheduleReloadAfter(j.generated_at);
+    } else {
+      say(prefix + 'The refresh request was not accepted' + (j.error ? ': ' + j.error : '.'), 'err');
+    }
+    return j;
+  } catch (e) {
+    say(prefix + 'Could not trigger a rebuild (' + e.message + '); the timer will pick it up within a minute.', 'info');
+    return {accepted: false, detail: e.message};
+  }
+}
+
+// Poll the build stamp rather than reloading blind: reload when dashboard.html
+// is newer than the build we were looking at, give up after ~20 s with a plain
+// "reload" message instead of spinning forever.
 const saved = localStorage.getItem('hermes-dash-theme');
 // Dark is the default (Grafana look); only an explicit saved 'light' opts out.
 // :root IS light, so dark mounts via the [data-theme="dark"] attribute (the
@@ -11733,8 +12013,11 @@ function tickLiveStamp(now){
   const at = now == null ? Math.floor(Date.now() / 1000) : now;
   const age = Math.max(0, at - liveUpdatedAt);
   t.dataset.stampBase = age < 1 ? 'live · updated just now' : `live · updated ${ago(age)} ago`;
-  // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
-  return stampFreshness(t, liveUpdatedAt, 'live', at);
+  // #149/#185: the live panel ages against the ticket's absolute cuts (green
+  // under 30 s, amber 30-90 s, red past 90 s) instead of the 5 s poll cadence,
+  // so two missed polls no longer paint a healthy feed red. A red stamp also
+  // routes to Health via the feeder timer named in its tooltip.
+  return stampFreshness(t, liveUpdatedAt, 'liveboard', at, {health: true});
 }
 // One-second tick so the age is honest even when polling is stalled (a stalled
 // poll never calls tickLiveStamp, so the stamp would otherwise lie at "4s ago").

@@ -1,10 +1,16 @@
 [Unit]
-Description=Refresh OpenRouter rankings hourly
+Description=Refresh OpenRouter rankings every 6h (jittered)
 
 [Timer]
+# LST-209: rankings are a trend board, not a live feed — refreshing hourly spent
+# 24 API calls a day to move numbers nobody re-reads. 6h is the ticket's cut.
+# RandomizedDelaySec spreads the call away from the top of the hour, and
+# Persistent catches up a run missed while the host was off.
 OnBootSec=2min
-OnUnitActiveSec=1h
+OnUnitActiveSec=6h
+RandomizedDelaySec=900
 AccuracySec=1min
+Persistent=true
 
 [Install]
 WantedBy=timers.target

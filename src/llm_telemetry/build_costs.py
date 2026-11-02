@@ -50,6 +50,23 @@ def rate_source(model, catalog):
     return "openrouter" if origin == "catalog" else "vendor"
 
 
+def rate_origin_tag(model, catalog):
+    """LST-193: the finer provenance the Prices row tooltip needs.
+
+    rate_source() collapses every non-catalogue rate into "vendor", which hides
+    the distinction that matters to a cost reviewer: a manual override beats the
+    live catalogue on purpose (see pricing.RATE_OVERRIDES), so its number is a
+    human decision and not a fetched price. Returns "catalog" / "override" /
+    "builtin" / "local" / "free-tier" / "" — "" when nothing is priced at all.
+    """
+    if P.is_local(model):
+        return "local"
+    if P.is_free_tier(model):
+        return "free-tier"
+    origin, rt = P.rate_origin(model, catalog)
+    return (origin or "") if rt else ""
+
+
 def installed_local_models(ollama):
     """Model names installed on any probed local host (ollama-data.json)."""
     out = set()
@@ -186,6 +203,9 @@ def assemble(data, catalog, installed=()):
             "oid": ("" if local else (P.ALIASES.get(model) or P._resolve_catalog_id(model, catalog) or "")),
             "in_1m": ri, "out_1m": ro, "cache_1m": rc,
             "source": source, "tps": tps, "used": used,
+            # LST-193: "override" tells the Prices row this rate is a manual
+            # decision, not a fetched catalogue number, so it can be tagged.
+            "rate_origin": rate_origin_tag(model, catalog),
             "calls": a["calls"], "inp": a["inp"], "outp": a["outp"],
             "cache": a["cache"], "cost": a["cost"], "energy": energy,
             "providers": sorted(a["providers"]),
