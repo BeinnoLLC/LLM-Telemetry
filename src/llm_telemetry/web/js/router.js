@@ -1010,7 +1010,7 @@ export function pvToggle(n){
   tabs(); pick(current);
 }
 // ---- Fleet bar (replaced the old segmented tab strip) --------------------
-// One 42px row: kind filter | scrolling profile chips | N/M on | Manage.
+// One 42px row: kind filter | N/M on | Profiles (N) popover holding the chips.
 // The kind filter only narrows the Live tiles (chips are always the Hermes
 // profile selector) — it never changes what is on/off, so the merged view and `current` are exactly
 // what pvFilter()/pvSyncCurrent() derive from the on-set, as before.
@@ -1104,8 +1104,6 @@ export function tabs(){
   const names = Object.keys(PV_ALL);
   const active = fbKindGet();
   const counts = fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live);
-  const strip = bar.querySelector('.fb-strip');
-  const left = strip ? strip.scrollLeft : 0;
   const ae = document.activeElement;
   const had = ae && bar.contains(ae) ? { key: ae.dataset.key, manage: ae.hasAttribute('data-fbmanage'), kind: ae.classList.contains('kseg') } : null;
   const on = pvOnProfiles().length, tot = names.length;
@@ -1113,16 +1111,13 @@ export function tabs(){
   bar.innerHTML = '<span class="fb-label">Fleet</span>'
     + fbKindsHtml(counts, active)
     + '<span class="fb-sep" aria-hidden="true"></span>'
-    + `<div class="fb-strip" role="toolbar" aria-label="Profiles" data-at-start="1">${chips}</div>`
     + `<span id="tabsub" class="fb-count" aria-live="polite">${on === tot ? `all ${tot} shown` : `${on}/${tot} on`}</span>`
-    + `<button type="button" class="fb-more" data-fbmanage="1" aria-haspopup="dialog" aria-expanded="${fbDialogOpen()}"`
-    + ` title="Manage profiles (F)">Manage <kbd>F</kbd></button>`;
-  const ns = bar.querySelector('.fb-strip');
-  if (ns){
-    ns.scrollLeft = left;
-    ns.dataset.atStart = left < 4 ? '1' : '0';
-    ns.addEventListener('scroll', () => { ns.dataset.atStart = ns.scrollLeft < 4 ? '1' : '0'; }, { passive: true });
-  }
+    + '<div class="fb-menu">'
+    + `<button type="button" class="fb-pbtn" data-fbpop="1" aria-haspopup="true" aria-expanded="${fbPopOpen}" title="Choose which profiles are on">Profiles (${tot})</button>`
+    + `<div class="fb-pop"${fbPopOpen ? '' : ' hidden'}>`
+    + `<button type="button" class="fb-more" data-fbmanage="1" aria-haspopup="dialog" aria-expanded="${fbDialogOpen()}" title="Manage profiles (F)">Manage <kbd>F</kbd></button>`
+    + `<div class="fb-strip" role="toolbar" aria-label="Profiles">${chips}</div>`
+    + '</div></div>';
   fbRoveApply(bar);
   if (had){
     const sel = had.manage ? '[data-fbmanage]' : null;
@@ -1215,6 +1210,13 @@ function fbSetMany(list, on){
 function fbOtherOverlayOpen(){
   return !!document.querySelector('dialog[open]:not(#fbdialog), [role="dialog"][aria-hidden="false"], #helpwrap.open');
 }
+let fbPopOpen = false;
+function fbPopToggle(on){
+  fbPopOpen = on === undefined ? !fbPopOpen : !!on;
+  const bar = $('tabs'), pop = bar && bar.querySelector('.fb-pop'), b = bar && bar.querySelector('[data-fbpop]');
+  if (pop) pop.hidden = !fbPopOpen;
+  if (b) b.setAttribute('aria-expanded', String(fbPopOpen));
+}
 function fbInstall(){
   const bar = $('tabs');
   if (!bar || bar._fbInstalled) return;
@@ -1223,7 +1225,8 @@ function fbInstall(){
     const t = e.target.closest && e.target.closest('button');
     if (!t) return;
     if (t.dataset.fbkind) return fbKindSet(t.dataset.fbkind);
-    if (t.dataset.fbmanage) return fbDialogToggle();
+    if (t.dataset.fbpop) return fbPopToggle();
+    if (t.dataset.fbmanage) { fbPopToggle(false); return fbDialogToggle(); }
     if (t.classList.contains('pchip')) pvToggle(t.dataset.tab);
   });
   bar.addEventListener('focusin', e => {
@@ -1231,6 +1234,8 @@ function fbInstall(){
     if (t) fbRoveSet(t);
   });
   bar.addEventListener('keydown', fbRoveKey);
+  document.addEventListener('click', e => { if (fbPopOpen && !bar.contains(e.target)) fbPopToggle(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && fbPopOpen) fbPopToggle(false); });
   bar.addEventListener('contextmenu', e => {
     const t = e.target.closest && e.target.closest('.pchip');
     if (t) pvMenu(e, t.dataset.tab);

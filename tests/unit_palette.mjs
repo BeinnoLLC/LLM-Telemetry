@@ -112,6 +112,7 @@ eq(P.esc('<a href="x">&</a>'), '&lt;a href="x"&gt;&amp;&lt;/a&gt;', 'esc escapes
 eq(P.esc(null), '', 'esc(null) is empty');
 eq(P.escA('"t"<'), '&quot;t&quot;&lt;', 'escA also escapes quotes');
 eq([P.ago(59), P.ago(60), P.ago(90), P.ago(3600), P.ago(7200)], ['59s', '1m', '2m', '1h', '2h'], 'ago picks s/m/h');
+eq([P.ago(47 * 3600), P.ago(48 * 3600), P.ago(453 * 3600)], ['47h', '2d', '19d'], 'ago switches to days from 48h so idle 453h reads 19d');
 eq(P.catOf('Coding').c, '#5f9e6e', 'catOf known category (calmed)');
 eq(P.catOf('Nope'), { c: '#6b7280', i: '•' }, 'catOf unknown -> neutral');
 eq(P.slugOf('NowInv'), 'nowinv', 'slugOf lowercases');
