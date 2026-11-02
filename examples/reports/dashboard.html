@@ -912,7 +912,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
 .qt-line{--jc:var(--z-ok)}
 .qt-yard{--jc:var(--accent)}
-.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 7px}
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 14px}
 .qt-lid{position:relative;z-index:1;margin:0 -1px;display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:7px 12px;border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));border-radius:9px;
   background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,var(--card)),color-mix(in srgb,var(--jc) 7%,var(--card)));
@@ -920,16 +920,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-name{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--fg)}
 .qt-n{font-weight:600;font-size:var(--fs-xs);padding:0 8px;line-height:19px;border-radius:999px;
   border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));background:var(--card);color:var(--fg)}
-.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px 3px 0;padding:14px 8px 12px;
-  border:1px solid color-mix(in srgb,var(--jc) 38%,var(--border));border-top:0;border-radius:0 0 30px 30px;overflow:hidden;
-  background:linear-gradient(90deg,color-mix(in srgb,var(--fg) 7%,transparent),transparent 18%,transparent 82%,color-mix(in srgb,var(--fg) 4%,transparent)),
-    linear-gradient(180deg,color-mix(in srgb,var(--fg) 4%,transparent),color-mix(in srgb,var(--fg) 1%,transparent));
-  box-shadow:inset 3px 0 0 -1px color-mix(in srgb,var(--fg) 14%,transparent),inset 0 -12px 16px -14px color-mix(in srgb,var(--jc) 50%,transparent)}
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px -9px 0;padding:14px 8px;
+  border:1.5px solid color-mix(in srgb,var(--jc) 55%,var(--border));border-top:0;border-radius:0 0 34px 34px;overflow:hidden;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--fg) 12%,transparent),transparent 14%,transparent 86%,color-mix(in srgb,var(--fg) 7%,transparent)),
+    linear-gradient(180deg,color-mix(in srgb,var(--fg) 5%,transparent),color-mix(in srgb,var(--fg) 2%,transparent));
+  box-shadow:inset 4px 0 0 -1px color-mix(in srgb,var(--fg) 24%,transparent),inset 0 -14px 18px -12px color-mix(in srgb,var(--jc) 60%,transparent),0 6px 14px -8px rgba(0,0,0,.5)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 3%,transparent),color-mix(in srgb,var(--jc) 14%,transparent));
+  border-top:1px solid color-mix(in srgb,var(--jc) 50%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 22%,transparent));
   transition:height .6s ease}
 .qt-cars{position:relative;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
-  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:170px;max-height:330px;overflow-y:auto;padding:3px;scrollbar-width:thin}
+  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:150px;max-height:260px;overflow-y:auto;padding:3px;scrollbar-width:thin}
 .qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);grid-column:1/-1;align-self:center;text-align:center;
   padding:18px 22px;color:var(--muted);font-size:var(--fs-sm);border:1px dashed color-mix(in srgb,var(--jc) 40%,var(--border));border-radius:8px}
 .qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
@@ -939,7 +940,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
 .qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
-  font-size:14px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+  font-size:14px;line-height:1.35;font-weight:600;overflow-wrap:anywhere;text-wrap:pretty}
 .qt-meta{flex:none;color:color-mix(in srgb,var(--fg) 72%,var(--card));font-size:12.5px;line-height:1.35;margin-top:auto;overflow-wrap:anywhere}
 .qt-legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;color:var(--muted);font-size:12.5px}
 .qt-legend span{display:inline-flex;align-items:center;gap:6px}
@@ -967,7 +968,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-land{0%{transform:scale(1.06)}100%{transform:none}}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;z-index:80;pointer-events:none}
+.qtip{position:fixed;max-width:300px;z-index:80;pointer-events:none;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
+  left:var(--ax,50%);top:-6px;margin-left:-5px;border-right:0;border-bottom:0}
+.qtip[data-side=top]::before{top:auto;bottom:-6px;transform:rotate(225deg)}
+.qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
+.qtip[data-side=right]::before{left:-6px;transform:rotate(315deg)}
+.qtip[data-side=left]::before{right:-6px;transform:rotate(135deg)}
 @media (max-width:1100px){.qtrain{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
   .qtrain *, .qtrain{animation:none !important}
@@ -6703,9 +6710,12 @@ function qtTipWire(tr){
     const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
     const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
       && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
-    const [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
+    const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
+    tip.dataset.side = ['bottom', 'top', 'right', 'left'][at];
+    tip.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+    tip.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });

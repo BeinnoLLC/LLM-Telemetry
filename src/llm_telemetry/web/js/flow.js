@@ -258,9 +258,12 @@ export function qtTipWire(tr){
     const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
     const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
       && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
-    const [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
+    const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
+    tip.dataset.side = ['bottom', 'top', 'right', 'left'][at];
+    tip.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+    tip.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
