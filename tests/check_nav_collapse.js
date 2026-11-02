@@ -100,7 +100,10 @@ function stage2() {
         'the hard-coded 232px offset is gone');
 
     // --- canvas reuse guard (the stalled live feed) ------------------------
-    const js = (raw.match(/function mk\(id,type[\s\S]{0,700}/) || [''])[0];
+    // mk() gained a Chart.js-absent guard before the reuse logic, so the
+    // window has to cover the whole function head — matching only the first
+    // 700 chars asserted about text that had moved, not about behaviour.
+    const js = (raw.match(/function mk\(id,type[\s\S]{0,1400}/) || [''])[0];
     chk(/Chart\.getChart\(el\)/.test(js),
         'mk() releases a canvas already owned by another chart');
     chk(/prev\.destroy\(\)/.test(js), 'and destroys it before rebinding');

@@ -2,10 +2,114 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LLM Telemetry</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='bg'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0%25'%20stop-color='%23161c2a'/%3E%3Cstop%20offset='100%25'%20stop-color='%230b0f17'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='trend'%20x1='0'%20y1='1'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0%25'%20stop-color='%236366f1'/%3E%3Cstop%20offset='55%25'%20stop-color='%23818cf8'/%3E%3Cstop%20offset='100%25'%20stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3C!--%20rounded-square%20tile%20in%20the%20dashboard's%20own%20card%20palette%20--%3E%3Crect%20width='64'%20height='64'%20rx='15'%20fill='url(%23bg)'/%3E%3Crect%20x='0.75'%20y='0.75'%20width='62.5'%20height='62.5'%20rx='14.5'%20fill='none'%20stroke='%232b3446'%20stroke-width='1.5'/%3E%3C!--%20Ascending%20telemetry%20line,%20same%20shape%20family%20as%20the%20header%20brandmark.%20The%20faint%20bar%20chart%20that%20sat%20behind%20this%20was%20DROPPED:%20at%2032px%20three%20translucent%20bars%20plus%20a%20gradient%20line%20read%20as%20mud,%20and%20the%20bars%20carried%20no%20meaning%20the%20line%20does%20not.%20One%20bold%20mark%20survives%20scaling.%20--%3E%3Cpath%20d='M13%2044%20L25%2030%20L34%2037%20L49%2020'%20fill='none'%20stroke='url(%23trend)'%20stroke-width='6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C!--%20endpoint%20node:%20the%20'live'%20pulse,%20inset%20so%20it%20is%20never%20clipped%20--%3E%3Ccircle%20cx='49'%20cy='20'%20r='5'%20fill='%2322c55e'/%3E%3C/svg%3E">
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- The Tailwind CDN script was REMOVED (not deferred): it was a runtime layout
+     dependency, so a blocked CDN silently deleted every flex/gap/padding class
+     and collapsed the dashboard into unstyled text. Those utilities are now
+     vendored in web/css/utilities.css and inlined with the page stylesheet
+     (ADR 0001: one self-contained artifact). Chart.js stays a CDN script
+     because it is a genuine optional enhancement: charts.js guards against the
+     library being absent instead of throwing at module scope. -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>try{if(localStorage.getItem('hermes-dash-theme')!=='light')document.documentElement.setAttribute('data-theme','dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
 <style>
+
+
+
+.flex{display:flex}
+.inline-flex{display:inline-flex}
+.grid{display:grid}
+.block{display:block}
+.hidden{display:none}
+.flex-col{flex-direction:column}
+.flex-wrap{flex-wrap:wrap}
+.flex-1{flex:1 1 0%}
+.shrink-0{flex-shrink:0}
+.grow{flex-grow:1}
+.items-center{align-items:center}
+.items-start{align-items:flex-start}
+.items-end{align-items:flex-end}
+.items-baseline{align-items:baseline}
+.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}
+.self-center{align-self:center}
+.w-full{width:100%}
+.relative{position:relative}
+.absolute{position:absolute}
+.sticky{position:sticky}
+.overflow-hidden{overflow:hidden}
+.overflow-x-auto{overflow-x:auto}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+.gap-1{gap:.25rem}
+.gap-1\.5{gap:.375rem}
+.gap-2{gap:.5rem}
+.gap-2\.5{gap:.625rem}
+.gap-3{gap:.75rem}
+.gap-4{gap:1rem}
+
+
+.p-2{padding:.5rem}
+.p-3{padding:.75rem}
+.p-4{padding:1rem}
+.p-6{padding:1.5rem}
+.px-1{padding-left:.25rem;padding-right:.25rem}
+.px-1\.5{padding-left:.375rem;padding-right:.375rem}
+.px-2{padding-left:.5rem;padding-right:.5rem}
+.px-3{padding-left:.75rem;padding-right:.75rem}
+.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}
+.py-1{padding-top:.25rem;padding-bottom:.25rem}
+.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}
+.py-2{padding-top:.5rem;padding-bottom:.5rem}
+.py-3{padding-top:.75rem;padding-bottom:.75rem}
+.pt-4{padding-top:1rem}
+.pb-2{padding-bottom:.5rem}
+.pl-1{padding-left:.25rem}
+.pl-3{padding-left:.75rem}
+.pr-2{padding-right:.5rem}
+
+
+.mb-1{margin-bottom:.25rem}
+.mb-2{margin-bottom:.5rem}
+.mb-2\.5{margin-bottom:.625rem}
+.mb-3{margin-bottom:.75rem}
+.mb-4{margin-bottom:1rem}
+.mt-0\.5{margin-top:.125rem}
+.mt-1{margin-top:.25rem}
+.mt-2{margin-top:.5rem}
+.mt-3{margin-top:.75rem}
+.mt-4{margin-top:1rem}
+.ml-1{margin-left:.25rem}
+.ml-auto{margin-left:auto}
+
+
+.border{border:1px solid var(--border)}
+.border-t{border-top:1px solid var(--border)}
+.border-l-2{border-left:2px solid var(--border)}
+.rounded{border-radius:4px}
+.rounded-md{border-radius:6px}
+
+
+.text-left{text-align:left}
+.text-right{text-align:right}
+.font-normal{font-weight:400}
+.font-medium{font-weight:500}
+.font-semibold{font-weight:600}
+.uppercase{text-transform:uppercase}
+.normal-case{text-transform:none}
+.tracking-normal{letter-spacing:0}
+.tracking-wide{letter-spacing:.04em}
+.leading-tight{line-height:1.25}
+.tabular-nums{font-variant-numeric:tabular-nums}
+.opacity-40{opacity:.4}
+
+.text-\[length\:var\(--fs-2xs\)\]{font-size:var(--fs-2xs)}
+.text-\[length\:var\(--fs-xs\)\]{font-size:var(--fs-xs)}
+.text-\[length\:var\(--fs-sm\)\]{font-size:var(--fs-sm)}
+.text-\[length\:var\(--fs-md\)\]{font-size:var(--fs-md)}
+.text-\[length\:var\(--fs-lg\)\]{font-size:var(--fs-lg)}
+
+.h-\[9px\]{height:9px}
 
 
 :root,
@@ -2982,6 +3086,22 @@ const emptyHTML = (icon, msg, hint) =>
   `<div class="e-msg">${esc(msg)}</div>` +
   (hint ? `<div class="e-hint">${esc(hint)}</div>` : '') + `</div>`;
 
+const HAS_CHART = typeof Chart !== 'undefined' && !!Chart;
+if (!HAS_CHART) {
+  globalThis.Chart = {
+    defaults: {font: {}, color: null, borderColor: null,
+               plugins: {legend: {labels: {generateLabels: () => []}}}},
+    getChart: () => null,
+    register: () => {},
+  };
+}
+Chart.defaults.font.size = 10; readTheme();
+// A visible, honest note where the charts would be, so a blank canvas is
+// explained in the page instead of looking like missing data.
+const CHART_MISSING_NOTE =
+  'Charts unavailable: the Chart.js library could not be loaded from its CDN. '
+  + 'Every table and number on this page is still live; start `llm-telemetry serve` '
+  + 'with network access, or vendored chart.js, to restore the graphs.';
 let charts = [], current = null;
 const RT_TIER_HUE = {
   trivial: 160, monitoring: 195, test: 45, automation: 28, research: 265,
@@ -3886,7 +4006,14 @@ let HOUR_RANGE = null;
 // builds from that point on: the data still updates, it just snaps instead
 // of re-animating from zero.
 let CHART_ANIM_DONE = false;
-Chart.defaults.font.size = 10; readTheme();
+// Chart.js comes from a CDN. When that request fails — a blocked CDN, an
+// offline LAN viewer, a firewall — `Chart` is undefined and this line used to
+// throw at MODULE scope, which aborted the whole bundle: no KPI strip, no nav,
+// no live table, no tables. The page still rendered, just as an empty shell,
+// which reads as "the dashboard is broken/unorganised" rather than "one CDN
+// didn't load". Charts are a progressive enhancement here: if the library is
+// missing we stub the defaults object so every other view still renders, and
+// mk() returns null so callers skip drawing instead of throwing.
 const noLeg = {plugins:{legend:{display:false}}};
 
 const bounds = p => {
@@ -3988,6 +4115,17 @@ function tintTicks(axis){
 }
 
 function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
+  // No Chart.js: say so where the graph should be, once per canvas, and stop.
+  // Returning null lets every caller keep going instead of throwing inside the
+  // render pass that also builds the tables and KPI cards.
+  if (!HAS_CHART) {
+    if (!el.dataset.chartMissing) {
+      el.dataset.chartMissing = '1';
+      const note = el.parentNode;
+      if (note) note.innerHTML = `<div class="muted" style="font-size:var(--fs-xs);padding:.6rem .2rem">${CHART_MISSING_NOTE}</div>`;
+    }
+    return null;
+  }
   // Chart.js refuses to bind a second chart to a canvas that still has one
   // ("Canvas is already in use"). charts[] is emptied on every render, but a
   // chart created outside that cycle — the live poll repaints a chart every

@@ -16,7 +16,49 @@ const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,
 const w=dom.window,d=w.document;
 let p=0,f=0; const chk=(ok,l,x)=>{console.log(`  ${ok?'OK  ':'FAIL'} ${l}${x?'  '+x:''}`);ok?p++:f++;};
 const col=e=>w.getComputedStyle(e).color;
-const size=e=>parseFloat(w.getComputedStyle(e).fontSize);
+// jsdom does not implement clamp() and returns an empty string for a
+// font-size that resolves through it, which is how these checks silently turned
+// into NaN. The dashboard's type scale IS clamp()-based (--fs-md is
+// clamp(13px,.75vw + 10.3px,15px)), so resolve the value the way a browser
+// would: substitute var(--fs-*) from the stylesheet, then evaluate clamp()
+// against this window's width. Without this the assertion cannot tell a
+// correctly-sized label from a missing one.
+const clampPx = (min, pref, max, vw) => {
+  const evalTerm = (t) => {
+    t = t.trim();
+    const m = /^([\d.]+)vw$/.exec(t);
+    if (m) return (parseFloat(m[1]) * vw) / 100;
+    t = t.replace(/([\d.]+)px/g, '$1');
+    if (/^[\d.]+$/.test(t)) return parseFloat(t);
+    // e.g. ".75vw + 10.3px" -> sum of its parts
+    return t.split('+').reduce((acc, part) => acc + evalTerm(part), 0);
+  };
+  return Math.min(Math.max(evalTerm(pref), parseFloat(min)), parseFloat(max));
+};
+const cssText = html.match(/<style>([\s\S]*)<\/style>/)?.[1] || '';
+const tokenVal = (name) => {
+  const m = new RegExp(`${name}\\s*:\\s*([^;}]+)`).exec(cssText);
+  return m ? m[1].trim() : null;
+};
+const resolvePx = (value) => {
+  if (!value) return NaN;
+  const vwMatch = /^clamp\(([^,]+),([^,]+),([^)]+)\)$/.exec(value.trim());
+  if (vwMatch) return clampPx(vwMatch[1], vwMatch[2], vwMatch[3], w.innerWidth);
+  const varMatch = /^var\((--[\w-]+)(?:,([^)]+))?\)$/.exec(value.trim());
+  if (varMatch) return resolvePx(tokenVal(varMatch[1]) || varMatch[2] || '');
+  const px = parseFloat(value);
+  return Number.isFinite(px) ? px : NaN;
+};
+const size=e=>{
+  const raw = w.getComputedStyle(e).fontSize;
+  const direct = parseFloat(raw);
+  if (Number.isFinite(direct)) return direct;
+  // The class list wins when computed style is unresolved (clamp via a var).
+  const cls = [...e.classList].join(' ');
+  const arb = /text-\[length:var\((--[\w-]+)\)\]/.exec(cls);
+  if (arb) return resolvePx(tokenVal(arb[1]));
+  return NaN;
+};
 // "uncoloured" means it inherited the body/muted colour or the old fallback
 // grey — not merely that it looks desaturated.
 const FALLBACK='rgb(122, 137, 159)';

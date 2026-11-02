@@ -1,0 +1,116 @@
+/* Vendored utility layer.
+
+   The page used to depend on `https://cdn.tailwindcss.com` at RUNTIME for the
+   ~75 utility classes its markup uses (flex, gap-2, p-4, mb-2.5, text-right…).
+   That CDN is a JIT compiler that rewrites the stylesheet in the browser: when
+   it is blocked — offline, air-gapped LAN, firewall, proxy — every one of those
+   classes silently does nothing and the whole dashboard collapses into
+   unstyled stacked text. It looks like "the app is broken and disorganised",
+   but the HTML and data are fine.
+
+   ADR 0001 says this is ONE self-contained artifact that must open from
+   file://. A runtime layout dependency contradicts that outright, so the
+   utilities the markup actually uses are vendored here instead. This is not
+   Tailwind: it is the specific subset those class names mean, at the same
+   values, so the existing markup renders identically with no network at all.
+
+   Keep it honest: if a new utility class is used in the markup, add it here.
+   tests/check_vendored_utilities.js fails when a class is used but not defined,
+   so this file cannot silently rot behind the markup. */
+
+/* ---- layout ------------------------------------------------------------- */
+.flex{display:flex}
+.inline-flex{display:inline-flex}
+.grid{display:grid}
+.block{display:block}
+.hidden{display:none}
+.flex-col{flex-direction:column}
+.flex-wrap{flex-wrap:wrap}
+.flex-1{flex:1 1 0%}
+.shrink-0{flex-shrink:0}
+.grow{flex-grow:1}
+.items-center{align-items:center}
+.items-start{align-items:flex-start}
+.items-end{align-items:flex-end}
+.items-baseline{align-items:baseline}
+.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}
+.self-center{align-self:center}
+.w-full{width:100%}
+.relative{position:relative}
+.absolute{position:absolute}
+.sticky{position:sticky}
+.overflow-hidden{overflow:hidden}
+.overflow-x-auto{overflow-x:auto}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- gaps --------------------------------------------------------------- */
+.gap-1{gap:.25rem}
+.gap-1\.5{gap:.375rem}
+.gap-2{gap:.5rem}
+.gap-2\.5{gap:.625rem}
+.gap-3{gap:.75rem}
+.gap-4{gap:1rem}
+
+/* ---- padding ------------------------------------------------------------ */
+.p-2{padding:.5rem}
+.p-3{padding:.75rem}
+.p-4{padding:1rem}
+.p-6{padding:1.5rem}
+.px-1{padding-left:.25rem;padding-right:.25rem}
+.px-1\.5{padding-left:.375rem;padding-right:.375rem}
+.px-2{padding-left:.5rem;padding-right:.5rem}
+.px-3{padding-left:.75rem;padding-right:.75rem}
+.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}
+.py-1{padding-top:.25rem;padding-bottom:.25rem}
+.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}
+.py-2{padding-top:.5rem;padding-bottom:.5rem}
+.py-3{padding-top:.75rem;padding-bottom:.75rem}
+.pt-4{padding-top:1rem}
+.pb-2{padding-bottom:.5rem}
+.pl-1{padding-left:.25rem}
+.pl-3{padding-left:.75rem}
+.pr-2{padding-right:.5rem}
+
+/* ---- margin ------------------------------------------------------------- */
+.mb-1{margin-bottom:.25rem}
+.mb-2{margin-bottom:.5rem}
+.mb-2\.5{margin-bottom:.625rem}
+.mb-3{margin-bottom:.75rem}
+.mb-4{margin-bottom:1rem}
+.mt-0\.5{margin-top:.125rem}
+.mt-1{margin-top:.25rem}
+.mt-2{margin-top:.5rem}
+.mt-3{margin-top:.75rem}
+.mt-4{margin-top:1rem}
+.ml-1{margin-left:.25rem}
+.ml-auto{margin-left:auto}
+
+/* ---- borders & shape ---------------------------------------------------- */
+.border{border:1px solid var(--border)}
+.border-t{border-top:1px solid var(--border)}
+.border-l-2{border-left:2px solid var(--border)}
+.rounded{border-radius:4px}
+.rounded-md{border-radius:6px}
+
+/* ---- type --------------------------------------------------------------- */
+.text-left{text-align:left}
+.text-right{text-align:right}
+.font-normal{font-weight:400}
+.font-medium{font-weight:500}
+.font-semibold{font-weight:600}
+.uppercase{text-transform:uppercase}
+.normal-case{text-transform:none}
+.tracking-normal{letter-spacing:0}
+.tracking-wide{letter-spacing:.04em}
+.leading-tight{line-height:1.25}
+.tabular-nums{font-variant-numeric:tabular-nums}
+.opacity-40{opacity:.4}
+/* Arbitrary-value font sizes the markup spells as text-[length:var(--fs-*)]. */
+.text-\[length\:var\(--fs-2xs\)\]{font-size:var(--fs-2xs)}
+.text-\[length\:var\(--fs-xs\)\]{font-size:var(--fs-xs)}
+.text-\[length\:var\(--fs-sm\)\]{font-size:var(--fs-sm)}
+.text-\[length\:var\(--fs-md\)\]{font-size:var(--fs-md)}
+.text-\[length\:var\(--fs-lg\)\]{font-size:var(--fs-lg)}
+/* Arbitrary height used by the bandwidth spark ticks. */
+.h-\[9px\]{height:9px}

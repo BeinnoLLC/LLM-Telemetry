@@ -139,6 +139,14 @@
   },
   {
    "mod": "charts",
+   "name": "HAS_CHART"
+  },
+  {
+   "mod": "charts",
+   "name": "CHART_MISSING_NOTE"
+  },
+  {
+   "mod": "charts",
    "name": "charts"
   },
   {
