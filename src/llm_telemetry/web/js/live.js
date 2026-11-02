@@ -397,7 +397,7 @@ function lvRow(o){
   const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool">${esc(t)}</span>`).join('');
-  const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${o.attrs}>
+  const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${S.idle_s > 86400 ? ' data-longidle="1"' : ''}${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
         : `<div class="lvc lvc-sess" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div></div></div>`}
@@ -998,10 +998,10 @@ export function soundToggleInstall(){
   const paint = () => {
     btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
     btn.classList.toggle('on', soundOn);
-    btn.textContent = soundOn ? 'Sound on' : 'Sound off';
-    btn.title = soundOn
-      ? 'A tone plays when a session or task finishes or a critical alert appears (needs one click or key press on the page first). Click to turn off.'
-      : 'Muted. Click to hear a tone when a session or task finishes or a critical alert appears.';
+    btn.innerHTML = soundOn ? '&#128266;' : '&#128263;';
+    const label = soundOn ? 'Sound on \u2014 click to mute' : 'Sound off \u2014 click to unmute';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
   };
   armAudioUnlock();
   paint();

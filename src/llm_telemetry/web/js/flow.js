@@ -74,6 +74,7 @@ export function trainCar(it){
     c.appendChild(b);
   }
   const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
+  const m = document.createElement('span'); m.className = 'qt-meta'; c.appendChild(m);
   return c;
 }
 
@@ -94,6 +95,8 @@ export function paintCars(box, items, decorate){
     keep.add(c);
     const l = c.querySelector('.qt-lbl');
     if (l && l.textContent !== it.label) l.textContent = it.label;
+    const mt = c.querySelector('.qt-meta'), mx = carMeta(it);
+    if (mt && mt.textContent !== mx) mt.textContent = mx;
     const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}`);
     c._qt = it;
@@ -106,6 +109,16 @@ export function paintCars(box, items, decorate){
     setTimeout(() => c.remove(), 600);
   });
   return fresh;
+}
+
+// Second line of a car: who ran it, how long ago, and a short id so two cars
+// with the same title can still be told apart.
+export function carMeta(it){
+  const id = it.sid ? '#' + String(it.sid).slice(-6) : '';
+  const at = it.kind === 'd' ? (it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
+    : it.idle_s != null ? ago(+it.idle_s) + ' ago' : '';
+  if (it.kind === 'q') return `${it.host} \u00b7 ${it.pos} of ${it.depth}`;
+  return [at, it.kind === 'r' ? it.profile : it.model, id].filter(Boolean).join(' \u00b7 ');
 }
 
 // Hover/focus card for one car. Only fields the feeds really carry.
@@ -193,13 +206,13 @@ export function paintTrain(queuedAll, runningAll, doneAll){
   // (no car silently clipped by overflow). Without layout, fall back to cap.
   const fit = (box, carW, rows, cap, n) => {
     if (!box.clientWidth) return cap;
-    const per = Math.max(1, Math.floor((box.clientWidth + 5) / (carW + 5)));
+    const per = Math.max(1, Math.floor((box.clientWidth + 8) / (carW + 8)));
     const room = per * rows;
     return Math.min(cap, n > room ? room - 1 : room);
   };
-  const queued = queuedAll.slice(0, fit(qb, 74, 3, QT_CAP.q, nq));
-  const running = runningAll.slice(0, QT_CAP.r);
-  const done = doneAll.slice(0, fit(db, 86, 3, QT_CAP.d, nd));
+  const queued = queuedAll.slice(0, fit(qb, 150, 3, QT_CAP.q, nq));
+  const running = runningAll.slice(0, fit(consist, 150, 3, QT_CAP.r, nr));
+  const done = doneAll.slice(0, fit(db, 150, 3, QT_CAP.d, nd));
 
   // Where every car is right now, so a task that changes section can be
   // flown across instead of blinking out and back in.

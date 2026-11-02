@@ -58,7 +58,7 @@ chk(/Persistent=true/.test(timerText('llm-telemetry-rankings.timer')),
 
 // ---- the bands, at the boundaries -------------------------------------
 const NOW = 1_700_000_000;
-const at = (age, key = 'dashboard') => P.freshness(NOW - age, key, NOW);
+const at = (age, key = 'costs') => P.freshness(NOW - age, key, NOW);
 
 eq(at(0).state, 'fresh', 'just-updated is fresh');
 eq(at(59).state, 'fresh', 'just under 1x the cadence is still fresh');
@@ -87,26 +87,26 @@ chk(at(180).hint.includes('last update 3m ago'), 'the hint states the observed a
 eq(at(90).hint === undefined, false, 'old and stale both carry a hint');
 
 // ---- timestamps in every shape the payloads use ------------------------
-eq(P.freshness(null, 'dashboard', NOW).state, 'unknown', 'a missing timestamp is unknown, not fresh');
-eq(P.freshness('', 'dashboard', NOW).state, 'unknown', 'an empty timestamp is unknown');
-eq(P.freshness('not a date', 'dashboard', NOW).state, 'unknown', 'an unparseable timestamp is unknown');
-eq(P.freshness(null, 'dashboard', NOW).label, 'no timestamp', 'unknown says why');
+eq(P.freshness(null, 'costs', NOW).state, 'unknown', 'a missing timestamp is unknown, not fresh');
+eq(P.freshness('', 'costs', NOW).state, 'unknown', 'an empty timestamp is unknown');
+eq(P.freshness('not a date', 'costs', NOW).state, 'unknown', 'an unparseable timestamp is unknown');
+eq(P.freshness(null, 'costs', NOW).label, 'no timestamp', 'unknown says why');
 eq(P.freshness(NOW - 10, 'nonsense-key', NOW).state, 'unknown', 'an unknown section key is unknown');
 eq(P.freshness(NOW - 10, 'nonsense-key', NOW).cadence, null, 'an unknown section has no cadence');
 const realNow = Math.floor(Date.now() / 1000);
-eq(P.freshness(realNow - 10, 'dashboard').state, 'fresh', 'a missing now defaults to the real clock');
-eq(P.freshness(realNow - 7200, 'dashboard').state, 'stale', 'the real clock agrees about an old payload');
-eq(P.freshness('1700000000', 'dashboard', NOW).state, 'fresh', 'a numeric string is a unix second');
-eq(P.freshness((NOW - 30) * 1000, 'dashboard', NOW).age, 30, 'a millisecond epoch is divided down');
-eq(P.freshness(NOW + 500, 'dashboard', NOW).age, 0, 'a clock-skewed future timestamp clamps to zero');
-eq(P.freshness(NOW + 500, 'dashboard', NOW).state, 'fresh', 'a future timestamp is fresh, not negative');
-eq(P.freshness(NOW - 30.4, 'dashboard', NOW).age, 30, 'a fractional age is rounded');
+eq(P.freshness(realNow - 10, 'costs').state, 'fresh', 'a missing now defaults to the real clock');
+eq(P.freshness(realNow - 7200, 'costs').state, 'stale', 'the real clock agrees about an old payload');
+eq(P.freshness('1700000000', 'costs', NOW).state, 'fresh', 'a numeric string is a unix second');
+eq(P.freshness((NOW - 30) * 1000, 'costs', NOW).age, 30, 'a millisecond epoch is divided down');
+eq(P.freshness(NOW + 500, 'costs', NOW).age, 0, 'a clock-skewed future timestamp clamps to zero');
+eq(P.freshness(NOW + 500, 'costs', NOW).state, 'fresh', 'a future timestamp is fresh, not negative');
+eq(P.freshness(NOW - 30.4, 'costs', NOW).age, 30, 'a fractional age is rounded');
 // An ISO string with no zone is local time, which is how the payloads write it.
 const iso = new Date(NOW * 1000).toISOString().replace('Z', '');
 const isoAt = Math.floor(Date.parse(iso) / 1000);   // whatever zone the machine is in
-eq(P.freshness(iso, 'dashboard', isoAt + 30).state, 'fresh',
+eq(P.freshness(iso, 'costs', isoAt + 30).state, 'fresh',
    'an ISO string without a zone is parsed as local time, not discarded');
-eq(P.freshness('2026-01-01T00:00:00Z', 'dashboard', Math.floor(Date.parse('2026-01-01T00:00:00Z') / 1000) + 90).state,
+eq(P.freshness('2026-01-01T00:00:00Z', 'costs', Math.floor(Date.parse('2026-01-01T00:00:00Z') / 1000) + 90).state,
    'old', 'an ISO string with a Z is honoured too');
 
 // ---- writing the state onto an element --------------------------------
@@ -117,23 +117,23 @@ const mkStamp = (text = '') => {
 };
 
 const fresh = mkStamp('generated 2026-01-01 00:00:00 · auto-refresh every 1 min');
-const r1 = P.stampFreshness(fresh, NOW - 10, 'dashboard', NOW);
+const r1 = P.stampFreshness(fresh, NOW - 10, 'costs', NOW);
 eq(r1.state, 'fresh', 'a fresh section reports fresh');
-eq([fresh._cls.size, fresh.dataset.stampState, fresh.dataset.stampKey], [0, 'fresh', 'dashboard'],
+eq([fresh._cls.size, fresh.dataset.stampState, fresh.dataset.stampKey], [0, 'fresh', 'costs'],
    'a fresh stamp carries no class and records its state');
 eq(fresh.textContent, 'generated 2026-01-01 00:00:00 · auto-refresh every 1 min',
    'a fresh stamp leaves the text alone');
 eq(fresh.title, '', 'a fresh stamp has no hint');
 
 const late = mkStamp('live · updated 12:00:00');
-P.stampFreshness(late, NOW - 90, 'dashboard', NOW);
+P.stampFreshness(late, NOW - 90, 'costs', NOW);
 eq([late.dataset.stampState, late._cls.has('old'), late._cls.has('stale')], ['old', true, false],
    'a late stamp gets .old and only .old');
 eq(late.textContent, 'live · updated 12:00:00 · 2m old', 'the late stamp appends its age');
 chk(late.title.includes('llm-telemetry-build.timer'), 'the late stamp names the feeder timer in its title', late.title);
 
 const stale = mkStamp('live · updated 12:00:00');
-P.stampFreshness(stale, NOW - 180, 'dashboard', NOW);
+P.stampFreshness(stale, NOW - 180, 'costs', NOW);
 eq([stale.dataset.stampState, stale._cls.has('stale')], ['stale', true], 'a 3x stamp is stale');
 eq(stale.textContent, 'live · updated 12:00:00 · stale, 3m old', 'a stale stamp says so in words');
 chk(stale.title.includes('last update 3m ago'), 'the stale title carries the age', stale.title);
@@ -141,16 +141,16 @@ chk(stale.title.includes('last update 3m ago'), 'the stale title carries the age
 // Recovering must not accumulate suffixes — the user asked for a section that
 // looks live again after the next fresh poll.
 const recovered = mkStamp('live · updated 12:00:00');
-P.stampFreshness(recovered, NOW - 300, 'dashboard', NOW);
+P.stampFreshness(recovered, NOW - 300, 'costs', NOW);
 chk(recovered.textContent.includes('stale'), 'the section is stale before the poll');
-P.stampFreshness(recovered, NOW - 1, 'dashboard', NOW);
+P.stampFreshness(recovered, NOW - 1, 'costs', NOW);
 eq([recovered.textContent, recovered._cls.size, recovered.title], ['live · updated 12:00:00', 0, ''],
    'a fresh poll clears the class, the suffix and the hint');
 
 // A second late call updates the numbers without stacking text.
 const twice = mkStamp('mine');
-P.stampFreshness(twice, NOW - 90, 'dashboard', NOW);
-P.stampFreshness(twice, NOW - 3600, 'dashboard', NOW);
+P.stampFreshness(twice, NOW - 90, 'costs', NOW);
+P.stampFreshness(twice, NOW - 3600, 'costs', NOW);
 eq(twice.textContent, 'mine · stale, 1h old', 'the suffix is recomputed, not appended twice');
 
 // An element with nothing in it yet still reports, without a dangling space.
@@ -160,9 +160,9 @@ eq(blank.textContent, 'stale, 3m old', 'a blank stamp does not start with a sepa
 eq(blank.dataset.stampKey, 'logs', 'the section key is recorded');
 
 // Defensive: no element, or an element without classList, is not a crash.
-eq(P.stampFreshness(null, NOW, 'dashboard', NOW), null, 'a missing element returns null');
+eq(P.stampFreshness(null, NOW, 'costs', NOW), null, 'a missing element returns null');
 const bare = { textContent: '', dataset: {} };
-chk(P.stampFreshness(bare, NOW - 180, 'dashboard', NOW).state === 'stale',
+chk(P.stampFreshness(bare, NOW - 180, 'costs', NOW).state === 'stale',
     'an element without classList still gets its text and state');
 
 // ---- the shell carries the class and the CSS the state needs -----------
@@ -177,3 +177,15 @@ chk(css.includes('.stamp.stale'), 'the stylesheet dims a stale stamp');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
+
+// ---- the page header ages against the build interval, not the 1-minute timer ----
+// A full rebuild takes minutes, so 3-7 minutes old is a healthy header.
+const hat = age => P.freshness(NOW - age, 'dashboard', NOW).state;
+eq(hat(7 * 60), 'fresh', 'a 7 minute old page is fresh: a rebuild takes minutes');
+eq(hat(11 * 60), 'old', 'past 10 minutes the header goes amber');
+eq(hat(14 * 60), 'old', 'still amber just under 15 minutes');
+eq(hat(15 * 60), 'stale', 'red only from 15 minutes');
+eq(P.buildCuts(0), {warn: 600, bad: 900}, 'no measured interval: the 10 / 15 minute floors');
+eq(P.buildCuts(undefined), {warn: 600, bad: 900}, 'a missing interval falls back to the floors');
+eq(P.buildCuts(7 * 60), {warn: 840, bad: 1260}, 'a 7 minute build: amber at 2x, red at 3x');
+eq(P.buildCuts(2 * 60), {warn: 600, bad: 900}, 'a fast build never tightens below the floors');

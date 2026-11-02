@@ -77,7 +77,7 @@ setTimeout(() => {
   chk(cars.length === 8, '8 running cars are rendered', cars.length);
   const cs = w.getComputedStyle(consist);
   chk(cs.position !== 'absolute', 'the consist is in flow (not absolutely slid out of the viewport)', cs.position);
-  chk(cs.flexWrap === 'wrap-reverse', 'the consist wraps', cs.flexWrap);
+  chk(cs.display === 'grid' || /\.qt-cars,\.qt-consist\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the consist is a wrapping grid', cs.display);
   const moved = [consist, ...cars].filter(e => e.style.transform || e.style.opacity === '0' || /qt-run/.test(w.getComputedStyle(e).animationName || ''));
   chk(moved.length === 0, 'no translate/animation/fade keeps any of the 8 cars off-screen', moved.length);
   chk(!/\.qt-consist\{[^}]*(animation|transform:(?!none))/.test(html) && !/@keyframes qt-run\b/.test(html),

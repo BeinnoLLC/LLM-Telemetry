@@ -722,6 +722,8 @@ R.profileLogoSet('nous', '');
 // tabs() reads PV_ALL (never the merged DATA key) and reports the on-count
 R.tabs();
 ok(getEl('tabs').innerHTML.includes('data-tab="anthropic"'), 'tabs: renders a chip per profile in PV_ALL');
+ok(getEl('tabs').innerHTML.includes('>Profiles (2)<'), 'tabs: the Profiles menu button carries the PV_ALL count');
+ok(/class="fb-pop" hidden>.*class="pchip"/s.test(getEl('tabs').innerHTML), 'tabs: the chips live in the closed Profiles popover, not the bar');
 ok(!getEl('tabs').innerHTML.includes('data-tab="All"'), 'tabs: never renders the merged All key as a tab');
 ok(getEl('tabs').innerHTML.includes('>all 2 shown<'), 'tabs: subtitle when all profiles are on');
 R.pvSet('nous', true);

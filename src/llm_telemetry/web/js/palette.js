@@ -240,7 +240,7 @@ export const CAT = {
   'Idle':       {c:'#6b7280', i:'○'}
 };
 export const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};
-export const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.round(s/3600)+'h';
+export const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : s<172800 ? Math.round(s/3600)+'h' : Math.round(s/86400)+'d';
 
 // ---- per-section freshness (P14, #149) ----------------------------------
 // The header used to carry a single "rebuilt Ns ago" derived from the build,
@@ -263,7 +263,13 @@ export const STALE_FACTOR = 2;
 // cadence. A 5 s poll is the transport, not the promise to the user: two
 // missed polls (10 s) is still a healthy feed, so cadence multiples screamed
 // "stale" at a board that was fine. `cuts` wins over cadence when present.
-export const AGE_CUTS = { liveboard: {warn: 30, bad: 90} };
+export const AGE_CUTS = { liveboard: {warn: 30, bad: 90}, dashboard: {warn: 600, bad: 900} };
+// A full rebuild takes minutes, so the page ages against the measured build
+// interval (when the payload carries one), never below 10 / 15 minutes.
+export function buildCuts(typicalS){
+  const t = +typicalS > 0 ? +typicalS : 0;
+  return {warn: Math.max(2 * t, 600), bad: Math.max(3 * t, 900)};
+}
 // Which systemd timer feeds each section, so a red stamp can name the unit to
 // inspect instead of leaving the user to guess.
 export const FEEDER = {

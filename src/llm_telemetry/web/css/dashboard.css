@@ -135,12 +135,19 @@
 .pchip[aria-current="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:2px;border-radius:2px;background:var(--accent)}
 .pchip:focus-visible,.kseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .fb-count{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;padding:0 4px}
-.fb-more{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);
+.fb-more,.fb-pbtn{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);
   border-radius:var(--fb-r);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
-.fb-more:hover{background:var(--fb-raise)}
+.fb-more:hover,.fb-pbtn:hover{background:var(--fb-raise)}
+.fb-menu{position:relative;flex:none}
+.fb-pop{position:absolute;z-index:40;top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
+  display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--card);border:1px solid var(--border);
+  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.fb-pop[hidden]{display:none}
+.fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:4px}
+.fb-pop .fb-more{align-self:flex-end}
 .fb-more kbd{font:inherit;font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:0 4px}
-.fb-more[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent-wash);border-color:var(--accent)}
-.fb-more:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fb-more[aria-expanded="true"],.fb-pbtn[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent-wash);border-color:var(--accent)}
+.fb-more:focus-visible,.fb-pbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
    the ::backdrop (the mock had none). */
 .fbdlg{padding:0;width:min(680px,92vw);max-height:min(76vh,600px);flex-direction:column;overflow:hidden;
@@ -274,10 +281,10 @@
  .lkpi-spark{position:absolute;right:12px;bottom:10px;width:84px;height:30px;pointer-events:none}
  @media(max-width:1100px){ .lkpi-spark{position:static;width:100%;height:26px;margin-top:2px} }
  .lkpi-alist{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;min-width:0}
- .lkpi-alist li{display:flex;gap:6px;align-items:baseline;min-width:0;font-size:var(--fs-xs);color:var(--fg)}
- .lkpi-alist .adot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
+ .lkpi-alist li{display:flex;gap:6px;align-items:flex-start;min-width:0;font-size:var(--fs-xs);color:var(--fg)}
+ .lkpi-alist .adot{flex:none;margin-top:5px;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
  .lkpi-alist .crit .adot{background:var(--z-bad)}
- .lkpi-alist .atext{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .lkpi-alist .atext{min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
  .lkpi-alist .amore{color:var(--muted)}
  .lkpi-alerts{color:var(--z-warn)}
  .lkpi-alerts.crit{color:var(--z-bad)}
@@ -758,9 +765,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     provider names keep their palette colour here too, so a name learnt in a
     chart is recognisable in the explanation. */
  #helpbtn{cursor:pointer;border:1px solid var(--border);background:var(--card);
-   color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:var(--fs-md);
-   font-weight:700;line-height:1;display:inline-flex;align-items:center;
-   justify-content:center;transition:all .15s ease;flex:none}
+   color:var(--muted);font-weight:700;transition:all .15s ease}
+ #refresh,#theme,#soundtoggle,#helpbtn{box-sizing:border-box;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;
+   border-radius:4px;font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
  #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
  #helpwrap{position:fixed;inset:0;z-index:70;display:none}
  #helpwrap.open{display:block}
@@ -821,121 +828,55 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .flowtip .ft-h{font-weight:600;font-size:var(--fs-sm);margin-bottom:3px}
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
- /* ---- #140 task queue as a railway (the only queue view since the lanes
-   were removed). Depot (queued cars held at a signal) -> the line (live
-   sessions as ONE coupled train, loco in front) -> the yard (finished
-   sessions parked on sidings, a shunter idling). Cars are big enough to
-   carry a title; hover/focus shows the full card (#qtip). transform/opacity
-   animations only; everything stops under prefers-reduced-motion. */
-.qtrain{position:relative;display:grid;align-items:end;gap:0 10px;min-height:140px;
-  grid-template-columns:minmax(110px,1fr) 18px minmax(220px,2.6fr) minmax(180px,1.7fr);
-  margin:2px 0 4px;padding:0 4px;--qt-loop:12s;border-radius:4px;overflow:hidden;
-  background:linear-gradient(180deg,transparent 45%,color-mix(in srgb,var(--border) 35%,transparent))}
-.qt-sec{position:relative;height:100%;min-height:140px;display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
-.qt-name{position:absolute;top:6px;left:2px;font-size:var(--fs-xs);text-transform:uppercase;
-  letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:5px;z-index:1}
-.qt-n{font-weight:600;letter-spacing:0;padding:0 6px;line-height:16px;border-radius:999px;
-  border:1px solid var(--border);background:var(--card);color:var(--foreground,var(--fg))}
-.qt-cars{position:relative;margin-bottom:16px;display:flex;align-items:flex-end;gap:6px;min-width:0}
-.qt-depot .qt-cars{justify-content:flex-end;flex-wrap:wrap-reverse;gap:10px 5px;max-height:88px;overflow:hidden}
-/* the rail: two steel lines over sleepers that scroll while the line moves */
-.qt-rail{position:absolute;left:0;right:0;bottom:6px;height:8px;pointer-events:none;
-  border-top:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
-  border-bottom:2px solid color-mix(in srgb,var(--muted) 55%,transparent);
-  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--muted) 45%,transparent) 0 3px,transparent 3px 14px)}
-.qtrain.moving .qt-rail{animation:qt-sleepers 1.8s linear infinite;opacity:.7}
-@keyframes qt-sleepers{to{background-position:14px 0}}
-/* a car: a titled box on wheels */
-.qt-car{flex:none;position:relative;display:flex;align-items:center;height:26px;padding:0 7px;
-  border-radius:5px;font-size:11px;line-height:1;font-weight:600;color:white;cursor:default;
-  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);outline-offset:2px;
-  --qt-wheel:color-mix(in srgb,var(--muted) 85%,var(--card))}
+/* ---- task queue: three columns of readable cards (depot / on the line / yard).
+   Cars keep their keyed DOM so a 5s poll never rebuilds them. */
+.qtrain{position:relative;display:grid;gap:16px;align-items:start;
+  grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,2fr)}
+.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;gap:8px}
+.qt-name{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted)}
+.qt-n{font-weight:600;letter-spacing:0;padding:0 7px;line-height:18px;border-radius:999px;
+  border:1px solid var(--border);background:var(--card);color:var(--fg)}
+.qt-cars{position:relative;min-width:0}
+.qt-cars,.qt-consist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.qt-line .qt-cars{display:block}
+.qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);display:block;padding:14px 10px;
+  border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:var(--fs-sm)}
+.qt-rail,.qt-signal,.qt-shunter,.qt-patrol{display:none}
+.qt-car{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;
+  align-content:start;min-height:52px;padding:7px 10px;border-radius:6px;min-width:0;
+  border:1px solid var(--border);border-left:3px solid hsl(var(--h,215) 55% 50%);
+  background:var(--card);color:var(--fg);font-size:var(--fs-sm);line-height:1.3;cursor:default;outline-offset:2px}
 .qt-car:focus-visible{outline:2px solid var(--accent)}
-.qt-lbl{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
-  text-shadow:0 1px 1px rgba(0,0,0,.35)}
-.qt-car::after{content:"";position:absolute;left:5px;right:5px;bottom:-6px;height:5px;pointer-events:none;
-  background:radial-gradient(circle at 3px 2.5px,var(--qt-wheel) 2.5px,transparent 3px),
-             radial-gradient(circle at calc(100% - 3px) 2.5px,var(--qt-wheel) 2.5px,transparent 3px)}
-.qt-car:hover{filter:brightness(1.15)}
-/* queued: amber, held at the signal, shunting in place, staggered */
-.qt-q{width:74px;height:22px;background:var(--z-warn);
-  animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both,qt-shunt 3.6s ease-in-out calc(var(--i,0) * .15s) infinite}
-@keyframes qt-shunt{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
-/* running: ONE consist loops the line; loco leads (rightmost), couplers between */
-.qt-line .qt-cars{min-height:44px;margin:24px 0 10px}
-.qt-consist{position:relative;margin-bottom:6px;display:flex;flex-direction:row-reverse;flex-wrap:wrap-reverse;
-  justify-content:flex-end;gap:12px 9px;min-width:0}
-.qt-r{width:104px;height:28px;background:hsl(var(--h,142) 60% 42%);
-  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 8px hsl(var(--h,142) 70% 50% / .2)}
-.qt-r::before{content:"";position:absolute;inset:4px 6px 9px;border-radius:2px;pointer-events:none;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
-  background-size:200% 100%;animation:qt-glint 4.8s linear infinite}
-/* coupler to the car behind (to the LEFT, since the consist is row-reverse) */
-.qt-r[data-kind]:not([data-kind=hermes]){background:var(--k);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 8px color-mix(in srgb,var(--k) 25%,transparent)}
-.qt-kb{flex:none;margin-right:4px;padding:1px 3px;border-radius:3px;font-size:10px;line-height:1;
+.qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
+.qt-lbl{grid-column:1;grid-row:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;font-weight:600;overflow-wrap:anywhere}
+.qt-meta{grid-column:1/-1;grid-row:2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  color:var(--muted);font-size:var(--fs-xs);margin-top:2px}
+.qt-kb{grid-column:2;grid-row:1;padding:1px 4px;border-radius:3px;font-size:10px;line-height:1.2;
   background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
-.qt-r + .qt-r .qt-lbl::before{content:"";position:absolute;right:-10px;top:50%;width:10px;height:3px;
-  margin-top:-1px;background:var(--qt-wheel);border-radius:1px}
-.qt-loco{width:124px;border-top-right-radius:14px;padding-right:20px}
-.qt-loco::before{inset:5px 6px auto auto;width:9px;height:9px;border-radius:2px;
-  background:rgba(255,255,255,.85);animation:qt-lamp 2.8s ease-in-out infinite}
-@keyframes qt-glint{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes qt-lamp{50%{opacity:.7;box-shadow:0 0 4px white}}
-/* yard: sidings (one rail per row) with finished sessions parked on them */
-.qt-yard .qt-cars{flex-wrap:wrap-reverse;align-content:flex-start;gap:12px 5px;max-height:84px;overflow:hidden;
-  padding-bottom:2px;margin-bottom:14px;
-  background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--muted) 40%,transparent) 0 2px,transparent 2px 25px);
-  background-position:0 100%}
-.qt-d{width:86px;height:18px;font-size:10px;padding:0 5px;background:hsl(var(--h,215) 22% 40%);opacity:.9;
-  animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
-.qt-d::after{bottom:-5px;height:4px}
-.qt-d.qt-newest{background:hsl(var(--h,215) 45% 45%);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 0 hsl(var(--h,215) 60% 60% / .6);
-  animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both,qt-newest 2.4s ease-out .7s infinite}
-@keyframes qt-newest{0%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 0 hsl(var(--h,215) 60% 60% / .55)}
-  70%,100%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 7px hsl(var(--h,215) 60% 60% / 0)}}
-/* the yard shunter: a little loco idling up and down the front siding */
-.qt-shunter{position:absolute;bottom:13px;left:4px;width:22px;height:13px;border-radius:3px 7px 2px 2px;
-  background:var(--pal-slate);pointer-events:none;opacity:.5;animation:qt-shunter 18s ease-in-out infinite alternate}
-.qt-shunter::before{content:"";position:absolute;right:3px;top:3px;width:5px;height:4px;border-radius:1px;background:var(--pal-amber)}
-@keyframes qt-shunter{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--qt-yw,160px))}}
+.qt-q{border-left-color:var(--z-warn);animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both}
+.qt-r[data-kind]:not([data-kind=hermes]){border-left-color:var(--k)}
+.qt-loco{background:color-mix(in srgb,var(--card) 92%,var(--accent))}
+.qt-d{opacity:.85;animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
+.qt-d.qt-newest{opacity:1;border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
 @keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
-@keyframes qt-park{from{opacity:0;transform:translateX(-30px) scale(.7)}to{opacity:.9;transform:none}}
+@keyframes qt-park{from{opacity:0;transform:translateX(-30px) scale(.7)}to{opacity:.85;transform:none}}
 .qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important;pointer-events:none}
 @keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
-/* a task changing section: a ghost car flies the arc, the real one lands */
-.qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:5px;transform-origin:0 0;
-  display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:white;
-  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.qt-ghost.qt-fly-yard{background:hsl(var(--h,215) 45% 45%)}
-.qt-ghost.qt-fly-line{background:var(--z-warn)}
+.qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:6px;transform-origin:0 0;
+  background:var(--card);border:1px solid var(--accent)}
 .qt-car.qt-landed{animation:qt-land .6s cubic-bezier(.3,1.6,.5,1) both !important}
-@keyframes qt-land{0%{transform:scale(1.18)}60%{transform:scale(.96)}100%{transform:none}}
-.qt-more{font-size:var(--fs-xs);color:var(--muted);font-weight:600;align-self:center;margin:0 2px}
-.qt-line > .qt-more{position:absolute;right:4px;top:6px}
-/* signal between depot and line: red while anything waits, green when clear */
-.qt-signal{position:relative;height:66px;margin-bottom:12px;display:flex;flex-direction:column;
-  align-items:center;gap:4px;padding-top:4px;border-left:2px solid color-mix(in srgb,var(--muted) 50%,transparent);
-  border-radius:0;width:2px;justify-self:center}
-.qt-signal i{display:block;width:9px;height:9px;border-radius:50%;margin-left:-2px;background:color-mix(in srgb,var(--muted) 35%,transparent)}
-.qtrain.backed .qt-signal i:first-child{background:var(--z-bad);animation:qt-blink 2s steps(2,end) infinite}
-.qtrain:not(.backed) .qt-signal i:last-child{background:var(--z-ok)}
-@keyframes qt-blink{50%{opacity:.6}}
-/* fleet clear: an empty line with one ghost car on patrol */
-.qt-patrol{position:absolute;bottom:16px;left:0;width:40px;height:20px;border-radius:5px;
-  border:1.5px dashed var(--z-ok);pointer-events:none;
-  animation:qt-patrol 14s ease-in-out infinite alternate}
-@keyframes qt-patrol{from{transform:translateX(0)}to{transform:translateX(calc(var(--qt-w,520px) - 60px))}}
-.qtrain.clear .qt-line .qt-name::after{content:"· clear";color:var(--z-ok)}
+@keyframes qt-land{0%{transform:scale(1.06)}100%{transform:none}}
+.qt-more{font-size:var(--fs-sm);color:var(--muted);font-weight:600;align-self:center;padding:0 6px}
+.qtrain.clear .qt-line .qt-name::after{content:"\00b7 clear";color:var(--z-ok)}
+.costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
+.costhow{max-width:90ch;line-height:1.55}
 .qtip{position:fixed;max-width:300px;z-index:60}
-@media (max-width:720px){
-  .qtrain{grid-template-columns:minmax(0,1fr)}
-  .qt-signal{display:none}
-  .qt-sec{min-height:84px}
-}
+@media (max-width:900px){.qtrain{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
-  .qtrain *, .qtrain *::before, .qtrain{animation:none !important}
-  .qt-consist{position:relative;transform:none}
-  .qt-shunter,.qt-ghost{display:none}
+  .qtrain *, .qtrain{animation:none !important}
+  .qt-ghost{display:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
@@ -1431,7 +1372,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
-   #theme,#helpbtn{padding:0}
+   #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
 
    /* Date range collapses to a single active-preset chip; tapping it reveals
       the two date inputs + full preset row beneath instead of all of them
@@ -1871,11 +1812,11 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
      activity share the slack and WRAP to two lines (line-clamp, full text in
      title=) instead of widening the table, so no column is ever scrolled out of
      view on desktop. Only below 1024px does the panel scroll sideways. */
-  --lvcols:36px minmax(96px,1.3fr) minmax(88px,1fr) 88px 60px 70px minmax(88px,1.3fr) 124px}
+  --lvcols:36px minmax(96px,1.3fr) minmax(88px,1fr) 156px 60px 70px minmax(88px,1.3fr) 124px}
 .lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:8px;align-items:center;padding:0 12px}
-@media(max-width:1023px){.lvhead,.lvrow{min-width:760px}.lvrow + .lmpanel{min-width:760px}}
-.lvhgrp{display:flex;flex-direction:column;justify-content:center;height:100%;min-width:0}
-.lvhgrp>.lvh{height:20px;justify-content:flex-start}
+@media(max-width:1023px){.lvhead,.lvrow{min-width:792px}.lvrow + .lmpanel{min-width:792px}}
+.lvhgrp{display:flex;flex-direction:row;align-items:center;gap:10px;height:100%;min-width:0;white-space:nowrap}
+.lvhgrp>.lvh{height:100%;flex:none;justify-content:flex-start}
 .lvhead{position:sticky;top:0;z-index:2;height:44px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
 .lvh{font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
@@ -1893,6 +1834,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lva1{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;min-width:0;max-width:100%}
 .lvel{font-size:13px;line-height:1.2;color:var(--muted);font-variant-numeric:tabular-nums}
 .lvc-state .lvstk{gap:2px}
+.lvrow[data-longidle] .lvs1{color:var(--muted)}
 /* cells may use 4px of the row padding so a two-line cell plus a chip line never clips */
 /* the tool chips: one wrapping line of fixed height, overflow hidden, so a chip that
    cannot fit at its min-width wraps to a clipped second line and disappears whole */
@@ -1931,7 +1873,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvswitch{color:var(--z-warn)}
 .lvtag{font-size:12.5px;padding:0 6px;border-radius:4px;flex:none}
 .lvphase{color:var(--muted);font-size:13px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal;min-width:0;flex:1 1 6ch}
-.lvtool{font-size:12.5px;line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--muted);flex:none}
+.lvtool{font-size:12.5px;line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--fg);flex:none}
 .lvst{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 9px;line-height:18px;
   border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg)}
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
