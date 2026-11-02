@@ -900,7 +900,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtip[data-side=left]::before{right:-6px;transform:rotate(135deg)}
 @media (max-width:1100px){.qtrain{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
-  .qtrain *, .qtrain{animation:none !important}
+  .qtrain *, .qtrain, .qtrain *::before, .qtrain *::after{animation:none !important;transition:none !important}
   .qt-car{opacity:1}
   .qt-ghost{display:none}
   .qt-body::before{transition:none}

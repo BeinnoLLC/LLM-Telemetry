@@ -195,7 +195,7 @@ export function paintTrain(queued, running, done){
 
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
-    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + n * 8) + '%' : '0%');
+    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
   });
 
   tr.classList.toggle('moving', nr > 0);
