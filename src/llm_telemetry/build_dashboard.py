@@ -18,6 +18,7 @@ from .config import Config as _Config
 from .schema import SCHEMA_VERSION
 from .webassets import inline_js, read_css, read_shell, read_tokens, read_utilities
 from . import energy as _E
+from . import stale as _stale
 from .pricing import ttl_label as _ttl_label
 
 CFG = _cfg()
@@ -88,6 +89,8 @@ def _shown_path(f):
     home = os.path.expanduser("~")
     return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
 
+
+data["stale"] = _stale.compute(CFG.reports_dir, now=_stale.stamp(data.get("generated")) if data.get("sample") else None)
 
 _kwh, _gw, _hw = _E.tariff(CFG)
 _d = _Config()

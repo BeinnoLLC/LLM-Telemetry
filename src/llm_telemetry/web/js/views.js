@@ -532,6 +532,7 @@ export function render(){
   // return, so an empty range never blanks the Live tab.
   renderLive();
   renderHealth(rows);
+  renderStalePolicy();
   renderDeleg();
   renderHome(inR);
   renderXfer(rows);
@@ -2244,6 +2245,32 @@ export function renderToolReliability(tools, cmds){
     : '';
 }
 
+
+const STALE_LABELS = {prices: 'Prices', rankings: 'Rankings', router: 'Router', quota: 'Quota', analytics: 'Analytics'};
+
+export function renderStalePolicy(){
+  const st = (DATA && DATA.stale) || {};
+  const names = Object.keys(STALE_LABELS).filter(k => st[k]);
+  const box = $('datasources');
+  if (box) {
+    box.innerHTML = names.length ? `<table class="dsrc"><thead><tr><th>Source</th><th>Age</th><th>Policy</th><th>Timer</th><th>Last error</th></tr></thead><tbody>${
+      names.map(k => {
+        const r = st[k];
+        const state = r.age_s == null ? 'unknown' : r.stale ? 'stale' : 'fresh';
+        return `<tr data-source="${k}" data-fresh-state="${state}"><td>${STALE_LABELS[k]}</td>` +
+          `<td class="dsrc-age">${r.age_s == null ? 'no data' : esc(ago(r.age_s)) + (r.stale ? ' · stale' : '')}</td>` +
+          `<td>stale after ${esc(ago(r.policy_s))}</td>` +
+          `<td>${esc(r.timer || '')} · every ${esc(ago(r.cadence_s || 0))}</td>` +
+          `<td>${r.last_error ? esc(r.last_error) : '<span class="muted">none</span>'}</td></tr>`;
+      }).join('')}</tbody></table>` : '<div class="muted p-4">No freshness policy in this build.</div>';
+  }
+  const note = $('coststale');
+  if (note) {
+    const pr = st.prices;
+    note.hidden = !(pr && pr.stale);
+    if (!note.hidden) note.textContent = `Rates last refreshed ${ago(pr.age_s)} ago (policy ${ago(pr.policy_s)}); costs use the last good price sheet.`;
+  }
+}
 
 // Headline strip: the three numbers that answer "is anything wrong" before
 // any chart is read. Computed from the same rows the grid shows.

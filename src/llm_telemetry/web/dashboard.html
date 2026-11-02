@@ -429,6 +429,12 @@ __DASHBOARD_CSS__
        panel used to open the page and push the main answer below the fold. -->
   <div id="hsummary" class="hsum mb-3"></div>
   <div class="card p-4 mb-3">
+   <div class="lbl mb-2.5 hhdr">Data sources
+    <span class="muted hsub">age against the stale policy</span>
+   </div>
+   <div id="datasources" class="dsrc-wrap"></div>
+  </div>
+  <div class="card p-4 mb-3">
    <div class="lbl mb-2.5 hhdr">Success rate by model
     <span class="muted hsub">most failures first · faded rows have under 5 calls</span>
    </div>
@@ -688,6 +694,7 @@ __DASHBOARD_CSS__
  </div>
 
  <div class="view" data-view="Cost" hidden>
+  <div id="coststale" class="card p-4 mb-4 stale-note" hidden></div>
   <!-- Row 1: Cost by category + Calls by task -->
   <div class="grid-2 mb-4">
    <div class="card p-4"><div class="lbl mb-2.5">Cost by category</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTaskCost"></canvas></div></div>
