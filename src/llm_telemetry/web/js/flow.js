@@ -9,9 +9,9 @@ import { profileHue } from './router.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 
-// #140: the queue IS the railway. Depot = requests waiting at an Ollama host, the line =
-// live sessions as ONE train (loco = most recently active; Hermes, Pi, Claude, Codex),
-// the yard = finished sessions. Cars are keyed and reused across polls, so only real
+// LST-260: the queue is three jars of tiles. Depot = requests waiting at an Ollama host,
+// on the line = live sessions (Hermes, Pi, Claude, Codex), yard = finished sessions. Every
+// tile is shown (the jar scrolls); tiles are keyed and reused across polls, so only real
 // arrivals/departures animate.
 export function renderQueue(){
   const p = DATA.profiles[current] || {};
@@ -34,7 +34,8 @@ export function renderQueue(){
       return {
         key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
         model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
-        phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+        phase: L.phase || '', state: /compress/i.test(L.phase || '') ? 'compressing' : /wait|approv|blocked|input/i.test(L.phase || '') ? 'waiting' : 'running',
+        category: L.category || '', idle_s: L.idle_s,
         tools: (L.tools || []).length, nmodels: L.nmodels,
       };
     });
@@ -44,7 +45,7 @@ export function renderQueue(){
     .sort((a, b) => (+b.last_ts || 0) - (+a.last_ts || 0))
     .map(s => ({
       key: `s:${s.id}`, kind: 'd', sid: s.id, label: titleOf(s.title, s.last_model || s.model),
-      model: short(s.last_model || s.model) || '', dur_s: s.dur_s, last_ts: s.last_ts,
+      model: short(s.last_model || s.model) || '', profile: current, dur_s: s.dur_s, last_ts: s.last_ts,
       tokens: s.tokens, api_calls: s.api_calls, hue: hashHue(s.last_model || s.model || ''),
     }));
 
@@ -59,15 +60,12 @@ export function renderQueue(){
   }
 }
 
-// How many cars each section draws. Generous (the user asked for "as many as
-// you want"); past it a "+N" badge keeps the real total visible.
-export const QT_CAP = { q: 16, r: 40, d: 48 };
-
 export function trainCar(it){
   const c = document.createElement('div');
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
+  c.setAttribute('role', 'listitem');
   if (it.eng && it.eng !== 'hermes'){
     const m = kindMeta(it.eng), b = document.createElement('span');
     b.className = 'qt-kb'; b.innerHTML = m.sig;  // trusted constant: a text glyph or a brand-mark <svg> b.title = m.label + ' agent';
@@ -133,33 +131,16 @@ export function carTip(it){
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
-    return head + row('engine', it.eng === 'hermes' ? '' : kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
+    return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
+      + row('engine', kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('model', it.model)
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', it.model)
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
-}
-
-// Fade each line car whole near the frame edge; the old mask chopped labels mid-word.
-let qtFadeRaf = 0;
-export function qtEdgeFade(rb, consist, moving){
-  const clear = () => [...consist.children].forEach(c => { c.style.opacity = ''; });
-  if (typeof cancelAnimationFrame !== 'function' || !rb.clientWidth || !moving){ clear(); return; }
-  cancelAnimationFrame(qtFadeRaf);
-  const fade = () => {
-    const b = rb.getBoundingClientRect();
-    [...consist.children].forEach(c => {
-      const r = c.getBoundingClientRect();
-      const o = Math.min(1, Math.max(0, (r.left - b.left) / 34), Math.max(0, (b.right - r.right) / 34));
-      c.style.opacity = o >= 1 ? '' : o <= 0 ? '0' : o.toFixed(2);
-    });
-    qtFadeRaf = requestAnimationFrame(fade);
-  };
-  qtFadeRaf = requestAnimationFrame(fade);
 }
 
 // Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
@@ -196,26 +177,12 @@ export function qtFly(tr, fromRect, toEl, cls){
   return true;
 }
 
-export function paintTrain(queuedAll, runningAll, doneAll){
-  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
+export function paintTrain(queued, running, done){
+  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
-  let consist = rb.querySelector('.qt-consist');
-  if (!consist){ consist = document.createElement('div'); consist.className = 'qt-consist'; rb.appendChild(consist); }
-  const nq = queuedAll.length, nr = runningAll.length, nd = doneAll.length;
-  // Depot and yard wrap into rows; show only what fits so "+N" stays honest
-  // (no car silently clipped by overflow). Without layout, fall back to cap.
-  const fit = (box, carW, rows, cap, n) => {
-    if (!box.clientWidth) return cap;
-    const per = Math.max(1, Math.floor((box.clientWidth + 8) / (carW + 8)));
-    const room = per * rows;
-    return Math.min(cap, n > room ? room - 1 : room);
-  };
-  const queued = queuedAll.slice(0, fit(qb, 150, 3, QT_CAP.q, nq));
-  const running = runningAll.slice(0, fit(consist, 150, 3, QT_CAP.r, nr));
-  const done = doneAll.slice(0, fit(db, 150, 3, QT_CAP.d, nd));
+  const nq = queued.length, nr = running.length, nd = done.length;
 
-  // Where every car is right now, so a task that changes section can be
-  // flown across instead of blinking out and back in.
+  // Where every tile is right now, so a task that changes jar flies across.
   const before = new Map();
   tr.querySelectorAll('.qt-car[data-key]').forEach(c => {
     if (c.classList.contains('qt-leaving')) return;
@@ -227,24 +194,16 @@ export function paintTrain(queuedAll, runningAll, doneAll){
     .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
     .map(c => c.getBoundingClientRect());
 
-  // Constant speed whatever the train length: the loop covers line + train.
-  const lineW = rb.clientWidth || 520;
-  const trainW = consist.scrollWidth || running.length * 111;
-  const loop = Math.max(8, Math.round((lineW + trainW) / 55));
-  tr.style.setProperty('--qt-loop', loop + 's');
-  tr.style.setProperty('--qt-w', (lineW + 10) + 'px');
-  tr.style.setProperty('--qt-yw', Math.max(40, (db.clientWidth || 200) - 26) + 'px');
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
-  if (sig) sig.title = nq > 0 ? `${nq} waiting` : 'line clear';
 
   paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
-  const freshR = paintCars(consist, running, (c, it, i) => {
+  const freshR = paintCars(rb, running, (c, it) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
     c.dataset.kind = it.eng;
+    c.dataset.state = it.state;
     c.style.setProperty('--k', kindMeta(it.eng).color);
-    c.classList.toggle('qt-loco', i === 0);
   });
   const freshD = paintCars(db, done, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 215 : it.hue);
@@ -256,32 +215,17 @@ export function paintTrain(queuedAll, runningAll, doneAll){
     const b = before.get(c.dataset.key);
     if (b && b.sec === 'r') qtFly(tr, b.rect, c, 'qt-fly-yard');
   });
-  // depot -> line: a queue slot has no id, so a departing depot car is paired
-  // with a newly running car by COUNT. Never claimed as an exact match.
+  // depot -> line: a queue slot has no id, so a departing depot tile is paired
+  // with a newly running one by COUNT. Never claimed as an exact match.
   freshR.forEach(c => {
     if (before.has(c.dataset.key)) return;
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
-  qtEdgeFade(rb, consist, false);  // cars hold still and all stay visible: no edge fade
 
-  // "+N" past the cap, so the strip never hides real depth.
-  [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {
-    [...box.children].forEach(c => { if (c.classList.contains('qt-more')) c.remove(); });
-    if (n > shown){
-      const m = document.createElement('b');
-      m.className = 'qt-more'; m.textContent = '+' + (n - shown);
-      box.appendChild(m);
-    }
-  });
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id); if (el && el.textContent !== String(n)) el.textContent = String(n);
   });
-  // An empty line still shows life: one ghost car patrols it.
-  const patrol = rb.querySelector('.qt-patrol');
-  if (nr === 0 && !patrol){
-    const g = document.createElement('i'); g.className = 'qt-patrol'; rb.appendChild(g);
-  } else if (nr > 0 && patrol){ patrol.remove(); }
 
   if (!tr.dataset.tip){ tr.dataset.tip = '1'; qtTipWire(tr); }
 }

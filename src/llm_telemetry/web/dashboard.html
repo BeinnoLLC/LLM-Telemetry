@@ -192,18 +192,10 @@ __DASHBOARD_CSS__
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
-   <!-- #140: the queue as a railway (and, since the follow-up, the ONLY queue
-        view: the old queued/running/done lanes were removed). Depot = requests
-        waiting at an Ollama host, the line = live sessions as one coupled
-        train (loco = most recently active), the yard = finished sessions
-        parked on sidings. Cars are keyed so a 5s poll never restarts motion;
-        a task that changes section flies across. Hover/focus a car for detail. -->
    <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued" data-empty="Nothing waiting"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running" data-empty="No live sessions"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done" data-empty="No finished sessions"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
+    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></section>
+    <section class="qt-sec qt-line" aria-label="On the line: running"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></section>
+    <section class="qt-sec qt-yard" aria-label="Yard: done"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-jar"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></section>
    </div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>

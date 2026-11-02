@@ -310,21 +310,21 @@ const ROWS = () => ([
   eq(D.flowColor({ kind: 'task', name: 'patch' }), 'col:patch', 'color: task without a model uses its own name');
 }
 
-// ═══ renderQueue / paintTrain — the railway (the only queue view since the
-// queued/running/done lanes were removed) ═══════════════════════════════════
+// ═══ renderQueue / paintTrain — three jars of tiles (depot / line / yard) ═══════════════════════════════════
 const railEls = () => ({
   qtrain: fakeEl(), 'qt-queued': fakeEl(), 'qt-running': fakeEl(), 'qt-done': fakeEl(),
-  'qt-signal': fakeEl(), qsub: fakeEl(), 'qt-n-queued': fakeEl(), 'qt-n-running': fakeEl(), 'qt-n-done': fakeEl(),
+  qsub: fakeEl(), 'qt-n-queued': fakeEl(), 'qt-n-running': fakeEl(), 'qt-n-done': fakeEl(),
 });
 const cars = box => box.children.filter(c => c.dataset && c.dataset.key && !c.classList.contains('qt-leaving'));
 const allCars = box => box.children.filter(c => c.dataset && c.dataset.key);
-const consistOf = h => h.ids.get('qt-running').querySelector('.qt-consist');
+const consistOf = h => h.ids.get('qt-running');
+const esc2 = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const lblOf = c => c.querySelector('.qt-lbl').textContent;
 {
   const h = harness();
   const D = await isolate(TARGET, h.stubs);
   D.renderQueue();
-  eq(h.ids.size, 0, 'queue: returns quietly when the railway is not on the page');
+  eq(h.ids.size, 0, 'queue: returns quietly when the jars are not on the page');
 }
 {
   const h = harness(railEls());
@@ -339,10 +339,9 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   eq(h.ids.get('qt-n-queued').textContent, '3', 'depot: count shows the real depth');
   eq(h.ids.get('qsub').textContent, 'backed up on gpu-a', 'depot: subtitle names the busy host');
   ok(h.ids.get('qtrain').classList.contains('backed'), 'depot: the train is flagged backed up');
-  eq(h.ids.get('qt-signal').title, '3 waiting', 'depot: the signal says how many wait');
   eq(D.carTip(cars(qb)[1]._qt), '<div class="ft-h">Waiting on gpu-a</div><div class="ft-r"><span>position</span><b>2 of 3</b></div><div class="ft-r"><span>state</span><b>queued at the Ollama host</b></div>',
     'depot: hover card gives host and position');
-  ok(h.ids.get('qt-running').querySelector('.qt-patrol'), 'line: an empty line gets one patrol car');
+  eq(cars(qb).map(c => c.tabIndex), [0, 0, 0], 'depot: tiles are focusable');
 
   h.DATA.ollama.hosts = [{ label: 'h', queue: '2' }];
   D.renderQueue();
@@ -353,15 +352,12 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
   ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  // Cap: display is capped (QT_CAP.q), the count is not.
-  h.DATA.ollama.hosts = [{ label: 'big', queue: D.QT_CAP.q + 4 }];
+  // No cap: every waiting task is a tile, and there is no "+N" badge.
+  h.DATA.ollama.hosts = [{ label: 'big', queue: 70 }];
   D.renderQueue();
-  eq(cars(qb).filter(c => !c.classList.contains('qt-leaving')).length, D.QT_CAP.q, 'depot: cars capped at QT_CAP.q');
-  eq(h.ids.get('qt-n-queued').textContent, String(D.QT_CAP.q + 4), 'depot: count ignores the cap');
-  eq(qb.querySelector('.qt-more')?.textContent, '+4', 'depot: "+N" badge past the cap');
-  D.renderQueue();
-  eq(qb.querySelectorAll('.qt-more').length, 1, 'depot: the badge is not duplicated on the next poll');
-  ok(D.QT_CAP.r >= 30 && D.QT_CAP.d >= 30, 'caps are generous enough for "as many trains as you want"');
+  eq(cars(qb).length, 70, 'depot: every waiting task is drawn (no cap)');
+  eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: count matches the tiles');
+  eq(qb.querySelectorAll('.qt-more').length, 0, 'depot: no "+N" badge');
 
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
   D.renderQueue();
@@ -399,14 +395,13 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   const run = cars(consistOf(h));
   eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
   eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
-  ok(run[0].classList.contains('qt-loco') && !run[1].classList.contains('qt-loco'), 'line: exactly the lead car is the locomotive');
+  eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: tiles carry a live state');
   eq(run[1].style['--h'], 'hue:work', 'line: car hue comes from the profile');
   eq(run[0].attrs['aria-label'], 'running: Fix parser · m2', 'line: car has an accessible label');
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
-  ok(h.ids.get('qtrain').classList.contains('moving'), 'line: the train is moving');
-  eq(h.ids.get('qt-running').querySelector('.qt-patrol'), null, 'line: no patrol car once real cars run');
+  ok(h.ids.get('qtrain').classList.contains('moving'), 'line: flagged as moving');
   eq(D.carTip(run[1]._qt),
-    '<div class="ft-h">kimi-k3</div><div class="ft-r"><span>model</span><b>kimi-k3</b></div>'
+    '<div class="ft-h">kimi-k3</div><div class="ft-r"><span>state</span><b>running</b></div><div class="ft-r"><span>engine</span><b>hermes</b></div><div class="ft-r"><span>model</span><b>kimi-k3</b></div>'
     + '<div class="ft-r"><span>profile</span><b>work</b></div><div class="ft-r"><span>doing</span><b>receiving stream response</b></div>'
     + '<div class="ft-r"><span>last activity</span><b>30s ago</b></div><div class="ft-r"><span>tools used</span><b>2</b></div>'
     + '<div class="ft-r"><span>models seen</span><b>3</b></div>', 'line: hover card for a running session');
@@ -419,8 +414,17 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   ok(D.carTip(yard[2]._qt).includes('<span>ran for</span><b>2m</b>'), 'yard: hover card has the duration');
   ok(D.carTip(yard[2]._qt).includes('<span>tokens</span><b>1.5k</b>'), 'yard: hover card has tokens');
   ok(D.carTip(yard[2]._qt).includes('<span>API calls</span><b>7</b>'), 'yard: hover card has API calls');
+  ok(yard.every(c => c.tabIndex === 0), 'yard: tiles are focusable');
+  ok(yard.every(c => D.carTip(c._qt).includes(esc2(c._qt.label))), 'yard: every tooltip carries the full title');
   ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
   ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
+
+  // Many finished tasks: all drawn, none capped.
+  h.DATA.profiles.p1 = { live: [], recent_sessions: Array.from({ length: 120 }, (_, i) => ({ id: 'x' + i, title: 'Task number ' + i + ' with a long wrapped title', model: 'm', last_ts: 1000 + i })) };
+  D.renderQueue();
+  eq(cars(h.ids.get('qt-done')).length, 120, 'yard: all done tasks are tiles (no cap)');
+  eq(h.ids.get('qt-done').querySelectorAll('.qt-more').length, 0, 'yard: no "+N" badge');
+  eq(h.ids.get('qt-n-done').textContent, '120', 'yard: count is honest');
 
   // No model at all: 'session', never "undefined" (#138).
   h.DATA.profiles.p1 = { live: [{ id: 'n', title: '(untitled)', idle_s: 0 }], recent_sessions: [] };

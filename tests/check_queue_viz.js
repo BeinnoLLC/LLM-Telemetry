@@ -58,7 +58,7 @@ setTimeout(() => {
   const lbl = c => c.querySelector('.qt-lbl').textContent;
   const n = id => d.getElementById(id).textContent;
   try {
-    chk(!!tr && !!qb && !!rb && !!db, 'railway: depot, line and yard exist');
+    chk(!!tr && !!qb && !!rb && !!db, 'jars: depot, line and yard exist');
     chk(!!d.getElementById('qcard'), 'queue card exists');
     chk(!!d.getElementById('qsub'), 'queue subtitle exists');
     chk(!!d.getElementById('qtip'), 'shared car tooltip exists');
@@ -88,18 +88,17 @@ setTimeout(() => {
     // ---- CSS: the motion really exists and is wired -----------------------
     for (const k of ['qt-arrive', 'qt-park', 'qt-depart', 'qt-land'])
       chk(new RegExp('@keyframes ' + k + '\\b').test(html), `@keyframes ${k} defined`);
-    // Grafana G1: the consist holds still (no qt-run slide) so every running car stays visible.
-    chk(!/@keyframes qt-run\b/.test(html) && !/\.qt-consist\{[^}]*animation/.test(html), 'the consist no longer slides across the line');
-    chk(/\.qt-cars,\.qt-consist\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the consist wraps so a long train shows every car');
-    chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get a still railway');
+    chk(!/@keyframes qt-run\b/.test(html), 'no sliding train animation');
+    chk(/\.qt-cars\{[^}]*grid-template-columns:repeat\(auto-fill[^}]*overflow-y:auto/.test(html), 'each jar wraps its tiles and scrolls inside');
+    chk(d.querySelectorAll('.qt-jar').length === 3, 'three jars: depot, line, yard');
+    chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get still jars');
     chk(/\.qt-cars:not\(:has\(\.qt-car\)\)::after\{content:attr\(data-empty\)/.test(html) && !!d.getElementById('qt-done').dataset.empty, 'an empty section says so instead of drawing nothing');
-    chk(!!d.querySelector('.qt-yard .qt-shunter'), 'the yard has an idling shunter');
+    chk(!d.querySelector('.qt-shunter, .qt-rail, .qt-signal'), 'the train furniture (shunter, rail, signal) is gone');
 
-    // ---- empty: patrol car on a clear line --------------------------------
+    // ---- empty line --------------------------------
     w.eval(`DATA.ollama = {hosts: [{label:'box-a', up:true, queue:0, loaded:[], urls:[]}]};
             DATA.profiles[current].live = []; DATA.profiles[current].recent_sessions = []; renderQueue();`);
-    chk(rb.querySelectorAll('.qt-patrol').length === 1, 'empty line: exactly one patrol car');
-    chk(tr.classList.contains('clear'), 'empty line: railway flagged clear');
+    chk(tr.classList.contains('clear'), 'empty line: flagged clear');
     chk(d.getElementById('qsub').textContent === 'fleet clear · 1 host', 'subtitle: fleet clear');
 
     // ---- depot: one car per real waiting slot -----------------------------
@@ -132,18 +131,14 @@ setTimeout(() => {
         {id:'t1', model:'qwen3-coder:30b', title:'one', idle_s:1, profile:'work', phase:'receiving stream response'},
         {id:'t2', model:'claude-opus-5', title:'two', idle_s:2},
         {id:'t3', model:'gpt-5', title:'(untitled)', idle_s:3}]; renderQueue();`);
-    const consist = rb.querySelector('.qt-consist');
-    chk(!!consist, 'line: cars ride inside one consist');
-    const run = cars(consist);
+    const run = cars(rb);
     chk(run.map(lbl).join('|') === 'one|two|gpt-5', 'line: titles lead, untitled falls back to the model', run.map(lbl).join('|'));
-    chk(run.filter(c => c.classList.contains('qt-loco')).length === 1 && run[0].classList.contains('qt-loco'), 'line: exactly one locomotive and it leads (departing cars aside)');
-    chk(!rb.querySelector('.qt-patrol'), 'line: the patrol car leaves once real cars run');
+    chk(run.every(c => c.dataset.state === 'running') && run.some(c => c.dataset.state), 'line: tiles carry a live state');
     chk(n('qt-n-running') === '3', 'line: count badge');
     chk(Number(run[0].style.getPropertyValue('--h')) === w.eval(`profileHue('work')`), 'line: car colour comes from the profile hue');
-    chk(/^\d+s$/.test(tr.style.getPropertyValue('--qt-loop')), 'line: a loop duration is set', tr.style.getPropertyValue('--qt-loop'));
     run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
-    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:2/.test(html) && /\.qt-car\{[^}]*min-height:52px/.test(html), 'cars are two-line cards, not squeezed pills');
+    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:3/.test(html) && /\.qt-car\{[^}]*min-height:56px/.test(html), 'tiles wrap titles to three lines');
     chk(!!run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent.length > 0, 'a car carries a meta line (age, owner, short id)', run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent);
     chk(w.eval(`carMeta({kind:'q',host:'box-a',pos:2,depth:5})`) === 'box-a \u00b7 2 of 5', 'depot car meta: host and position');
     chk(w.eval(`carMeta({kind:'r',profile:'p1',idle_s:90,sid:'abcdef123456'})`) === '2m ago \u00b7 p1 \u00b7 #123456', 'line car meta: age, profile and short id tell duplicate titles apart');
@@ -157,23 +152,20 @@ setTimeout(() => {
     const parked = cars(db);
     chk(parked.length === 1 && parked[0].dataset.key === 's:t1', 'line -> yard: it is parked in the yard');
     chk(parked[0].classList.contains('qt-newest'), 'yard: the newest arrival is highlighted');
-    chk(cars(rb.querySelector('.qt-consist'))[0].classList.contains('qt-loco'), 'line: the next car becomes the locomotive');
     parked[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/ran for/.test(tip.textContent) && /2\.0k/.test(tip.textContent), 'hover: yard card has duration and tokens', tip.textContent);
 
-    // ---- generous caps; "+N" keeps the real total -------------------------
-    const cap = w.eval('QT_CAP');
-    chk(cap.r >= 30 && cap.d >= 30, 'caps allow many trains', JSON.stringify(cap));
-    w.eval(`DATA.ollama.hosts[0].queue = QT_CAP.q + 3; renderQueue();`);
-    chk(cars(qb).length > 0 && cars(qb).length <= cap.q, 'depot: display capped', cars(qb).length);
-    chk(n('qt-n-queued') === String(cap.q + 3), 'depot: count is the real total');
-    const more = qb.querySelector('.qt-more');
-    chk(!!more && more.textContent === '+' + (cap.q + 3 - cars(qb).length), 'depot: +N counts exactly the cars not drawn', more && more.textContent);
-    const many = Array.from({ length: cap.d + 5 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
+    // ---- no caps: every task is a tile, the jar scrolls ---------------------
+    w.eval(`DATA.ollama.hosts[0].queue = 60; renderQueue();`);
+    chk(cars(qb).length === 60 && n('qt-n-queued') === '60', 'depot: all 60 waiting tasks drawn', cars(qb).length);
+    const many = Array.from({ length: 150 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
     w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}; renderQueue();`);
-    chk(cars(db).length > 0 && cars(db).length <= cap.d, 'yard: display capped', cars(db).length);
-    chk(db.querySelector('.qt-more')?.textContent === '+' + (cap.d + 5 - cars(db).length), 'yard: +N counts exactly the cars not drawn');
-    chk(n('qt-n-done') === String(cap.d + 5), 'yard: count is the real total');
+    chk(cars(db).length === 150 && n('qt-n-done') === '150', 'yard: all 150 done tasks drawn', cars(db).length);
+    chk(!d.querySelector('.qt-more'), 'no "+N" badge anywhere');
+    chk(cars(db).every(c => c.tabIndex === 0), 'yard: every tile is focusable');
+    cars(db)[3].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
+    chk(tip.classList.contains('on') && tip.textContent.includes(cars(db)[3]._qt.label), 'yard: tooltip carries the full title');
+    cars(db)[3].dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true, relatedTarget: d.body }));
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));

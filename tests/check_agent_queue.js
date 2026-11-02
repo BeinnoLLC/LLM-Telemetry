@@ -45,7 +45,7 @@ const dom = new JSDOM(html, {
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    const cars = () => [...d.querySelectorAll('#qt-running .qt-consist .qt-car:not(.qt-leaving)')];
+    const cars = () => [...d.querySelectorAll('#qt-running .qt-car:not(.qt-leaving)')];
     const kcount = k => cars().filter(c => c.dataset.kind === k).length;
     const kpi = () => d.querySelector('#kpis .kpi-live');
     const chip = k => { const e = kpi().querySelector(`.kpi-kind[data-kind="${k}"]`); return e ? parseInt(e.textContent.replace(/\D+/g, ''), 10) : 0; };
