@@ -2246,8 +2246,6 @@ export function renderToolReliability(tools, cmds){
 }
 
 
-// Headline strip: the three numbers that answer "is anything wrong" before
-// any chart is read. Computed from the same rows the grid shows.
 const STALE_LABELS = {prices: 'Prices', rankings: 'Rankings', router: 'Router', quota: 'Quota', analytics: 'Analytics'};
 
 export function renderStalePolicy(){
@@ -2274,6 +2272,8 @@ export function renderStalePolicy(){
   }
 }
 
+// Headline strip: the three numbers that answer "is anything wrong" before
+// any chart is read. Computed from the same rows the grid shows.
 export function renderHealthSummary(H, F){
   const el = $('hsummary'); if (!el) return;
   const tot = H.reduce((a,h)=>a+h.total,0), ok = H.reduce((a,h)=>a+h.ok,0);

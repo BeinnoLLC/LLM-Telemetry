@@ -8167,6 +8167,8 @@ function renderStalePolicy(){
   }
 }
 
+// Headline strip: the three numbers that answer "is anything wrong" before
+// any chart is read. Computed from the same rows the grid shows.
 function renderLifecycle(pressure){
   const card = $('lifecard');
   if (!card) return;
@@ -8301,8 +8303,6 @@ function renderToolReliability(tools, cmds){
 }
 
 
-// Headline strip: the three numbers that answer "is anything wrong" before
-// any chart is read. Computed from the same rows the grid shows.
 function renderHealthSummary(H, F){
   const el = $('hsummary'); if (!el) return;
   const tot = H.reduce((a,h)=>a+h.total,0), ok = H.reduce((a,h)=>a+h.ok,0);
