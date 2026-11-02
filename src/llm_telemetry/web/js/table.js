@@ -123,7 +123,9 @@ export function applySort(tbl, id){
   const parent = body.length ? body[0].parentNode : null;
   if (!parent) return;
   const anchor = pinned.length ? pinned[0] : null;
-  keyed.forEach(k => parent.insertBefore(k.r, anchor));
+  const frag = document.createDocumentFragment();
+  keyed.forEach(k => frag.appendChild(k.r));
+  parent.insertBefore(frag, anchor);
 }
 
 export function sortBy(tbl, id, label){
@@ -136,6 +138,7 @@ export function sortBy(tbl, id, label){
 export function enhanceTable(tbl, id){
   if (!tbl || !tbl.querySelectorAll) return;
   tbl.classList.add('dt');
+  if (tbl.parentNode && tbl.parentNode.classList) tbl.parentNode.classList.add('dt-wrap');
   const {head, rows} = headerAndRows(tbl);
   if (head){
     Array.from(head.children).forEach((th, i) => {

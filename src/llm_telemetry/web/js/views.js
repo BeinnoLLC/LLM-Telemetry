@@ -1434,6 +1434,7 @@ export function renderProjectMatrix(rows){
     td.onclick = () => pdOpen(td.dataset.project, rows, td.dataset.model);
     td.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pdOpen(td.dataset.project, rows, td.dataset.model); } };
   });
+  enhanceTable(table, 'projmatrix');
   // Acceptance: "opens from a matrix cell AND from a project row label."
   table.querySelectorAll('tbody tr').forEach(tr => {
     const labelCell = tr.firstElementChild;

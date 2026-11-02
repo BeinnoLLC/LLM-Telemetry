@@ -1907,6 +1907,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dt-sort:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .dt-ar{font-size:10px;opacity:.55}
 .dt th[aria-sort=ascending] .dt-ar,.dt th[aria-sort=descending] .dt-ar,.fsort [aria-sort=ascending] .dt-ar,.fsort [aria-sort=descending] .dt-ar{opacity:1;color:var(--accent)}
+.dt-wrap{max-height:70vh;overflow:auto;-webkit-overflow-scrolling:touch}
 .dt-cap{caption-side:top;text-align:right;padding:0 0 8px}
 .dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:12px;color:var(--muted)}
@@ -6050,6 +6051,7 @@ function renderProjectMatrix(rows){
     td.onclick = () => pdOpen(td.dataset.project, rows, td.dataset.model);
     td.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pdOpen(td.dataset.project, rows, td.dataset.model); } };
   });
+  enhanceTable(table, 'projmatrix');
   // Acceptance: "opens from a matrix cell AND from a project row label."
   table.querySelectorAll('tbody tr').forEach(tr => {
     const labelCell = tr.firstElementChild;
@@ -9725,7 +9727,9 @@ function applySort(tbl, id){
   const parent = body.length ? body[0].parentNode : null;
   if (!parent) return;
   const anchor = pinned.length ? pinned[0] : null;
-  keyed.forEach(k => parent.insertBefore(k.r, anchor));
+  const frag = document.createDocumentFragment();
+  keyed.forEach(k => frag.appendChild(k.r));
+  parent.insertBefore(frag, anchor);
 }
 
 function sortBy(tbl, id, label){
@@ -9738,6 +9742,7 @@ function sortBy(tbl, id, label){
 function enhanceTable(tbl, id){
   if (!tbl || !tbl.querySelectorAll) return;
   tbl.classList.add('dt');
+  if (tbl.parentNode && tbl.parentNode.classList) tbl.parentNode.classList.add('dt-wrap');
   const {head, rows} = headerAndRows(tbl);
   if (head){
     Array.from(head.children).forEach((th, i) => {

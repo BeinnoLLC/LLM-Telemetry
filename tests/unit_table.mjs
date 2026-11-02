@@ -109,5 +109,28 @@ ok(dbtn('compact').getAttribute('aria-pressed') === 'true', 'a fresh render show
 T.setDensity('garbage');
 eq(store['llmt.density'], 'comfortable', 'unknown density falls back to comfortable');
 
+// wide matrix (projmatrix shape): tfoot stays put, dashes sort last, 1,200 rows sort fast, wrapper scrolls
+{
+  const t2 = doc.createElement('table');
+  const w = doc.createElement('div'); w.appendChild(t2); doc.body.appendChild(w);
+  let rows = '';
+  for (let i = 0; i < 1200; i++) rows += `<tr><td>p${i}</td><td class="text-right">${i % 7 === 0 ? '—' : '$' + ((i * 37) % 1000) + '.50'}</td><td class="text-right">${(i * 13) % 500}</td></tr>`;
+  t2.innerHTML = `<thead><tr><th>Project</th><th class="text-right">Cost</th><th class="text-right">Total</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>Total</td><td>1</td><td>2</td></tr></tfoot>`;
+  T.enhanceTable(t2, 'mx');
+  ok(w.classList.contains('dt-wrap'), 'helper marks the wrapper dt-wrap (bounded scroll container)');
+  ok(t2.querySelector('td.num') && t2.querySelector('th.num'), 'matrix numeric cells and headers are right-aligned');
+  const b = [...t2.querySelectorAll('th button.dt-sort')].find(x => x.textContent.startsWith('Total'));
+  const t0 = Date.now();
+  b.click(); b.click();
+  ok(Date.now() - t0 < 1500, 'two sorts of 1,200 rows are fast');
+  const col = [...t2.querySelectorAll('tbody tr')].map(r => +r.children[2].textContent);
+  ok(col[0] >= col[col.length - 1] && col[0] === Math.max(...col), 'matrix sorts numerically descending');
+  eq(b.parentNode.getAttribute('aria-sort'), 'descending', 'matrix header aria-sort descending');
+  eq(t2.querySelector('tfoot td').textContent, 'Total', 'tfoot is not sorted');
+  [...t2.querySelectorAll('th button.dt-sort')].find(x => x.textContent.startsWith('Cost')).click();
+  const c = [...t2.querySelectorAll('tbody tr')].map(r => r.children[1].textContent);
+  eq(c[c.length - 1], '—', 'dash cells sort last ascending');
+}
+
 console.log(`\nunit_table.mjs  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

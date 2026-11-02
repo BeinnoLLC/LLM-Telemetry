@@ -1987,6 +1987,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dt-sort:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .dt-ar{font-size:10px;opacity:.55}
 .dt th[aria-sort=ascending] .dt-ar,.dt th[aria-sort=descending] .dt-ar,.fsort [aria-sort=ascending] .dt-ar,.fsort [aria-sort=descending] .dt-ar{opacity:1;color:var(--accent)}
+.dt-wrap{max-height:70vh;overflow:auto;-webkit-overflow-scrolling:touch}
 .dt-cap{caption-side:top;text-align:right;padding:0 0 8px}
 .dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:12px;color:var(--muted)}
