@@ -585,14 +585,14 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
 
 // ── soundToggleInstall ───────────────────────────────────────────────────────
 {
-  const lab = x => [x.M.soundOn, x.els.soundtoggle._attrs['aria-pressed'], x.els.soundtoggle.textContent, x.els.soundtoggle.classList.contains('on')];
+  const lab = x => [x.M.soundOn, x.els.soundtoggle._attrs['aria-pressed'], x.els.soundtoggle._attrs['aria-label'], x.els.soundtoggle.classList.contains('on')];
   const on = await boot({ storage: { 'lt-sound': '1' } });
-  eq(lab(on), [true, 'true', 'Sound on', true], 'soundToggleInstall: a remembered choice paints the button as on');
+  eq(lab(on), [true, 'true', 'Sound on \u2014 click to mute', true], 'soundToggleInstall: a remembered choice paints the button as on');
 
   const d = await boot({ storage: {} });
-  eq(lab(d), [true, 'true', 'Sound on', true], 'soundToggleInstall: sound is ON by default (nothing saved)');
+  eq(lab(d), [true, 'true', 'Sound on \u2014 click to mute', true], 'soundToggleInstall: sound is ON by default (nothing saved)');
   const m = await boot({ storage: { 'lt-sound': '0' } });
-  eq(lab(m), [false, 'false', 'Sound off', false], 'soundToggleInstall: negative control: a saved "0" mutes and paints "Sound off" (default is not hard-coded)');
+  eq(lab(m), [false, 'false', 'Sound off \u2014 click to unmute', false], 'soundToggleInstall: negative control: a saved "0" mutes and paints "Sound off" (default is not hard-coded)');
 
   const s = await boot({ storage: { 'lt-sound': '0' } });
   s.win.soundBaseline = false;
