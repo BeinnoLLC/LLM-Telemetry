@@ -1,0 +1,14 @@
+[Unit]
+Description=Refresh the price catalogue daily (jittered)
+
+[Timer]
+# LST-209: once a day is the catalogue's own cadence. Jitter keeps a fleet off
+# the same second; Persistent catches up a missed run after downtime.
+OnBootSec=5min
+OnUnitActiveSec=24h
+RandomizedDelaySec=1800
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

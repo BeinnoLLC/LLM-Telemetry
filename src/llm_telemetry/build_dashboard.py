@@ -16,7 +16,7 @@ import time
 from .config import get as _cfg
 from .config import Config as _Config
 from .schema import SCHEMA_VERSION
-from .webassets import inline_js, read_css, read_shell, read_tokens
+from .webassets import inline_js, read_css, read_shell, read_tokens, read_utilities
 from . import energy as _E
 from .pricing import ttl_label as _ttl_label
 
@@ -102,7 +102,10 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
                        "analytics_rebuild_interval_s": getattr(CFG, "analytics_rebuild_interval_s", _d.analytics_rebuild_interval_s)},
          "interval_defaults": {"live_poll_interval_s": _d.live_poll_interval_s,
                                 "analytics_rebuild_interval_s": _d.analytics_rebuild_interval_s}}
-_DASHBOARD_CSS = read_tokens() + read_css()
+# Utilities first, then tokens and the page stylesheet: the utility
+# classes must exist without the Tailwind CDN (ADR 0001: one self-contained
+# artifact), and a component rule still wins over a utility of equal weight.
+_DASHBOARD_CSS = read_utilities() + read_tokens() + read_css()
 SHELL = read_shell()
 try:
     _costs_payload = json.dumps(json.load(open(COSTS_DATA)), default=str)

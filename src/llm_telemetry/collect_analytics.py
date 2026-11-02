@@ -322,13 +322,20 @@ select s.id,
        (select u.billing_base_url from session_model_usage u
           where u.session_id = s.id
             and coalesce(nullif(u.task,''),'main') = 'main'
-          order by u.last_seen desc limit 1)
+          order by u.last_seen desc limit 1),
+       -- LST-256: how long this session has been running. The live table has an
+       -- Elapsed column that showed "—" for every Hermes row because only the PI
+       -- collector emitted uptime_s; the data was in sessions.started_at all
+       -- along. Null when started_at is missing rather than 0, so the cell says
+       -- "unknown" instead of claiming the session just started.
+       case when s.started_at is null then null
+            else cast(strftime('%s','now') - s.started_at as int) end
 from sessions s
 where s.ended_at is null
   and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
 order by coalesce(s.last_activity_at, s.started_at) desc
 """
-LIVE_COLS = "id title init_model phase idle_s parent tools model nmodels base_url".split()
+LIVE_COLS = "id title init_model phase idle_s parent tools model nmodels base_url uptime_s".split()
 
 #
 #

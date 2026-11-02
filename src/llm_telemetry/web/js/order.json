@@ -139,6 +139,14 @@
   },
   {
    "mod": "charts",
+   "name": "HAS_CHART"
+  },
+  {
+   "mod": "charts",
+   "name": "CHART_MISSING_NOTE"
+  },
+  {
+   "mod": "charts",
    "name": "charts"
   },
   {
@@ -1418,8 +1426,20 @@
    "name": "exportTableCsv"
   },
   {
+   "mod": "views",
+   "name": "priceFreshness"
+  },
+  {
    "mod": "palette",
    "name": "slugOf"
+  },
+  {
+   "mod": "palette",
+   "name": "AGE_CUTS"
+  },
+  {
+   "mod": "palette",
+   "name": "FEEDER"
   },
   {
    "mod": "router",
@@ -1432,6 +1452,10 @@
   {
    "mod": "router",
    "name": "MODEL_FILTER"
+  },
+  {
+   "mod": "router",
+   "name": "VIEW_PARAMS"
   },
   {
    "mod": "router",
@@ -1892,6 +1916,18 @@
   {
    "mod": "router",
    "name": "exitHourRange"
+  },
+  {
+   "mod": "router",
+   "name": "setViewParam"
+  },
+  {
+   "mod": "router",
+   "name": "hydrateViewParams"
+  },
+  {
+   "mod": "router",
+   "name": "triggerRefresh"
   },
   {
    "mod": "main",

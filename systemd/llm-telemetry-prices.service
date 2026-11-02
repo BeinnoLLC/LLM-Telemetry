@@ -1,0 +1,18 @@
+[Unit]
+Description=Refresh the OpenRouter price catalogue cache
+
+[Service]
+# LST-209: the catalogue feed is a daily-priced document, but it only refreshed
+# as a side effect of the build — so with the build pinned to a short TTL the
+# cache could still serve a day-old sheet, and there was no unit to point a
+# reviewer at when the Prices pill went amber. This unit owns the refresh.
+#
+# --force bypasses the in-process TTL cache, which is the point: this timer IS
+# the refresh cadence, so the collector must not decide to skip it. It writes
+# the same cache file the build reads, so the next build picks the new sheet up.
+# A network failure leaves the prior cache in place with status=stale and
+# last_error set (pricing._fetch_openrouter), so the view stays honest rather
+# than blank.
+Type=oneshot
+Nice=10
+ExecStart=%h/.local/bin/llm-telemetry pricing --force

@@ -1118,8 +1118,11 @@ export function tickLiveStamp(now){
   const at = now == null ? Math.floor(Date.now() / 1000) : now;
   const age = Math.max(0, at - liveUpdatedAt);
   t.dataset.stampBase = age < 1 ? 'live · updated just now' : `live · updated ${ago(age)} ago`;
-  // #149: the live panel ages on the 5s poll cadence, not the build's 60s.
-  return stampFreshness(t, liveUpdatedAt, 'live', at);
+  // #149/#185: the live panel ages against the ticket's absolute cuts (green
+  // under 30 s, amber 30-90 s, red past 90 s) instead of the 5 s poll cadence,
+  // so two missed polls no longer paint a healthy feed red. A red stamp also
+  // routes to Health via the feeder timer named in its tooltip.
+  return stampFreshness(t, liveUpdatedAt, 'liveboard', at, {health: true});
 }
 // One-second tick so the age is honest even when polling is stalled (a stalled
 // poll never calls tickLiveStamp, so the stamp would otherwise lie at "4s ago").

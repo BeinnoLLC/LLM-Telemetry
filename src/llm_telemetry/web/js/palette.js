@@ -253,11 +253,27 @@ export const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : Math.roun
 // `llm-telemetry doctor` command reads the same numbers from the unit files.
 export const CADENCE = {
   dashboard: 60, live: 5, logs: 60, costs: 60, transcripts: 60,
-  probe: 5, router: 3600, quota: 3600, rankings: 3600,
+  probe: 5, router: 3600, quota: 3600, rankings: 6 * 3600,
 };
 // Past 1x the cadence a section is late; past 2x it is stale and gets greyed
 // with a hint rather than quietly showing yesterday's numbers.
 export const STALE_FACTOR = 2;
+// LST-185: the Home live board ages against ABSOLUTE cuts the ticket pins —
+// green under 30 s, amber 30-90 s, red past 90 s — not against the 5 s poll
+// cadence. A 5 s poll is the transport, not the promise to the user: two
+// missed polls (10 s) is still a healthy feed, so cadence multiples screamed
+// "stale" at a board that was fine. `cuts` wins over cadence when present.
+export const AGE_CUTS = { liveboard: {warn: 30, bad: 90} };
+// Which systemd timer feeds each section, so a red stamp can name the unit to
+// inspect instead of leaving the user to guess.
+export const FEEDER = {
+  liveboard: 'llm-telemetry-probe.timer',
+  dashboard: 'llm-telemetry-build.timer',
+  costs: 'llm-telemetry-build.timer',
+  rankings: 'llm-telemetry-rankings.timer',
+  router: 'llm-telemetry-router.timer',
+  quota: 'llm-telemetry-quota.timer',
+};
 
 // ---- one focus trap for every overlay (P14, #146) ----------------------
 // Six overlays shipped four different amounts of keyboard support: two trapped
@@ -334,18 +350,27 @@ export function freshness(ts, key, now){
   if (typeof t === 'number') t = t > 1e12 ? Math.floor(t / 1000) : t;
   else if (typeof t === 'string'){ const ms = Date.parse(t); t = isNaN(ms) ? null : Math.floor(ms / 1000); }
   const cadence = CADENCE[key];
+  const cuts = AGE_CUTS[key];
   const at = now == null ? Math.floor(Date.now() / 1000) : now;
-  if (t == null || !cadence) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
+  if (t == null || (!cadence && !cuts)) return {state:'unknown', key, cadence: cadence || null, age:null, label:'no timestamp'};
   const age = Math.max(0, Math.round(at - t));
-  const state = age < cadence ? 'fresh' : age < cadence * STALE_FACTOR ? 'old' : 'stale';
-  return {state, key, cadence, age, label: ago(age) + ' old',
-          hint: `last update ${ago(age)} ago · expected every ${ago(cadence)}`};
+  // LST-185: absolute cuts (30 s / 90 s) beat the cadence multiples when a
+  // ticket pins a user-facing promise; otherwise age against the poll cadence.
+  const warnAt = cuts ? cuts.warn : cadence;
+  const badAt = cuts ? cuts.bad : cadence * STALE_FACTOR;
+  const state = age < warnAt ? 'fresh' : age < badAt ? 'old' : 'stale';
+  const feeder = FEEDER[key];
+  const hint = feeder
+    ? `last update ${ago(age)} ago · fed by ${feeder}`
+    : `last update ${ago(age)} ago · expected every ${ago(cadence || warnAt)}`;
+  return {state, key, cadence: cadence || null, age, feeder: feeder || null,
+          label: ago(age) + ' old', hint};
 }
 
 // Writes the state onto the element: a class the CSS can grey, and (for a late
 // or stale section) a suffix on the existing text. The original text is kept in
 // one place, so a section that recovers does not accumulate suffixes.
-export function stampFreshness(el, ts, key, now){
+export function stampFreshness(el, ts, key, now, opts){
   if (!el) return null;
   const r = freshness(ts, key, now);
   if (el.dataset.stampBase === undefined) el.dataset.stampBase = el.dataset.stampBase || el.textContent || '';
@@ -359,6 +384,18 @@ export function stampFreshness(el, ts, key, now){
   else {
     const sep = el.dataset.stampBase ? ' · ' : '';
     el.textContent = `${el.dataset.stampBase}${sep}${r.state === 'stale' ? 'stale, ' : ''}${r.label}`;
+  }
+  // A red stamp is a dead end unless it says where to look: the ticket asks for
+  // the stale state to route to Health, where the failing collector and timer
+  // live. Building it as a real anchor keeps it keyboard-reachable, and the
+  // text reset above removes it as soon as the feed recovers.
+  if (r.state === 'stale' && opts && opts.health && el.ownerDocument) {
+    const a = el.ownerDocument.createElement('a');
+    a.href = '#/health';
+    a.className = 'stamp-health';
+    a.textContent = ' check Health';
+    a.title = r.hint || r.label;
+    el.appendChild(a);
   }
   if ('title' in el) el.title = r.state === 'fresh' ? '' : (r.hint || r.label);
   return r;

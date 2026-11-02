@@ -27,6 +27,12 @@ ORDER_PATH = os.path.join(JS_DIR, "order.json")
 # stylesheets are inlined behind this file, so the dashboard and the price
 # sheet cannot drift apart.
 TOKENS_PATH = os.path.join(HERE, "web", "css", "tokens.css")
+# ADR 0001: the page is ONE self-contained artifact, so it must not need a CDN
+# at runtime for its layout. These are the Tailwind utility classes the markup
+# actually uses, vendored at the values those class names mean — the CDN they
+# used to come from is a browser-side JIT, and when it is blocked the entire
+# dashboard lost its layout (flex/gap/padding all silently no-ops).
+UTILITIES_PATH = os.path.join(HERE, "web", "css", "utilities.css")
 # The rankings payload rides in-app too (#113): no standalone page, so the
 # module list is just the SPA's, in dependency order (main boots last and is
 # the only one that runs anything while loading).
@@ -70,6 +76,17 @@ def script_json(obj):
 def read_css():
     """The stylesheet, inlined into <style> so the page needs no sibling file."""
     with open(CSS_PATH, encoding="utf-8") as fh:
+        return strip_css_comments(fh.read())
+
+
+def read_utilities():
+    """The vendored utility classes the markup uses (replaces the Tailwind CDN).
+
+    Inlined BEFORE the page stylesheet so a component rule can still override a
+    utility, and emitted in the same <style> block so the page ships as one
+    file with no network dependency for layout.
+    """
+    with open(UTILITIES_PATH, encoding="utf-8") as fh:
         return strip_css_comments(fh.read())
 
 

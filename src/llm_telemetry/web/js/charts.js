@@ -9,7 +9,20 @@ import { DATA } from './main.js';
 
 export let charts = [], current = null;
 export let CHART_ANIM_DONE = false;
+// Chart.js is a CDN script; if it fails to load, stub it so the rest of the
+// bundle still runs (it used to abort the whole page). See utilities.css.
+export const HAS_CHART = typeof Chart !== 'undefined' && !!Chart;
+if (!HAS_CHART) {
+  globalThis.Chart = {
+    defaults: {font: {}, color: null, borderColor: null,
+               plugins: {legend: {labels: {generateLabels: () => []}}}},
+    getChart: () => null,
+    register: () => {},
+  };
+}
 Chart.defaults.font.size = 10; readTheme();
+export const CHART_MISSING_NOTE =
+  'Charts unavailable: Chart.js could not load from its CDN. Tables and numbers are still live.';
 export const noLeg = {plugins:{legend:{display:false}}};
 
 export const bounds = p => {
@@ -22,6 +35,14 @@ export function tintTicks(axis){
 }
 
 export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)return;
+  if (!HAS_CHART) {
+    if (!el.dataset.chartMissing) {
+      el.dataset.chartMissing = '1';
+      const note = el.parentNode;
+      if (note) note.innerHTML = `<div class="muted" style="font-size:var(--fs-xs);padding:.6rem .2rem">${CHART_MISSING_NOTE}</div>`;
+    }
+    return null;
+  }
   // Chart.js refuses to bind a second chart to a canvas that still has one
   // ("Canvas is already in use"). charts[] is emptied on every render, but a
   // chart created outside that cycle — the live poll repaints a chart every

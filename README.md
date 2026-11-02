@@ -102,6 +102,7 @@ Profiles are autodiscovered from `~/.hermes`. To point it somewhere else, write
 | `llm-telemetry session-timeline` | Write `sessions/<profile>/<id>.json` — one session's timeline (#94) |
 | `llm-telemetry probe` | Probe inference hosts → `ollama-data.json` |
 | `llm-telemetry costs` | Render the per-1M rate reference page |
+| `llm-telemetry pricing` | Refresh the OpenRouter price-catalogue cache in place (`--force` bypasses the TTL) — owned by `llm-telemetry-prices.timer` (LST-209) |
 | `llm-telemetry rankings` | Fetch OpenRouter's public rankings → `rankings-data.json`, rendered by the dashboard's Rankings view (#113) |
 | `llm-telemetry router` | Export router config, tiers, auth and routing decisions (Router tab) |
 | `llm-telemetry quota` | Export per-profile provider quota headroom from the Hermes quota cache (Quota tab) |
@@ -121,7 +122,7 @@ cp systemd/*.service systemd/*.timer ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now llm-telemetry-build.timer llm-telemetry-probe.timer \
   llm-telemetry-router.timer llm-telemetry-quota.timer llm-telemetry-rankings.timer \
-  llm-telemetry-serve
+  llm-telemetry-prices.timer llm-telemetry-serve
 ```
 
 No systemd (e.g. a container)? Run `llm-telemetry router` and
