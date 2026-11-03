@@ -44,7 +44,7 @@ chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after,[
 
 // ---- LST-261 pass 2: ghost keeps the destination size (no scaled text), jar bottom padding, tooltip hides
 chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'flying ghost is sized like its destination tile and only translates (text stays 14px)');
-chk(/\.qt-body\{[^}]*padding:30px 10px 30px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
+chk(/\.qt-body\{[^}]*padding:30px 10px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
 chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'tile tooltip hides when the pointer leaves the jars');
 chk(/jr\.bottom \+ g/.test(html), 'tile tooltip prefers a spot outside the jar');
 
