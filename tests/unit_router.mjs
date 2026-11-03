@@ -549,34 +549,50 @@ eq(R.hourRowsFor({ hour_rows: [{ date: 'not-a-date', hour: 1 }] }, 24).length, 0
   'hourRowsFor: an unparseable date yields no row (NaN comparison is false)');
 
 // =============================== updateRangeToggleLabel / setRange / setHour =
+// U-2: the label now lives on the Custom segment of the #presets radiogroup,
+// and the checked segment follows the state.
+const mkRadio = key => { const b = mkEl('button'); b.dataset.key = key; b._lbl = mkEl('span'); b.querySelector = () => b._lbl; return b; };
+const radios = ['1h', '6h', '12h', 'custom'].map(mkRadio);
+getEl('presets').querySelectorAll = sel => sel === '[role=radio]' ? radios : [];
+getEl('presets').querySelector = sel => sel.includes('custom') ? radios[3] : null;
+const customLabel = () => radios[3]._lbl.textContent;
+const checkedKey = () => (radios.find(r => r.getAttribute('aria-checked') === 'true') || {dataset: {}}).dataset.key;
 R.setRange('2026-01-01', '2026-01-31');
 eq(R.HOUR_RANGE, null, 'setRange: clears any hour range');
 eq(getEl('from').value, '2026-01-01', 'setRange: writes #from');
 eq(getEl('to').value, '2026-01-31', 'setRange: writes #to');
-eq(getEl('rangetoggle').textContent, '2026-01-01 → 2026-01-31',
-  'updateRangeToggleLabel: shows from -> to');
+eq(customLabel(), '2026-01-01 \u2192 2026-01-31',
+  'updateRangeToggleLabel: Custom shows from -> to');
+eq(checkedKey(), 'custom', 'updateRangeToggleLabel: a date range checks Custom');
 R.setRange('2026-01-01', '2026-01-01');
-eq(getEl('rangetoggle').textContent, '2026-01-01',
+eq(customLabel(), '2026-01-01',
   'updateRangeToggleLabel: a single day collapses to one date');
 R.setRange('', '');
-eq(getEl('rangetoggle').textContent, 'Range',
+eq(customLabel(), 'Custom',
   'updateRangeToggleLabel: both empty -> the generic label');
 R.setRange('2026-01-01', '');
-eq(getEl('rangetoggle').textContent, 'Range',
+eq(customLabel(), 'Custom',
   'updateRangeToggleLabel: half a range -> the generic label');
 R.setHourRange(6);
 eq(R.HOUR_RANGE, 6, 'setHourRange: stores the hour count');
-eq(getEl('rangetoggle').textContent, '6h', 'updateRangeToggleLabel: hour range wins over from/to');
+eq(checkedKey(), '6h', 'updateRangeToggleLabel: hour range checks its segment');
+eq(customLabel(), 'Custom', 'updateRangeToggleLabel: Custom stays generic under an hour range');
 R.setHourRange(1);
-eq(getEl('rangetoggle').textContent, '1h', 'updateRangeToggleLabel: 1h');
+eq(checkedKey(), '1h', 'updateRangeToggleLabel: 1h');
 R.setRange('2026-01-01', '2026-01-31');
-eq(getEl('rangetoggle').textContent, '2026-01-01 → 2026-01-31',
+eq(customLabel(), '2026-01-01 \u2192 2026-01-31',
   'setRange: switching back from an hour range restores the dates');
 R.setHourRange(null);
 eq(R.HOUR_RANGE, null, 'setHourRange(null): cleared');
 R.setHourRange(12);
 getEl('from').value = 'x';
-eq(getEl('rangetoggle').textContent, '12h', 'updateRangeToggleLabel: dates ignored while hours set');
+eq(checkedKey(), '12h', 'updateRangeToggleLabel: dates ignored while hours set');
+eq(R.rangeKey(), '12h', 'rangeKey: the hour preset');
+eq(R.rangeParam(), '12h', 'rangeParam: hour presets serialise by name');
+R.setRange('2026-01-01', '2026-01-31');
+eq(R.rangeParam(), '2026-01-01_2026-01-31', 'rangeParam: a custom range serialises as from_to');
+R.setRange('', '');
+eq(R.rangeParam(), '', 'rangeParam: no bounds means no param (All)');
 
 // =============================================================== nav drawer =
 eq(R.navViews(), BASE_VIEWS.concat(EXTRA_VIEWS), 'navViews: every .view in DOM order');

@@ -92,7 +92,7 @@ setTimeout(() => {
         `active-state class on the Sessions nav item matches the convention other entries use (got "${navItem.className}" vs reference "${usageActiveClass}")`);
 
     // Deep link.
-    chk(w.eval('location.hash') === '#/sessions', 'navigating to Sessions sets the hash to #/sessions');
+    chk(w.eval('location.hash') === '#/sessions', 'navigating to Sessions sets the hash to #/sessions', w.eval('location.hash'));
 
     // Fresh load from #/projects lands directly on the view.
     const dom2 = boot('#/sessions');

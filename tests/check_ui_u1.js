@@ -31,7 +31,7 @@ chk(has(/\.statgrid\{display:grid;grid-template-columns:repeat\(12,minmax\(0,1fr
 chk(has(/\.statgrid\.live>\.stat\{grid-column:span 3\}/) && has(/\.statgrid\.totals>\.stat\{grid-column:span 2\}/), 'live row = 4 x span 3, totals row = 6 x span 2');
 chk(has(/\.stat\{display:grid;grid-template-rows:18px 38px 18px 28px;row-gap:4px;padding:12px 16px/), 'card anatomy is fixed grid tracks (shared baselines)');
 chk(has(/\.stat-value\{font:600 28px\/38px/) && has(/\.stat-label\{font:500 13px\/18px/) && has(/\.stat-sub\{font:400 13px\/18px/), 'every text slot is 13px or larger');
-chk(has(/\.page:not\(\[data-pageview="Home"\]\) > #kpis,\.page:not\(\[data-pageview="Home"\]\) > #xfercard\{display:none\}/), 'KPI strip and Transferred bar are hidden on every non-Home view');
+chk(has(/\.page:not\(\[data-pageview="Home"\]\) > #kpis\{display:none\}/), 'KPI strip is hidden on every non-Home view');
 chk(!has(/\.lkpi|\.grid-kpi|\.kpi-card|\.kpi-ring/), 'the two old card families are gone from the CSS');
 // sidebar
 chk(has(/--nav-w:240px/), 'nav is 240px wide');
@@ -61,7 +61,7 @@ setTimeout(() => {
   const meters = d.querySelectorAll('#kpis .stat-meter[role="meter"]');
   chk(meters.length === 2, 'bounded percentages are thin meters', meters.length);
   chk(!d.getElementById('unpricedbanner') && !!d.getElementById('notices'), 'banner element replaced by the notices region');
-  chk(d.getElementById('xfercard') && d.getElementById('kpis').parentNode === d.getElementById('xfercard').parentNode, 'strip and Transferred bar are siblings the Home-only rule targets');
+  chk(!d.querySelector('.page > #xfercard') && !!d.querySelector('#bwpanel #xfercard'), 'Transferred is no longer a Home-level bar (U-2): it sits in the Bandwidth panel');
   // sidebar: every item has a name for the icon-only rail
   const items = [...d.querySelectorAll('#navdrawer .navitem')];
   chk(items.length > 5 && items.every(a => (a.getAttribute('aria-label') || '').trim().length > 0), 'every nav item has an aria-label (icon-only rail still has names)', items.length);
@@ -73,7 +73,7 @@ setTimeout(() => {
   setTimeout(() => {
     const u = use.window.document, pg = u.querySelector('.page');
     chk(pg && pg.dataset.pageview !== 'Home', 'on #/usage the page is not in Home mode', pg && pg.dataset.pageview);
-    chk(!!u.getElementById('kpis') && !!u.getElementById('xfercard'), 'the strip exists in the DOM; the CSS rule above hides it off Home');
+    chk(!!u.getElementById('kpis') && !!u.getElementById('xfercard'), 'the strip exists in the DOM (CSS hides it off Home); Transferred lives in Bandwidth');
     use.window.close();
     console.log(`\ncheck_ui_u1.js  ${total - failed} passed, ${failed} failed`);
     process.exit(failed ? 1 : 0);

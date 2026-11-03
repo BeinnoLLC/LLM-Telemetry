@@ -90,7 +90,8 @@ setTimeout(() => {
   const hasLan = merged.some(r => (+r.lan_up_bytes || 0) + (+r.lan_down_bytes || 0) > 0);
   chk(!hasLan || /not metered/i.test(note),
     'LAN traffic disclosed separately and labelled', `(${note})`);
-  chk(/row/i.test(note), 'note says how many rows were summarised', `(${note})`);
+  chk(!/row/i.test(note), 'the row count lives once, in the filter bar meta (not repeated in the note)', `(${note})`);
+  chk(/rows/.test(d.getElementById('rangeinfo').textContent), 'the filter bar meta shows the row count');
   chk(tot.querySelector('.bwup') && tot.querySelector('.bwdown'),
     'reuses the shared up/down colour classes');
 
@@ -112,10 +113,8 @@ setTimeout(() => {
       'the surviving card still names its scope');
   chk(/\u2191/.test(xt), 'shows upload');
   chk(/\u2193/.test(xt), 'shows download in the SAME card');
-  // Placement: before the KPI row, i.e. above Est. cost (2 = PRECEDING).
-  const kpis = dom.window.document.getElementById('kpis');
-  chk(!!kpis && !!(kpis.compareDocumentPosition(xfer) & 2),
-      'the card sits before the Est. cost KPI row');
+  // Placement (U-2): the summary line of the Usage Bandwidth panel, not a Home bar.
+  chk(!!xfer.closest('#bwpanel'), 'the card is the Bandwidth panel summary line');
 })();
 
   console.log(`\n${f === 0 ? 'ALL PASS' : 'FAILED'}  (${p} passed, ${f} failed)`);

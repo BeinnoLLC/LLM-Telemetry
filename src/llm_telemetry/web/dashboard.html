@@ -86,72 +86,32 @@ __DASHBOARD_CSS__
   </div>
  </div>
 
- <div class="card p-3 flex items-center gap-2 flex-wrap" id="rangebar">
-  <span class="lbl">Range</span>
-  <!-- #13: on mobile this chip is the only thing visible until tapped; it
-       shows the active preset so the collapsed state still says something,
-       then reveals the date inputs + preset row beneath it. Desktop ignores
-       it entirely (display:none outside the mobile media query). -->
-  <button type="button" id="rangetoggle" class="chip" style="display:none" aria-expanded="false" aria-controls="rangebar"></button>
-  <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
-  <span class="flex gap-1.5 ml-1" id="presets"></span>
-  <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
-</div>
- <div class="flex gap-1.5" id="views"></div>
-
- <!-- P4-09 (#46): project cross-filter. Sits beside the range/profile
-      filters so the three read as one filter set. "All projects" is the
-      default; the choice composes with (never overrides) the date range
-      and profile tabs because it is applied as one more row-filter step
-      after those two, not a separate query. -->
- <div class="card p-3 mb-3 flex items-center gap-2 flex-wrap" id="projfilterbar">
-  <span class="lbl">Filter</span>
-  <span class="selwrap">
-   <select id="projfiltersel" class="chip" style="text-transform:none;letter-spacing:0">
-    <option value="">All projects</option>
-   </select>
-  </span>
-  <!-- Provider/model cross-filters (#130). Same bar, same discipline as the
-       project filter: each COMPOSES with the others and with the range and
-       profile tabs rather than replacing them. The provider list is the slots
-       actually present in this profile's rows and the model list is the ids
-       actually present, so neither can offer an option that matches nothing. -->
-  <span class="selwrap">
-   <select id="provfiltersel" class="chip" style="text-transform:none;letter-spacing:0"
-     aria-label="Filter by provider">
-    <option value="">All providers</option>
-   </select>
-  </span>
-  <span class="selwrap">
-   <select id="modelfiltersel" class="chip" style="text-transform:none;letter-spacing:0"
-     aria-label="Filter by model">
-    <option value="">All models</option>
-   </select>
-  </span>
-  <!-- Visible on every view this filter actually affects (Usage/Cost/Flow/
-       Health) — a silent global filter is how a wrong number gets quoted
-       in a meeting. Hidden on views the filter doesn't touch. -->
-  <span id="projfilterchip" class="chip" style="display:none;text-transform:none;letter-spacing:0" hidden>
-   Filtering: <b id="projfilterchipname"></b>
-   <button type="button" id="projfilterclear" title="Clear project filter" style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 4px;font:inherit">&times;</button>
-  </span>
- </div>
-
- <!-- Transferred: ONE card holding both directions, because the interesting
-      fact is the ratio between them (upload dominates ~255:1 -- a whole
-      conversation is re-sent to receive one paragraph) and splitting the
-      directions across cards would hide exactly that. Sits BEFORE the KPI row:
-      it is a headline number, not a drill-down. -->
- <div class="card p-3 mb-3" id="xfercard" hidden>
-  <div class="flex items-center gap-3 flex-wrap">
-   <div class="lbl">Transferred
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1"
-      title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</span>
-   </div>
-   <div id="xfertot" class="bw"></div>
-   <div class="muted text-[length:var(--fs-xs)] ml-auto" id="xfernote"></div>
+ <!-- U-2: ONE filter bar. Range = a keyboard-operable segmented control
+      (role=radiogroup, filled by presets()) with a Custom date popover;
+      Session / Provider / Model = searchable comboboxes (built by
+      buildFilterCombos) over the hidden native selects below, which stay the
+      source of truth so the change handlers and tests have one code path. -->
+ <div class="card filterbar" id="filterbar">
+  <div class="seg" id="presets" role="radiogroup" aria-label="Time range"></div>
+  <div class="fb-pop rangepop" id="rangepop" role="dialog" aria-label="Custom date range" hidden>
+   <label class="rp-f"><span>From</span><input type="date" id="from"></label>
+   <label class="rp-f"><span>To</span><input type="date" id="to"></label>
+   <button type="button" class="btn-apply" id="rangeapply">Apply</button>
+  </div>
+  <button type="button" class="chip fb-filters" id="fbfilters" aria-expanded="false" aria-controls="fbsheet">Filters<span id="fbfcount"></span></button>
+  <div class="fb-sheet" id="fbsheet">
+   <div class="fb-combos" id="fbcombos"></div>
+   <button type="button" class="btn-apply fb-done" id="fbdone">Done</button>
+  </div>
+  <span class="fb-meta" id="rangeinfo" aria-live="polite"></span>
+  <div class="fb-active" id="fbactive"></div>
+  <div hidden aria-hidden="true">
+   <select id="projfiltersel"><option value="">All sessions</option></select>
+   <select id="provfiltersel"><option value="">All providers</option></select>
+   <select id="modelfiltersel"><option value="">All models</option></select>
   </div>
  </div>
+ <div class="flex gap-1.5" id="views"></div>
 
  <div class="statgrid totals" id="kpis"></div>
 
@@ -547,6 +507,15 @@ __DASHBOARD_CSS__
   <div class="card p-4 mt-4" id="bwpanel">
    <div class="lbl mb-2.5">Bandwidth
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="bwpsub"></span>
+   </div>
+   <!-- Transferred: both directions in ONE line because the ratio is the
+        finding (a whole conversation is re-sent to receive one paragraph).
+        Moved here from the filter area by U-2; renderXfer() fills it. -->
+   <div class="xferline mb-3" id="xfercard" hidden>
+    <div class="lbl">Transferred</div>
+    <div id="xfertot" class="bw"></div>
+    <div class="muted" id="xfernote"></div>
+    <div class="muted ml-auto" title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</div>
    </div>
    <div id="bwpkpi" class="bwpkpi mb-3"></div>
    <div class="grid-2">

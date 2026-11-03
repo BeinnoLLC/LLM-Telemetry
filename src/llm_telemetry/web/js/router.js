@@ -30,11 +30,11 @@ export let HOUR_RANGE = null;
 // paint (bootDone()), and mk() then forces animation:false on every chart it
 // builds from that point on: the data still updates, it just snaps instead
 // of re-animating from zero.
-export function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
+export function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; setHash(view); render(); updateRangeToggleLabel(); }
 // #129: pick a sub-day preset (hours = 1/6/12). Clears the date pickers'
 // influence for this render — hourRowsFor() below is what render() actually
 // reads while HOUR_RANGE is set.
-export function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeToggleLabel(); }
+export function setHourRange(hours){ HOUR_RANGE=hours; setHash(view); render(); updateRangeToggleLabel(); }
 // Real "last N hours from now" filter over p.hour_rows (server-bounded to
 // HOUR_WINDOW_S = 72h — see collect_analytics.py). Falls back to an empty
 // slice rather than silently widening to the day range: a 1h preset that
@@ -61,40 +61,129 @@ export function hourRowsFor(p, hours){
   });
 }
 
-// #13: mobile-only collapsed range chip. Desktop never toggles .rangeopen
-// (the toggle button stays display:none outside the mobile media query), so
-// this is a no-op cost on every other viewport.
-export function updateRangeToggleLabel(){
-  const rt = $('rangetoggle'); if (!rt) return;
-  if (HOUR_RANGE){ rt.textContent = `${HOUR_RANGE}h`; return; }
-  const from = $('from').value, to = $('to').value;
-  rt.textContent = from && to ? (from === to ? from : `${from} → ${to}`) : 'Range';
+// U-2: the range presets as ONE segmented control (role=radiogroup). The day
+// presets are pure functions of the profile's bounds, so the same table serves
+// the buttons, the "which one is active" check and the ?range= hash param.
+export const RANGE_HOURS = [1, 6, 12];
+export function rangeDefs(p){
+  const [lo,hi] = bounds(p);
+  const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
+    if (isNaN(d)) return lo;   // empty profile: bounds() has no dates to count back from
+    const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
+  return [['24h',[hi,hi]],['7d',[days(7),hi]],['30d',[days(30),hi]],['All',[lo,hi]]];
 }
-(function initRangeToggle(){
-  const rt = $('rangetoggle'), rb = $('rangebar'); if (!rt || !rb) return;
-  rt.onclick = () => {
-    const open = rb.classList.toggle('rangeopen');
-    rt.setAttribute('aria-expanded', open ? 'true' : 'false');
-  };
+// The active range as one key: "6h", "7d", "all", or "custom". Derived from the
+// live state rather than stored, so a from/to restored by the live refresh can
+// never leave the control pointing at the wrong segment.
+export function rangeKey(){
+  if (HOUR_RANGE) return `${HOUR_RANGE}h`;
+  const p = DATA.profiles[current], f = $('from'), t = $('to');
+  // No bounds set means no restriction: that is "all", not a custom range.
+  if (!p || !f || !t || !f.value || !t.value) return 'all';
+  // On a short history several presets cover the same dates; the one the user
+  // picked wins, otherwise the widest (All), so the control never claims "7d"
+  // for a range nobody chose.
+  const hits = rangeDefs(p).filter(([, [a, b]]) => a === f.value && b === t.value).map(([l]) => l.toLowerCase());
+  return !hits.length ? 'custom' : hits.includes(RANGE_PICK) ? RANGE_PICK : hits[hits.length - 1];
+}
+// The hash form: presets by name, a custom range as from_to, "all" omitted
+// (it is what a link without ?range= means).
+export function rangeParam(){
+  const k = rangeKey();
+  if (k === 'all') return '';
+  return k === 'custom' ? `${$('from').value}_${$('to').value}` : k;
+}
+// Apply a ?range= value: a preset name, a from_to pair, or empty for All.
+export function applyRangeParam(v){
+  const p = DATA.profiles[current]; if (!p) return;
+  const [lo,hi] = bounds(p);
+  RANGE_PICK = (v || '').toLowerCase();
+  const m = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(v || '');
+  const h = /^(\d+)h$/.exec(v || '');
+  if (h && RANGE_HOURS.includes(+h[1])) HOUR_RANGE = +h[1];
+  else {
+    HOUR_RANGE = null;
+    const hit = rangeDefs(p).find(([l]) => l.toLowerCase() === (v || 'all').toLowerCase());
+    const [a, b] = m ? [m[1], m[2]] : hit ? hit[1] : [lo, hi];
+    $('from').value = a; $('to').value = b;
+  }
+  updateRangeToggleLabel();
+}
+let RANGE_HYDRATED = false;
+let RANGE_PICK = '';
+
+// Keeps the control, the Custom label and the popover in step with the state.
+// Name kept from the old mobile chip; it is still what every range change calls.
+export function updateRangeToggleLabel(){
+  const g = $('presets'); if (!g) return;
+  const k = rangeKey();
+  g.querySelectorAll('[role=radio]').forEach(b => {
+    const on = b.dataset.key === k;
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    b.classList.toggle('on', on);
+    b.tabIndex = on || (k === 'custom' && b.dataset.key === 'custom') ? 0 : -1;
+  });
+  const cu = g.querySelector('[data-key=custom]');
+  if (cu){
+    const from = $('from').value, to = $('to').value;
+    const txt = k === 'custom' && from && to ? (from === to ? from : `${from} → ${to}`) : 'Custom';
+    cu.querySelector('.seg-lbl').textContent = txt;
+  }
+  // Nothing is checked only if the active key has no segment; keep one tab stop.
+  if (!g.querySelector('[tabindex="0"]')) { const f = g.querySelector('[role=radio]'); if (f) f.tabIndex = 0; }
+}
+function toggleRangePop(open){
+  const pop = $('rangepop'), cu = $('presets') && $('presets').querySelector('[data-key=custom]');
+  if (!pop || !cu) return;
+  const want = open == null ? pop.hidden : open;
+  pop.hidden = !want;
+  cu.setAttribute('aria-expanded', want ? 'true' : 'false');
+  if (want) { const f = $('from'); if (f) f.focus(); } else cu.focus();
+}
+(function initRangePop(){
+  const pop = $('rangepop'); if (!pop) return;
+  const ap = $('rangeapply'); if (ap) ap.onclick = () => toggleRangePop(false);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !pop.hidden) { toggleRangePop(false); e.stopPropagation(); }
+  });
+  document.addEventListener('mousedown', e => {
+    if (pop.hidden || pop.contains(e.target) || e.target.closest && e.target.closest('[data-key=custom]')) return;
+    pop.hidden = true;
+    const cu = $('presets') && $('presets').querySelector('[data-key=custom]');
+    if (cu) cu.setAttribute('aria-expanded', 'false');
+  });
 })();
 
 export function presets(p){
-  const [lo,hi] = bounds(p);
-  const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
-    const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
-  // #129: hour presets are separate chips (own data-h attribute) from the
-  // day presets — they set HOUR_RANGE instead of From/To, and read
-  // p.hour_rows (real per-hour data) rather than collapsing to "today" like
-  // reusing the 24h day-preset would.
-  const hourDefs = [1, 6, 12];
-  const defs = [['24h',()=>[hi,hi]],['7d',()=>[days(7),hi]],['30d',()=>[days(30),hi]],['All',()=>[lo,hi]]];
+  const defs = rangeDefs(p);
+  const seg = (key, label, extra = '') =>
+    `<button type="button" class="seg-btn" role="radio" aria-checked="false" tabindex="-1" data-key="${key}"${extra}><span class="seg-lbl">${label}</span></button>`;
+  // #129: hour presets keep their own data-h (they set HOUR_RANGE and read the
+  // real hourly rows); the day presets keep data-p.
   $('presets').innerHTML =
-    hourDefs.map(h=>`<span class="chip" data-h="${h}" title="Last ${h} hour${h===1?'':'s'}, real hourly data">${h}h</span>`).join('') +
-    defs.map(([l],i)=>`<span class="chip" data-p="${i}">${l}</span>`).join('');
-  $('presets').querySelectorAll('[data-h]').forEach(el =>
-    el.onclick = () => setHourRange(+el.dataset.h));
-  $('presets').querySelectorAll('[data-p]').forEach((el,i)=>
-    el.onclick = () => { const [a,b]=defs[i][1](); setRange(a,b); });
+    RANGE_HOURS.map(h => seg(`${h}h`, `${h}h`, ` data-h="${h}" title="Last ${h} hour${h===1?'':'s'}, real hourly data"`)).join('') +
+    defs.map(([l], i) => seg(l.toLowerCase(), l, ` data-p="${i}"`)).join('') +
+    seg('custom', 'Custom', ' aria-haspopup="dialog" aria-expanded="false" aria-controls="rangepop"') ;
+  const g = $('presets');
+  g.querySelectorAll('[data-h]').forEach(el => el.onclick = () => setHourRange(+el.dataset.h));
+  g.querySelectorAll('[data-p]').forEach(el => el.onclick = () => { RANGE_PICK = el.dataset.key; const [a,b] = defs[+el.dataset.p][1]; setRange(a,b); });
+  g.querySelector('[data-key=custom]').onclick = () => toggleRangePop();
+  // Radiogroup keyboard model: arrows move AND select (Custom only takes focus,
+  // since selecting it means opening the date popover), Home/End jump.
+  g.onkeydown = e => {
+    const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    const bs = [...g.querySelectorAll('[role=radio]')];
+    let i = bs.indexOf(document.activeElement);
+    if (i < 0) return;
+    if (e.key in keys) i = (i + keys[e.key] + bs.length) % bs.length;
+    else if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = bs.length - 1;
+    else return;
+    e.preventDefault();
+    bs[i].focus();
+    if (bs[i].dataset.key !== 'custom') bs[i].click();
+  };
+  if (!RANGE_HYDRATED){ RANGE_HYDRATED = true; const v = filterFromHash('range'); if (v) applyRangeParam(v); }
   updateRangeToggleLabel();
 }
 
@@ -124,6 +213,10 @@ export function setHash(v){
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
+  // Until presets() has applied the URL's range (first pick() at boot), keep the
+  // URL's own value: writing the not-yet-restored default would erase it.
+  const rg = RANGE_HYDRATED ? rangeParam() : filterFromHash('range');
+  if (rg) p.push('range=' + encodeURIComponent(rg));
   // LST-196: view-owned params (?span=week) ride along with the cross-filters,
   // so a Rankings link restores the window the user was looking at.
   const own = VIEW_PARAMS.get(slugOf(v));
@@ -215,6 +308,7 @@ export function hydrateViewParams(view, keys){
 window.addEventListener('hashchange', () => {
   const v = viewFromHash();
   setFiltersFromHash();
+  if ($('presets') && $('presets').firstChild) applyRangeParam(filterFromHash('range'));
   syncProjFilterUI();
   // Back/forward land here, and so does pickView's own hash write. Comparing
   // against the visible view makes the self-write a no-op, so a view change
@@ -1341,7 +1435,7 @@ tabs();
 renderResolution();
 // #129: editing either date input exits hour-preset mode (the two are
 // mutually exclusive — see HOUR_RANGE's own comment).
-export const exitHourRange = () => { HOUR_RANGE = null; render(); };
+export const exitHourRange = () => { HOUR_RANGE = null; setHash(view); render(); updateRangeToggleLabel(); };
 $('from').onchange=exitHourRange; $('to').onchange=exitHourRange;
 // P4-04 (#41): the exclude-Unattributed toggle re-renders just the
 // projects card (via a full render() — simplest correct option since
