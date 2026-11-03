@@ -255,7 +255,7 @@ export function paintTrain(queued, running, done){
   });
 
   if (painted && nd > prevDone){
-    const yj = db.closest('.qt-jar');
+    const yj = db.closest && db.closest('.qt-jar');
     if (yj){ yj.classList.remove('qt-splash'); void yj.offsetWidth; yj.classList.add('qt-splash'); setTimeout(() => yj.classList.remove('qt-splash'), 1700); }
   }
 
