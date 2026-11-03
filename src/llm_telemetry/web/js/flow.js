@@ -48,7 +48,8 @@ export function renderQueue(){
       tokens: s.tokens, api_calls: s.api_calls, hue: hashHue(s.last_model || s.model || ''),
     }));
 
-  paintTrain(queuedAll, runningAll, doneAll);
+  qtDemoWire(queuedAll, runningAll, doneAll);
+  paintTrain(...qtDemoApply(queuedAll, runningAll, doneAll));
 
   const sub = $('qsub');
   if (sub){
@@ -57,6 +58,31 @@ export function renderQueue(){
       ? `backed up on ${busy.join(', ')}`
       : (hosts.length ? `fleet clear · ${hosts.length} host${hosts.length===1?'':'s'}` : '');
   }
+}
+
+// Preview-only: `?demoQueue=1` cycles one synthetic task Depot -> Line -> Yard every 3s so the
+// jar motion can be watched without live traffic. Inert (returns the lists untouched) otherwise.
+const QT_DEMO = { on: null, step: 0, timer: 0, last: null };
+export function qtDemoOn(){
+  if (QT_DEMO.on === null) QT_DEMO.on = /[?&]demoQueue=1(?:&|$)/.test((typeof window !== 'undefined' && window.location && window.location.search) || '');
+  return QT_DEMO.on;
+}
+export function qtDemoApply(q, r, d){
+  if (!qtDemoOn()) return [q, r, d];
+  const n = Math.floor(QT_DEMO.step / 3), ph = QT_DEMO.step % 3, id = 'demo' + n;
+  const base = { label: 'Demo task ' + (n + 1) + ': a long synthetic title that wraps over a few lines in the tile', model: 'demo', profile: 'demo', hue: 28 + (n * 47) % 300, sid: id };
+  const past = [];
+  for (let i = Math.max(0, n - 3); i < n; i++) past.push({ ...base, key: 's:demo' + i, kind: 'd', label: 'Demo task ' + (i + 1), sid: 'demo' + i, hue: 28 + (i * 47) % 300, last_ts: Date.now() / 1000 - 60 });
+  const mine = ph === 0 ? [{ key: 'q:demo:' + n, kind: 'q', label: 'demo', host: 'demo-host', pos: 1, depth: 1 }]
+    : ph === 1 ? [{ ...base, key: 's:' + id, kind: 'r', eng: 'hermes', state: 'running', idle_s: 2 }]
+    : [{ ...base, key: 's:' + id, kind: 'd', last_ts: Date.now() / 1000 }];
+  return [q.concat(ph === 0 ? mine : []), r.concat(ph === 1 ? mine : []), (ph === 2 ? mine : []).concat(past, d)];
+}
+function qtDemoWire(q, r, d){
+  if (!qtDemoOn()) return;
+  QT_DEMO.last = [q, r, d];
+  if (QT_DEMO.timer) return;
+  QT_DEMO.timer = setInterval(() => { QT_DEMO.step++; paintTrain(...qtDemoApply(...QT_DEMO.last)); }, 3000);
 }
 
 export function trainCar(it){
@@ -228,7 +254,11 @@ export function paintTrain(queued, running, done){
   });
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
-    const el = $(id); if (el && el.textContent !== String(n)) el.textContent = String(n);
+    const el = $(id);
+    if (el && el.textContent !== String(n)){
+      el.textContent = String(n);
+      el.classList.remove('qt-bump'); void el.offsetWidth; el.classList.add('qt-bump');
+    }
   });
 
   if (!tr.dataset.tip){ tr.dataset.tip = '1'; qtTipWire(tr); }

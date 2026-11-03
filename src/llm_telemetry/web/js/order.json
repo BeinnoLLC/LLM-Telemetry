@@ -883,6 +883,22 @@
   },
   {
    "mod": "flow",
+   "name": "QT_DEMO"
+  },
+  {
+   "mod": "flow",
+   "name": "qtDemoOn"
+  },
+  {
+   "mod": "flow",
+   "name": "qtDemoApply"
+  },
+  {
+   "mod": "flow",
+   "name": "qtDemoWire"
+  },
+  {
+   "mod": "flow",
    "name": "trainCar"
   },
   {

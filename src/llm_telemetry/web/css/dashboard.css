@@ -844,22 +844,27 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-n{font-weight:600;font-size:var(--fs-xs);padding:0 8px;line-height:19px;border-radius:999px;
   border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));background:var(--card);color:var(--fg)}
 .qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px -9px 0;padding:14px 8px;
-  border:1.5px solid color-mix(in srgb,var(--jc) 55%,var(--border));border-top:0;border-radius:0 0 34px 34px;overflow:hidden;
-  background:linear-gradient(90deg,color-mix(in srgb,var(--fg) 12%,transparent),transparent 14%,transparent 86%,color-mix(in srgb,var(--fg) 7%,transparent)),
-    linear-gradient(180deg,color-mix(in srgb,var(--fg) 5%,transparent),color-mix(in srgb,var(--fg) 2%,transparent));
-  box-shadow:inset 4px 0 0 -1px color-mix(in srgb,var(--fg) 24%,transparent),inset 0 -14px 18px -12px color-mix(in srgb,var(--jc) 60%,transparent),0 6px 14px -8px rgba(0,0,0,.5)}
+  border:1px solid color-mix(in srgb,var(--fg) 26%,transparent);border-top:0;border-radius:0 0 34px 34px;overflow:hidden;
+  background-color:color-mix(in srgb,var(--fg) 6%,transparent);
+  -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
+  background-image:linear-gradient(90deg,color-mix(in srgb,var(--fg) 12%,transparent),transparent 12%,transparent 88%,color-mix(in srgb,var(--fg) 6%,transparent));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--fg) 22%,transparent),inset 3px 0 0 -1px color-mix(in srgb,var(--fg) 20%,transparent),inset 0 -14px 18px -12px color-mix(in srgb,var(--jc) 55%,transparent),0 6px 14px -8px rgba(0,0,0,.45)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  border-top:1px solid color-mix(in srgb,var(--jc) 50%,transparent);
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 22%,transparent));
-  transition:height .6s ease}
-.qt-cars{position:relative;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,transparent),color-mix(in srgb,var(--jc) 28%,transparent));
+  transition:height .8s cubic-bezier(.22,1,.36,1)}
+.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:8px;margin-bottom:-1px;pointer-events:none;
+  background:radial-gradient(ellipse 14px 5px at 50% 100%,color-mix(in srgb,var(--jc) 45%,transparent) 98%,transparent) 0 0/28px 8px repeat-x;
+  border-bottom:1px solid color-mix(in srgb,var(--jc) 55%,transparent);opacity:.85;
+  transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
+@keyframes qt-wave{to{background-position-x:28px}}
+.qt-cars{position:relative;z-index:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
   gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:150px;max-height:260px;overflow-y:auto;padding:3px;scrollbar-width:thin}
 .qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);grid-column:1/-1;align-self:center;text-align:center;
   padding:18px 22px;color:var(--muted);font-size:var(--fs-sm);border:1px dashed color-mix(in srgb,var(--jc) 40%,var(--border));border-radius:8px}
 .qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
 .qt-car{position:relative;display:flex;flex-direction:column;gap:4px;min-height:64px;padding:8px 10px;
   border-radius:6px;min-width:0;border:1px solid var(--border);border-left:4px solid hsl(var(--h,215) 55% 50%);
-  background:var(--card);color:var(--fg);font-size:12.5px;line-height:1.35;cursor:default;outline-offset:2px}
+  background:color-mix(in srgb,var(--card) 92%,transparent);color:var(--fg);font-size:12.5px;line-height:1.35;cursor:default;outline-offset:2px}
 .qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
 .qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
@@ -872,7 +877,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-kb{position:absolute;top:5px;right:5px;padding:1px 4px;border-radius:3px;font-size:11px;line-height:1.2;
   background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
 .qt-kb+.qt-lbl{padding-right:24px}
-.qt-q{border-left-color:var(--z-warn);animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both}
+.qt-q{border-left-color:var(--z-warn);animation:qt-arrive .6s cubic-bezier(.2,.8,.2,1) both}
 .qt-r::after{content:"";position:absolute;right:8px;bottom:9px;width:7px;height:7px;border-radius:50%;
   background:var(--z-ok);animation:qt-pulse 1.6s ease-in-out infinite}
 .qt-r .qt-meta{padding-right:16px}
@@ -881,13 +886,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-d{opacity:.88;animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
 .qt-d.qt-newest{opacity:1;border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
 @keyframes qt-pulse{50%{opacity:.3}}
-@keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes qt-arrive{from{opacity:0;transform:translateY(-34px)}to{opacity:1;transform:none}}
 @keyframes qt-park{from{opacity:0;transform:translateY(-24px) scale(.7)}to{opacity:.88;transform:none}}
 .qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important;pointer-events:none}
 @keyframes qt-depart{to{opacity:0;transform:translateY(24px) scale(.7)}}
 .qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:6px;transform-origin:0 0;
-  background:var(--card);border:1px solid var(--accent)}
+  background:var(--card);border:1px solid var(--accent);font-size:14px;line-height:1.35;font-weight:600;padding:8px 10px;overflow:hidden;color:var(--fg)}
 .qt-car.qt-landed{animation:qt-land .6s cubic-bezier(.3,1.6,.5,1) both !important}
+@keyframes qt-bump{40%{transform:scale(1.35)}}
+.qt-n.qt-bump{animation:qt-bump .45s ease-out}
 @keyframes qt-land{0%{transform:scale(1.06)}100%{transform:none}}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
@@ -903,7 +910,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   .qtrain *, .qtrain, .qtrain *::before, .qtrain *::after{animation:none !important;transition:none !important}
   .qt-car{opacity:1}
   .qt-ghost{display:none}
-  .qt-body::before{transition:none}
+  .qt-body::before,.qt-body::after{transition:none;animation:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
@@ -1376,7 +1383,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .pagehead{order:-40}
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
+ .page[data-pageview="Home"] > #rangebar{order:-35}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > #kpis{order:-28}
  .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
