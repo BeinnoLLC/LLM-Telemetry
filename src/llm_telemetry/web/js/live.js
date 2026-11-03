@@ -373,7 +373,7 @@ function lvRow(o){
   // fit and hides the rest whole; the full list is in the cell's title=).
   const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
-    `<span class="lvtool">${esc(t)}</span>`).join('');
+    `<span class="lvtool" title="${escA(t)}">${esc(t)}</span>`).join('');
   const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${S.idle_s > 86400 ? ' data-longidle="1"' : ''}${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`

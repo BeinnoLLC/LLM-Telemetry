@@ -6,11 +6,11 @@
    /* ---- Fluid type + spacing scale ---------------------------------
       One continuous scale instead of per-breakpoint font rules. Every
       step is clamp(min, preferred, max) so text grows with the viewport
-      and never drops below a legible floor on a phone: --fs-xs is 11px
-      at 360px, which is the smallest size we allow anywhere. */
-   --fs-xs:clamp(11px,.62vw + 8.8px,12px);
-   --fs-sm:clamp(12px,.70vw + 9.5px,13.5px);
-   --fs-md:clamp(13px,.75vw + 10.3px,15px);
+      and never drops below a legible floor on a phone: --fs-xs is a flat 13px
+      and --fs-sm 14px (body text floor, LST-261). */
+   --fs-xs:13px;
+   --fs-sm:14px;
+   --fs-md:clamp(14px,.75vw + 10.3px,15px);
    --fs-lg:clamp(15px,1.1vw + 11px,18px);
    --fs-xl:clamp(17px,1.8vw + 11px,24px);
    --sp-1:4px;  --sp-2:6px;
@@ -106,7 +106,7 @@
 .fb-kinds{display:flex;gap:2px;flex:none}
 .kseg{height:var(--fb-h);display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:var(--fb-r);
   background:transparent;color:var(--muted);font:inherit;font-size:var(--fs-sm);cursor:pointer;white-space:nowrap}
-.kseg .g{color:var(--k,var(--muted));font-size:12px;line-height:1;width:12px;text-align:center}
+.kseg .g{color:var(--k,var(--muted));font-size:13px;line-height:1;width:12px;text-align:center}
 .kseg .n{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;color:var(--muted);opacity:.8}
 .kseg:hover{background:var(--fb-raise);color:var(--fg)}
 .kseg[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:0 0 0 1px var(--border) inset,0 1px 2px rgba(0,0,0,.25)}
@@ -124,7 +124,7 @@
 .pchip .av{display:inline-flex;flex:none}
 .pchip .name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pchip .pfx{color:var(--muted)}
-.pchip .kd{font-size:11px;color:var(--k);line-height:1}
+.pchip .kd{font-size:13px;color:var(--k);line-height:1}
 .pchip .live{width:6px;height:6px;border-radius:50%;background:var(--z-ok);
   box-shadow:0 0 0 2px color-mix(in srgb,var(--z-ok) 25%,transparent);flex:none}
 .pchip:hover{background:var(--fb-raise)}
@@ -145,7 +145,7 @@
 .fb-pop[hidden]{display:none}
 .fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:4px}
 .fb-pop .fb-more{align-self:flex-end}
-.fb-more kbd{font:inherit;font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:0 4px}
+.fb-more kbd{font:inherit;font-size:13px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:0 4px}
 .fb-more[aria-expanded="true"],.fb-pbtn[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent-wash);border-color:var(--accent)}
 .fb-more:focus-visible,.fb-pbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
@@ -183,7 +183,7 @@
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:11px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .fbwrap{min-width:0}
 /* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
 @media (max-width:960px){
@@ -235,7 +235,7 @@
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
- .lbl{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+ .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
@@ -252,7 +252,7 @@
  @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
  @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
  .lkpi{position:relative;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
- .lkpi-name{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+ .lkpi-name{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
  .lkpi-num{font-size:clamp(26px,2.2vw,34px);font-weight:600;letter-spacing:-.015em;line-height:1.1;
    font-variant-numeric:tabular-nums;color:inherit;text-decoration:none;white-space:nowrap;
    overflow:hidden;text-overflow:ellipsis}
@@ -417,7 +417,7 @@ body.hasnav #views{ display:none; }
 #lgcountbadge{background:var(--accent);color:var(--accent-ink);border-radius:999px;
   font-size:var(--fs-xs);font-weight:700;padding:1px 7px;line-height:1.5}
 /* Event rows: monospace timestamps so they form a readable column. */
-.lgev{display:grid;grid-template-columns:70px 66px 1fr;gap:9px;align-items:baseline;
+.lgev{display:grid;grid-template-columns:70px max-content 1fr;gap:9px;align-items:baseline;
   padding:4px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
 .lgev:last-child{border-bottom:0}
 .lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-xs)}
@@ -846,17 +846,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
 .qt-car{position:relative;display:flex;flex-direction:column;gap:4px;min-height:64px;padding:8px 10px;
   border-radius:6px;min-width:0;border:1px solid var(--border);border-left:4px solid hsl(var(--h,215) 55% 50%);
-  background:color-mix(in srgb,var(--card) 92%,transparent);color:var(--fg);font-size:12.5px;line-height:1.35;cursor:default;outline-offset:2px}
+  background:color-mix(in srgb,var(--card) 92%,transparent);color:var(--fg);font-size:13px;line-height:1.35;cursor:default;outline-offset:2px}
 .qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
 .qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
   font-size:14px;line-height:1.35;font-weight:600;overflow-wrap:anywhere;text-wrap:pretty}
-.qt-meta{flex:none;color:color-mix(in srgb,var(--fg) 72%,var(--card));font-size:12.5px;line-height:1.35;margin-top:auto;overflow-wrap:anywhere}
-.qt-legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;color:var(--muted);font-size:12.5px}
+.qt-meta{flex:none;color:color-mix(in srgb,var(--fg) 72%,var(--card));font-size:13px;line-height:1.35;margin-top:auto;overflow-wrap:anywhere}
+.qt-legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:6px}
 .qt-sw{width:4px;height:12px;border-radius:2px;background:hsl(215 55% 50%)}
 .qt-dot{width:8px;height:8px;border-radius:50%;background:var(--z-ok)}
-.qt-kb{position:absolute;top:5px;right:5px;padding:1px 4px;border-radius:3px;font-size:11px;line-height:1.2;
+.qt-kb{position:absolute;top:5px;right:5px;padding:1px 4px;border-radius:3px;font-size:13px;line-height:1.2;
   background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
 .qt-kb+.qt-lbl{padding-right:24px}
 .qt-q{border-left-color:var(--z-warn);animation:qt-arrive .6s cubic-bezier(.2,.8,.2,1) both}
@@ -887,7 +887,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
 .qtip[data-side=right]::before{left:-6px;transform:rotate(315deg)}
 .qtip[data-side=left]::before{right:-6px;transform:rotate(135deg)}
-@media (max-width:1100px){.qtrain{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:899px){.qtrain{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px) and (min-width:900px){.qtrain{gap:12px}.qt-jar{padding:0 8px}.qt-cars{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
   .qtrain *, .qtrain, .qtrain *::before, .qtrain *::after{animation:none !important;transition:none !important}
   .qt-car{opacity:1}
@@ -1053,7 +1054,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .xcard .kpi-badge svg{width:15px;height:15px}
 .xp-body{flex:1 1 auto;min-width:0}
 .xp-row{display:flex;align-items:baseline;gap:8px;min-width:0}
-.xp-title{flex:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;
+.xp-title{flex:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500;
    letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
@@ -1078,7 +1079,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    card centres its gauge+label inside that fixed-height body. */
 .kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
 /* LST-252: titles wrap inside the 36px header instead of escaping the card */
-.kpi-name{font-size:12px;font-weight:500;letter-spacing:.04em;
+.kpi-name{font-size:13px;font-weight:500;letter-spacing:.04em;
   color:var(--muted);text-transform:uppercase;
   min-width:0;overflow-wrap:anywhere;hyphens:auto;line-height:1.15}
 .kpi-num{flex:1;display:flex;align-items:flex-start}
@@ -1156,7 +1157,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Hide the tab itself while the drawer is open — it would sit under the panel. */
  #logbtn.hidden{opacity:0;pointer-events:none}
   /* 44px = the mobile touch-target floor (button min-width), so it cannot go lower. */
- @media (max-width:599px){ :root{--logtab-w:44px;--logtab-gap:6px} #logbtn{padding:10px 0;gap:5px;letter-spacing:.02em} }
+ /* <=600px: the floating tab is hidden (the sidebar Live tail item remains) and reserves nothing. */
+ @media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }
  #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
    font-size:var(--fs-xs);font-weight:600;line-height:1.5}
  #logbtn .n[hidden]{display:none}
@@ -1434,10 +1436,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .frow .fmsg{flex:1 1 100%;white-space:normal;overflow-wrap:anywhere}
    }
  @media(max-width:400px){
-   /* KPI strip: down to a single column once 2-up gets too cramped for the
-      ring/sparkline cards to stay legible. */
-   .grid-kpi{grid-template-columns:1fr}
+   /* KPI strip stays 2-up on phones (LST-261); a single column only below 340px. */
+   .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
  }
+ @media(max-width:340px){.grid-kpi{grid-template-columns:1fr}}
 
  /* Tablet — #14: portrait and landscape get different treatment rather than
     one 641-1024 band, because a portrait tablet has desktop-narrow WIDTH but
@@ -1799,16 +1801,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-freshpill[data-fresh-state="old"]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
 .pv-freshpill[data-fresh-state="stale"]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 50%,transparent);
   background:color-mix(in srgb,var(--z-bad) 9%,transparent)}
-.kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:11px;font-weight:600;vertical-align:middle;max-width:100%}
+.kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:13px;font-weight:600;vertical-align:middle;max-width:100%}
 .kpi-kind{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--foreground,var(--fg));min-width:0}
 .kpi-dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
 /* Brand marks for the Claude/Codex agent kinds: 16px (the glyph is the marker,
    12px read as a blob), inherit the kind colour, centred on the text line. */
 svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
-.kpi-logo{display:inline-flex;align-items:center;flex:none;font-size:12px;line-height:1}
+.kpi-logo{display:inline-flex;align-items:center;flex:none;font-size:13px;line-height:1}
  /* G3: Grafana legend table (Name / Max / Mean / Last) under a time chart */
  .lgt-wrap{overflow-x:auto;margin-top:8px}
- .lgt{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+ .lgt{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
  .lgt th{color:var(--accent);font-weight:500;text-align:right;padding:2px 8px;border:0}
  .lgt th:nth-child(2){text-align:left}
  .lgt td{padding:2px 8px;text-align:right;white-space:nowrap;border-top:1px solid var(--border)}
@@ -1837,12 +1839,12 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvhgrp>.lvh{height:100%;flex:none;justify-content:flex-start}
 .lvhead{position:sticky;top:0;z-index:2;height:44px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
-.lvh{font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
+.lvh{font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
   display:flex;align-items:center;gap:4px;height:100%;overflow:hidden}
 .lvh.lvnum{justify-content:flex-end}
 .lvh:hover,.lvh[aria-sort]:not([aria-sort=none]){color:var(--fg)}
 .lvh:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.lvarr{font-size:9px;width:9px}
+.lvarr{font-size:13px;width:9px}
 .lvrow{min-height:52px;max-height:64px;padding-top:8px;padding-bottom:8px;border-bottom:1px solid var(--border);transition:background-color .12s ease}
 .lvc:not(.metacol){font-size:14px}  /* model size comes from its own rule below */
 .lvrow:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
@@ -1881,17 +1883,17 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvs2{overflow:hidden;line-height:1.25;flex-wrap:wrap;align-content:flex-start;height:20px;row-gap:24px}
 .lvs2>.lvtag{line-height:16px}
 .lvrow .lmsplit{display:none}
-.lvrow .chip.lntimelinebtn{font-size:12px;line-height:16px;padding:0 8px;border-radius:999px;flex:none}
-.lvrow .chip{padding:0 6px;line-height:18px;flex:none;font-size:12.5px}
+.lvrow .chip.lntimelinebtn{font-size:13px;line-height:16px;padding:0 8px;border-radius:999px;flex:none}
+.lvrow .chip{padding:0 6px;line-height:18px;flex:none;font-size:13px}
 .lvrow .lmbtn{padding:0;line-height:18px;flex:0 1 auto}
 .lvrow .pv-badge{flex:none}
 .lvcat{font-size:15px;line-height:1;flex:none}
 .lvcatl,.lvsub,.lvswitch,.lvago{font-size:13px;flex:none}
 .lvago{color:var(--muted);font-variant-numeric:tabular-nums}
 .lvswitch{color:var(--z-warn)}
-.lvtag{font-size:12.5px;padding:0 6px;border-radius:4px;flex:none}
+.lvtag{font-size:13px;padding:0 6px;border-radius:4px;flex:none}
 .lvphase{color:var(--muted);font-size:13px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal;min-width:0;flex:1 1 6ch}
-.lvtool{font-size:12.5px;line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--fg);flex:none}
+.lvtool{font-size:13px;line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--fg);flex:none}
 .lvst{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 9px;line-height:18px;
   border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg)}
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
@@ -1899,7 +1901,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
 .lvsid{font:12.5px/18px var(--mono,monospace);color:var(--muted);padding:0 4px;border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
 button.lvsid{cursor:pointer;text-decoration:underline dotted}
-.lvsrc{font-size:12px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
+.lvsrc{font-size:13px;line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
 .lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
 .lvrow .lvc-kind .pv-badge{padding:4px;font-size:18px}
@@ -1909,7 +1911,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvrow .loe .gnum,.lvrow .loe .glbl{display:none}
 .lvpct{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted);min-width:0;text-align:left}
 /* transfer stats: up and down stacked, one per line */
-.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;display:grid;grid-auto-flow:row;justify-items:start;gap:1px 0;line-height:1.2;font-size:12px;min-width:0;white-space:nowrap}
+.lvrow .loecol .bw{border-top:0;padding-top:0;margin:0;width:auto;display:grid;grid-auto-flow:row;justify-items:start;gap:1px 0;line-height:1.2;font-size:13px;min-width:0;white-space:nowrap}
 .lvrow + .lmpanel{margin:0;border-left:0;border-right:0}
 .lvbody{display:block}
 /* The 44px mobile tap-target floor would balloon a table row; inside the
@@ -1945,12 +1947,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dt-sort{all:unset;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:inherit;font:inherit;border-radius:4px;padding:2px 4px;margin:-2px -4px}
 .dt-sort:hover{color:var(--fg)}
 .dt-sort:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.dt-ar{font-size:10px;opacity:.55}
+.dt-ar{font-size:13px;opacity:.55}
 .dt th[aria-sort=ascending] .dt-ar,.dt th[aria-sort=descending] .dt-ar,.fsort [aria-sort=ascending] .dt-ar,.fsort [aria-sort=descending] .dt-ar{opacity:1;color:var(--accent)}
 .dt-wrap{max-height:70vh;overflow:auto;-webkit-overflow-scrolling:touch}
-.dt-cap{caption-side:top;text-align:right;padding:0 0 8px}
+.dt-cap{caption-side:top;text-align:left;padding:0 0 8px;position:sticky;left:0}
 .dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:12px;color:var(--muted)}
+.dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:13px;color:var(--muted)}
 .dt-dens button.on{background:var(--accent-wash);color:var(--fg)}
 .dt-dens button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .pv-tbl.dt th:first-child,.pv-tbl.dt td:first-child{z-index:4}
@@ -1962,3 +1964,39 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 #faillist .frow .fmsg,#faillist .frow .fwhen,#faillist .frow .fmodel,#faillist .frow .fkind{font-size:14px}
 :root[data-density=compact] #faillist .frow{min-height:36px;padding:4px 8px}
 :root[data-density=compact] #faillist .frow .fmsg,:root[data-density=compact] #faillist .frow .fwhen,:root[data-density=compact] #faillist .frow .fmodel{font-size:13px}
+
+/* LST-261: the three filter selects share ONE row (wrap only on phones). */
+#projfilterbar{flex-wrap:nowrap}
+#projfilterbar .selwrap{flex:1 1 0;min-width:0}
+#projfilterbar .selwrap select{width:100%;min-width:0;text-overflow:ellipsis}
+@media (max-width:600px){#projfilterbar{flex-wrap:wrap}#projfilterbar .selwrap{flex:1 1 100%}}
+
+/* LST-261 clipping: tags and blurbs wrap or grow instead of cutting words. */
+.lgtag{overflow:visible;text-overflow:clip;min-width:66px}
+.xp-blurb{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.xcard{align-items:flex-start}
+.xcard .hc-stat{white-space:normal;overflow-wrap:anywhere}
+.qv-wname{white-space:normal;overflow:visible;text-overflow:clip}
+.qv-amodels,.fmsg,.dgoal{white-space:normal;overflow-wrap:anywhere}
+.fmsg.truncate{white-space:normal;overflow:visible;text-overflow:clip}
+.lva2{flex-wrap:wrap}
+.lva2>.lvtool{max-width:100%}
+/* Explore tiles: even grid (3 rows x 4 cols at desktop, never a 5+5+1 orphan). */
+.grid-home{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.grid-home{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:700px){.grid-home{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* One control size scale (LST-261): sm 28 / md 32 / lg 44 on touch. */
+:root{--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+.csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
+.chip,.fb-btn,.pk-btn,select.chip,.pchip,.kseg{min-height:var(--ctl-md)}
+.dt-dens button{padding:0 10px}
+@media (max-width:600px){
+  .csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
+}
+/* Empty cards collapse to one line (LST-261): the chart box and header hints go, the message stays. */
+.card:has(> [id$="empty"]:not([hidden])) > div[style*="height"],.card:has(> [id$="empty"]:not([hidden])) > #concpeak,.card:has(> [id$="empty"]:not([hidden])) > #projhdr{display:none}
+.card:has(> [id$="empty"]:not([hidden])){padding-top:10px;padding-bottom:10px}
+.card:has(> [id$="empty"]:not([hidden])) > .lbl{margin-bottom:0}
+.olurls>summary{cursor:pointer;list-style:none}
+.olurls>summary::-webkit-details-marker{display:none}
+.olurls b{text-decoration:underline dotted}
