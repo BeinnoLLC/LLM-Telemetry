@@ -251,6 +251,18 @@
   },
   {
    "mod": "routerview",
+   "name": "RT_OPEN_KEY"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtOpened"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtSaveOpen"
+  },
+  {
+   "mod": "routerview",
    "name": "rtSection"
   },
   {
