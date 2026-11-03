@@ -110,7 +110,16 @@ chk(set(P.RATE_OVERRIDES) >= {"glm-5.3", "kimi-k3"}, "glm-5.3 and kimi-k3 are ov
 chk(per_m(P.rates_for("glm-5.3", CAT))[:2] == (1.40, 4.40), "glm-5.3 keeps 1.40/4.40 over live 0.07/1.40")
 chk(per_m(P.rates_for("kimi-k3", CAT))[:2] == (3.0, 15.0), "kimi-k3 keeps 3/15 over live 0.169/20")
 fw = "accounts/fireworks/models/deepseek-v4p1-flash"
-chk(per_m(P.rates_for(fw, CAT))[:2] == (0.22, 0.66), "a Fireworks SKU keeps its provider-specific rate")
+chk(per_m(P.rates_for(fw, CAT)) == tuple(round(x, 6) for x in P.RATE_OVERRIDES[fw]),
+    "a Fireworks SKU keeps its provider-specific rate")
+chk(P.RATE_OVERRIDES[fw] == (0.30, 1.20, 0.006), "DeepSeek V4.1 Flash on Fireworks is 0.30/1.20, cached 0.006")
+print("fireworks spot SKUs are 30% below Standard")
+for std in ("deepseek-v4p1-flash", "deepseek-v4p1-flash-1017", "glm-5p3", "kimi-k3"):
+    a = P.RATE_OVERRIDES["accounts/fireworks/models/" + std]
+    b = P.RATE_OVERRIDES.get("accounts/fireworks/models/" + std + "-spot")
+    chk(b is not None and all(abs(y - 0.7 * x) < 1e-9 for x, y in zip(a, b)), std + "-spot = 0.7 x Standard", b)
+print("free-tier: beam-free")
+chk(P.is_free_tier("beam-free"), "beam-free is free-tier")
 chk(P.rate_origin("glm-5.3", CAT)[0] == "override", "origin is 'override'")
 extra = set(P.RATE_OVERRIDES) - {"glm-5.3", "kimi-k3"}
 chk(all(k.startswith("accounts/fireworks/") for k in extra), "every other override is a Fireworks id", sorted(extra))

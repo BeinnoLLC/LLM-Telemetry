@@ -89,6 +89,7 @@ ZEN_FREE_MODELS = {
     "muse-spark-1.3-contributor-free",
     "jev-1.13-free",
     "big-pickle",
+    "beam-free",
 }
 
 
@@ -152,12 +153,20 @@ RATE_OVERRIDES = {
     "glm-5.3":    (1.40, 4.40, 0.26),
     # live 0.169/20 -> output looks like a typo; official list is 3/15
     "kimi-k3":    (3.00, 15.00, 0.30),
-    # Fireworks-billed SKUs: Fireworks' own price, not the generic model's
+    # Fireworks-billed SKUs: Fireworks' own Standard price, not the generic model's
+    # (source: docs.fireworks.ai/serverless/pricing, 2026-11-03; spot SKUs are 30% below Standard)
+    "accounts/fireworks/models/deepseek-v4p1-flash":          (0.30, 1.20, 0.006),
+    "accounts/fireworks/models/deepseek-v4p1-flash-1017":     (0.30, 1.20, 0.006),
+    "accounts/fireworks/models/deepseek-v4p1-flash-spot":      (0.21, 0.84, 0.0042),
+    "accounts/fireworks/models/deepseek-v4p1-flash-1017-spot": (0.21, 0.84, 0.0042),
+    "accounts/fireworks/models/glm-5p3":                      (1.40, 4.40, 0.26),
+    "accounts/fireworks/models/glm-5p3-spot":                 (0.98, 3.08, 0.182),
+    "accounts/fireworks/models/kimi-k3":                      (3.00, 15.00, 0.30),
+    "accounts/fireworks/models/kimi-k3-spot":                 (2.10, 10.50, 0.21),
+    # retired SKUs, last listed price (no longer on Fireworks' price list; kept for historic usage)
     "accounts/fireworks/models/deepseek-v4-flash-0731":       (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-flash-vision-exp": (0.22, 0.66, 0.007),
-    "accounts/fireworks/models/deepseek-v4p1-flash":          (0.22, 0.66, 0.007),
     "accounts/fireworks/models/deepseek-v4-pro-0813":         (1.32, 3.96, 0.044),
-    "accounts/fireworks/models/kimi-k3":                      (3.00, 15.00, 0.30),
 }
 
 # Fallback only (see precedence above): models with no live catalogue entry.
