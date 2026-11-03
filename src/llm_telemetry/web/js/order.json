@@ -1458,6 +1458,74 @@
    "name": "FEEDER"
   },
   {
+   "mod": "table",
+   "name": "DENSITY_KEY"
+  },
+  {
+   "mod": "table",
+   "name": "TABLE_SORT"
+  },
+  {
+   "mod": "table",
+   "name": "getDensity"
+  },
+  {
+   "mod": "table",
+   "name": "applyDensity"
+  },
+  {
+   "mod": "table",
+   "name": "setDensity"
+  },
+  {
+   "mod": "table",
+   "name": "NUM_RE"
+  },
+  {
+   "mod": "table",
+   "name": "MULT"
+  },
+  {
+   "mod": "table",
+   "name": "parseNum"
+  },
+  {
+   "mod": "table",
+   "name": "sortValues"
+  },
+  {
+   "mod": "table",
+   "name": "cellValue"
+  },
+  {
+   "mod": "table",
+   "name": "isRightAligned"
+  },
+  {
+   "mod": "table",
+   "name": "headerAndRows"
+  },
+  {
+   "mod": "table",
+   "name": "densityBar"
+  },
+  {
+   "mod": "table",
+   "name": "sortGlyph"
+  },
+  {
+   "mod": "table",
+   "name": "applySort"
+  },
+  {
+   "mod": "table",
+   "name": "sortBy"
+  },
+  {
+   "mod": "table",
+   "name": "enhanceTable"
+  },
+  {
    "mod": "router",
    "name": "PROJECT_FILTER"
   },

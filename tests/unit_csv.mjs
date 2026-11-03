@@ -76,6 +76,7 @@ const P = await isolate('palette.js', {
 const DOM = new Map();
 globalThis.__dom = DOM;
 const V = await isolate('views.js', {
+  'table.js': { TABLE_SORT: {}, enhanceTable: () => {}, sortValues: (a, b) => (a < b ? -1 : a > b ? 1 : 0) },
   'palette.js': {
     $: id => DOM.get(id) || null,
     AC: '#AC', BD: '#BD', MU: '#MU', PAL: P.PAL, ago: P.ago, colorOf: m => 'col:' + m,

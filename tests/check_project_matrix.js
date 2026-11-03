@@ -82,7 +82,7 @@ setTimeout(() => {
     if (modelHeader) {
       const modelName = w.eval(`(() => {
         const models = [...new Set(DATA.profiles.work.rows.map(r => r.model))];
-        return models.find(m => short(m) === ${JSON.stringify(modelHeader.textContent)}) || models[0];
+        return models.find(m => short(m) === ${JSON.stringify(modelHeader.textContent.replace(/\s*[↕▲▼]$/, ''))}) || models[0];
       })()`);
       const expectedColor = w.eval(`colorOf(${JSON.stringify(modelName)})`);
       // jsdom normalizes inline hex colors to rgb(); compare via a probe
@@ -159,7 +159,7 @@ setTimeout(() => {
       // Untouched cells render WITHOUT the proj-cell class (they're not a
       // click target), so locate by row/column position instead.
       const rowEl = [...table.querySelectorAll('tbody tr')].find(tr => tr.firstElementChild.textContent === uProj);
-      const headerTexts = [...table.querySelectorAll('thead th')].map(th => th.textContent);
+      const headerTexts = [...table.querySelectorAll('thead th')].map(th => th.textContent.replace(/\s*[↕▲▼]$/, ''));
       const uModelShort = w.eval(`short(${JSON.stringify(uModel)})`);
       const colIdx = headerTexts.indexOf(uModelShort);
       const cellEl = rowEl ? rowEl.children[colIdx] : null;

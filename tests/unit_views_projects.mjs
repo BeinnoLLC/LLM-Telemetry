@@ -208,6 +208,7 @@ async function load(over = {}) {
   chartGet = over.chartGet || null;
   const { doc, els, docListeners } = mkDom();
   const V = await isolate('views.js', {
+  'table.js': { TABLE_SORT: {}, enhanceTable: () => {}, sortValues: (a, b) => (a < b ? -1 : a > b ? 1 : 0) },
     'palette.js': {
       $: id => els[id] || null,
       esc, escA, fmt, fmtB, money,
