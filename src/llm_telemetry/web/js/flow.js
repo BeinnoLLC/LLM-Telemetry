@@ -104,10 +104,14 @@ export function qtSeed(key){
   h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-export const QT_CAP = 60;                     // balls drawn per jar; the 60th slot becomes a "+N" chip
+export const QT_CAP = 40;                     // balls drawn per jar; the 40th slot becomes a "+N" chip
 // Ball px: start at QT_MAX and step down to QT_MIN until the pile fits in QT_FILL of the jar.
-export const QT_MAX = 20;
-export const QT_MIN = 12;
+export const QT_MAX = 28;
+export const QT_MIN = 18;
+// One bold letter per agent family, centred on its ball (and in the legend). Near-black on every
+// family colour (contrast 5.4-8.8:1, white would be 2.3-3.7:1). A logo blurs at 18px; a letter reads.
+export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
+export function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
 export const QT_FILL = 0.5;
 
 // Pour the balls in, oldest first: each one drops from a seeded column (best of six, so it
@@ -130,7 +134,7 @@ export function qtPack(keys, w, h, size){
   return { balls, top };
 }
 
-// Size the whole jar (steps down from 20px to 12px as it fills), pack it and write the
+// Size the whole jar (steps down from 28px to 18px as it fills), pack it and write the
 // positions. A ball that already sat somewhere and now moves glides there (.qt-repack).
 export function qtLayout(box, els){
   const w = box.clientWidth || 200, h = box.clientHeight || 240;
@@ -188,6 +192,10 @@ export function paintBalls(box, items, decorate, elsewhere){
     keep.add(c); els.push(c);
     const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
     const when = carMeta(it);
+    const gk = qtGlyphKey(it);
+    let gl = c.querySelector('.qt-gl');
+    if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
+    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = QT_GLYPH[gk]; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -284,6 +292,8 @@ export function qtFly(tr, fromRect, toEl, cls){
   g.style.cssText = `left:${fromRect.left - base.left}px;top:${fromRect.top - base.top}px;`
     + `width:${to.width}px;height:${to.height}px`;
   ['--k', '--rz'].forEach(v => { const x = toEl.style.getPropertyValue(v); if (x) g.style.setProperty(v, x); });
+  const gl = toEl.querySelector('.qt-gl');
+  if (gl) g.appendChild(gl.cloneNode(true));
   tr.appendChild(g);
   toEl.style.visibility = 'hidden';
   const dx = to.left - fromRect.left, dy = to.top - fromRect.top, dist = Math.hypot(dx, dy);

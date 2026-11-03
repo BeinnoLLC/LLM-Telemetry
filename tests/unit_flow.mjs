@@ -350,15 +350,15 @@ const lblOf = c => c._qt.label;
   eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
   ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  // Cap: 59 balls and a "+N" chip from 61 up; the lid keeps the true total.
+  // Cap: 39 balls and a "+N" chip from 41 up; the lid keeps the true total.
   h.DATA.ollama.hosts = [{ label: 'big', queue: 70 }];
   D.renderQueue();
-  eq(cars(qb).length, 59, 'depot: 70 waiting -> 59 balls drawn');
+  eq(cars(qb).length, 39, 'depot: 70 waiting -> 39 balls drawn');
   eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: the lid shows the true count');
-  eq(qb._qtChip && qb._qtChip.textContent, '+11', 'depot: a "+11" chip takes the 60th slot');
-  h.DATA.ollama.hosts = [{ label: 'big', queue: 60 }];
+  eq(qb._qtChip && qb._qtChip.textContent, '+31', 'depot: a "+31" chip takes the 40th slot');
+  h.DATA.ollama.hosts = [{ label: 'big', queue: 40 }];
   D.renderQueue();
-  eq(cars(qb).length, 60, 'depot: exactly 60 -> all drawn');
+  eq(cars(qb).length, 40, 'depot: exactly 40 -> all drawn');
   eq(qb._qtChip, null, 'depot: and no chip');
 
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
@@ -421,11 +421,11 @@ const lblOf = c => c._qt.label;
   ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
   ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
 
-  // Many finished tasks: 59 balls + a chip, honest lid.
+  // Many finished tasks: 39 balls + a chip, honest lid.
   h.DATA.profiles.p1 = { live: [], recent_sessions: Array.from({ length: 120 }, (_, i) => ({ id: 'x' + i, title: 'Task number ' + i + ' with a long wrapped title', model: 'm', last_ts: 1000 + i })) };
   D.renderQueue();
-  eq(cars(h.ids.get('qt-done')).length, 59, 'yard: 120 done -> 59 balls');
-  eq(h.ids.get('qt-done')._qtChip.textContent, '+61', 'yard: a "+61" chip for the rest');
+  eq(cars(h.ids.get('qt-done')).length, 39, 'yard: 120 done -> 39 balls');
+  eq(h.ids.get('qt-done')._qtChip.textContent, '+81', 'yard: a "+81" chip for the rest');
   eq(h.ids.get('qt-n-done').textContent, '120', 'yard: the lid count is honest');
 
   // No model at all: 'session', never "undefined" (#138).
@@ -510,15 +510,15 @@ const lblOf = c => c._qt.label;
   ok(a.top > 100, 'pack: forty balls are a layer on the floor, not a column to the roof');
   ok(new Set(a.balls.map(p => Math.round(p.rz))).size > 10, 'pack: balls are rotated at random');
   ok(D.qtSeed('x') !== D.qtSeed('y') && D.qtSeed('x') === D.qtSeed('x'), 'seed: stable per key, different between keys');
-  // sizes step down so the pile fits in half the jar, and never below 12px
+  // sizes step down so the pile fits in half the jar, and never below 18px
   const box = fakeEl(); box.clientWidth = 200; box.clientHeight = 120;
   const els = Array.from({ length: 60 }, (_, i) => { const c = D.trainBall({ kind: 'd', key: 's:' + i }); c.dataset.key = 's:' + i; return c; });
   D.qtLayout(box, els);
   const sz = +els[0].style['--sz'].replace('px', '');
-  ok(sz >= 12 && sz < 20, 'layout: a crowded small jar steps the balls down (' + sz + 'px)');
+  ok(sz >= 18 && sz < 28, 'layout: a crowded small jar steps the balls down (' + sz + 'px)');
   ok(els.every(c => parseFloat(c.style.top) < 120 && parseFloat(c.style.left) < 200), 'layout: nothing is placed outside the box');
   const few = els.slice(0, 5); D.qtLayout(box, few);
-  eq(few[0].style['--sz'], '20px', 'layout: a few balls stay at 20px');
+  eq(few[0].style['--sz'], '28px', 'layout: a few balls stay at 28px');
   // popover: carPop adds cost, session and the way into the session
   const pop = D.carPop({ kind: 'd', sid: 'abcdefghij', label: '<b>t</b>', profile: 'p', cost: 0.5, last_ts: 1 });
   ok(pop.includes('<span>cost</span><b>$0.5000</b>') && pop.includes('#cdefghij') && pop.includes('class="pp-open"'), 'popover: cost, session id and the Open session button');

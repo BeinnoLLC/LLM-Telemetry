@@ -863,7 +863,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* One task = one bead, piled from the floor of the jar by JS (left/top are its centre).
    Resin look: a flat family colour, a soft highlight, a core shadow and a contact shadow. */
 #qcard{--qk-wait:hsl(215 16% 62%)}
-.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,20px);height:var(--sz,20px);margin:calc(var(--sz,20px) / -2) 0 0 calc(var(--sz,20px) / -2);
+.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,28px);height:var(--sz,28px);margin:calc(var(--sz,28px) / -2) 0 0 calc(var(--sz,28px) / -2);
   padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
   background:radial-gradient(circle at 32% 26%,white 0,rgba(255,255,255,.92) 8%,rgba(255,255,255,0) 21%),
     radial-gradient(circle at 36% 30%,rgba(255,255,255,.3),transparent 50%),
@@ -875,10 +875,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.45),0 5px 8px -2px rgba(0,0,0,.7)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 /* Running = a clip: an upright capsule with a bright inner loop, glowing in its own colour. */
-.qt-ball.qt-run{width:calc(var(--sz,20px) * .76);height:calc(var(--sz,20px) * 1.14);margin:calc(var(--sz,20px) * -.57) 0 0 calc(var(--sz,20px) * -.38);
+.qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:22%;right:22%;top:18%;bottom:30%;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);pointer-events:none}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid rgba(255,255,255,.4);pointer-events:none}
+/* The family letter: upright whatever the pile rotation, above the gloss, near-black for AA contrast. */
+.qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  font:800 max(10px,calc(var(--sz,28px) * .52))/1 system-ui,sans-serif;color:hsl(225 25% 6%);
+  rotate:calc(var(--rz,0deg) * -1);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg);font-size:max(10px,calc(var(--sz,28px) * .46))}
+.qt-ghost .qt-gl{rotate:0deg}
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
@@ -904,7 +910,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
-.qt-sw{width:12px;height:12px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
+.qt-sw .qt-gl{position:static;inset:auto;--sz:21px;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
 .qt-sw-claude{--k:var(--kind-claude)}

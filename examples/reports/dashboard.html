@@ -938,7 +938,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
 
 #qcard{--qk-wait:hsl(215 16% 62%)}
-.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,20px);height:var(--sz,20px);margin:calc(var(--sz,20px) / -2) 0 0 calc(var(--sz,20px) / -2);
+.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,28px);height:var(--sz,28px);margin:calc(var(--sz,28px) / -2) 0 0 calc(var(--sz,28px) / -2);
   padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
   background:radial-gradient(circle at 32% 26%,white 0,rgba(255,255,255,.92) 8%,rgba(255,255,255,0) 21%),
     radial-gradient(circle at 36% 30%,rgba(255,255,255,.3),transparent 50%),
@@ -950,10 +950,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.45),0 5px 8px -2px rgba(0,0,0,.7)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 
-.qt-ball.qt-run{width:calc(var(--sz,20px) * .76);height:calc(var(--sz,20px) * 1.14);margin:calc(var(--sz,20px) * -.57) 0 0 calc(var(--sz,20px) * -.38);
+.qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:22%;right:22%;top:18%;bottom:30%;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);pointer-events:none}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid rgba(255,255,255,.4);pointer-events:none}
+
+.qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  font:800 max(10px,calc(var(--sz,28px) * .52))/1 system-ui,sans-serif;color:hsl(225 25% 6%);
+  rotate:calc(var(--rz,0deg) * -1);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg);font-size:max(10px,calc(var(--sz,28px) * .46))}
+.qt-ghost .qt-gl{rotate:0deg}
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
@@ -979,7 +985,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
-.qt-sw{width:12px;height:12px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
+.qt-sw .qt-gl{position:static;inset:auto;--sz:21px;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
 .qt-sw-claude{--k:var(--kind-claude)}
@@ -2094,7 +2101,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="group" aria-label="Running tasks" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
     <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="group" aria-label="Finished tasks" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
    </div>
-   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"></i>Hermes</span><span><i class="qt-sw qt-sw-pi"></i>Pi</span><span><i class="qt-sw qt-sw-claude"></i>Claude</span><span><i class="qt-sw qt-sw-codex"></i>Codex</span><span><i class="qt-sw qt-sw-wait"></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span></div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"><b class="qt-gl">H</b></i>Hermes</span><span><i class="qt-sw qt-sw-pi"><b class="qt-gl">π</b></i>Pi</span><span><i class="qt-sw qt-sw-claude"><b class="qt-gl">C</b></i>Claude</span><span><i class="qt-sw qt-sw-codex"><b class="qt-gl">X</b></i>Codex</span><span><i class="qt-sw qt-sw-wait"><b class="qt-gl">O</b></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
    <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
@@ -5892,9 +5899,11 @@ function qtSeed(key){
   h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-const QT_CAP = 60;                     // balls drawn per jar; the 60th slot becomes a "+N" chip
-const QT_MAX = 20;
-const QT_MIN = 12;
+const QT_CAP = 40;                     // balls drawn per jar; the 40th slot becomes a "+N" chip
+const QT_MAX = 28;
+const QT_MIN = 18;
+const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
+function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
 const QT_FILL = 0.5;
 
 function qtPack(keys, w, h, size){
@@ -5965,6 +5974,10 @@ function paintBalls(box, items, decorate, elsewhere){
     keep.add(c); els.push(c);
     const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
     const when = carMeta(it);
+    const gk = qtGlyphKey(it);
+    let gl = c.querySelector('.qt-gl');
+    if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
+    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = QT_GLYPH[gk]; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -6051,6 +6064,8 @@ function qtFly(tr, fromRect, toEl, cls){
   g.style.cssText = `left:${fromRect.left - base.left}px;top:${fromRect.top - base.top}px;`
     + `width:${to.width}px;height:${to.height}px`;
   ['--k', '--rz'].forEach(v => { const x = toEl.style.getPropertyValue(v); if (x) g.style.setProperty(v, x); });
+  const gl = toEl.querySelector('.qt-gl');
+  if (gl) g.appendChild(gl.cloneNode(true));
   tr.appendChild(g);
   toEl.style.visibility = 'hidden';
   const dx = to.left - fromRect.left, dy = to.top - fromRect.top, dist = Math.hypot(dx, dy);
