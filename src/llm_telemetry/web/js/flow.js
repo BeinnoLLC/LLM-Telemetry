@@ -205,6 +205,7 @@ export function paintTrain(queued, running, done){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
+  const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
 
   // Where every tile is right now, so a task that changes jar flies across.
   const before = new Map();
@@ -220,6 +221,7 @@ export function paintTrain(queued, running, done){
 
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
+    if (jar) jar.style.setProperty('--wv', n ? 1 : 0);
     if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
   });
 
@@ -251,6 +253,11 @@ export function paintTrain(queued, running, done){
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
+
+  if (painted && nd > prevDone){
+    const yj = db.closest('.qt-jar');
+    if (yj){ yj.classList.remove('qt-splash'); void yj.offsetWidth; yj.classList.add('qt-splash'); setTimeout(() => yj.classList.remove('qt-splash'), 1700); }
+  }
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id);

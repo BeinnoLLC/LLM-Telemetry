@@ -894,36 +894,42 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
 .qt-line{--jc:var(--z-ok)}
 .qt-yard{--jc:var(--accent)}
-.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 14px}
-.qt-lid{position:relative;z-index:1;margin:0 -1px;display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:7px 12px;border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));border-radius:9px;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,var(--card)),color-mix(in srgb,var(--jc) 7%,var(--card)));
-  box-shadow:0 2px 5px -2px rgba(0,0,0,.35),inset 0 1px 0 color-mix(in srgb,var(--fg) 12%,transparent)}
-.qt-name{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--fg)}
-.qt-n{font-weight:600;font-size:var(--fs-xs);padding:0 8px;line-height:19px;border-radius:999px;
-  border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));background:var(--card);color:var(--fg)}
-.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px -9px 0;padding:14px 8px 34px;
-  border:1px solid color-mix(in srgb,var(--fg) 26%,transparent);border-top:0;border-radius:0 0 34px 34px;overflow:hidden;
-  background-color:color-mix(in srgb,var(--fg) 6%,transparent);
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px}
+.qt-lid{position:relative;z-index:3;align-self:center;width:44%;min-width:76px;height:26px;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid rgba(255,255,255,.3);border-radius:8px 8px 4px 4px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 42%,#fff 10%),color-mix(in srgb,var(--jc) 40%,#0b0e14));
+  box-shadow:0 2px 6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35)}
+.qt-lid::after{content:"";position:absolute;top:calc(100% - 1px);left:7%;right:7%;height:15px;
+  border:1.5px solid rgba(255,255,255,.22);border-top:0;background:linear-gradient(90deg,rgba(255,255,255,.14),rgba(255,255,255,.03))}
+.qt-name{margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--fg))}
+.qt-n{font-weight:700;font-size:var(--fs-sm);line-height:1;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-2px;padding:30px 10px 30px;
+  border:1.5px solid rgba(255,255,255,.22);border-radius:46px 46px 34px 34px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
   -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
-  background-image:linear-gradient(90deg,color-mix(in srgb,var(--fg) 12%,transparent),transparent 12%,transparent 88%,color-mix(in srgb,var(--fg) 6%,transparent));
-  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--fg) 22%,transparent),inset 3px 0 0 -1px color-mix(in srgb,var(--fg) 20%,transparent),inset 0 -14px 18px -12px color-mix(in srgb,var(--jc) 55%,transparent),0 6px 14px -8px rgba(0,0,0,.45)}
+  box-shadow:inset 0 -16px 22px -12px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.04),0 8px 16px -8px rgba(0,0,0,.55)}
+.qt-jar::after{content:"";position:absolute;z-index:2;left:15px;top:52px;bottom:46px;width:7px;border-radius:6px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.07) 55%,transparent);filter:blur(2.5px)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,transparent),color-mix(in srgb,var(--jc) 28%,transparent));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 26%,transparent),color-mix(in srgb,var(--jc) 40%,transparent));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
-.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:8px;margin-bottom:-1px;pointer-events:none;
-  background:radial-gradient(ellipse 14px 5px at 50% 100%,color-mix(in srgb,var(--jc) 45%,transparent) 98%,transparent) 0 0/28px 8px repeat-x;
-  border-bottom:1px solid color-mix(in srgb,var(--jc) 55%,transparent);opacity:.85;
-  transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
+.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:9px;margin-bottom:-1px;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 40%,transparent) 98%,transparent) 0 0/28px 9px repeat-x;
+  border-bottom:2px solid color-mix(in srgb,var(--jc) 45%,#fff 30%);
+  opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
+.qt-jar.qt-splash .qt-body::after{animation:qt-wave 3.2s linear infinite,qt-splash 1s ease-out .55s}
+.qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out .55s}
 @keyframes qt-wave{to{background-position-x:28px}}
+@keyframes qt-splash{35%{transform:scaleY(2.4);border-bottom-color:#fff}to{transform:none}}
+@keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
-  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:150px;max-height:260px;overflow-y:auto;padding:3px;scrollbar-width:thin}
+  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:170px;max-height:270px;overflow-y:auto;padding:3px;scrollbar-width:thin}
 .qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);grid-column:1/-1;align-self:center;text-align:center;
   padding:18px 22px;color:var(--muted);font-size:var(--fs-sm);border:1px dashed color-mix(in srgb,var(--jc) 40%,var(--border));border-radius:8px}
 .qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
 .qt-car{position:relative;display:flex;flex-direction:column;gap:4px;min-height:64px;padding:8px 10px;
   border-radius:6px;min-width:0;border:1px solid var(--border);border-left:4px solid hsl(var(--h,215) 55% 50%);
-  background:color-mix(in srgb,var(--card) 92%,transparent);color:var(--fg);font-size:13px;line-height:1.35;cursor:default;outline-offset:2px}
+  background:color-mix(in srgb,var(--card) 86%,transparent);color:var(--fg);font-size:13px;line-height:1.35;cursor:default;outline-offset:2px}
 .qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
 .qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
@@ -965,12 +971,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtip[data-side=right]::before{left:-6px;transform:rotate(315deg)}
 .qtip[data-side=left]::before{right:-6px;transform:rotate(135deg)}
 @media (max-width:899px){.qtrain{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:1100px) and (min-width:900px){.qtrain{gap:12px}.qt-jar{padding:0 8px}.qt-cars{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px) and (min-width:900px){.qtrain{gap:12px}.qt-jar{padding:0 4px}.qt-cars{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
   .qtrain *, .qtrain, .qtrain *::before, .qtrain *::after{animation:none !important;transition:none !important}
   .qt-car{opacity:1}
   .qt-ghost{display:none}
-  .qt-body::before,.qt-body::after{transition:none;animation:none}
+  .qt-body::before,.qt-body::after,.qt-jar.qt-splash .qt-body::before,.qt-jar.qt-splash .qt-body::after{transition:none;animation:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
@@ -2047,9 +2053,9 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
    <div class="qtrain" id="qtrain">
-    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Depot</span><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></div></section>
-    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">On the line</span><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></div></section>
-    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Yard</span><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></div></section>
+    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></div><div class="qt-name">Depot</div></section>
+    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
+    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
    </div>
    <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw"></i>Stripe colour = model</span><span><i class="qt-dot"></i>Pulsing dot = live now (square: compressing, amber: waiting)</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
@@ -5944,6 +5950,7 @@ function paintTrain(queued, running, done){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
+  const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
 
   const before = new Map();
   tr.querySelectorAll('.qt-car[data-key]').forEach(c => {
@@ -5958,6 +5965,7 @@ function paintTrain(queued, running, done){
 
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
+    if (jar) jar.style.setProperty('--wv', n ? 1 : 0);
     if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
   });
 
@@ -5986,6 +5994,11 @@ function paintTrain(queued, running, done){
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
+
+  if (painted && nd > prevDone){
+    const yj = db.closest('.qt-jar');
+    if (yj){ yj.classList.remove('qt-splash'); void yj.offsetWidth; yj.classList.add('qt-splash'); setTimeout(() => yj.classList.remove('qt-splash'), 1700); }
+  }
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id);

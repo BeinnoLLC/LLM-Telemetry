@@ -32,15 +32,19 @@ chk([head, rng, lk, kp, qc, lg].every(x => x !== null) && head < rng && rng < lk
 
 // ---- CSS: glass + fill motion + reduced motion
 chk(/\.qt-body\{[^}]*backdrop-filter:blur/.test(html), 'jar body has backdrop-filter blur');
-chk(/\.qt-body\{[^}]*background-color:color-mix\([^}]*transparent\)/.test(html), 'jar body fill is translucent');
+chk(/\.qt-body\{[^}]*border:1\.5px solid rgba\(255,255,255,\.22\)[^}]*border-radius:46px 46px 34px 34px/.test(html), 'glass rim 1.5px + rounded shoulders and base');
+chk(/\.qt-body\{[^}]*linear-gradient\(180deg,rgba\(255,255,255,\.08\),rgba\(255,255,255,\.02\)\)/.test(html), 'jar body is a light translucent glass gradient');
+chk(/\.qt-jar::after\{[^}]*filter:blur/.test(html), 'blurred specular streak on the jar');
+chk(/\.qt-lid::after\{/.test(html) && !/\.qt-lid\{[^}]*justify-content:space-between/.test(html), 'lid + neck silhouette, no kanban header bar');
 chk(/\.qt-body::before\{[^}]*transition:height \.8s cubic-bezier/.test(html), 'fill level eases on height');
+chk(/\.qt-jar\.qt-splash \.qt-body::after\{[^}]*qt-splash/.test(html) && /@keyframes qt-splash\b/.test(html), 'yard splash keyframes exist');
 chk(/@keyframes qt-wave\b/.test(html) && /@keyframes qt-bump\b/.test(html), 'wave and count-bump keyframes exist');
 chk(/@keyframes qt-arrive\{from\{opacity:0;transform:translateY\(-/.test(html), 'new queued tiles drop in from above');
-chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after\{transition:none;animation:none\}/.test(html), 'reduced motion: instant fill, no wave');
+chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after,[^{]*\{transition:none;animation:none\}/.test(html), 'reduced motion: instant fill, no wave');
 
 // ---- LST-261 pass 2: ghost keeps the destination size (no scaled text), jar bottom padding, tooltip hides
 chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'flying ghost is sized like its destination tile and only translates (text stays 14px)');
-chk(/\.qt-body\{[^}]*padding:14px 8px 34px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
+chk(/\.qt-body\{[^}]*padding:30px 10px 30px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
 chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'tile tooltip hides when the pointer leaves the jars');
 chk(/jr\.bottom \+ g/.test(html), 'tile tooltip prefers a spot outside the jar');
 
@@ -50,6 +54,17 @@ setTimeout(() => {
   try {
     const FOLLOW = w.Node.DOCUMENT_POSITION_FOLLOWING;
     chk(d.querySelectorAll('.qt-jar').length === 3, 'three jars');
+    chk([...d.querySelectorAll('.qt-jar')].every(j => j.querySelector('.qt-lid > .qt-n') && j.querySelector('.qt-body > .qt-cars')) && d.querySelectorAll('.qt-sec > .qt-name').length === 3, 'each jar: count on the lid, tiles in the body, label under the jar');
+    ev(`DATA.ollama={hosts:[]}; DATA.pi_live=null; DATA.agent_live=null; DATA.profiles[current].live=[]; DATA.profiles[current].recent_sessions=[]; renderQueue();`);
+    ev(`paintTrain([], [], [])`);
+    chk(d.getElementById('qt-done').closest('.qt-jar').style.getPropertyValue('--wv') === '0', 'empty jar has no wave');
+    ev(`paintTrain([], [], [{key:'s:z1',kind:'d',label:'Z1',hue:10,last_ts:Date.now()/1000}])`);
+    ev(`paintTrain([], [], [{key:'s:z1',kind:'d',label:'Z1',hue:10,last_ts:Date.now()/1000}])`);
+    d.querySelector('.qt-yard .qt-jar').classList.remove('qt-splash');
+    ev(`paintTrain([], [], [{key:'s:z1',kind:'d',label:'Z1',hue:10,last_ts:Date.now()/1000}])`);
+    chk(!d.querySelector('.qt-yard .qt-jar').classList.contains('qt-splash'), 'no splash when the yard count did not rise');
+    ev(`paintTrain([], [], [{key:'s:z1',kind:'d',label:'Z1',hue:10,last_ts:Date.now()/1000},{key:'s:z2',kind:'d',label:'Z2',hue:10,last_ts:Date.now()/1000}])`);
+    chk(d.querySelector('.qt-yard .qt-jar').classList.contains('qt-splash'), 'yard splashes when a task lands');
     chk(ev('qtDemoOn()') === false, 'demo hook off without ?demoQueue=1');
     chk(ev('(()=>{const a=[1],b=[2],c=[3];const r=qtDemoApply(a,b,c);return r[0]===a&&r[1]===b&&r[2]===c})()'), 'demo hook is inert (lists untouched)');
     // stable ids + FLIP: a task moving jars keeps its key and flies (ghost created) when rects exist
