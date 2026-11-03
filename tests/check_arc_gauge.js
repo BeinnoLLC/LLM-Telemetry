@@ -87,11 +87,10 @@ setTimeout(() => {
     chk(num(loe).textContent === `${loe.querySelector('[role=meter]').getAttribute('aria-valuenow')}%`,
         '(d) .loe number equals its aria-valuenow + "%"', num(loe).textContent);
     chk(num(ring(97)).getAttribute('text-anchor') === 'middle' && num(ring(97)).getAttribute('x') === '50', '(d) the number is centred on the arc');
-    // integration: the Home KPI strip
-    const rings = [...d.querySelectorAll('#kpis .kring')];
-    chk(rings.length >= 2, 'Home KPI strip renders the arc rings', rings.length);
-    chk(rings.every(r => r.querySelector('.gtrack') && r.querySelector('.gnum') && r.getAttribute('role') === 'meter' && r.getAttribute('aria-label')),
-        'each Home ring keeps role=meter, aria-label, track and number');
+    // integration: Home now uses thin meters instead of rings (UI pass U-1)
+    const meters = [...d.querySelectorAll('#kpis .stat-meter')];
+    chk(meters.length === 2 && meters.every(r => r.getAttribute('role') === 'meter' && r.getAttribute('aria-label')),
+        'Home KPI strip renders 2 meters, each with role=meter and aria-label', meters.length);
   } catch (e) {
     chk(false, 'checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 6).join('\n'));

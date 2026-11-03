@@ -47,7 +47,7 @@ setTimeout(() => {
   try {
     const cars = () => [...d.querySelectorAll('#qt-running .qt-ball:not(.qt-leaving)')];
     const kcount = k => cars().filter(c => c.dataset.kind === k).length;
-    const kpi = () => d.querySelector('#kpis .kpi-live');
+    const kpi = () => d.querySelector('#livekpis [data-kpi="sessions"] .stat-sub');
     const chip = k => { const e = kpi().querySelector(`.kpi-kind[data-kind="${k}"]`); return e ? parseInt(e.textContent.replace(/\D+/g, ''), 10) : 0; };
 
     w.eval('DATA.agent_live = []; DATA.pi_live = []; renderQueue();');
@@ -74,9 +74,8 @@ setTimeout(() => {
 
     // KPI
     w.eval('renderLive();');
-    w.eval(`document.querySelector('#kpis .kpi-live').innerHTML = inProgressHtml(DATA.profiles[current], DATA.pi_live, DATA.agent_live);`);
     const hermesN = base.hermes;
-    const total = parseInt([...kpi().childNodes].find(n => n.nodeType === 3).textContent, 10);
+    const total = Number(d.querySelector('#livekpis [data-kpi="sessions"] .stat-value').textContent);
     chk(total === hermesN + 4, 'KPI total = Hermes + Pi + Claude + Codex', `${total} vs ${hermesN + 4}`);
     chk(chip('claude') === 2 && chip('codex') === 1 && chip('pi') === 1 && chip('hermes') === hermesN, 'KPI per-kind chips',
       ['claude', 'codex', 'pi', 'hermes'].map(chip).join('/'));
@@ -127,7 +126,7 @@ setTimeout(() => {
       ['live row', ['claude', 'codex'].map(k => rowBadge(k).querySelector('svg[data-kindlogo]'))]];
     sized.forEach(([what, svgs]) => chk(svgs.length === 2 && svgs.every(sv => logoPx(sv) >= 15 && parseFloat(w.getComputedStyle(sv).height) >= 15), `${what} logos render >= 15px`, svgs.map(logoPx).join(',')));
     chk(/sessions/i.test(d.querySelector('#livekpis [data-kpi="sessions"]').textContent)
-      && Number(d.querySelector('#livekpis [data-kpi="sessions"] .lkpi-num').textContent) === hermesN + 4, 'sessions-in-flight tile agrees');
+      && Number(d.querySelector('#livekpis [data-kpi="sessions"] .stat-value').textContent) === hermesN + 4, 'sessions-in-flight tile agrees');
 
     // Fleet-wide: independent of the selected profile.
     const other = w.eval(`Object.keys(DATA.profiles).find(n => n !== current)`);

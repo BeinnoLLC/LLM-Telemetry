@@ -59,6 +59,9 @@ function mkEl(id){
     addEventListener(){},
     contains(){ return false; },
     appendChild(c){ this.children.push(c); c.parent = this; return c; },
+    append(...c){ this.children.push(...c); },
+    prepend(...c){ this.children.unshift(...c); },
+    remove(){ if (this.parent) this.parent.children = this.parent.children.filter(x => x !== this); },
     getBoundingClientRect(){ return { left: 0, top: 0, width: 0, height: 0 }; },
     classList: {
       _s: new Set(),
@@ -116,7 +119,7 @@ const load = () => isolate('views.js', {
   'charts.js': {
     current: 'p1',
     mk: (...a) => { mkCalls.push(a); },
-    agg: () => ({}), noLeg: () => ({}), sparkSvg: () => '', radialRing: () => '',
+    agg: () => ({}), noLeg: () => ({}), sparkSvg: () => '',
     charts: [], ctxSpark: () => '', olBar: () => '',
   },
   'router.js': {
@@ -566,33 +569,27 @@ const BW_ROWS = [
 }
 
 {
-  eq(D.renderUnpriced([]), undefined, 'renderUnpriced: no banner element, no throw');
-  const els = dom();
-  D.renderUnpriced([{ model: 'z', calls: 2 }]);
-  lacks(Object.keys(els).join(','), 'unpricedbanner', 'renderUnpriced: nothing created when the id is absent');
+  const txt = e => (e.textContent || '') + (e.children || []).map(txt).join(' ');
+  eq(D.renderUnpriced([]), 0, 'renderUnpriced: nothing unpriced -> 0, and no notices region is no throw');
+  eq(D.renderUnpriced([{ model: 'z', calls: 2 }]), 1, 'renderUnpriced: with no #notices region it still counts and does not throw');
 
-  const e = dom('unpricedbanner');
-  e.unpricedbanner.hidden = false;
-  e.unpricedbanner.innerHTML = 'stale';
-  D.renderUnpriced([{ model: 'z', calls: 2, priced: true }]);
-  eq(e.unpricedbanner.hidden, true, 'renderUnpriced: all priced -> banner hidden');
-  eq(e.unpricedbanner.innerHTML, '', 'renderUnpriced: and cleared');
+  const e = dom('notices');
+  eq(D.renderUnpriced([{ model: 'z', calls: 2, priced: true }]), 0, 'renderUnpriced: all priced -> no toast');
+  eq(e.notices.children.length, 0, 'renderUnpriced: and nothing in the region');
 
-  const e2 = dom('unpricedbanner');
-  D.renderUnpriced([{ model: 'z', calls: 3 }, { model: 'acme/<x>', calls: 2 }]);
-  eq(e2.unpricedbanner.hidden, false, 'renderUnpriced: unpriced traffic shows the banner');
-  has(e2.unpricedbanner.innerHTML, '<b>2 models with traffic have no price</b>', 'renderUnpriced: headline counts models');
-  has(e2.unpricedbanner.innerHTML, '(<span class="mono">z</span>, <span class="mono">&lt;x&gt;</span>; 5 calls).',
-    'renderUnpriced: names escaped, worst first, calls summed');
-  has(e2.unpricedbanner.innerHTML, 'Est. cost excludes that traffic, so it is understated.',
-    'renderUnpriced: warns the estimate is low');
-  has(e2.unpricedbanner.innerHTML, '<a href="#/Prices">Price sheet</a> shows the fix.',
-    'renderUnpriced: links to the fix (in-app Prices view)');
+  const e2 = dom('notices');
+  eq(D.renderUnpriced([{ model: 'z', calls: 3 }, { model: 'acme/<x>', calls: 2 }]), 2, 'renderUnpriced: counts the unpriced models');
+  const t2 = e2.notices.children[0];
+  ok(!!t2, 'renderUnpriced: unpriced traffic raises a toast');
+  has(txt(t2), '2 models have no price', 'renderUnpriced: headline counts models');
+  has(txt(t2), 'leaves out 5 calls (z, <x>', 'renderUnpriced: names (as text, never markup), worst first, calls summed');
+  has(txt(t2), 'too low', 'renderUnpriced: warns the estimate is low');
+  eq(t2.attrs.role, 'status', 'renderUnpriced: a warning is a polite status region');
 
-  const e3 = dom('unpricedbanner');
+  const e3 = dom('notices');
+  D.clearNotice('unpriced');
   D.renderUnpriced([{ model: 'solo', calls: 1 }]);
-  has(e3.unpricedbanner.innerHTML, '<b>1 model with traffic has no price</b>', 'renderUnpriced: singular model');
-  has(e3.unpricedbanner.innerHTML, '1 calls', 'renderUnpriced: the call count is not pluralised');
+  has(txt(e3.notices.children[0]), '1 model has no price', 'renderUnpriced: singular model');
 }
 
 // ═══ renderResend ══════════════════════════════════════════════════════════

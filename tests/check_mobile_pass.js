@@ -76,11 +76,10 @@ setTimeout(() => {
 
     // ---- CSS rule checks (source-level, since jsdom does not evaluate media
     // queries) — confirm the actual rules this ticket asked for exist. -------
-    chk(/@media\(max-width:640px\)\{[^}]*\.grid-kpi\{grid-template-columns:repeat\(2/.test(html) ||
-        /grid-kpi\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/.test(html),
-        'KPI strip goes to 2 columns at <=640px');
-    chk(/@media\(max-width:340px\)\{\.grid-kpi\{grid-template-columns:1fr\}\}/.test(html),
-        'KPI strip stays 2-up on phones and goes to 1 column only below 340px (LST-261)');
+    chk(/@media\(max-width:899px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:span 6\} \}/.test(html),
+        'KPI cards go 2-up at <=899px');
+    chk(/@media\(max-width:359px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:1\/-1\} \}/.test(html),
+        'KPI cards stay 2-up on phones and go to 1 column only below 360px');
     chk(/\.lvscroll\{overflow:auto;[^}]*min-width:0/.test(html),
         'live table scrolls inside its own panel (overflow:auto, min-width:0) at every width');
     chk(!/#livelist \.liverow\{flex-direction:column/.test(html),
@@ -98,7 +97,6 @@ setTimeout(() => {
     chk(!!mobileBlockMatch, 'the mobile rules are scoped inside a single @media(max-width:640px) block');
     if (mobileBlockMatch) {
       const block = mobileBlockMatch[1];
-      chk(block.includes('.grid-kpi{grid-template-columns:repeat(2'), 'KPI 2-col rule lives inside the mobile block');
       chk(block.includes('.olgrid{grid-template-columns:1fr}'), 'olgrid 1-col rule lives inside the mobile block');
     }
   } catch (e) {

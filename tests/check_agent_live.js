@@ -40,7 +40,7 @@ const dom = new JSDOM(html, {
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    const kpi = k => d.querySelector(`#livekpis [data-kpi="${k}"] .lkpi-num`);
+    const kpi = k => d.querySelector(`#livekpis [data-kpi="${k}"] .stat-value`);
     w.eval('DATA.agent_live = []; renderLive();');
     const base = {
       sessions: Number(kpi('sessions').textContent),

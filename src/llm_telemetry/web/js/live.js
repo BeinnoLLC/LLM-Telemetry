@@ -133,12 +133,11 @@ export function inFlight(p, piLive, agentLive){
   dedupAgentLive(agentLive).forEach(S => { if (S.phase !== 'idle') out.push({ kind: S.engine === 'codex' ? 'codex' : 'claude', S }); });
   return out;
 }
-// "In progress" KPI body: total plus one tinted chip per non-zero kind.
+// Sessions-in-flight sub-line: one dot (or brand mark) per non-zero kind,
+// "5 Hermes · 3 Claude". Empty string when nothing is in flight.
 export function inProgressHtml(p, piLive, agentLive){
   const c = { hermes: 0, pi: 0, claude: 0, codex: 0 };
   inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
-  const n = c.hermes + c.pi + c.claude + c.codex;
-  // Labelled chips ("2 Claude"), dot in the kind colour, zero kinds omitted.
   const chips = KIND_ORDER.filter(k => c[k]).map(k => {
     const m = kindMeta(k);
     // Claude/Codex lead with their brand mark (inherits the kind colour);
@@ -148,8 +147,33 @@ export function inProgressHtml(p, piLive, agentLive){
       : `<i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>`;
     return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}">${mark}${c[k]} ${esc(m.label)}</span>`;
   }).join('');
-  return `<span class="${n ? '' : 'muted'}"${n ? ' style="color:var(--z-ok)"' : ''}>\u25CF</span> ${n}`
-    + (chips ? `<span class="kpi-kinds">${chips}</span>` : '');
+  return chips ? `<span class="kpi-kinds">${chips}</span>` : '';
+}
+// ONE card anatomy for every KPI on Home (both rows): label, value (+ unit),
+// sub-line, viz slot. Fixed grid rows in CSS keep the baselines shared and the
+// height equal whether or not a card has a viz. `viz` is raw markup.
+export function statHtml(o){
+  const attrs = (o.kpi ? ` data-kpi="${o.kpi}"` : '') + (o.state ? ` data-state="${o.state}"` : '');
+  const open = o.href ? `<a class="card stat" href="${o.href}"${attrs}>` : `<div class="card stat"${attrs}>`;
+  return open
+    + `<div class="stat-label" title="${escA(o.label)}">${esc(o.label)}</div>`
+    + `<div class="stat-value">${o.value}${o.unit ? `<span class="stat-unit">${o.unit}</span>` : ''}</div>`
+    + `<div class="stat-sub"${o.subState ? ` data-state="${o.subState}"` : ''}>${o.sub || ''}</div>`
+    + `<div class="stat-viz">${o.viz || ''}</div>`
+    + (o.href ? '</a>' : '</div>');
+}
+// Bounded 0-100 metric as a thin bar (replaces the ring gauge). Returns the
+// state ('ok'|'warn'|'bad'|null) alongside the bar so the card can colour its
+// sub-line from the same threshold.
+export function meterStat(pct, o){
+  const state = pct == null ? null : pct >= o.warnAt ? 'ok' : pct >= o.badAt ? 'warn' : 'bad';
+  const word = pct == null ? 'no data' : state === 'ok' ? 'Healthy' : state === 'warn' ? 'Watch' : 'Low';
+  const v = pct == null ? 0 : Math.round(Math.max(0, Math.min(100, pct)));
+  return {
+    state, word,
+    viz: `<div class="stat-meter" role="meter" aria-valuenow="${v}" aria-valuemin="0" aria-valuemax="100"`
+      + ` aria-label="${escA(o.label)}" style="--v:${v}%"><i></i></div>`,
+  };
 }
 export function liveKpis(p, name, now, profiles, agentLive, piLive){
   const sessions = inFlight(p, piLive, agentLive).length;
@@ -168,7 +192,7 @@ export function liveKpis(p, name, now, profiles, agentLive, piLive){
 // throughput sparkline's Chart.js canvas every poll. So the canvas wrapper is
 // lifted out first and put back into the new throughput card; it is only
 // emitted as markup the first time (or after a full rebuild removed it).
-const LKPI_SPARK = '<div class="lkpi-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>';
+const LKPI_SPARK = '<div class="stat-spark" aria-hidden="true"><canvas id="cLkpiSpark"></canvas></div>';
 // One chart per page: built through mk() (which destroys any chart already
 // bound to the canvas) the first time, then fed the new window in place.
 function paintSpark(series){
@@ -190,16 +214,22 @@ function paintSpark(series){
      scales: {x: {display: false}, y: {display: false, beginAtZero: true}}});
 }
 const SEV_RANK = { critical: 0, warning: 1, info: 2 };
-const ALERT_ROWS = 2;
-function alertsHtml(k){
+// "delegation_failure_rate" -> "Delegation failure rate": the rule name is the
+// short title, the full sentence rides in title=.
+const ruleTitle = r => { const t = String(r || '').replace(/[_-]+/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : 'Alert'; };
+function alertsStat(k){
+  if (!k.alerts){
+    return statHtml({kpi: 'alerts', label: 'Active alerts', value: '0', state: 'ok', href: '#/health',
+      sub: '<span class="stat-clear"><span aria-hidden="true">\u25CF</span> All clear</span>'});
+  }
   const list = k.list.slice().sort((a, b) => (SEV_RANK[a.severity] ?? 9) - (SEV_RANK[b.severity] ?? 9));
-  const rows = list.slice(0, ALERT_ROWS).map(a =>
-    `<li class="${a.severity === 'critical' ? 'crit' : ''}"><span class="adot" aria-hidden="true"></span>`
-    + `<span class="atext" title="${escA(a.why || a.message || '')}">${esc(a.message || a.rule || '')}</span></li>`);
-  if (list.length > ALERT_ROWS) rows.push(`<li class="amore">+${list.length - ALERT_ROWS} more</li>`);
-  return `<a class="lkpi-num lkpi-alerts${k.critical ? ' crit' : ''}" href="#/health">${k.alerts}</a>
-       <div class="lkpi-sub">${k.critical ? `${k.critical} critical` : 'need attention'}</div>
-       <ul class="lkpi-alist">${rows.join('')}</ul>`;
+  const worst = list[0];
+  const warn = list.filter(a => a.severity !== 'critical').length;
+  const split = [k.critical ? `${k.critical} critical` : '', warn ? `${warn} warning` : ''].filter(Boolean).join(' \u00b7 ');
+  const viz = `<span class="stat-alert${worst.severity === 'critical' ? ' crit' : ''}" title="${escA(worst.why || worst.message || '')}">`
+    + `<span class="adot" aria-hidden="true"></span><span class="atext">${esc(ruleTitle(worst.rule))}</span></span>`;
+  return statHtml({kpi: 'alerts', label: 'Active alerts', value: String(k.alerts), href: '#/health',
+    state: k.critical ? 'bad' : 'warn', sub: split, viz});
 }
 export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const box = $('livekpis');
@@ -207,29 +237,25 @@ export function renderLiveKpis(p, name, now, profiles, agentLive, piLive){
   const k = liveKpis(p, name, now, profiles, agentLive, piLive);
   checkCriticalAlerts(k.list);
   const win = k.tput.span >= TPUT_WINDOW_S ? 'last 5 min'
-    : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring…';
-  const alertsBody = k.alerts ? alertsHtml(k)
-    : `<div class="lkpi-clear"><span aria-hidden="true">●</span> All clear</div>`;
-  const card = (key, label, body) =>
-    `<div class="card lkpi" data-kpi="${key}"><div class="lkpi-name">${label}</div>${body}</div>`;
+    : k.tput.span > 0 ? `last ${ago(Math.round(k.tput.span))}` : 'measuring\u2026';
   const had = $('cLkpiSpark');
   const keep = had && had.parentNode;
   if (keep && keep.parentNode) keep.parentNode.removeChild(keep);
+  const down = k.agents - k.alive;
   box.innerHTML = [
-    card('sessions', 'Sessions in flight',
-      `<div class="lkpi-num">${k.sessions}</div><div class="lkpi-sub">open right now</div>`),
+    statHtml({kpi: 'sessions', label: 'Sessions in flight', value: String(k.sessions),
+      sub: inProgressHtml(p, piLive, agentLive) || 'open right now'}),
     // No heartbeat rows (a profile without a gateway backend, or a feed that
     // carries none) is "unknown", not "all heartbeating".
-    card('agents', 'Agents alive', k.agents
-      ? `<div class="lkpi-num">${k.alive}<span class="lkpi-of">/${k.agents}</span></div>`
-        + `<div class="lkpi-sub">${k.agents - k.alive ? `${k.agents - k.alive} not heartbeating` : 'all heartbeating'}</div>`
-      : `<div class="lkpi-num muted">\u2014</div><div class="lkpi-sub">no agent heartbeats reported</div>`),
-    card('throughput', 'Calls · tokens',
-      `<div class="lkpi-num">${k.tput.calls.toLocaleString()}<span class="lkpi-of"> · ${fmt(k.tput.tokens)}</span></div>`
-      + `<div class="lkpi-sub">${win}</div>${keep ? '' : LKPI_SPARK}`),
-    card('alerts', 'Active alerts', alertsBody),
+    k.agents
+      ? statHtml({kpi: 'agents', label: 'Agents alive', value: String(k.alive), unit: `/${k.agents}`,
+          sub: down ? `${down} not heartbeating` : 'all heartbeating', subState: down ? 'warn' : ''})
+      : statHtml({kpi: 'agents', label: 'Agents alive', value: '\u2014', sub: 'no agent heartbeats reported'}),
+    statHtml({kpi: 'throughput', label: 'Calls \u00b7 tokens', value: k.tput.calls.toLocaleString(), unit: 'calls',
+      sub: `${fmt(k.tput.tokens)} tokens \u00b7 ${win}`, viz: keep ? '' : LKPI_SPARK}),
+    alertsStat(k),
   ].join('');
-  if (keep) box.querySelector('[data-kpi="throughput"]').appendChild(keep);
+  if (keep) box.querySelector('[data-kpi="throughput"] .stat-viz').appendChild(keep);
   paintSpark(k.tput.series);
   return k;
 }
@@ -1043,12 +1069,6 @@ export async function pollLive(){
     // Repaint unconditionally: gating on the Live view left it stale on other tabs.
     renderLive();
     navSync();
-    // Update only the "In progress" KPI in place — the other cards depend on
-    // date-filtered aggregates the live feed does not carry, so a full KPI
-    // rebuild here would show wrong numbers.
-    const p = DATA.profiles[current] || {};
-    const card = document.querySelector('#kpis .kpi-live');
-    if (card) card.innerHTML = inProgressHtml(p, DATA.pi_live, DATA.agent_live);
     liveFails = 0;
     tickLiveStamp();
   } catch (e) {

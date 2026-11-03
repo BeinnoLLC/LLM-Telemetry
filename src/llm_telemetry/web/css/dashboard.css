@@ -21,7 +21,8 @@
    /* Gauge sizing — a single knob drives stroke, ticks and readout. */
    --gauge-size:84px;
    /* gauge severity zones + palette: single source = tokens.css */
-   --nav-w:232px; --rail-w:60px; --bar-h:52px;
+   --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+   --nav-w:240px; --rail-w:60px; --bar-h:52px;
    /* Logs edge tab (#254): ONE source of truth. The tab is exactly --logtab-w
       wide (fixed, so fonts and the count badge cannot widen it) and the page
       reserves --logtab-w + --logtab-gap on the right, so it never covers content. */
@@ -242,37 +243,55 @@
  /* Responsive grid helpers */
  .grid-auto{display:grid;gap:var(--gap);
    grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
- .grid-kpi{display:grid;gap:8px;
-   grid-template-columns:repeat(auto-fit,minmax(min(144px,100%),1fr))}
- /* #182: Home's live scorecards. Exactly four, so fixed 4-up tracks rather
-    than auto-fit (auto-fit would leave a 3+1 orphan at mid widths); 2-up on
-    tablets/phones and 1-up only on the narrowest. Calm palette (#153): the
-    number carries the weight, colour is reserved for state. */
- .lkpis{display:grid;gap:8px;align-items:start;grid-template-columns:repeat(4,minmax(0,1fr))}
- @media(max-width:900px){ .lkpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
- @media(max-width:340px){ .lkpis{grid-template-columns:minmax(0,1fr)} }
- .lkpi{position:relative;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
- .lkpi-name{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
- .lkpi-num{font-size:clamp(26px,2.2vw,34px);font-weight:600;letter-spacing:-.015em;line-height:1.1;
-   font-variant-numeric:tabular-nums;color:inherit;text-decoration:none;white-space:nowrap;
-   overflow:hidden;text-overflow:ellipsis}
- .lkpi-of{font-size:.6em;font-weight:600;color:var(--muted)}
- .lkpi-sub{font-size:var(--fs-xs);color:var(--muted)}
- /* Throughput sparkline: a Chart.js canvas (built once through mk(), then updated
-    in place) tucked into the card's right edge; under the number once cards narrow. */
- .lkpi-spark{position:absolute;right:12px;bottom:10px;width:84px;height:30px;pointer-events:none}
- @media(max-width:1100px){ .lkpi-spark{position:static;width:100%;height:26px;margin-top:2px} }
- .lkpi-alist{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;min-width:0}
- .lkpi-alist li{display:flex;gap:6px;align-items:flex-start;min-width:0;font-size:var(--fs-xs);color:var(--fg)}
- .lkpi-alist .adot{flex:none;margin-top:5px;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
- .lkpi-alist .crit .adot{background:var(--z-bad)}
- .lkpi-alist .atext{min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
- .lkpi-alist .amore{color:var(--muted)}
- .lkpi-alerts{color:var(--z-warn)}
- .lkpi-alerts.crit{color:var(--z-bad)}
- .lkpi-clear{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:999px;
-   font-size:var(--fs-xs);font-weight:600;color:var(--z-ok);
-   background:color-mix(in srgb,var(--z-ok) 12%,transparent)}
+ /* One KPI card for Home's two rows (live + totals): fixed grid rows keep label,
+    value baseline, sub-line and viz on the same lines in every card, and a card
+    with no viz still reserves its slot, so all cards are 138px. Calm palette
+    (#153): the number carries the weight, colour is reserved for state. */
+ .statgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;grid-auto-rows:138px}
+ .statgrid.live>.stat{grid-column:span 3}
+ .statgrid.totals>.stat{grid-column:span 2}
+ @media(max-width:1279px){ .statgrid.totals>.stat{grid-column:span 4} }
+ @media(max-width:899px){ .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:span 6} }
+ @media(max-width:359px){ .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1} }
+ .stat{display:grid;grid-template-rows:18px 38px 18px 28px;row-gap:4px;padding:12px 16px;min-width:0;
+   height:100%;box-sizing:border-box;color:inherit;text-decoration:none}
+ .stat-label{font:500 13px/18px var(--font);color:var(--muted);text-transform:uppercase;
+   letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .stat-value{font:600 28px/38px var(--font);font-variant-numeric:tabular-nums;color:var(--fg);
+   display:flex;align-items:baseline;gap:4px;white-space:nowrap;min-width:0;overflow:hidden}
+ .stat-unit{font:600 16px/1 var(--font);color:var(--muted)}
+ .stat-sub{font:400 13px/18px var(--font);color:var(--muted);min-width:0;overflow:hidden;
+   white-space:nowrap;text-overflow:ellipsis}
+ .stat-sub .kpi-kinds{margin-left:0;display:flex;flex-wrap:nowrap;gap:0 10px;font-size:13px;font-weight:400;overflow:hidden}
+ .stat-sub[data-state=warn],.stat-sub[data-state=warn] *{color:var(--z-warn)}
+ .stat-sub[data-state=ok]{color:var(--z-ok)}
+ .stat-sub[data-state=bad]{color:var(--z-bad)}
+ .stat-viz{align-self:end;height:28px;min-width:0;overflow:hidden}
+ .stat-viz svg,.stat-viz canvas{display:block;width:100%;height:28px}
+ .stat-spark{width:100%;height:28px;pointer-events:none}
+ .stat[data-state=warn] .stat-value{color:var(--z-warn)}
+ .stat[data-state=bad] .stat-value{color:var(--z-bad)}
+ .stat[data-state=ok] .stat-value{color:var(--z-ok)}
+ a.stat:hover{background:var(--state-hover)}
+ a.stat:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+ .stat-clear{color:var(--z-ok)}
+ .stat-alert{display:flex;gap:6px;align-items:center;height:28px;min-width:0;font:400 13px/28px var(--font);color:var(--fg)}
+ .stat-alert .adot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
+ .stat-alert.crit .adot{background:var(--z-bad)}
+ .stat-alert .atext{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .stat-meter{height:6px;margin-top:11px;border-radius:3px;background:var(--state-hover);overflow:hidden;color:var(--muted)}
+ .stat-meter>i{display:block;height:100%;width:var(--v);background:currentColor}
+ .stat-sub[data-state=ok]~.stat-viz .stat-meter{color:var(--z-ok)}
+ .stat-sub[data-state=warn]~.stat-viz .stat-meter{color:var(--z-warn)}
+ .stat-sub[data-state=bad]~.stat-viz .stat-meter{color:var(--z-bad)}
+ /* Phones: label and sub-line may wrap to two lines instead of truncating. */
+ @media(max-width:479px){
+   .statgrid{grid-auto-rows:174px}
+   .stat{grid-template-rows:36px 38px 36px 28px;padding:12px}
+   .stat-label,.stat-sub{white-space:normal;overflow-wrap:anywhere}
+   .stat-label{letter-spacing:.02em}
+   .stat-sub .kpi-kinds{flex-wrap:wrap}
+ }
  /* Two-up chart rows. Written as auto-fit rather than `1fr 1fr` so a narrow
     viewport reflows to one column instead of producing two ~160px tracks that
     hold a squashed canvas and force horizontal overflow. min() keeps the track
@@ -291,7 +310,7 @@
 .navitem:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
 /* Active item: accent bar plus accent text, so it reads as "you are here"
    without relying on colour alone. */
-.dkpis{display:flex;gap:18px;flex-wrap:wrap}
+.dkpis{display:flex;gap:8px;flex-wrap:wrap}
 .dkpi{display:flex;flex-direction:column;gap:2px}
 .dkpi-n{font-size:var(--fs-lg);font-weight:600}
 .dkpi-n.ok{color:var(--z-ok-fg)}
@@ -321,10 +340,10 @@
   font-weight:600;
 }
 .navitem .nvico{ width:16px; text-align:center; flex:0 0 16px; font-size:var(--fs-md); }
-.navitem .nvlabel{ flex:1 1 auto; min-width:0; }
+.navitem .nvlabel{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
 /* Counts ride on the right; hidden when zero so the rail stays quiet. */
 .navitem .nvbadge{
-  flex:0 0 auto; font-size:var(--fs-xs); padding:1px 6px; border-radius:999px;
+  flex:none; font-size:var(--fs-xs); padding:1px 6px; border-radius:999px;
   background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
 }
 #navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
@@ -447,8 +466,13 @@ body.hasnav #views{ display:none; }
   width:var(--rail-now);
   background:var(--card); border-right:1px solid var(--border);
   display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+  scrollbar-gutter:stable; scrollbar-width:thin;
   padding:14px 10px; transition:width .18s ease, transform .2s ease;
 }
+/* Reserve the scrollbar's width always (expanded) so items never narrow when the
+   list starts to scroll; the 60px rail has no room for a gutter, so it hides it. */
+body.navcollapsed #navdrawer{ scrollbar-gutter:auto; scrollbar-width:none; }
+@media (max-height:820px){ .navitem{ min-height:36px; } #navdrawer .navsep{ margin:6px; } }
 /* Collapsed (DEFAULT): icons only. */
 body.navcollapsed{ --rail-now:var(--rail-w); }
 body.navcollapsed #navdrawer .nvlabel,
@@ -458,7 +482,7 @@ body.navcollapsed #navdrawer .navbrand .brandword{ display:none; }
    still visible as rhythm without trying to spell it out. */
 body.navcollapsed #navdrawer .navgroup-h{ display:none; }
 body.navcollapsed #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
-body.navcollapsed #navdrawer .nvbadge{ position:absolute; transform:translate(14px,-9px); }
+body.navcollapsed #navdrawer .nvbadge{ position:absolute; top:2px; right:4px; min-width:16px; text-align:center; font-size:var(--fs-xs); line-height:16px; padding:0 3px; }
 body.navcollapsed #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
 /* Expanded: labels visible. */
 body:not(.navcollapsed){ --rail-now:var(--nav-w); }
@@ -494,7 +518,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   body.navcollapsed #navdrawer .nvlabel,
   body.navcollapsed #navdrawer .navbrand .brandword{ display:inline; }
   body.navcollapsed #navdrawer .navitem{ justify-content:flex-start; padding:8px 10px; }
-  body.navcollapsed #navdrawer .nvbadge{ position:static; transform:none; }
+  body.navcollapsed #navdrawer .nvbadge{ position:static; padding:1px 6px; font-size:var(--fs-xs); line-height:inherit; }
   body.navcollapsed #navdrawer .navbrand{ justify-content:flex-start; padding:4px 8px 12px; }
   body.navcollapsed #navdrawer .navitem::after{ display:none; }
   body.hasnav .page{ padding-left:var(--pad); }
@@ -1079,13 +1103,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
-/* KPI card redesign (dashboard restyle 2026-09-30): a rounded-square icon
-   chip tinted with the card's own accent colour, sitting above a big bold
-   number with its trend sparkline trailing to the right, then a small
-   muted uppercase label — modelled on a reference analytics-card design
-   the user shared (icon badge top-left / number+trend row / label below,
-   never a native-looking or generic KPI tile). */
-.kpi-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:12px}
+/* The icon chip survives for the Explore strip (.xcard) only; Home's KPI cards
+   use .stat and carry no icons. */
 .kpi-badge{width:36px;height:36px;border-radius:4px;display:flex;align-items:center;
   justify-content:center;flex:none}
 .kpi-badge svg{width:18px;height:18px}
@@ -1124,31 +1143,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .xcard .hc-stat{text-align:left;max-width:100%}
    .fb-more kbd{display:none}
  }
-/* Reference-card structure: badge+name header at the top (vertically
-   centered with the icon), big number below it, sparkline trend underneath
-   the number as a full-width footer. The card height is set so every card
-   in the strip — number or ring — finishes at the same baseline; the ring
-   card centres its gauge+label inside that fixed-height body. */
-.kpi-head{display:flex;align-items:center;gap:9px;min-height:36px}
-/* LST-252: titles wrap inside the 36px header instead of escaping the card */
-.kpi-name{font-size:13px;font-weight:500;letter-spacing:.04em;
-  color:var(--muted);text-transform:uppercase;
-  min-width:0;overflow-wrap:anywhere;hyphens:auto;line-height:1.15}
-.kpi-num{flex:1;display:flex;align-items:flex-start}
-.kpi-num > div{line-height:1}
-.kpi-big{font-size:clamp(26px,2.2vw,34px);font-weight:600;letter-spacing:-.015em;
-  font-variant-numeric:tabular-nums;color:var(--fg)}
-/* The trend sits INSIDE the card padding: bleeding it to the borders made
-   the polyline touch the card edge (measured 1px) and read as clipped. */
-.kpi-trend{height:20px;margin-top:2px}
-.kpi-trend svg{display:block;width:100%;height:100%}
-.kpi-live{color:var(--accent)}
-/* Ring card: same badge+name header as every number card (so the strip has
-   ONE header rhythm), then the gauge centred in the remaining body. */
-.kpi-ring{gap:12px;align-items:stretch;text-align:left}
-.kpi-ring-body{flex:1;display:flex;align-items:center;justify-content:center}
-.kpi-label{margin-top:-1px}
-
 /* #11: radial KPI rings — compact variant of the arc gauge for
    bounded 0-100 metrics inside the tight KPI strip; sparklines for the
    unbounded counters next to it, so both live in the same card recipe. */
@@ -1166,10 +1160,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .freetier{color:var(--muted)}
  .ftmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
    padding:0 4px;border-radius:3px;background:var(--wash-indigo);color:var(--pal-indigo);vertical-align:1px}
- .unpricedbanner{margin:8px 0 2px;padding:8px 12px;border-radius:4px;font-size:var(--fs-sm);line-height:1.5;
-   border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.07)}
- .unpricedbanner[hidden]{display:none}
- .unpricedbanner a{color:var(--accent);text-decoration:underline}
  .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
    color:var(--accent2);display:inline-block}
  .resendname{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1423,8 +1413,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > #rangebar{order:-35}
  .page[data-pageview="Home"] > #projfilterbar{order:-34}
  .page[data-pageview="Home"] > #xfercard{order:-33}
- .page[data-pageview="Home"] > #unpricedbanner{order:-32}
- .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
+ .page[data-pageview="Home"] > .view[data-view="Home"] > #livekpis{order:-30}
  .page[data-pageview="Home"] > #kpis{order:-28}
  .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
@@ -1463,9 +1452,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #rangebar #rangeinfo{margin-left:0;width:100%;order:-1}
    #rangetoggle{display:flex !important}
 
-   /* KPI strip: 2 columns, 1 below 400px (separate query further down). */
-   .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
-
    /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
       page itself never does. */
    .livegrid{grid-template-columns:minmax(0,1fr)}
@@ -1492,10 +1478,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .frow .fmsg{flex:1 1 100%;white-space:normal;overflow-wrap:anywhere}
    }
  @media(max-width:400px){
-   /* KPI strip stays 2-up on phones (LST-261); a single column only below 340px. */
-   .grid-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+   /* Two-up cards at ~170px: a 26px value keeps "$12,144.94" inside the card. */
+   .stat-value{font-size:26px}
  }
- @media(max-width:340px){.grid-kpi{grid-template-columns:1fr}}
 
  /* Tablet — #14: portrait and landscape get different treatment rather than
     one 641-1024 band, because a portrait tablet has desktop-narrow WIDTH but
@@ -2047,6 +2032,46 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .olurls>summary::-webkit-details-marker{display:none}
 .olurls b{text-decoration:underline dotted}
 
-/* LST-261: the cost note and the unpriced-models banner only matter where money is shown. */
-.page:not([data-pageview="Home"]):not([data-pageview="Cost"]):not([data-pageview="Prices"]) > #unpricedbanner,
+/* LST-261: the cost note only matters where money is shown. */
 .page:not([data-pageview="Home"]):not([data-pageview="Cost"]):not([data-pageview="Prices"]) .costhow{display:none}
+/* UI pass U-1 (P1-1): the totals strip and the Transferred bar are Home's, not every tab's. */
+.page:not([data-pageview="Home"]) > #kpis,.page:not([data-pageview="Home"]) > #xfercard{display:none}
+
+/* ---- Notices (UI pass U-1): toast overlay + app-bar chip ---------------------
+   The stack floats over the page and never takes layout space, so a notice
+   appearing or clearing cannot move anything. Severity colour via --sev. */
+.notices{position:fixed;z-index:60;top:calc(var(--bar-h,52px) + 12px);right:16px;
+  width:min(380px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{pointer-events:auto;display:grid;grid-template-columns:20px minmax(0,1fr) 32px;gap:10px;
+  padding:12px 12px 12px 14px;border-radius:4px;background:var(--card);
+  border:1px solid color-mix(in srgb,var(--sev) 45%,var(--border));border-left:4px solid var(--sev);
+  box-shadow:0 12px 28px -10px rgba(0,0,0,.7);animation:toast-in .18s ease-out}
+.toast[data-sev=info]{--sev:var(--accent)}
+.toast[data-sev=ok]{--sev:var(--z-ok)}
+.toast[data-sev=warn]{--sev:var(--z-warn)}
+.toast[data-sev=error]{--sev:var(--z-bad)}
+.toast-ico{color:var(--sev);font-size:16px;line-height:20px}
+.toast-title{margin:0;font:600 14px/20px var(--font);color:var(--fg)}
+.toast-text{margin:2px 0 0;font:400 14px/20px var(--font);color:var(--muted);overflow-wrap:anywhere}
+.toast-actions{margin-top:8px;display:flex;gap:8px}
+.toast-actions .btn{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:4px;
+  border:1px solid var(--border);color:var(--accent);text-decoration:none;font-size:14px}
+.toast-actions .btn:hover{background:var(--state-hover)}
+.toast-x{min-height:32px;min-width:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;
+  background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;border-radius:4px;align-self:start}
+.toast-x:hover{background:var(--state-hover);color:var(--fg)}
+.noticechips{display:contents}
+.notice-chip[data-sev=warn]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
+.notice-chip[data-sev=error]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 40%,transparent)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (max-width:599px){ .notices{top:auto;bottom:calc(12px + env(safe-area-inset-bottom));left:16px;right:16px;width:auto} }
+@media (prefers-reduced-motion:reduce){ .toast{animation:none} }
+
+/* UI pass U-1 (P1-1): per-tab tiles (Health, Delegation, Quota) keep their own data
+   but wear the .stat card: label on top in 13px caps, 28px tabular value under it,
+   same padding, border and a shared minimum height, so every tile reads as one family. */
+.dkpi,.qv-kpi,.qv-fkpi{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:84px;box-sizing:border-box;
+  padding:12px 16px;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.dkpi .lbl,.dkpi .dkl,.qv-kpi span,.qv-fkpi span{order:-1;font:500 13px/18px var(--font);letter-spacing:.04em;
+  text-transform:uppercase;color:var(--muted)}
+.dkpi-n,.dkpi .dkv,.qv-kpi .qv-kv,.qv-fkpi .qv-kv{font:600 28px/38px var(--font);font-variant-numeric:tabular-nums}

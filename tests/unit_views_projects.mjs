@@ -158,7 +158,7 @@ function baseChartsStub(over = {}) {
     olBar: c => c,
     projDistNormalized: false,
     projTrendStacked: false,
-    radialRing: () => '',
+   
     sparkSvg: () => '',
   }, over);
 }

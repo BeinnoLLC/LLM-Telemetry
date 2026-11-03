@@ -86,7 +86,7 @@ const V = await isolate('views.js', {
   },
   'charts.js': { PROJ_WEIGHT: {}, PROJ_WEIGHT_LABELS: {}, agg: () => [], charts: {}, ctxSpark: () => '',
     current: 'p1', mk: () => ({}), noLeg: () => '', olBar: () => '', projDistNormalized: () => [],
-    projTrendStacked: () => '', radialRing: () => '', sparkSvg: () => '', weightValue: () => 0 },
+    projTrendStacked: () => '', sparkSvg: () => '', weightValue: () => 0 },
   'flow.js': { flowControls: () => '', renderFlow: () => {} },
   'live.js': { renderLive: () => {} },
   'routerview.js': { renderRouterView: () => {}, routerStat: () => '' },

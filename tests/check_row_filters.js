@@ -49,10 +49,10 @@ function fire(sel, value) {
 // the honest end-to-end probe of whether a filter actually reached the numbers:
 // it is computed from the same `rows` the filter narrows.
 function callsKpi() {
-  const card = [...d.querySelectorAll('#kpis .kpi-card')]
-    .find(c => (c.querySelector('.kpi-name') || {}).textContent === 'API calls');
+  const card = [...d.querySelectorAll('#kpis .stat')]
+    .find(c => (c.querySelector('.stat-label') || {}).textContent === 'API calls');
   if (!card) return NaN;
-  return +((card.querySelector('.kpi-big').textContent || '').replace(/[^\d]/g, '')) || 0;
+  return +((card.querySelector('.stat-value').textContent || '').replace(/[^\d]/g, '')) || 0;
 }
 // jsdom's window.location is the document URL; read the hash the page wrote.
 const hash = () => w.location.hash;

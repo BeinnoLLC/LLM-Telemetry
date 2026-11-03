@@ -72,7 +72,7 @@ setTimeout(async () => {
   try {
     const card = k => d.querySelector(`#livekpis [data-kpi="${k}"]`);
     const text = k => card(k).textContent.replace(/\s+/g, ' ');
-    const num = k => card(k).querySelector('.lkpi-num').textContent.replace(/\s/g, '');
+    const num = k => card(k).querySelector('.stat-value').textContent.replace(/\s/g, '');
     const render = (cur, profiles) => {
       w.__PR = profiles;
       w.eval(`current = ${JSON.stringify(cur)}; renderLiveKpis(__PR[current] || {}, current, undefined, __PR, [], [])`);
@@ -102,14 +102,14 @@ setTimeout(async () => {
     await w.eval('pollLive()');
     w.eval('current = "All"; renderLive()');
     const t3 = text('throughput');
-    chk(num('throughput') !== '0·0', 'counters that grew across polls show non-zero calls/tokens', t3);
-    chk(/^[1-9][\d,]*\u00b7[1-9][\d.]*[KM]?$/.test(num('throughput')), 'calls and tokens are both non-zero', num('throughput'));
+    chk(num('throughput') !== '0calls', 'counters that grew across polls show non-zero calls/tokens', t3);
+    chk(/^[1-9][\d,]*calls$/.test(num('throughput')) && /calls[1-9][\d.,]*[KM]? tokens/.test(text('throughput')), 'calls and tokens are both non-zero', text('throughput'));
     chk(!/measuring/.test(t3), 'the measuring label ends once the window has data', t3);
     chk(/last \d+s/.test(t3), 'the window states how much history it holds', t3);
     w.eval('current = "bot-one"; renderLive()');
-    chk(num('throughput') !== '0·0', 'a single profile view shows its own activity', text('throughput'));
+    chk(num('throughput') !== '0calls', 'a single profile view shows its own activity', text('throughput'));
     w.eval('current = "bot-idle"; renderLive()');
-    chk(num('throughput') === '0·0', 'a profile with no session shows 0 (not another profile\'s)', text('throughput'));
+    chk(num('throughput') === '0calls', 'a profile with no session shows 0 (not another profile\'s)', text('throughput'));
   } catch (e) { fail++; console.log('  FAIL threw ' + e.stack); }
   console.log(`\ncheck_live_kpis_real_shape.js  ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

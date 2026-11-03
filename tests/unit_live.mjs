@@ -857,16 +857,16 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   const html = h.els.livekpis.innerHTML;
   ok(['sessions', 'agents', 'throughput', 'alerts'].every(x => html.includes(`data-kpi="${x}"`)),
      'renderLiveKpis: paints exactly the four #181 cards');
-  has(html, '2<span class="lkpi-of">/3</span>', 'renderLiveKpis: agents read alive/total');
+  has(html, '<span class="stat-unit">/3</span>', 'renderLiveKpis: agents read alive/total');
   has(html, '1 not heartbeating', 'renderLiveKpis: a non-alive agent is called out');
-  has(html, 'lkpi-alerts crit', 'renderLiveKpis: a critical alert colours the count');
+  has(html, 'data-state="bad"', 'renderLiveKpis: a critical alert colours the count');
   has(html, 'href="#/health"', 'renderLiveKpis: the alert count links to Health');
   ok(!html.includes('All clear'), 'renderLiveKpis: no All-clear pill while alerts are active');
   has(html, 'last 15s', 'renderLiveKpis: a short history is labelled with its real span, not "5 min"');
 
   h.M.renderLiveKpis({ live: [], agents: [], alerts: [] }, 'p1', T0 + 320);
   has(h.els.livekpis.innerHTML, 'All clear', 'renderLiveKpis: zero alerts renders a quiet All-clear pill (#181)');
-  ok(!h.els.livekpis.innerHTML.includes('lkpi-alerts'), 'renderLiveKpis: ...and no empty alert count');
+  ok(!h.els.livekpis.innerHTML.includes('stat-alert'), 'renderLiveKpis: ...and no worst-alert line');
 
   const m = await boot({ missing: ['livekpis'] });
   eq(m.M.renderLiveKpis(p, 'p1'), null, 'renderLiveKpis: no #livekpis element is a no-op');

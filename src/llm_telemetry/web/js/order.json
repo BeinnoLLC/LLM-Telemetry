@@ -539,6 +539,58 @@
   },
   {
    "mod": "views",
+   "name": "NOTICE_MS"
+  },
+  {
+   "mod": "views",
+   "name": "NOTICE_MAX"
+  },
+  {
+   "mod": "views",
+   "name": "NOTICES"
+  },
+  {
+   "mod": "views",
+   "name": "noticeKey"
+  },
+  {
+   "mod": "views",
+   "name": "noticeGet"
+  },
+  {
+   "mod": "views",
+   "name": "noticeSet"
+  },
+  {
+   "mod": "views",
+   "name": "noticeEl"
+  },
+  {
+   "mod": "views",
+   "name": "noticeClose"
+  },
+  {
+   "mod": "views",
+   "name": "noticeArm"
+  },
+  {
+   "mod": "views",
+   "name": "noticeShow"
+  },
+  {
+   "mod": "views",
+   "name": "noticeChip"
+  },
+  {
+   "mod": "views",
+   "name": "notify"
+  },
+  {
+   "mod": "views",
+   "name": "clearNotice"
+  },
+  {
+   "mod": "views",
    "name": "renderUnpriced"
   },
   {
@@ -1107,6 +1159,14 @@
   },
   {
    "mod": "live",
+   "name": "statHtml"
+  },
+  {
+   "mod": "live",
+   "name": "meterStat"
+  },
+  {
+   "mod": "live",
    "name": "liveKpis"
   },
   {
@@ -1123,11 +1183,11 @@
   },
   {
    "mod": "live",
-   "name": "ALERT_ROWS"
+   "name": "ruleTitle"
   },
   {
    "mod": "live",
-   "name": "alertsHtml"
+   "name": "alertsStat"
   },
   {
    "mod": "live",

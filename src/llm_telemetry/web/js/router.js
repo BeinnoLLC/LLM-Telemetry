@@ -684,7 +684,7 @@ export function renderNav(){
   if (!box) return;
   const groups = navGroups();
   const item = v => `
-    <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}">
+    <a class="navitem" href="#/${slugOf(v)}" data-nav="${v}" data-tip="${v}" aria-label="${v}">
       <svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-${NAV_ICONS[v] || 'Home'}"/></svg>
       <span class="nvlabel">${v}</span>
       <span class="nvbadge" data-navbadge="${v}" hidden></span>

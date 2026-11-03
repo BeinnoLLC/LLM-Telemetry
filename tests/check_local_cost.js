@@ -70,7 +70,7 @@ setTimeout(() => {
 
   // Headline: electricity is visible inside Est. cost, not hidden in it.
   const kpis = d.getElementById('kpis');
-  chk(kpis && /incl\./.test(kpis.textContent) && kpis.querySelector('.elecmark'),
+  chk(kpis && /incl\. ~\$[\d,.]+ electricity/.test(kpis.textContent),
     'Est. cost KPI states how much of it is electricity');
 
   // No prose on the page may still claim local runs cost nothing.
