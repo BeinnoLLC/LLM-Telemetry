@@ -113,6 +113,82 @@ def split_blocks(text):
     return blocks
 
 
+_REGEX_PRECEDERS = "(,=:[!&|?{};+-*%<>~^"
+
+
+def strip_js_line_comments(text):
+    """Drop whole-line ``//`` comments from shipped JS (nothing else is minified).
+
+    The source modules keep their comments for maintainers; the page does not
+    need to ship ~100 KB of them. A small scanner tracks strings, template
+    literals (with ``${}`` nesting), regex literals and ``/* */`` comments so a
+    line that merely LOOKS like a comment inside a template literal or a block
+    comment is kept verbatim, and ``/*! */`` licence comments survive.
+    """
+    out = []
+    stack = []            # "`" when inside a template, "{" for a ${ } or plain brace
+    in_block = False
+    last = ""             # last significant code char, to tell regex from division
+    for line in text.splitlines(True):
+        in_tpl = bool(stack) and stack[-1] == "`"
+        if not in_block and not in_tpl and line.lstrip().startswith("//"):
+            continue
+        out.append(line)
+        i, n = 0, len(line)
+        while i < n:
+            c = line[i]
+            if in_block:
+                end = line.find("*/", i)
+                if end < 0:
+                    break
+                in_block, i = False, end + 2
+                continue
+            if stack and stack[-1] == "`":
+                if c == "\\":
+                    i += 2
+                elif c == "`":
+                    stack.pop()
+                    last, i = "`", i + 1
+                elif c == "$" and line.startswith("${", i):
+                    stack.append("{")
+                    last, i = "{", i + 2
+                else:
+                    i += 1
+                continue
+            if c in "'\"":
+                j = i + 1
+                while j < n and line[j] != c:
+                    j += 2 if line[j] == "\\" else 1
+                last, i = c, j + 1
+            elif c == "`":
+                stack.append("`")
+                i += 1
+            elif c == "/" and line.startswith("//", i):
+                break
+            elif c == "/" and line.startswith("/*", i):
+                in_block, i = True, i + 2
+            elif c == "/" and (last == "" or last in _REGEX_PRECEDERS):
+                j, cls = i + 1, False
+                while j < n and (cls or line[j] != "/"):
+                    if line[j] == "\\":
+                        j += 1
+                    elif line[j] == "[":
+                        cls = True
+                    elif line[j] == "]":
+                        cls = False
+                    j += 1
+                last, i = "/", j + 1
+            else:
+                if c == "{":
+                    stack.append("{")
+                elif c == "}" and stack:
+                    stack.pop()
+                if not c.isspace():
+                    last = c
+                i += 1
+    return "".join(out)
+
+
 def inline_js():
     """Return the page's JavaScript as one classic-script body."""
     with open(ORDER_PATH, encoding="utf-8") as fh:
@@ -135,7 +211,7 @@ def inline_js():
             sys.exit(f"web/js/order.json references '{entry['name']}' in {name}, "
                      f"but that module does not declare it")
         chunks.append(re.sub(r"^export\s+", "", text, flags=re.M))
-    body = "".join(chunks)
+    body = strip_js_line_comments("".join(chunks))
 
     # Flattening modules into a single script scope must not collapse two
     # declarations onto one name; fail loudly rather than shadow silently.

@@ -47,7 +47,7 @@ function goPage(id) {
 }
 function secOf(name) { return d.querySelector(`.rt-profile[data-profile="${name}"]`); }
 function cardIds(name) {
-  return [...secOf(name).querySelectorAll('details.rt-card')].map(x => x.dataset.rtfold.split('|')[1]);
+  return [...secOf(name).querySelectorAll('details.rt-card')].map(x => x.dataset.rtopen.split('|')[1]);
 }
 
 // The assertions live in one function so the negative controls below can run
@@ -216,13 +216,13 @@ setTimeout(() => {
   const sec = secOf('work');
   chk(sec.tagName === 'DETAILS' && sec.open, 'profile section is collapsible and starts open');
   const folds = [...sec.querySelectorAll('details.rt-card')];
-  chk(folds.length === 1 && folds.every(x => x.open), 'the page card is collapsible and starts open', `(${folds.length})`);
-  const authCard = sec.querySelector('details[data-rtfold="work|auth"]');
-  authCard.open = false; authCard.dispatchEvent(new w.Event('toggle'));
+  chk(folds.length === 1 && folds.every(x => !x.open), 'the page card is collapsible and starts folded (LST-261)', `(${folds.length})`);
+  const authCard = sec.querySelector('details[data-rtopen="work|auth"]');
+  authCard.open = true; authCard.dispatchEvent(new w.Event('toggle'));
   w.pick('work');
-  chk(!d.querySelector('details[data-rtfold="work|auth"]').open, 'a folded card stays folded after re-render');
+  chk(d.querySelector('details[data-rtopen="work|auth"]').open, 'an opened card stays open after re-render');
   w.pick('personal');
-  chk(d.querySelector('details[data-rtfold="personal|auth"]').open, 'folding is per profile');
+  chk(!d.querySelector('details[data-rtopen="personal|auth"]').open, 'opening is per profile');
   w.pick('work');
   d.querySelector('.rt-profile[data-profile="work"] [data-rtall="close"]').click();
   chk(cardIds('work').length && [...secOf('work').querySelectorAll('details.rt-card')].every(x => !x.open),

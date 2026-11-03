@@ -79,8 +79,8 @@ setTimeout(() => {
     chk(/@media\(max-width:640px\)\{[^}]*\.grid-kpi\{grid-template-columns:repeat\(2/.test(html) ||
         /grid-kpi\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/.test(html),
         'KPI strip goes to 2 columns at <=640px');
-    chk(/@media\(max-width:400px\)\{[\s\S]{0,200}?\.grid-kpi\{grid-template-columns:1fr\}/.test(html),
-        'KPI strip goes to 1 column below 400px');
+    chk(/@media\(max-width:340px\)\{\.grid-kpi\{grid-template-columns:1fr\}\}/.test(html),
+        'KPI strip stays 2-up on phones and goes to 1 column only below 340px (LST-261)');
     chk(/\.lvscroll\{overflow:auto;[^}]*min-width:0/.test(html),
         'live table scrolls inside its own panel (overflow:auto, min-width:0) at every width');
     chk(!/#livelist \.liverow\{flex-direction:column/.test(html),

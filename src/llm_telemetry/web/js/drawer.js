@@ -206,7 +206,7 @@ export function renderLogs(){
     const meta = [e.title, short(e.model||'')].filter(Boolean).join(' · ');
     return `<div class="lgev" data-i="${i}">`
       + `<span class="lgts">${t}</span>`
-      + `<span class="lgtag ${cls}">${esc(tag)}</span>`
+      + `<span class="lgtag ${cls}" title="${esc(tag)}">${esc(tag)}</span>`
       + `<span class="lgmsg">${esc(e.preview||'')}`
       + (meta ? `<span class="lgmeta">${esc(meta)}</span>` : '') + `</span></div>`;
   }).join('') || '<div class="muted text-[length:var(--fs-sm)]">Nothing matches these filters.</div>';

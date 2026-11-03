@@ -100,8 +100,8 @@ eq(registry['lgscope'].textContent, 'last 24h · 5 events', 'the scope line repo
 eq(registry['lgcountbadge'].hidden, true, 'no active filters hides the badge');
 eq(registry['lgcap'].hidden, true, 'an uncapped payload hides the cap note');
 eq((registry['lglist'].innerHTML.match(/class="lgev"/g) || []).length, 4, 'one row per matching event');
-has(registry['lglist'].innerHTML, '<span class="lgtag error">throttle</span>', 'an error row tags the failure kind');
-has(registry['lglist'].innerHTML, '<span class="lgtag user">read</span>',
+has(registry['lglist'].innerHTML, '<span class="lgtag error" title="throttle">throttle</span>', 'an error row tags the failure kind');
+has(registry['lglist'].innerHTML, '<span class="lgtag user" title="read">read</span>',
     'a non-error row tags the tool but colours it by role');
 has(registry['lglist'].innerHTML, 'Fix the login', 'the preview is escaped, not raw');
 has(registry['lglist'].innerHTML, 'gpt-5', 'the meta line shortens the model name');

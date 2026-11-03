@@ -318,7 +318,7 @@ const cars = box => box.children.filter(c => c.dataset && c.dataset.key && !c.cl
 const allCars = box => box.children.filter(c => c.dataset && c.dataset.key);
 const consistOf = h => h.ids.get('qt-running');
 const esc2 = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const lblOf = c => c.querySelector('.qt-lbl').textContent;
+const lblOf = c => c._qt.label;
 {
   const h = harness();
   const D = await isolate(TARGET, h.stubs);
@@ -334,13 +334,12 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   const qb = h.ids.get('qt-queued');
   eq(cars(qb).map(c => c.dataset.key), ['q:gpu-a:0', 'q:gpu-a:1', 'q:gpu-a:2'], 'depot: one car per waiting slot, keyed by host and index');
   eq(cars(qb).map(lblOf), ['gpu-a', 'gpu-a', 'gpu-a'], 'depot: car label is the host');
-  eq(cars(qb).map(c => c.style['--i']), [0, 1, 2], 'depot: cars carry a stagger index');
-  eq(h.ids.get('qt-n-queued').textContent, '3', 'depot: count shows the real depth');
+    eq(h.ids.get('qt-n-queued').textContent, '3', 'depot: count shows the real depth');
   eq(h.ids.get('qsub').textContent, 'backed up on gpu-a', 'depot: subtitle names the busy host');
   ok(h.ids.get('qtrain').classList.contains('backed'), 'depot: the train is flagged backed up');
   eq(D.carTip(cars(qb)[1]._qt), '<div class="ft-h">Waiting on gpu-a</div><div class="ft-r"><span>position</span><b>2 of 3</b></div><div class="ft-r"><span>state</span><b>queued at the Ollama host</b></div>',
     'depot: hover card gives host and position');
-  eq(cars(qb).map(c => c.tabIndex), [0, 0, 0], 'depot: tiles are focusable');
+  eq(cars(qb).map(c => c.tabIndex), [0, 0, 0], 'depot: balls are focusable');
 
   h.DATA.ollama.hosts = [{ label: 'h', queue: '2' }];
   D.renderQueue();
@@ -351,12 +350,16 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
   ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  // No cap: every waiting task is a tile, and there is no "+N" badge.
+  // Cap: 59 balls and a "+N" chip from 61 up; the lid keeps the true total.
   h.DATA.ollama.hosts = [{ label: 'big', queue: 70 }];
   D.renderQueue();
-  eq(cars(qb).length, 70, 'depot: every waiting task is drawn (no cap)');
-  eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: count matches the tiles');
-  eq(qb.querySelectorAll('.qt-more').length, 0, 'depot: no "+N" badge');
+  eq(cars(qb).length, 59, 'depot: 70 waiting -> 59 balls drawn');
+  eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: the lid shows the true count');
+  eq(qb._qtChip && qb._qtChip.textContent, '+11', 'depot: a "+11" chip takes the 60th slot');
+  h.DATA.ollama.hosts = [{ label: 'big', queue: 60 }];
+  D.renderQueue();
+  eq(cars(qb).length, 60, 'depot: exactly 60 -> all drawn');
+  eq(qb._qtChip, null, 'depot: and no chip');
 
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
   D.renderQueue();
@@ -394,9 +397,10 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   const run = cars(consistOf(h));
   eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
   eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
-  eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: tiles carry a live state');
-  eq(run[1].style['--h'], 'mh:accounts/fireworks/models/kimi-k3', 'line: tile hue comes from the model');
-  eq(run[0].attrs['aria-label'], 'running: Fix parser · m2', 'line: car has an accessible label');
+  eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: balls carry a live state');
+  eq(run[1].style['--k'], 'kc:hermes', 'line: ball colour comes from the agent family');
+  ok(run.every(c => c.classList.contains('qt-run')), 'line: running balls are clips');
+  eq(run[0].attrs['aria-label'], 'running: Fix parser · m2 · 1s ago · #b', 'line: ball has an accessible label');
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
   ok(h.ids.get('qtrain').classList.contains('moving'), 'line: flagged as moving');
   eq(D.carTip(run[1]._qt),
@@ -408,22 +412,21 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   const yard = cars(h.ids.get('qt-done'));
   eq(yard.map(c => c.dataset.key), ['s:d2', 's:d3', 's:d1'], 'yard: newest first');
   eq(yard.map(lblOf), ['y', 'No duration', 'Old run'], 'yard: (untitled) falls back to the short last_model');
-  ok(yard[0].classList.contains('qt-newest') && !yard[1].classList.contains('qt-newest'), 'yard: only the newest arrival is highlighted');
   eq(h.ids.get('qt-n-done').textContent, '3', 'yard: count');
   ok(D.carTip(yard[2]._qt).includes('<span>ran for</span><b>2m</b>'), 'yard: hover card has the duration');
   ok(D.carTip(yard[2]._qt).includes('<span>tokens</span><b>1.5k</b>'), 'yard: hover card has tokens');
   ok(D.carTip(yard[2]._qt).includes('<span>API calls</span><b>7</b>'), 'yard: hover card has API calls');
-  ok(yard.every(c => c.tabIndex === 0), 'yard: tiles are focusable');
+  ok(yard.every(c => c.tabIndex === 0), 'yard: balls are focusable');
   ok(yard.every(c => D.carTip(c._qt).includes(esc2(c._qt.label))), 'yard: every tooltip carries the full title');
   ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
   ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
 
-  // Many finished tasks: all drawn, none capped.
+  // Many finished tasks: 59 balls + a chip, honest lid.
   h.DATA.profiles.p1 = { live: [], recent_sessions: Array.from({ length: 120 }, (_, i) => ({ id: 'x' + i, title: 'Task number ' + i + ' with a long wrapped title', model: 'm', last_ts: 1000 + i })) };
   D.renderQueue();
-  eq(cars(h.ids.get('qt-done')).length, 120, 'yard: all done tasks are tiles (no cap)');
-  eq(h.ids.get('qt-done').querySelectorAll('.qt-more').length, 0, 'yard: no "+N" badge');
-  eq(h.ids.get('qt-n-done').textContent, '120', 'yard: count is honest');
+  eq(cars(h.ids.get('qt-done')).length, 59, 'yard: 120 done -> 59 balls');
+  eq(h.ids.get('qt-done')._qtChip.textContent, '+61', 'yard: a "+61" chip for the rest');
+  eq(h.ids.get('qt-n-done').textContent, '120', 'yard: the lid count is honest');
 
   // No model at all: 'session', never "undefined" (#138).
   h.DATA.profiles.p1 = { live: [{ id: 'n', title: '(untitled)', idle_s: 0 }], recent_sessions: [] };
@@ -464,7 +467,7 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   // Session ends: it leaves the line and parks in the yard under the same key.
   h.DATA.profiles.p1 = { live: [], recent_sessions: [{ id: 's1', title: 'Started', model: 'm', last_ts: 5, dur_s: 9 }] };
   D.renderQueue();
-  ok(runCar.classList.contains('qt-leaving'), 'line -> yard: the running car departs the line');
+  ok(!allCars(consistOf(h)).includes(runCar), 'line -> yard: the running ball leaves the line at once (a ghost flies in its place)');
   const parked = cars(h.ids.get('qt-done'));
   eq(parked.map(c => c.dataset.key), ['s:s1'], 'line -> yard: the same session is parked in the yard');
   eq(h.ids.get('qt-n-running').textContent, '0', 'line -> yard: running count drops to zero');
@@ -472,13 +475,16 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   D.renderQueue();
   eq(cars(h.ids.get('qt-done'))[0], parkedEl, 'poll: the parked car survives an identical poll');
 
-  // Order changes re-sequence existing cars instead of recreating them.
+  // A newer arrival is added to the pile; the older ball is kept, not recreated.
   h.DATA.profiles.p1 = { live: [], recent_sessions: [
     { id: 'n2', title: 'Newer', model: 'm', last_ts: 9, dur_s: 1 },
     { id: 's1', title: 'Started', model: 'm', last_ts: 5, dur_s: 9 }] };
   D.renderQueue();
-  eq(cars(h.ids.get('qt-done')).map(c => c.dataset.key), ['s:n2', 's:s1'], 'yard: a newer arrival parks in front');
-  eq(cars(h.ids.get('qt-done'))[1], parkedEl, 'yard: the older car is moved, not recreated');
+  eq(cars(h.ids.get('qt-done')).map(c => c.dataset.key).sort(), ['s:n2', 's:s1'], 'yard: a newer arrival joins the pile');
+  eq(cars(h.ids.get('qt-done')).find(c => c.dataset.key === 's:s1'), parkedEl, 'yard: the older ball is kept, not recreated');
+  const posBefore = [parkedEl.style.left, parkedEl.style.top];
+  D.renderQueue();
+  eq([parkedEl.style.left, parkedEl.style.top], posBefore, 'yard: an identical poll leaves every ball where it sat (deterministic pile)');
 }
 {
   // qtFly is a no-op without the Web Animations API / layout (and never throws).
@@ -486,6 +492,39 @@ const lblOf = c => c.querySelector('.qt-lbl').textContent;
   const D = await isolate(TARGET, h.stubs);
   eq(D.qtFly(null, null, null, 'x'), false, 'fly: nothing to fly -> false');
   eq(D.qtFly(fakeEl(), { left: 0, top: 0, width: 10, height: 10 }, fakeEl(), 'x'), false, 'fly: no element.animate -> false');
+}
+
+// ═══ the pile: seeded packing, sizes, popover, overflow chip ═══════════════════════════════════
+{
+  const h = harness(railEls());
+  const D = await isolate(TARGET, h.stubs);
+  const keys = Array.from({ length: 40 }, (_, i) => 's:k' + i);
+  const a = D.qtPack(keys, 380, 260, 20), b = D.qtPack(keys, 380, 260, 20);
+  eq(a, b, 'pack: the same keys and size always give the same pile');
+  eq(D.qtPack(keys.slice(0, 20), 380, 260, 20).balls, a.balls.slice(0, 20), 'pack: appending a task never moves the balls already poured');
+  ok(a.balls.every(p => p.x >= 10 && p.x <= 370 && p.y >= 10 && p.y <= 250), 'pack: every ball stays inside the jar');
+  const gap = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+  let tight = 0;
+  a.balls.forEach((p, i) => a.balls.slice(i + 1).forEach(q => { if (gap(p, q) < 20 * 0.85) tight++; }));
+  eq(tight, 0, 'pack: balls rest on each other, with at most a slight overlap');
+  ok(a.top > 100, 'pack: forty balls are a layer on the floor, not a column to the roof');
+  ok(new Set(a.balls.map(p => Math.round(p.rz))).size > 10, 'pack: balls are rotated at random');
+  ok(D.qtSeed('x') !== D.qtSeed('y') && D.qtSeed('x') === D.qtSeed('x'), 'seed: stable per key, different between keys');
+  // sizes step down so the pile fits in half the jar, and never below 12px
+  const box = fakeEl(); box.clientWidth = 200; box.clientHeight = 120;
+  const els = Array.from({ length: 60 }, (_, i) => { const c = D.trainBall({ kind: 'd', key: 's:' + i }); c.dataset.key = 's:' + i; return c; });
+  D.qtLayout(box, els);
+  const sz = +els[0].style['--sz'].replace('px', '');
+  ok(sz >= 12 && sz < 20, 'layout: a crowded small jar steps the balls down (' + sz + 'px)');
+  ok(els.every(c => parseFloat(c.style.top) < 120 && parseFloat(c.style.left) < 200), 'layout: nothing is placed outside the box');
+  const few = els.slice(0, 5); D.qtLayout(box, few);
+  eq(few[0].style['--sz'], '20px', 'layout: a few balls stay at 20px');
+  // popover: carPop adds cost, session and the way into the session
+  const pop = D.carPop({ kind: 'd', sid: 'abcdefghij', label: '<b>t</b>', profile: 'p', cost: 0.5, last_ts: 1 });
+  ok(pop.includes('<span>cost</span><b>$0.5000</b>') && pop.includes('#cdefghij') && pop.includes('class="pp-open"'), 'popover: cost, session id and the Open session button');
+  ok(!pop.includes('<b>t</b>') && pop.includes('&lt;b&gt;t&lt;/b&gt;'), 'popover: the title is escaped');
+  ok(!D.carPop({ kind: 'q', host: 'h', pos: 1, depth: 1 }).includes('pp-open'), 'popover: a queued request has no session to open');
+  ok(D.carPop({ kind: 'r', sid: 's', label: 'x', eng: 'claude', cost: 2, covered: true }).includes('covered by subscription'), 'popover: subscription cost is labelled as covered');
 }
 
 // ═══ renderAgents — escaping of collector-supplied strings ═════════════════

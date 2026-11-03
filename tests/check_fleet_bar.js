@@ -88,14 +88,10 @@ if (m960) {
 }
 if (m600) {
   chk(/\.pchip \.name\{display:none\}/.test(m600[1]), '600px: chips shrink to avatar + glyph (name hidden, kept in aria-label/title)');
-  chk(/\.pk-tiles\{grid-template-columns:1fr\}/.test(m600[1]), '600px: tiles are a single column');
 }
 chk(/\.pchip \.name\{[^}]*text-overflow:ellipsis/.test(css), 'chip name has text-overflow:ellipsis');
 chk(/\.fbdlg::backdrop\{[^}]*background/.test(css), 'Manage dialog has a ::backdrop scrim');
 chk(/input\.pk-on:indeterminate/.test(css), 'indeterminate checkbox state is styled');
-chk(/@container \(max-width:240px\)\{[^}]*\.ft-sub\{[^}]*flex-direction:row/.test(css),
-    'tiles under 240px put phase and cost on one line');
-chk(/\.ft-cost\{[^}]*tabular-nums/.test(css), 'tile cost uses tabular-nums');
 chk(/height:calc\(var\(--fb-h\) \+ 10px\)/.test(css) && /--fb-h:32px/.test(tokens), 'fleet bar is 42px (32 + 10)');
 
 const dom = bootDOM();
@@ -135,14 +131,6 @@ setTimeout(() => {
     chk(kbtn('claude').getAttribute('aria-pressed') === 'true' && kbtn('all').getAttribute('aria-pressed') === 'false', 'pressing Claude flips aria-pressed');
     chk(d.querySelectorAll('.pchip').length === chipsBefore && chipsBefore > 0, 'PI/Claude/Codex filters hide no profile chips', `${d.querySelectorAll('.pchip').length} vs ${chipsBefore}`);
     chk(w.eval('pvOnProfiles().length') === onBefore, 'filtering does not change which profiles are on');
-    chk(d.querySelectorAll('#livetiles .ftile').length === 2 && [...d.querySelectorAll('#livetiles .ftile')].every(t => t.dataset.kind === 'claude'),
-        'Live tiles follow the kind filter', String(d.querySelectorAll('#livetiles .ftile').length));
-    d.querySelector('.kseg[data-fbkind="all"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-    chk(d.querySelectorAll('#livetiles .ftile').length === Number(count('all')), 'All shows every kind tile (= the All badge)', `${d.querySelectorAll('#livetiles .ftile').length} vs ${count('all')}`);
-    for (const k of ['hermes', 'pi', 'claude', 'codex']) {
-      kbtn(k).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-      chk(d.querySelectorAll('#livetiles .ftile').length === Number(count(k)), `kind ${k}: tile count = its badge`, `${d.querySelectorAll('#livetiles .ftile').length} vs ${count(k)}`);
-    }
     kbtn('all').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
 
     // ---- hidden profiles are not counted ------------------------------
@@ -155,37 +143,14 @@ setTimeout(() => {
     chk(count('hermes') === '2' && count('all') === '2', 'both profiles on: Hermes 2, All 2', count('hermes') + '/' + count('all'));
     w.eval(`pvToggle(${JSON.stringify(h1)})`);
     chk(count('hermes') === '1' && count('all') === '1', 'a hidden profile is not counted (Hermes 1, All 1)', count('hermes') + '/' + count('all'));
-    chk(d.querySelectorAll('#livetiles .ftile').length === 1, 'tiles agree with the count after hiding a profile');
     w.eval(`pvToggle(${JSON.stringify(h1)})`);
-    chk(count('hermes') === '2' && d.querySelectorAll('#livetiles .ftile').length === 2, 'profile back on: count and tiles back to 2');
-
-    // ---- Hermes tiles: category chip, idle threshold, cost omitted ----
-    const hl = d.querySelector('#livetiles .ftile[data-kind="hermes"]');
-    chk(hl.querySelector('.ft-phase').textContent === 'coding', 'Hermes phase chip is the short category token', hl.querySelector('.ft-phase').textContent);
-    chk(!/Reading/.test(hl.textContent) && /Reading a file/.test(hl.querySelector('.ft-phase').getAttribute('title')), 'last_activity_description is only a tooltip, never chip text');
-    chk(hl.dataset.state === 'run' && /Running/.test(hl.querySelector('.ft-st').textContent), 'Hermes session quiet for 5s is Running');
-    chk(!hl.querySelector('.ft-cost'), 'no cost_usd: the cost cell is omitted entirely (no dash)');
-    chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'coding', phase:'p', idle_s:121})`).includes('data-state="idle"'), 'Hermes idle_s > 120 reads Idle');
-    chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'coding', phase:'p', idle_s:120})`).includes('data-state="run"'), 'Hermes idle_s = 120 is still Running');
-    const longTip = w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'c', phase:'<b>"${'z'.repeat(200)}', idle_s:1})`);
-    chk(!/z{81}/.test(longTip) && !longTip.includes('<b>') && longTip.includes('&lt;b&gt;'), 'tooltip is truncated to 80 chars and escaped');
-    chk(w.eval(`fleetTileHtml('hermes', {id:'q', model:'m', category:'c', cost_usd:0.5, idle_s:1})`).includes('ft-cost">$0.500'), 'finite cost_usd renders the cost cell');
-    chk(!w.eval(`fleetTileHtml('pi', {model:'m', phase:'bash', cost_usd:NaN})`).includes('ft-cost'), 'non-finite cost_usd omits the cell');
+    chk(count('hermes') === '2', 'profile back on: count back to 2');
 
     // ---- Claude/Codex rows, order + escaping ---------------------------
     w.eval(`DATA.agent_live = [{engine:'codex', session_id:'x1', model:'openai/<img src=x onerror=1>', phase:'idle', idle_s:1, cost_usd:0.1234},
                                {engine:'claude', session_id:'c9', model:'anthropic/claude-opus-5', phase:'tool', idle_s:1}]; tabs(); renderLive();`);
     chk(count('codex') === '1' && count('claude') === '1', 'Claude and Codex rows from the fixture are counted');
-    const tile = d.querySelector('#livetiles .ftile[data-kind="codex"]');
-    chk(!!tile, 'codex tile rendered');
-    const order = [...tile.children].map(c => c.className.split(' ')[0]);
-    chk(order.join() === 'ft-status,ft-model,ft-sub', 'tile order: status, model, (phase, cost)', order.join());
-    chk([...tile.querySelector('.ft-sub').children].map(c => c.className).join() === 'ft-phase,ft-cost', 'phase chip precedes cost');
-    chk(tile.querySelector('.ft-model').getAttribute('title').includes('<img'), 'model tooltip carries the (escaped) model string');
-    chk(!tile.querySelector('img'), 'a hostile model string is escaped, not parsed as markup');
-    chk(tile.querySelector('.ft-cost').textContent === '$0.123', 'cost formatted', tile.querySelector('.ft-cost').textContent);
-    chk(tile.dataset.state === 'idle' && /Idle/.test(tile.querySelector('.ft-st').textContent), 'idle phase reads as Idle');
-    chk(!d.querySelector('#livetiles .ftile[data-kind="claude"] .ft-cost'), 'a claude tile without cost_usd has no cost cell');
+    chk(d.getElementById('livetiles') === null, 'negative control: the Running/model tile grid is gone from Home (LST-261)');
 
     // ---- chip states --------------------------------------------------
     const chips = () => [...d.querySelectorAll('#tabs .pchip')];

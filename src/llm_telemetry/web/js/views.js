@@ -2498,7 +2498,7 @@ export function renderOllama(ol){
     // Several URLs can front ONE box; say so explicitly rather than listing
     // them as separate hosts and overstating the fleet.
     const alias = urls.length > 1
-      ? `<div class="olurls">${urls.length} endpoints → this box: ${urls.join(' · ')}</div>` : '';
+      ? `<details class="olurls"><summary>${urls.length} endpoints → this box: ${urls[0]}${urls.length > 1 ? ` <b>+${urls.length - 1} more</b>` : ''}</summary>${urls.slice(1).join(' · ')}</details>` : '';
     if (!h.up){
       // Down resets the pressure streak — the icon never follows a host
       // back up carrying a stale count from before it dropped.

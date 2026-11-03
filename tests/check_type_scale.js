@@ -37,15 +37,17 @@ chk(htmlMatches.length === 0, 'no literal text-[Npx] utility survives into the b
 
 // The fluid tokens exist and are genuinely clamp()-based (scale with the
 // viewport), not just a renamed constant.
-['--fs-xs', '--fs-sm', '--fs-md', '--fs-lg', '--fs-xl'].forEach(tok => {
+['--fs-md', '--fs-lg', '--fs-xl'].forEach(tok => {
   const re = new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*clamp\\(');
   chk(re.test(cssSrc), `${tok} is defined as a clamp() (scales with viewport)`);
 });
 
 // The floor: --fs-xs's minimum must be >= 11px (the ticket's explicit
 // "minimum label text 11px" requirement).
-const xsMatch = cssSrc.match(/--fs-xs:clamp\((\d+)px/);
-chk(!!xsMatch && +xsMatch[1] >= 11, '--fs-xs floor is >= 11px', xsMatch && xsMatch[1]);
+// LST-261: xs and sm are flat floors now (13px / 14px), no longer fluid.
+const xsMatch = cssSrc.match(/--fs-xs:(\d+)px/), smMatch = cssSrc.match(/--fs-sm:(\d+)px/);
+chk(!!xsMatch && +xsMatch[1] >= 13, '--fs-xs floor is >= 13px', xsMatch && xsMatch[1]);
+chk(!!smMatch && +smMatch[1] >= 14, '--fs-sm floor is >= 14px', smMatch && smMatch[1]);
 
 // Tokens are actually USED (not just declared and ignored) — every text-size
 // utility class in the emitted markup should reference one of them.

@@ -7,11 +7,12 @@ import { current } from './charts.js';
 import { PROV, provOf, render } from './views.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
+import { lnOpenModal, sfOpenPalette } from './drawer.js';
 
-// LST-260: the queue is three jars of tiles. Depot = requests waiting at an Ollama host,
-// on the line = live sessions (Hermes, Pi, Claude, Codex), yard = finished sessions. Every
-// tile is shown (the jar scrolls); tiles are keyed and reused across polls, so only real
-// arrivals/departures animate.
+// LST-261: the queue is three glass jars of small balls. Depot = requests waiting at an Ollama
+// host, on the line = live sessions (Hermes, Pi, Claude, Codex), yard = finished sessions. One
+// ball per task, piled from the bottom (no scrolling: the balls shrink, then a "+N" chip takes
+// over); balls are keyed and reused across polls, so only real arrivals/departures animate.
 export function renderQueue(){
   const p = DATA.profiles[current] || {};
   const hosts = (DATA.ollama && DATA.ollama.hosts) || [];
@@ -34,7 +35,7 @@ export function renderQueue(){
         key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
         model: short(L.model) || '', profile: L.profile || '', hue: hashHue(L.model || ''),
         phase: L.phase || '', state: /compress/i.test(L.phase || '') ? 'compressing' : /wait|approv|blocked|input/i.test(L.phase || '') ? 'waiting' : 'running',
-        category: L.category || '', idle_s: L.idle_s,
+        category: L.category || '', idle_s: L.idle_s, up: L.uptime_s, cost: +L.cost_usd || 0, covered: L.cost_class === 'subscription',
         tools: (L.tools || []).length, nmodels: L.nmodels,
       };
     });
@@ -45,10 +46,11 @@ export function renderQueue(){
     .map(s => ({
       key: `s:${s.id}`, kind: 'd', sid: s.id, label: titleOf(s.title, s.last_model || s.model),
       model: short(s.last_model || s.model) || '', profile: current, dur_s: s.dur_s, last_ts: s.last_ts,
-      tokens: s.tokens, api_calls: s.api_calls, hue: hashHue(s.last_model || s.model || ''),
+      tokens: s.tokens, api_calls: s.api_calls, cost: +s.cost_usd || 0, hue: hashHue(s.last_model || s.model || ''),
     }));
 
-  paintTrain(queuedAll, runningAll, doneAll);
+  qtDemoWire(queuedAll, runningAll, doneAll);
+  paintTrain(...qtDemoApply(queuedAll, runningAll, doneAll));
 
   const sub = $('qsub');
   if (sub){
@@ -59,70 +61,176 @@ export function renderQueue(){
   }
 }
 
-export function trainCar(it){
-  const c = document.createElement('div');
-  c.className = 'qt-car qt-' + it.kind;
+// Preview-only: `?demoQueue=1` cycles one synthetic task Depot -> Line -> Yard every 3s so the
+// jar motion can be watched without live traffic. Inert (returns the lists untouched) otherwise.
+const QT_DEMO = { on: null, step: 0, timer: 0, last: null };
+export function qtDemoOn(){
+  if (QT_DEMO.on === null) QT_DEMO.on = /[?&]demoQueue=1(?:&|$)/.test((typeof window !== 'undefined' && window.location && window.location.search) || '');
+  return QT_DEMO.on;
+}
+export function qtDemoApply(q, r, d){
+  if (!qtDemoOn()) return [q, r, d];
+  const n = Math.floor(QT_DEMO.step / 3), ph = QT_DEMO.step % 3, id = 'demo' + n;
+  const base = { label: 'Demo task ' + (n + 1) + ': a long synthetic title that wraps over a few lines in the tile', model: 'demo', profile: 'demo', hue: 28 + (n * 47) % 300, sid: id };
+  const past = [];
+  for (let i = Math.max(0, n - 3); i < n; i++) past.push({ ...base, key: 's:demo' + i, kind: 'd', label: 'Demo task ' + (i + 1), sid: 'demo' + i, hue: 28 + (i * 47) % 300, last_ts: Date.now() / 1000 - 60 });
+  const mine = ph === 0 ? [{ key: 'q:demo:' + n, kind: 'q', label: 'demo', host: 'demo-host', pos: 1, depth: 1 }]
+    : ph === 1 ? [{ ...base, key: 's:' + id, kind: 'r', eng: 'hermes', state: 'running', idle_s: 2 }]
+    : [{ ...base, key: 's:' + id, kind: 'd', last_ts: Date.now() / 1000 }];
+  return [q.concat(ph === 0 ? mine : []), r.concat(ph === 1 ? mine : []), (ph === 2 ? mine : []).concat(past, d)];
+}
+function qtDemoWire(q, r, d){
+  if (!qtDemoOn()) return;
+  QT_DEMO.last = [q, r, d];
+  if (QT_DEMO.timer) return;
+  QT_DEMO.timer = setInterval(() => { QT_DEMO.step++; paintTrain(...qtDemoApply(...QT_DEMO.last)); }, 3000);
+}
+
+export function trainBall(it){
+  const c = document.createElement('button');
+  c.className = 'qt-ball qt-' + it.kind;
+  c.setAttribute('type', 'button');
   c.dataset.key = it.key;
   c.tabIndex = 0;
-  c.setAttribute('role', 'listitem');
-  if (it.eng && it.eng !== 'hermes'){
-    const m = kindMeta(it.eng), b = document.createElement('span');
-    b.className = 'qt-kb'; b.innerHTML = m.sig;  // trusted constant: a text glyph or a brand-mark <svg> b.title = m.label + ' agent';
-    c.appendChild(b);
-  }
-  const l = document.createElement('span'); l.className = 'qt-lbl'; c.appendChild(l);
-  const m = document.createElement('span'); m.className = 'qt-meta'; c.appendChild(m);
+  const g = document.createElement('span'); g.className = 'qt-ball-g'; c.appendChild(g);
   return c;
 }
 
-// Keyed, ordered reconcile of one section. Returns the cars created this pass
-// so the caller can fly them in from where the task was a moment ago.
-export function paintCars(box, items, decorate){
+// Deterministic 0..1 from a string: the same task id always lands on the same spot,
+// so a 5s poll never re-shuffles the pile.
+export function qtSeed(key){
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+export const QT_CAP = 60;                     // balls drawn per jar; the 60th slot becomes a "+N" chip
+// Ball px: start at QT_MAX and step down to QT_MIN until the pile fits in QT_FILL of the jar.
+export const QT_MAX = 20;
+export const QT_MIN = 12;
+export const QT_FILL = 0.5;
+
+// Pour the balls in, oldest first: each one drops from a seeded column (best of six, so it
+// rolls into a valley) and rests on whatever is below. Only earlier balls matter, so
+// appending a task never moves the existing pile. Centres, in px, inside a w x h box.
+export function qtPack(keys, w, h, size){
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
+  let top = h;
+  keys.forEach(k => {
+    let best = null;
+    for (let t = 0; t < 6; t++){
+      const x = r + pad + qtSeed(k + ':' + t) * Math.max(0, w - size - 2 * pad);
+      let y = h - r - pad;
+      for (const b of balls){ const dx = Math.abs(b.x - x); if (dx < d) y = Math.min(y, b.y - Math.sqrt(d * d - dx * dx)); }
+      if (!best || y > best.y) best = { x, y };
+    }
+    balls.push({ x: best.x, y: best.y, rz: (qtSeed(k + ':r') - 0.5) * 44 });
+    top = Math.min(top, best.y - r);
+  });
+  return { balls, top };
+}
+
+// Size the whole jar (steps down from 20px to 12px as it fills), pack it and write the
+// positions. A ball that already sat somewhere and now moves glides there (.qt-repack).
+export function qtLayout(box, els){
+  const w = box.clientWidth || 200, h = box.clientHeight || 240;
+  const keys = els.map(c => c.dataset.key);
+  let size = QT_MAX, pk = qtPack(keys, w, h, size);
+  while (size > QT_MIN && pk.top < h * (1 - QT_FILL)){ size--; pk = qtPack(keys, w, h, size); }
+  const pos = pk.balls.map(b => [b.x.toFixed(1) + 'px', b.y.toFixed(1) + 'px']);
+  const moved = els.some((c, i) => c._qtL !== undefined && (c._qtL !== pos[i][0] || c._qtT !== pos[i][1] || c._qtS !== size));
+  if (moved){
+    box.classList.add('qt-repack');
+    clearTimeout(box._qtRp);
+    box._qtRp = setTimeout(() => box.classList.remove('qt-repack'), 360);
+  }
+  // Liquid rises with the pile: at least as high as the balls, so the count and the fill agree.
+  const jar = box.closest && box.closest('.qt-jar'), body = jar && jar.querySelector('.qt-body');
+  if (jar && body && body.clientHeight && els.length){
+    const pile = (h - pk.top) + size * 0.5 + 14;
+    jar.style.setProperty('--fill', Math.min(94, 100 * pile / body.clientHeight).toFixed(1) + '%');
+  }
+  els.forEach((c, i) => {
+    const fresh = c._qtL === undefined;
+    c._qtL = pos[i][0]; c._qtT = pos[i][1]; c._qtS = size;
+    c.style.left = pos[i][0]; c.style.top = pos[i][1];
+    c.style.setProperty('--sz', size + 'px');
+    c.style.setProperty('--zr', String(Math.round(pk.balls[i].y)));
+    c.style.setProperty('--rz', pk.balls[i].rz.toFixed(1) + 'deg');
+    if (fresh) c.style.setProperty('--drop', Math.round(Math.min(pk.balls[i].y, 150)) + 'px');
+    c.classList.toggle('qt-sm', size <= QT_MIN + 2);
+  });
+}
+export function qtRelayout(box){ if (box && box._qtEls && box._qtEls.length) qtLayout(box, box._qtEls); }
+
+// Keyed reconcile of one jar. Returns the balls created this pass so the caller can fly
+// them in from where the task was a moment ago. `elsewhere` = keys now in any jar: a ball
+// whose task moved is removed at once (the flying ghost replaces it) instead of fading.
+export function paintBalls(box, items, decorate, elsewhere){
   const have = new Map();
   [...box.children].forEach(c => {
     if (c.dataset && c.dataset.key && !c.classList.contains('qt-leaving')) have.set(c.dataset.key, c);
   });
-  const keep = new Set(), fresh = [];
+  // Pile order = first-seen order (a poll brings the newest first, so number them backwards).
+  const seq = box._qtSeq || (box._qtSeq = new Map()), live = new Set(items.map(it => it.key));
+  [...seq.keys()].forEach(k => { if (!live.has(k)) seq.delete(k); });
+  for (let i = items.length - 1; i >= 0; i--){
+    if (!seq.has(items[i].key)) seq.set(items[i].key, box._qtN = (box._qtN || 0) + 1);
+  }
+  const byNew = items.slice().sort((a, b) => seq.get(b.key) - seq.get(a.key));
+  const vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  const hidden = items.length - vis.length;
   const where = { q: 'waiting', r: 'running', d: 'finished' };
-  items.forEach((it, i) => {
+  const keep = new Set(), fresh = [], els = [];
+  vis.forEach(it => {
     let c = have.get(it.key);
-    if (!c){ c = trainCar(it); fresh.push(c); }
-    const ref = box.children[i];
-    if (ref !== c){ if (c.parentNode === box) c.remove(); if (ref) box.insertBefore(c, ref); else box.appendChild(c); }
-    keep.add(c);
-    const l = c.querySelector('.qt-lbl');
-    if (l && l.textContent !== it.label) l.textContent = it.label;
-    const mt = c.querySelector('.qt-meta'), mx = carMeta(it);
-    if (mt && mt.textContent !== mx) mt.textContent = mx;
+    if (!c){ c = trainBall(it); fresh.push(c); }
+    keep.add(c); els.push(c);
     const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
-    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}`);
+    const when = carMeta(it);
+    c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
-    decorate(c, it, i);
+    c.classList.toggle('qt-run', it.kind === 'r');
+    c.classList.toggle('qt-warn', it.state === 'waiting');
+    decorate(c, it);
   });
-  [...box.children].forEach(c => {
-    if (keep.has(c) || c.classList.contains('qt-leaving')) return;
-    if (!c.dataset || !c.dataset.key){ c.remove(); return; }
+  qtLayout(box, els);
+  fresh.slice().reverse().forEach(c => box.appendChild(c));   // DOM order = list order (newest first)
+  box._qtEls = els;
+  have.forEach((c, k) => {
+    if (keep.has(c)) return;
+    if (elsewhere && elsewhere.has(k)){ c.remove(); return; }
     c.classList.add('qt-leaving');
-    setTimeout(() => c.remove(), 600);
+    setTimeout(() => c.remove(), 400);
   });
+  let chip = box._qtChip;
+  if (hidden > 0){
+    if (!chip){
+      chip = document.createElement('button'); chip.className = 'qt-overflow'; chip.setAttribute('type', 'button');
+      box._qtChip = chip; box.appendChild(chip);
+    }
+    chip.textContent = '+' + hidden;
+    chip.setAttribute('aria-label', `${hidden} more tasks in this jar; open the session finder`);
+  } else if (chip){ chip.remove(); box._qtChip = null; }
   return fresh;
 }
 
-// Second line of a car: who ran it, how long ago, and a short id so two cars
+// Second line of a ball's label: who ran it, how long ago, and a short id so two balls
 // with the same title can still be told apart.
 export function carMeta(it){
   const id = it.sid ? '#' + String(it.sid).slice(-6) : '';
   const at = it.kind === 'd' ? (it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     : it.idle_s != null ? ago(+it.idle_s) + ' ago' : '';
-  if (it.kind === 'q') return `${it.host} \u00b7 ${it.pos} of ${it.depth}`;
-  return [at, it.profile, id].filter(Boolean).join(' \u00b7 ');
+  if (it.kind === 'q') return `${it.host} · ${it.pos} of ${it.depth}`;
+  return [at, it.profile, id].filter(Boolean).join(' · ');
 }
 
-// Hover/focus card for one car. Only fields the feeds really carry.
+export const ttRow = (k, v) => (v === '' || v == null || v === 0) ? ''
+  : `<div class="ft-r"><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`;
+// Hover/focus card for one ball. Only fields the feeds really carry.
 export function carTip(it){
   if (!it) return '';
-  const row = (k, v) => (v === '' || v == null || v === 0) ? ''
-    : `<div class="ft-r"><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`;
+  const row = ttRow;
   const tk = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
   if (it.kind === 'q'){
     return `<div class="ft-h">Waiting on ${esc(it.host)}</div>`
@@ -142,35 +250,58 @@ export function carTip(it){
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
 }
 
-// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
-// the real car with a landing bounce. No-op without the Web Animations API,
-// without layout (rects of 0), or under prefers-reduced-motion.
+// The click popover: the hover card plus what is too long for a tooltip (cost, session id)
+// and the way into the session.
+export function carPop(it){
+  if (!it) return '';
+  const usd = it.cost ? '$' + (+it.cost).toFixed(+it.cost < 1 ? 4 : 2) + (it.covered ? ' (covered by subscription)' : '') : '';
+  const up = it.up != null && it.kind === 'r' ? ago(Math.max(0, +it.up)) : '';
+  const open = it.kind !== 'q' && it.sid
+    ? `<div class="pp-act"><button type="button" class="pp-open" data-sid="${escA(it.sid)}" data-profile="${escA(it.profile || current)}" data-title="${escA(it.label)}">Open session</button></div>` : '';
+  return carTip(it) + ttRow('running for', up) + ttRow('cost', usd) + ttRow('session', it.sid ? '#' + String(it.sid).slice(-8) : '') + open;
+}
+
+// Splash fires when a ball LANDS in the yard, not when the poll arrives.
+export function qtSplash(jar){
+  if (!jar) return;
+  jar.classList.remove('qt-splash'); void jar.offsetWidth; jar.classList.add('qt-splash');
+  setTimeout(() => jar.classList.remove('qt-splash'), 1700);
+}
+
+// Fly a ghost ball from where a task WAS (fromRect) to its new ball along a shallow arc, then
+// reveal the real ball with a landing bounce. Duration scales with distance (600-900ms),
+// flights in one poll start 70ms apart and at most four fly at once (the rest just appear).
+// No-op without the Web Animations API, without layout (rects of 0), or under reduced motion.
+export const QT_FLY = { live: 0, batch: 0 };
 export function qtFly(tr, fromRect, toEl, cls){
   if (!tr || !toEl || !fromRect || typeof toEl.animate !== 'function') return false;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  if (QT_FLY.live >= 4) return false;
   const base = tr.getBoundingClientRect(), to = toEl.getBoundingClientRect();
   if (!to.width || !fromRect.width) return false;
-  const g = document.createElement('div');
-  g.className = 'qt-ghost ' + cls;
+  const g = document.createElement('span');
+  g.className = 'qt-ball qt-ghost ' + cls + (toEl.classList.contains('qt-run') ? ' qt-run' : '');
   g.style.cssText = `left:${fromRect.left - base.left}px;top:${fromRect.top - base.top}px;`
-    + `width:${fromRect.width}px;height:${fromRect.height}px`;
-  const h = toEl.style.getPropertyValue('--h'); if (h) g.style.setProperty('--h', h);
-  const lbl = toEl.querySelector('.qt-lbl'); g.textContent = lbl ? lbl.textContent : '';
+    + `width:${to.width}px;height:${to.height}px`;
+  ['--k', '--rz'].forEach(v => { const x = toEl.style.getPropertyValue(v); if (x) g.style.setProperty(v, x); });
   tr.appendChild(g);
   toEl.style.visibility = 'hidden';
-  const dx = to.left - fromRect.left, dy = to.top - fromRect.top;
-  const sx = to.width / fromRect.width, sy = to.height / fromRect.height;
+  const dx = to.left - fromRect.left, dy = to.top - fromRect.top, dist = Math.hypot(dx, dy);
+  const lift = Math.min(44, Math.max(18, dist * 0.1));
   const anim = g.animate([
-    { transform: 'translate(0,0) scale(1)' },
-    { transform: `translate(${dx / 2}px,${dy / 2 - 22}px) scale(${(1 + sx) / 2},${(1 + sy) / 2})`, offset: 0.55 },
-    { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` },
-  ], { duration: 950, easing: 'cubic-bezier(.45,.05,.3,1)' });
+    { transform: 'translate(0,0) rotate(0deg)', easing: 'cubic-bezier(.32,0,.67,0)' },
+    { transform: `translate(${dx / 2}px,${dy / 2 - lift}px) rotate(110deg)`, offset: 0.45, easing: 'cubic-bezier(.33,1,.68,1)' },
+    { transform: `translate(${dx}px,${dy}px) rotate(220deg)` },
+  ], { duration: Math.min(900, Math.max(600, 480 + dist * 0.55)), delay: QT_FLY.batch++ * 70, fill: 'backwards' });
+  QT_FLY.live++;
   let fin = false;
   const land = () => {
     if (fin) return; fin = true;
+    QT_FLY.live--;
     g.remove(); toEl.style.visibility = '';
-    toEl.classList.add('qt-landed');
-    setTimeout(() => toEl.classList.remove('qt-landed'), 650);
+    toEl.classList.add('qt-land');
+    setTimeout(() => toEl.classList.remove('qt-land'), 300);
+    if (/yard/.test(cls)) qtSplash(toEl.closest && toEl.closest('.qt-jar'));
   };
   anim.onfinish = land; anim.oncancel = land;
   return true;
@@ -180,97 +311,173 @@ export function paintTrain(queued, running, done){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
+  const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
 
-  // Where every tile is right now, so a task that changes jar flies across.
+  // Where every ball is right now, so a task that changes jar flies across.
   const before = new Map();
-  tr.querySelectorAll('.qt-car[data-key]').forEach(c => {
-    if (c.classList.contains('qt-leaving')) return;
+  tr.querySelectorAll('.qt-ball[data-key]').forEach(c => {
+    if (c.classList.contains('qt-leaving') || c.classList.contains('qt-ghost')) return;
     before.set(c.dataset.key, { rect: c.getBoundingClientRect(),
       sec: c.classList.contains('qt-q') ? 'q' : c.classList.contains('qt-r') ? 'r' : 'd' });
   });
   const keepQ = new Set(queued.map(q => q.key));
-  const departing = [...qb.querySelectorAll('.qt-car[data-key]')]
+  const departing = [...qb.querySelectorAll('.qt-ball[data-key]')]
     .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
     .map(c => c.getBoundingClientRect());
 
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
-    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
+    if (jar) jar.style.setProperty('--wv', n ? 1 : 0);
+    if (jar && !n) jar.style.setProperty('--fill', '0%');
   });
 
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
 
-  paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
-  const freshR = paintCars(rb, running, (c, it) => {
-    c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
+  QT_FLY.batch = 0;
+  const elsewhere = new Set([...queued, ...running, ...done].map(i => i.key));
+  const freshQ = paintBalls(qb, queued, (c) => { c.style.setProperty('--k', 'var(--qk-wait)'); }, elsewhere);
+  const freshR = paintBalls(rb, running, (c, it) => {
     c.dataset.kind = it.eng;
     c.dataset.state = it.state;
     c.style.setProperty('--k', kindMeta(it.eng).color);
-  });
-  const freshD = paintCars(db, done, (c, it, i) => {
-    c.style.setProperty('--h', it.hue == null ? 215 : it.hue);
-    c.classList.toggle('qt-newest', i === 0);
-  });
+  }, elsewhere);
+  const freshD = paintBalls(db, done, (c) => {
+    c.style.setProperty('--k', kindMeta('hermes').color);
+  }, elsewhere);
 
   // line -> yard is an exact identity (same session id in both feeds).
+  let flewYard = false;
+  const flown = new Set();
   freshD.forEach(c => {
     const b = before.get(c.dataset.key);
-    if (b && b.sec === 'r') qtFly(tr, b.rect, c, 'qt-fly-yard');
+    if (b && b.sec === 'r' && qtFly(tr, b.rect, c, 'qt-fly-yard')){ flewYard = true; flown.add(c); }
   });
-  // depot -> line: a queue slot has no id, so a departing depot tile is paired
+  // depot -> line: a queue slot has no id, so a departing depot ball is paired
   // with a newly running one by COUNT. Never claimed as an exact match.
   freshR.forEach(c => {
     if (before.has(c.dataset.key)) return;
     const from = departing.shift();
-    if (from) qtFly(tr, from, c, 'qt-fly-line');
+    if (from && qtFly(tr, from, c, 'qt-fly-line')) flown.add(c);
   });
+  // Everything else that is new drops in from the top of its jar, with a small bounce.
+  if (painted) [...freshQ, ...freshR, ...freshD].forEach(c => { if (!flown.has(c)) c.classList.add('qt-arrive'); });
+
+  if (painted && nd > prevDone && !flewYard) qtSplash(db.closest && db.closest('.qt-jar'));
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
-    const el = $(id); if (el && el.textContent !== String(n)) el.textContent = String(n);
+    const el = $(id);
+    if (el && el.textContent !== String(n)){
+      el.textContent = String(n);
+      el.classList.remove('qt-bump'); void el.offsetWidth; el.classList.add('qt-bump');
+    }
   });
 
-  if (!tr.dataset.tip){ tr.dataset.tip = '1'; qtTipWire(tr); }
+  if (!tr.dataset.tip){
+    tr.dataset.tip = '1'; qtTipWire(tr);
+    if (typeof ResizeObserver !== 'undefined'){
+      const ro = new ResizeObserver(es => es.forEach(e => qtRelayout(e.target)));
+      [qb, rb, db].forEach(b => ro.observe(b));
+    }
+  }
 }
 
-// One shared tooltip for every car (event delegation, wired once).
+// Place a fixed card (tooltip or popover) beside a ball: below the jar, else above it, else
+// beside the ball; the first spot that stays inside the viewport without covering the lid.
+export function qtPlace(el, r, jar){
+  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+  const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80, g = 8;
+  const lid = jar && jar.querySelector('.qt-lid');
+  const lr = lid ? lid.getBoundingClientRect() : null;
+  const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+  const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+  const jr = jar ? jar.getBoundingClientRect() : r;
+  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [jr.right + g, cy], [jr.left - w - g, cy], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+  const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
+    && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
+  const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.dataset.side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
+  el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+  el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
+}
+
+export function qtPopClose(restore){
+  const pop = $('qpop');
+  if (!pop || !pop._ball) return;
+  const b = pop._ball;
+  pop._ball = null;
+  pop.classList.remove('on');
+  b.classList.remove('qt-tip-on');
+  if (restore && b.focus) b.focus();
+}
+export function qtPopOpen(ball){
+  const pop = $('qpop'), it = ball && ball._qt;
+  if (!pop || !it) return false;
+  qtPopClose(false);
+  const tip = $('qtip'); if (tip) tip.classList.remove('on');
+  pop._ball = ball;
+  ball.classList.add('qt-tip-on');
+  pop.innerHTML = carPop(it);
+  pop.classList.add('on');
+  qtPlace(pop, ball.getBoundingClientRect(), ball.closest('.qt-jar'));
+  const go = pop.querySelector('.pp-open');
+  if (go && go.focus) go.focus(); else if (pop.focus) pop.focus();
+  return true;
+}
+
+// One shared tooltip for every ball (event delegation, wired once), plus the click popover.
 export function qtTipWire(tr){
   const tip = $('qtip');
   if (!tip) return;
   let cur = null;
-  const hide = () => { tip.classList.remove('on'); if (cur) cur.classList.remove('qt-tip-on'); cur = null; };
-  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  const hide = () => { tip.classList.remove('on'); if (cur && !($('qpop') || {})._ball) cur.classList.remove('qt-tip-on'); cur = null; };
   const show = c => {
     if (!c || !c._qt) return;
+    const pop = $('qpop');
+    if (pop && pop._ball) return;
     if (cur && cur !== c) cur.classList.remove('qt-tip-on');
     cur = c; c.classList.add('qt-tip-on');
     tip.innerHTML = carTip(c._qt);
     tip.classList.add('on');
-    // position:fixed beside the tile: below, else above, right, left; the first spot that
-    // stays inside the viewport without covering the jar's own lid.
-    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80, g = 8;
-    const lid = c.closest('.qt-jar') && c.closest('.qt-jar').querySelector('.qt-lid');
-    const lr = lid ? lid.getBoundingClientRect() : null;
-    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
-    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
-    const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
-    const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
-      && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
-    const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
-    tip.style.left = x + 'px';
-    tip.style.top = y + 'px';
-    tip.dataset.side = ['bottom', 'top', 'right', 'left'][at];
-    tip.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
-    tip.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
+    qtPlace(tip, c.getBoundingClientRect(), c.closest('.qt-jar'));
   };
-  const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
+  const carOf = t => (t && t.closest) ? t.closest('.qt-ball') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
   tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
   tr.addEventListener('focusin', e => show(carOf(e.target)));
   tr.addEventListener('focusout', hide);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+  tr.addEventListener('mouseleave', hide);
+  tr.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('.qt-overflow')){ qtPopClose(false); hide(); sfOpenPalette(); return; }
+    const c = carOf(e.target);
+    if (!c) return;
+    const pop = $('qpop');
+    if (pop && pop._ball === c) qtPopClose(true); else qtPopOpen(c);
+  });
+  const pop = $('qpop');
+  if (pop){
+    pop.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('.pp-open');
+      if (!b) return;
+      const d = b.dataset;
+      qtPopClose(false);
+      lnOpenModal(d.sid, d.profile, d.title);
+    });
+    document.addEventListener('click', e => {
+      if (!pop._ball || pop.contains(e.target) || carOf(e.target)) return;
+      qtPopClose(false);
+    });
+  }
+  window.addEventListener('scroll', () => { hide(); qtPopClose(false); }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    hide();
+    qtPopClose(true);
+  });
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed

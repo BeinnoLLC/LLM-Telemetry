@@ -23,11 +23,9 @@ const page = (/\n\s*\.page\{([^}]*)\}/.exec(css) || [])[1] || '';
 chk(/max\(var\(--pad\),\s*var\(--logtab-gutter\)\)\s+40px/.test(page), '.page reserves the gutter on the right');
 chk(!/--logtab-gutter/.test(css.replace(/--logtab-gutter:calc[^;]*;/, '').replace(/\.page\{[^}]*\}/, '')) , 'only .page consumes the gutter variable');
 
-// narrow widths: compact tab, still reserved
-const mq = /@media \(max-width:599px\)\{\s*:root\{--logtab-w:(\d+)px;--logtab-gap:(\d+)px\}/.exec(css);
-chk(!!mq, 'under 600px the tab shrinks via the same variables');
-chk(mq && Number(mq[1]) < w && Number(mq[1]) + Number(mq[2]) >= Number(mq[1]) + 4, 'compact tab is narrower yet keeps a gap', mq ? `w=${mq[1]} gap=${mq[2]}` : '');
-chk(!/@media[^{]*\{[^{}]*\.page\{[^}]*padding[^}]*\}/.test(css.slice(css.indexOf('@media (max-width:599px)'), css.indexOf('@media (max-width:599px)') + 200)), 'narrow rule does not override .page padding (reservation follows the variables)');
+// narrow widths (LST-261): the floating tab is hidden and reserves nothing; the sidebar Live tail remains
+const mq = /@media \(max-width:600px\)\{ :root\{--logtab-w:0px;--logtab-gap:0px\} #logbtn\{display:none\} \}/.exec(css);
+chk(!!mq, 'at <=600px the floating tab is hidden and the reserved gutter is 0');
 
 // function kept: keyboard + drawer
 chk(/<button id="logbtn"/.test(html), 'tab is a real <button> (focusable, Enter/Space)');
