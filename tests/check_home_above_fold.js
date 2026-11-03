@@ -33,12 +33,12 @@ chk(!/<canvas id="cLiveCat"/.test(html) && !/<canvas id="cTools"/.test(html),
   'the By category donut and Tool calls chart canvases are gone');
 chk(!/By category/.test(html) && !/Tool calls · last hour/.test(html), 'their panel titles are gone');
 chk(/<canvas id="cHome6h"/.test(html), 'negative control: other Home charts (6h series) are still present');
-css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.lkpis\{order:-30\}/,
+css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > #livekpis\{order:-30\}/,
   'on Home the scorecards lead (order -30)');
 css(/\.page\[data-pageview="Home"\] > \.view\[data-view="Home"\] > \.livegrid\{order:-20\}/,
   'on Home the table + agents grid follows the scorecards (order -20)');
-css(/\.lkpis\{display:grid;gap:8px;align-items:start;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/,
-  'scorecards are four tracks wide on desktop');
+css(/\.statgrid\.live>\.stat\{grid-column:span 3\}/,
+  'live scorecards span 3 of 12 columns (four across) on desktop');
 
 // Live feed: cumulative per-session counters that grow on every poll.
 let tick = 0;
@@ -92,9 +92,9 @@ const dom = new JSDOM(html, {
 setTimeout(async () => {
   const w = dom.window, d = w.document;
   try {
-    const cards = () => [...d.querySelectorAll('#livekpis > .lkpi')];
+    const cards = () => [...d.querySelectorAll('#livekpis > .stat')];
     const body = k => d.querySelector(`#livekpis [data-kpi="${k}"]`);
-    const num = k => d.querySelector(`#livekpis [data-kpi="${k}"] .lkpi-num`).textContent;
+    const num = k => d.querySelector(`#livekpis [data-kpi="${k}"] .stat-value`).textContent;
     const FOLLOWING = w.Node.DOCUMENT_POSITION_FOLLOWING;
     const after = (a, b) => !!(a.compareDocumentPosition(b) & FOLLOWING);
 
@@ -140,15 +140,15 @@ setTimeout(async () => {
     chk(num('agents').replace(/\s/g, '') === '2/3', 'Agents alive = 2 of 3 heartbeating', num('agents'));
     chk(/1 not heartbeating/.test(body('agents').textContent), 'agents card says how many are not heartbeating');
     // calls: 40-10 + 5-5 = 30; tokens: (3600-1100) + 0 = 2,500 over the polls
-    chk(num('throughput').replace(/\s/g, '') === '30·2.5K', 'calls/tokens in the window come from the poll-to-poll diff', num('throughput'));
+    chk(num('throughput').replace(/\s/g, '') === '30calls' && /2\.5K tokens/.test(body('throughput').textContent), 'calls/tokens in the window come from the poll-to-poll diff', num('throughput'));
     chk(/last/.test(body('throughput').textContent), 'throughput card states the window it covers');
 
     // ---- alerts: zero -> quiet pill; N -> count + list ---------------------
     const alertsBody = () => body('alerts');
-    chk(!!alertsBody().querySelector('.lkpi-clear') && /All clear/.test(alertsBody().textContent),
+    chk(!!alertsBody().querySelector('.stat-clear') && /All clear/.test(alertsBody().textContent),
       'zero alerts renders the "All clear" pill');
-    chk(!alertsBody().querySelector('.lkpi-alist') && !alertsBody().querySelector('.lkpi-alerts'),
-      'zero alerts renders no empty list / count');
+    chk(!alertsBody().querySelector('.stat-alert') && num('alerts') === '0',
+      'zero alerts renders no worst-item line, count 0');
     P.alerts = [
       { rule: 'a', severity: 'warning', message: 'Warn one', why: 'because' },
       { rule: 'b', severity: 'critical', message: 'Crit one' },
@@ -156,16 +156,17 @@ setTimeout(async () => {
       { rule: 'd', severity: 'info', message: 'Info two' }];
     w.eval(`renderLiveKpis(__P, 'work', 1005, { work: __P }, [], []);`);
     chk(num('alerts') === '4', 'N alerts show a count', num('alerts'));
-    const items = [...alertsBody().querySelectorAll('.lkpi-alist li:not(.amore)')];
-    chk(items.length === 2 && /Crit one/.test(items[0].textContent) && items[0].classList.contains('crit'),
-      'the list shows the most severe alerts first (critical leads)', items.map(i => i.textContent).join('|'));
-    chk(/\+2 more/.test(alertsBody().querySelector('.amore').textContent), 'the rest are summarised as "+N more"');
-    chk(!alertsBody().querySelector('.lkpi-clear'), 'no "All clear" pill while alerts are tripped');
+    const worst = alertsBody().querySelector('.stat-alert');
+    chk(!!worst && worst.classList.contains('crit') && /^B$/.test(worst.textContent.trim()),
+      'only the worst alert is shown (critical leads), by short title', worst && worst.textContent);
+    chk(/1 critical \u00b7 3 warning/.test(alertsBody().querySelector('.stat-sub').textContent), 'severity split is shown under the count', alertsBody().querySelector('.stat-sub').textContent);
+    chk(alertsBody().dataset.state === 'bad', 'card state follows the worst severity');
+    chk(!alertsBody().querySelector('.stat-clear'), 'no "All clear" pill while alerts are tripped');
     chk(/1 critical/.test(alertsBody().textContent), 'critical count shown under the number');
-    chk(alertsBody().querySelector('a.lkpi-alerts').getAttribute('href') === '#/health', 'count links to Health');
+    chk(alertsBody().getAttribute('href') === '#/health', 'the whole card links to Health');
     P.alerts = [];
     w.eval(`renderLiveKpis(__P, 'work', 1005, { work: __P }, [], []);`);
-    chk(!!alertsBody().querySelector('.lkpi-clear'), 'alerts clearing returns to the "All clear" pill');
+    chk(!!alertsBody().querySelector('.stat-clear'), 'alerts clearing returns to the "All clear" pill');
 
     // ---- sparkline: guarded path, one canvas, no leak across polls ---------
     const spark = () => d.querySelectorAll('#livekpis canvas');

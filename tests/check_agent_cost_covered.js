@@ -44,9 +44,9 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     const estCost = () => {
-      const card = [...d.querySelectorAll('#kpis .kpi-card')]
-        .find(c => (c.querySelector('.kpi-name') || {}).textContent === 'Est. cost');
-      return card ? card.querySelector('.kpi-big').textContent : null;
+      const card = [...d.querySelectorAll('#kpis .stat')]
+        .find(c => (c.querySelector('.stat-label') || {}).textContent === 'Est. cost');
+      return card ? card.querySelector('.stat-value').textContent : null;
     };
     w.eval('DATA.agent_live = []; render();');
     const before = estCost();

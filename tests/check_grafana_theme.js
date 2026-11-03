@@ -66,7 +66,7 @@ setTimeout(() => {
   chk(w.getComputedStyle(el).borderRadius === '4px', 'computed .card border-radius is 4px', w.getComputedStyle(el).borderRadius);
   chk(/:root\{[^}]*--gap:8px/.test(html), 'grid gap token --gap is 8px');
   chk(/\.page\{[^}]*gap:var\(--gap\)/.test(html), 'the page grid uses --gap');
-  chk(/\.grid-kpi\{display:grid;gap:8px/.test(html) && /\.lkpis\{display:grid;gap:8px/.test(html), 'KPI grids use an 8px gap');
+  chk(/\.statgrid\{display:grid;grid-template-columns:repeat\(12,minmax\(0,1fr\)\);gap:8px/.test(html), 'KPI grids use an 8px gap');
 
   // (d) all running cars visible
   const d = w.document, rb = d.getElementById('qt-running');

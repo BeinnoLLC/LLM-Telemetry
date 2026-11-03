@@ -8,10 +8,10 @@ import {
 } from './palette.js';
 import { TABLE_SORT, enhanceTable, sortValues } from './table.js';
 import {
-  PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, radialRing, sparkSvg, weightValue,
+  PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
-import { inProgressHtml, kindLogo, renderLive } from './live.js';
+import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
 import { renderQuotaView, qvStat } from './quotaview.js';
 import {
@@ -340,17 +340,134 @@ export function unpricedModels(rows){
   return Object.entries(by).filter(([, o]) => !o.priced && o.calls > 0)
     .sort((a, b) => b[1].calls - a[1].calls);
 }
+// ---- Notices: one toast + app-bar chip component ----------------------------
+// A condition that needs a human glance but must not move the page (stale
+// source, unpriced models, a failed refresh) is raised with notify(). The toast
+// overlays the page once per condition signature; the chip stays in the app bar
+// for as long as the condition holds, and clicking it reopens the toast.
+const NOTICE_MS = {info: 6000, ok: 6000, warn: 10000};
+const NOTICE_MAX = 3;
+const NOTICES = {};   // id -> {n, seen, el, timer}
+function noticeKey(id){ return 'lt.notice.' + id; }
+function noticeGet(id){ try { return localStorage.getItem(noticeKey(id)); } catch (e) { return null; } }
+function noticeSet(id, v){
+  try { if (v == null) localStorage.removeItem(noticeKey(id)); else localStorage.setItem(noticeKey(id), v); } catch (e) { /* storage blocked */ }
+}
+function noticeEl(tag, cls, text){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function noticeClose(id, persist){
+  const st = NOTICES[id];
+  if (!st || !st.el) return;
+  clearTimeout(st.timer);
+  st.el.remove();
+  st.el = null;
+  if (persist) noticeSet(id, st.n.sig);
+}
+function noticeArm(id){
+  const st = NOTICES[id];
+  const ms = st && st.el ? NOTICE_MS[st.n.sev] : 0;
+  clearTimeout(st && st.timer);
+  if (ms) st.timer = setTimeout(() => noticeClose(id, false), ms);
+}
+// The stack sits 12px under the page header (title row + controls), so it never
+// covers the header buttons; it follows the header as the page scrolls. On phones
+// the CSS docks it to the bottom instead.
+function noticePlace(){
+  const box = document.getElementById('notices'), head = document.getElementById('pagehead');
+  if (!box || !head || !head.getBoundingClientRect) return;
+  if (!box.dataset.placed){
+    box.dataset.placed = '1';
+    window.addEventListener('scroll', noticePlace, {passive: true});
+    window.addEventListener('resize', noticePlace);
+  }
+  box.style.top = window.innerWidth <= 599 ? '' : (Math.max(head.getBoundingClientRect().bottom, 0) + 12) + 'px';
+}
+function noticeShow(id){
+  const st = NOTICES[id], box = document.getElementById('notices');
+  if (!st || !box) return;
+  const n = st.n;
+  noticeClose(id, false);
+  const el = noticeEl('div', 'toast');
+  el.dataset.sev = n.sev; el.dataset.notice = id;
+  el.setAttribute('role', n.sev === 'error' ? 'alert' : 'status');
+  const body = noticeEl('div', 'toast-body');
+  body.append(noticeEl('p', 'toast-title', n.title), noticeEl('p', 'toast-text', n.text));
+  if (n.action){
+    const a = noticeEl('a', 'btn btn-sm', n.action.label);
+    a.href = n.action.href;
+    const acts = noticeEl('div', 'toast-actions');
+    acts.append(a);
+    body.append(acts);
+  }
+  const x = noticeEl('button', 'toast-x chip', '\u00d7');
+  x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
+  x.addEventListener('click', () => noticeClose(id, true));
+  const ico = noticeEl('span', 'toast-ico', n.sev === 'ok' ? '\u2713' : n.sev === 'info' ? '\u24d8' : '\u26a0');
+  ico.setAttribute('aria-hidden', 'true');
+  el.append(ico, body, x);
+  el.addEventListener('keydown', e => { if (e.key === 'Escape') noticeClose(id, true); });
+  el.addEventListener('mouseenter', () => clearTimeout(st.timer));
+  el.addEventListener('focusin', () => clearTimeout(st.timer));
+  el.addEventListener('mouseleave', () => noticeArm(id));
+  el.addEventListener('focusout', () => noticeArm(id));
+  st.el = el;
+  noticePlace();
+  box.prepend(el);
+  while (box.children.length > NOTICE_MAX) box.lastElementChild.remove();
+  noticeArm(id);
+}
+function noticeChip(id){
+  const st = NOTICES[id], bar = document.getElementById('noticechips');
+  if (!st || !bar) return;
+  let c = bar.querySelector(`[data-notice-chip="${id}"]`);
+  if (!st.n.chip){ if (c) c.remove(); return; }
+  if (!c){
+    c = noticeEl('button', 'chip notice-chip');
+    c.type = 'button'; c.dataset.noticeChip = id;
+    c.addEventListener('click', () => noticeShow(id));
+    bar.append(c);
+  }
+  c.dataset.sev = st.n.sev;
+  c.textContent = '\u26a0 ' + st.n.chip;
+  c.title = st.n.title;
+}
+// n: {id, sev: info|ok|warn|error, title, text, action?: {label, href}, sig, chip?}
+// Re-raising the same id with the same sig only refreshes the chip; the toast
+// pops again when sig changes, unless the user dismissed that exact sig.
+export function notify(n){
+  const st = NOTICES[n.id] || (NOTICES[n.id] = {seen: null, el: null, timer: 0});
+  st.n = n;
+  noticeChip(n.id);
+  if (st.seen === n.sig) return;
+  st.seen = n.sig;
+  if (noticeGet(n.id) === n.sig) return;
+  noticeShow(n.id);
+}
+export function clearNotice(id){
+  const st = NOTICES[id];
+  if (!st) return;
+  noticeClose(id, false);
+  const bar = document.getElementById('noticechips');
+  const c = bar && bar.querySelector(`[data-notice-chip="${id}"]`);
+  if (c) c.remove();
+  noticeSet(id, null);
+  delete NOTICES[id];
+}
 export function renderUnpriced(rows){
-  const el = document.getElementById('unpricedbanner');
-  if (!el) return;
   const un = unpricedModels(rows);
-  if (!un.length){ el.hidden = true; el.innerHTML = ''; return; }
+  if (!un.length){ clearNotice('unpriced'); return 0; }
   const calls = un.reduce((s, [, o]) => s + o.calls, 0);
-  el.hidden = false;
-  el.innerHTML = `<b>${un.length} model${un.length === 1 ? '' : 's'} with traffic ${un.length === 1 ? 'has' : 'have'} no price</b>`
-    + ` (${un.map(([m]) => '<span class="mono">' + esc(m) + '</span>').join(', ')}; ${calls.toLocaleString()} calls).`
-    + ` Est. cost excludes that traffic, so it is understated.`
-    + ` <a href="#/Prices">Price sheet</a> shows the fix.`;
+  const names = un.slice(0, 3).map(([m]) => m).join(', ') + (un.length > 3 ? ` +${un.length - 3} more` : '');
+  notify({id: 'unpriced', sev: 'warn',
+    title: `${un.length} model${un.length === 1 ? '' : 's'} ${un.length === 1 ? 'has' : 'have'} no price`,
+    text: `Est. cost leaves out ${calls.toLocaleString()} calls (${names}), so it is too low.`,
+    action: {label: 'Open Prices', href: '#/Prices'},
+    sig: un.map(([m]) => m).sort().join(','), chip: `${un.length} unpriced`});
+  return un.length;
 }
 // ---- Context re-send per session (P9-03, #80) ------------------------------
 // Rows come from the collector (p.resend): calls, average prompt context per
@@ -455,7 +572,7 @@ export function render(){
   const cache=rows.reduce((s,r)=>s+r.cread,0);
   const market=rows.reduce((s,r)=>s+(r.market_value_usd||0),0);
   const elec=rows.reduce((s,r)=>s+(r.cost_class==='local'?(r.energy_usd||0):0),0);
-  renderUnpriced(rows);
+  const nUnpriced = renderUnpriced(rows);
   const nsess=sess.reduce((s,r)=>s+r.sessions,0);
   const nd=new Set(rows.map(r=>r.date)).size;
   $('meta').textContent=`updated ${DATA.generated.replace('T',' ')}`;
@@ -467,8 +584,6 @@ export function render(){
   $('rangeinfo').textContent = HOUR_RANGE
     ? `last ${HOUR_RANGE}h · ${rows.length} rows`
     : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
-  // Live count, deliberately NOT date-filtered: in progress means right now.
-  const liveDot = inProgressHtml(DATA.profiles[current], DATA.pi_live, DATA.agent_live);
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
   const H = DATA.profiles[current].health || [];
@@ -495,42 +610,27 @@ export function render(){
   const sessSeries = kdays.map(d=>sess.filter(r=>r.date===d).reduce((s,r)=>s+r.sessions,0));
   const costSeries = kdays.map(d=>rows.filter(r=>r.date===d).reduce((s,r)=>s+(r.market_value_usd||0),0));
 
-  // One glyph + accent colour per KPI card so the strip reads at a glance,
-  // same idea as the provider badges (PROV) elsewhere on the page. Colours
-  // reuse the same series colours the card's own sparkline is drawn in
-  // (AC/PAL[n] below), so the badge is never an arbitrary extra hue — it is
-  // "this card's colour", just also used to tint its icon chip.
-  const KPI_META = {
-    'API calls':      {icon:icon('swap'),   color:AC},
-    'Tokens':         {icon:icon('layers'), color:PAL[1]},
-    'Cache hit rate': {icon:icon('zap'),    color:PAL[5]},
-    'Sessions':       {icon:icon('users'),  color:PAL[2]},
-    'Success rate':   {icon:icon('check'),  color:PAL[6]},
-    'In progress':    {icon:icon('pulse'),  color:PAL[3]},
-    'Est. cost':      {icon:icon('dollar'), color:PAL[4]},
+  // The six totals share the live row's card anatomy (statHtml): no icons, one
+  // sparkline colour, bounded percentages as a thin meter instead of a ring.
+  const spark = v => sparkSvg(v, AC, {w: 160, h: 28});
+  const range = `${nd} day${nd === 1 ? '' : 's'} in range`;
+  const meterCard = (label, pct, warnAt, badAt) => {
+    const m = meterStat(pct, {label, warnAt, badAt});
+    return statHtml({label, value: pct == null ? '\u2014' : String(Math.round(pct)), unit: pct == null ? '' : '%',
+      sub: m.word, subState: m.state || '', viz: m.viz});
   };
-
+  const costSub = nUnpriced
+    ? `excludes ${nUnpriced} unpriced model${nUnpriced === 1 ? '' : 's'}`
+    : (elec > 0 ? `incl. ~${money(elec)} electricity` : 'market value');
   $('kpis').innerHTML=[
-    ['API calls',calls.toLocaleString(),sparkSvg(callsSeries,AC)],
-    ['Tokens',fmt(tok),sparkSvg(tokSeries,PAL[1])],
-    ['Cache hit rate',null,null,radialRing(cacheRate,{label:'Cache hit rate',warnAt:60,badAt:30})],
-    ['Sessions',nsess.toLocaleString(),sparkSvg(sessSeries,PAL[2])],
-    ['Success rate',null,null,radialRing(srate,{label:'Success rate',warnAt:95,badAt:80})],
-    ['In progress',liveDot],
-    ['Est. cost','<span class="costpulse">$'+market.toFixed(2)+'</span>'+(elec>0?'<div class="kpisub" title="Local models: electricity at your tariff, included in Est. cost">incl. '+costCell(elec,true)+'</div>':''),sparkSvg(costSeries,PAL[4])]]
-    .map(([l,v,spark,ring])=>{
-      const meta = KPI_META[l] || {icon:'', color:MU};
-      const iconEl = meta.icon ? `<span class="kpi-icon" aria-hidden="true">${meta.icon}</span>` : '';
-      const badge = `<div class="kpi-badge" style="background:color-mix(in srgb,${meta.color} 14%,var(--card));color:${meta.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${meta.color} 30%,transparent)">${iconEl}</div>`;
-      const trend = spark ? `<div class="kpi-trend">${spark}</div>` : '';
-      if (ring) return `<div class="card kpi-card kpi-ring">
-        <div class="kpi-head">${badge}<div class="kpi-name" title="${l}">${l}</div></div>
-        <div class="kpi-ring-body"><div class="kringwrap">${ring}</div></div></div>`;
-      return `<div class="card kpi-card">
-        <div class="kpi-head">${badge}<div class="kpi-name" title="${l}">${l}</div></div>
-        <div class="kpi-num"><div class="kpi-big font-semibold${l==='In progress'?' kpi-live':''}">${v}</div></div>
-        ${trend}</div>`;
-    }).join('');
+    statHtml({label:'API calls', value:calls.toLocaleString(), sub:range, viz:spark(callsSeries)}),
+    statHtml({label:'Tokens', value:fmt(tok), sub:'input + output', viz:spark(tokSeries)}),
+    meterCard('Cache hit rate', cacheRate, 60, 30),
+    statHtml({label:'Sessions', value:nsess.toLocaleString(), sub:range, viz:spark(sessSeries)}),
+    meterCard('Success rate', srate, 95, 80),
+    statHtml({label:'Est. cost', value:'<span class="costpulse">'+(market?money(market):'$0.00')+'</span>', sub:costSub,
+      subState:nUnpriced?'warn':'', viz:spark(costSeries)}),
+  ].join('');
 
   // Live data is independent of the date filter — render it before the early
   // return, so an empty range never blanks the Live tab.

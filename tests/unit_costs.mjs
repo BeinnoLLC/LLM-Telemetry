@@ -35,6 +35,7 @@ const mkEl = () => ({
   children: [], options: [], label: '', tag: '', hidden: false, id: '',
   appendChild(c) { this.children.push(c); if (this.tag === 'select') this.options.push(c); },
   addEventListener(type, fn) { ((this._on ||= {})[type] ||= []).push(fn); },
+  append(...c) { this.children.push(...c); }, prepend(...c) { this.children.unshift(...c); },
   remove() {}, setAttribute() {}, classList: { add() {}, toggle() {}, remove() {} },
 });
 const registry = {};
@@ -89,7 +90,7 @@ const D = await isolate('views.js', {
     PROJ_WEIGHT: 0, PROJ_WEIGHT_LABELS: {}, agg: () => ({}), charts: [],
     ctxSpark: () => '', current: 'p1', mk: () => ({}), noLeg: () => ({}),
     olBar: () => '', projDistNormalized: () => ({}), projTrendStacked: () => ({}),
-    radialRing: () => '', sparkSvg: () => '', weightValue: () => 1,
+    sparkSvg: () => '', weightValue: () => 1,
   },
   'router.js': {
     HOUR_RANGE: 0, MODEL_FILTER: '', PROJECT_FILTER: '', PROVIDER_FILTER: '',
@@ -260,13 +261,13 @@ chk(brk().includes('no published cache rate'), 'the no-cache-rate caveat shows',
 registry.cc.value = ''; registry.ci.value = '10k'; registry.co.value = ''; fire('ci');
 
 // ---- renderUnpriced: never a silent $0 ------------------------------------
-registry.unpricedbanner = mkEl();
-const banner = registry.unpricedbanner;
-D.renderUnpriced([{ model: 'mystery', calls: 3 }]);
-chk(banner.innerHTML.includes('mystery'), 'an unpriced model is listed by name', banner.innerHTML);
-chk(banner.innerHTML.includes('no price'), 'the banner says why the estimate is short', banner.innerHTML);
-D.renderUnpriced([{ model: 'zed', calls: 4, priced: true }]);
-eq(banner.hidden, true, 'a fully-priced sheet hides the banner');
+registry.notices = mkEl();
+const toastText = e => (e.textContent || '') + (e.children || []).map(toastText).join(' ');
+chk(D.renderUnpriced([{ model: 'mystery', calls: 3 }]) === 1, 'one unpriced model is counted');
+const toast = registry.notices.children[0];
+chk(toast && toastText(toast).includes('mystery'), 'an unpriced model is listed by name', toast && toastText(toast));
+chk(toast && toastText(toast).includes('no price'), 'the toast says why the estimate is short', toast && toastText(toast));
+chk(D.renderUnpriced([{ model: 'zed', calls: 4, priced: true }]) === 0, 'a fully-priced sheet raises no notice');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0)

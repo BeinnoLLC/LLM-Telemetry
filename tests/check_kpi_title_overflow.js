@@ -22,7 +22,7 @@ function chk(ok, name, got) {
 // Pull the `.kpi-name{...}` declaration block out of the built CSS. The
 // builder minifies but keeps multi-line rules, so match up to the closing
 // brace of the first such block.
-const m = html.match(/\.kpi-name\{[^}]*\}/);
+const m = html.match(/\.stat-label\{font:[^}]*\}/);
 const kpiNameRule = m ? m[0] : '';
 
 function boot() {
@@ -60,45 +60,18 @@ const dom = boot();
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    // The wrap recipe must be on the title element itself (a flex
-    // child needs min-width:0 to be allowed to shrink below its content
-    // width — the classic CSS overflow culprit the bug was).
-    chk(cssSane, '.kpi-name rule present in built dashboard CSS');
-    chk(!kpiNameRule.includes('white-space:nowrap'),
-      '.kpi-name may wrap (no white-space:nowrap)', kpiNameRule);
-    // Every rule whose selector mentions .kpi-name (media queries included,
-    // .lkpi-name excluded) must leave wrapping on.
-    const nowrapRules = [];
-    for (const r of html.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
-      if (/(^|[^\w-])\.kpi-name(?![\w-])/.test(r[1]) && /white-space\s*:\s*nowrap/.test(r[2])) {
-        nowrapRules.push(r[0].trim());
-      }
+    // UI pass U-1: titles are short fixed copy on ONE line (13px, nowrap) and are
+    // clipped with an ellipsis at the card edge at worst, never spilling out.
+    chk(cssSane, '.stat-label rule present in built dashboard CSS');
+    for (const decl of ['white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis']) {
+      chk(kpiNameRule.includes(decl), `.stat-label has ${decl} (title cannot escape the card)`, kpiNameRule || 'rule not found');
     }
-    chk(nowrapRules.length === 0,
-      'no CSS rule targeting .kpi-name sets white-space:nowrap (any media query)',
-      nowrapRules.join(' | '));
-    const need = [
-      ['hyphens:auto', 'forced breaks hyphenate (PRO-GRESS, not PROGRES/S)'],
-      ['min-width:0', 'flex child may shrink below content width'],
-      ['overflow-wrap:anywhere', 'long words break instead of escaping'],
-      ['line-height:1.15', '2 lines x 1.15 x <=12px <= 36px header'],
-    ];
-    for (const [decl, why] of need) {
-      chk(kpiNameRule.includes(decl), `.kpi-name has ${decl} (${why})`,
-        kpiNameRule || 'rule not found');
-    }
-
-    // Cards must not shrink so far that a bold 11-12px word (PROGRESS ~62px)
-    // no longer fits beside the 36px badge: 130px left ~53px and broke
-    // mid-word at ~1000-1024px. Keep the grid minimum >= 144px.
-    const gm = html.match(/\.grid-kpi\{[^}]*minmax\(min\((\d+)px,100%\),1fr\)/);
-    chk(!!gm && +gm[1] >= 144, '.grid-kpi card minimum >= 144px (no mid-word breaks)',
-      gm ? gm[1] + 'px' : 'rule not found');
+    chk(/\.stat\{[^}]*min-width:0/.test(html), '.stat may shrink below its content width (min-width:0)');
 
     // The rendered strip: every title carries its full text as the hover
     // tooltip, so the full label is always available.
-    const names = [...d.querySelectorAll('#kpis .kpi-name')];
-    chk(names.length >= 5, `KPI strip rendered titles (got ${names.length})`);
+    const names = [...d.querySelectorAll('#kpis .stat-label')];
+    chk(names.length >= 6, `KPI strip rendered titles (got ${names.length})`);
     let titled = 0, matches = 0;
     for (const el of names) {
       const t = (el.textContent || '').trim();
@@ -106,10 +79,10 @@ setTimeout(() => {
       if (el.hasAttribute('title') && t) titled++;
     }
     chk(matches === names.length,
-      'every .kpi-name has title= equal to its full label',
+      'every .stat-label has title= equal to its full label',
       `${matches}/${names.length} match`);
     chk(titled === names.length,
-      'every .kpi-name title attribute is non-empty');
+      'every .stat-label title attribute is non-empty');
   } catch (e) {
     fail++; console.log('  FAIL unexpected error — ' + e.message);
   }

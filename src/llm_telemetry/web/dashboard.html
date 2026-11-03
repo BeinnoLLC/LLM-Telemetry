@@ -15,10 +15,11 @@ __DASHBOARD_CSS__
  <div class="navbrand"><span style="color:var(--accent)">◈</span><span class="brandword"> LLM Telemetry</span><button id="navcollapse" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Expand navigation">&#187;</button></div>
  <div id="navlist"></div>
  <div class="navsep"></div>
- <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+ <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail" aria-label="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
+<section id="notices" class="notices" aria-label="Notifications"></section>
 <div class="page flex flex-col gap-4">
- <div class="flex items-end justify-between flex-wrap gap-3 pagehead">
+ <div id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <!-- Inline SVG, not a file: the dashboard is one self-contained artifact
@@ -45,6 +46,7 @@ __DASHBOARD_CSS__
   </div>
   <div class="flex gap-2 items-center flex-wrap fbwrap">
    <div class="fleetbar" id="tabs" data-kind="all"></div>
+   <span id="noticechips" class="noticechips"></span>
    <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
    <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
@@ -151,8 +153,7 @@ __DASHBOARD_CSS__
   </div>
  </div>
 
- <div class="grid-kpi" id="kpis"></div>
- <div id="unpricedbanner" class="unpricedbanner" hidden></div>
+ <div class="statgrid totals" id="kpis"></div>
 
 
 
@@ -185,7 +186,7 @@ __DASHBOARD_CSS__
        sessions in flight, agents alive, calls/tokens over the last 5 minutes
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
-  <div class="lkpis mb-3" id="livekpis" aria-live="polite"></div>
+  <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
   <!-- Task queue: always directly under the four scorecards, above "In
        progress now", at every width (Home feedback 2026-10-28). -->
   <div class="card p-4" id="qcard" style="position:relative">

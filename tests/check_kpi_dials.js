@@ -67,30 +67,21 @@ setTimeout(() => {
     chk(shortSpark === '', 'sparkSvg renders nothing with fewer than 2 points');
 
     // ---- integration: the built KPI strip actually uses them ---------------
+    // UI pass U-1: bounded percentages are thin meters (role=meter), not rings.
     const kpis = d.getElementById('kpis');
     chk(!!kpis, '#kpis strip exists');
-    const rings = kpis.querySelectorAll('.kring');
-    chk(rings.length >= 2, 'the KPI strip renders at least 2 rings (success rate + cache hit rate)', rings.length);
-    const sparks = kpis.querySelectorAll('.kspark');
-    chk(sparks.length >= 2, 'the KPI strip renders at least 2 sparklines (calls + tokens)', sparks.length);
-    // The KPI strip must still be ONE flat grid, not a differently-shaped
-    // sub-layout for ring cards — the grid-kpi CSS (#11's "fits one row at
-    // 1440px, two at 768px" requirement) needs every card in the same flow.
-    chk(kpis.children.length === 7, 'the strip still has exactly 7 KPI cards (unbounded + bounded together)', kpis.children.length);
-    chk([...kpis.children].every(c => c.classList.contains('card')), 'every KPI card (ring or plain) shares the same .card recipe');
-
-    // Unbounded metrics (API calls / tokens) keep their real number visible
-    // alongside the sparkline — a trend line must not replace the figure.
+    const meters = kpis.querySelectorAll('.stat-meter[role="meter"]');
+    chk(meters.length === 2 && [...meters].every(m => m.getAttribute('aria-label') && m.hasAttribute('aria-valuenow')),
+      'the strip renders 2 meters (success + cache hit) with aria-label and aria-valuenow', meters.length);
+    chk(kpis.querySelectorAll('.kring').length === 0, 'no ring gauges left in the strip');
+    chk(kpis.querySelectorAll('.kspark').length >= 3, 'the strip renders sparklines for the unbounded counters', kpis.querySelectorAll('.kspark').length);
+    chk(kpis.children.length === 6, 'the strip has exactly 6 KPI cards ("In progress" folded into the live row)', kpis.children.length);
+    chk([...kpis.children].every(c => c.classList.contains('card') && c.classList.contains('stat')), 'every KPI card shares the one .card.stat recipe');
+    chk([...kpis.children].every(c => c.children.length === 4 && ['stat-label', 'stat-value', 'stat-sub', 'stat-viz'].every((k, n) => c.children[n].classList.contains(k))),
+      'every card has the same four slots in the same order: label, value, sub, viz');
+    chk(kpis.querySelectorAll('.kpi-icon').length === 0, 'no per-card icons');
     const callsCard = [...kpis.children].find(c => /API calls/.test(c.textContent));
-    chk(!!callsCard && /\d/.test(callsCard.querySelector('.font-semibold').textContent),
-        'API calls KPI still shows the real number, not just a sparkline');
-
-    // ---- KPI cards each carry an icon (icons + trend sparklines everywhere) --
-    const icons = kpis.querySelectorAll('.kpi-icon');
-    chk(icons.length === 7, 'every one of the 7 KPI cards renders an icon glyph', icons.length);
-
-    // Sessions and Est. cost now get a real 7-day trend too (icons + trend
-    // charts on every card, not just calls/tokens).
+    chk(!!callsCard && /\d/.test(callsCard.querySelector('.stat-value').textContent), 'API calls KPI still shows the real number');
     const sessCard = [...kpis.children].find(c => /Sessions/.test(c.textContent));
     const costCard = [...kpis.children].find(c => /Est\. cost/.test(c.textContent));
     chk(!!sessCard && !!sessCard.querySelector('.kspark'), 'Sessions KPI carries a trend sparkline');
