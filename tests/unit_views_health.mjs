@@ -88,6 +88,7 @@ const fakeDocument = {
 // stale/empty payload, so the stub carries a matching schema_version and one profile.
 const DATA = { schema_version: 1, profiles: { p1: {} } };
 const load = (o = {}) => (Object.keys(DATA.profiles).length || (DATA.profiles = { p1: {} }), isolate('views.js', {
+  'table.js': { TABLE_SORT: {}, enhanceTable: () => {}, sortValues: (a, b) => (a < b ? -1 : a > b ? 1 : 0) },
   'palette.js': {
     $, AC: '#AC', BD: '#BD', MU: '#MU', PAL: P.PAL,
     ago: P.ago, esc: P.esc, escA: P.escA, fmt: P.fmt, short: P.short,
