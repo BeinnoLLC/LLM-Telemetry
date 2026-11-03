@@ -23,5 +23,7 @@ chk(has(/<details class="olurls"><summary>/) && has(/\+\$\{urls\.length - 1\} mo
 chk(has(/\.lgtag\{overflow:visible;text-overflow:clip;min-width:66px\}/), 'Logs role/tool tags are not truncated');
 chk(has(/class="lvtool" title="\$\{escA\(t\)\}"/), 'tool names carry a title tooltip');
 chk(has(/\.dt-cap\{caption-side:top;text-align:left;/), 'density toggle sits at the left of the table, never scrolled out of view');
+const o = id => { const m = html.match(new RegExp('\\.page\\[data-pageview="Home"\\] > #' + id + '\\{order:(-?\\d+)\\}')); return m ? +m[1] : null; };
+chk(o('rangebar') < o('projfilterbar') && o('projfilterbar') < o('xfercard') && o('xfercard') < o('kpis'), 'Home: range, filters and transfer strip sit above the KPI cards, not at the bottom');
 console.log(`check_layout_pass2.js  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

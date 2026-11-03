@@ -1368,6 +1368,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
  .page[data-pageview="Home"] > #rangebar{order:-35}
+ .page[data-pageview="Home"] > #projfilterbar{order:-34}
+ .page[data-pageview="Home"] > #xfercard{order:-33}
+ .page[data-pageview="Home"] > #unpricedbanner{order:-32}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .lkpis{order:-30}
  .page[data-pageview="Home"] > #kpis{order:-28}
  .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
