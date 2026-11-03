@@ -25,5 +25,9 @@ chk(has(/class="lvtool" title="\$\{escA\(t\)\}"/), 'tool names carry a title too
 chk(has(/\.dt-cap\{caption-side:top;text-align:left;/), 'density toggle sits at the left of the table, never scrolled out of view');
 const o = id => { const m = html.match(new RegExp('\\.page\\[data-pageview="Home"\\] > #' + id + '\\{order:(-?\\d+)\\}')); return m ? +m[1] : null; };
 chk(o('rangebar') < o('projfilterbar') && o('projfilterbar') < o('xfercard') && o('xfercard') < o('kpis'), 'Home: range, filters and transfer strip sit above the KPI cards, not at the bottom');
+chk(has(/--lvcols:36px minmax\(96px,1\.3fr\) minmax\(88px,1fr\) 176px/) && has(/\.lvst\{white-space:nowrap/), 'state pill column is wide enough and never clips "Compressing"');
+chk(has(/#drawer:not\(\.open\)\{visibility:hidden/), 'closed Live tail drawer is visibility:hidden (out of tab order)');
+chk(has(/not\(\[data-pageview="Prices"\]\) > #unpricedbanner,[\s\S]{0,160}\.costhow\{display:none\}/), 'unpriced banner and cost note only on Home/Cost/Prices');
+chk(has(/hermes-dash-router-opened/) && has(/data-rtopen="\$\{escA\(key\)\}"\$\{opened\.has\(key\) \? ' open' : ''\}/), 'Router cards start folded; only reader-opened ones persist');
 console.log(`check_layout_pass2.js  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

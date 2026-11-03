@@ -271,15 +271,29 @@ export function rtSaveFold(key, open){
   try { localStorage.setItem(RT_FOLD_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
+// Cards start folded (98 open blocks made the page 54,000px tall); only the
+// ones the reader opened are remembered.
+export const RT_OPEN_KEY = 'hermes-dash-router-opened';
+export function rtOpened(){
+  try { return new Set(JSON.parse(localStorage.getItem(RT_OPEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+export function rtSaveOpen(key, open){
+  const s = rtOpened();
+  if (open) s.add(key); else s.delete(key);
+  try { localStorage.setItem(RT_OPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
+}
+
 export function rtSection(name, p, vocab){
   const tr = p.tier_router;
   const on = tr && tr.enabled;
   const folded = rtFolded();
+  const opened = rtOpened();
   // Every card is a <details>: native keyboard + screen-reader support, and
   // the summary keeps the title and subtitle visible while folded.
   const card = (id, title, sub, body) => {
     const key = `${name}|${id}`;
-    return `<details class="card rt-card" data-rtfold="${escA(key)}"${folded.has(key) ? '' : ' open'}>` +
+    return `<details class="card rt-card" data-rtopen="${escA(key)}"${opened.has(key) ? ' open' : ''}>` +
       `<summary class="lbl">${esc(title)}${sub ? ` <span class="muted rt-lblsub">${esc(sub)}</span>` : ''}</summary>` +
       `<div class="rt-cbody">${body}</div></details>`;
   };
@@ -356,10 +370,11 @@ export function renderRouterView(){
   }).join('')}</nav>`;
   el.innerHTML = strip + names.map(n => rtSection(n, all[n], vocab)).join('');
   el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle', () => rtSaveFold(dt.dataset.rtfold, dt.open)));
+  el.querySelectorAll('details[data-rtopen]').forEach(dt => dt.addEventListener('toggle', () => rtSaveOpen(dt.dataset.rtopen, dt.open)));
   el.querySelectorAll('[data-rtall]').forEach(b => b.addEventListener('click', ev => {
     ev.preventDefault(); ev.stopPropagation();   // inside <summary>: don't fold the profile
     const open = b.dataset.rtall === 'open';
-    b.closest('.rt-profile').querySelectorAll('details.rt-card').forEach(dt => { dt.open = open; rtSaveFold(dt.dataset.rtfold, open); });
+    b.closest('.rt-profile').querySelectorAll('details.rt-card').forEach(dt => { dt.open = open; rtSaveOpen(dt.dataset.rtopen, open); });
   }));
   el.querySelectorAll('[data-rtpage]').forEach(b => b.addEventListener('click', () => rtPageSet(b.dataset.rtpage)));
 }
