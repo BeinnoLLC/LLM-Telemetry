@@ -482,7 +482,7 @@ const FAILS = () => ([
   eq(DO.OL_SEEN, true, 'ollama: seen');
   eq(E.olcard.hidden, false, 'ollama: shown');
   const [box, far] = E.ollama.innerHTML.split('<div class="olcard').slice(1);
-  has(box, '<div class="olurls">2 endpoints → this box: http://a:11434 · http://b:11434</div>', 'ollama: aliased endpoints');
+  has(box, '<details class="olurls"><summary>2 endpoints → this box: http://a:11434 <b>+1 more</b></summary>http://b:11434</details>', 'ollama: aliased endpoints');
   has(box, '<span class="olver">v0.9.1 · 12ms · 7 models</span>', 'ollama: version line');
   has(box, '<span class="olbadge">▣ local</span>', 'ollama: local badge');
   has(box, '[bar queue|50|2 waiting||50]', 'ollama: queue 2 -> 50%, tracked');

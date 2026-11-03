@@ -368,7 +368,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(h2h, '↯ from glm', 'renderLive: a switched session names the SHORT model it fell back from');
   has(h2h, 'title="router fell back from glm"', 'renderLive: the fallback tooltip uses the short name');
   eq(h2.logs.loeIcon.map(x => x[1].label), ['session load','session load'], 'renderLive: absent/untitled titles fall back to "session load"');
-  times(h2h, 'class="lvtool">', 5, 'renderLive: at most five tool chips are drawn');
+  times(h2h, 'class="lvtool" title=', 5, 'renderLive: at most five tool chips are drawn');
   has(h2h, '>e</span>', 'renderLive: ...keeping the first five');
   lacks(h2h, '>f</span>', 'renderLive: ...and dropping the rest');
   lacks(h2h, 'NaN', 'renderLive: a session with no idle_s never renders NaN (#138)');
