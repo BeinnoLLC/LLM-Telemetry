@@ -575,6 +575,10 @@
   },
   {
    "mod": "views",
+   "name": "noticePlace"
+  },
+  {
+   "mod": "views",
    "name": "noticeShow"
   },
   {

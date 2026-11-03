@@ -41,6 +41,14 @@ chk(has(/\.navitem \.nvlabel\{[^}]*min-width:0;[^}]*overflow-wrap:anywhere/), 'n
 chk(has(/\.navitem \.nvbadge\{[^}]*flex:none/), 'nav badge is never squeezed');
 chk(has(/@media \(max-height:820px\)\{ \.navitem\{ min-height:36px; \}/), 'short windows compact the nav so it fits 768px');
 
+// follow-up: shared value baseline, toast below the header, clean collapsed rail
+chk(has(/a\.card\.stat\{display:grid\}/), 'the link-card (Active alerts) keeps the grid anatomy: a.card display:block no longer wins');
+chk(has(/\.notices\{position:fixed;[^}]*top:calc\(var\(--notices-top,var\(--bar-h,52px\)\) \+ 12px\);right:var\(--pad,16px\)/), 'toast stack is right-aligned to the content edge, 12px under its anchor');
+chk(has(/function noticePlace\(\)\{[^]*?pagehead[^]*?getBoundingClientRect\(\)\.bottom[^]*?\+ 12\)/), 'toast stack is placed 12px below the page header (never over its buttons)');
+chk(has(/\.toast\{[^}]*box-shadow:0 0 0 1px var\(--border\),0 14px 32px/), 'toast has a 1px border token ring plus elevation shadow');
+chk(has(/\.toast-x\{min-height:32px;min-width:32px;[^}]*border:0;box-shadow:none/), 'toast close is a 32px target with no border or shadow bar');
+chk(has(/body\.navcollapsed #navdrawer \.navitem::after\{[^}]*position:fixed;/), 'collapsed-rail tooltips are fixed, so they add no scroll width to the 40px items');
+
 // ---- DOM: Home ------------------------------------------------------------
 const home = boot('');
 setTimeout(() => {

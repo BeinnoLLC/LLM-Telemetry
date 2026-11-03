@@ -443,6 +443,7 @@
  .stat[data-state=warn] .stat-value{color:var(--z-warn)}
  .stat[data-state=bad] .stat-value{color:var(--z-bad)}
  .stat[data-state=ok] .stat-value{color:var(--z-ok)}
+ a.card.stat{display:grid}
  a.stat:hover{background:var(--state-hover)}
  a.stat:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
  .stat-clear{color:var(--z-ok)}
@@ -635,7 +636,7 @@ body.hasnav .page{ margin-left:0; padding-left:calc(var(--rail-now) + var(--pad)
 body.navcollapsed #navcollapse{ margin:6px auto 0; }
 
 body.navcollapsed #navdrawer .navitem::after{
-  content:attr(data-tip); position:absolute; left:calc(100% + 8px); top:50%;
+  content:attr(data-tip); position:fixed; left:calc(var(--rail-w) + 8px);
   transform:translateY(-50%); white-space:nowrap; background:var(--card);
   border:1px solid var(--border); border-radius:4px; padding:4px 8px;
   font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
@@ -1971,12 +1972,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .page:not([data-pageview="Home"]) > #kpis,.page:not([data-pageview="Home"]) > #xfercard{display:none}
 
 
-.notices{position:fixed;z-index:60;top:calc(var(--bar-h,52px) + 12px);right:16px;
+.notices{position:fixed;z-index:60;top:calc(var(--notices-top,var(--bar-h,52px)) + 12px);right:var(--pad,16px);
   width:min(380px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{pointer-events:auto;display:grid;grid-template-columns:20px minmax(0,1fr) 32px;gap:10px;
   padding:12px 12px 12px 14px;border-radius:4px;background:var(--card);
   border:1px solid color-mix(in srgb,var(--sev) 45%,var(--border));border-left:4px solid var(--sev);
-  box-shadow:0 12px 28px -10px rgba(0,0,0,.7);animation:toast-in .18s ease-out}
+  box-shadow:0 0 0 1px var(--border),0 14px 32px -8px rgba(0,0,0,.85);animation:toast-in .18s ease-out}
 .toast[data-sev=info]{--sev:var(--accent)}
 .toast[data-sev=ok]{--sev:var(--z-ok)}
 .toast[data-sev=warn]{--sev:var(--z-warn)}
@@ -1989,7 +1990,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   border:1px solid var(--border);color:var(--accent);text-decoration:none;font-size:14px}
 .toast-actions .btn:hover{background:var(--state-hover)}
 .toast-x{min-height:32px;min-width:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;
-  background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;border-radius:4px;align-self:start}
+  background:none;border:0;box-shadow:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;border-radius:4px;align-self:start}
 .toast-x:hover{background:var(--state-hover);color:var(--fg)}
 .noticechips{display:contents}
 .notice-chip[data-sev=warn]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
@@ -2018,7 +2019,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 </nav>
 <section id="notices" class="notices" aria-label="Notifications"></section>
 <div class="page flex flex-col gap-4">
- <div class="flex items-end justify-between flex-wrap gap-3 pagehead">
+ <div id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <svg class="brandmark" viewBox="0 0 24 24" width="26" height="26" fill="none"
@@ -4037,6 +4038,16 @@ function noticeArm(id){
   clearTimeout(st && st.timer);
   if (ms) st.timer = setTimeout(() => noticeClose(id, false), ms);
 }
+function noticePlace(){
+  const box = document.getElementById('notices'), head = document.getElementById('pagehead');
+  if (!box || !head || !head.getBoundingClientRect) return;
+  if (!box.dataset.placed){
+    box.dataset.placed = '1';
+    window.addEventListener('scroll', noticePlace, {passive: true});
+    window.addEventListener('resize', noticePlace);
+  }
+  box.style.top = window.innerWidth <= 599 ? '' : (Math.max(head.getBoundingClientRect().bottom, 0) + 12) + 'px';
+}
 function noticeShow(id){
   const st = NOTICES[id], box = document.getElementById('notices');
   if (!st || !box) return;
@@ -4066,6 +4077,7 @@ function noticeShow(id){
   el.addEventListener('mouseleave', () => noticeArm(id));
   el.addEventListener('focusout', () => noticeArm(id));
   st.el = el;
+  noticePlace();
   box.prepend(el);
   while (box.children.length > NOTICE_MAX) box.lastElementChild.remove();
   noticeArm(id);

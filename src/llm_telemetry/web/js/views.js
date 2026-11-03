@@ -373,6 +373,19 @@ function noticeArm(id){
   clearTimeout(st && st.timer);
   if (ms) st.timer = setTimeout(() => noticeClose(id, false), ms);
 }
+// The stack sits 12px under the page header (title row + controls), so it never
+// covers the header buttons; it follows the header as the page scrolls. On phones
+// the CSS docks it to the bottom instead.
+function noticePlace(){
+  const box = document.getElementById('notices'), head = document.getElementById('pagehead');
+  if (!box || !head || !head.getBoundingClientRect) return;
+  if (!box.dataset.placed){
+    box.dataset.placed = '1';
+    window.addEventListener('scroll', noticePlace, {passive: true});
+    window.addEventListener('resize', noticePlace);
+  }
+  box.style.top = window.innerWidth <= 599 ? '' : (Math.max(head.getBoundingClientRect().bottom, 0) + 12) + 'px';
+}
 function noticeShow(id){
   const st = NOTICES[id], box = document.getElementById('notices');
   if (!st || !box) return;
@@ -402,6 +415,7 @@ function noticeShow(id){
   el.addEventListener('mouseleave', () => noticeArm(id));
   el.addEventListener('focusout', () => noticeArm(id));
   st.el = el;
+  noticePlace();
   box.prepend(el);
   while (box.children.length > NOTICE_MAX) box.lastElementChild.remove();
   noticeArm(id);
