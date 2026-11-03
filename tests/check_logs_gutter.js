@@ -19,9 +19,7 @@ chk(/#logbtn\{[^}]*width:var\(--logtab-w\)/.test(css), '#logbtn width is var(--l
 chk(w + gap >= 51 + 4, `gutter ${w + gap}px >= old tab 51px + hover growth 4px`);
 chk(!/#logbtn:hover\{[^}]*padding/.test(css), 'hover does not change the tab footprint');
 chk(!/padding-right/.test(css.match(/body\.hasnav \.page\{[^}]*\}/g).join('')), 'nav rules only touch padding-left');
-chk(/\.qt-line \.qt-cars\{(?![^}]*mask-image)[^}]*\}/.test(css)
-  && /qtEdgeFade\(/.test(fs.readFileSync(path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js', 'flow.js'), 'utf8'))
-  && !/mask-image/.test(rule('.qt-line .qt-cars') || ''), 'train edge fade is car-level, no chopper mask');
+chk(!/mask-image/.test(rule('.qt-cars') || ''), 'jar tiles carry no chopper mask');
 chk(!/\n\s*\.n2\{/.test(css), 'dead .n2 rule stays removed');
 chk(/\.fbwrap\{min-width:0\}/.test(css), 'fleet-bar wrapper can shrink (min-width:0)');
 chk(/\.olhead\{[^}]*flex-wrap:wrap/.test(css), '.olhead wraps long hostnames');

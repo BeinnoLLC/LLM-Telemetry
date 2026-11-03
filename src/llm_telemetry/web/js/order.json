@@ -887,10 +887,6 @@
   },
   {
    "mod": "flow",
-   "name": "QT_CAP"
-  },
-  {
-   "mod": "flow",
    "name": "paintCars"
   },
   {
@@ -904,14 +900,6 @@
   {
    "mod": "flow",
    "name": "qtFly"
-  },
-  {
-   "mod": "flow",
-   "name": "qtFadeRaf"
-  },
-  {
-   "mod": "flow",
-   "name": "qtEdgeFade"
   },
   {
    "mod": "flow",

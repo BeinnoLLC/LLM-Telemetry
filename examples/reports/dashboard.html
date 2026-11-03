@@ -907,53 +907,80 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .flowtip .ft-r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
  .flowtip .ft-r b{color:var(--fg);font-weight:600}
 
-.qtrain{position:relative;display:grid;gap:16px;align-items:start;
-  grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,2fr)}
-.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;gap:8px}
-.qt-name{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
-  letter-spacing:.06em;color:var(--muted)}
-.qt-n{font-weight:600;letter-spacing:0;padding:0 7px;line-height:18px;border-radius:999px;
-  border:1px solid var(--border);background:var(--card);color:var(--fg)}
-.qt-cars{position:relative;min-width:0}
-.qt-cars,.qt-consist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.qt-line .qt-cars{display:block}
-.qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);display:block;padding:14px 10px;
-  border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:var(--fs-sm)}
-.qt-rail,.qt-signal,.qt-shunter,.qt-patrol{display:none}
-.qt-car{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;
-  align-content:start;min-height:52px;padding:7px 10px;border-radius:6px;min-width:0;
-  border:1px solid var(--border);border-left:3px solid hsl(var(--h,215) 55% 50%);
-  background:var(--card);color:var(--fg);font-size:var(--fs-sm);line-height:1.3;cursor:default;outline-offset:2px}
-.qt-car:focus-visible{outline:2px solid var(--accent)}
+.qtrain{position:relative;display:grid;gap:18px;align-items:stretch;
+  grid-template-columns:repeat(3,minmax(0,1fr))}
+.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
+.qt-line{--jc:var(--z-ok)}
+.qt-yard{--jc:var(--accent)}
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 14px}
+.qt-lid{position:relative;z-index:1;margin:0 -1px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:7px 12px;border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));border-radius:9px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 16%,var(--card)),color-mix(in srgb,var(--jc) 7%,var(--card)));
+  box-shadow:0 2px 5px -2px rgba(0,0,0,.35),inset 0 1px 0 color-mix(in srgb,var(--fg) 12%,transparent)}
+.qt-name{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--fg)}
+.qt-n{font-weight:600;font-size:var(--fs-xs);padding:0 8px;line-height:19px;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--jc) 45%,var(--border));background:var(--card);color:var(--fg)}
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin:-1px -9px 0;padding:14px 8px;
+  border:1.5px solid color-mix(in srgb,var(--jc) 55%,var(--border));border-top:0;border-radius:0 0 34px 34px;overflow:hidden;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--fg) 12%,transparent),transparent 14%,transparent 86%,color-mix(in srgb,var(--fg) 7%,transparent)),
+    linear-gradient(180deg,color-mix(in srgb,var(--fg) 5%,transparent),color-mix(in srgb,var(--fg) 2%,transparent));
+  box-shadow:inset 4px 0 0 -1px color-mix(in srgb,var(--fg) 24%,transparent),inset 0 -14px 18px -12px color-mix(in srgb,var(--jc) 60%,transparent),0 6px 14px -8px rgba(0,0,0,.5)}
+.qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
+  border-top:1px solid color-mix(in srgb,var(--jc) 50%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 22%,transparent));
+  transition:height .6s ease}
+.qt-cars{position:relative;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  gap:8px;grid-auto-rows:max-content;align-content:start;flex:1;min-height:150px;max-height:260px;overflow-y:auto;padding:3px;scrollbar-width:thin}
+.qt-cars:not(:has(.qt-car))::after{content:attr(data-empty);grid-column:1/-1;align-self:center;text-align:center;
+  padding:18px 22px;color:var(--muted);font-size:var(--fs-sm);border:1px dashed color-mix(in srgb,var(--jc) 40%,var(--border));border-radius:8px}
+.qt-cars:not(:has(.qt-car)){display:flex;align-items:center;justify-content:center}
+.qt-car{position:relative;display:flex;flex-direction:column;gap:4px;min-height:64px;padding:8px 10px;
+  border-radius:6px;min-width:0;border:1px solid var(--border);border-left:4px solid hsl(var(--h,215) 55% 50%);
+  background:var(--card);color:var(--fg);font-size:12.5px;line-height:1.35;cursor:default;outline-offset:2px}
+.qt-car:focus-visible,.qt-car.qt-tip-on{outline:2px solid var(--accent)}
 .qt-car:hover{background:color-mix(in srgb,var(--card) 90%,var(--fg))}
-.qt-lbl{grid-column:1;grid-row:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-  overflow:hidden;font-weight:600;overflow-wrap:anywhere}
-.qt-meta{grid-column:1/-1;grid-row:2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
-  color:var(--muted);font-size:var(--fs-xs);margin-top:2px}
-.qt-kb{grid-column:2;grid-row:1;padding:1px 4px;border-radius:3px;font-size:10px;line-height:1.2;
+.qt-lbl{flex:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:14px;line-height:1.35;font-weight:600;overflow-wrap:anywhere;text-wrap:pretty}
+.qt-meta{flex:none;color:color-mix(in srgb,var(--fg) 72%,var(--card));font-size:12.5px;line-height:1.35;margin-top:auto;overflow-wrap:anywhere}
+.qt-legend{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;color:var(--muted);font-size:12.5px}
+.qt-legend span{display:inline-flex;align-items:center;gap:6px}
+.qt-sw{width:4px;height:12px;border-radius:2px;background:hsl(215 55% 50%)}
+.qt-dot{width:8px;height:8px;border-radius:50%;background:var(--z-ok)}
+.qt-kb{position:absolute;top:5px;right:5px;padding:1px 4px;border-radius:3px;font-size:11px;line-height:1.2;
   background:color-mix(in srgb,var(--card) 88%,var(--k));color:var(--k)}
+.qt-kb+.qt-lbl{padding-right:24px}
 .qt-q{border-left-color:var(--z-warn);animation:qt-arrive .45s cubic-bezier(.2,.8,.2,1) both}
-.qt-r[data-kind]:not([data-kind=hermes]){border-left-color:var(--k)}
-.qt-loco{background:color-mix(in srgb,var(--card) 92%,var(--accent))}
-.qt-d{opacity:.85;animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
+.qt-r::after{content:"";position:absolute;right:8px;bottom:9px;width:7px;height:7px;border-radius:50%;
+  background:var(--z-ok);animation:qt-pulse 1.6s ease-in-out infinite}
+.qt-r .qt-meta{padding-right:16px}
+.qt-r[data-state=compressing]::after{background:var(--accent);border-radius:2px;animation-duration:.9s}
+.qt-r[data-state=waiting]::after{background:var(--z-warn);animation:none}
+.qt-d{opacity:.88;animation:qt-park .7s cubic-bezier(.2,.8,.2,1) both}
 .qt-d.qt-newest{opacity:1;border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+@keyframes qt-pulse{50%{opacity:.3}}
 @keyframes qt-arrive{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
-@keyframes qt-park{from{opacity:0;transform:translateX(-30px) scale(.7)}to{opacity:.85;transform:none}}
+@keyframes qt-park{from{opacity:0;transform:translateY(-24px) scale(.7)}to{opacity:.88;transform:none}}
 .qt-car.qt-leaving{animation:qt-depart .55s ease-in forwards !important;pointer-events:none}
-@keyframes qt-depart{to{opacity:0;transform:translateX(40px) scale(.7)}}
+@keyframes qt-depart{to{opacity:0;transform:translateY(24px) scale(.7)}}
 .qt-ghost{position:absolute;z-index:4;pointer-events:none;border-radius:6px;transform-origin:0 0;
   background:var(--card);border:1px solid var(--accent)}
 .qt-car.qt-landed{animation:qt-land .6s cubic-bezier(.3,1.6,.5,1) both !important}
 @keyframes qt-land{0%{transform:scale(1.06)}100%{transform:none}}
-.qt-more{font-size:var(--fs-sm);color:var(--muted);font-weight:600;align-self:center;padding:0 6px}
-.qtrain.clear .qt-line .qt-name::after{content:"\00b7 clear";color:var(--z-ok)}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;z-index:60}
-@media (max-width:900px){.qtrain{grid-template-columns:minmax(0,1fr)}}
+.qtip{position:fixed;max-width:300px;z-index:80;pointer-events:none;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
+  left:var(--ax,50%);top:-6px;margin-left:-5px;border-right:0;border-bottom:0}
+.qtip[data-side=top]::before{top:auto;bottom:-6px;transform:rotate(225deg)}
+.qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
+.qtip[data-side=right]::before{left:-6px;transform:rotate(315deg)}
+.qtip[data-side=left]::before{right:-6px;transform:rotate(135deg)}
+@media (max-width:1100px){.qtrain{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion: reduce){
-  .qtrain *, .qtrain{animation:none !important}
+  .qtrain *, .qtrain, .qtrain *::before, .qtrain *::after{animation:none !important;transition:none !important}
+  .qt-car{opacity:1}
   .qt-ghost{display:none}
+  .qt-body::before{transition:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
  .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
@@ -1992,12 +2019,11 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
    <div class="qtrain" id="qtrain">
-    <div class="qt-sec qt-depot"><span class="qt-name">Depot <b class="qt-n" id="qt-n-queued">0</b></span><div class="qt-cars" id="qt-queued" data-empty="Nothing waiting"></div></div>
-    <div class="qt-signal" id="qt-signal"><i></i><i></i></div>
-    <div class="qt-sec qt-line"><span class="qt-name">On the line <b class="qt-n" id="qt-n-running">0</b></span><div class="qt-cars" id="qt-running" data-empty="No live sessions"></div></div>
-    <div class="qt-sec qt-yard"><span class="qt-name">Yard <b class="qt-n" id="qt-n-done">0</b></span><div class="qt-cars" id="qt-done" data-empty="No finished sessions"></div><i class="qt-shunter" aria-hidden="true"></i></div>
-    <div class="qt-rail" aria-hidden="true"></div>
+    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Depot</span><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></div></section>
+    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">On the line</span><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></div></section>
+    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><span class="qt-name">Yard</span><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></div></section>
    </div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw"></i>Stripe colour = model</span><span><i class="qt-dot"></i>Pulsing dot = live now (square: compressing, amber: waiting)</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
   </div>
  <div class="pk-tiles" id="livetiles" aria-label="Live agents" hidden></div>
@@ -6527,6 +6553,7 @@ function trainCar(it){
   c.className = 'qt-car qt-' + it.kind;
   c.dataset.key = it.key;
   c.tabIndex = 0;
+  c.setAttribute('role', 'listitem');
   if (it.eng && it.eng !== 'hermes'){
     const m = kindMeta(it.eng), b = document.createElement('span');
     b.className = 'qt-kb'; b.innerHTML = m.sig;  // trusted constant: a text glyph or a brand-mark <svg> b.title = m.label + ' agent';
@@ -6539,8 +6566,6 @@ function trainCar(it){
 
 // Keyed, ordered reconcile of one section. Returns the cars created this pass
 // so the caller can fly them in from where the task was a moment ago.
-const QT_CAP = { q: 16, r: 40, d: 48 };
-
 function paintCars(box, items, decorate){
   const have = new Map();
   [...box.children].forEach(c => {
@@ -6579,7 +6604,7 @@ function carMeta(it){
   const at = it.kind === 'd' ? (it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     : it.idle_s != null ? ago(+it.idle_s) + ' ago' : '';
   if (it.kind === 'q') return `${it.host} \u00b7 ${it.pos} of ${it.depth}`;
-  return [at, it.kind === 'r' ? it.profile : it.model, id].filter(Boolean).join(' \u00b7 ');
+  return [at, it.profile, id].filter(Boolean).join(' \u00b7 ');
 }
 
 // Hover/focus card for one car. Only fields the feeds really carry.
@@ -6594,18 +6619,21 @@ function carTip(it){
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
-    return head + row('engine', it.eng === 'hermes' ? '' : kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
+    return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
+      + row('engine', kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('model', it.model)
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', it.model)
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
 }
 
-// Fade each line car whole near the frame edge; the old mask chopped labels mid-word.
+// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
+// the real car with a landing bounce. No-op without the Web Animations API,
+// without layout (rects of 0), or under prefers-reduced-motion.
 function qtFly(tr, fromRect, toEl, cls){
   if (!tr || !toEl || !fromRect || typeof toEl.animate !== 'function') return false;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
@@ -6637,46 +6665,12 @@ function qtFly(tr, fromRect, toEl, cls){
   return true;
 }
 
-let qtFadeRaf = 0;
-function qtEdgeFade(rb, consist, moving){
-  const clear = () => [...consist.children].forEach(c => { c.style.opacity = ''; });
-  if (typeof cancelAnimationFrame !== 'function' || !rb.clientWidth || !moving){ clear(); return; }
-  cancelAnimationFrame(qtFadeRaf);
-  const fade = () => {
-    const b = rb.getBoundingClientRect();
-    [...consist.children].forEach(c => {
-      const r = c.getBoundingClientRect();
-      const o = Math.min(1, Math.max(0, (r.left - b.left) / 34), Math.max(0, (b.right - r.right) / 34));
-      c.style.opacity = o >= 1 ? '' : o <= 0 ? '0' : o.toFixed(2);
-    });
-    qtFadeRaf = requestAnimationFrame(fade);
-  };
-  qtFadeRaf = requestAnimationFrame(fade);
-}
-
-// Fly a ghost car from where a task WAS (fromRect) to its new car, then reveal
-// the real car with a landing bounce. No-op without the Web Animations API,
-// without layout (rects of 0), or under prefers-reduced-motion.
-function paintTrain(queuedAll, runningAll, doneAll){
-  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done'), sig = $('qt-signal');
+function paintTrain(queued, running, done){
+  const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
-  let consist = rb.querySelector('.qt-consist');
-  if (!consist){ consist = document.createElement('div'); consist.className = 'qt-consist'; rb.appendChild(consist); }
-  const nq = queuedAll.length, nr = runningAll.length, nd = doneAll.length;
-  // Depot and yard wrap into rows; show only what fits so "+N" stays honest
-  // (no car silently clipped by overflow). Without layout, fall back to cap.
-  const fit = (box, carW, rows, cap, n) => {
-    if (!box.clientWidth) return cap;
-    const per = Math.max(1, Math.floor((box.clientWidth + 8) / (carW + 8)));
-    const room = per * rows;
-    return Math.min(cap, n > room ? room - 1 : room);
-  };
-  const queued = queuedAll.slice(0, fit(qb, 150, 3, QT_CAP.q, nq));
-  const running = runningAll.slice(0, fit(consist, 150, 3, QT_CAP.r, nr));
-  const done = doneAll.slice(0, fit(db, 150, 3, QT_CAP.d, nd));
+  const nq = queued.length, nr = running.length, nd = done.length;
 
-  // Where every car is right now, so a task that changes section can be
-  // flown across instead of blinking out and back in.
+  // Where every tile is right now, so a task that changes jar flies across.
   const before = new Map();
   tr.querySelectorAll('.qt-car[data-key]').forEach(c => {
     if (c.classList.contains('qt-leaving')) return;
@@ -6688,24 +6682,21 @@ function paintTrain(queuedAll, runningAll, doneAll){
     .filter(c => !keepQ.has(c.dataset.key) && !c.classList.contains('qt-leaving'))
     .map(c => c.getBoundingClientRect());
 
-  // Constant speed whatever the train length: the loop covers line + train.
-  const lineW = rb.clientWidth || 520;
-  const trainW = consist.scrollWidth || running.length * 111;
-  const loop = Math.max(8, Math.round((lineW + trainW) / 55));
-  tr.style.setProperty('--qt-loop', loop + 's');
-  tr.style.setProperty('--qt-w', (lineW + 10) + 'px');
-  tr.style.setProperty('--qt-yw', Math.max(40, (db.clientWidth || 200) - 26) + 'px');
+  [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
+    const jar = box.closest && box.closest('.qt-jar');
+    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
+  });
+
   tr.classList.toggle('moving', nr > 0);
   tr.classList.toggle('backed', nq > 0);
   tr.classList.toggle('clear', nq === 0 && nr === 0);
-  if (sig) sig.title = nq > 0 ? `${nq} waiting` : 'line clear';
 
   paintCars(qb, queued, (c, it, i) => { c.style.setProperty('--i', i); });
-  const freshR = paintCars(consist, running, (c, it, i) => {
+  const freshR = paintCars(rb, running, (c, it) => {
     c.style.setProperty('--h', it.hue == null ? 142 : it.hue);
     c.dataset.kind = it.eng;
+    c.dataset.state = it.state;
     c.style.setProperty('--k', kindMeta(it.eng).color);
-    c.classList.toggle('qt-loco', i === 0);
   });
   const freshD = paintCars(db, done, (c, it, i) => {
     c.style.setProperty('--h', it.hue == null ? 215 : it.hue);
@@ -6717,32 +6708,17 @@ function paintTrain(queuedAll, runningAll, doneAll){
     const b = before.get(c.dataset.key);
     if (b && b.sec === 'r') qtFly(tr, b.rect, c, 'qt-fly-yard');
   });
-  // depot -> line: a queue slot has no id, so a departing depot car is paired
-  // with a newly running car by COUNT. Never claimed as an exact match.
+  // depot -> line: a queue slot has no id, so a departing depot tile is paired
+  // with a newly running one by COUNT. Never claimed as an exact match.
   freshR.forEach(c => {
     if (before.has(c.dataset.key)) return;
     const from = departing.shift();
     if (from) qtFly(tr, from, c, 'qt-fly-line');
   });
-  qtEdgeFade(rb, consist, false);  // cars hold still and all stay visible: no edge fade
 
-  // "+N" past the cap, so the strip never hides real depth.
-  [[qb, nq, queued.length], [rb, nr, running.length], [db, nd, done.length]].forEach(([box, n, shown]) => {
-    [...box.children].forEach(c => { if (c.classList.contains('qt-more')) c.remove(); });
-    if (n > shown){
-      const m = document.createElement('b');
-      m.className = 'qt-more'; m.textContent = '+' + (n - shown);
-      box.appendChild(m);
-    }
-  });
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id); if (el && el.textContent !== String(n)) el.textContent = String(n);
   });
-  // An empty line still shows life: one ghost car patrols it.
-  const patrol = rb.querySelector('.qt-patrol');
-  if (nr === 0 && !patrol){
-    const g = document.createElement('i'); g.className = 'qt-patrol'; rb.appendChild(g);
-  } else if (nr > 0 && patrol){ patrol.remove(); }
 
   if (!tr.dataset.tip){ tr.dataset.tip = '1'; qtTipWire(tr); }
 }
@@ -6751,25 +6727,39 @@ function paintTrain(queuedAll, runningAll, doneAll){
 function qtTipWire(tr){
   const tip = $('qtip');
   if (!tip) return;
-  const hide = () => tip.classList.remove('on');
+  let cur = null;
+  const hide = () => { tip.classList.remove('on'); if (cur) cur.classList.remove('qt-tip-on'); cur = null; };
+  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const show = c => {
     if (!c || !c._qt) return;
+    if (cur && cur !== c) cur.classList.remove('qt-tip-on');
+    cur = c; c.classList.add('qt-tip-on');
     tip.innerHTML = carTip(c._qt);
     tip.classList.add('on');
-    // position:fixed, so no card overflow can clip it; above the car when
-    // there is room in the viewport, else below.
-    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024;
-    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80;
-    const x = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
-    const y = r.top - hgt - 10;
+    // position:fixed beside the tile: below, else above, right, left; the first spot that
+    // stays inside the viewport without covering the jar's own lid.
+    const r = c.getBoundingClientRect(), vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+    const w = tip.offsetWidth || 240, hgt = tip.offsetHeight || 80, g = 8;
+    const lid = c.closest('.qt-jar') && c.closest('.qt-jar').querySelector('.qt-lid');
+    const lr = lid ? lid.getBoundingClientRect() : null;
+    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+    const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+    const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
+      && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
+    const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
-    tip.style.top = (y < 6 ? r.bottom + 10 : y) + 'px';
+    tip.style.top = y + 'px';
+    tip.dataset.side = ['bottom', 'top', 'right', 'left'][at];
+    tip.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+    tip.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-car') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
   tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
   tr.addEventListener('focusin', e => show(carOf(e.target)));
   tr.addEventListener('focusout', hide);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 }
 
 // P10-08 (#96): agents alive. Renders the collector's own already-computed
@@ -6795,8 +6785,9 @@ function renderQueue(){
       const hermes = kind === 'hermes', sid = hermes ? L.id : L.session_id;
       return {
         key: hermes ? `s:${sid}` : `${kind}:${sid}`, kind: 'r', eng: kind, sid, label: titleOf(L.title, L.model),
-        model: short(L.model) || '', profile: L.profile || '', hue: profileHue(L.profile || ''),
-        phase: L.phase || '', category: L.category || '', idle_s: L.idle_s,
+        model: short(L.model) || '', profile: L.profile || '', hue: hashHue(L.model || ''),
+        phase: L.phase || '', state: /compress/i.test(L.phase || '') ? 'compressing' : /wait|approv|blocked|input/i.test(L.phase || '') ? 'waiting' : 'running',
+        category: L.category || '', idle_s: L.idle_s,
         tools: (L.tools || []).length, nmodels: L.nmodels,
       };
     });
@@ -6806,7 +6797,7 @@ function renderQueue(){
     .sort((a, b) => (+b.last_ts || 0) - (+a.last_ts || 0))
     .map(s => ({
       key: `s:${s.id}`, kind: 'd', sid: s.id, label: titleOf(s.title, s.last_model || s.model),
-      model: short(s.last_model || s.model) || '', dur_s: s.dur_s, last_ts: s.last_ts,
+      model: short(s.last_model || s.model) || '', profile: current, dur_s: s.dur_s, last_ts: s.last_ts,
       tokens: s.tokens, api_calls: s.api_calls, hue: hashHue(s.last_model || s.model || ''),
     }));
 
@@ -6821,8 +6812,6 @@ function renderQueue(){
   }
 }
 
-// How many cars each section draws. Generous (the user asked for "as many as
-// you want"); past it a "+N" badge keeps the real total visible.
 function renderAgents(agents){
   const card = $('agentscard');
   if (!card) return;

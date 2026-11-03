@@ -72,18 +72,17 @@ setTimeout(() => {
   const d = w.document, rb = d.getElementById('qt-running');
   const items = Array.from({ length: 8 }, (_, i) => `{id:'r${i}', model:'m${i}', title:'car ${i}', idle_s:${i}}`).join(',');
   w.eval(`DATA.ollama = {hosts: []}; DATA.pi_live = []; DATA.agent_live = []; DATA.profiles[current].live = [${items}]; DATA.profiles[current].recent_sessions = []; renderQueue();`);
-  const consist = rb.querySelector('.qt-consist');
+  const consist = rb;
   const cars = [...consist.querySelectorAll('.qt-car[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
   chk(cars.length === 8, '8 running cars are rendered', cars.length);
   const cs = w.getComputedStyle(consist);
   chk(cs.position !== 'absolute', 'the consist is in flow (not absolutely slid out of the viewport)', cs.position);
-  chk(cs.display === 'grid' || /\.qt-cars,\.qt-consist\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the consist is a wrapping grid', cs.display);
+  chk(cs.display === 'grid' || /\.qt-cars\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the line is a wrapping grid', cs.display);
   const moved = [consist, ...cars].filter(e => e.style.transform || e.style.opacity === '0' || /qt-run/.test(w.getComputedStyle(e).animationName || ''));
   chk(moved.length === 0, 'no translate/animation/fade keeps any of the 8 cars off-screen', moved.length);
-  chk(!/\.qt-consist\{[^}]*(animation|transform:(?!none))/.test(html) && !/@keyframes qt-run\b/.test(html),
+  chk(!/@keyframes qt-run\b/.test(html),
       'no CSS animation or transform moves the consist');
-  const line = rule('.qt-line .qt-cars');
-  chk(!/overflow:hidden/.test(line) && !/(^|[^-])height:\d+px/.test(line), 'the line viewport does not clip (no fixed height/overflow:hidden)', line);
+  chk(/\.qt-cars\{[^}]*overflow-y:auto/.test(html) && !/\.qt-cars\{[^}]*overflow:hidden/.test(html), 'the jar scrolls rather than clips');
 
   console.log(`\ncheck_grafana_theme.js  ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
