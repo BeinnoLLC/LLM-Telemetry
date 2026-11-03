@@ -179,17 +179,16 @@ export function qtFly(tr, fromRect, toEl, cls){
   const g = document.createElement('div');
   g.className = 'qt-ghost ' + cls;
   g.style.cssText = `left:${fromRect.left - base.left}px;top:${fromRect.top - base.top}px;`
-    + `width:${fromRect.width}px;height:${fromRect.height}px`;
+    + `width:${to.width}px;height:${to.height}px`;
   const h = toEl.style.getPropertyValue('--h'); if (h) g.style.setProperty('--h', h);
   const lbl = toEl.querySelector('.qt-lbl'); g.textContent = lbl ? lbl.textContent : '';
   tr.appendChild(g);
   toEl.style.visibility = 'hidden';
   const dx = to.left - fromRect.left, dy = to.top - fromRect.top;
-  const sx = to.width / fromRect.width, sy = to.height / fromRect.height;
   const anim = g.animate([
-    { transform: 'translate(0,0) scale(1)' },
-    { transform: `translate(${dx / 2}px,${dy / 2 - 22}px) scale(${(1 + sx) / 2},${(1 + sy) / 2})`, offset: 0.55 },
-    { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` },
+    { transform: 'translate(0,0)' },
+    { transform: `translate(${dx / 2}px,${dy / 2 - 22}px)`, offset: 0.55 },
+    { transform: `translate(${dx}px,${dy}px)` },
   ], { duration: 950, easing: 'cubic-bezier(.45,.05,.3,1)' });
   let fin = false;
   const land = () => {
@@ -285,13 +284,15 @@ export function qtTipWire(tr){
     const lr = lid ? lid.getBoundingClientRect() : null;
     const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
     const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
-    const spots = [[cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+    const jr = c.closest('.qt-jar').getBoundingClientRect();
+    // outside the jar first (never over the other tiles), then beside the tile
+    const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
     const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
       && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
     const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
-    tip.dataset.side = ['bottom', 'top', 'right', 'left'][at];
+    tip.dataset.side = ['bottom', 'top', 'bottom', 'top', 'right', 'left'][at];
     tip.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
     tip.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
   };
@@ -300,6 +301,8 @@ export function qtTipWire(tr){
   tr.addEventListener('mouseout', e => { const c = carOf(e.target); if (c && !c.contains(e.relatedTarget)) hide(); });
   tr.addEventListener('focusin', e => show(carOf(e.target)));
   tr.addEventListener('focusout', hide);
+  tr.addEventListener('mouseleave', hide);
+  window.addEventListener('scroll', hide, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 }
 

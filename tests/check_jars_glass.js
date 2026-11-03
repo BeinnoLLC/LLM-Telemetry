@@ -38,6 +38,12 @@ chk(/@keyframes qt-wave\b/.test(html) && /@keyframes qt-bump\b/.test(html), 'wav
 chk(/@keyframes qt-arrive\{from\{opacity:0;transform:translateY\(-/.test(html), 'new queued tiles drop in from above');
 chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after\{transition:none;animation:none\}/.test(html), 'reduced motion: instant fill, no wave');
 
+// ---- LST-261 pass 2: ghost keeps the destination size (no scaled text), jar bottom padding, tooltip hides
+chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'flying ghost is sized like its destination tile and only translates (text stays 14px)');
+chk(/\.qt-body\{[^}]*padding:14px 8px 34px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
+chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'tile tooltip hides when the pointer leaves the jars');
+chk(/jr\.bottom \+ g/.test(html), 'tile tooltip prefers a spot outside the jar');
+
 const dom = boot('');
 setTimeout(() => {
   const w = dom.window, d = w.document, ev = s => w.eval(s);
