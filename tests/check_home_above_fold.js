@@ -114,11 +114,11 @@ setTimeout(async () => {
     chk(!after(qc, kpis) && !after(grid, qc), 'negative control: queue is neither before the scorecards nor after the table');
     const between = (a, b) => { const out = []; for (let n = a.nextElementSibling; n && n !== b; n = n.nextElementSibling) out.push(n); return out; };
     const gap = between(qc, grid);
-    chk(qc.parentElement === grid.parentElement && gap.length === 1 && gap[0].id === 'livetiles',
-      'nothing but the hidden tiles sits between queue and table', gap.map(n => n.id || n.tagName).join());
+    chk(qc.parentElement === grid.parentElement && gap.length === 0,
+      'nothing sits between queue and table', gap.map(n => n.id || n.tagName).join());
     const stray = d.createElement('div'); stray.id = 'stray'; grid.parentElement.insertBefore(stray, grid);
     const gap2 = between(qc, grid);
-    chk(!(gap2.length === 1 && gap2[0].id === 'livetiles'), 'negative control: an extra element between queue and table is detected');
+    chk(gap2.length === 1, 'negative control: an extra element between queue and table is detected');
     stray.remove();
     chk(d.querySelector('.page').dataset.pageview === 'Home', 'page carries data-pageview=Home so the Home ordering applies');
 

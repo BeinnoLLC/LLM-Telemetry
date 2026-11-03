@@ -182,25 +182,8 @@
 .fbdlg input.pk-on:checked::after{content:"";width:8px;height:4px;border:2px solid var(--accent-ink);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
-/* Per-agent tiles: status, model, phase, cost — always in that order. */
-.pk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-2,8px);margin-bottom:12px}
-.ftile{container-type:inline-size;display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;
-  background:var(--card);border:1px solid var(--border);border-left:3px solid var(--k);border-radius:var(--fb-r)}
-.ft-status{display:flex;align-items:center;gap:6px;font-size:var(--fs-sm)}
-.ft-dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);flex:none}
-.ftile[data-state="idle"] .ft-dot{background:var(--muted)}
-.ft-kind{color:var(--k);font-size:12px;line-height:1}
-.ft-model{font-size:var(--fs-sm);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ft-sub{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-.ft-phase{font-size:var(--fs-xs);padding:1px 6px;max-width:100%;border-radius:999px;background:var(--fb-surface);border:1px solid var(--border);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
 .lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:11px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.ft-cost .lvcov{flex-direction:row;align-items:center;gap:4px}
-.ft-cost .lvsubb{margin-top:0}
-.ft-cost{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;align-self:flex-end}
-/* narrow tiles: phase and cost share one line instead of stacking/wrapping */
-@container (max-width:240px){.ft-sub{flex-direction:row;align-items:center;justify-content:space-between}.ft-cost{align-self:auto;flex:none}}
 .fbwrap{min-width:0}
 /* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
 @media (max-width:960px){
@@ -212,7 +195,6 @@
   .fleetbar{height:auto;min-height:calc(var(--fb-h) + 10px);position:static}
   .pchip{padding:0 6px;gap:5px}
   .pchip .name{display:none}
-  .pk-tiles{grid-template-columns:1fr}
   .pk-grid{grid-template-columns:1fr}
   .pk-hue{width:48px}
 }

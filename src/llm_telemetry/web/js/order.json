@@ -1091,10 +1091,6 @@
   },
   {
    "mod": "live",
-   "name": "fleetTileHtml"
-  },
-  {
-   "mod": "live",
    "name": "kindBadge"
   },
   {
@@ -1168,10 +1164,6 @@
   {
    "mod": "live",
    "name": "agentLiveRows"
-  },
-  {
-   "mod": "live",
-   "name": "renderFleetTiles"
   },
   {
    "mod": "live",

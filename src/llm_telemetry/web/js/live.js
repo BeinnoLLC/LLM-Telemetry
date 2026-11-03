@@ -293,29 +293,6 @@ export function fleetKindCounts(profiles, piLive, agentLive){
 // A Hermes session quiet for longer than this reads Idle (the live query
 // itself drops sessions after 600s). PI/Claude/Codex report phase 'idle'.
 export const TILE_IDLE_S = 120;
-// Per-agent tile, fixed scan order: status, model, phase chip, cost.
-// Only already-sanitised fields ever reach the DOM (title, short model, coarse
-// phase) — never prompts, tool arguments or paths. A Hermes session's phase
-// chip is its short category token; its free-text last-activity sentence is
-// only offered as a truncated, escaped tooltip.
-export function fleetTileHtml(kind, S){
-  const meta = kindMeta(kind);
-  const hermes = kind === 'hermes';
-  const idle = hermes ? Number.isFinite(S.idle_s) && S.idle_s > TILE_IDLE_S : S.phase === 'idle';
-  const model = short(S.model) || '\u2014';
-  const chip = hermes ? (S.category || '\u2014') : (S.phase || '\u2014');
-  const tip = hermes && S.phase ? String(S.phase).slice(0, 80) : '';
-  const cost = Number.isFinite(S.cost_usd) ? '$' + S.cost_usd.toFixed(S.cost_usd < 1 ? 3 : 2) : '';
-  return `<div class="ftile" data-kind="${escA(kind)}" data-state="${idle ? 'idle' : 'run'}" style="--k:${meta.color}">`
-    + `<div class="ft-status"><span class="ft-dot" aria-hidden="true"></span>`
-    + `<span class="ft-kind" aria-hidden="true">${meta.sig}</span>`
-    + `<span class="ft-st">${idle ? 'Idle' : 'Running'}</span></div>`
-    + `<div class="ft-model" title="${escA(model)}">${esc(model)}</div>`
-    + `<div class="ft-sub"><span class="ft-phase"${tip ? ` title="${escA(tip)}"` : ''}>${esc(chip)}</span>`
-    + (cost ? (S.cost_class === 'subscription'
-      ? `<span class="ft-cost">${coveredCost(kind, cost)}</span>`
-      : `<span class="ft-cost">${esc(cost)}</span>`) : '') + `</div></div>`;
-}
 export function kindBadge(kind){
   const meta = kindMeta(kind);
   // Icon-only: the glyph carries the visible signal; the text label
@@ -520,23 +497,8 @@ function agentLiveRows(list){
   });
 }
 
-// Tiles under the fleet bar: one per live session of the kind the bar's
-// filter selects ('All' shows every kind), from the same fleetTiles() list the
-// count badges use.
-export function renderFleetTiles(){
-  const box = $('livetiles');
-  if (!box) return;
-  const bar = $('tabs');
-  const want = (bar && bar.dataset.kind) || 'all';
-  const tiles = fleetTiles(DATA.profiles, DATA.pi_live, DATA.agent_live)
-    .filter(t => want === 'all' || want === t.kind)
-    .map(t => fleetTileHtml(t.kind, t.S));
-  box.innerHTML = tiles.join('');
-  box.hidden = tiles.length === 0;
-}
 export function renderLive(){
   const p = DATA.profiles[current] || {};
-  renderFleetTiles();
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
   renderOllama(DATA.ollama);
   renderQueue();
