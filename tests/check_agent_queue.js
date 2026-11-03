@@ -45,7 +45,7 @@ const dom = new JSDOM(html, {
 setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
-    const cars = () => [...d.querySelectorAll('#qt-running .qt-car:not(.qt-leaving)')];
+    const cars = () => [...d.querySelectorAll('#qt-running .qt-ball:not(.qt-leaving)')];
     const kcount = k => cars().filter(c => c.dataset.kind === k).length;
     const kpi = () => d.querySelector('#kpis .kpi-live');
     const chip = k => { const e = kpi().querySelector(`.kpi-kind[data-kind="${k}"]`); return e ? parseInt(e.textContent.replace(/\D+/g, ''), 10) : 0; };
@@ -64,7 +64,7 @@ setTimeout(() => {
     chk(new Set(keys).size === keys.length, 'car keys are unique');
     chk(['claude:c-1', 'claude:c-2', 'codex:x-1', 'pi:p-1'].every(k => keys.includes(k)), 'keys are <kind>:<session id>', keys.join(','));
     const claudeCar = cars().find(c => c.dataset.key === 'claude:c-1');
-    chk(!!claudeCar && claudeCar.querySelector('.qt-kb') && /var\(--kind-claude\)/.test(claudeCar.style.getPropertyValue('--k')), 'car has kind badge and kind tint');
+    chk(!!claudeCar && /var\(--kind-claude\)/.test(claudeCar.style.getPropertyValue('--k')) && /Claude agent/.test(claudeCar.getAttribute('aria-label')), 'ball has the Claude colour and names the agent in its aria-label');
     chk(claudeCar._qt && claudeCar._qt.idle_s === 12, 'duplicate keeps the freshest session', claudeCar._qt && claudeCar._qt.idle_s);
     chk(/Claude/.test(w.eval(`carTip(document.querySelector('[data-key="claude:c-1"]')._qt)`)), 'tooltip names the engine');
 
@@ -105,31 +105,25 @@ setTimeout(() => {
     chk(/2\s*Claude/.test(kpi().textContent) && /1\s*Codex/.test(kpi().textContent), 'KPI text still says "N Claude" / "N Codex"');
     const words = /Claude/.test(kpi().textContent) && /Codex/.test(kpi().textContent) && /PI/.test(kpi().textContent) && /Hermes/.test(kpi().textContent);
     chk(words, 'all four kind names readable in the KPI', kpi().textContent.trim());
-    // Car badges: same kindMeta glyph, kind still named for a11y; Hermes cars stay plain.
+    // Balls carry no badge: the agent family is the ball colour, named in the aria-label.
     const badgeCar = k => cars().find(c => c.dataset.kind === k);
     ['claude', 'codex', 'pi'].forEach(k => {
       const car = badgeCar(k);
-      const kb = car && car.querySelector('.qt-kb');
-      if (k === 'pi') {
-        chk(!!kb && kb.textContent.length > 0 && !kb.querySelector('svg'), `${k} car carries a text-glyph kind badge`);
-      } else {
-        chk(!!logoOf(kb) && kb.querySelector('svg[data-kindlogo]').getAttribute('data-kindlogo') === k, `${k} car badge carries the ${k} brand logo`);
-      }
-      chk(!!car && new RegExp(k === 'codex' ? 'Codex' : k === 'claude' ? 'Claude' : 'PI agent').test(car.getAttribute('aria-label') || ''), `${k} car aria-label names the kind`, car && car.getAttribute('aria-label'));
-      chk(!!car && /var\(--kind-/.test(car.style.getPropertyValue('--k') || ''), `${k} car keeps its kind tint`);
+      chk(!!car && new RegExp(k === 'codex' ? 'Codex' : k === 'claude' ? 'Claude' : 'PI agent').test(car.getAttribute('aria-label') || ''), `${k} ball aria-label names the kind`, car && car.getAttribute('aria-label'));
+      chk(!!car && car.style.getPropertyValue('--k') === `var(--kind-${k})`, `${k} ball takes its kind colour`);
+      chk(!!car && car.classList.contains('qt-run'), `${k} ball is a running clip`);
     });
     const her = badgeCar('hermes');
-    chk(!!her && !her.querySelector('.qt-kb'), 'Hermes car has no kind badge');
+    chk(!!her && !her.querySelector('svg') && /var\(--kind-hermes\)/.test(her.style.getPropertyValue('--k')), 'Hermes ball is plain, in the Hermes colour');
     // Live rows and the provider badges reuse the same shared logos.
     w.eval('renderLive();');
     const rowBadge = k => d.querySelector(`#livelist [data-kindbadge="${k}"]`);
     chk(!!logoOf(rowBadge('claude')) && !!logoOf(rowBadge('codex')), 'live rows carry claude and codex logos');
     chk(!!rowBadge('pi') && !rowBadge('pi').querySelector('svg'), 'PI live row keeps its glyph');
     chk(new Set([...d.querySelectorAll('svg[data-kindlogo="claude"] path')].map(p => p.getAttribute('d'))).size === 1, 'every Claude logo uses the one shared path');
-    // Legibility: 12px logos read as blobs. Chips, car badges and live rows must render >= 15px.
+    // Legibility: 12px logos read as blobs. Chips and live rows must render >= 15px.
     const logoPx = svg => parseFloat(w.getComputedStyle(svg).width);
     const sized = [['KPI chip', chipEls.filter(isLogo).map(e => e.querySelector('svg[data-kindlogo]'))],
-      ['car badge', ['claude', 'codex'].map(k => badgeCar(k).querySelector('.qt-kb svg[data-kindlogo]'))],
       ['live row', ['claude', 'codex'].map(k => rowBadge(k).querySelector('svg[data-kindlogo]'))]];
     sized.forEach(([what, svgs]) => chk(svgs.length === 2 && svgs.every(sv => logoPx(sv) >= 15 && parseFloat(w.getComputedStyle(sv).height) >= 15), `${what} logos render >= 15px`, svgs.map(logoPx).join(',')));
     chk(/sessions/i.test(d.querySelector('#livekpis [data-kpi="sessions"]').textContent)

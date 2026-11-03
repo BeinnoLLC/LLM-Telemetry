@@ -73,16 +73,16 @@ setTimeout(() => {
   const items = Array.from({ length: 8 }, (_, i) => `{id:'r${i}', model:'m${i}', title:'car ${i}', idle_s:${i}}`).join(',');
   w.eval(`DATA.ollama = {hosts: []}; DATA.pi_live = []; DATA.agent_live = []; DATA.profiles[current].live = [${items}]; DATA.profiles[current].recent_sessions = []; renderQueue();`);
   const consist = rb;
-  const cars = [...consist.querySelectorAll('.qt-car[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
+  const cars = [...consist.querySelectorAll('.qt-ball[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
   chk(cars.length === 8, '8 running cars are rendered', cars.length);
   const cs = w.getComputedStyle(consist);
   chk(cs.position !== 'absolute', 'the consist is in flow (not absolutely slid out of the viewport)', cs.position);
-  chk(cs.display === 'grid' || /\.qt-cars\{[^}]*grid-template-columns:repeat\(auto-fill/.test(html), 'the line is a wrapping grid', cs.display);
+  chk(cs.display !== 'none' && /\.qt-cars\{[^}]*position:relative/.test(html), 'the line is a positioned ball box', cs.display);
   const moved = [consist, ...cars].filter(e => e.style.transform || e.style.opacity === '0' || /qt-run/.test(w.getComputedStyle(e).animationName || ''));
   chk(moved.length === 0, 'no translate/animation/fade keeps any of the 8 cars off-screen', moved.length);
   chk(!/@keyframes qt-run\b/.test(html),
       'no CSS animation or transform moves the consist');
-  chk(/\.qt-cars\{[^}]*overflow-y:auto/.test(html) && !/\.qt-cars\{[^}]*overflow:hidden/.test(html), 'the jar scrolls rather than clips');
+  chk(/\.qt-cars\{[^}]*overflow:hidden/.test(html) && !/\.qt-cars\{[^}]*overflow-y:(auto|scroll)/.test(html), 'the jar never scrolls (balls shrink, then "+N")');
 
   console.log(`\ncheck_grafana_theme.js  ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

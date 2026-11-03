@@ -65,8 +65,8 @@ setTimeout(() => {
     // ---- Task queue (railway): running car leads with title, not model ----
     // The lanes were removed (#140 follow-up); the train cars now carry the
     // label, and the hover card carries the model as secondary info.
-    const car = k => d.querySelector(`#qtrain .qt-car[data-key="${k}"]`);
-    const lbl = c => c.querySelector('.qt-lbl').textContent;
+    const car = k => d.querySelector(`#qtrain .qt-ball[data-key="${k}"]`);
+    const lbl = c => c._qt.label;
     const runCar = car('s:tlive1');
     chk(!!runCar, 'running car for the titled session exists');
     chk(lbl(runCar) === 'Refactor the billing parser',

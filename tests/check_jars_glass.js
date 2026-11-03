@@ -1,4 +1,4 @@
-// LST-261: Home order (range + KPI above the jars), glass jars, FLIP/fly code path,
+// LST-261: Home order (range + KPI above the jars), glass jars of balls, fly code path,
 // reduced-motion, and the inert ?demoQueue=1 hook. Loads the BUILT dashboard.
 const fs = require('fs');
 const path = require('path');
@@ -39,14 +39,25 @@ chk(/\.qt-lid::after\{/.test(html) && !/\.qt-lid\{[^}]*justify-content:space-bet
 chk(/\.qt-body::before\{[^}]*transition:height \.8s cubic-bezier/.test(html), 'fill level eases on height');
 chk(/\.qt-jar\.qt-splash \.qt-body::after\{[^}]*qt-splash/.test(html) && /@keyframes qt-splash\b/.test(html), 'yard splash keyframes exist');
 chk(/@keyframes qt-wave\b/.test(html) && /@keyframes qt-bump\b/.test(html), 'wave and count-bump keyframes exist');
-chk(/@keyframes qt-arrive\{from\{opacity:0;transform:translateY\(-/.test(html), 'new queued tiles drop in from above');
+chk(/@keyframes qt-ball-in\{0%\{opacity:0;transform:translateY\(calc\(var\(--drop,60px\) \* -1\)\)\}/.test(html) && /\.qt-ball\.qt-arrive\{animation:qt-ball-in/.test(html), 'a new ball drops in from above with a bounce');
 chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after,[^{]*\{transition:none;animation:none\}/.test(html), 'reduced motion: instant fill, no wave');
+chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-ball\.qt-arrive,\.qt-ball\.qt-land\{animation:qt-ball-fade[^]*?\.qt-run \.qt-ball-g\{box-shadow:0 0 0 3px[^]*?\.qt-ghost\{display:none\}/.test(html), 'reduced motion: no bounce or flight, a static halo on running balls');
+
+// ---- balls: material, no scrolling anywhere in a jar, hit target, popover shell
+chk(/\.qt-ball\{[^}]*border-radius:50%[^}]*radial-gradient\(circle at 32% 26%[^}]*box-shadow:inset 0 -2px 2px/.test(html), 'a ball is a glossy resin bead (highlight, core shadow, contact shadow)');
+chk(/\.qt-ball\.qt-run\{[^}]*border-radius:46%/.test(html) && /@keyframes qt-ball-pulse\b/.test(html), 'running = a hooked clip with a pulsing halo');
+chk(/\.qt-ball\.qt-warn\{[^}]*0 0 0 2px var\(--z-warn\)/.test(html), 'waiting/stuck = a thin ring');
+chk(!/\.qt-(?:cars|body|jar|sec)\{[^}]*overflow(?:-y)?:(?:auto|scroll)/.test(html), 'no jar rule scrolls');
+chk(/\.qt-overflow\{[^}]*font-size:14px/.test(html), 'the +N chip is 14px');
+chk(/@media \(pointer:coarse\)\{\.qt-ball::before\{[^}]*inset:calc\(\(32px - 100%\) \/ -2\)/.test(html), 'touch screens get a 32px hit area on small balls');
+chk(/\.qt-legend\{/.test(html) && /qt-sw-claude\{--k:var\(--kind-claude\)/.test(html), 'a legend names the ball colours');
+chk(!/#[0-9a-fA-F]{3,8}\b/.test((html.match(/\.qt-ball\{[^}]*\}/) || [''])[0]), 'ball CSS has no hex colour literals');
 
 // ---- LST-261 pass 2: ghost keeps the destination size (no scaled text), jar bottom padding, tooltip hides
-chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'flying ghost is sized like its destination tile and only translates (text stays 14px)');
-chk(/\.qt-body\{[^}]*padding:30px 10px/.test(html), 'jar body has bottom padding past the rounded corner so the last tile is not cut');
-chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'tile tooltip hides when the pointer leaves the jars');
-chk(/jr\.bottom \+ g/.test(html), 'tile tooltip prefers a spot outside the jar');
+chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'the flying ghost is a ball the size of its destination and only translates/rotates');
+chk(/\.qt-body\{[^}]*padding:26px 8px 12px/.test(html), 'jar body keeps padding inside the rounded corners');
+chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'ball tooltip hides when the pointer leaves the jars');
+chk(/jr\.bottom \+ g/.test(html), 'ball tooltip prefers a spot outside the jar');
 
 const dom = boot('');
 setTimeout(() => {
@@ -54,7 +65,7 @@ setTimeout(() => {
   try {
     const FOLLOW = w.Node.DOCUMENT_POSITION_FOLLOWING;
     chk(d.querySelectorAll('.qt-jar').length === 3, 'three jars');
-    chk([...d.querySelectorAll('.qt-jar')].every(j => j.querySelector('.qt-lid > .qt-n') && j.querySelector('.qt-body > .qt-cars')) && d.querySelectorAll('.qt-sec > .qt-name').length === 3, 'each jar: count on the lid, tiles in the body, label under the jar');
+    chk([...d.querySelectorAll('.qt-jar')].every(j => j.querySelector('.qt-lid > .qt-n') && j.querySelector('.qt-body > .qt-cars')) && d.querySelectorAll('.qt-sec > .qt-name').length === 3, 'each jar: count on the lid, balls in the body, label under the jar');
     ev(`DATA.ollama={hosts:[]}; DATA.pi_live=null; DATA.agent_live=null; DATA.profiles[current].live=[]; DATA.profiles[current].recent_sessions=[]; renderQueue();`);
     ev(`paintTrain([], [], [])`);
     chk(d.getElementById('qt-done').closest('.qt-jar').style.getPropertyValue('--wv') === '0', 'empty jar has no wave');
@@ -71,15 +82,34 @@ setTimeout(() => {
     ev(`DATA.ollama={hosts:[]}; DATA.pi_live=null; DATA.agent_live=null; DATA.profiles[current].live=[]; DATA.profiles[current].recent_sessions=[]; renderQueue();`);
     ev(`paintTrain([], [{key:'s:x1',kind:'r',eng:'hermes',label:'T1',state:'running',idle_s:1,hue:10}], [])`);
     const rb = d.getElementById('qt-running'), db = d.getElementById('qt-done');
-    chk(rb.querySelector('[data-key="s:x1"]'), 'running tile keyed by task id');
+    chk(rb.querySelector('[data-key="s:x1"]'), 'running ball keyed by task id');
+    chk(d.getElementById('qpop') && d.getElementById('qpop').getAttribute('role') === 'dialog', 'click popover shell exists');
+    chk(rb.querySelector('[data-key="s:x1"]').tagName === 'BUTTON' && /running/.test(rb.querySelector('[data-key="s:x1"]').getAttribute('aria-label')), 'a ball is a focusable button with an aria-label');
     const rect = (l, t) => ({ left: l, top: t, width: 100, height: 50, right: l + 100, bottom: t + 50 });
     const calls = [];
-    w.Element.prototype.getBoundingClientRect = function () { return this.classList && this.classList.contains('qt-car') && this.parentNode === db ? rect(400, 10) : rect(10, 10); };
-    w.Element.prototype.animate = function (kf, o) { calls.push({ kf, o, cls: this.className }); return {}; };
+    w.Element.prototype.getBoundingClientRect = function () { return this.classList && this.classList.contains('qt-ball') && this.parentNode === db ? rect(400, 10) : rect(10, 10); };
+    const anims = [];
+    w.Element.prototype.animate = function (kf, o) { calls.push({ kf, o, cls: this.className }); const a = {}; anims.push(a); return a; };
+    const yardJar = d.querySelector('.qt-yard .qt-jar');
+    yardJar.classList.remove('qt-splash');
     ev(`paintTrain([], [], [{key:'s:x1',kind:'d',label:'T1',hue:10,last_ts:Date.now()/1000}])`);
     const fly = calls.find(c => /qt-ghost/.test(c.cls));
     chk(!!fly && fly.kf.length === 3 && fly.o.duration >= 600 && fly.o.duration <= 1000, 'running->done flies a ghost along a 3-point arc', JSON.stringify(calls.map(c => c.cls)));
     chk(!!db.querySelector('[data-key="s:x1"]'), 'same key lands in the yard');
+    chk(!yardJar.classList.contains('qt-splash'), 'no splash while the ball is still in the air');
+    anims[0].onfinish();
+    chk(yardJar.classList.contains('qt-splash'), 'the splash fires when the ball lands');
+    chk(!db.querySelector('[data-key="s:x1"]').style.visibility, 'the real ball is revealed on landing');
+    // six balls move at once: at most four fly, 70ms apart; the rest just appear
+    calls.length = 0; anims.length = 0;
+    const six = n => Array.from({ length: 6 }, (_, i) => `{key:'s:m${i}',kind:'${n}',eng:'hermes',label:'M${i}',state:'running',idle_s:1,last_ts:Date.now()/1000}`).join(',');
+    ev(`paintTrain([], [${six('r')}], [])`);
+    calls.length = 0; anims.length = 0;
+    ev(`paintTrain([], [], [${six('d')}])`);
+    const ghosts = calls.filter(c => /qt-ghost/.test(c.cls));
+    chk(ghosts.length === 4, 'at most four balls fly at once', ghosts.length);
+    chk(ghosts.map(g => g.o.delay).join() === '0,70,140,210', 'flights are staggered by 70ms', ghosts.map(g => g.o.delay).join());
+    chk(ghosts.every(g => g.kf[2].transform.includes('rotate(220deg)')), 'balls tumble along the arc');
     chk(d.getElementById('qt-n-done').classList.contains('qt-bump'), 'yard count bumps');
   } catch (e) { fail++; console.log('  FAIL threw', e && e.stack); }
 
@@ -91,7 +121,7 @@ setTimeout(() => {
       w2.eval(`paintTrain([], [{key:'s:y',kind:'r',eng:'hermes',label:'Y',state:'running',idle_s:1,hue:1}], [])`);
       w2.Element.prototype.getBoundingClientRect = () => ({ left: 5, top: 5, width: 90, height: 40 });
       w2.Element.prototype.animate = () => ({});
-      w2.eval(`window.__r = qtFly(document.getElementById('qtrain'), {left:0,top:0,width:50,height:20}, document.querySelector('.qt-car'), 'x')`);
+      w2.eval(`window.__r = qtFly(document.getElementById('qtrain'), {left:0,top:0,width:50,height:20}, document.querySelector('.qt-ball'), 'x')`);
       chk(w2.__r === false, 'reduced motion: qtFly does not animate');
     } catch (e) { fail++; console.log('  FAIL threw2', e && e.stack); }
     // demo hook active

@@ -17,7 +17,7 @@ chk(has(/\.grid-home\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/), 
 chk(has(/\.xp-blurb\{[^}]*white-space:normal;display:-webkit-box;[^}]*-webkit-line-clamp:2/), 'Explore blurbs wrap to 2 lines');
 chk(has(/--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px/), 'one control size scale: sm 28 / md 32 / lg 44');
 chk(has(/\.csvbtn,\.dt-dens button[^{]*\{min-height:var\(--ctl-sm\)/) && has(/min-height:var\(--ctl-lg\)/), 'chips, density toggle, Export CSV use the scale; touch size on phones');
-chk(has(/@media \(max-width:1100px\) and \(min-width:900px\)\{\.qtrain\{gap:12px\}/) && has(/@media \(max-width:899px\)\{\.qtrain\{grid-template-columns:minmax\(0,1fr\)\}\}/), 'three jars stay side by side down to 900px');
+chk(has(/@media \(max-width:1100px\) and \(min-width:900px\)\{\.qtrain\{gap:12px\}/) && has(/@media \(max-width:899px\)\{\.qtrain\{grid-template-columns:minmax\(0,1fr\)\}/), 'three jars stay side by side down to 900px');
 chk(has(/\.card:has\(> \[id\$="empty"\]:not\(\[hidden\]\)\) > div\[style\*="height"\]/), 'empty cards collapse to one line');
 chk(has(/<details class="olurls"><summary>/) && has(/\+\$\{urls\.length - 1\} more/), 'local inference hosts show the first endpoint plus "+N more"');
 chk(has(/\.lgtag\{[^}]*overflow:visible;text-overflow:clip;min-width:66px\}/), 'Logs role/tool tags are not truncated');

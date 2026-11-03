@@ -54,8 +54,8 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   const tr = d.getElementById('qtrain');
   const qb = d.getElementById('qt-queued'), rb = d.getElementById('qt-running'), db = d.getElementById('qt-done');
-  const cars = box => [...box.querySelectorAll('.qt-car[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
-  const lbl = c => c.querySelector('.qt-lbl').textContent;
+  const cars = box => [...box.querySelectorAll('.qt-ball[data-key]')].filter(c => !c.classList.contains('qt-leaving'));
+  const lbl = c => c._qt.label;
   const n = id => d.getElementById(id).textContent;
   try {
     chk(!!tr && !!qb && !!rb && !!db, 'jars: depot, line and yard exist');
@@ -86,10 +86,10 @@ setTimeout(() => {
         'task queue renders before the 6h series panel');
 
     // ---- CSS: the motion really exists and is wired -----------------------
-    for (const k of ['qt-arrive', 'qt-park', 'qt-depart', 'qt-land'])
+    for (const k of ['qt-ball-in', 'qt-ball-land', 'qt-ball-out', 'qt-ball-pulse'])
       chk(new RegExp('@keyframes ' + k + '\\b').test(html), `@keyframes ${k} defined`);
     chk(!/@keyframes qt-run\b/.test(html), 'no sliding train animation');
-    chk(/\.qt-cars\{[^}]*grid-template-columns:repeat\(auto-fill[^}]*overflow-y:auto/.test(html), 'each jar wraps its tiles and scrolls inside');
+    chk(/\.qt-cars\{[^}]*overflow:hidden/.test(html) && !/\.qt-cars\{[^}]*overflow-y:auto/.test(html), 'a jar never scrolls: balls are placed absolutely inside a clipped box');
     chk(d.querySelectorAll('.qt-jar').length === 3, 'three jars: depot, line, yard');
     chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get still jars');
     chk(/prefers-reduced-motion: reduce\)\{[^}]*\.qtrain \*::before[^}]*\.qtrain \*::after\{animation:none/.test(html), 'reduced-motion rule also covers ::before/::after pseudo-elements');
@@ -99,7 +99,7 @@ setTimeout(() => {
       chk(html.includes('Math.log10(61)'), 'jar fill uses the log-scaled formula');
       chk(fillOf(10) < fillOf(27) && fillOf(27) < fillOf(60) && fillOf(60) <= 92 && fillOf(0) === 0 && fillOf(1) > 12, 'jar fill still tells 10, 27 and 60 tasks apart and stays capped');
     }
-    chk(/\.qt-cars:not\(:has\(\.qt-car\)\)::after\{content:attr\(data-empty\)/.test(html) && !!d.getElementById('qt-done').dataset.empty, 'an empty section says so instead of drawing nothing');
+    chk(/\.qt-cars:not\(:has\(\.qt-ball\)\)::after\{content:attr\(data-empty\)/.test(html) && !!d.getElementById('qt-done').dataset.empty, 'an empty section says so instead of drawing nothing');
     chk(!d.querySelector('.qt-shunter, .qt-rail, .qt-signal'), 'the train furniture (shunter, rail, signal) is gone');
 
     // ---- empty line --------------------------------
@@ -142,11 +142,11 @@ setTimeout(() => {
     chk(run.map(lbl).join('|') === 'one|two|gpt-5', 'line: titles lead, untitled falls back to the model', run.map(lbl).join('|'));
     chk(run.every(c => c.dataset.state === 'running') && run.some(c => c.dataset.state), 'line: tiles carry a live state');
     chk(n('qt-n-running') === '3', 'line: count badge');
-    chk(Number(run[0].style.getPropertyValue('--h')) === w.eval(`hashHue('qwen3-coder:30b')`), 'line: stripe colour comes from the model hue');
+    chk(/var\(--kind-hermes\)/.test(run[0].style.getPropertyValue('--k')), 'line: ball colour comes from the agent family');
     run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
-    chk(/\.qt-lbl\{[^}]*-webkit-line-clamp:3/.test(html) && /\.qt-car\{[^}]*min-height:64px/.test(html), 'tiles wrap titles to three lines');
-    chk(!!run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent.length > 0, 'a car carries a meta line (age, owner, short id)', run[0].querySelector('.qt-meta') && run[0].querySelector('.qt-meta').textContent);
+    chk(run[0].tagName === 'BUTTON' && /one/.test(run[0].getAttribute('aria-label')), 'a ball is a button whose aria-label carries the title');
+    chk(/1s ago/.test(run[0].getAttribute('aria-label')), 'the aria-label carries age, owner and short id', run[0].getAttribute('aria-label'));
     chk(w.eval(`carMeta({kind:'q',host:'box-a',pos:2,depth:5})`) === 'box-a \u00b7 2 of 5', 'depot car meta: host and position');
     chk(w.eval(`carMeta({kind:'r',profile:'p1',idle_s:90,sid:'abcdef123456'})`) === '2m ago \u00b7 p1 \u00b7 #123456', 'line car meta: age, profile and short id tell duplicate titles apart');
 
@@ -155,20 +155,21 @@ setTimeout(() => {
     w.eval(`DATA.profiles[current].live = DATA.profiles[current].live.slice(1);
       DATA.profiles[current].recent_sessions = [{id:'t1', title:'one', model:'qwen3-coder:30b', last_ts: Date.now()/1000, dur_s: 42, tokens: 2048, api_calls: 3}];
       renderQueue();`);
-    chk(t1.classList.contains('qt-leaving'), 'line -> yard: the car departs the line');
+    chk(!cars(rb).includes(t1), 'line -> yard: the ball leaves the line');
     const parked = cars(db);
     chk(parked.length === 1 && parked[0].dataset.key === 's:t1', 'line -> yard: it is parked in the yard');
-    chk(parked[0].classList.contains('qt-newest'), 'yard: the newest arrival is highlighted');
+    chk(parked[0].classList.contains('qt-d'), 'yard: the parked ball is a done ball');
     parked[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/ran for/.test(tip.textContent) && /2\.0k/.test(tip.textContent), 'hover: yard card has duration and tokens', tip.textContent);
 
-    // ---- no caps: every task is a tile, the jar scrolls ---------------------
+    // ---- cap: at most 60 balls per jar, the true total on the lid, never a scrollbar ----
     w.eval(`DATA.ollama.hosts[0].queue = 60; renderQueue();`);
     chk(cars(qb).length === 60 && n('qt-n-queued') === '60', 'depot: all 60 waiting tasks drawn', cars(qb).length);
     const many = Array.from({ length: 150 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
     w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}; renderQueue();`);
-    chk(cars(db).length === 150 && n('qt-n-done') === '150', 'yard: all 150 done tasks drawn', cars(db).length);
-    chk(!d.querySelector('.qt-more'), 'no "+N" badge anywhere');
+    chk(cars(db).length === 59 && n('qt-n-done') === '150', 'yard: 59 balls drawn, the lid keeps the true 150', cars(db).length);
+    chk(db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent === '+91', 'yard: a +91 chip takes the 60th slot', db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent);
+    chk(!qb.querySelector('.qt-overflow'), 'depot at exactly 60: no chip');
     chk(cars(db).every(c => c.tabIndex === 0), 'yard: every tile is focusable');
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(tip.classList.contains('on') && tip.textContent.includes(cars(db)[3]._qt.label), 'yard: tooltip carries the full title');
