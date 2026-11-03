@@ -112,7 +112,6 @@ setTimeout(() => {
     chk(tr.classList.contains('backed'), 'depot: signal goes red (backed)');
     chk(/backed up on box-a, box-b/.test(d.getElementById('qsub').textContent), 'subtitle names both busy hosts');
     const depotKeep = cars(qb)[0];
-    w.eval('renderQueue()');
     chk(cars(qb)[0] === depotKeep, 'depot: an identical poll keeps the same car element');
 
     // ---- hover card on a real car -----------------------------------------
@@ -157,18 +156,30 @@ setTimeout(() => {
     parked[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/ran for/.test(tip.textContent) && /2\.0k/.test(tip.textContent), 'hover: yard card has duration and tokens', tip.textContent);
 
-    // ---- cap: at most 60 balls per jar, the true total on the lid, never a scrollbar ----
-    w.eval(`DATA.ollama.hosts[0].queue = 60; renderQueue();`);
-    chk(cars(qb).length === 60 && n('qt-n-queued') === '60', 'depot: all 60 waiting tasks drawn', cars(qb).length);
+    // ---- cap: at most 40 balls per jar (bigger marbles), the true total on the lid, never a scrollbar ----
+    w.eval(`DATA.ollama.hosts[0].queue = 40; renderQueue();`);
+    chk(cars(qb).length === 40 && n('qt-n-queued') === '40', 'depot: all 40 waiting tasks drawn', cars(qb).length);
     const many = Array.from({ length: 150 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
     w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}; renderQueue();`);
-    chk(cars(db).length === 59 && n('qt-n-done') === '150', 'yard: 59 balls drawn, the lid keeps the true 150', cars(db).length);
-    chk(db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent === '+91', 'yard: a +91 chip takes the 60th slot', db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent);
-    chk(!qb.querySelector('.qt-overflow'), 'depot at exactly 60: no chip');
+    chk(cars(db).length === 39 && n('qt-n-done') === '150', 'yard: 39 balls drawn, the lid keeps the true 150', cars(db).length);
+    chk(db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent === '+111', 'yard: a +111 chip takes the 40th slot (counts exactly what is not drawn)', db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent);
+    chk(!qb.querySelector('.qt-overflow'), 'depot at exactly 40: no chip');
+    // ---- glyphs: every ball carries its family letter, the legend shows the same ones ----
+    const G = w.eval('QT_GLYPH');
+    chk(G.hermes === 'H' && G.pi === '\u03C0' && G.claude === 'C' && G.codex === 'X' && G.ollama === 'O', 'glyph map: H, pi, C, X, O');
+    chk(cars(qb).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === 'O'), 'depot balls show O');
+    chk(cars(db).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === 'H'), 'yard balls show H');
+    const sw = fam => { const e = d.querySelector('.qt-legend .qt-sw-' + fam + ' .qt-gl'); return e && e.textContent; };
+    chk(sw('hermes') === G.hermes && sw('pi') === G.pi && sw('claude') === G.claude && sw('codex') === G.codex && sw('wait') === G.ollama, 'legend swatches show the same glyphs');
+    chk(/\.qt-gl\{[^}]*color:hsl\(225 25% 6%\)/.test(html) && /\.qt-gl\{[^}]*max\(10px,/.test(html), 'glyph is near-black and never under 10px');
+    chk(/\.qt-cars\{[^}]*overflow:hidden/.test(html) && w.eval('QT_MAX') === 28 && w.eval('QT_MIN') === 18, 'no scrolling in a jar; ball ladder 28px -> 18px');
     chk(cars(db).every(c => c.tabIndex === 0), 'yard: every tile is focusable');
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(tip.classList.contains('on') && tip.textContent.includes(cars(db)[3]._qt.label), 'yard: tooltip carries the full title');
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true, relatedTarget: d.body }));
+    w.eval(`paintTrain([], ['hermes','pi','claude','codex'].map((e, i) => ({key:'g:' + e, kind:'r', eng:e, label:'T' + e, state: i === 3 ? 'waiting' : 'running', idle_s:1, hue:10})), [])`);
+    const gl = cars(rb).map(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent).sort().join('');
+    chk(gl === ['H', '\u03C0', 'C', 'X'].sort().join(''), 'running clips (incl. the waiting ring one) keep their family glyph', gl);
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));

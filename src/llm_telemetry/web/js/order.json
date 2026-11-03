@@ -931,6 +931,14 @@
   },
   {
    "mod": "flow",
+   "name": "QT_GLYPH"
+  },
+  {
+   "mod": "flow",
+   "name": "qtGlyphKey"
+  },
+  {
+   "mod": "flow",
    "name": "QT_FILL"
   },
   {
