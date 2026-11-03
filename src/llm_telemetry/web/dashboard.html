@@ -193,12 +193,13 @@ __DASHBOARD_CSS__
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
    </div>
    <div class="qtrain" id="qtrain">
-    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="list" data-empty="Nothing queued"></div></div></div><div class="qt-name">Depot</div></section>
-    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="list" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
-    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="list" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
+    <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="group" aria-label="Waiting tasks" data-empty="Nothing queued"></div></div></div><div class="qt-name">Depot</div></section>
+    <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="group" aria-label="Running tasks" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
+    <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="group" aria-label="Finished tasks" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
    </div>
-   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw"></i>Stripe colour = model</span><span><i class="qt-dot"></i>Pulsing dot = live now (square: compressing, amber: waiting)</span></div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"></i>Hermes</span><span><i class="qt-sw qt-sw-pi"></i>Pi</span><span><i class="qt-sw qt-sw-claude"></i>Claude</span><span><i class="qt-sw qt-sw-codex"></i>Codex</span><span><i class="qt-sw qt-sw-wait"></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
+   <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
