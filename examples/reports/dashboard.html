@@ -894,28 +894,40 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
 .qt-line{--jc:var(--z-ok)}
 .qt-yard{--jc:var(--accent)}
-.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px}
-.qt-lid{position:relative;z-index:3;align-self:center;width:44%;min-width:76px;height:26px;display:flex;align-items:center;justify-content:center;
-  border:1.5px solid rgba(255,255,255,.3);border-radius:8px 8px 4px 4px;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 42%,white 10%),color-mix(in srgb,var(--jc) 40%,black));
-  box-shadow:0 2px 6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35)}
-.qt-lid::after{content:"";position:absolute;top:calc(100% - 1px);left:7%;right:7%;height:15px;
-  border:1.5px solid rgba(255,255,255,.22);border-top:0;background:linear-gradient(90deg,rgba(255,255,255,.14),rgba(255,255,255,.03))}
-.qt-name{margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--fg))}
-.qt-n{font-weight:700;font-size:var(--fs-sm);line-height:1;color:white;text-shadow:0 1px 1px rgba(0,0,0,.5)}
-.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-2px;min-height:300px;padding:26px 8px 12px;
-  border:1.5px solid rgba(255,255,255,.22);border-radius:46px 46px 34px 34px;overflow:hidden;
-  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
+  filter:drop-shadow(0 0 .7px rgba(255,255,255,.75)) drop-shadow(0 0 1px rgba(255,255,255,.3))}
+.qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 72%)}
+.qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
+  background:linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px),
+    linear-gradient(90deg,rgba(0,0,0,.35),transparent 20%,rgba(255,255,255,.08) 40%,transparent 60%,rgba(0,0,0,.4)),
+    linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,white 22%),color-mix(in srgb,var(--bg) 70%,black));
+  box-shadow:0 0 0 1px rgba(255,255,255,.18),0 3px 5px rgba(0,0,0,.55),inset 0 -5px 0 -3px rgba(0,0,0,.4)}
+.qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:3px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.25),rgba(0,0,0,.45));box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--fg))}
+.qt-n{position:relative;z-index:1;font-weight:700;font-size:14px;line-height:1;color:white;text-shadow:0 1px 1px rgba(0,0,0,.6)}
+
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-6px;min-height:300px;padding:84px 8px 14px;
+  border-radius:0 0 30px 30px;overflow:hidden;
+  clip-path:polygon(26.0% 0px,26.0% 16px,21.5% 17px,17.1% 21px,13.0% 27px,9.3% 35px,6.1% 45px,3.5% 56px,1.6% 69px,0.4% 82px,0.0% 96px,0 100%,100% 100%,100.0% 96px,99.6% 82px,98.4% 69px,96.5% 56px,93.9% 45px,90.7% 35px,87.0% 27px,82.9% 21px,78.5% 17px,74.0% 16px,74.0% 0px);
+  background:linear-gradient(90deg,transparent calc(100% - 16px),rgba(255,255,255,.1) calc(100% - 11px),transparent calc(100% - 5px)) no-repeat,
+    linear-gradient(180deg,transparent calc(100% - 12px),rgba(255,255,255,.13)) no-repeat,
+    linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.02) 14%,rgba(255,255,255,.015) 86%,rgba(255,255,255,.07)),
+    linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
   -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
-  box-shadow:inset 0 -16px 22px -12px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.04),0 8px 16px -8px rgba(0,0,0,.55)}
-.qt-jar::after{content:"";position:absolute;z-index:2;left:15px;top:52px;bottom:46px;width:7px;border-radius:6px;pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.07) 55%,transparent);filter:blur(2.5px)}
+  box-shadow:inset 2px 0 0 rgba(255,255,255,.35),inset -2px 0 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(255,255,255,.14),
+    inset 5px 0 8px -4px rgba(255,255,255,.14),inset 0 -22px 24px -14px rgba(0,0,0,.55)}
+.qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:6px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.22) 60%,rgba(255,255,255,.05));filter:blur(2px)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 26%,transparent),color-mix(in srgb,var(--jc) 40%,transparent));
+  background:linear-gradient(90deg,rgba(0,0,0,.22),transparent 16%,transparent 84%,rgba(0,0,0,.18)),
+    linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,black 10%));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
 .qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:9px;margin-bottom:-1px;pointer-events:none;transform-origin:50% 100%;
-  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 40%,transparent) 98%,transparent) 0 0/28px 9px repeat-x;
-  border-bottom:2px solid color-mix(in srgb,var(--jc) 45%,white 30%);
+  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 55%,white 15%) 98%,transparent) 0 0/28px 9px repeat-x;
+  border-bottom:2px solid color-mix(in srgb,var(--jc) 30%,white 70%);
   opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
 .qt-jar.qt-splash .qt-body::after{animation:qt-wave 3.2s linear infinite,qt-splash 1s ease-out}
 .qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out}
@@ -926,23 +938,28 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
 
 #qcard{--qk-wait:hsl(215 16% 62%)}
-.qt-ball{position:absolute;z-index:2;min-width:0;min-height:0;width:var(--sz,20px);height:var(--sz,20px);margin:calc(var(--sz,20px) / -2) 0 0 calc(var(--sz,20px) / -2);
+.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,20px);height:var(--sz,20px);margin:calc(var(--sz,20px) / -2) 0 0 calc(var(--sz,20px) / -2);
   padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
-  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.8),rgba(255,255,255,.1) 34%,transparent 48%),
-    radial-gradient(circle at 70% 80%,rgba(0,0,0,.4),transparent 55%),var(--k,var(--qk-wait));
-  box-shadow:inset 0 -2px 2px rgba(0,0,0,.32),inset 0 1.5px 1.5px rgba(255,255,255,.4),0 2px 3px rgba(0,0,0,.5);
+  background:radial-gradient(circle at 32% 26%,white 0,rgba(255,255,255,.92) 8%,rgba(255,255,255,0) 21%),
+    radial-gradient(circle at 36% 30%,rgba(255,255,255,.3),transparent 50%),
+    radial-gradient(circle at 70% 80%,rgba(0,0,0,.38),transparent 60%),
+    radial-gradient(circle at 45% 42%,var(--k,var(--qk-wait)) 25%,color-mix(in srgb,var(--k,var(--qk-wait)) 72%,black) 100%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65);
   transition:transform .14s cubic-bezier(.2,.8,.2,1),box-shadow .14s}
-.qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:3;transform:scale(1.22);outline:0;
-  box-shadow:inset 0 -2px 2px rgba(0,0,0,.32),inset 0 1.5px 1.5px rgba(255,255,255,.45),0 4px 8px -2px rgba(0,0,0,.65)}
+.qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:900;transform:scale(1.22);outline:0;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.45),0 5px 8px -2px rgba(0,0,0,.7)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 
-.qt-ball.qt-run{border-radius:46% 46% 50% 50% / 60% 60% 40% 40%;rotate:calc(var(--rz,0deg) + 8deg)}
+.qt-ball.qt-run{width:calc(var(--sz,20px) * .76);height:calc(var(--sz,20px) * 1.14);margin:calc(var(--sz,20px) * -.57) 0 0 calc(var(--sz,20px) * -.38);
+  border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65)}
+.qt-ball.qt-run::after{content:"";position:absolute;left:22%;right:22%;top:18%;bottom:30%;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);pointer-events:none}
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
-.qt-ball.qt-warn{box-shadow:inset 0 -2px 2px rgba(0,0,0,.32),inset 0 1.5px 1.5px rgba(255,255,255,.4),0 2px 3px rgba(0,0,0,.5),0 0 0 2px var(--z-warn)}
+.qt-ball.qt-warn{box-shadow:inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
-.qt-overflow{position:absolute;z-index:3;top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
+.qt-overflow{position:absolute;z-index:1000;top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
   font-size:14px;font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
   background:color-mix(in srgb,var(--fg) 10%,var(--card))}
 .qt-overflow:hover,.qt-overflow:focus-visible{border-color:var(--accent);outline:0}
@@ -950,7 +967,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-ball.qt-arrive{animation:qt-ball-in .7s cubic-bezier(.4,0,.6,1) both}
 .qt-ball.qt-land{animation:qt-ball-land .26s cubic-bezier(.3,1.3,.4,1)}
 .qt-ball.qt-leaving{animation:qt-ball-out .35s ease-in forwards;pointer-events:none}
-.qt-ghost{margin:0;z-index:6;pointer-events:none;transition:none}
+.qt-ghost{margin:0;z-index:950;pointer-events:none;transition:none}
 @keyframes qt-ball-pulse{70%,100%{box-shadow:0 0 0 7px transparent}}
 @keyframes qt-ball-pulse-sm{70%,100%{box-shadow:0 0 0 5px transparent}}
 @keyframes qt-ball-in{0%{opacity:0;transform:translateY(calc(var(--drop,60px) * -1))}
@@ -5881,7 +5898,7 @@ const QT_MIN = 12;
 const QT_FILL = 0.5;
 
 function qtPack(keys, w, h, size){
-  const r = size / 2, d = size * 0.94, pad = 7, balls = [];
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
   let top = h;
   keys.forEach(k => {
     let best = null;
@@ -5909,11 +5926,17 @@ function qtLayout(box, els){
     clearTimeout(box._qtRp);
     box._qtRp = setTimeout(() => box.classList.remove('qt-repack'), 360);
   }
+  const jar = box.closest && box.closest('.qt-jar'), body = jar && jar.querySelector('.qt-body');
+  if (jar && body && body.clientHeight && els.length){
+    const pile = (h - pk.top) + size * 0.5 + 14;
+    jar.style.setProperty('--fill', Math.min(94, 100 * pile / body.clientHeight).toFixed(1) + '%');
+  }
   els.forEach((c, i) => {
     const fresh = c._qtL === undefined;
     c._qtL = pos[i][0]; c._qtT = pos[i][1]; c._qtS = size;
     c.style.left = pos[i][0]; c.style.top = pos[i][1];
     c.style.setProperty('--sz', size + 'px');
+    c.style.setProperty('--zr', String(Math.round(pk.balls[i].y)));
     c.style.setProperty('--rz', pk.balls[i].rz.toFixed(1) + 'deg');
     if (fresh) c.style.setProperty('--drop', Math.round(Math.min(pk.balls[i].y, 150)) + 'px');
     c.classList.toggle('qt-sm', size <= QT_MIN + 2);
@@ -6071,7 +6094,7 @@ function paintTrain(queued, running, done){
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
     if (jar) jar.style.setProperty('--wv', n ? 1 : 0);
-    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
+    if (jar && !n) jar.style.setProperty('--fill', '0%');
   });
 
   tr.classList.toggle('moving', nr > 0);
@@ -6131,13 +6154,13 @@ function qtPlace(el, r, jar){
   const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
   const jr = jar ? jar.getBoundingClientRect() : r;
   const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [jr.right + g, cy], [jr.left - w - g, cy], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
   const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
     && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
   const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
   el.style.left = x + 'px';
   el.style.top = y + 'px';
-  el.dataset.side = ['bottom', 'top', 'bottom', 'top', 'right', 'left'][at];
+  el.dataset.side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
   el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
   el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
 }

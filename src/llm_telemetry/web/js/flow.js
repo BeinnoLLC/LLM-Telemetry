@@ -114,7 +114,7 @@ export const QT_FILL = 0.5;
 // rolls into a valley) and rests on whatever is below. Only earlier balls matter, so
 // appending a task never moves the existing pile. Centres, in px, inside a w x h box.
 export function qtPack(keys, w, h, size){
-  const r = size / 2, d = size * 0.94, pad = 7, balls = [];
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
   let top = h;
   keys.forEach(k => {
     let best = null;
@@ -144,11 +144,18 @@ export function qtLayout(box, els){
     clearTimeout(box._qtRp);
     box._qtRp = setTimeout(() => box.classList.remove('qt-repack'), 360);
   }
+  // Liquid rises with the pile: at least as high as the balls, so the count and the fill agree.
+  const jar = box.closest && box.closest('.qt-jar'), body = jar && jar.querySelector('.qt-body');
+  if (jar && body && body.clientHeight && els.length){
+    const pile = (h - pk.top) + size * 0.5 + 14;
+    jar.style.setProperty('--fill', Math.min(94, 100 * pile / body.clientHeight).toFixed(1) + '%');
+  }
   els.forEach((c, i) => {
     const fresh = c._qtL === undefined;
     c._qtL = pos[i][0]; c._qtT = pos[i][1]; c._qtS = size;
     c.style.left = pos[i][0]; c.style.top = pos[i][1];
     c.style.setProperty('--sz', size + 'px');
+    c.style.setProperty('--zr', String(Math.round(pk.balls[i].y)));
     c.style.setProperty('--rz', pk.balls[i].rz.toFixed(1) + 'deg');
     if (fresh) c.style.setProperty('--drop', Math.round(Math.min(pk.balls[i].y, 150)) + 'px');
     c.classList.toggle('qt-sm', size <= QT_MIN + 2);
@@ -321,7 +328,7 @@ export function paintTrain(queued, running, done){
   [[qb, nq], [rb, nr], [db, nd]].forEach(([box, n]) => {
     const jar = box.closest && box.closest('.qt-jar');
     if (jar) jar.style.setProperty('--wv', n ? 1 : 0);
-    if (jar) jar.style.setProperty('--fill', n ? Math.min(92, 12 + 80 * Math.log10(1 + n) / Math.log10(61)).toFixed(1) + '%' : '0%');
+    if (jar && !n) jar.style.setProperty('--fill', '0%');
   });
 
   tr.classList.toggle('moving', nr > 0);
@@ -387,13 +394,13 @@ export function qtPlace(el, r, jar){
   const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
   const jr = jar ? jar.getBoundingClientRect() : r;
   const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
+  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [jr.right + g, cy], [jr.left - w - g, cy], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
   const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
     && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
   const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
   el.style.left = x + 'px';
   el.style.top = y + 'px';
-  el.dataset.side = ['bottom', 'top', 'bottom', 'top', 'right', 'left'][at];
+  el.dataset.side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
   el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
   el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
 }
