@@ -32,8 +32,8 @@ chk([head, rng, lk, kp, qc, lg].every(x => x !== null) && head < rng && rng < lk
 
 // ---- CSS: glass + fill motion + reduced motion
 chk(/\.qt-body\{[^}]*backdrop-filter:blur/.test(html), 'jar body has backdrop-filter blur');
-chk(/\.qt-body\{[^}]*border:1\.5px solid rgba\(255,255,255,\.22\)[^}]*border-radius:46px 46px 34px 34px/.test(html), 'glass rim 1.5px + rounded shoulders and base');
-chk(/\.qt-body\{[^}]*linear-gradient\(180deg,rgba\(255,255,255,\.08\),rgba\(255,255,255,\.02\)\)/.test(html), 'jar body is a light translucent glass gradient');
+chk(/\.qt-body\{[^}]*border-radius:0 0 30px 30px[^}]*clip-path:polygon\(/.test(html) && /\.qt-jar\{[^}]*drop-shadow\(0 0 \.7px rgba\(255,255,255,\.75\)\)/.test(html), 'curved shoulders into a neck (clip-path) with a bright outer rim');
+chk(/\.qt-body\{[^}]*linear-gradient\(180deg,rgba\(255,255,255,\.07\),rgba\(255,255,255,\.02\)\)/.test(html) && /\.qt-body\{[^}]*inset 2px 0 0 rgba\(255,255,255,\.35\)/.test(html), 'jar body is a translucent glass gradient with bright wall edges');
 chk(/\.qt-jar::after\{[^}]*filter:blur/.test(html), 'blurred specular streak on the jar');
 chk(/\.qt-lid::after\{/.test(html) && !/\.qt-lid\{[^}]*justify-content:space-between/.test(html), 'lid + neck silhouette, no kanban header bar');
 chk(/\.qt-body::before\{[^}]*transition:height \.8s cubic-bezier/.test(html), 'fill level eases on height');
@@ -44,8 +44,8 @@ chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-body::before,\.qt-body::after,[
 chk(/prefers-reduced-motion: reduce\)\{[^]*?\.qt-ball\.qt-arrive,\.qt-ball\.qt-land\{animation:qt-ball-fade[^]*?\.qt-run \.qt-ball-g\{box-shadow:0 0 0 3px[^]*?\.qt-ghost\{display:none\}/.test(html), 'reduced motion: no bounce or flight, a static halo on running balls');
 
 // ---- balls: material, no scrolling anywhere in a jar, hit target, popover shell
-chk(/\.qt-ball\{[^}]*border-radius:50%[^}]*radial-gradient\(circle at 32% 26%[^}]*box-shadow:inset 0 -2px 2px/.test(html), 'a ball is a glossy resin bead (highlight, core shadow, contact shadow)');
-chk(/\.qt-ball\.qt-run\{[^}]*border-radius:46%/.test(html) && /@keyframes qt-ball-pulse\b/.test(html), 'running = a hooked clip with a pulsing halo');
+chk(/\.qt-ball\{[^}]*border-radius:50%[^}]*radial-gradient\(circle at 32% 26%[^}]*box-shadow:0 0 0 1px[^}]*inset 0 -2px 3px/.test(html), 'a ball is a glossy marble (specular dot, darker rim, core shadow, drop shadow)');
+chk(/\.qt-ball\.qt-run\{[^}]*border-radius:999px/.test(html) && /\.qt-ball\.qt-run::after\{/.test(html) && /@keyframes qt-ball-pulse\b/.test(html), 'running = a glowing capsule clip with a pulsing halo');
 chk(/\.qt-ball\.qt-warn\{[^}]*0 0 0 2px var\(--z-warn\)/.test(html), 'waiting/stuck = a thin ring');
 chk(!/\.qt-(?:cars|body|jar|sec)\{[^}]*overflow(?:-y)?:(?:auto|scroll)/.test(html), 'no jar rule scrolls');
 chk(/\.qt-overflow\{[^}]*font-size:14px/.test(html), 'the +N chip is 14px');
@@ -55,7 +55,7 @@ chk(!/#[0-9a-fA-F]{3,8}\b/.test((html.match(/\.qt-ball\{[^}]*\}/) || [''])[0]), 
 
 // ---- LST-261 pass 2: ghost keeps the destination size (no scaled text), jar bottom padding, tooltip hides
 chk(/qtFly[^]*?width:\$\{to\.width\}px/.test(html) && !/scale\(\$\{sx\}/.test(html), 'the flying ghost is a ball the size of its destination and only translates/rotates');
-chk(/\.qt-body\{[^}]*padding:26px 8px 12px/.test(html), 'jar body keeps padding inside the rounded corners');
+chk(/\.qt-body\{[^}]*padding:84px 8px 14px/.test(html), 'jar body keeps padding below the shoulders');
 chk(/tr\.addEventListener\('mouseleave', hide\)/.test(html), 'ball tooltip hides when the pointer leaves the jars');
 chk(/jr\.bottom \+ g/.test(html), 'ball tooltip prefers a spot outside the jar');
 

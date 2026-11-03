@@ -93,12 +93,7 @@ setTimeout(() => {
     chk(d.querySelectorAll('.qt-jar').length === 3, 'three jars: depot, line, yard');
     chk(/prefers-reduced-motion: reduce\)\{\s*\.qtrain \*/.test(html), 'reduced-motion users get still jars');
     chk(/prefers-reduced-motion: reduce\)\{[^}]*\.qtrain \*::before[^}]*\.qtrain \*::after\{animation:none/.test(html), 'reduced-motion rule also covers ::before/::after pseudo-elements');
-    {
-      const fillOf = n => { const a = Array.from({length: n}, (_, i) => ({key: 'k' + i, title: 't' + i}));
-        return w.eval(`(${n} ? Math.min(92, 12 + 80 * Math.log10(1 + ${n}) / Math.log10(61)) : 0)`); };
-      chk(html.includes('Math.log10(61)'), 'jar fill uses the log-scaled formula');
-      chk(fillOf(10) < fillOf(27) && fillOf(27) < fillOf(60) && fillOf(60) <= 92 && fillOf(0) === 0 && fillOf(1) > 12, 'jar fill still tells 10, 27 and 60 tasks apart and stays capped');
-    }
+    chk(/Math\.min\(94, 100 \* pile \/ body\.clientHeight\)/.test(html) && /pile = \(h - pk\.top\)/.test(html), 'jar fill follows the pile height (never lower than the balls); an empty jar has none');
     chk(/\.qt-cars:not\(:has\(\.qt-ball\)\)::after\{content:attr\(data-empty\)/.test(html) && !!d.getElementById('qt-done').dataset.empty, 'an empty section says so instead of drawing nothing');
     chk(!d.querySelector('.qt-shunter, .qt-rail, .qt-signal'), 'the train furniture (shunter, rail, signal) is gone');
 
