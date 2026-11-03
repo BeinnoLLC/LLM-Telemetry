@@ -1836,7 +1836,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
      activity share the slack and WRAP to two lines (line-clamp, full text in
      title=) instead of widening the table, so no column is ever scrolled out of
      view on desktop. Only below 1024px does the panel scroll sideways. */
-  --lvcols:36px minmax(96px,1.3fr) minmax(88px,1fr) 176px 60px 70px minmax(88px,1.3fr) 124px}
+  --lvcols:36px minmax(96px,1.3fr) minmax(88px,1fr) 156px 60px 70px minmax(88px,1.3fr) 124px}
 .lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:8px;align-items:center;padding:0 12px}
 @media(max-width:1023px){.lvhead,.lvrow{min-width:792px}.lvrow + .lmpanel{min-width:792px}}
 .lvhgrp{display:flex;flex-direction:row;align-items:center;gap:10px;height:100%;min-width:0;white-space:nowrap}
