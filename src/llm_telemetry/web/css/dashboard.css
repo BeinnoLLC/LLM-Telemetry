@@ -27,7 +27,7 @@
       reserves --logtab-w + --logtab-gap on the right, so it never covers content. */
    --logtab-w:52px; --logtab-gap:12px;
    --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
- }
+;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
@@ -422,7 +422,7 @@ body.hasnav #views{ display:none; }
 .lgev:last-child{border-bottom:0}
 .lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-xs)}
 .lgtag{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow:visible;text-overflow:clip;min-width:66px}
 .lgtag.error{color:var(--z-bad-fg);font-weight:700}
 .lgtag.tool{color:var(--accent)}
 .lgtag.assistant{color:var(--z-ok-fg)}
@@ -518,7 +518,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     keeps the strip wrapping without fixed columns on desktop; the <=480px
     override below pins the collapse to exactly 2 columns on phones. */
  .grid-home{display:grid;gap:8px var(--gap);align-items:stretch;
-   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
+   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));grid-template-columns:repeat(4,minmax(0,1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
    transform .12s ease,border-color .12s ease}
@@ -1042,7 +1042,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    Long values and blurbs ellipsize instead of wrapping the strip into
    uneven heights. */
 .xcard{display:flex;align-items:center;gap:10px;padding:9px 12px;
-   min-height:44px}
+   min-height:44px;align-items:flex-start}
 /* LST-220: the Explore cards are the board's links, so they get the interactive
    treatment: resting elev-1, elev-2 plus a 1px lift on hover, state layers on
    press, and a real focus ring for keyboard users. */
@@ -1057,10 +1057,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .xp-title{flex:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500;
    letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .xcard .hc-stat{flex:0 1 auto;min-width:0;font-size:var(--fs-md);
-   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;white-space:normal;overflow-wrap:anywhere}
 .xcard .hc-stat:has(.bwup){white-space:normal;overflow-wrap:anywhere;text-align:left}
 .xp-blurb{display:block;margin-top:1px;font-size:var(--fs-xs);color:var(--muted);
-   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 @media(max-width:480px){
    /* Two pinned columns: auto-fit's 230px floor would drop the strip to a
       single column at phone widths, wasting half the row for a card that
@@ -1609,7 +1609,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    time is supplementary and survives as the row's title. */
 @media (max-width:520px){.qv-win{grid-template-columns:minmax(56px,auto) 46px minmax(48px,1fr)}.qv-reset{display:none}}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
-.qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
 .qv-pct.qv-ok{color:var(--z-ok)}
 .qv-pct.qv-warn{color:var(--z-warn)}
@@ -1862,7 +1862,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 /* cells may use 4px of the row padding so a two-line cell plus a chip line never clips */
 /* the tool chips: one wrapping line of fixed height, overflow hidden, so a chip that
    cannot fit at its min-width wraps to a clipped second line and disappears whole */
-.lva2{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;row-gap:24px;height:20px;overflow:hidden;min-width:0;max-width:100%}
+.lva2{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;row-gap:24px;height:20px;overflow:hidden;min-width:0;max-width:100%;flex-wrap:wrap}
 .lvnum{justify-content:flex-end;text-align:right;font-variant-numeric:tabular-nums}
 .lvc.metacol{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;align-self:auto;width:auto;text-align:left;gap:1px 8px;justify-content:flex-start}
 .lvprov>span{padding:0 5px;line-height:14px}
@@ -1899,8 +1899,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvphase{color:var(--muted);font-size:13px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal;min-width:0;flex:1 1 6ch}
 .lvtool{font-size:13px;line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--fg);flex:none}
 .lvst{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 9px;line-height:18px;
-  border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg)}
-.lvst{white-space:nowrap;max-width:none}
+  border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg);white-space:nowrap;max-width:none}
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
@@ -1932,7 +1931,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvc-act .lva1{flex-wrap:nowrap;width:100%}
 .lvc-act .lva2{max-width:100%}
 .lva2>.lvtool:nth-child(n+4){display:none}
-.lva2>.lvtool{flex:0 1 auto;min-width:6ch;max-width:14ch;overflow:hidden;text-overflow:ellipsis}
+.lva2>.lvtool{flex:0 1 auto;min-width:6ch;max-width:14ch;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lvrow .lvs2>.lvtag,.lvrow .lvs2>.lvcatl{flex:none;min-width:6ch;max-width:16ch}
 .lvrow .lvs2>.lvowner{max-width:20ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* beside the title the agent tag keeps >= 6ch: the title gives way, not the tag */
@@ -1957,7 +1956,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dt-wrap{max-height:70vh;overflow:auto;-webkit-overflow-scrolling:touch}
 .dt-cap{caption-side:top;text-align:left;padding:0 0 8px;position:sticky;left:0}
 .dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:13px;color:var(--muted)}
+.dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:13px;color:var(--muted);padding:0 10px}
 .dt-dens button.on{background:var(--accent-wash);color:var(--fg)}
 .dt-dens button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .pv-tbl.dt th:first-child,.pv-tbl.dt td:first-child{z-index:4}
@@ -1977,24 +1976,14 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 @media (max-width:600px){#projfilterbar{flex-wrap:wrap}#projfilterbar .selwrap{flex:1 1 100%}}
 
 /* LST-261 clipping: tags and blurbs wrap or grow instead of cutting words. */
-.lgtag{overflow:visible;text-overflow:clip;min-width:66px}
-.xp-blurb{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.xcard{align-items:flex-start}
-.xcard .hc-stat{white-space:normal;overflow-wrap:anywhere}
-.qv-wname{white-space:normal;overflow:visible;text-overflow:clip}
 .qv-amodels,.fmsg,.dgoal{white-space:normal;overflow-wrap:anywhere}
 .fmsg.truncate{white-space:normal;overflow:visible;text-overflow:clip}
-.lva2{flex-wrap:wrap}
-.lva2>.lvtool{max-width:100%}
 /* Explore tiles: even grid (3 rows x 4 cols at desktop, never a 5+5+1 orphan). */
-.grid-home{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:1100px){.grid-home{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:700px){.grid-home{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* One control size scale (LST-261): sm 28 / md 32 / lg 44 on touch. */
-:root{--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 .csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
 .chip,.fb-btn,.pk-btn,select.chip,.pchip,.kseg{min-height:var(--ctl-md)}
-.dt-dens button{padding:0 10px}
 @media (max-width:600px){
   .csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
 }
