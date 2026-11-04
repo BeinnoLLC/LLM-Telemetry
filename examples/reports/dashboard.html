@@ -1225,6 +1225,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kring svg{width:100%;height:100%;display:block}
 .kspwrap{display:inline-block;width:60px;height:20px;vertical-align:middle;flex:none}
 .kspark{width:100%;height:100%;display:block}
+.lvspark{margin-top:2px;height:12px;pointer-events:none}
+.lvspark .kspark{width:100%;height:100%;display:block}
 .kpi-icon{display:flex;line-height:1}
 .olspwrap{display:inline-block;width:44px;height:14px;vertical-align:middle;margin-left:6px}
 
@@ -2224,7 +2226,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="group" aria-label="Running tasks" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
     <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="group" aria-label="Finished tasks" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
    </div>
-   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"><b class="qt-gl">H</b></i>Hermes</span><span><i class="qt-sw qt-sw-pi"><b class="qt-gl">π</b></i>Pi</span><span><i class="qt-sw qt-sw-claude"><b class="qt-gl">C</b></i>Claude</span><span><i class="qt-sw qt-sw-codex"><b class="qt-gl">X</b></i>Codex</span><span><i class="qt-sw qt-sw-wait"><b class="qt-gl">O</b></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span></div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"><b class="qt-gl">H</b></i>Hermes</span><span><i class="qt-sw qt-sw-pi"><b class="qt-gl">π</b></i>Pi</span><span><i class="qt-sw qt-sw-claude"><b class="qt-gl">C</b></i>Claude</span><span><i class="qt-sw qt-sw-codex"><b class="qt-gl">X</b></i>Codex</span><span><i class="qt-sw qt-sw-wait"><b class="qt-gl">O</b></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span><span>Done ball = LLM provider</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
    <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
@@ -6325,7 +6327,14 @@ const QT_CAP = 40;                     // balls drawn per jar; the 40th slot bec
 const QT_MAX = 28;
 const QT_MIN = 18;
 const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
-function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
+function qtGlyphKey(it){
+  if (it.kind === 'q') return 'ollama';
+  if (it.kind === 'd') {
+    const p = provOf('', it.model || '', '');
+    if (p && p !== 'cloud') return p;
+  }
+  return it.kind === 'r' ? (it.eng || 'hermes') : 'hermes';
+}
 const QT_FILL = 0.5;
 
 function qtPack(keys, w, h, size, chip){
@@ -6413,7 +6422,8 @@ function paintBalls(box, items, decorate, elsewhere){
     const gk = qtGlyphKey(it);
     let gl = c.querySelector('.qt-gl');
     if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
-    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = QT_GLYPH[gk]; }
+    const icon = (PROV[gk] && PROV[gk].icon) || QT_GLYPH[gk] || (gk ? gk[0].toUpperCase() : '•');
+    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = icon; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -6460,14 +6470,15 @@ function carTip(it){
       + row('position', `${it.pos} of ${it.depth}`) + row('state', 'queued at the Ollama host');
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
+  const provIcon = (m) => (PROV[provOf('', m || '', '')] || {}).icon || '';
   if (it.kind === 'r'){
     return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
-      + row('engine', kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
+      + row('engine', kindMeta(it.eng).label) + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim()) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', it.model)
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim())
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
@@ -6953,6 +6964,8 @@ function sessTotals(L){
   (L.models || []).forEach(m => { c += +m.calls || 0; k += (+m.in_tok || 0) + (+m.out_tok || 0); });
   return { c, k };
 }
+const WORKER_TOK_HIST = new Map();
+function workerTokPush(key, tok){ if(!key) return; const h = WORKER_TOK_HIST.get(key) || []; h.push(tok || 0); if(h.length > 12) h.shift(); WORKER_TOK_HIST.set(key, h); }
 function sampleThroughput(profiles, now){
   const t = now == null ? Math.floor(Date.now() / 1000) : now;
   const baseline = tputPrev == null;
@@ -7232,7 +7245,7 @@ function lvRow(o){
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
       <div class="lvc lvc-act" role="cell"><div class="lva1"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span></div>${tools ? `<div class="lva2" title="${allTools}">${tools}</div>` : ''}</div>
-      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
+      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div></div>
     </div>${o.panel || ''}`;
   const num = v => Number.isFinite(+v) && v != null ? +v : null;
   return { key: o.key, html, sv: {
@@ -7383,6 +7396,7 @@ function renderLive(){
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tok = sessTotals(L).k;
+      workerTokPush(L.id, tok);
       const prof = profileOf(L);
       return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
         prov: provOf('', L.model, L.base_url),
@@ -10658,7 +10672,7 @@ function drawerSync(){
 
   body.innerHTML = rows.length ? rows.map(e => {
     const t = new Date(e.ts).toLocaleTimeString([], {hour12:false});
-    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${short(e.model)}</span> ` : '';
+    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${(PROV[provOf('', e.model || '', '')] || {}).icon || ''} ${short(e.model)}</span> ` : '';
     const twho = e.tool ? `<span class="evt" style="color:${toolColor(e.tool)}">${esc(e.tool)}</span> ` : '';
     const pf = e.profile ? `<span class="muted">[${e.profile}]</span> ` : '';
     return `<div class="ev ${e.level==='error'?'err':''}">

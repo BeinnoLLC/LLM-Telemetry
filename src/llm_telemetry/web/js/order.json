@@ -1223,6 +1223,14 @@
   },
   {
    "mod": "live",
+   "name": "WORKER_TOK_HIST"
+  },
+  {
+   "mod": "live",
+   "name": "workerTokPush"
+  },
+  {
+   "mod": "live",
    "name": "sampleThroughput"
   },
   {

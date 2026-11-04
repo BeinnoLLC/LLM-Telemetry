@@ -112,7 +112,14 @@ export const QT_MIN = 18;
 // One bold letter per agent family, centred on its ball (and in the legend). Near-black on every
 // family colour (contrast 5.4-8.8:1, white would be 2.3-3.7:1). A logo blurs at 18px; a letter reads.
 export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
-export function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
+export function qtGlyphKey(it){
+  if (it.kind === 'q') return 'ollama';
+  if (it.kind === 'd') {
+    const p = provOf('', it.model || '', '');
+    if (p && p !== 'cloud') return p;
+  }
+  return it.kind === 'r' ? (it.eng || 'hermes') : 'hermes';
+}
 export const QT_FILL = 0.5;
 
 // Pour the balls in, oldest first: each one drops from a seeded column (best of six, so it
@@ -214,7 +221,8 @@ export function paintBalls(box, items, decorate, elsewhere){
     const gk = qtGlyphKey(it);
     let gl = c.querySelector('.qt-gl');
     if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
-    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = QT_GLYPH[gk]; }
+    const icon = (PROV[gk] && PROV[gk].icon) || QT_GLYPH[gk] || (gk ? gk[0].toUpperCase() : '•');
+    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = icon; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -264,14 +272,15 @@ export function carTip(it){
       + row('position', `${it.pos} of ${it.depth}`) + row('state', 'queued at the Ollama host');
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
+  const provIcon = (m) => (PROV[provOf('', m || '', '')] || {}).icon || '';
   if (it.kind === 'r'){
     return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
-      + row('engine', kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
+      + row('engine', kindMeta(it.eng).label) + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim()) + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', it.model)
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim())
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);

@@ -5,7 +5,7 @@
 import {
   $, BD, COLORS, PAL, TOOLCOLORS, ago, allModelNames, allToolNames, buildColors, buildToolColors, bwPrev, bwPrevAt, catOf, colorOf, emptyHTML, esc, escA, fmt, fmtB, pick, short, stampFreshness,
 } from './palette.js';
-import { bwRow, current, loeIcon, mk } from './charts.js';
+import { bwRow, current, loeIcon, mk, sparkSvg } from './charts.js';
 import {
   REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
@@ -381,6 +381,9 @@ export function sidChip(id, open, profile){
     ? `<button type="button" class="lvsid ttitlebtn" data-tsession="${escA(full)}" data-tprofile="${escA(profile || '')}" title="${escA(full)} \u2014 open transcript">${esc(short6)}</button>`
     : `<span class="lvsid" title="${escA(full)}">${esc(short6)}</span>`;
 }
+// Per-worker token history for sparklines (last 12 polls).
+const WORKER_TOK_HIST = new Map();
+function workerTokPush(key, tok){ if(!key) return; const h = WORKER_TOK_HIST.get(key) || []; h.push(tok || 0); if(h.length > 12) h.shift(); WORKER_TOK_HIST.set(key, h); }
 // Hermes rows from older payloads carry no `profile`; the owner is then the
 // profile whose live list holds the session.
 function profileOf(L){
@@ -411,7 +414,7 @@ function lvRow(o){
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
       <div class="lvc lvc-act" role="cell"><div class="lva1"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span></div>${tools ? `<div class="lva2" title="${allTools}">${tools}</div>` : ''}</div>
-      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
+      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div></div>
     </div>${o.panel || ''}`;
   const num = v => Number.isFinite(+v) && v != null ? +v : null;
   return { key: o.key, html, sv: {
@@ -596,6 +599,7 @@ export function renderLive(){
       const c = catOf(L.category);
       const mcol = colorOf(short(L.model));
       const tok = sessTotals(L).k;
+      workerTokPush(L.id, tok);
       const prof = profileOf(L);
       return lvRow({ kind: 'hermes', key: L.id, S: L, tok, tools: L.tools, mcol, model: L.model, costv: null, cost: '',
         prov: provOf('', L.model, L.base_url),
