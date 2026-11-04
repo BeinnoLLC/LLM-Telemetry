@@ -263,6 +263,22 @@
   },
   {
    "mod": "routerview",
+   "name": "RT_COMPACT_AT"
+  },
+  {
+   "mod": "routerview",
+   "name": "RT_POPEN_KEY"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtProfOpened"
+  },
+  {
+   "mod": "routerview",
+   "name": "rtSaveProfOpen"
+  },
+  {
+   "mod": "routerview",
    "name": "rtSection"
   },
   {
@@ -1496,6 +1512,14 @@
   {
    "mod": "views",
    "name": "failMsgClean"
+  },
+  {
+   "mod": "views",
+   "name": "HTTP_WORDS"
+  },
+  {
+   "mod": "views",
+   "name": "failMsgHuman"
   },
   {
    "mod": "views",

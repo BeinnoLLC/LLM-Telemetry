@@ -415,13 +415,12 @@ export function setColorSwatch(n){
   const h = profileHue(n);
   const overridden = pvHueOverride(n) !== null;
   return `<div class="setf" data-scname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${overridden ? '' : ' hidden'}>Custom</span></span>
     <span class="setin">
       <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
-      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
-      <span class="muted text-[length:var(--fs-xs)]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" aria-label="${escA(n)} hue" style="flex:1;min-width:0">
+      <span class="muted text-[length:var(--fs-xs)]" style="min-width:4.6em;text-align:right" data-schuen="${escA(n)}">hue ${h}°</span>
     </span>
-    <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
   </div>`;
 }
 export function renderSetColors(){
@@ -450,9 +449,9 @@ export function setColorsInstall(){
       const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
       if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
       const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
-      if (readout) readout.textContent = deg + '°';
-      const hint = row.querySelector('.seth');
-      if (hint) hint.textContent = 'Custom — used for its tab, badges and live dots.';
+      if (readout) readout.textContent = 'hue ' + deg + '°';
+      const tag = row.querySelector('.setcustom');
+      if (tag) tag.hidden = false;
     }
     // Everywhere else that draws this profile's colour must pick it up
     // immediately, not just on the next poll — a settings change with no
@@ -477,13 +476,12 @@ export function setColorsInstall(){
 export function setLogoRow(n){
   const logo = profileLogo(n);
   return `<div class="setf" data-slname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${logo ? '' : ' hidden'}>Custom</span></span>
     <span class="setin" style="gap:8px">
       ${profileIconHtml(n, 28)}
-      <input type="file" accept="image/*" data-slfile="${escA(n)}" style="flex:1;min-width:0;font-size:var(--fs-xs)">
+      <label class="chip setup">Upload logo<input type="file" class="sr-only" accept="image/*" data-slfile="${escA(n)}"></label>
       ${logo ? `<button type="button" data-slclear="${escA(n)}" class="chip" style="padding:2px 8px">Clear</button>` : ''}
     </span>
-    <span class="seth" data-slmsg="${escA(n)}">${logo ? 'Custom logo set.' : 'No logo — showing the name-derived initial.'}</span>
   </div>`;
 }
 export function renderSetLogos(){
@@ -500,8 +498,10 @@ export function setLogosInstall(){
   const setRowMsg = (n, text, kind) => {
     const row = box.querySelector(`[data-slname="${CSS.escape(n)}"]`);
     if (!row) return;
-    const msg = row.querySelector('.seth');
-    if (msg) { msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : ''); }
+    // Messages exist only when there is something to say (no repeated boilerplate per row).
+    let msg = row.querySelector('.seth');
+    if (!msg) { msg = document.createElement('span'); row.appendChild(msg); }
+    msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : '');
   };
   box.addEventListener('change', e => {
     const inp = e.target.closest && e.target.closest('[data-slfile]');
@@ -719,6 +719,10 @@ export function settingsInstall(){
   });
   setColorsInstall();
   setLogosInstall();
+  document.getElementById('setnav')?.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-setgo]');
+    if (b) document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+  });
   loadSettings();
 }
 
@@ -728,6 +732,9 @@ export function settingsInstall(){
 export function setCrumb(v){
   const el = document.getElementById('crumb');
   if (el) el.textContent = v || '';
+  // The page's one h1 names the view for screen readers (visually the crumb does).
+  const h = document.getElementById('h1view');
+  if (h) h.textContent = v ? ': ' + v : '';
 }
 
 // ---- Left nav drawer (#3) -------------------------------------------------
@@ -949,12 +956,15 @@ export function pickView(v){
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
   });
+  // `#/usage?s=bandwidth` deep-links a panel; setHash below drops the param, so read it first.
+  const sec = ({bandwidth: 'bwpanel'})[filterFromHash('s')];
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
   setCrumb(v);
   navSync();
   syncProjFilterUI();
   render();
+  if (sec) document.getElementById(sec)?.scrollIntoView?.({block: 'start'});
   // The logs payload is ~1.3 MB and most visits never open this view, so it
   // is fetched on first navigation rather than with the page.
   if (v === 'Logs') loadLogs();

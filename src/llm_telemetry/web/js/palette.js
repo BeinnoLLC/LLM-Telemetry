@@ -207,7 +207,7 @@ export function costCell(v, local, state){
   if (state === 'freetier') return `<span class="freetier" title="Published $0 tier (OpenRouter :free or an OpenCode Zen free SKU): genuinely $0 per token.">$0 <span class="ftmark">free tier</span></span>`;
   if (!local) return '$' + v.toFixed(2);
   const s = v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toFixed(4) : '0';
-  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">elec</span></span>`;
+  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">electricity</span></span>`;
 }
 
 // ---- Unpriced traffic (P9-05, #82) ------------------------------------------

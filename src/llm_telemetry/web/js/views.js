@@ -465,7 +465,7 @@ export function renderUnpriced(rows){
   notify({id: 'unpriced', sev: 'warn',
     title: `${un.length} model${un.length === 1 ? '' : 's'} ${un.length === 1 ? 'has' : 'have'} no price`,
     text: `Est. cost leaves out ${calls.toLocaleString()} calls (${names}), so it is too low.`,
-    action: {label: 'Open Prices', href: '#/Prices'},
+    action: {label: 'Open Prices', href: '#/prices'},
     sig: un.map(([m]) => m).sort().join(','), chip: `${un.length} unpriced`});
   return un.length;
 }
@@ -1002,8 +1002,8 @@ export function renderHome(inR){
 
   // LST-178: each strip card is one compact row (icon, title, headline value,
   // one-line blurb) with the same derived stats as before. rel on every link.
-  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view) => `
-    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}" title="${escA(desc)}">
+  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view, sec = '') => `
+    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}"${sec ? ` data-sec="${sec}"` : ''} title="${escA(desc)}">
       <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
         <span class="hc-ico" aria-hidden="true">${ico}</span></span>
       <span class="xp-body">
@@ -1017,10 +1017,10 @@ export function renderHome(inR){
   // that looks measured is the failure this project guards against.
   html += xc('Usage', icon('updown'), PAL[0], 'Estimated from tokens, not measured',
     `<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    'Bandwidth (est.)', 'usage');
+    'Bandwidth (est.)', 'usage?s=bandwidth', 'Usage', 'bwpanel');
 
   // Prices is an in-app view now (was the standalone costs.html page).
-  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'Price sheet', 'Prices', 'Prices');
+  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'per 1M tokens', 'Prices', 'prices', 'Prices');
 
   box.innerHTML = html;
   // Route in-page instead of relying on the hash alone, so a card works even
@@ -1029,6 +1029,7 @@ export function renderHome(inR){
     a.addEventListener('click', (e) => {
       e.preventDefault();
       pickView(a.dataset.gohome);
+      if (a.dataset.sec) document.getElementById(a.dataset.sec)?.scrollIntoView?.({block: 'start'});
     });
   });
 }
@@ -2375,7 +2376,7 @@ export function renderLifecycle(pressure){
         <span class="muted">${bits.map(esc).join(' · ')}</span>
         ${s.error ? `<span style="color:var(--z-bad)" title="${esc(s.error)}">error</span>` : ''}
       </div>` +
-      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
+      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="overflow-wrap:anywhere" title="${esc(s.error)}">${esc(failMsgHuman(s.error))}</div>` : '');
     }).join('');
 }
 
@@ -2549,6 +2550,28 @@ export function failMsgClean(m){
           .replace(/\bprompt-turn-[\w:.-]+/g, '')
           .replace(/\s{2,}/g, ' ').trim();
 }
+// One readable line for the Failures and Lifecycle rows. The raw text (error_type=…
+// base_url=… key=value runs, JSON payloads) stays in the row's title; this only
+// keeps the part a person acts on: what happened, which status, which host.
+export const HTTP_WORDS = {400:'Bad request', 401:'Not authorised', 403:'Forbidden', 404:'Not found', 408:'Request timed out',
+  413:'Request too large', 429:'Rate limited', 500:'Provider server error', 502:'Bad gateway', 503:'Provider unavailable',
+  504:'Gateway timeout', 524:'Provider timed out'};
+export function failMsgHuman(m){
+  const s = String(m || '').trim();
+  const json = s.match(/"(?:message|detail|title)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const kv = s.match(/\b\w+=\S/g) || [];
+  const et = s.match(/\berror_type=([A-Za-z_.]+)/);
+  const host = s.match(/\bbase_url=(?:https?:\/\/)?([^\s\/,'")]+)/);
+  const code = s.match(/\b(?:HTTP|status(?:_code)?[= :]+)\s*(\d{3})\b/i);
+  if (!json && !et && !host && kv.length < 2) return s;
+  const words = code && HTTP_WORDS[code[1]];
+  let why = json ? json[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')
+    : et ? et[1].split('.').pop().replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase()) : '';
+  if (!why && !words) why = s.replace(/\b\w+=\S+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const out = [words ? `${words} (HTTP ${code[1]})` : code ? `HTTP ${code[1]}` : '', why, host ? `via ${host[1]}` : '']
+    .filter(Boolean).join(' · ');
+  return out.length > 160 ? out.slice(0, 157) + '…' : out;
+}
 export function groupFailures(F){
   const g = new Map();
   F.forEach(f => {
@@ -2645,7 +2668,7 @@ export function renderFailures(F){
         <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
         <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
         <span class="muted shrink-0 text-[length:var(--fs-xs)] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
-        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
+        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(failMsgHuman(g.msg))}</span>
         <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
       </div>`).join('');
 
