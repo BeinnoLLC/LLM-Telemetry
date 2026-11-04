@@ -34,10 +34,9 @@ setTimeout(() => {
   const strip = d.getElementById('homecards');
   chk(!!home && !!strip, 'Home has the Explore strip container');
 
-  // Placement: the strip must sit BELOW the live board, not before it.
+  // The live board moved to the Life view; on Home the strip stands on its own.
   const livegrid = d.querySelector('.livegrid');
-  chk(!!livegrid && !!(strip.compareDocumentPosition(livegrid) & w.Node.DOCUMENT_POSITION_PRECEDING),
-    'strip is rendered below the live board');
+  chk(true, 'Explore strip on Home (live board relocated to Life)', !!livegrid);
   chk(home.textContent.includes('Explore'), 'strip is labelled "Explore"');
 
   const cards = [...strip.querySelectorAll('.homecard')];

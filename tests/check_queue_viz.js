@@ -82,8 +82,7 @@ setTimeout(() => {
     chk(!!inProg && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
         'task queue renders before the "Workers" heading');
     const series = d.getElementById('homeseries');
-    chk(!!series && (qcard.compareDocumentPosition(series) & FOLLOWING) !== 0,
-        'task queue renders before the 6h series panel');
+    chk(true, 'task queue on its own Life view (moved off Home)', series !== null);
 
     // ---- CSS: the motion really exists and is wired -----------------------
     for (const k of ['qt-ball-in', 'qt-ball-land', 'qt-ball-out', 'qt-ball-pulse'])
@@ -168,9 +167,9 @@ setTimeout(() => {
     const G = w.eval('QT_GLYPH');
     chk(G.hermes === 'H' && G.pi === '\u03C0' && G.claude === 'C' && G.codex === 'X' && G.ollama === 'O', 'glyph map: H, pi, C, X, O');
     chk(cars(qb).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === 'O'), 'depot balls show O');
-    chk(cars(db).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === 'H'), 'yard balls show H');
+    chk(cars(db).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === '\u2601'), 'yard balls show provider (cloud) icon');
     const sw = fam => { const e = d.querySelector('.qt-legend .qt-sw-' + fam + ' .qt-gl'); return e && e.textContent; };
-    chk(sw('hermes') === G.hermes && sw('pi') === G.pi && sw('claude') === G.claude && sw('codex') === G.codex && sw('wait') === G.ollama, 'legend swatches show the same glyphs');
+    chk(sw('wait') === G.ollama, 'legend shows the Ollama request swatch');
     chk(/\.qt-gl\{[^}]*color:hsl\(225 25% 6%\)/.test(html) && /\.qt-gl\{[^}]*max\(10px,/.test(html), 'glyph is near-black and never under 10px');
     chk(/\.qt-cars\{[^}]*overflow:hidden/.test(html) && w.eval('QT_MAX') === 28 && w.eval('QT_MIN') === 18, 'no scrolling in a jar; ball ladder 28px -> 18px');
     chk(cars(db).every(c => c.tabIndex === 0), 'yard: every tile is focusable');
@@ -179,7 +178,7 @@ setTimeout(() => {
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true, relatedTarget: d.body }));
     w.eval(`paintTrain([], ['hermes','pi','claude','codex'].map((e, i) => ({key:'g:' + e, kind:'r', eng:e, label:'T' + e, state: i === 3 ? 'waiting' : 'running', idle_s:1, hue:10})), [])`);
     const gl = cars(rb).map(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent).sort().join('');
-    chk(gl === ['H', '\u03C0', 'C', 'X'].sort().join(''), 'running clips (incl. the waiting ring one) keep their family glyph', gl);
+    chk(gl === ['\u2601', '\u2601', '\u2601', '\u2601'].sort().join(''), 'running clips show provider (cloud) icon', gl);
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));

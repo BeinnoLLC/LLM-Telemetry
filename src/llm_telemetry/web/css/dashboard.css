@@ -1424,6 +1424,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
+ .page[data-pageview="Life"] > .pagehead{order:-40}
+.page[data-pageview="Life"] > .view[data-view="Life"]{display:contents}
+.page[data-pageview="Life"] > .view[data-view="Life"] > *{order:-10;margin-top:0;margin-bottom:0}
+.page[data-pageview="Life"] > #filterbar{order:-34}
+.page[data-pageview="Life"] > #alertscard{display:none}
  /* Mobile */
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}

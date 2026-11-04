@@ -114,11 +114,8 @@ export const QT_MIN = 18;
 export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
 export function qtGlyphKey(it){
   if (it.kind === 'q') return 'ollama';
-  if (it.kind === 'd') {
-    const p = provOf('', it.model || '', '');
-    if (p && p !== 'cloud') return p;
-  }
-  return it.kind === 'r' ? (it.eng || 'hermes') : 'hermes';
+  const p = provOf('', it.model || '', '');
+  return p || 'cloud';
 }
 export const QT_FILL = 0.5;
 
