@@ -155,13 +155,14 @@ setTimeout(() => {
     parked[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/ran for/.test(tip.textContent) && /2\.0k/.test(tip.textContent), 'hover: yard card has duration and tokens', tip.textContent);
 
-    // ---- cap: at most 40 balls per jar (bigger marbles), the true total on the lid, never a scrollbar ----
+    // ---- no cap: every task is drawn as a ball, the true total on the lid ----
     w.eval(`DATA.ollama.hosts[0].queue = 40; renderQueue();`);
     chk(cars(qb).length === 40 && n('qt-n-queued') === '40', 'depot: all 40 waiting tasks drawn', cars(qb).length);
     const many = Array.from({ length: 150 }, (_, i) => ({ id: 'm' + i, title: 'job ' + i, model: 'm', last_ts: 1000 - i, dur_s: 1 }));
     w.eval(`DATA.profiles[current].recent_sessions = ${JSON.stringify(many)}; renderQueue();`);
-    chk(cars(db).length === 39 && n('qt-n-done') === '150', 'yard: 39 balls drawn, the lid keeps the true 150', cars(db).length);
-    chk(db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent === '+111', 'yard: a +111 chip takes the 40th slot (counts exactly what is not drawn)', db.querySelector('.qt-overflow') && db.querySelector('.qt-overflow').textContent);
+    chk(cars(db).length > 40 && n('qt-n-done') === '150', 'yard: more than 40 done tasks drawn (no artificial cap), the lid keeps the true 150', cars(db).length);
+    // with 150 tasks the jar overflows its physical space, so a +N chip is shown for the rest
+    chk(!!db.querySelector('.qt-overflow'), 'yard: overflow chip shown for tasks that do not fit physically');
     chk(!qb.querySelector('.qt-overflow'), 'depot at exactly 40: no chip');
     // ---- glyphs: every ball carries its family letter, the legend shows the same ones ----
     const G = w.eval('QT_GLYPH');
