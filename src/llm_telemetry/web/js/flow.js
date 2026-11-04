@@ -115,7 +115,8 @@ export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ol
 export function qtGlyphKey(it){
   if (it.kind === 'q') return 'ollama';
   const p = provOf('', it.model || '', '');
-  return p || 'cloud';
+  const familyMap = { anthropic:'claude', 'openai-codex':'codex', 'opencode-go':'pi', 'opencode':'pi', local:'ollama', 'ollama-cloud':'ollama', nous:'hermes' };
+  return familyMap[p] || p || 'cloud';
 }
 export const QT_FILL = 0.5;
 
@@ -218,7 +219,7 @@ export function paintBalls(box, items, decorate, elsewhere){
     const gk = qtGlyphKey(it);
     let gl = c.querySelector('.qt-gl');
     if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
-    const icon = (PROV[gk] && PROV[gk].icon) || QT_GLYPH[gk] || (gk ? gk[0].toUpperCase() : '•');
+    const icon = QT_GLYPH[gk] || (PROV[gk] && PROV[gk].icon) || (gk ? gk[0].toUpperCase() : '•');
     if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = icon; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
