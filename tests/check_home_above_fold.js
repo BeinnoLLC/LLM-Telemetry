@@ -106,11 +106,11 @@ setTimeout(async () => {
     chk(after(kpis, grid), 'scorecards come before the table + agents grid');
     chk(grid.contains(d.getElementById('livelist')),
       'the grid holds the session table');
-    // LST-258: the standalone agents panel was folded into the In progress now table.
+    // LST-258: the standalone agents panel was folded into the Workers table.
     chk(d.getElementById('agentscard') === null,
       'negative control: no standalone agents panel sits in the grid (LST-258)');
     const qc = d.getElementById('qcard');
-    chk(after(kpis, qc) && after(qc, grid), 'task queue sits directly under the scorecards, above In progress now');
+    chk(after(kpis, qc) && after(qc, grid), 'task queue sits directly under the scorecards, above Workers');
     chk(!after(qc, kpis) && !after(grid, qc), 'negative control: queue is neither before the scorecards nor after the table');
     const between = (a, b) => { const out = []; for (let n = a.nextElementSibling; n && n !== b; n = n.nextElementSibling) out.push(n); return out; };
     const gap = between(qc, grid);

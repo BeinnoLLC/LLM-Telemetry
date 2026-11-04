@@ -1,4 +1,4 @@
-// #127: Task queue running/done lanes, and the "In progress now" grid, must
+// #127: Task queue running/done lanes, and the "Workers" grid, must
 // lead with the session TITLE (the prompt/task the user is actually running)
 // rather than the model name. Model stays visible as secondary metadata —
 // it's useful, just not what answers "what is this box doing".
@@ -92,10 +92,10 @@ setTimeout(() => {
     chk(lbl(doneCar2) === 'glm-5.3-flash',
         'untitled done session falls back to the model name', lbl(doneCar2));
 
-    // ---- In progress now: title is the prominent text, model is secondary --
+    // ---- Workers: title is the prominent text, model is secondary --
     const rows = [...d.querySelectorAll('#livelist > div')];
     const row1 = rows.find(r => r.textContent.includes('Refactor the billing parser'));
-    chk(!!row1, '"In progress now" row shows the session title');
+    chk(!!row1, '"Workers" row shows the session title');
     const titleEl = [...row1.querySelectorAll('span,button')].find(s => s.textContent === 'Refactor the billing parser');
     chk(!!titleEl, 'the title text is its own element (not buried in a combined string)');
     chk(/text-\[length:var\(--fs-md\)\]/.test(titleEl.className) && /font-semibold/.test(titleEl.className),
