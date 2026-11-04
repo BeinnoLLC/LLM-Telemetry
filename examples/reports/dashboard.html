@@ -1462,6 +1462,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
+ .page[data-pageview="Life"] > .pagehead{order:-40}
+.page[data-pageview="Life"] > .view[data-view="Life"]{display:contents}
+.page[data-pageview="Life"] > .view[data-view="Life"] > *{order:-10;margin-top:0;margin-bottom:0}
+.page[data-pageview="Life"] > #filterbar{order:-34}
+.page[data-pageview="Life"] > #alertscard{display:none}
  
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
@@ -2217,6 +2222,18 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
  <div class="view" data-view="Home">
   <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
+  <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
+  <div class="card p-4 mt-3 home-late" id="olcard" hidden>
+   <div class="lbl mb-2.5">Local inference hosts
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
+   </div>
+   <div id="ollama" class="olgrid"></div>
+  </div>
+  <div class="lbl mt-4 mb-2.5 home-late">Explore</div>
+  <div class="grid-home home-late" id="homecards"></div>
+ </div>
+
+ <div class="view" data-view="Life" hidden>
   <div class="card p-4" id="qcard" style="position:relative">
    <div class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
@@ -2226,7 +2243,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="group" aria-label="Running tasks" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
     <section class="qt-sec qt-yard" aria-label="Yard: done"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-done">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-done" role="group" aria-label="Finished tasks" data-empty="No finished sessions"></div></div></div><div class="qt-name">Yard</div></section>
    </div>
-   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-hermes"><b class="qt-gl">H</b></i>Hermes</span><span><i class="qt-sw qt-sw-pi"><b class="qt-gl">π</b></i>Pi</span><span><i class="qt-sw qt-sw-claude"><b class="qt-gl">C</b></i>Claude</span><span><i class="qt-sw qt-sw-codex"><b class="qt-gl">X</b></i>Codex</span><span><i class="qt-sw qt-sw-wait"><b class="qt-gl">O</b></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span><span>Done ball = LLM provider</span></div>
+   <div class="qt-legend" aria-hidden="true"><span><i class="qt-sw qt-sw-wait"><b class="qt-gl">O</b></i>Ollama request</span><span><i class="qt-sw qt-sw-glow"></i>Glow = live now</span><span><i class="qt-sw qt-sw-ring"></i>Ring = waiting on approval</span><span>Ball icon = LLM provider</span></div>
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
    <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
@@ -2241,17 +2258,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    </div>
 
   </div>
-  <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
-  <div class="card p-4 mt-3 home-late" id="olcard" hidden>
-   <div class="lbl mb-2.5">Local inference hosts
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
-   </div>
-   <div id="ollama" class="olgrid"></div>
-  </div>
-  <div class="lbl mt-4 mb-2.5 home-late">Explore</div>
-  <div class="grid-home home-late" id="homecards"></div>
- </div>
 
+ </div>
  <div class="view" data-view="Router" hidden>
   <div class="lbl mb-2.5">Model router
    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="routersub"></span>
@@ -6329,11 +6337,8 @@ const QT_MIN = 18;
 const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
 function qtGlyphKey(it){
   if (it.kind === 'q') return 'ollama';
-  if (it.kind === 'd') {
-    const p = provOf('', it.model || '', '');
-    if (p && p !== 'cloud') return p;
-  }
-  return it.kind === 'r' ? (it.eng || 'hermes') : 'hermes';
+  const p = provOf('', it.model || '', '');
+  return p || 'cloud';
 }
 const QT_FILL = 0.5;
 
@@ -9898,7 +9903,7 @@ function navInstall(){
   navSetOpen(false);
 }
 function views(){
-  $('views').innerHTML=['Home','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
+  $('views').innerHTML=['Home','Life','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 function pickView(v){

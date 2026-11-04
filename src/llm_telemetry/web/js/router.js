@@ -933,7 +933,7 @@ export function navInstall(){
   navSetOpen(false);
 }
 export function views(){
-  $('views').innerHTML=['Home','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
+  $('views').innerHTML=['Home','Life','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){
