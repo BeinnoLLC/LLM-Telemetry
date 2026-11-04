@@ -69,7 +69,7 @@ setTimeout(()=>{
 
  // 1. live cards
  view('Live');
- const lm=[...d.querySelectorAll('#livelist .metacol > div:first-child')];
+ const lm=[...d.querySelectorAll('#livelist .metacol .lvmodel')];
  chk(lm.length>0,'live card model names',`(${lm.length})`);
  chk(lm.every(e=>size(e)>=15),'live names >= 15px',`(${size(lm[0])}px)`);
  chk(lm.every(e=>!grey(col(e))),'live names coloured',`(${col(lm[0])})`);

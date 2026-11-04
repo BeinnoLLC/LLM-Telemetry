@@ -128,7 +128,7 @@ setTimeout(() => {
         'card contents vertically centred');
     const meta = cards.map(c => c.querySelector('.metacol')).filter(Boolean);
     chk(meta.length === cards.length, 'every card has a fixed meta column');
-    chk(meta.every(m => (m.firstElementChild.className || '').includes('text-[length:var(--fs-sm)]')),
+    chk(meta.every(m => (m.querySelector('.lvmodel')?.className || '').includes('text-[length:var(--fs-sm)]')),
         'model name uses the smaller, secondary size (title is now primary, #127; fluid token, #20)');
   }
 

@@ -105,7 +105,7 @@ export function qtSeed(key){
   h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-export const QT_CAP = 40;                     // balls drawn per jar; the 40th slot becomes a "+N" chip
+export const QT_CAP = Infinity;                     // no cap: fit as many balls as the jar holds
 // Ball px: start at QT_MAX and step down to QT_MIN until the pile fits in QT_FILL of the jar.
 export const QT_MAX = 28;
 export const QT_MIN = 18;

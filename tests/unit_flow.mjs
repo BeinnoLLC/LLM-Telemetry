@@ -353,16 +353,16 @@ const lblOf = c => c._qt.label;
   eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
   ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  // Cap: 39 balls and a "+N" chip from 41 up; the lid keeps the true total.
+  // No cap: every task is drawn as a ball; the lid keeps the true total.
   h.DATA.ollama.hosts = [{ label: 'big', queue: 70 }];
   D.renderQueue();
-  eq(cars(qb).length, 39, 'depot: 70 waiting -> 39 balls drawn');
+  eq(cars(qb).length, 70, 'depot: 70 waiting -> 70 balls drawn');
   eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: the lid shows the true count');
-  eq(qb._qtChip && qb._qtChip.textContent, '+31', 'depot: a "+31" chip takes the 40th slot');
+  ok(!qb._qtChip, 'depot: no chip when all are drawn');
   h.DATA.ollama.hosts = [{ label: 'big', queue: 40 }];
   D.renderQueue();
   eq(cars(qb).length, 40, 'depot: exactly 40 -> all drawn');
-  eq(qb._qtChip, null, 'depot: and no chip');
+  ok(!qb._qtChip, 'depot: and no chip');
 
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
   D.renderQueue();
@@ -424,11 +424,10 @@ const lblOf = c => c._qt.label;
   ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
   ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
 
-  // Many finished tasks: 39 balls + a chip, honest lid.
+  // Many finished tasks: all drawn, honest lid.
   h.DATA.profiles.p1 = { live: [], recent_sessions: Array.from({ length: 120 }, (_, i) => ({ id: 'x' + i, title: 'Task number ' + i + ' with a long wrapped title', model: 'm', last_ts: 1000 + i })) };
   D.renderQueue();
-  eq(cars(h.ids.get('qt-done')).length, 39, 'yard: 120 done -> 39 balls');
-  eq(h.ids.get('qt-done')._qtChip.textContent, '+81', 'yard: a "+81" chip for the rest');
+  ok(cars(h.ids.get('qt-done')).length > 40, 'yard: 120 done -> more than 40 balls (no artificial cap)');
   eq(h.ids.get('qt-n-done').textContent, '120', 'yard: the lid count is honest');
 
   // No model at all: 'session', never "undefined" (#138).
