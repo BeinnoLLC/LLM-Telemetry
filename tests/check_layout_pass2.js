@@ -10,7 +10,7 @@ const has = re => re.test(html);
 chk(has(/--fs-xs:13px;/) && has(/--fs-sm:14px;/), 'body text floor: --fs-xs 13px, --fs-sm 14px');
 chk(!has(/[;{ ]font-size:(?:9|10|11|11\.2|12|12\.5)px(?![^<]*<\/tspan>)/), 'no hard-coded sub-13px font-size left in the stylesheet');
 chk(has(/\.lbl\{font-size:13px/), '.lbl is at least 13px');
-chk(has(/@media \(max-width:600px\)\{ :root\{--logtab-w:0px;--logtab-gap:0px\} #logbtn\{display:none\} \}/), 'floating Logs tab hidden at <=600px and reserves no gutter');
+// (removed: floating Logs tab gone in UI pass A; entry point is the rail's Live tail item)
 chk(has(/@media\(max-width:899px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:span 6\} \}/) && has(/@media\(max-width:359px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:1\/-1\} \}/), 'KPI cards are 2 columns on phones (1 only below 360px)');
 chk(has(/\.filterbar\{[^}]*flex-wrap:wrap/) && has(/\.fb-combos\{display:flex/), 'range, comboboxes and meta share one wrapping filter bar (U-2)');
 chk(has(/\.grid-home\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/), 'Explore tiles use an even 4-column grid (3 equal rows)');
