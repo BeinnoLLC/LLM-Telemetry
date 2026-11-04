@@ -845,7 +845,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
   filter:drop-shadow(0 0 .7px rgba(255,255,255,.75)) drop-shadow(0 0 1px rgba(255,255,255,.3))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 72%)}
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px),
@@ -2055,7 +2055,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dkpi .lbl,.dkpi .dkl,.qv-kpi span,.qv-fkpi span{order:-1;font:500 13px/18px var(--font);letter-spacing:.04em;
   text-transform:uppercase;color:var(--muted)}
 .dkpi-n,.dkpi .dkv,.qv-kpi .qv-kv,.qv-fkpi .qv-kv{font:600 28px/38px var(--font);font-variant-numeric:tabular-nums}
-
 /* ---- UI pass U-2: one filter bar ------------------------------------------
    Range = segmented radiogroup (+ Custom date popover); Session / Provider /
    Model = searchable comboboxes; active values show as removable chips. */
@@ -2112,3 +2111,46 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .fb-done{display:inline-flex;align-items:center;justify-content:center}
   .rangepop{left:12px;right:12px}
 }
+/* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
+   rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
+   light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
+:root:not([data-theme="dark"]) #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
+:root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
+:root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
+:root:not([data-theme="dark"]) #qcard .qt-yard{--jc:var(--accent)}
+:root:not([data-theme="dark"]) #qcard .qt-jar{filter:drop-shadow(1.5px 0 0 var(--jar-edge)) drop-shadow(-1.5px 0 0 var(--jar-edge)) drop-shadow(0 1.5px 0 var(--jar-edge))}
+:root:not([data-theme="dark"]) #qcard .qt-sec::before{left:2%;right:2%;bottom:20px;height:22px;filter:blur(3px);
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 75%)}
+:root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
+  background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
+  box-shadow:inset 7px 0 9px -6px hsl(220 25% 45% / .22),inset -7px 0 9px -6px hsl(220 25% 45% / .16),inset 0 -16px 18px -12px hsl(220 25% 45% / .22)}
+:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,hsl(0 0% 100% / .95),hsl(0 0% 100% / .55) 60%,hsl(0 0% 100% / 0));filter:blur(1.5px)}
+:root:not([data-theme="dark"]) #qcard .qt-body::before{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 30%,transparent))}
+:root:not([data-theme="dark"]) #qcard .qt-body::after{
+  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 30%,transparent) 98%,transparent) 0 0/28px 9px repeat-x;
+  border-bottom:2px solid color-mix(in srgb,var(--jc) 70%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-lid{border:1.5px solid var(--jar-edge);border-bottom:3px solid var(--jc);
+  background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
+  box-shadow:inset 0 1px 0 hsl(0 0% 100% / .95),inset 0 -2px 3px -1px hsl(220 25% 45% / .16),0 2px 4px hsl(220 30% 20% / .18)}
+:root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px hsl(220 30% 20% / .18)}
+:root:not([data-theme="dark"]) #qcard .qt-n{color:var(--jar-ink);text-shadow:none}
+:root:not([data-theme="dark"]) #qcard .qt-name{color:var(--jar-label)}
+:root:not([data-theme="dark"]) #qcard .qt-cars:not(:has(.qt-ball))::after{color:var(--jar-label-soft)}
+:root:not([data-theme="dark"]) #qcard .qt-legend{color:var(--jar-label-soft)}
+:root:not([data-theme="dark"]) #qcard .qt-ball{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-ball:hover,:root:not([data-theme="dark"]) #qcard .qt-ball:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-tip-on{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .45),0 4px 7px -2px hsl(220 30% 15% / .45)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-run{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-run .qt-ball-g{box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 70%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn{outline:2px dashed var(--jar-ring);outline-offset:3px;
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn.qt-tip-on{outline:2px solid var(--accent)}
+:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px hsl(0 0% 0% / .28),inset 0 1px 1px hsl(0 0% 100% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-sw-glow{--k:var(--jar-glow);background:var(--jar-glass);
+  box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
+  box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
+

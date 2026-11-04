@@ -1083,6 +1083,10 @@
   },
   {
    "mod": "flow",
+   "name": "qtFit"
+  },
+  {
+   "mod": "flow",
    "name": "qtLayout"
   },
   {
