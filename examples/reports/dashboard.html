@@ -967,13 +967,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:linear-gradient(90deg,rgba(0,0,0,.22),transparent 16%,transparent 84%,rgba(0,0,0,.18)),
     linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,black 10%));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
-.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:9px;margin-bottom:-1px;pointer-events:none;transform-origin:50% 100%;
-  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 55%,white 15%) 98%,transparent) 0 0/28px 9px repeat-x;
+.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:12px;margin-bottom:-2px;pointer-events:none;transform-origin:50% 100%;
+  background:
+    radial-gradient(ellipse 30px 10px at 50% 100%,color-mix(in srgb,var(--jc) 60%,white 20%) 98%,transparent) 0 0/60px 12px repeat-x,
+    radial-gradient(ellipse 18px 5px at 50% 100%,color-mix(in srgb,var(--jc) 40%,white 30%) 98%,transparent) 15px 2px/36px 12px repeat-x;
   border-bottom:2px solid color-mix(in srgb,var(--jc) 30%,white 70%);
-  opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
+  opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 4s linear infinite}
 .qt-jar.qt-splash .qt-body::after{animation:qt-wave 3.2s linear infinite,qt-splash 1s ease-out}
 .qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out}
-@keyframes qt-wave{to{background-position-x:28px}}
+@keyframes qt-wave{to{background-position:60px 0,-36px 2px}}
 @keyframes qt-splash{35%{transform:scaleY(2.4);border-bottom-color:white}to{transform:none}}
 @keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
