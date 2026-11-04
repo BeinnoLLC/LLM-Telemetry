@@ -2057,6 +2057,20 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .fb-done{display:inline-flex;align-items:center;justify-content:center}
   .rangepop{left:12px;right:12px}
 }
+@media (max-width:390px){
+  html,body{max-width:100vw;overflow-x:hidden}
+  .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
+  .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
+  .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
+  .grid-home > *{min-width:0}
+  div:has(>canvas){width:100%;max-width:100%;min-height:160px}
+  canvas{max-width:100%}
+  .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .navitem,.combo-btn,.chip,.tab,.tabbtn,[role=tab],.pk-btn,.pchip,.kseg,select.chip{min-height:44px}
+  .combo-btn{max-width:100%}
+  .combo-pop{max-width:calc(100vw - 16px)}
+}
+
 
 :root:not([data-theme="dark"]) #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
 :root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
@@ -2097,6 +2111,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
   box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
+
+
 
 
 </style></head><body>
