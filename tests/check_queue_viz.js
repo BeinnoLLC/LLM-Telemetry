@@ -136,7 +136,7 @@ setTimeout(() => {
     chk(run.map(lbl).join('|') === 'one|two|gpt-5', 'line: titles lead, untitled falls back to the model', run.map(lbl).join('|'));
     chk(run.every(c => c.dataset.state === 'running') && run.some(c => c.dataset.state), 'line: tiles carry a live state');
     chk(n('qt-n-running') === '3', 'line: count badge');
-    chk(/var\(--kind-hermes\)/.test(run[0].style.getPropertyValue('--k')), 'line: ball colour comes from the agent family');
+    chk(/^hsl\(/.test(run[0].style.getPropertyValue('--k')), 'line: ball colour comes from the profile', run[0].style.getPropertyValue('--k'));
     run[0].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(/qwen3-coder/.test(tip.textContent) && /receiving stream response/.test(tip.textContent), 'hover: running card shows model and phase', tip.textContent);
     chk(run[0].tagName === 'BUTTON' && /one/.test(run[0].getAttribute('aria-label')), 'a ball is a button whose aria-label carries the title');
