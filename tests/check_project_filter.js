@@ -16,9 +16,9 @@ function chk(ok, name, got) {
 }
 
 chk(/id="projfiltersel"/.test(html), 'the project filter select exists');
-chk(/All projects/.test(html), '"All projects" is present as the default option in markup');
-chk(/id="projfilterchip"/.test(html) && /id="projfilterclear"/.test(html),
-    'a removable filter chip with a clear control exists');
+chk(/All sessions/.test(html), '"All sessions" is present as the default option in markup');
+chk(/id="fbactive"/.test(html) && /id="fbcombos"/.test(html),
+    'the active-chip strip and the combobox host exist (U-2)');
 
 function boot(startHash) {
   return new JSDOM(html, {
@@ -67,20 +67,18 @@ setTimeout(() => {
     chk(usageAfterText !== usageBeforeText, 'selecting a project changes the Usage table');
 
     // Chip visible on Usage.
-    const chip = d.getElementById('projfilterchip');
-    chk(chip.hidden === false, 'the filter chip is visible on Usage while a filter is active');
-    chk(d.getElementById('projfilterchipname').textContent === targetProject,
-        'the chip names the active project');
+    const chipOn = () => [...d.querySelectorAll('#fbactive .fchip-on .fchip-v')].map(c => c.textContent);
+    chk(chipOn().includes(targetProject), 'a removable chip names the active project');
 
     // Cost, Flow, Health all narrow too (Health has no project field of its
     // own — assert it still changes, i.e. is actually being filtered by
     // which models the project touched, not just left alone).
     w.eval("pickView('Cost');");
     const costText = d.getElementById('cModelCost') ? 'has-canvas' : 'no-canvas';
-    chk(d.getElementById('projfilterchip').hidden === false, 'the chip is also visible on Cost');
+    chk(chipOn().includes(targetProject), 'the chip is also visible on Cost');
 
     w.eval("pickView('Health');");
-    chk(d.getElementById('projfilterchip').hidden === false, 'the chip is also visible on Health');
+    chk(chipOn().includes(targetProject), 'the chip is also visible on Health');
     const healthFilteredHTML = d.getElementById('healthgrid').textContent;
 
     w.eval("PROJECT_FILTER=''; syncProjFilterUI(); render();");
@@ -91,11 +89,11 @@ setTimeout(() => {
     // Restore filter, check a view NOT in the affected set hides the chip.
     w.eval(`PROJECT_FILTER=${JSON.stringify(targetProject)}; syncProjFilterUI();`);
     w.eval("pickView('Home');");
-    chk(d.getElementById('projfilterchip').hidden === true,
-        'the chip is hidden on a view the filter does not affect (Home)');
+    chk(chipOn().includes(targetProject),
+        'the chip stays visible on Home too: the bar is the same everywhere, so no silent filter');
 
     w.eval("pickView('Usage');");
-    chk(d.getElementById('projfilterchip').hidden === false, 'the chip reappears back on Usage');
+    chk(chipOn().includes(targetProject), 'the chip is still there back on Usage');
 
     // Composition with date range: applying a date range on top of the
     // project filter narrows further, it doesn't reset the filter.
@@ -112,7 +110,7 @@ setTimeout(() => {
     // Clear button.
     d.getElementById('projfilterclear').click();
     chk(w.eval('PROJECT_FILTER') === '', 'the clear (×) button resets the filter to All projects');
-    chk(d.getElementById('projfilterchip').hidden === true, 'the chip disappears once cleared');
+    chk(chipOn().length === 0, 'the chip disappears once cleared');
 
     // Deep link: hash carries ?project=.
     w.eval(`sel_ = $('projfiltersel'); sel_.value=${JSON.stringify(targetProject)}; sel_.dispatchEvent(new Event('change'));`);

@@ -92,8 +92,8 @@ setTimeout(() => {
     // ---- setHourRange / setRange are mutually exclusive --------------------
     w.eval(`setHourRange(6)`);
     chk(w.eval('HOUR_RANGE') === 6, 'setHourRange(6) sets HOUR_RANGE');
-    chk(w.eval(`$('rangetoggle').textContent`) === '6h',
-        'the mobile range-toggle label reflects the active hour preset');
+    chk(w.eval(`$('presets').querySelector('[aria-checked=true]').dataset.key`) === '6h',
+        'the segmented control reflects the active hour preset');
     w.eval(`setRange($('from').min, $('to').max)`);
     chk(w.eval('HOUR_RANGE') === null,
         'picking a day preset (setRange) clears HOUR_RANGE — exclusive with hour mode');

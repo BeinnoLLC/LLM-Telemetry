@@ -84,10 +84,10 @@
  /* LST-196: a real segmented control. One visual pill with the options joined,
     a raised active state, and 44px-class hit heights on touch. The old three
     loose .tab buttons read as unrelated actions rather than one choice. */
- .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card)}
+ .seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--card)}
  .seg-btn{appearance:none;background:transparent;border:0;border-right:1px solid var(--border);
-   color:var(--muted);font:inherit;font-size:var(--fs-xs);font-weight:600;
-   padding:.34rem .7rem;min-height:30px;cursor:pointer;transition:background .12s,color .12s}
+   color:var(--muted);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;white-space:nowrap;
+   padding:0 12px;min-height:32px;cursor:pointer;transition:background .12s,color .12s}
  .seg-btn:last-child{border-right:0}
  .seg-btn:hover{color:var(--fg);background:var(--accent-wash)}
  .seg-btn.on{background:var(--accent);color:var(--accent-ink)}
@@ -1411,9 +1411,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .pagehead{order:-40}
  .page[data-pageview="Home"] > .view[data-view="Home"]{display:contents}
  .page[data-pageview="Home"] > .view[data-view="Home"] > *{order:-10;margin-top:0;margin-bottom:0}
- .page[data-pageview="Home"] > #rangebar{order:-35}
- .page[data-pageview="Home"] > #projfilterbar{order:-34}
- .page[data-pageview="Home"] > #xfercard{order:-33}
+ .page[data-pageview="Home"] > #filterbar{order:-34}
  .page[data-pageview="Home"] > .view[data-view="Home"] > #livekpis{order:-30}
  .page[data-pageview="Home"] > #kpis{order:-28}
  .page[data-pageview="Home"] > .view[data-view="Home"] > #qcard{order:-25}
@@ -1439,19 +1437,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
    #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
-
-   /* Date range collapses to a single active-preset chip; tapping it reveals
-      the two date inputs + full preset row beneath instead of all of them
-      fighting for one line (avoids the desktop row overflowing at 360px). */
-   #rangebar{flex-direction:column;align-items:stretch !important}
-   #rangebar > .lbl{display:none}
-   #rangebar input[type=date]{flex:1;min-width:0}
-   #rangebar:not(.rangeopen) input[type=date],
-   #rangebar:not(.rangeopen) > span.muted:not(#rangeinfo){display:none}
-   #rangebar #presets{flex-wrap:wrap;width:100%}
-   #rangebar:not(.rangeopen) #presets{display:none}
-   #rangebar #rangeinfo{margin-left:0;width:100%;order:-1}
-   #rangetoggle{display:flex !important}
 
    /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
       page itself never does. */
@@ -2007,12 +1992,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 :root[data-density=compact] #faillist .frow{min-height:36px;padding:4px 8px}
 :root[data-density=compact] #faillist .frow .fmsg,:root[data-density=compact] #faillist .frow .fwhen,:root[data-density=compact] #faillist .frow .fmodel{font-size:13px}
 
-/* LST-261: the three filter selects share ONE row (wrap only on phones). */
-#projfilterbar{flex-wrap:nowrap}
-#projfilterbar .selwrap{flex:1 1 0;min-width:0}
-#projfilterbar .selwrap select{width:100%;min-width:0;text-overflow:ellipsis}
-@media (max-width:600px){#projfilterbar{flex-wrap:wrap}#projfilterbar .selwrap{flex:1 1 100%}}
-
 /* LST-261 clipping: tags and blurbs wrap or grow instead of cutting words. */
 .qv-amodels,.fmsg,.dgoal{white-space:normal;overflow-wrap:anywhere}
 .fmsg.truncate{white-space:normal;overflow:visible;text-overflow:clip}
@@ -2036,7 +2015,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 /* LST-261: the cost note only matters where money is shown. */
 .page:not([data-pageview="Home"]):not([data-pageview="Cost"]):not([data-pageview="Prices"]) .costhow{display:none}
 /* UI pass U-1 (P1-1): the totals strip and the Transferred bar are Home's, not every tab's. */
-.page:not([data-pageview="Home"]) > #kpis,.page:not([data-pageview="Home"]) > #xfercard{display:none}
+.page:not([data-pageview="Home"]) > #kpis{display:none}
 
 /* ---- Notices (UI pass U-1): toast overlay + app-bar chip ---------------------
    The stack floats over the page and never takes layout space, so a notice
@@ -2076,3 +2055,60 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dkpi .lbl,.dkpi .dkl,.qv-kpi span,.qv-fkpi span{order:-1;font:500 13px/18px var(--font);letter-spacing:.04em;
   text-transform:uppercase;color:var(--muted)}
 .dkpi-n,.dkpi .dkv,.qv-kpi .qv-kv,.qv-fkpi .qv-kv{font:600 28px/38px var(--font);font-variant-numeric:tabular-nums}
+
+/* ---- UI pass U-2: one filter bar ------------------------------------------
+   Range = segmented radiogroup (+ Custom date popover); Session / Provider /
+   Model = searchable comboboxes; active values show as removable chips. */
+.filterbar{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:6px 12px}
+.filterbar .fb-combos{display:flex;flex-wrap:wrap;gap:8px}
+.filterbar .fb-meta{margin-left:auto;font-size:13px;line-height:32px;color:var(--muted);white-space:nowrap}
+.filterbar .fb-active{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.filterbar .fb-active:empty{display:none}
+.fb-sheet{display:contents}
+.fb-filters,.fb-done{display:none}
+.rangepop{left:12px;right:auto;width:auto;flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:12px}
+.rp-f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.rangepop input[type=date]{height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;font-size:14px;color-scheme:dark}
+.btn-apply{min-height:32px;padding:0 16px;border:0;border-radius:var(--radius-sm);background:var(--accent);color:var(--accent-ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.combo{position:relative}
+.combo-btn{display:inline-flex;align-items:center;gap:8px;background:var(--bg);color:var(--fg);padding:0 12px;font-size:14px;max-width:260px}
+.combo-btn.has{border-color:var(--accent)}
+.combo-l{color:var(--muted)}
+.combo-btn.has .combo-l::after{content:":"}
+.combo-v{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.combo-chev{flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
+.combo-pop{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.combo-q{margin:8px;height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;font:inherit;font-size:14px}
+.combo-list{max-height:min(320px,50vh);overflow:auto;border-top:1px solid var(--border)}
+.combo-opt{display:flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px;font-size:14px;cursor:pointer}
+.combo-opt.act{background:var(--accent-wash)}
+.combo-opt.dim{opacity:.55}
+.combo-tick{flex:none;width:14px;color:var(--accent)}
+.combo-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.combo-name mark{background:rgba(110,159,255,.35);color:var(--fg);border-radius:2px}
+.combo-n{flex:none;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.combo-none{padding:12px;font-size:14px}
+.combo-foot{display:flex;justify-content:flex-end;padding:8px;border-top:1px solid var(--border)}
+.combo-clear,.fb-clearall{min-height:32px;padding:0 8px;border:0;background:none;color:var(--accent);font:inherit;font-size:14px;cursor:pointer}
+.fchip-on{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:0 8px 0 12px;background:var(--accent-wash);border-color:var(--accent);color:var(--fg);font-size:14px}
+.fchip-k,.fchip-x{color:var(--muted)}
+.fchip-v{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fchip-x{margin-left:4px;font-size:18px;line-height:1}
+.fb-filters{background:var(--bg);color:var(--fg)}
+.xferline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px}
+@media (max-width:600px){
+  .filterbar #presets{flex:1 1 100%;max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .filterbar .seg-btn{min-height:44px;min-width:0;flex:1 0 auto;padding:0 8px}
+  .fb-filters{display:inline-flex}
+  .filterbar .fb-meta{order:3;flex-basis:100%;margin-left:0;line-height:20px}
+  .filterbar .fb-active{order:2}
+  .fb-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:75vh;overflow:auto;flex-direction:column;gap:8px;
+    padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.5)}
+  .filterbar.sheet-open .fb-sheet{display:flex}
+  .fb-sheet .fb-combos{flex-direction:column;flex-wrap:nowrap}
+  .fb-sheet .combo-btn{width:100%;max-width:none;justify-content:space-between}
+  .fb-sheet .combo-pop{position:static;width:auto;margin-top:4px;box-shadow:none}
+  .fb-done{display:inline-flex;align-items:center;justify-content:center}
+  .rangepop{left:12px;right:12px}
+}

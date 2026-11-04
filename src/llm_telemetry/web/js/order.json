@@ -458,6 +458,38 @@
    "name": "presets"
   },
   {
+   "mod": "router",
+   "name": "RANGE_HOURS"
+  },
+  {
+   "mod": "router",
+   "name": "rangeDefs"
+  },
+  {
+   "mod": "router",
+   "name": "rangeKey"
+  },
+  {
+   "mod": "router",
+   "name": "rangeParam"
+  },
+  {
+   "mod": "router",
+   "name": "applyRangeParam"
+  },
+  {
+   "mod": "router",
+   "name": "RANGE_HYDRATED"
+  },
+  {
+   "mod": "router",
+   "name": "RANGE_PICK"
+  },
+  {
+   "mod": "router",
+   "name": "toggleRangePop"
+  },
+  {
    "mod": "palette",
    "name": "labelColor"
   },
@@ -920,6 +952,54 @@
   {
    "mod": "views",
    "name": "installProjFilter"
+  },
+  {
+   "mod": "views",
+   "name": "FB_FACETS"
+  },
+  {
+   "mod": "views",
+   "name": "comboState"
+  },
+  {
+   "mod": "views",
+   "name": "comboCounts"
+  },
+  {
+   "mod": "views",
+   "name": "comboOptions"
+  },
+  {
+   "mod": "views",
+   "name": "comboHits"
+  },
+  {
+   "mod": "views",
+   "name": "comboMark"
+  },
+  {
+   "mod": "views",
+   "name": "renderComboList"
+  },
+  {
+   "mod": "views",
+   "name": "closeCombo"
+  },
+  {
+   "mod": "views",
+   "name": "openCombo"
+  },
+  {
+   "mod": "views",
+   "name": "pickCombo"
+  },
+  {
+   "mod": "views",
+   "name": "buildFilterCombos"
+  },
+  {
+   "mod": "views",
+   "name": "refreshFilterCombos"
   },
   {
    "mod": "charts",
