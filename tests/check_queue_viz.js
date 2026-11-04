@@ -78,9 +78,9 @@ setTimeout(() => {
         'task queue renders BEFORE the in-progress grid (Home feedback: queue always on top)');
     chk(!!liveGrid && (liveGrid.compareDocumentPosition(qcard) & FOLLOWING) === 0,
         'negative control: queue does not follow the in-progress grid');
-    const inProg = [...d.querySelectorAll('.lbl')].find(el => /In progress now/i.test(el.textContent));
+    const inProg = [...d.querySelectorAll('.lbl')].find(el => /Workers/i.test(el.textContent));
     chk(!!inProg && (qcard.compareDocumentPosition(inProg) & FOLLOWING) !== 0,
-        'task queue renders before the "In progress now" heading');
+        'task queue renders before the "Workers" heading');
     const series = d.getElementById('homeseries');
     chk(!!series && (qcard.compareDocumentPosition(series) & FOLLOWING) !== 0,
         'task queue renders before the 6h series panel');
