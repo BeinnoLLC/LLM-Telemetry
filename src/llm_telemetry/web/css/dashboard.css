@@ -2111,6 +2111,20 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .fb-done{display:inline-flex;align-items:center;justify-content:center}
   .rangepop{left:12px;right:12px}
 }
+@media (max-width:390px){
+  html,body{max-width:100vw;overflow-x:hidden}
+  .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
+  .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
+  .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
+  .grid-home > *{min-width:0}
+  div:has(>canvas){width:100%;max-width:100%;min-height:160px}
+  canvas{max-width:100%}
+  .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .navitem,.combo-btn,.chip,.tab,.tabbtn,[role=tab],.pk-btn,.pchip,.kseg,select.chip{min-height:44px}
+  .combo-btn{max-width:100%}
+  .combo-pop{max-width:calc(100vw - 16px)}
+}
+
 /* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
    rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
    light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
@@ -2157,16 +2171,3 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 /* LST-230: 390px pass — nothing may widen the page; wide tables scroll inside
    their own panel; charts stay readable; touch controls reach the 44px floor. */
-@media (max-width:390px){
-  html,body{max-width:100vw;overflow-x:hidden}
-  .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
-  .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
-  .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
-  .grid-home > *{min-width:0}
-  div:has(>canvas){width:100%;max-width:100%;min-height:160px}
-  canvas{max-width:100%}
-  .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .navitem,.combo-btn,.chip,.tab,.tabbtn,[role=tab],.pk-btn,.pchip,.kseg,select.chip{min-height:44px}
-  .combo-btn{max-width:100%}
-  .combo-pop{max-width:calc(100vw - 16px)}
-}
