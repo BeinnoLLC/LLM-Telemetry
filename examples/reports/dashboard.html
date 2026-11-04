@@ -156,7 +156,7 @@
   --jar-label-soft:hsl(220 12% 34%);
   --jar-lid-top:hsl(0 0% 100%);
   --jar-lid-bot:hsl(220 18% 90%);
-  --jar-shadow:hsl(220 30% 20% / .22);
+  --jar-shadow:hsl(220 30% 20% / .34);
   --jar-glow:hsl(199 95% 38%);
   --jar-ring:hsl(28 95% 36%);
   --jar-hermes:hsl(199 90% 41%);
@@ -939,7 +939,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
   filter:drop-shadow(0 0 .7px rgba(255,255,255,.75)) drop-shadow(0 0 1px rgba(255,255,255,.3))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 72%)}
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px),
@@ -2028,8 +2028,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 :root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
 :root:not([data-theme="dark"]) #qcard .qt-yard{--jc:var(--accent)}
 :root:not([data-theme="dark"]) #qcard .qt-jar{filter:drop-shadow(1.5px 0 0 var(--jar-edge)) drop-shadow(-1.5px 0 0 var(--jar-edge)) drop-shadow(0 1.5px 0 var(--jar-edge))}
-:root:not([data-theme="dark"]) #qcard .qt-sec::before{bottom:10px;height:20px;filter:blur(5px);
-  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 70%)}
+:root:not([data-theme="dark"]) #qcard .qt-sec::before{left:2%;right:2%;bottom:20px;height:22px;filter:blur(3px);
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 75%)}
 :root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
   box-shadow:inset 7px 0 9px -6px hsl(220 25% 45% / .22),inset -7px 0 9px -6px hsl(220 25% 45% / .16),inset 0 -16px 18px -12px hsl(220 25% 45% / .22)}
@@ -2041,7 +2041,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   border-bottom:2px solid color-mix(in srgb,var(--jc) 70%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-lid{border:1.5px solid var(--jar-edge);border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
-  box-shadow:0 2px 4px hsl(220 30% 20% / .18)}
+  box-shadow:inset 0 1px 0 hsl(0 0% 100% / .95),inset 0 -2px 3px -1px hsl(220 25% 45% / .16),0 2px 4px hsl(220 30% 20% / .18)}
 :root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px hsl(220 30% 20% / .18)}
 :root:not([data-theme="dark"]) #qcard .qt-n{color:var(--jar-ink);text-shadow:none}
 :root:not([data-theme="dark"]) #qcard .qt-name{color:var(--jar-label)}
@@ -6089,28 +6089,39 @@ const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: '
 function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
 const QT_FILL = 0.5;
 
-function qtPack(keys, w, h, size){
-  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
-  let top = h;
+function qtPack(keys, w, h, size, chip){
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [], chipW = 56, chipH = 50;   // the +N button, top right (44px tap target on touch)
+  let top = h, ok = true;
+  const fits = (x, y) => y - r * 1.14 >= 2 && !(chip && x + r > w - chipW && y - r < chipH);
   keys.forEach(k => {
     let best = null;
     for (let t = 0; t < 6; t++){
       const x = r + pad + qtSeed(k + ':' + t) * Math.max(0, w - size - 2 * pad);
       let y = h - r - pad;
       for (const b of balls){ const dx = Math.abs(b.x - x); if (dx < d) y = Math.min(y, b.y - Math.sqrt(d * d - dx * dx)); }
-      if (!best || y > best.y) best = { x, y };
+      const good = fits(x, y);
+      if (!best || (good && !best.good) || (good === best.good && y > best.y)) best = { x, y, good };
     }
+    if (!best.good) ok = false;
     balls.push({ x: best.x, y: best.y, rz: (qtSeed(k + ':r') - 0.5) * 44 });
     top = Math.min(top, best.y - r);
   });
-  return { balls, top };
+  return { balls, top, ok };
+}
+
+function qtFit(keys, w, h, more){
+  for (let n = keys.length; n > 0; n--){
+    if (qtPack(keys.slice(keys.length - n), w, h, QT_MIN, more || n < keys.length).ok) return n;
+  }
+  return 0;
 }
 
 function qtLayout(box, els){
   const w = box.clientWidth || 200, h = box.clientHeight || 240;
   const keys = els.map(c => c.dataset.key);
-  let size = QT_MAX, pk = qtPack(keys, w, h, size);
-  while (size > QT_MIN && pk.top < h * (1 - QT_FILL)){ size--; pk = qtPack(keys, w, h, size); }
+  const chip = !!box._qtMore;
+  let size = QT_MAX, pk = qtPack(keys, w, h, size, chip);
+  while (size > QT_MIN && (pk.top < h * (1 - QT_FILL) || !pk.ok)){ size--; pk = qtPack(keys, w, h, size, chip); }
   const pos = pk.balls.map(b => [b.x.toFixed(1) + 'px', b.y.toFixed(1) + 'px']);
   const moved = els.some((c, i) => c._qtL !== undefined && (c._qtL !== pos[i][0] || c._qtT !== pos[i][1] || c._qtS !== size));
   if (moved){
@@ -6147,8 +6158,11 @@ function paintBalls(box, items, decorate, elsewhere){
     if (!seq.has(items[i].key)) seq.set(items[i].key, box._qtN = (box._qtN || 0) + 1);
   }
   const byNew = items.slice().sort((a, b) => seq.get(b.key) - seq.get(a.key));
-  const vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  let vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  const fit = qtFit(vis.map(it => it.key), box.clientWidth || 200, box.clientHeight || 240, vis.length < items.length);
+  if (fit < vis.length) vis = vis.slice(vis.length - fit);
   const hidden = items.length - vis.length;
+  box._qtMore = hidden > 0;
   const where = { q: 'waiting', r: 'running', d: 'finished' };
   const keep = new Set(), fresh = [], els = [];
   vis.forEach(it => {

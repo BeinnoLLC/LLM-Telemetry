@@ -117,21 +117,34 @@ export const QT_FILL = 0.5;
 // Pour the balls in, oldest first: each one drops from a seeded column (best of six, so it
 // rolls into a valley) and rests on whatever is below. Only earlier balls matter, so
 // appending a task never moves the existing pile. Centres, in px, inside a w x h box.
-export function qtPack(keys, w, h, size){
-  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
-  let top = h;
+export function qtPack(keys, w, h, size, chip){
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [], chipW = 56, chipH = 50;   // the +N button, top right (44px tap target on touch)
+  let top = h, ok = true;
+  // A ball is clipped by the roof of the box (a running ball is 1.14x tall) or hidden by the +N chip.
+  const fits = (x, y) => y - r * 1.14 >= 2 && !(chip && x + r > w - chipW && y - r < chipH);
   keys.forEach(k => {
     let best = null;
     for (let t = 0; t < 6; t++){
       const x = r + pad + qtSeed(k + ':' + t) * Math.max(0, w - size - 2 * pad);
       let y = h - r - pad;
       for (const b of balls){ const dx = Math.abs(b.x - x); if (dx < d) y = Math.min(y, b.y - Math.sqrt(d * d - dx * dx)); }
-      if (!best || y > best.y) best = { x, y };
+      const good = fits(x, y);
+      if (!best || (good && !best.good) || (good === best.good && y > best.y)) best = { x, y, good };
     }
+    if (!best.good) ok = false;
     balls.push({ x: best.x, y: best.y, rz: (qtSeed(k + ':r') - 0.5) * 44 });
     top = Math.min(top, best.y - r);
   });
-  return { balls, top };
+  return { balls, top, ok };
+}
+
+// How many of the newest `keys` (oldest first) can sit in the box at the smallest ball size with
+// none clipped or covered. Whatever does not fit joins the "+N" count, so a ball is never half hidden.
+export function qtFit(keys, w, h, more){
+  for (let n = keys.length; n > 0; n--){
+    if (qtPack(keys.slice(keys.length - n), w, h, QT_MIN, more || n < keys.length).ok) return n;
+  }
+  return 0;
 }
 
 // Size the whole jar (steps down from 28px to 18px as it fills), pack it and write the
@@ -139,8 +152,9 @@ export function qtPack(keys, w, h, size){
 export function qtLayout(box, els){
   const w = box.clientWidth || 200, h = box.clientHeight || 240;
   const keys = els.map(c => c.dataset.key);
-  let size = QT_MAX, pk = qtPack(keys, w, h, size);
-  while (size > QT_MIN && pk.top < h * (1 - QT_FILL)){ size--; pk = qtPack(keys, w, h, size); }
+  const chip = !!box._qtMore;
+  let size = QT_MAX, pk = qtPack(keys, w, h, size, chip);
+  while (size > QT_MIN && (pk.top < h * (1 - QT_FILL) || !pk.ok)){ size--; pk = qtPack(keys, w, h, size, chip); }
   const pos = pk.balls.map(b => [b.x.toFixed(1) + 'px', b.y.toFixed(1) + 'px']);
   const moved = els.some((c, i) => c._qtL !== undefined && (c._qtL !== pos[i][0] || c._qtT !== pos[i][1] || c._qtS !== size));
   if (moved){
@@ -182,8 +196,12 @@ export function paintBalls(box, items, decorate, elsewhere){
     if (!seq.has(items[i].key)) seq.set(items[i].key, box._qtN = (box._qtN || 0) + 1);
   }
   const byNew = items.slice().sort((a, b) => seq.get(b.key) - seq.get(a.key));
-  const vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  let vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  // Never draw a ball the jar cannot hold whole (short phone jars): the rest go into the +N count.
+  const fit = qtFit(vis.map(it => it.key), box.clientWidth || 200, box.clientHeight || 240, vis.length < items.length);
+  if (fit < vis.length) vis = vis.slice(vis.length - fit);
   const hidden = items.length - vis.length;
+  box._qtMore = hidden > 0;
   const where = { q: 'waiting', r: 'running', d: 'finished' };
   const keep = new Set(), fresh = [], els = [];
   vis.forEach(it => {
