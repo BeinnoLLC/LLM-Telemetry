@@ -411,10 +411,10 @@ function lvRow(o){
         <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${provIcon(short(o.model)) || ''} ${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
       </div>
       <div class="lvc lvc-state" role="cell"><div class="lvstk"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span><span class="lvel" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</span></div></div>
-      <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>
+      <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}${o.tok ? `<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div>` : ''}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
       <div class="lvc lvc-act" role="cell"><div class="lva1"><span class="lvago">${ago_}</span><span class="lvphase" title="${escA(S.phase || '')}">${esc(S.phase || '—')}</span></div>${tools ? `<div class="lva2" title="${allTools}">${tools}</div>` : ''}</div>
-      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div></div>
+      <div class="lvc loecol" role="cell">${o.gauge}${pct != null ? `<span class="lvpct">${pct}%</span>` : ''}${o.bw || ''}</div>
     </div>${o.panel || ''}`;
   const num = v => Number.isFinite(+v) && v != null ? +v : null;
   return { key: o.key, html, sv: {
