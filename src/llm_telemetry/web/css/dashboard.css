@@ -884,6 +884,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out}
 @keyframes qt-wave{to{background-position:60px 0,-36px 2px}}
 @keyframes qt-splash{35%{transform:scaleY(2.4);border-bottom-color:white}to{transform:none}}
+.qt-jar.qt-slosh{animation:qt-slosh .65s ease-out}
+@keyframes qt-slosh{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-4px) rotate(-2deg)}30%{transform:translateX(5px) rotate(2.5deg)}45%{transform:translateX(-4px) rotate(-1.5deg)}60%{transform:translateX(3px) rotate(1.5deg)}75%{transform:translateX(-2px) rotate(-.8deg)}90%{transform:translateX(1px) rotate(.4deg)}100%{transform:translateX(0) rotate(0deg)}}
 @keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}

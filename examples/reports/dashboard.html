@@ -977,6 +977,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out}
 @keyframes qt-wave{to{background-position:60px 0,-36px 2px}}
 @keyframes qt-splash{35%{transform:scaleY(2.4);border-bottom-color:white}to{transform:none}}
+.qt-jar.qt-slosh{animation:qt-slosh .65s ease-out}
+@keyframes qt-slosh{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-4px) rotate(-2deg)}30%{transform:translateX(5px) rotate(2.5deg)}45%{transform:translateX(-4px) rotate(-1.5deg)}60%{transform:translateX(3px) rotate(1.5deg)}75%{transform:translateX(-2px) rotate(-.8deg)}90%{transform:translateX(1px) rotate(.4deg)}100%{transform:translateX(0) rotate(0deg)}}
 @keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
@@ -6528,6 +6530,9 @@ function paintTrain(queued, running, done){
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
   const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
+  const prevCounts = tr._qtCounts || { q: nq, r: nr, d: nd };
+  const changed = [prevCounts.q !== nq, prevCounts.r !== nr, prevCounts.d !== nd];
+  tr._qtCounts = { q: nq, r: nr, d: nd };
 
   const before = new Map();
   tr.querySelectorAll('.qt-ball[data-key]').forEach(c => {
@@ -6556,10 +6561,11 @@ function paintTrain(queued, running, done){
   const freshR = paintBalls(rb, running, (c, it) => {
     c.dataset.kind = it.eng;
     c.dataset.state = it.state;
-    c.style.setProperty('--k', kindMeta(it.eng).color);
+    const hue = (it.eng === 'hermes' || !it.eng) ? profileHue(it.profile || '') : null;
+    c.style.setProperty('--k', hue != null ? `hsl(${hue} 65% 52%)` : kindMeta(it.eng).color);
   }, elsewhere);
-  const freshD = paintBalls(db, done, (c) => {
-    c.style.setProperty('--k', kindMeta('hermes').color);
+  const freshD = paintBalls(db, done, (c, it) => {
+    c.style.setProperty('--k', `hsl(${profileHue((it && it.profile) || current || '')} 65% 52%)`);
   }, elsewhere);
 
   let flewYard = false;
@@ -6576,6 +6582,17 @@ function paintTrain(queued, running, done){
   if (painted) [...freshQ, ...freshR, ...freshD].forEach(c => { if (!flown.has(c)) c.classList.add('qt-arrive'); });
 
   if (painted && nd > prevDone && !flewYard) qtSplash(db.closest && db.closest('.qt-jar'));
+
+  if (painted) {
+    const boxes = [qb, rb, db];
+    boxes.forEach((box, i) => {
+      if (!changed[i]) return;
+      const jar = box.closest && box.closest('.qt-jar');
+      if (!jar) return;
+      jar.classList.remove('qt-slosh'); void jar.offsetWidth; jar.classList.add('qt-slosh');
+      setTimeout(() => jar.classList.remove('qt-slosh'), 700);
+    });
+  }
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id);

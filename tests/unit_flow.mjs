@@ -137,6 +137,9 @@ function harness(els = {}){
       inFlight: p => { const seen = new Set(); return ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).map(S => ({ kind: 'hermes', S })); },
       kindMeta: k => ({ sig: '*', label: k, color: 'kc:' + k }),
     },
+    'router.js': {
+      profileHue: m => 'ph:' + (m || ''),
+    },
   };
   return { ids, rec, DATA, stubs };
 }
@@ -398,7 +401,7 @@ const lblOf = c => c._qt.label;
   eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
   eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
   eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: balls carry a live state');
-  eq(run[1].style['--k'], 'kc:hermes', 'line: ball colour comes from the agent family');
+  eq(run[1].style['--k'], 'hsl(ph:work 65% 52%)', 'line: ball colour comes from the profile');
   ok(run.every(c => c.classList.contains('qt-run')), 'line: running balls are clips');
   eq(run[0].attrs['aria-label'], 'running: Fix parser · m2 · 1s ago · #b', 'line: ball has an accessible label');
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');

@@ -7,6 +7,7 @@ import { current } from './charts.js';
 import { PROV, provOf, render } from './views.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
+import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
 
 // LST-261: the queue is three glass jars of small balls. Depot = requests waiting at an Ollama
@@ -340,6 +341,10 @@ export function paintTrain(queued, running, done){
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
   const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
+  // Slosh: shake jars whose count changed since the last paint.
+  const prevCounts = tr._qtCounts || { q: nq, r: nr, d: nd };
+  const changed = [prevCounts.q !== nq, prevCounts.r !== nr, prevCounts.d !== nd];
+  tr._qtCounts = { q: nq, r: nr, d: nd };
 
   // Where every ball is right now, so a task that changes jar flies across.
   const before = new Map();
@@ -369,10 +374,12 @@ export function paintTrain(queued, running, done){
   const freshR = paintBalls(rb, running, (c, it) => {
     c.dataset.kind = it.eng;
     c.dataset.state = it.state;
-    c.style.setProperty('--k', kindMeta(it.eng).color);
+    // Per-profile colour for Hermes balls; engine colour for fleet-wide agents.
+    const hue = (it.eng === 'hermes' || !it.eng) ? profileHue(it.profile || '') : null;
+    c.style.setProperty('--k', hue != null ? `hsl(${hue} 65% 52%)` : kindMeta(it.eng).color);
   }, elsewhere);
-  const freshD = paintBalls(db, done, (c) => {
-    c.style.setProperty('--k', kindMeta('hermes').color);
+  const freshD = paintBalls(db, done, (c, it) => {
+    c.style.setProperty('--k', `hsl(${profileHue((it && it.profile) || current || '')} 65% 52%)`);
   }, elsewhere);
 
   // line -> yard is an exact identity (same session id in both feeds).
@@ -393,6 +400,18 @@ export function paintTrain(queued, running, done){
   if (painted) [...freshQ, ...freshR, ...freshD].forEach(c => { if (!flown.has(c)) c.classList.add('qt-arrive'); });
 
   if (painted && nd > prevDone && !flewYard) qtSplash(db.closest && db.closest('.qt-jar'));
+
+  // Slosh: shake jars whose count changed this paint (water sloshing).
+  if (painted) {
+    const boxes = [qb, rb, db];
+    boxes.forEach((box, i) => {
+      if (!changed[i]) return;
+      const jar = box.closest && box.closest('.qt-jar');
+      if (!jar) return;
+      jar.classList.remove('qt-slosh'); void jar.offsetWidth; jar.classList.add('qt-slosh');
+      setTimeout(() => jar.classList.remove('qt-slosh'), 700);
+    });
+  }
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id);
