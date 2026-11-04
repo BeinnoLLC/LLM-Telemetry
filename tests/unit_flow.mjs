@@ -519,6 +519,17 @@ const lblOf = c => c._qt.label;
   ok(els.every(c => parseFloat(c.style.top) < 120 && parseFloat(c.style.left) < 200), 'layout: nothing is placed outside the box');
   const few = els.slice(0, 5); D.qtLayout(box, few);
   eq(few[0].style['--sz'], '28px', 'layout: a few balls stay at 28px');
+  // no ball is ever clipped by the roof or covered by the +N chip: what does not fit joins the count
+  const keys39 = Array.from({ length: 39 }, (_, i) => 's:fit' + i);
+  for (const [fw, fh] of [[304, 92], [251, 152], [382, 202]]) {
+    for (const more of [false, true]) {
+      const n = D.qtFit(keys39, fw, fh, more), pk = D.qtPack(keys39.slice(39 - n), fw, fh, 18, more || n < 39);
+      ok(pk.ok && pk.balls.every(p => p.y - 18 * 0.57 >= 2 && p.x - 9 >= 0 && p.x + 9 <= fw), `fit: ${n} of 39 balls sit whole in ${fw}x${fh}${more ? ' with the chip' : ''}`);
+      ok(!pk.balls.some(p => (more || n < 39) && p.x + 9 > fw - 56 && p.y - 9 < 50), `fit: no ball sits under the +N chip in ${fw}x${fh}`);
+    }
+  }
+  eq(D.qtFit(keys39.slice(0, 3), 304, 92, false), 3, 'fit: a few balls all fit');
+  eq(D.qtFit(keys39, 40, 20, true), 0, 'fit: a box too small for any ball draws none');
   // popover: carPop adds cost, session and the way into the session
   const pop = D.carPop({ kind: 'd', sid: 'abcdefghij', label: '<b>t</b>', profile: 'p', cost: 0.5, last_ts: 1 });
   ok(pop.includes('<span>cost</span><b>$0.5000</b>') && pop.includes('#cdefghij') && pop.includes('class="pp-open"'), 'popover: cost, session id and the Open session button');

@@ -41,5 +41,11 @@ const sels = [...rules.matchAll(/(?:^|\})\s*([^{}@]+)\{/g)].map(m => m[1].trim()
 chk(sels.length > 20 && sels.every(s => s.split(',').every(p => p.trim().startsWith(':root:not([data-theme="dark"]) #qcard'))), 'every light rule is scoped to :root:not([data-theme="dark"]) #qcard', sels.length);
 chk(!/#[0-9a-fA-F]{3,8}\b/.test(rules), 'light rules use no hex literals');
 chk(/\.qt-ball\.qt-warn\{outline:2px dashed var\(--jar-ring\)/.test(rules) && /\.qt-sw-ring\{[^}]*dashed/.test(rules) && /\.qt-sw-glow\{[^}]*--jar-glow/.test(rules), 'ring is a 2px dashed outline; glow and ring legend swatches are restyled');
+chk(/\.qt-sec::before\{[^}]*bottom:\d+px[^}]*var\(--jar-shadow\)/.test(rules), 'a soft grounding shadow sits under each jar base (from --jar-shadow)');
+chk(/\.qt-lid\{[^}]*border:1\.5px solid var\(--jar-edge\)[^}]*inset 0 1px 0 hsl\(0 0% 100%/.test(rules), 'count cap has a 1px+ border and an inset highlight');
+const log = (a, b) => console.log(`  contrast ${a} vs ${b}: ${r(a, b)}:1`);
+log('jar-edge', 'card'); log('jar-ink', 'jar-glass');
+for (const k of ['jar-hermes', 'jar-pi', 'jar-claude', 'jar-codex', 'jar-wait']) { log(k, 'jar-glass'); log('jar-ink', k); }
+log('jar-glow', 'jar-glass'); log('jar-ring', 'jar-glass'); log('jar-label', 'card'); log('jar-label-soft', 'card');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

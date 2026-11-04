@@ -87,7 +87,7 @@
   --jar-label-soft:hsl(220 12% 34%);
   --jar-lid-top:hsl(0 0% 100%);
   --jar-lid-bot:hsl(220 18% 90%);
-  --jar-shadow:hsl(220 30% 20% / .22);
+  --jar-shadow:hsl(220 30% 20% / .34);
   --jar-glow:hsl(199 95% 38%);
   --jar-ring:hsl(28 95% 36%);
   --jar-hermes:hsl(199 90% 41%);

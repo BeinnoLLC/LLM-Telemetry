@@ -845,7 +845,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
   filter:drop-shadow(0 0 .7px rgba(255,255,255,.75)) drop-shadow(0 0 1px rgba(255,255,255,.3))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 72%)}
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px),
@@ -2084,8 +2084,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 :root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
 :root:not([data-theme="dark"]) #qcard .qt-yard{--jc:var(--accent)}
 :root:not([data-theme="dark"]) #qcard .qt-jar{filter:drop-shadow(1.5px 0 0 var(--jar-edge)) drop-shadow(-1.5px 0 0 var(--jar-edge)) drop-shadow(0 1.5px 0 var(--jar-edge))}
-:root:not([data-theme="dark"]) #qcard .qt-sec::before{bottom:10px;height:20px;filter:blur(5px);
-  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 70%)}
+:root:not([data-theme="dark"]) #qcard .qt-sec::before{left:2%;right:2%;bottom:20px;height:22px;filter:blur(3px);
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 75%)}
 :root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
   box-shadow:inset 7px 0 9px -6px hsl(220 25% 45% / .22),inset -7px 0 9px -6px hsl(220 25% 45% / .16),inset 0 -16px 18px -12px hsl(220 25% 45% / .22)}
@@ -2097,7 +2097,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   border-bottom:2px solid color-mix(in srgb,var(--jc) 70%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-lid{border:1.5px solid var(--jar-edge);border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
-  box-shadow:0 2px 4px hsl(220 30% 20% / .18)}
+  box-shadow:inset 0 1px 0 hsl(0 0% 100% / .95),inset 0 -2px 3px -1px hsl(220 25% 45% / .16),0 2px 4px hsl(220 30% 20% / .18)}
 :root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px hsl(220 30% 20% / .18)}
 :root:not([data-theme="dark"]) #qcard .qt-n{color:var(--jar-ink);text-shadow:none}
 :root:not([data-theme="dark"]) #qcard .qt-name{color:var(--jar-label)}
