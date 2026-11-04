@@ -139,8 +139,8 @@ setTimeout(() => {
     w.eval('renderQueue()');
     const qcar = d.querySelector(`#qt-running .qt-ball[data-key="s:sx"]`);
     chk(!!qcar, 'the running train car for that session exists');
-    chk(/var\(--kind-hermes\)/.test(qcar.style.getPropertyValue('--k')),
-        'the queue ball colour follows the agent family, not the profile hue', qcar.getAttribute('style'));
+    chk(new RegExp(`hsl\\(${NEW_HUE} `).test(qcar.style.getPropertyValue('--k')),
+        'the queue ball colour follows the profile hue', qcar.getAttribute('style'));
 
     // ---- reset restores the deterministic default --------------------------
     w.eval(`pickView('Settings');`);
