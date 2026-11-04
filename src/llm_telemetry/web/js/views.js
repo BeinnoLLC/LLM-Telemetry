@@ -13,7 +13,7 @@ import {
 import { flowControls, renderFlow } from './flow.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
 import { renderRouterView, routerStat } from './routerview.js';
-import { renderQuotaView, qvStat } from './quotaview.js';
+import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
   hydrateViewParams, pickView, setCrossFilter, setHash, setViewParam, view,
@@ -652,6 +652,7 @@ export function render(){
   if (view === 'Router') renderRouterView();
   // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
   if (view === 'Quota') renderQuotaView();
+  if (view === 'Life') renderLifeQuota();
   if (view === 'Prices') renderPrices();
   if (view === 'Rankings') renderRankings();
 
@@ -750,7 +751,7 @@ export function render(){
     [{data:hv,backgroundColor:PAL[4],borderRadius:2}],
     {...noLeg,scales:{x:{grid:{display:false}},y:{grid:{color:BD}}}});
   const bp=agg(rows,r=>provOf(r.provider,r.model,r.base_url),r=>r.calls);
-  mk('cProv','doughnut',bp.map(x=>x[0]),[{data:bp.map(x=>x[1]),
+  mk('cProv','doughnut',bp.map(x=>{const s=PROV[x[0]]||{icon:'○'};return s.icon+' '+x[0];}),[{data:bp.map(x=>x[1]),
       backgroundColor:bp.map(x=>(PROV[x[0]]||{fg:MU}).fg),borderWidth:0}],
     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:6}}},cutout:'55%'});
 
@@ -1078,8 +1079,9 @@ export function modelsShare(ms, cur){
   }).join('');
   const legend = ms.map((m, i) => {
     const nm = short(m.model), pct = vals[i] / tot * 100;
+    const icon = provIcon(nm);
     return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
-      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${esc(nm)}`
+      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${icon ? icon + ' ' : ''}${esc(nm)}`
       + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
   }).join('');
   return `<div class="lmbar" role="img"

@@ -2247,6 +2247,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
    <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
+ <div class="card p-4" id="lifequota" style="position:relative">
+   <div class="lbl mb-2.5">Quota
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="lifequotasub"></span>
+   </div>
+   <div id="lifequotabody"></div>
+  </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
     <div class="lbl mb-2.5 shrink-0 livehdr">Workers <span id="livestamp" class="stamp muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
@@ -3791,7 +3797,8 @@ function renderQuotaView(){
   }));
   el.querySelectorAll('[data-qvpage]').forEach(b =>
     b.addEventListener('click', () => qvPageSet(b.dataset.qvpage)));
-}let view = localStorage.getItem('hermes-dash-view') || 'Home';
+}
+let view = localStorage.getItem('hermes-dash-view') || 'Home';
 let HOUR_RANGE = null;
 let CHART_ANIM_DONE = false;
 const noLeg = {plugins:{legend:{display:false}}};
@@ -4494,6 +4501,7 @@ function render(){
   if (view === 'Flow') renderFlow(rows);
   if (view === 'Router') renderRouterView();
   if (view === 'Quota') renderQuotaView();
+  if (view === 'Life') renderLifeQuota();
   if (view === 'Prices') renderPrices();
   if (view === 'Rankings') renderRankings();
 
@@ -4579,7 +4587,7 @@ function render(){
     [{data:hv,backgroundColor:PAL[4],borderRadius:2}],
     {...noLeg,scales:{x:{grid:{display:false}},y:{grid:{color:BD}}}});
   const bp=agg(rows,r=>provOf(r.provider,r.model,r.base_url),r=>r.calls);
-  mk('cProv','doughnut',bp.map(x=>x[0]),[{data:bp.map(x=>x[1]),
+  mk('cProv','doughnut',bp.map(x=>{const s=PROV[x[0]]||{icon:'○'};return s.icon+' '+x[0];}),[{data:bp.map(x=>x[1]),
       backgroundColor:bp.map(x=>(PROV[x[0]]||{fg:MU}).fg),borderWidth:0}],
     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:6}}},cutout:'55%'});
 
@@ -5331,8 +5339,9 @@ function modelsShare(ms, cur){
   }).join('');
   const legend = ms.map((m, i) => {
     const nm = short(m.model), pct = vals[i] / tot * 100;
+    const icon = provIcon(nm);
     return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
-      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${esc(nm)}`
+      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${icon ? icon + ' ' : ''}${esc(nm)}`
       + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
   }).join('');
   return `<div class="lmbar" role="img"
@@ -6331,7 +6340,7 @@ function qtSeed(key){
   h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-const QT_CAP = 40;                     // balls drawn per jar; the 40th slot becomes a "+N" chip
+const QT_CAP = Infinity;                     // no cap: fit as many balls as the jar holds
 const QT_MAX = 28;
 const QT_MIN = 18;
 const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
@@ -7244,7 +7253,7 @@ function lvRow(o){
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
         : `<div class="lvc lvc-sess" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div></div></div>`}
       <div class="lvc metacol" role="cell">
-        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
+        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${provIcon(short(o.model)) || ''} ${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
       </div>
       <div class="lvc lvc-state" role="cell"><div class="lvstk"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span><span class="lvel" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</span></div></div>
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}</div>

@@ -523,3 +523,38 @@ export function renderQuotaView(){
   el.querySelectorAll('[data-qvpage]').forEach(b =>
     b.addEventListener('click', () => qvPageSet(b.dataset.qvpage)));
 }
+// Simple quota summary for the Life view: KPI strip + compact provider list.
+// Not the full Quota page — just enough to see who is near a limit.
+export function renderLifeQuota(){
+  const el = $('lifequotabody');
+  const sub = $('lifequotasub');
+  if (!el) return;
+  const all = DATA.quota || {};
+  const name = (current && current !== 'All' && all[current]) ? current : Object.keys(all)[0];
+  const pdata = name ? (all[name] || {}) : {};
+  const provs = Object.values(pdata.providers || {});
+  if (sub) sub.textContent = name ? `${name} · ${provs.length} provider${provs.length === 1 ? '' : 's'}` : '';
+  if (!provs.length){
+    el.innerHTML = '<div class="muted">No quota data cached for this profile.</div>';
+    return;
+  }
+  const att = qvAttention();
+  const rows = provs.map(p => {
+    const worst = (p.windows || []).reduce((a, w) => {
+      const pct = qvPct(w.used_percent);
+      return (pct !== null && (a === null || pct > a)) ? pct : a;
+    }, null);
+    const lvl = qvLevel(worst, att);
+    const status = p.unavailable_reason
+      ? `<span class="rt-auth rt-mute">${esc(p.unavailable_reason)}</span>`
+      : (worst === null ? '<span class="rt-auth rt-mute">no reading</span>'
+        : `<span class="rt-auth rt-${lvl === 'bad' ? 'warn' : lvl === 'warn' ? 'warn' : 'ok'}">${worst}% used</span>`);
+    const bar = qvBar(worst, att);
+    return `<div class="qv-win" data-level="${lvl}">
+      <span class="qv-wname">${esc(p.label || p.id || '')}</span>
+      ${status}
+      ${bar}
+    </div>`;
+  }).join('');
+  el.innerHTML = qvKpis(pdata) + `<div class="qv-provs">${rows}</div>`;
+}
