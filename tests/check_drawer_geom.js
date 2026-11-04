@@ -31,23 +31,20 @@ const chk = (ok, label, extra) => {
 
 setTimeout(() => {
   const drawer = d.getElementById('drawer');
-  const btn = d.getElementById('logbtn');
+  const btn = d.getElementById('navdrawerbtn');
   const scrim = d.getElementById('scrim');
 
   console.log('== DOM placement ==');
   console.log(`  drawer parent : <${drawer.parentElement.tagName.toLowerCase()} ` +
               `class="${drawer.parentElement.className}">`);
-  console.log(`  button parent : <${btn.parentElement.tagName.toLowerCase()} ` +
-              `class="${btn.parentElement.className}">`);
   chk(drawer.parentElement === d.body, 'drawer is a direct child of <body>');
-  chk(btn.parentElement === d.body, 'log button is a direct child of <body>');
   chk(scrim.parentElement === d.body, 'scrim is a direct child of <body>');
 
   console.log('\n== ancestors that would trap position:fixed ==');
   // transform / filter / perspective / contain / will-change on an ancestor
   // makes fixed children resolve against THAT box, not the viewport.
   let bad = [];
-  for (const el of [drawer, btn]) {
+  for (const el of [drawer]) {
     let p = el.parentElement;
     while (p && p !== d.documentElement) {
       const s = w.getComputedStyle(p);
@@ -66,13 +63,6 @@ setTimeout(() => {
               `  transform=${ds.transform}  z-index=${ds.zIndex}  visibility=${ds.visibility}`);
   chk(ds.position === 'fixed', 'drawer is position:fixed');
   chk(parseInt(ds.zIndex, 10) >= 50, 'drawer z-index is above the page', `(${ds.zIndex})`);
-
-  const bs = w.getComputedStyle(btn);
-  console.log(`  button: position=${bs.position}  right=${bs.right}  bottom=${bs.bottom}` +
-              `  z-index=${bs.zIndex}  display=${bs.display}`);
-  chk(bs.position === 'fixed', 'log button is position:fixed');
-  chk(bs.display !== 'none', 'log button is displayed');
-  chk(parseInt(bs.zIndex, 10) >= 50, 'button z-index is above the page', `(${bs.zIndex})`);
 
   console.log('\n== opening ==');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));

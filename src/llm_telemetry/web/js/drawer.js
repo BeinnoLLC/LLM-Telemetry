@@ -312,7 +312,7 @@ export function drawerSync(){
 
   // Unread badge: only failures are worth interrupting for.
   const unread = dOpen ? 0 : Math.max(0, errs.length - dSeen);
-  for (const bid of ['logn','logn2']){
+  for (const bid of ['navlogn']){
     const badge = $(bid);
     if (badge){ badge.textContent = unread; badge.hidden = unread === 0; }
   }
@@ -350,7 +350,6 @@ export function drawerOpen(on){
   $('drawer')?.classList.toggle('open', on);
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
-  $('logbtn')?.classList.toggle('hidden', on);
   // #146: the sheet gets the shared Tab trap while open. Its own global
   // listener keeps Escape and the 'l' toggle (which must still work while the
   // drawer is closed), so the trap forwards keys to nothing: Tab only.
@@ -423,11 +422,10 @@ export function installDrawerDrag(){
 
 export function installDrawer(){
   installDrawerDrag();
-  $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
-  // The header "Logs" chip was removed (#116): the floating edge tab and the
-  // nav drawer button are the entry points. Optional-chained handlers, so the
-  // markup stays the single source of truth for which controls exist.
-  $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
+  // The header "Logs" chip (#116) and the floating edge tab (UI pass A) are
+  // gone: the rail's Live tail item is the one entry point to the drawer, and
+  // carries the unread badge. Optional-chained, so the markup stays the source
+  // of truth for which controls exist.
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   // The drawer's "All logs" link hands off to the full view: close the panel,
   // then navigate, so the page you asked for is not sitting behind a sheet.

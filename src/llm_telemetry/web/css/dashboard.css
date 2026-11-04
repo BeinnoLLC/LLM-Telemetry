@@ -23,19 +23,14 @@
    /* gauge severity zones + palette: single source = tokens.css */
    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
    --nav-w:240px; --rail-w:60px; --bar-h:52px;
-   /* Logs edge tab (#254): ONE source of truth. The tab is exactly --logtab-w
-      wide (fixed, so fonts and the count badge cannot widen it) and the page
-      reserves --logtab-w + --logtab-gap on the right, so it never covers content. */
-   --logtab-w:52px; --logtab-gap:12px;
-   --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
-;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+  ;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  /* Full viewport width — no max-width cap */
- .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+ .page{width:100%;padding:var(--pad) var(--pad) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  /* LST-220: cards sit one step off the page instead of being flat outlines, and
     interactive ones answer hover/press with the token state layers. The lift is
     deliberately small (elev-1 resting, elev-2 on hover) — this is a dense
@@ -184,7 +179,7 @@
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
 .fbwrap{min-width:0}
 /* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
 @media (max-width:960px){
@@ -236,9 +231,18 @@
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
+ /* Headings carry the semantics only: the visual classes keep owning size,
+    weight and spacing, so turning a title div into an h2 changes nothing. */
+ h1,h2,h3{margin:0;font:inherit}
+ .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+ .skip{position:fixed;left:8px;top:-60px;z-index:200;padding:8px 14px;border-radius:4px;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
+ .skip:focus{top:8px}
+ main:focus{outline:none}
  .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
- .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+ /* Freshness dot: green while the feed is fresh, amber once its stamp is old or stale. */
+ .dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
+ :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn)}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
  /* Responsive grid helpers */
  .grid-auto{display:grid;gap:var(--gap);
@@ -1100,7 +1104,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     without shouting — opacity only, no layout shift. */
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  /* Local electricity cost (P7-04, #68): distinct from billed spend. */
- .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:0;text-transform:none;
    padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
@@ -1167,6 +1171,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
  /* Settings (P7-03, #67) */
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin-bottom:8px;background:var(--bg)}
+ .setnav button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+ .setnav button:hover{border-color:var(--accent)}
+ .view[data-view="Settings"] > .card{scroll-margin-top:56px}
+ .setcustom{margin-left:8px;padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
+ .setcustom[hidden]{display:none}
+ .setup{cursor:pointer;height:32px;display:inline-flex;align-items:center}
+ .setup:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+ #setcolorgrid .setf,#setlogogrid .setf{padding:8px 10px;gap:2px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:4px;padding:10px}
  .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
@@ -1187,24 +1200,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* ---- Logs drawer -------------------------------------------------------
     Fixed to the right edge, above everything, and translated off-screen when
     closed so it costs nothing until opened. */
- #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
-   display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 0;
-   width:var(--logtab-w);box-sizing:border-box;overflow:hidden;
-   border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
-   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
-   font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
-   box-shadow:-4px 0 18px rgba(0,0,0,.35)}
- /* Hover must not change the footprint the page reserved: colour only. */
- #logbtn:hover{border-color:var(--accent)}
- #logbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
- /* Hide the tab itself while the drawer is open — it would sit under the panel. */
- #logbtn.hidden{opacity:0;pointer-events:none}
-  /* 44px = the mobile touch-target floor (button min-width), so it cannot go lower. */
- /* <=600px: the floating tab is hidden (the sidebar Live tail item remains) and reserves nothing. */
- @media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }
- #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
-   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
- #logbtn .n[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
@@ -1541,6 +1536,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-foldall button{font-size:var(--fs-xs);padding:.15rem .5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer}
 .rt-foldall button:hover{color:var(--fg);border-color:var(--accent)}
 .rt-phead h2{font-size:var(--fs-lg);font-weight:600;margin:0}
+.rt-compact{margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.rt-compact > .rt-phead{margin:0;padding:10px 12px;min-height:48px}
+.rt-compact[open] > .rt-phead{border-bottom:1px solid var(--border);margin-bottom:.6rem}
+.rt-compact > .rt-card{margin:0 12px .6rem}
+.rt-compact:not([open]) .rt-foldall{display:none}
+.rt-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .8rem}
+.rt-find{flex:1 1 220px;max-width:340px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);font:inherit;color-scheme:dark}
+.rt-tbtn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.rt-tbtn:hover{color:var(--fg);border-color:var(--accent)}
 /* Sub-page strip (#130). Not a profile switcher — the header chips do that, and
    a second one mid-page invited the wrong click. This picks a page of the
    tab's own content. Sticky so the way back is always in reach on a long page. */

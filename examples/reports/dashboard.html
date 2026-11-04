@@ -221,17 +221,14 @@
    
    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
    --nav-w:240px; --rail-w:60px; --bar-h:52px;
-   
-   --logtab-w:52px; --logtab-gap:12px;
-   --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
-;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+  ;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  
- .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+ .page{width:100%;padding:var(--pad) var(--pad) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  
  .card{background:var(--card);border:1px solid var(--border);border-radius:4px;box-shadow:var(--elev-1)}
  .card-hover{transition:box-shadow .15s ease,transform .15s ease;will-change:box-shadow}
@@ -363,7 +360,7 @@
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
 .fbwrap{min-width:0}
 
 @media (max-width:960px){
@@ -410,9 +407,17 @@
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
+ 
+ h1,h2,h3{margin:0;font:inherit}
+ .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+ .skip{position:fixed;left:8px;top:-60px;z-index:200;padding:8px 14px;border-radius:4px;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
+ .skip:focus{top:8px}
+ main:focus{outline:none}
  .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
- .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+ 
+ .dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
+ :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn)}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
  
  .grid-auto{display:grid;gap:var(--gap);
@@ -1162,7 +1167,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  
- .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:0;text-transform:none;
    padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
@@ -1219,6 +1224,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
  
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin-bottom:8px;background:var(--bg)}
+ .setnav button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+ .setnav button:hover{border-color:var(--accent)}
+ .view[data-view="Settings"] > .card{scroll-margin-top:56px}
+ .setcustom{margin-left:8px;padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
+ .setcustom[hidden]{display:none}
+ .setup{cursor:pointer;height:32px;display:inline-flex;align-items:center}
+ .setup:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+ #setcolorgrid .setf,#setlogogrid .setf{padding:8px 10px;gap:2px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:4px;padding:10px}
  .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
@@ -1237,24 +1251,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
 
  
- #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
-   display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 0;
-   width:var(--logtab-w);box-sizing:border-box;overflow:hidden;
-   border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
-   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
-   font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
-   box-shadow:-4px 0 18px rgba(0,0,0,.35)}
- 
- #logbtn:hover{border-color:var(--accent)}
- #logbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
- 
- #logbtn.hidden{opacity:0;pointer-events:none}
-  
- 
- @media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }
- #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
-   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
- #logbtn .n[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
@@ -1547,6 +1543,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-foldall button{font-size:var(--fs-xs);padding:.15rem .5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer}
 .rt-foldall button:hover{color:var(--fg);border-color:var(--accent)}
 .rt-phead h2{font-size:var(--fs-lg);font-weight:600;margin:0}
+.rt-compact{margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.rt-compact > .rt-phead{margin:0;padding:10px 12px;min-height:48px}
+.rt-compact[open] > .rt-phead{border-bottom:1px solid var(--border);margin-bottom:.6rem}
+.rt-compact > .rt-card{margin:0 12px .6rem}
+.rt-compact:not([open]) .rt-foldall{display:none}
+.rt-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .8rem}
+.rt-find{flex:1 1 220px;max-width:340px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);font:inherit;color-scheme:dark}
+.rt-tbtn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.rt-tbtn:hover{color:var(--fg);border-color:var(--accent)}
 
 .rt-pages{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem;position:sticky;top:0;z-index:3;
   background:var(--bg);padding:.35rem 0}
@@ -2044,6 +2049,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 </style></head><body>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
+<a class="skip" href="#main">Skip to content</a>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
 <div id="navscrim"></div>
@@ -2051,10 +2057,10 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="navbrand"><span style="color:var(--accent)">◈</span><span class="brandword"> LLM Telemetry</span><button id="navcollapse" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Expand navigation">&#187;</button></div>
  <div id="navlist"></div>
  <div class="navsep"></div>
- <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail" aria-label="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
+ <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail" aria-label="Live tail" aria-keyshortcuts="L" title="Live tail (L)"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <section id="notices" class="notices" aria-label="Notifications"></section>
-<div class="page flex flex-col gap-4">
+<main class="page flex flex-col gap-4" id="main" tabindex="-1">
  <div id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
@@ -2068,7 +2074,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <path d="M3 21h18" opacity=".35"/>
    </svg>
    <div>
-    <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
+    <h1 class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry<span class="sr-only" id="h1view"></span></h1>
     <div class="muted text-[length:var(--fs-xs)] mt-0.5 flex items-center gap-1.5">
      <span class="dot"></span><span id="meta" class="stamp"></span>
      <span id="resinfo" class="resinfo"></span>
@@ -2139,9 +2145,9 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="view" data-view="Home">
   <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
   <div class="card p-4" id="qcard" style="position:relative">
-   <div class="lbl mb-2.5">Task queue
+   <h2 class="lbl mb-2.5">Task queue
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="qsub"></span>
-   </div>
+   </h2>
    <div class="qtrain" id="qtrain">
     <section class="qt-sec qt-depot" aria-label="Depot: waiting"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-queued">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-queued" role="group" aria-label="Waiting tasks" data-empty="Nothing queued"></div></div></div><div class="qt-name">Depot</div></section>
     <section class="qt-sec qt-line" aria-label="On the line: running"><div class="qt-jar"><div class="qt-lid"><b class="qt-n" id="qt-n-running">0</b></div><div class="qt-body"><div class="qt-cars" id="qt-running" role="group" aria-label="Running tasks" data-empty="No live sessions"></div></div></div><div class="qt-name">On the line</div></section>
@@ -2153,7 +2159,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
-    <div class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="stamp muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
+    <h2 class="lbl mb-2.5 shrink-0 livehdr">In progress now <span id="livestamp" class="stamp muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></h2>
     <div id="livefanout" class="flex flex-wrap gap-1.5 mb-2 shrink-0" hidden></div>
     <div class="lvscroll" role="table" aria-label="Live sessions">
      <div id="livehead" class="lvhead" role="row" hidden></div>
@@ -2162,45 +2168,52 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    </div>
 
   </div>
-  <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
+  <div class="card p-4 mt-3" id="homeseries"><h2 class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</h2><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <div class="card p-4 mt-3 home-late" id="olcard" hidden>
-   <div class="lbl mb-2.5">Local inference hosts
+   <h2 class="lbl mb-2.5">Local inference hosts
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="olsub"></span>
-   </div>
+   </h2>
    <div id="ollama" class="olgrid"></div>
   </div>
-  <div class="lbl mt-4 mb-2.5 home-late">Explore</div>
+  <h2 class="lbl mt-4 mb-2.5 home-late">Explore</h2>
   <div class="grid-home home-late" id="homecards"></div>
  </div>
 
  <div class="view" data-view="Router" hidden>
-  <div class="lbl mb-2.5">Model router
+  <h2 class="lbl mb-2.5">Model router
    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="routersub"></span>
-  </div>
+  </h2>
   <div id="routerview"></div>
  </div>
 
  <div class="view" data-view="Quota" hidden>
-  <div class="lbl mb-2.5">Provider quota
+  <h2 class="lbl mb-2.5">Provider quota
    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="quotasub"></span>
-  </div>
+  </h2>
   <div id="quotaview"></div>
  </div>
 
 <div class="view" data-view="Flow" hidden>
   <div class="card p-4">
-   <div class="lbl mb-2.5">Provider → model → task
+   <h2 class="lbl mb-2.5">Provider → model → task
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="flowsub"></span>
     <span class="flowctl" id="flowctl"></span>
-   </div>
+   </h2>
    <div id="flowwrap"><svg id="flow"></svg><div id="flowtip" class="flowtip"></div></div>
   </div>
  </div>
 
  <div class="view" data-view="Settings" hidden>
+  <nav class="setnav" id="setnav" aria-label="Settings sections">
+   <button type="button" data-setgo="setcard">Electricity &amp; hardware</button>
+   <button type="button" data-setgo="setpricecard">Local token pricing</button>
+   <button type="button" data-setgo="setintervalscard">Refresh intervals</button>
+   <button type="button" data-setgo="setcolorcard">Profile colours</button>
+   <button type="button" data-setgo="setlogocard">Profile logos</button>
+  </nav>
   <div class="card p-4 mb-3" id="setcard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
-    <div class="lbl">Electricity &amp; hardware</div>
+    <h2 class="lbl">Electricity &amp; hardware</h2>
     <span class="muted text-[length:var(--fs-xs)]" id="setsrc">—</span>
    </div>
    <p class="text-[length:var(--fs-sm)] mb-3" id="setnotbill"><b>Local cost is electricity, not billing.</b>
@@ -2237,15 +2250,15 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
     <span class="text-[length:var(--fs-xs)]" id="setmsg" role="status"></span>
    </div>
   </div>
-  <div class="card p-4 mb-3">
-   <div class="lbl mb-1">How a local token is priced</div>
+  <div class="card p-4 mb-3" id="setpricecard">
+   <h2 class="lbl mb-1">How a local token is priced</h2>
    <p class="muted text-[length:var(--fs-xs)] mb-2">Read-only: measured on this hardware and fixed in
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
    <div id="setfacts"></div>
   </div>
   <div class="card p-4 mb-3" id="setintervalscard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
-    <div class="lbl">Refresh intervals</div>
+    <h2 class="lbl">Refresh intervals</h2>
     <span class="muted text-[length:var(--fs-xs)]" id="setintervalssrc">—</span>
    </div>
    <p class="text-[length:var(--fs-sm)] mb-3">How often the page polls live sessions and rebuilds from a
@@ -2271,7 +2284,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   </div>
   <div class="card p-4 mb-3" id="setcolorcard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
-    <div class="lbl">Profile colours</div>
+    <h2 class="lbl">Profile colours</h2>
    </div>
    <p class="text-[length:var(--fs-sm)] mb-3">Each profile's tab, badges and live-session dots share one
     colour. Defaults are derived from the name so two profiles never collide; override
@@ -2284,7 +2297,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   </div>
   <div class="card p-4 mb-3" id="setlogocard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
-    <div class="lbl">Profile logos</div>
+    <h2 class="lbl">Profile logos</h2>
    </div>
    <p class="text-[length:var(--fs-sm)] mb-3">Upload a small square image per profile — shown in its tab. Falls
     back to a colour-matched initial when unset. Stored in this browser only, up to 200KB per image; it
@@ -2296,7 +2309,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="view" data-view="Logs" hidden>
   <div class="card p-4 mb-3">
    <div class="flex items-center gap-2 flex-wrap mb-3">
-    <div class="lbl">Log events</div>
+    <h2 class="lbl">Log events</h2>
     <span class="muted text-[length:var(--fs-xs)]" id="lgscope">—</span>
     <span id="lgcountbadge" hidden></span>
     <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -2335,22 +2348,22 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="view" data-view="Health">
   <div id="hsummary" class="hsum mb-3"></div>
   <div class="card p-4 mb-3">
-   <div class="lbl mb-2.5 hhdr">Data sources
+   <h2 class="lbl mb-2.5 hhdr">Data sources
     <span class="muted hsub">age against the stale policy</span>
-   </div>
+   </h2>
    <div id="datasources" class="dsrc-wrap"></div>
   </div>
   <div class="card p-4 mb-3">
-   <div class="lbl mb-2.5 hhdr">Success rate by model
+   <h2 class="lbl mb-2.5 hhdr">Success rate by model
     <span class="muted hsub">most failures first · faded rows have under 5 calls</span>
-   </div>
+   </h2>
    <div id="healthgrid" class="flex flex-col gap-1.5"></div>
   </div>
   <div class="card p-4 mb-3">
-   <div class="lbl mb-2.5 hhdr">Recent failures
+   <h2 class="lbl mb-2.5 hhdr">Recent failures
     <span class="muted hsub">identical errors grouped</span>
     <button id="tolog" class="chip" style="margin-left:auto;font-size:var(--fs-xs);text-transform:none;letter-spacing:0">Open live logs &rarr;</button>
-   </div>
+   </h2>
    <div id="failfilters" class="ffwrap mb-2.5"></div>
    <div id="failsort" class="fsort" role="row"></div>
    <div id="faillist" class="flex flex-col gap-1.5"
@@ -2358,44 +2371,44 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div id="failcount" class="muted text-[length:var(--fs-xs)] mt-2"></div>
   </div>
   <div class="card p-4 mb-3" id="lifecard" hidden>
-   <div class="lbl mb-2.5 hhdr">Session lifecycle
+   <h2 class="lbl mb-2.5 hhdr">Session lifecycle
     <span class="muted hsub">compression pressure · last 30 days</span>
-   </div>
+   </h2>
    <div id="lifereasons" class="flex flex-wrap gap-2 mb-2.5"></div>
    <div id="lifepressure" class="flex flex-col gap-1.5"></div>
   </div>
   <div class="card p-4 mb-3" id="outcard" hidden>
-   <div class="lbl mb-2.5 hhdr">Session outcomes
+   <h2 class="lbl mb-2.5 hhdr">Session outcomes
     <span class="muted hsub">how sessions ended · last 30 days</span>
-   </div>
+   </h2>
    <div id="outkpis" class="dkpis mb-3"></div>
    <div id="outbysource" class="flex flex-col gap-1.5 mb-3"></div>
    <div id="outreaptrend"></div>
    <div id="outsilentlist" class="flex flex-col gap-1.5 mt-2"></div>
   </div>
   <div class="card p-4 mb-3" id="toolcard" hidden>
-   <div class="lbl mb-2.5 hhdr">Tool reliability
+   <h2 class="lbl mb-2.5 hhdr">Tool reliability
     <span class="muted hsub">fail rate and wasted tokens per tool · last 30 days</span>
-   </div>
+   </h2>
    <div id="toolrows" class="flex flex-col gap-1"></div>
    <div id="toolcmds" class="mt-3"></div>
   </div>
   <div class="card p-4" id="delegcard" hidden>
-   <div class="lbl mb-2.5">Delegated runs
+   <h2 class="lbl mb-2.5">Delegated runs
     <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"> — outcomes recorded by the runtime</span>
-   </div>
+   </h2>
    <div id="delegkpi" class="dkpis mb-3"></div>
    <div class="grid-2 gap-4">
     <div>
-     <div class="lbl mb-2">Completion rate by model</div>
+     <h3 class="lbl mb-2">Completion rate by model</h3>
      <div id="delegmodels" class="flex flex-col gap-1.5"></div>
-     <div class="lbl mb-2 mt-3">Why runs ended early</div>
+     <h3 class="lbl mb-2 mt-3">Why runs ended early</h3>
      <div id="delegreasons" class="flex gap-1.5 flex-wrap"></div>
     </div>
     <div>
-     <div class="lbl mb-2">Tool success inside runs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— measured</span></div>
+     <h3 class="lbl mb-2">Tool success inside runs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— measured</span></h3>
      <div id="delegtools" class="flex flex-col gap-1.5"></div>
-     <div class="lbl mb-2 mt-3">Recent runs</div>
+     <h3 class="lbl mb-2 mt-3">Recent runs</h3>
      <div id="deleglist" class="flex flex-col gap-1"
        style="max-height:clamp(160px,22vh,300px);overflow-y:auto;padding-right:4px"></div>
     </div>
@@ -2405,21 +2418,21 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
  <div class="view" data-view="Usage">
   <div class="card p-4 mb-4">
-   <div class="lbl mb-2.5">Provider distribution — calls</div>
+   <h2 class="lbl mb-2.5">Provider distribution — calls</h2>
    <div style="height:clamp(130px,12vw,180px)"><canvas id="cProvDist"></canvas></div>
   </div>
   <div class="grid-2 mb-4">
-   <div class="card p-4"><div class="lbl mb-2.5">Calls by model</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cModels"></canvas></div></div>
-   <div class="card p-4"><div class="lbl mb-2.5">Token share</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cShare"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Calls by model</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cModels"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Token share</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cShare"></canvas></div></div>
   </div>
   <div class="grid-2">
-   <div class="card p-4"><div class="lbl mb-2.5">Daily activity</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cDaily"></canvas></div></div>
-   <div class="card p-4"><div class="lbl mb-2.5">Hourly distribution</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cHours"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Daily activity</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cDaily"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Hourly distribution</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cHours"></canvas></div></div>
   </div>
   <div class="card p-4 mt-4" id="latcard" hidden>
-   <div class="lbl mb-2.5 hhdr">Latency
+   <h2 class="lbl mb-2.5 hhdr">Latency
     <span class="muted hsub">assistant-turn response time, idle excluded · last 7 days</span>
-   </div>
+   </h2>
    <div class="grid-2 mb-3">
     <div>
      <div class="muted text-[length:var(--fs-xs)] mb-1">By model</div>
@@ -2433,11 +2446,11 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div id="latslowest"></div>
   </div>
   <div class="card p-4 mt-4" id="bwpanel">
-   <div class="lbl mb-2.5">Bandwidth
+   <h2 class="lbl mb-2.5">Bandwidth
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="bwpsub"></span>
-   </div>
+   </h2>
    <div class="xferline mb-3" id="xfercard" hidden>
-    <div class="lbl">Transferred</div>
+    <h2 class="lbl">Transferred</h2>
     <div id="xfertot" class="bw"></div>
     <div class="muted" id="xfernote"></div>
     <div class="muted ml-auto" title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</div>
@@ -2445,44 +2458,44 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div id="bwpkpi" class="bwpkpi mb-3"></div>
    <div class="grid-2">
     <div>
-     <div class="lbl mb-2">Daily transfer <span class="muted normal-case tracking-normal">— internet up / down, LAN separate</span></div>
+     <h3 class="lbl mb-2">Daily transfer <span class="muted normal-case tracking-normal">— internet up / down, LAN separate</span></h3>
      <div style="height:clamp(200px,20vw,280px)"><canvas id="cBwTrend"></canvas></div>
     </div>
     <div>
-     <div class="lbl mb-2">Context re-send by model <span class="muted normal-case tracking-normal">— prompt tokens sent per fresh token</span></div>
+     <h3 class="lbl mb-2">Context re-send by model <span class="muted normal-case tracking-normal">— prompt tokens sent per fresh token</span></h3>
      <div id="bwresend" class="flex flex-col gap-1"></div>
     </div>
    </div>
    <div class="muted text-[length:var(--fs-xs)] mt-3" id="bwpnote"></div>
   </div>
   <div class="card p-4 mt-4" id="conccard">
-   <div class="lbl mb-2.5">Concurrency
+   <h2 class="lbl mb-2.5">Concurrency
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— sessions active per hour, top-level vs. subagent</span>
-   </div>
+   </h2>
    <div id="concpeak" class="muted text-[length:var(--fs-xs)] mb-2"></div>
    <div style="height:clamp(220px,22vw,320px)"><canvas id="cConcurrency"></canvas></div>
    <div id="concempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
   </div>
   <div class="card p-4 mt-4" id="projcard">
-   <div class="lbl mb-2.5 flex items-center justify-between">
+   <h2 class="lbl mb-2.5 flex items-center justify-between">
     <span>Cost by project
      <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— includes Unattributed (sessions with no resolvable project)</span>
     </span>
     <label class="muted normal-case tracking-normal text-[length:var(--fs-xs)] flex items-center gap-1.5">
      <input type="checkbox" id="projexclude"> exclude Unattributed
     </label>
-   </div>
+   </h2>
    <div id="projhdr" class="muted text-[length:var(--fs-xs)] mb-2"></div>
    <div style="height:clamp(220px,22vw,320px)"><canvas id="cProjects"></canvas></div>
    <div id="projempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
   </div>
 
   <div class="card p-4 mt-4" id="repocard">
-   <div class="lbl mb-2.5 flex items-center justify-between">
+   <h2 class="lbl mb-2.5 flex items-center justify-between">
     <span>Repo &amp; branch
      <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— sessions, tokens, cost, sorted by cost; click a repo to expand its branches</span>
     </span>
-   </div>
+   </h2>
    <div id="repolist"></div>
    <div id="repoempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
   </div>
@@ -2490,7 +2503,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
  <div class="view" data-view="Sessions" hidden>
   <div class="card p-4 mb-4">
-   <div class="lbl mb-2.5 flex items-center justify-between">
+   <h2 class="lbl mb-2.5 flex items-center justify-between">
     <span>Weight by</span>
     <div id="projweight" role="radiogroup" aria-label="Weighting" class="flex gap-1.5">
      <button type="button" data-w="cost" class="chip on" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="true">Cost</button>
@@ -2498,43 +2511,43 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
      <button type="button" data-w="tokens" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="false">Tokens</button>
      <button type="button" data-w="sessions" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0" aria-pressed="false">Sessions</button>
     </div>
-   </div>
+   </h2>
    <div id="projweightnote" class="muted text-[length:var(--fs-xs)]"></div>
   </div>
   <div class="card p-4">
-   <div class="lbl mb-2.5 flex items-center justify-between">
+   <h2 class="lbl mb-2.5 flex items-center justify-between">
     <span>Project × model
      <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— cost weighting, sorted by project total</span>
     </span>
-   </div>
+   </h2>
    <div id="projmatrixwrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <table id="projmatrix" class="w-full text-[length:var(--fs-sm)]" style="border-collapse:collapse"></table>
    </div>
    <div id="projmatrixempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
 
    <div id="projdistcard" class="mt-4 pt-4" style="border-top:1px solid var(--border)">
-    <div class="lbl mb-2.5 flex items-center justify-between">
+    <h2 class="lbl mb-2.5 flex items-center justify-between">
      <span>Project × provider
       <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— vendor exposure per project</span>
      </span>
      <label class="inline-flex items-center gap-1.5 text-[length:var(--fs-xs)] muted normal-case tracking-normal">
       <input type="checkbox" id="projdistnorm"> normalise to 100%
      </label>
-    </div>
+    </h2>
     <div style="height:clamp(200px, 32vw, 420px)"><canvas id="cProjDist"></canvas></div>
     <div id="projdistlegend" class="flex flex-wrap gap-1.5 mt-2"></div>
     <div id="projdistempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
    </div>
 
    <div id="projtrendcard" class="mt-4 pt-4" style="border-top:1px solid var(--border)">
-    <div class="lbl mb-2.5 flex items-center justify-between">
+    <h2 class="lbl mb-2.5 flex items-center justify-between">
      <span>Project trend
       <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">— burn over time</span>
      </span>
      <label class="inline-flex items-center gap-1.5 text-[length:var(--fs-xs)] muted normal-case tracking-normal">
       <input type="checkbox" id="projtrendstack"> stacked share of total
      </label>
-    </div>
+    </h2>
     <div style="height:clamp(200px, 32vw, 420px)"><canvas id="cProjTrend"></canvas></div>
     <div id="projtrendlegend" class="flex flex-wrap gap-1.5 mt-2"></div>
     <div id="projtrendempty" class="muted text-[length:var(--fs-xs)] mt-3" hidden>No session activity in the selected range.</div>
@@ -2545,21 +2558,21 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div class="view" data-view="Cost" hidden>
   <div id="coststale" class="card p-4 mb-4 stale-note" hidden></div>
   <div class="grid-2 mb-4">
-   <div class="card p-4"><div class="lbl mb-2.5">Cost by category</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTaskCost"></canvas></div></div>
-   <div class="card p-4"><div class="lbl mb-2.5">Calls by task</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cTasks"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Cost by category</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cTaskCost"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Calls by task</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cTasks"></canvas></div></div>
   </div>
 
   <div class="grid-2 mb-4">
-   <div class="card p-4"><div class="lbl mb-2.5">Cost by model</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cModelCost"></canvas></div></div>
-   <div class="card p-4"><div class="lbl mb-2.5">Provider mix</div><div style="height:clamp(200px,20vw,300px)"><canvas id="cProv"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Cost by model</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cModelCost"></canvas></div></div>
+   <div class="card p-4"><h2 class="lbl mb-2.5">Provider mix</h2><div style="height:clamp(200px,20vw,300px)"><canvas id="cProv"></canvas></div></div>
   </div>
   <div class="card p-4">
-   <div class="lbl mb-2.5">Cost by provider</div>
+   <h2 class="lbl mb-2.5">Cost by provider</h2>
    <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="tblProv"></table></div>
   </div>
   <div class="card p-4 mt-4" id="resendpanel">
    <div class="flex items-baseline justify-between flex-wrap gap-2 mb-2">
-    <div class="lbl">Context re-sent per session</div>
+    <h2 class="lbl">Context re-sent per session</h2>
     <span class="muted text-[length:var(--fs-xs)]" id="resendsub"></span>
    </div>
    <div class="muted text-[length:var(--fs-xs)] mb-2">Every call re-sends the conversation so far. The cached share is billed at the
@@ -2568,7 +2581,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="resendtbl"></table></div>
   </div>
   <div class="card p-4 mt-4" id="attribcard">
-   <div class="lbl mb-2.5">Cost attribution <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">by source, root session, cron job and tool</span></div>
+   <h2 class="lbl mb-2.5">Cost attribution <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">by source, root session, cron job and tool</span></h2>
    <div class="grid-2 mb-3">
     <div>
      <div class="muted text-[length:var(--fs-xs)] mb-1">By source</div>
@@ -2597,24 +2610,24 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
  <div class="view" data-view="Detail" hidden>
   <div class="card p-4 mb-4" id="heatcard">
-   <div class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="heatsub"></span></div>
+   <h2 class="lbl mb-2.5">Activity <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="heatsub"></span></h2>
    <div id="heatmap"></div>
   </div>
   <div class="card p-4">
-   <div class="lbl mb-2.5 flex items-center justify-between gap-3"><span>Per-model detail</span
+   <h2 class="lbl mb-2.5 flex items-center justify-between gap-3"><span>Per-model detail</span
      ><button id="csvexport" class="csvbtn" type="button"
-       title="Download the rows this table is showing, as CSV. Uses the current range and filters (no new fetch).">Export CSV</button></div>
+       title="Download the rows this table is showing, as CSV. Uses the current range and filters (no new fetch).">Export CSV</button></h2>
    <div class="overflow-x-auto"><table class="w-full text-[length:var(--fs-sm)]" id="tbl"></table></div>
   </div>
 
   <div class="card p-4 mt-4" id="sesstreecard">
-   <div class="lbl mb-2.5">Sessions &rarr; Tree <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="sesstreesub"></span></div>
+   <h2 class="lbl mb-2.5">Sessions &rarr; Tree <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="sesstreesub"></span></h2>
    <div id="sesstree"></div>
    <div class="muted text-[length:var(--fs-sm)] py-2" id="sesstreeempty" hidden>No parent/child sessions in this range.</div>
   </div>
 
   <div class="card p-4 mt-4" id="ctxcard">
-   <div class="lbl mb-2.5">Context &amp; compaction <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">context growth per session, compaction yield, reasoning share</span></div>
+   <h2 class="lbl mb-2.5">Context &amp; compaction <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1">context growth per session, compaction yield, reasoning share</span></h2>
    <div class="grid-2 mb-3">
     <div>
      <div class="muted text-[length:var(--fs-xs)] mb-1">Reasoning share of output tokens, by model</div>
@@ -2635,15 +2648,15 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   <b>Est. cost</b> is what every request would cost at public API rates, priced per token (input,
   output and cache-read rated separately) from the OpenRouter catalogue (cached 6h), plus
   official vendor rates for models OpenRouter does not list (Codex/Astra, some Fireworks SKUs).
-  Local models are priced from electricity at your tariff and marked <b>elec</b>; they are
+  Local models are priced from electricity at your tariff and marked <b>electricity</b>; they are
   never shown as $0.
   It is a <i>consumption estimate, not an invoice</i>: traffic on Anthropic OAuth, OpenCode Go and
   Codex is covered by flat monthly subscriptions, so the dollars here show the worth of what you
   consumed rather than money leaving your account. Only Fireworks is genuinely pay-per-token.
   Live Claude Code and Codex sessions count their tokens and show the same API-price equivalent
-  with a <b>sub</b> badge (covered by your Claude / ChatGPT subscription); it is never added to Est. cost.
+  with a <b>subscription</b> badge (covered by your Claude / ChatGPT subscription); it is never added to Est. cost.
  </details>
-</div><div id="helpwrap" role="dialog" aria-modal="true" aria-label="How routing works">
+</main><div id="helpwrap" role="dialog" aria-modal="true" aria-label="How routing works">
  <div id="helpscrim"></div>
  <div id="helppanel">
   <button id="helpclose" aria-label="Close">&times;</button>
@@ -2704,11 +2717,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <div id="lnbody" tabindex="-1"></div>
 </div>
 <div id="lntip"></div>
-
-<button id="logbtn" title="Open live logs (L)" aria-keyshortcuts="L">
- <span style="color:var(--accent)">&#9776;</span> Logs
- <span class="n" id="logn" hidden>0</span>
-</button>
 
 <div id="pdscrim"></div>
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
@@ -3212,7 +3220,19 @@ function rtSaveOpen(key, open){
   try { localStorage.setItem(RT_OPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
-function rtSection(name, p, vocab){
+const RT_COMPACT_AT = 3;
+const RT_POPEN_KEY = 'hermes-dash-router-profiles-open';
+function rtProfOpened(){
+  try { return new Set(JSON.parse(localStorage.getItem(RT_POPEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function rtSaveProfOpen(key, open){
+  const s = rtProfOpened();
+  if (open) s.add(key); else s.delete(key);
+  try { localStorage.setItem(RT_POPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
+}
+
+function rtSection(name, p, vocab, compact){
   const tr = p.tier_router;
   const on = tr && tr.enabled;
   const folded = rtFolded();
@@ -3246,10 +3266,15 @@ function rtSection(name, p, vocab){
   };
   const body = (PAGES[rtPage] || PAGES.overview)();
   const pkey = `${name}|*`;
-  return `<details class="rt-profile" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${folded.has(pkey) ? '' : ' open'}>
+  const isOpen = compact ? rtProfOpened().has(pkey) : !folded.has(pkey);
+  const chip = on && compact ? '' : `<span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>`;
+  const pm = (p.primary || {}).model;
+  const preview = on ? `${tr.tiers.length} tiers · default ${esc(tr.default_tier)}`
+    : compact && pm ? `primary ${esc(pm)}` : '';
+  return `<details class="rt-profile${compact ? ' rt-compact' : ''}" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${isOpen ? ' open' : ''}>
     <summary class="rt-phead"><h2>${esc(name)}</h2>
-      <span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>
-      ${on ? `<span class="muted">${tr.tiers.length} tiers · default ${esc(tr.default_tier)}</span>` : ''}
+      ${chip}
+      ${preview ? `<span class="muted">${preview}</span>` : ''}
       <span class="rt-foldall"><button type="button" data-rtall="open">expand all</button><button type="button" data-rtall="close">collapse all</button></span>
     </summary>${body}</details>`;
 }
@@ -3283,8 +3308,28 @@ function renderRouterView(){
     return `<button type="button" data-rtpage="${escA(id)}"${on ? ' aria-current="page"' : ''}` +
       ` title="${escA(tip)}" class="rt-page${on ? ' rt-page-on' : ''}">${esc(label)}</button>`;
   }).join('')}</nav>`;
-  el.innerHTML = strip + names.map(n => rtSection(n, all[n], vocab)).join('');
-  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle', () => rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const compact = names.length > RT_COMPACT_AT;
+  const tools = compact
+    ? `<div class="rt-tools"><input type="search" class="rt-find" aria-label="Filter profiles" placeholder="Filter ${names.length} profiles">` +
+      `<button type="button" class="rt-tbtn" data-rtprof="open">Expand all</button><button type="button" class="rt-tbtn" data-rtprof="close">Collapse all</button>` +
+      `<span class="muted rt-count" aria-live="polite">${names.length} profiles</span></div>` : '';
+  el.innerHTML = strip + tools + names.map(n => rtSection(n, all[n], vocab, compact)).join('');
+  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle',
+    () => compact ? rtSaveProfOpen(dt.dataset.rtfold, dt.open) : rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const find = el.querySelector('.rt-find');
+  if (find) find.addEventListener('input', () => {
+    const q = find.value.trim().toLowerCase();
+    let n = 0;
+    el.querySelectorAll('.rt-profile').forEach(dt => {
+      const hit = !q || dt.dataset.profile.toLowerCase().includes(q);
+      dt.hidden = !hit; if (hit) n++;
+    });
+    el.querySelector('.rt-count').textContent = q ? `${n} of ${names.length} profiles` : `${names.length} profiles`;
+  });
+  el.querySelectorAll('[data-rtprof]').forEach(b => b.addEventListener('click', () => {
+    const open = b.dataset.rtprof === 'open';
+    el.querySelectorAll('.rt-profile:not([hidden])').forEach(dt => { dt.open = open; });
+  }));
   el.querySelectorAll('details[data-rtopen]').forEach(dt => dt.addEventListener('toggle', () => rtSaveOpen(dt.dataset.rtopen, dt.open)));
   el.querySelectorAll('[data-rtall]').forEach(b => b.addEventListener('click', ev => {
     ev.preventDefault(); ev.stopPropagation();   // inside <summary>: don't fold the profile
@@ -4091,7 +4136,7 @@ function costCell(v, local, state){
   if (state === 'freetier') return `<span class="freetier" title="Published $0 tier (OpenRouter :free or an OpenCode Zen free SKU): genuinely $0 per token.">$0 <span class="ftmark">free tier</span></span>`;
   if (!local) return '$' + v.toFixed(2);
   const s = v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toFixed(4) : '0';
-  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">elec</span></span>`;
+  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">electricity</span></span>`;
 }
 
 function unpricedModels(rows){
@@ -4219,7 +4264,7 @@ function renderUnpriced(rows){
   notify({id: 'unpriced', sev: 'warn',
     title: `${un.length} model${un.length === 1 ? '' : 's'} ${un.length === 1 ? 'has' : 'have'} no price`,
     text: `Est. cost leaves out ${calls.toLocaleString()} calls (${names}), so it is too low.`,
-    action: {label: 'Open Prices', href: '#/Prices'},
+    action: {label: 'Open Prices', href: '#/prices'},
     sig: un.map(([m]) => m).sort().join(','), chip: `${un.length} unpriced`});
   return un.length;
 }
@@ -5184,8 +5229,8 @@ function renderHome(inR){
       '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
   ];
 
-  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view) => `
-    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}" title="${escA(desc)}">
+  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view, sec = '') => `
+    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}"${sec ? ` data-sec="${sec}"` : ''} title="${escA(desc)}">
       <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
         <span class="hc-ico" aria-hidden="true">${ico}</span></span>
       <span class="xp-body">
@@ -5197,15 +5242,16 @@ function renderHome(inR){
 
   html += xc('Usage', icon('updown'), PAL[0], 'Estimated from tokens, not measured',
     `<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    'Bandwidth (est.)', 'usage');
+    'Bandwidth (est.)', 'usage?s=bandwidth', 'Usage', 'bwpanel');
 
-  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'Price sheet', 'Prices', 'Prices');
+  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'per 1M tokens', 'Prices', 'prices', 'Prices');
 
   box.innerHTML = html;
   box.querySelectorAll('[data-gohome]').forEach(a => {
     a.addEventListener('click', (e) => {
       e.preventDefault();
       pickView(a.dataset.gohome);
+      if (a.dataset.sec) document.getElementById(a.dataset.sec)?.scrollIntoView?.({block: 'start'});
     });
   });
 }
@@ -7083,7 +7129,7 @@ const COVERED_PLAN = { claude: 'Claude', codex: 'ChatGPT' };
 const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN[kind] || 'subscription'} subscription`;
 function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
-  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">subscription</span></span>`;
 }
 function ownerBadge(name, what, kindColor){
   const n = name || '';
@@ -7723,7 +7769,7 @@ function renderLifecycle(pressure){
         <span class="muted">${bits.map(esc).join(' · ')}</span>
         ${s.error ? `<span style="color:var(--z-bad)" title="${esc(s.error)}">error</span>` : ''}
       </div>` +
-      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
+      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="overflow-wrap:anywhere" title="${esc(s.error)}">${esc(failMsgHuman(s.error))}</div>` : '');
     }).join('');
 }
 
@@ -7848,6 +7894,25 @@ function failMsgClean(m){
           .replace(/\bprompt-turn-[\w:.-]+/g, '')
           .replace(/\s{2,}/g, ' ').trim();
 }
+const HTTP_WORDS = {400:'Bad request', 401:'Not authorised', 403:'Forbidden', 404:'Not found', 408:'Request timed out',
+  413:'Request too large', 429:'Rate limited', 500:'Provider server error', 502:'Bad gateway', 503:'Provider unavailable',
+  504:'Gateway timeout', 524:'Provider timed out'};
+function failMsgHuman(m){
+  const s = String(m || '').trim();
+  const json = s.match(/"(?:message|detail|title)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const kv = s.match(/\b\w+=\S/g) || [];
+  const et = s.match(/\berror_type=([A-Za-z_.]+)/);
+  const host = s.match(/\bbase_url=(?:https?:\/\/)?([^\s\/,'")]+)/);
+  const code = s.match(/\b(?:HTTP|status(?:_code)?[= :]+)\s*(\d{3})\b/i);
+  if (!json && !et && !host && kv.length < 2) return s;
+  const words = code && HTTP_WORDS[code[1]];
+  let why = json ? json[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')
+    : et ? et[1].split('.').pop().replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase()) : '';
+  if (!why && !words) why = s.replace(/\b\w+=\S+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const out = [words ? `${words} (HTTP ${code[1]})` : code ? `HTTP ${code[1]}` : '', why, host ? `via ${host[1]}` : '']
+    .filter(Boolean).join(' · ');
+  return out.length > 160 ? out.slice(0, 157) + '…' : out;
+}
 function groupFailures(F){
   const g = new Map();
   F.forEach(f => {
@@ -7940,7 +8005,7 @@ function renderFailures(F){
         <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
         <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
         <span class="muted shrink-0 text-[length:var(--fs-xs)] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
-        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
+        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(failMsgHuman(g.msg))}</span>
         <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
       </div>`).join('');
 
@@ -9204,13 +9269,12 @@ function setColorSwatch(n){
   const h = profileHue(n);
   const overridden = pvHueOverride(n) !== null;
   return `<div class="setf" data-scname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${overridden ? '' : ' hidden'}>Custom</span></span>
     <span class="setin">
       <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
-      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
-      <span class="muted text-[length:var(--fs-xs)]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" aria-label="${escA(n)} hue" style="flex:1;min-width:0">
+      <span class="muted text-[length:var(--fs-xs)]" style="min-width:4.6em;text-align:right" data-schuen="${escA(n)}">hue ${h}°</span>
     </span>
-    <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
   </div>`;
 }
 function renderSetColors(){
@@ -9235,9 +9299,9 @@ function setColorsInstall(){
       const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
       if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
       const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
-      if (readout) readout.textContent = deg + '°';
-      const hint = row.querySelector('.seth');
-      if (hint) hint.textContent = 'Custom — used for its tab, badges and live dots.';
+      if (readout) readout.textContent = 'hue ' + deg + '°';
+      const tag = row.querySelector('.setcustom');
+      if (tag) tag.hidden = false;
     }
     tabs(); renderLive();
   });
@@ -9255,13 +9319,12 @@ function setColorsInstall(){
 function setLogoRow(n){
   const logo = profileLogo(n);
   return `<div class="setf" data-slname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${logo ? '' : ' hidden'}>Custom</span></span>
     <span class="setin" style="gap:8px">
       ${profileIconHtml(n, 28)}
-      <input type="file" accept="image/*" data-slfile="${escA(n)}" style="flex:1;min-width:0;font-size:var(--fs-xs)">
+      <label class="chip setup">Upload logo<input type="file" class="sr-only" accept="image/*" data-slfile="${escA(n)}"></label>
       ${logo ? `<button type="button" data-slclear="${escA(n)}" class="chip" style="padding:2px 8px">Clear</button>` : ''}
     </span>
-    <span class="seth" data-slmsg="${escA(n)}">${logo ? 'Custom logo set.' : 'No logo — showing the name-derived initial.'}</span>
   </div>`;
 }
 function renderSetLogos(){
@@ -9276,8 +9339,9 @@ function setLogosInstall(){
   const setRowMsg = (n, text, kind) => {
     const row = box.querySelector(`[data-slname="${CSS.escape(n)}"]`);
     if (!row) return;
-    const msg = row.querySelector('.seth');
-    if (msg) { msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : ''); }
+    let msg = row.querySelector('.seth');
+    if (!msg) { msg = document.createElement('span'); row.appendChild(msg); }
+    msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : '');
   };
   box.addEventListener('change', e => {
     const inp = e.target.closest && e.target.closest('[data-slfile]');
@@ -9430,12 +9494,18 @@ function settingsInstall(){
   });
   setColorsInstall();
   setLogosInstall();
+  document.getElementById('setnav')?.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-setgo]');
+    if (b) document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+  });
   loadSettings();
 }
 
 function setCrumb(v){
   const el = document.getElementById('crumb');
   if (el) el.textContent = v || '';
+  const h = document.getElementById('h1view');
+  if (h) h.textContent = v ? ': ' + v : '';
 }
 
 const NAV_ICONS = {
@@ -9790,12 +9860,14 @@ function pickView(v){
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
   });
+  const sec = ({bandwidth: 'bwpanel'})[filterFromHash('s')];
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
   setCrumb(v);
   navSync();
   syncProjFilterUI();
   render();
+  if (sec) document.getElementById(sec)?.scrollIntoView?.({block: 'start'});
   if (v === 'Logs') loadLogs();
   if (v === 'Flow') requestAnimationFrame(() => {
     const p = DATA.profiles[current];
@@ -10539,7 +10611,7 @@ function drawerSync(){
   const errs = all.filter(e => e.level === 'error');
 
   const unread = dOpen ? 0 : Math.max(0, errs.length - dSeen);
-  for (const bid of ['logn','logn2']){
+  for (const bid of ['navlogn']){
     const badge = $(bid);
     if (badge){ badge.textContent = unread; badge.hidden = unread === 0; }
   }
@@ -10574,7 +10646,6 @@ function drawerOpen(on){
   $('drawer')?.classList.toggle('open', on);
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
-  $('logbtn')?.classList.toggle('hidden', on);
   if (on && !dTrap) dTrap = trapFocus($('drawer'), $('scrim'), null);
   if (!on && dTrap){ dTrap.release(); dTrap = null; }
   if (on){
@@ -10636,8 +10707,6 @@ function installDrawerDrag(){
 
 function installDrawer(){
   installDrawerDrag();
-  $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
-  $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('dfull')?.addEventListener('click', e => {
     e.preventDefault();

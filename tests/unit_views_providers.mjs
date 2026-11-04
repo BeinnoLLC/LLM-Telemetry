@@ -652,7 +652,7 @@ const BW_ROWS = [
 
   const local = e.resendtbl.innerHTML.slice(e.resendtbl.innerHTML.indexOf('data-sid="s2"'));
   has(local, '>s2</td>', 'renderResend: an empty title falls back to the id');
-  has(local, '~$0.250 <span class="elecmark">elec</span>', 'renderResend: a local row shows electricity, not a bill');
+  has(local, '~$0.250 <span class="elecmark">electricity</span>', 'renderResend: a local row shows electricity, not a bill');
   has(local, 'width:16.666', 'renderResend: bar width is proportional');
   has(local, '<td class="text-right">50.0%</td>', 'renderResend: 50 renders as 50.0%');
 

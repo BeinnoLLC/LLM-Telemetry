@@ -358,7 +358,7 @@ const COVERED_PLAN = { claude: 'Claude', codex: 'ChatGPT' };
 const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN[kind] || 'subscription'} subscription`;
 function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
-  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">subscription</span></span>`;
 }
 // Owner badge: the profile / login / agent that owns a row. Hermes profiles are
 // tinted with the same profileHue() the profile tabs use, so one colour means one
