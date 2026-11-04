@@ -149,6 +149,7 @@ async function boot(opt = {}){
       current: opt.current || 'p1',
       loeIcon: (L, o) => { logs.loeIcon.push([L.id, o]); return '<loe>'; },   // must NOT echo L.title: it is untrusted and unescaped
       mk: (...a) => { logs.mk.push(a); },
+      sparkSvg: (vals, color, opts) => { logs.sparkSvg = (logs.sparkSvg || 0) + 1; return '<spark>'; },
     },
     'views.js': {
       REPO_EXPANDED: opt.expanded || new Set(),
