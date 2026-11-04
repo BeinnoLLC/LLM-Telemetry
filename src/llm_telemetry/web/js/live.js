@@ -403,13 +403,12 @@ function lvRow(o){
   const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool" title="${escA(t)}">${esc(t)}</span>`).join('');
+  const _pi = provIcon(short(o.model)) ? `<span class="lvprovicon" style="margin-right:4px">${provIcon(short(o.model))}</span>` : '';
   const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${S.idle_s > 86400 ? ' data-longidle="1"' : ''}${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
         : `<div class="lvc lvc-sess" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div></div></div>`}
-      <div class="lvc metacol" role="cell">
-        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${provIcon(short(o.model)) || ''} ${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
-      </div>
+      <div class="lvc metacol" role="cell">${_pi}<div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}</div>
       <div class="lvc lvc-state" role="cell"><div class="lvstk"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span><span class="lvel" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</span></div></div>
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}${o.tok ? `<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div>` : ''}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>

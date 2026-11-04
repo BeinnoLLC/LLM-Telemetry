@@ -418,6 +418,10 @@
    "name": "renderQuotaView"
   },
   {
+   "mod": "quotaview",
+   "name": "renderLifeQuota"
+  },
+  {
    "mod": "router",
    "name": "view"
   },

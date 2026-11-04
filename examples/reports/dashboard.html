@@ -2247,12 +2247,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
    <div id="qtip" class="flowtip qtip" role="tooltip"></div>
    <div id="qpop" class="flowtip qtip qt-pop" role="dialog" aria-label="Task details" tabindex="-1"></div>
   </div>
- <div class="card p-4" id="lifequota" style="position:relative">
-   <div class="lbl mb-2.5">Quota
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="lifequotasub"></span>
-   </div>
-   <div id="lifequotabody"></div>
-  </div>
  <div class="livegrid" id="live-grid">
    <div class="card p-4" style="min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px)">
     <div class="lbl mb-2.5 shrink-0 livehdr">Workers <span id="livestamp" class="stamp muted text-[length:var(--fs-xs)] normal-case tracking-normal ml-1">live · every 5s</span><span id="livebw" class="livebw" title="Open sessions only · estimated from token counts, not measured"></span></div>
@@ -2262,6 +2256,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
      <div id="livelist" class="lvbody" role="rowgroup"></div>
     </div>
    </div>
+ <div class="card p-4 mt-4" id="lifequota" style="position:relative">
+   <div class="lbl mb-2.5">Quota
+    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="lifequotasub"></span>
+   </div>
+   <div id="lifequotabody"></div>
+  </div>
 
   </div>
 
@@ -3797,6 +3797,39 @@ function renderQuotaView(){
   }));
   el.querySelectorAll('[data-qvpage]').forEach(b =>
     b.addEventListener('click', () => qvPageSet(b.dataset.qvpage)));
+}
+function renderLifeQuota(){
+  const el = $('lifequotabody');
+  const sub = $('lifequotasub');
+  if (!el) return;
+  const all = DATA.quota || {};
+  const name = (current && current !== 'All' && all[current]) ? current : Object.keys(all)[0];
+  const pdata = name ? (all[name] || {}) : {};
+  const provs = Object.values(pdata.providers || {});
+  if (sub) sub.textContent = name ? `${name} · ${provs.length} provider${provs.length === 1 ? '' : 's'}` : '';
+  if (!provs.length){
+    el.innerHTML = '<div class="muted">No quota data cached for this profile.</div>';
+    return;
+  }
+  const att = qvAttention();
+  const rows = provs.map(p => {
+    const worst = (p.windows || []).reduce((a, w) => {
+      const pct = qvPct(w.used_percent);
+      return (pct !== null && (a === null || pct > a)) ? pct : a;
+    }, null);
+    const lvl = qvLevel(worst, att);
+    const status = p.unavailable_reason
+      ? `<span class="rt-auth rt-mute">${esc(p.unavailable_reason)}</span>`
+      : (worst === null ? '<span class="rt-auth rt-mute">no reading</span>'
+        : `<span class="rt-auth rt-${lvl === 'bad' ? 'warn' : lvl === 'warn' ? 'warn' : 'ok'}">${worst}% used</span>`);
+    const bar = qvBar(worst, att);
+    return `<div class="qv-win" data-level="${lvl}">
+      <span class="qv-wname">${esc(p.label || p.id || '')}</span>
+      ${status}
+      ${bar}
+    </div>`;
+  }).join('');
+  el.innerHTML = qvKpis(pdata) + `<div class="qv-provs">${rows}</div>`;
 }
 let view = localStorage.getItem('hermes-dash-view') || 'Home';
 let HOUR_RANGE = null;
@@ -7248,13 +7281,12 @@ function lvRow(o){
   const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool" title="${escA(t)}">${esc(t)}</span>`).join('');
+  const _pi = provIcon(short(o.model)) ? `<span class="lvprovicon" style="margin-right:4px">${provIcon(short(o.model))}</span>` : '';
   const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${S.idle_s > 86400 ? ' data-longidle="1"' : ''}${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
         : `<div class="lvc lvc-sess" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div></div></div>`}
-      <div class="lvc metacol" role="cell">
-        <div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${provIcon(short(o.model)) || ''} ${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}
-      </div>
+      <div class="lvc metacol" role="cell">${_pi}<div class="lvmodel text-[length:var(--fs-sm)] muted truncate leading-tight" style="color:${o.mcol}" title="${escA(short(o.model))}">${esc(short(o.model) || '—')}</div>${o.mextra ? `<div class="lvmx">${o.mextra}</div>` : (o.prov ? `<div class="lvmx"><span class="lvprov">${provBadge(o.prov)}</span></div>` : '')}</div>
       <div class="lvc lvc-state" role="cell"><div class="lvstk"><span class="lvst" data-state="${st.toLowerCase()}">${st}</span><span class="lvel" title="running since session start">${Number.isFinite(S.uptime_s) ? ago(S.uptime_s) : '—'}</span></div></div>
       <div class="lvc lvnum" role="cell" title="tokens in + out">${o.tok ? fmt(o.tok) : '—'}${o.tok ? `<div class="lvspark">${sparkSvg(WORKER_TOK_HIST.get(S.id) || [], o.mcol || '#888', {w:48,h:12,pad:1})}</div>` : ''}</div>
       <div class="lvc lvnum" role="cell" title="${o.cost && o.covered ? escA(coveredTip(o.kind)) : 'estimated cost for this session'}">${o.cost ? (o.covered ? coveredCost(o.kind, o.cost) : esc(o.cost)) : '—'}</div>
