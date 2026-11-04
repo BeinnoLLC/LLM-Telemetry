@@ -48,23 +48,19 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     // ---- markup/structure checks (viewport-independent) -------------------
-    const rangebar = d.getElementById('rangebar');
-    chk(!!rangebar, '#rangebar exists (collapsible range card, #13)');
-    const rangetoggle = d.getElementById('rangetoggle');
-    chk(!!rangetoggle, '#rangetoggle chip exists');
-    chk(rangetoggle.getAttribute('aria-controls') === 'rangebar', 'rangetoggle names the region it controls (a11y)');
-
-    // Clicking the toggle opens/closes the bar via a real class, not inline style.
-    chk(!rangebar.classList.contains('rangeopen'), 'range card starts collapsed');
-    rangetoggle.click();
-    chk(rangebar.classList.contains('rangeopen'), 'clicking the toggle opens the range card');
-    chk(rangetoggle.getAttribute('aria-expanded') === 'true', 'aria-expanded flips to true when open');
-    rangetoggle.click();
-    chk(!rangebar.classList.contains('rangeopen'), 'clicking again closes it');
-    chk(rangetoggle.getAttribute('aria-expanded') === 'false', 'aria-expanded flips back to false');
-
-    // The toggle's label reflects the actual selected range, not a static string.
-    chk(/\d{4}-\d{2}-\d{2}/.test(rangetoggle.textContent), 'the collapsed chip shows the real active date range', rangetoggle.textContent);
+    const fbar = d.getElementById('filterbar');
+    chk(!!fbar, '#filterbar exists (one filter card, U-2)');
+    const seg = d.getElementById('presets');
+    chk(seg && seg.getAttribute('role') === 'radiogroup', 'the range presets are one radiogroup');
+    chk(seg.querySelectorAll('[role=radio]').length === 8, 'seven presets plus Custom are radios', seg.querySelectorAll('[role=radio]').length);
+    const cu = seg.querySelector('[data-key=custom]');
+    chk(cu.getAttribute('aria-controls') === 'rangepop', 'Custom names the popover it opens (a11y)');
+    chk(d.getElementById('rangepop').hidden, 'the date popover starts closed');
+    cu.click();
+    chk(!d.getElementById('rangepop').hidden && cu.getAttribute('aria-expanded') === 'true', 'clicking Custom opens the date popover');
+    d.getElementById('rangeapply').click();
+    chk(d.getElementById('rangepop').hidden && cu.getAttribute('aria-expanded') === 'false', 'Apply closes it');
+    chk(!!d.getElementById('fbfilters') && !!d.getElementById('fbsheet'), 'phones get a Filters button and a bottom sheet');
 
     // Live rows carry a stable class so the mobile stacking rule can target them.
     const liverows = d.querySelectorAll('#livelist .liverow');
@@ -88,8 +84,8 @@ setTimeout(() => {
         '.olgrid (Ollama host cards) forced to a single column at mobile width (was minmax(310px,1fr))');
     chk(/\.chip, button\{min-height:44px;min-width:44px/.test(html),
         'chips/buttons get a 44x44 minimum tap target at mobile width');
-    chk(/#rangebar\{flex-direction:column/.test(html),
-        'the range card itself switches to a stacked column layout at mobile width');
+    chk(/\.filterbar \.seg-btn\{min-height:44px/.test(html) && /\.filterbar\.sheet-open \.fb-sheet\{display:flex\}/.test(html),
+        'phones: 44px range segments and the filters bottom sheet');
 
     // ---- no regression on desktop: the mobile rules must live INSIDE the
     // max-width:640px block, not leak out unconditionally. -----------------

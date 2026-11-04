@@ -129,13 +129,11 @@ setTimeout(() => {
   chk(!d.getElementById('bwcard'), 'the duplicate live bandwidth card is gone');
   chk(card && !card.hidden, 'card is visible when there is traffic');
 
-  // It must sit ABOVE the fold with the KPIs, not buried in a tab.
-  // User asked for it BEFORE the Est. cost card: 2 = DOCUMENT_POSITION_PRECEDING.
-  const kpis = d.getElementById('kpis');
-  chk(!!card && !!kpis && !!(kpis.compareDocumentPosition(card) & 2),
-    'card sits BEFORE the KPI row (above Est. cost)');
-  chk(!!card && !card.closest('.view'),
-    'card is outside any single view, so it shows on every tab');
+  // U-2: Transferred left the filter area; it is the summary line of the
+  // Usage -> Bandwidth panel, and nothing Home-level carries it any more.
+  chk(!!card && !!card.closest('#bwpanel'), 'Transferred is the summary line of the Usage Bandwidth panel');
+  chk(!!card && !!card.closest('.view[data-view="Usage"]'), 'and that panel lives in the Usage view');
+  chk(!!card && !card.closest('#filterbar'), 'Transferred is not part of the filter bar');
 
   const tot = d.getElementById('xfertot');
   const totTxt = tot ? tot.textContent : '';

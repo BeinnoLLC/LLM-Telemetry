@@ -582,8 +582,8 @@ export function render(){
   const hf = stampFreshness($('meta'), DATA.generated, 'dashboard');
   if (hf && hf.age != null) $('meta').textContent = `updated ${ago(hf.age)} ago${hf.state === 'stale' ? ' \u00b7 stale' : ''}`;
   $('rangeinfo').textContent = HOUR_RANGE
-    ? `last ${HOUR_RANGE}h · ${rows.length} rows`
-    : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
+    ? `last ${HOUR_RANGE}h · ${rows.length.toLocaleString('en-US')} rows`
+    : `${nd} day${nd===1?'':'s'} · ${rows.length.toLocaleString('en-US')} rows`;
   // Success rate: successes + failures come from p.health (DB successes,
   // errors.log failures). One number over every model in this profile.
   const H = DATA.profiles[current].health || [];
@@ -931,7 +931,6 @@ export function renderXfer(rows){
   // what you actually paid to move.
   const bits = [];
   if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp + lanDown)} (not metered)`);
-  bits.push(`${R.length} row${R.length === 1 ? '' : 's'}`);
   $('xfernote').textContent = bits.join(' \u00b7 ');
 }
 
@@ -1759,24 +1758,149 @@ export function populateRowFilterSelects(){
     [...new Set(modelRows.map(r => r.model).filter(Boolean))].sort(), 'All models', MODEL_FILTER));
 }
 
-// Reflects the three cross-filters into their selects + the chip on every view
-// they affect, and hides the chip everywhere else — a silent filter is exactly
-// the bug this bar exists to prevent.
+// U-2: Session / Provider / Model as searchable comboboxes. The three native
+// <select>s stay in the DOM (hidden) as the single source of truth: populate*
+// still fills them, the change handlers below still drive the filter state, and
+// the combobox is only the widget in front. SINGLE-select: PROJECT_FILTER,
+// PROVIDER_FILTER and MODEL_FILTER (router.js) each hold one string and every
+// row filter compares with ===, so a multi-select would be a data-layer change.
+export const FB_FACETS = [
+  ['projfiltersel', 'Session', r => r.project || 'Unattributed'],
+  ['provfiltersel', 'Provider', r => r.provider || ''],
+  ['modelfiltersel', 'Model', r => r.model],
+];
+export const comboState = { open: -1, active: 0, q: '' };
+
+// Calls per option value inside the CURRENT range, so the list can sort by
+// traffic and dim the options the range leaves empty.
+export function comboCounts(i){
+  const p = DATA.profiles[current]; if (!p) return new Map();
+  const from = ($('from') || {}).value, to = ($('to') || {}).value;
+  const rows = HOUR_RANGE ? hourRowsFor(p, HOUR_RANGE)
+    : (p.rows || []).filter(r => r.date && (!from || r.date >= from) && (!to || r.date <= to));
+  const key = FB_FACETS[i][2], m = new Map();
+  rows.forEach(r => m.set(key(r), (m.get(key(r)) || 0) + (+r.calls || 0)));
+  return m;
+}
+export function comboOptions(i){
+  const sel = $(FB_FACETS[i][0]); if (!sel) return [];
+  const counts = comboCounts(i), cur = sel.value;
+  return [...sel.options].filter(o => o.value !== '').map(o => ({ v: o.value, n: counts.get(o.value) || 0 }))
+    .sort((a, b) => (b.v === cur) - (a.v === cur) || b.n - a.n || a.v.localeCompare(b.v));
+}
+export function comboHits(i){
+  const q = comboState.q.trim().toLowerCase();
+  return comboOptions(i).filter(o => !q || o.v.toLowerCase().includes(q));
+}
+export function comboMark(v, q){
+  const at = q ? v.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  return at < 0 ? esc(v) : esc(v.slice(0, at)) + '<mark>' + esc(v.slice(at, at + q.length)) + '</mark>' + esc(v.slice(at + q.length));
+}
+export function renderComboList(i){
+  const box = document.querySelector(`.combo[data-i="${i}"] .combo-list`), sel = $(FB_FACETS[i][0]);
+  if (!box || !sel) return;
+  const hits = comboHits(i), q = comboState.q.trim();
+  comboState.active = Math.max(0, Math.min(comboState.active, hits.length - 1));
+  box.innerHTML = hits.length ? hits.map((o, k) =>
+    `<div class="combo-opt${k === comboState.active ? ' act' : ''}${o.n ? '' : ' dim'}" role="option" id="combo${i}o${k}" data-v="${escA(o.v)}" aria-selected="${o.v === sel.value}">` +
+    `<span class="combo-tick" aria-hidden="true">${o.v === sel.value ? '✓' : ''}</span><span class="combo-name">${comboMark(o.v, q)}</span>` +
+    `<span class="combo-n">${o.n.toLocaleString()}</span></div>`).join('')
+    : '<div class="combo-none muted">No match</div>';
+  const inp = document.querySelector(`.combo[data-i="${i}"] .combo-q`);
+  if (inp) inp.setAttribute('aria-activedescendant', hits.length ? `combo${i}o${comboState.active}` : '');
+  const act = box.querySelector('.act'); if (act && act.scrollIntoView) act.scrollIntoView({ block: 'nearest' });
+}
+export function closeCombo(restore){
+  const i = comboState.open; if (i < 0) return;
+  const c = document.querySelector(`.combo[data-i="${i}"]`);
+  comboState.open = -1;
+  if (!c) return;
+  c.querySelector('.combo-pop').hidden = true;
+  const b = c.querySelector('.combo-btn'); b.setAttribute('aria-expanded', 'false');
+  if (restore) b.focus();
+}
+export function openCombo(i){
+  if (comboState.open === i) return;
+  closeCombo(false);
+  comboState.open = i; comboState.q = ''; comboState.active = 0;
+  const c = document.querySelector(`.combo[data-i="${i}"]`); if (!c) return;
+  c.querySelector('.combo-btn').setAttribute('aria-expanded', 'true');
+  c.querySelector('.combo-pop').hidden = false;
+  const inp = c.querySelector('.combo-q'); inp.value = '';
+  renderComboList(i);
+  inp.focus();
+}
+// Writing through the hidden <select> + a change event keeps ONE code path: the
+// listeners in installProjFilter set the state, the hash, and re-render.
+export function pickCombo(i, value){
+  const sel = $(FB_FACETS[i][0]); if (!sel) return;
+  if (sel.value !== value){ sel.value = value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  closeCombo(true);
+}
+export function buildFilterCombos(){
+  const host = $('fbcombos'); if (!host || host.firstChild) return;
+  host.innerHTML = FB_FACETS.map(([, label], i) =>
+    `<div class="combo" data-i="${i}"><button type="button" class="chip combo-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by ${label.toLowerCase()}">` +
+    `<span class="combo-l">${label}</span><span class="combo-v"></span><span class="combo-chev" aria-hidden="true"></span></button>` +
+    `<div class="combo-pop" hidden><input type="text" class="combo-q" role="combobox" aria-expanded="true" aria-controls="combo${i}l" aria-autocomplete="list" ` +
+    `aria-label="Search ${label.toLowerCase()}s" placeholder="Search ${label.toLowerCase()}s…" autocomplete="off" spellcheck="false">` +
+    `<div class="combo-list" id="combo${i}l" role="listbox" aria-label="${label}"></div>` +
+    `<div class="combo-foot"><button type="button" class="combo-clear">Clear</button></div></div></div>`).join('');
+  host.querySelectorAll('.combo').forEach(c => {
+    const i = +c.dataset.i, btn = c.querySelector('.combo-btn'), inp = c.querySelector('.combo-q');
+    btn.onclick = () => comboState.open === i ? closeCombo(true) : openCombo(i);
+    btn.onkeydown = e => { if (e.key === 'ArrowDown'){ e.preventDefault(); openCombo(i); } };
+    inp.oninput = () => { comboState.q = inp.value; comboState.active = 0; renderComboList(i); };
+    inp.onkeydown = e => {
+      const n = comboHits(i).length;
+      if (e.key === 'ArrowDown'){ e.preventDefault(); comboState.active = Math.min(n - 1, comboState.active + 1); renderComboList(i); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); comboState.active = Math.max(0, comboState.active - 1); renderComboList(i); }
+      else if (e.key === 'Home'){ e.preventDefault(); comboState.active = 0; renderComboList(i); }
+      else if (e.key === 'End'){ e.preventDefault(); comboState.active = Math.max(0, n - 1); renderComboList(i); }
+      else if (e.key === 'Enter'){ e.preventDefault(); const h = comboHits(i)[comboState.active]; if (h) pickCombo(i, h.v); }
+      else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); closeCombo(true); }
+      else if (e.key === 'Tab') closeCombo(false);
+    };
+    c.querySelector('.combo-list').onmousedown = e => {
+      const o = e.target.closest && e.target.closest('.combo-opt');
+      if (o){ e.preventDefault(); pickCombo(i, o.dataset.v); }
+    };
+    c.querySelector('.combo-clear').onclick = () => pickCombo(i, '');
+  });
+  document.addEventListener('mousedown', e => {
+    if (comboState.open >= 0 && !(e.target.closest && e.target.closest('.combo'))) closeCombo(false);
+  });
+}
+// Trigger label ("Provider" idle, "Provider: openrouter" when set) + active chips.
+export function refreshFilterCombos(){
+  FB_FACETS.forEach(([id], i) => {
+    const sel = $(id), c = document.querySelector(`.combo[data-i="${i}"]`);
+    if (!sel || !c) return;
+    const on = sel.value !== '';
+    c.querySelector('.combo-btn').classList.toggle('has', on);
+    c.querySelector('.combo-v').textContent = on ? sel.value : '';
+  });
+  const n = FB_FACETS.filter(([id]) => $(id) && $(id).value !== '').length, fc = $('fbfcount');
+  if (fc) fc.textContent = n ? ` (${n})` : '';
+  const box = $('fbactive'); if (!box) return;
+  const chips = FB_FACETS.map(([id, label], i) => { const sel = $(id); return sel && sel.value
+    ? `<button type="button" class="chip fchip-on" data-i="${i}" aria-label="Remove ${label.toLowerCase()} filter ${escA(sel.value)}"><span class="fchip-k">${label}:</span> <span class="fchip-v">${esc(sel.value)}</span><span aria-hidden="true" class="fchip-x">×</span></button>` : ''; }).join('');
+  box.innerHTML = chips ? chips + '<button type="button" class="fb-clearall" id="projfilterclear">Clear all</button>' : '';
+}
+
+// Reflects the cross-filter state into the hidden selects and the visible
+// combobox triggers / active chips.
 export function syncProjFilterUI(){
-  const sel = $('projfiltersel'), chip = $('projfilterchip'), name = $('projfilterchipname');
+  const sel = $('projfiltersel');
   if (sel && sel.value !== PROJECT_FILTER) sel.value = PROJECT_FILTER;
   const psel = $('provfiltersel'), msel = $('modelfiltersel');
   if (psel && psel.value !== PROVIDER_FILTER) psel.value = PROVIDER_FILTER;
   if (msel && msel.value !== MODEL_FILTER) msel.value = MODEL_FILTER;
-  if (!chip || !name) return;
-  const active = [PROJECT_FILTER, PROVIDER_FILTER, MODEL_FILTER].filter(Boolean);
-  const showChip = active.length > 0 && PROJ_FILTER_VIEWS.has(view);
-  chip.hidden = !showChip;
-  chip.style.display = showChip ? 'inline-flex' : 'none';
-  if (showChip) name.textContent = active.join(' \u00b7 ');
+  refreshFilterCombos();
 }
 
 export function installProjFilter(){
+  buildFilterCombos();
   const sel = $('projfiltersel');
   if (sel) sel.addEventListener('change', () => {
     setCrossFilter('project', sel.value);
@@ -1800,7 +1924,12 @@ export function installProjFilter(){
     syncProjFilterUI();
     render();
   });
-  $('projfilterclear')?.addEventListener('click', () => {
+  // Phones: the three comboboxes live in a bottom sheet behind one button.
+  const fbar = $('filterbar'), fbtn = $('fbfilters');
+  const sheet = open => { if (!fbar || !fbtn) return; fbar.classList.toggle('sheet-open', open); fbtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+  if (fbtn) fbtn.onclick = () => sheet(!fbar.classList.contains('sheet-open'));
+  if ($('fbdone')) $('fbdone').onclick = () => { closeCombo(false); sheet(false); };
+  const clearAll = () => {
     clearCrossFilters();
     if (sel) sel.value = '';
     if (prov) prov.value = '';
@@ -1808,6 +1937,14 @@ export function installProjFilter(){
     setHash(view);
     syncProjFilterUI();
     render();
+  };
+  // The active-chip strip is rebuilt on every sync, so it is delegated: a chip
+  // removes its own facet, "Clear all" removes everything.
+  const strip = $('fbactive');
+  if (strip) strip.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('button'); if (!t) return;
+    if (t.id === 'projfilterclear'){ clearAll(); return; }
+    if (t.dataset.i != null) pickCombo(+t.dataset.i, '');
   });
 }
 

@@ -740,24 +740,24 @@ const D2 = await load();
   has(e.xfertot.innerHTML, 'semibold">1.00 KB</span>', 'renderXfer: down total');
   has(e.xfertot.innerHTML, '<span class="muted text-[length:var(--fs-xs)]">4:1</span>',
     'renderXfer: the up:down ratio is rounded to whole numbers');
-  eq(e.xfernote.textContent, 'LAN 1.00 KB (not metered) \u00B7 2 rows', 'renderXfer: LAN total and row count');
+  eq(e.xfernote.textContent, 'LAN 1.00 KB (not metered)', 'renderXfer: LAN total and row count');
 
   const seen = e.xfertot.innerHTML;
   D2.renderXfer([], () => false);
   eq(e.xfercard.hidden, false, 'renderXfer: once seen, an empty range does not hide the card');
   eq(e.xfertot.innerHTML, seen, 'renderXfer: and it does not clear the numbers (XF_SEEN)');
-  eq(e.xfernote.textContent, 'LAN 1.00 KB (not metered) \u00B7 2 rows', 'renderXfer: note also left alone');
+  eq(e.xfernote.textContent, 'LAN 1.00 KB (not metered)', 'renderXfer: note also left alone');
 
   D2.renderXfer([{ up_bytes: 2048, down_bytes: 0, lan_up_bytes: 0, lan_down_bytes: 0 }]);
   has(e.xfertot.innerHTML, 'semibold">2.00 KB</span>', 'renderXfer: up-only traffic still shows its total');
   has(e.xfertot.innerHTML, 'semibold">0 B</span>', 'renderXfer: a zero down total is printed, not omitted');
   eq(count(e.xfertot.innerHTML, ':1</span>'), 0, 'renderXfer: no ratio when nothing came down');
-  eq(e.xfernote.textContent, '1 row', 'renderXfer: singular row, and LAN omitted when zero');
+  eq(e.xfernote.textContent, '', 'renderXfer: no LAN, no note (rows are counted in the filter bar)');
 
   D2.renderXfer([{ up_bytes: 1024, down_bytes: 1024, lan_up_bytes: 10, lan_down_bytes: 0 }]);
   has(e.xfertot.innerHTML, '<span class="muted text-[length:var(--fs-xs)]">1:1</span>',
     'renderXfer: an even split reports 1:1');
-  eq(e.xfernote.textContent, 'LAN 10 B (not metered) \u00B7 1 row', 'renderXfer: LAN-only traffic is still disclosed');
+  eq(e.xfernote.textContent, 'LAN 10 B (not metered)', 'renderXfer: LAN-only traffic is still disclosed');
 }
 
 // ═══ renderHome ════════════════════════════════════════════════════════════

@@ -2131,50 +2131,27 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   </div>
  </div>
 
- <div class="card p-3 flex items-center gap-2 flex-wrap" id="rangebar">
-  <span class="lbl">Range</span>
-  <button type="button" id="rangetoggle" class="chip" style="display:none" aria-expanded="false" aria-controls="rangebar"></button>
-  <input type="date" id="from"><span class="muted text-[length:var(--fs-xs)]">to</span><input type="date" id="to">
-  <span class="flex gap-1.5 ml-1" id="presets"></span>
-  <span class="muted text-[length:var(--fs-xs)] ml-auto" id="rangeinfo"></span>
-</div>
- <div class="flex gap-1.5" id="views"></div>
-
- <div class="card p-3 mb-3 flex items-center gap-2 flex-wrap" id="projfilterbar">
-  <span class="lbl">Filter</span>
-  <span class="selwrap">
-   <select id="projfiltersel" class="chip" style="text-transform:none;letter-spacing:0">
-    <option value="">All projects</option>
-   </select>
-  </span>
-  <span class="selwrap">
-   <select id="provfiltersel" class="chip" style="text-transform:none;letter-spacing:0"
-     aria-label="Filter by provider">
-    <option value="">All providers</option>
-   </select>
-  </span>
-  <span class="selwrap">
-   <select id="modelfiltersel" class="chip" style="text-transform:none;letter-spacing:0"
-     aria-label="Filter by model">
-    <option value="">All models</option>
-   </select>
-  </span>
-  <span id="projfilterchip" class="chip" style="display:none;text-transform:none;letter-spacing:0" hidden>
-   Filtering: <b id="projfilterchipname"></b>
-   <button type="button" id="projfilterclear" title="Clear project filter" style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 4px;font:inherit">&times;</button>
-  </span>
- </div>
-
- <div class="card p-3 mb-3" id="xfercard" hidden>
-  <div class="flex items-center gap-3 flex-wrap">
-   <div class="lbl">Transferred
-    <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1"
-      title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</span>
-   </div>
-   <div id="xfertot" class="bw"></div>
-   <div class="muted text-[length:var(--fs-xs)] ml-auto" id="xfernote"></div>
+ <div class="card filterbar" id="filterbar">
+  <div class="seg" id="presets" role="radiogroup" aria-label="Time range"></div>
+  <div class="fb-pop rangepop" id="rangepop" role="dialog" aria-label="Custom date range" hidden>
+   <label class="rp-f"><span>From</span><input type="date" id="from"></label>
+   <label class="rp-f"><span>To</span><input type="date" id="to"></label>
+   <button type="button" class="btn-apply" id="rangeapply">Apply</button>
+  </div>
+  <button type="button" class="chip fb-filters" id="fbfilters" aria-expanded="false" aria-controls="fbsheet">Filters<span id="fbfcount"></span></button>
+  <div class="fb-sheet" id="fbsheet">
+   <div class="fb-combos" id="fbcombos"></div>
+   <button type="button" class="btn-apply fb-done" id="fbdone">Done</button>
+  </div>
+  <span class="fb-meta" id="rangeinfo" aria-live="polite"></span>
+  <div class="fb-active" id="fbactive"></div>
+  <div hidden aria-hidden="true">
+   <select id="projfiltersel"><option value="">All sessions</option></select>
+   <select id="provfiltersel"><option value="">All providers</option></select>
+   <select id="modelfiltersel"><option value="">All models</option></select>
   </div>
  </div>
+ <div class="flex gap-1.5" id="views"></div>
 
  <div class="statgrid totals" id="kpis"></div>
 
@@ -2479,6 +2456,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   <div class="card p-4 mt-4" id="bwpanel">
    <div class="lbl mb-2.5">Bandwidth
     <span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="bwpsub"></span>
+   </div>
+   <div class="xferline mb-3" id="xfercard" hidden>
+    <div class="lbl">Transferred</div>
+    <div id="xfertot" class="bw"></div>
+    <div class="muted" id="xfernote"></div>
+    <div class="muted ml-auto" title="Every recorded API call whose date falls in the selected range, across all sessions, finished or not.">all sessions &middot; selected date range &middot; estimated</div>
    </div>
    <div id="bwpkpi" class="bwpkpi mb-3"></div>
    <div class="grid-2">
@@ -3751,8 +3734,8 @@ const bounds = p => {
   const ds = [...new Set(p.rows.map(r=>r.date).filter(Boolean))].sort();
   return [ds[0]||'', ds[ds.length-1]||''];
 };
-function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; render(); updateRangeToggleLabel(); }
-function setHourRange(hours){ HOUR_RANGE=hours; render(); updateRangeToggleLabel(); }
+function setRange(from,to){ HOUR_RANGE=null; $('from').value=from; $('to').value=to; setHash(view); render(); updateRangeToggleLabel(); }
+function setHourRange(hours){ HOUR_RANGE=hours; setHash(view); render(); updateRangeToggleLabel(); }
 function hourRowsFor(p, hours){
   if (hours == null) return (p.hour_rows || []).slice();
   const cutoff = Date.now() - hours*3600*1000;
@@ -3765,34 +3748,110 @@ function hourRowsFor(p, hours){
 }
 
 function updateRangeToggleLabel(){
-  const rt = $('rangetoggle'); if (!rt) return;
-  if (HOUR_RANGE){ rt.textContent = `${HOUR_RANGE}h`; return; }
-  const from = $('from').value, to = $('to').value;
-  rt.textContent = from && to ? (from === to ? from : `${from} → ${to}`) : 'Range';
+  const g = $('presets'); if (!g) return;
+  const k = rangeKey();
+  g.querySelectorAll('[role=radio]').forEach(b => {
+    const on = b.dataset.key === k;
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    b.classList.toggle('on', on);
+    b.tabIndex = on || (k === 'custom' && b.dataset.key === 'custom') ? 0 : -1;
+  });
+  const cu = g.querySelector('[data-key=custom]');
+  if (cu){
+    const from = $('from').value, to = $('to').value;
+    const txt = k === 'custom' && from && to ? (from === to ? from : `${from} → ${to}`) : 'Custom';
+    cu.querySelector('.seg-lbl').textContent = txt;
+  }
+  if (!g.querySelector('[tabindex="0"]')) { const f = g.querySelector('[role=radio]'); if (f) f.tabIndex = 0; }
 }
-(function initRangeToggle(){
-  const rt = $('rangetoggle'), rb = $('rangebar'); if (!rt || !rb) return;
-  rt.onclick = () => {
-    const open = rb.classList.toggle('rangeopen');
-    rt.setAttribute('aria-expanded', open ? 'true' : 'false');
-  };
-})();
-
 function presets(p){
-  const [lo,hi] = bounds(p);
-  const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
-    const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
-  const hourDefs = [1, 6, 12];
-  const defs = [['24h',()=>[hi,hi]],['7d',()=>[days(7),hi]],['30d',()=>[days(30),hi]],['All',()=>[lo,hi]]];
+  const defs = rangeDefs(p);
+  const seg = (key, label, extra = '') =>
+    `<button type="button" class="seg-btn" role="radio" aria-checked="false" tabindex="-1" data-key="${key}"${extra}><span class="seg-lbl">${label}</span></button>`;
   $('presets').innerHTML =
-    hourDefs.map(h=>`<span class="chip" data-h="${h}" title="Last ${h} hour${h===1?'':'s'}, real hourly data">${h}h</span>`).join('') +
-    defs.map(([l],i)=>`<span class="chip" data-p="${i}">${l}</span>`).join('');
-  $('presets').querySelectorAll('[data-h]').forEach(el =>
-    el.onclick = () => setHourRange(+el.dataset.h));
-  $('presets').querySelectorAll('[data-p]').forEach((el,i)=>
-    el.onclick = () => { const [a,b]=defs[i][1](); setRange(a,b); });
+    RANGE_HOURS.map(h => seg(`${h}h`, `${h}h`, ` data-h="${h}" title="Last ${h} hour${h===1?'':'s'}, real hourly data"`)).join('') +
+    defs.map(([l], i) => seg(l.toLowerCase(), l, ` data-p="${i}"`)).join('') +
+    seg('custom', 'Custom', ' aria-haspopup="dialog" aria-expanded="false" aria-controls="rangepop"') ;
+  const g = $('presets');
+  g.querySelectorAll('[data-h]').forEach(el => el.onclick = () => setHourRange(+el.dataset.h));
+  g.querySelectorAll('[data-p]').forEach(el => el.onclick = () => { RANGE_PICK = el.dataset.key; const [a,b] = defs[+el.dataset.p][1]; setRange(a,b); });
+  g.querySelector('[data-key=custom]').onclick = () => toggleRangePop();
+  g.onkeydown = e => {
+    const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    const bs = [...g.querySelectorAll('[role=radio]')];
+    let i = bs.indexOf(document.activeElement);
+    if (i < 0) return;
+    if (e.key in keys) i = (i + keys[e.key] + bs.length) % bs.length;
+    else if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = bs.length - 1;
+    else return;
+    e.preventDefault();
+    bs[i].focus();
+    if (bs[i].dataset.key !== 'custom') bs[i].click();
+  };
+  if (!RANGE_HYDRATED){ RANGE_HYDRATED = true; const v = filterFromHash('range'); if (v) applyRangeParam(v); }
   updateRangeToggleLabel();
 }
+
+const RANGE_HOURS = [1, 6, 12];
+function rangeDefs(p){
+  const [lo,hi] = bounds(p);
+  const days = n => { const d=new Date(hi); d.setDate(d.getDate()-(n-1));
+    if (isNaN(d)) return lo;   // empty profile: bounds() has no dates to count back from
+    const s=d.toISOString().slice(0,10); return s<lo?lo:s; };
+  return [['24h',[hi,hi]],['7d',[days(7),hi]],['30d',[days(30),hi]],['All',[lo,hi]]];
+}
+function rangeKey(){
+  if (HOUR_RANGE) return `${HOUR_RANGE}h`;
+  const p = DATA.profiles[current], f = $('from'), t = $('to');
+  if (!p || !f || !t || !f.value || !t.value) return 'all';
+  const hits = rangeDefs(p).filter(([, [a, b]]) => a === f.value && b === t.value).map(([l]) => l.toLowerCase());
+  return !hits.length ? 'custom' : hits.includes(RANGE_PICK) ? RANGE_PICK : hits[hits.length - 1];
+}
+function rangeParam(){
+  const k = rangeKey();
+  if (k === 'all') return '';
+  return k === 'custom' ? `${$('from').value}_${$('to').value}` : k;
+}
+function applyRangeParam(v){
+  const p = DATA.profiles[current]; if (!p) return;
+  const [lo,hi] = bounds(p);
+  RANGE_PICK = (v || '').toLowerCase();
+  const m = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(v || '');
+  const h = /^(\d+)h$/.exec(v || '');
+  if (h && RANGE_HOURS.includes(+h[1])) HOUR_RANGE = +h[1];
+  else {
+    HOUR_RANGE = null;
+    const hit = rangeDefs(p).find(([l]) => l.toLowerCase() === (v || 'all').toLowerCase());
+    const [a, b] = m ? [m[1], m[2]] : hit ? hit[1] : [lo, hi];
+    $('from').value = a; $('to').value = b;
+  }
+  updateRangeToggleLabel();
+}
+let RANGE_HYDRATED = false;
+let RANGE_PICK = '';
+
+function toggleRangePop(open){
+  const pop = $('rangepop'), cu = $('presets') && $('presets').querySelector('[data-key=custom]');
+  if (!pop || !cu) return;
+  const want = open == null ? pop.hidden : open;
+  pop.hidden = !want;
+  cu.setAttribute('aria-expanded', want ? 'true' : 'false');
+  if (want) { const f = $('from'); if (f) f.focus(); } else cu.focus();
+}
+(function initRangePop(){
+  const pop = $('rangepop'); if (!pop) return;
+  const ap = $('rangeapply'); if (ap) ap.onclick = () => toggleRangePop(false);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !pop.hidden) { toggleRangePop(false); e.stopPropagation(); }
+  });
+  document.addEventListener('mousedown', e => {
+    if (pop.hidden || pop.contains(e.target) || e.target.closest && e.target.closest('[data-key=custom]')) return;
+    pop.hidden = true;
+    const cu = $('presets') && $('presets').querySelector('[data-key=custom]');
+    if (cu) cu.setAttribute('aria-expanded', 'false');
+  });
+})();
 
 function labelColor(raw){
   const s = String(raw).replace(/^\s*\S\s+/, '').trim();   // drop the glyph
@@ -4318,8 +4377,8 @@ function render(){
   const hf = stampFreshness($('meta'), DATA.generated, 'dashboard');
   if (hf && hf.age != null) $('meta').textContent = `updated ${ago(hf.age)} ago${hf.state === 'stale' ? ' \u00b7 stale' : ''}`;
   $('rangeinfo').textContent = HOUR_RANGE
-    ? `last ${HOUR_RANGE}h · ${rows.length} rows`
-    : `${nd} day${nd===1?'':'s'} · ${rows.length} rows`;
+    ? `last ${HOUR_RANGE}h · ${rows.length.toLocaleString('en-US')} rows`
+    : `${nd} day${nd===1?'':'s'} · ${rows.length.toLocaleString('en-US')} rows`;
   const H = DATA.profiles[current].health || [];
   let okN=0, failN=0;
   H.forEach(h=>{ okN+=(h.ok||0); failN+=(h.fail||0); });
@@ -5089,7 +5148,6 @@ function renderXfer(rows){
 
   const bits = [];
   if (lanUp || lanDown) bits.push(`LAN ${fmtB(lanUp + lanDown)} (not metered)`);
-  bits.push(`${R.length} row${R.length === 1 ? '' : 's'}`);
   $('xfernote').textContent = bits.join(' \u00b7 ');
 }
 
@@ -5793,20 +5851,16 @@ function populateRowFilterSelects(){
 }
 
 function syncProjFilterUI(){
-  const sel = $('projfiltersel'), chip = $('projfilterchip'), name = $('projfilterchipname');
+  const sel = $('projfiltersel');
   if (sel && sel.value !== PROJECT_FILTER) sel.value = PROJECT_FILTER;
   const psel = $('provfiltersel'), msel = $('modelfiltersel');
   if (psel && psel.value !== PROVIDER_FILTER) psel.value = PROVIDER_FILTER;
   if (msel && msel.value !== MODEL_FILTER) msel.value = MODEL_FILTER;
-  if (!chip || !name) return;
-  const active = [PROJECT_FILTER, PROVIDER_FILTER, MODEL_FILTER].filter(Boolean);
-  const showChip = active.length > 0 && PROJ_FILTER_VIEWS.has(view);
-  chip.hidden = !showChip;
-  chip.style.display = showChip ? 'inline-flex' : 'none';
-  if (showChip) name.textContent = active.join(' \u00b7 ');
+  refreshFilterCombos();
 }
 
 function installProjFilter(){
+  buildFilterCombos();
   const sel = $('projfiltersel');
   if (sel) sel.addEventListener('change', () => {
     setCrossFilter('project', sel.value);
@@ -5828,7 +5882,11 @@ function installProjFilter(){
     syncProjFilterUI();
     render();
   });
-  $('projfilterclear')?.addEventListener('click', () => {
+  const fbar = $('filterbar'), fbtn = $('fbfilters');
+  const sheet = open => { if (!fbar || !fbtn) return; fbar.classList.toggle('sheet-open', open); fbtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+  if (fbtn) fbtn.onclick = () => sheet(!fbar.classList.contains('sheet-open'));
+  if ($('fbdone')) $('fbdone').onclick = () => { closeCombo(false); sheet(false); };
+  const clearAll = () => {
     clearCrossFilters();
     if (sel) sel.value = '';
     if (prov) prov.value = '';
@@ -5836,7 +5894,132 @@ function installProjFilter(){
     setHash(view);
     syncProjFilterUI();
     render();
+  };
+  const strip = $('fbactive');
+  if (strip) strip.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('button'); if (!t) return;
+    if (t.id === 'projfilterclear'){ clearAll(); return; }
+    if (t.dataset.i != null) pickCombo(+t.dataset.i, '');
   });
+}
+
+const FB_FACETS = [
+  ['projfiltersel', 'Session', r => r.project || 'Unattributed'],
+  ['provfiltersel', 'Provider', r => r.provider || ''],
+  ['modelfiltersel', 'Model', r => r.model],
+];
+const comboState = { open: -1, active: 0, q: '' };
+
+function comboCounts(i){
+  const p = DATA.profiles[current]; if (!p) return new Map();
+  const from = ($('from') || {}).value, to = ($('to') || {}).value;
+  const rows = HOUR_RANGE ? hourRowsFor(p, HOUR_RANGE)
+    : (p.rows || []).filter(r => r.date && (!from || r.date >= from) && (!to || r.date <= to));
+  const key = FB_FACETS[i][2], m = new Map();
+  rows.forEach(r => m.set(key(r), (m.get(key(r)) || 0) + (+r.calls || 0)));
+  return m;
+}
+function comboOptions(i){
+  const sel = $(FB_FACETS[i][0]); if (!sel) return [];
+  const counts = comboCounts(i), cur = sel.value;
+  return [...sel.options].filter(o => o.value !== '').map(o => ({ v: o.value, n: counts.get(o.value) || 0 }))
+    .sort((a, b) => (b.v === cur) - (a.v === cur) || b.n - a.n || a.v.localeCompare(b.v));
+}
+function comboHits(i){
+  const q = comboState.q.trim().toLowerCase();
+  return comboOptions(i).filter(o => !q || o.v.toLowerCase().includes(q));
+}
+function comboMark(v, q){
+  const at = q ? v.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  return at < 0 ? esc(v) : esc(v.slice(0, at)) + '<mark>' + esc(v.slice(at, at + q.length)) + '</mark>' + esc(v.slice(at + q.length));
+}
+function renderComboList(i){
+  const box = document.querySelector(`.combo[data-i="${i}"] .combo-list`), sel = $(FB_FACETS[i][0]);
+  if (!box || !sel) return;
+  const hits = comboHits(i), q = comboState.q.trim();
+  comboState.active = Math.max(0, Math.min(comboState.active, hits.length - 1));
+  box.innerHTML = hits.length ? hits.map((o, k) =>
+    `<div class="combo-opt${k === comboState.active ? ' act' : ''}${o.n ? '' : ' dim'}" role="option" id="combo${i}o${k}" data-v="${escA(o.v)}" aria-selected="${o.v === sel.value}">` +
+    `<span class="combo-tick" aria-hidden="true">${o.v === sel.value ? '✓' : ''}</span><span class="combo-name">${comboMark(o.v, q)}</span>` +
+    `<span class="combo-n">${o.n.toLocaleString()}</span></div>`).join('')
+    : '<div class="combo-none muted">No match</div>';
+  const inp = document.querySelector(`.combo[data-i="${i}"] .combo-q`);
+  if (inp) inp.setAttribute('aria-activedescendant', hits.length ? `combo${i}o${comboState.active}` : '');
+  const act = box.querySelector('.act'); if (act && act.scrollIntoView) act.scrollIntoView({ block: 'nearest' });
+}
+function closeCombo(restore){
+  const i = comboState.open; if (i < 0) return;
+  const c = document.querySelector(`.combo[data-i="${i}"]`);
+  comboState.open = -1;
+  if (!c) return;
+  c.querySelector('.combo-pop').hidden = true;
+  const b = c.querySelector('.combo-btn'); b.setAttribute('aria-expanded', 'false');
+  if (restore) b.focus();
+}
+function openCombo(i){
+  if (comboState.open === i) return;
+  closeCombo(false);
+  comboState.open = i; comboState.q = ''; comboState.active = 0;
+  const c = document.querySelector(`.combo[data-i="${i}"]`); if (!c) return;
+  c.querySelector('.combo-btn').setAttribute('aria-expanded', 'true');
+  c.querySelector('.combo-pop').hidden = false;
+  const inp = c.querySelector('.combo-q'); inp.value = '';
+  renderComboList(i);
+  inp.focus();
+}
+function pickCombo(i, value){
+  const sel = $(FB_FACETS[i][0]); if (!sel) return;
+  if (sel.value !== value){ sel.value = value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  closeCombo(true);
+}
+function buildFilterCombos(){
+  const host = $('fbcombos'); if (!host || host.firstChild) return;
+  host.innerHTML = FB_FACETS.map(([, label], i) =>
+    `<div class="combo" data-i="${i}"><button type="button" class="chip combo-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by ${label.toLowerCase()}">` +
+    `<span class="combo-l">${label}</span><span class="combo-v"></span><span class="combo-chev" aria-hidden="true"></span></button>` +
+    `<div class="combo-pop" hidden><input type="text" class="combo-q" role="combobox" aria-expanded="true" aria-controls="combo${i}l" aria-autocomplete="list" ` +
+    `aria-label="Search ${label.toLowerCase()}s" placeholder="Search ${label.toLowerCase()}s…" autocomplete="off" spellcheck="false">` +
+    `<div class="combo-list" id="combo${i}l" role="listbox" aria-label="${label}"></div>` +
+    `<div class="combo-foot"><button type="button" class="combo-clear">Clear</button></div></div></div>`).join('');
+  host.querySelectorAll('.combo').forEach(c => {
+    const i = +c.dataset.i, btn = c.querySelector('.combo-btn'), inp = c.querySelector('.combo-q');
+    btn.onclick = () => comboState.open === i ? closeCombo(true) : openCombo(i);
+    btn.onkeydown = e => { if (e.key === 'ArrowDown'){ e.preventDefault(); openCombo(i); } };
+    inp.oninput = () => { comboState.q = inp.value; comboState.active = 0; renderComboList(i); };
+    inp.onkeydown = e => {
+      const n = comboHits(i).length;
+      if (e.key === 'ArrowDown'){ e.preventDefault(); comboState.active = Math.min(n - 1, comboState.active + 1); renderComboList(i); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); comboState.active = Math.max(0, comboState.active - 1); renderComboList(i); }
+      else if (e.key === 'Home'){ e.preventDefault(); comboState.active = 0; renderComboList(i); }
+      else if (e.key === 'End'){ e.preventDefault(); comboState.active = Math.max(0, n - 1); renderComboList(i); }
+      else if (e.key === 'Enter'){ e.preventDefault(); const h = comboHits(i)[comboState.active]; if (h) pickCombo(i, h.v); }
+      else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); closeCombo(true); }
+      else if (e.key === 'Tab') closeCombo(false);
+    };
+    c.querySelector('.combo-list').onmousedown = e => {
+      const o = e.target.closest && e.target.closest('.combo-opt');
+      if (o){ e.preventDefault(); pickCombo(i, o.dataset.v); }
+    };
+    c.querySelector('.combo-clear').onclick = () => pickCombo(i, '');
+  });
+  document.addEventListener('mousedown', e => {
+    if (comboState.open >= 0 && !(e.target.closest && e.target.closest('.combo'))) closeCombo(false);
+  });
+}
+function refreshFilterCombos(){
+  FB_FACETS.forEach(([id], i) => {
+    const sel = $(id), c = document.querySelector(`.combo[data-i="${i}"]`);
+    if (!sel || !c) return;
+    const on = sel.value !== '';
+    c.querySelector('.combo-btn').classList.toggle('has', on);
+    c.querySelector('.combo-v').textContent = on ? sel.value : '';
+  });
+  const n = FB_FACETS.filter(([id]) => $(id) && $(id).value !== '').length, fc = $('fbfcount');
+  if (fc) fc.textContent = n ? ` (${n})` : '';
+  const box = $('fbactive'); if (!box) return;
+  const chips = FB_FACETS.map(([id, label], i) => { const sel = $(id); return sel && sel.value
+    ? `<button type="button" class="chip fchip-on" data-i="${i}" aria-label="Remove ${label.toLowerCase()} filter ${escA(sel.value)}"><span class="fchip-k">${label}:</span> <span class="fchip-v">${esc(sel.value)}</span><span aria-hidden="true" class="fchip-x">×</span></button>` : ''; }).join('');
+  box.innerHTML = chips ? chips + '<button type="button" class="fb-clearall" id="projfilterclear">Clear all</button>' : '';
 }
 
 let projDistNormalized = false;
@@ -8918,6 +9101,8 @@ function setHash(v){
   if (PROJECT_FILTER) p.push('project=' + encodeURIComponent(PROJECT_FILTER));
   if (PROVIDER_FILTER) p.push('provider=' + encodeURIComponent(PROVIDER_FILTER));
   if (MODEL_FILTER) p.push('model=' + encodeURIComponent(MODEL_FILTER));
+  const rg = RANGE_HYDRATED ? rangeParam() : filterFromHash('range');
+  if (rg) p.push('range=' + encodeURIComponent(rg));
   const own = VIEW_PARAMS.get(slugOf(v));
   if (own) for (const [k, val] of own) p.push(encodeURIComponent(k) + '=' + encodeURIComponent(val));
   const want = '#/' + encodeURIComponent(slugOf(v)) + (p.length ? '?' + p.join('&') : '');
@@ -10060,7 +10245,7 @@ TOOLCOLORS = buildToolColors(allToolNames());
 current = ('All' in DATA.profiles) ? 'All' : Object.keys(DATA.profiles)[0];
 tabs();
 renderResolution();
-const exitHourRange = () => { HOUR_RANGE = null; render(); };
+const exitHourRange = () => { HOUR_RANGE = null; setHash(view); render(); updateRangeToggleLabel(); };
 $('from').onchange=exitHourRange; $('to').onchange=exitHourRange;
 if ($('projexclude')) $('projexclude').onchange = render;
 if ($('projdistnorm')) $('projdistnorm').onchange = function(){
@@ -10092,6 +10277,7 @@ function hydrateViewParams(view, keys){
 window.addEventListener('hashchange', () => {
   const v = viewFromHash();
   setFiltersFromHash();
+  if ($('presets') && $('presets').firstChild) applyRangeParam(filterFromHash('range'));
   syncProjFilterUI();
   if (v && v !== view) pickView(v);
   else render();

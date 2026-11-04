@@ -99,7 +99,7 @@ const IDS = [
   'projdistcard', 'projdistlegend', 'projtrendcard', 'projtrendlegend',
   'cProjDist', 'cProjTrend', 'projdistempty', 'projtrendempty',
   'pdclose', 'projweight', 'provfiltersel', 'modelfiltersel', 'projfilterclear',
-  'projfilterchipname',
+  'projfilterchipname', 'fbactive', 'fbcombos', 'fbfilters', 'fbdone', 'fbfcount', 'filterbar',
 ];
 
 function mkDom() {
@@ -958,34 +958,33 @@ const FILT_DATA = {
      V.PROJ_FILTER_VIEWS instanceof Set &&
      ['Usage', 'Cost', 'Flow', 'Health'].every(v => V.PROJ_FILTER_VIEWS.has(v)) &&
      !V.PROJ_FILTER_VIEWS.has('Live'));
+  // U-2: the "Filtering:" chip is gone; every active filter is its own removable
+  // chip in #fbactive (same on every view, so no filter can go unseen).
   const { V: V8, els: e8 } = await load({ router: { PROJECT_FILTER: 'Alpha', view: 'Usage' } });
-  e8.projfilterchip.hidden = true;
-  e8.projfilterchip.style.display = 'none';
   V8.syncProjFilterUI();
-  eq('syncProjFilterUI: chip is shown for a filtered view', e8.projfilterchip.hidden, false);
-  eq('syncProjFilterUI: chip display is inline-flex', e8.projfilterchip.style.display, 'inline-flex');
-  eq('syncProjFilterUI: chip names the filtered project', e8.projfilterchipname.textContent, 'Alpha');
+  has('syncProjFilterUI: a chip names the filtered project', e8.fbactive.innerHTML, '<span class="fchip-v">Alpha</span>');
+  has('syncProjFilterUI: the chip says which facet it removes', e8.fbactive.innerHTML, 'Session:');
+  has('syncProjFilterUI: Clear all appears with an active filter', e8.fbactive.innerHTML, 'id="projfilterclear"');
   eq('syncProjFilterUI: select mirrors the filter', e8.projfiltersel.value, 'Alpha');
+  eq('syncProjFilterUI: the Filters button counts active filters', e8.fbfcount.textContent, ' (1)');
 
   const { V: V8b, els: e8b } = await load({ router: { PROJECT_FILTER: 'Alpha', PROVIDER_FILTER: 'openai', MODEL_FILTER: 'gpt-x', view: 'Cost' } });
-  e8b.projfilterchip.hidden = true;
   V8b.syncProjFilterUI();
-  eq('syncProjFilterUI: chip joins every active cross-filter', e8b.projfilterchipname.textContent, 'Alpha · openai · gpt-x');
+  eq('syncProjFilterUI: one chip per active cross-filter', (e8b.fbactive.innerHTML.match(/class="chip fchip-on"/g) || []).length, 3);
+  has('syncProjFilterUI: provider chip', e8b.fbactive.innerHTML, '<span class="fchip-v">openai</span>');
+  has('syncProjFilterUI: model chip', e8b.fbactive.innerHTML, '<span class="fchip-v">gpt-x</span>');
   eq('syncProjFilterUI: provider select mirrors its filter', e8b.provfiltersel.value, 'openai');
   eq('syncProjFilterUI: model select mirrors its filter', e8b.modelfiltersel.value, 'gpt-x');
 
   const { V: V9, els: e9 } = await load({ router: { PROJECT_FILTER: 'Alpha', view: 'Live' } });
-  e9.projfilterchip.hidden = false;
   V9.syncProjFilterUI();
-  eq('syncProjFilterUI: a view outside PROJ_FILTER_VIEWS hides the chip', e9.projfilterchip.hidden, true);
-  eq('syncProjFilterUI: hidden chip is display:none', e9.projfilterchip.style.display, 'none');
+  has('syncProjFilterUI: chips are not view-gated any more', e9.fbactive.innerHTML, 'fchip-on');
 
   const { V: V10, els: e10 } = await load({ router: { PROJECT_FILTER: '', view: 'Usage' } });
-  e10.projfilterchip.hidden = false;
+  e10.fbactive.innerHTML = 'stale';
   V10.syncProjFilterUI();
-  eq('syncProjFilterUI: no project filter hides the chip', e10.projfilterchip.hidden, true);
-  eq('syncProjFilterUI: no filter leaves the previous chip label alone',
-     e10.projfilterchipname.textContent, '');
+  eq('syncProjFilterUI: no filter empties the chip strip (and Clear all)', e10.fbactive.innerHTML, '');
+  eq('syncProjFilterUI: no filter clears the Filters count', e10.fbfcount.textContent, '');
 
   // ---- installProjFilter (the trailing render() needs the whole dashboard, so
   // the change handler is driven in a try/catch and only its filter plumbing is
@@ -994,24 +993,17 @@ const FILT_DATA = {
   V11.installProjFilter();
   ck('installProjFilter: select has a change listener',
      (e11.projfiltersel.listeners.change || []).length === 1);
-  // the stub router cannot mutate PROJECT_FILTER, so make the chip visibly
-  // dirty first: if the handler runs syncProjFilterUI() the chip is normalised
-  // back against the (stubbed, still empty) filter state
-  e11.projfilterchip.hidden = false;
-  e11.projfilterchip.style.display = 'inline-flex';
-  e11.projfilterchipname.textContent = 'dirty';
+  ck('installProjFilter: the chip strip delegates clicks (chips are rebuilt on every sync)',
+     (e11.fbactive.listeners.click || []).length === 1);
+  e11.fbactive.innerHTML = 'dirty';
   e11.projfiltersel.value = 'A';
   try { e11.projfiltersel.dispatch('change'); } catch (err) { /* real render() needs the full DOM */ }
   has('installProjFilter: changing the select writes the cross-filter', JSON.stringify(xfCalls), '["project","A"]');
   has('installProjFilter: changing the select updates the hash', JSON.stringify(hashCalls), '["Usage"]');
-  eq('installProjFilter: changing the select re-syncs the filter chip', e11.projfilterchip.hidden, true);
-  eq('installProjFilter: re-synced chip hides when no filter survives',
-     e11.projfilterchip.hidden, true);
-  eq('installProjFilter: re-synced chip leaves a stale label untouched once hidden',
-     e11.projfilterchipname.textContent, 'dirty');
+  eq('installProjFilter: changing the select re-syncs the chip strip (stub state is empty)', e11.fbactive.innerHTML, '');
 
   const xfBefore = xfCalls.length, hashBefore = hashCalls.length;
-  try { e11.projfilterclear.click(); } catch (err) { /* real render() needs the full DOM */ }
+  try { e11.fbactive.dispatch('click', { target: { id: 'projfilterclear', closest: () => ({ id: 'projfilterclear', dataset: {} }) } }); } catch (err) { /* real render() needs the full DOM */ }
   ck('installProjFilter: clear button calls clearCrossFilters', xfCalls.length > xfBefore);
   ck('installProjFilter: clear button re-hashes the view', hashCalls.length > hashBefore &&
      hashCalls[hashCalls.length - 1][0] === 'Usage');

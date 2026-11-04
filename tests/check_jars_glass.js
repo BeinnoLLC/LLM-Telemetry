@@ -24,7 +24,7 @@ function boot(query, reduce) {
 
 // ---- CSS: order on Home
 const ord = sel => { const m = html.match(new RegExp(sel.replace(/[.#>\[\]="]/g, '\\$&') + '\\{order:(-?\\d+)\\}')); return m ? +m[1] : null; };
-const head = ord('.page[data-pageview="Home"] > .pagehead'), rng = ord('.page[data-pageview="Home"] > #rangebar'),
+const head = ord('.page[data-pageview="Home"] > .pagehead'), rng = ord('.page[data-pageview="Home"] > #filterbar'),
   lk = ord('.page[data-pageview="Home"] > .view[data-view="Home"] > #livekpis'), kp = ord('.page[data-pageview="Home"] > #kpis'),
   qc = ord('.page[data-pageview="Home"] > .view[data-view="Home"] > #qcard'), lg = ord('.page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid');
 chk([head, rng, lk, kp, qc, lg].every(x => x !== null) && head < rng && rng < lk && lk < kp && kp < qc && qc < lg,

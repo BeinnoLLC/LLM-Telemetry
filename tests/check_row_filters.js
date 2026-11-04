@@ -101,9 +101,9 @@ setTimeout(() => {
       'the hash names the actual provider and model', hash());
 
     // ---- the chip states what is filtered, on a view the filters affect -----
-    const chip = d.querySelector('#projfilterchip');
-    chk(!chip.hidden, 'the filter chip is visible while a filter is on');
-    const chipTxt = chip.textContent;
+    const chips = d.querySelector('#fbactive');
+    chk(chips.querySelectorAll('.fchip-on').length === 2, 'one removable chip per active filter');
+    const chipTxt = chips.textContent;
     chk(chipTxt.includes(topProv) && chipTxt.includes(topModel),
       'the chip names both active filters', chipTxt.trim());
 
