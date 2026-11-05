@@ -510,28 +510,52 @@ body.navcollapsed #navdrawer .navitem::after{
 }
 body.navcollapsed #navdrawer .navitem:hover::after,
 body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
-/* Off-canvas (<=640): the rail slides over the content and reserves nothing.
-   Full width here — a 60px strip is harder to hit than a real panel. */
-@media (max-width:640px){
-  #navdrawer{ width:264px; transform:translateX(-100%); box-shadow:0 8px 28px rgba(0,0,0,.35); }
-  body.navopen #navdrawer{ transform:translateX(0); }
-  /* Mobile shows labels regardless of the desktop collapse state. */
-  body.navcollapsed #navdrawer .nvlabel,
-  body.navcollapsed #navdrawer .navbrand .brandword{ display:inline; }
-  body.navcollapsed #navdrawer .navitem{ justify-content:flex-start; padding:8px 10px; }
-  body.navcollapsed #navdrawer .nvbadge{ position:static; padding:1px 6px; font-size:var(--fs-xs); line-height:inherit; }
-  body.navcollapsed #navdrawer .navbrand{ justify-content:flex-start; padding:4px 8px 12px; }
-  body.navcollapsed #navdrawer .navitem::after{ display:none; }
-  body.hasnav .page{ padding-left:var(--pad); }
+/* LST-229: icon rail (<=1023). Forced regardless of the collapse toggle: below
+   desktop width there is no room for labels, so the rail is always 48px,
+   icon-only, and the toggle is hidden. Same --rail-now variable, so .page and
+   #appbar follow it. */
+@media (max-width:1023px){
+  body.hasnav{ --rail-now:48px; }
+  #navdrawer{ padding:10px 4px; }
+  #navdrawer .nvlabel,
+  #navdrawer .navbrand .brandword,
+  #navdrawer .navgroup-h{ display:none; }
+  #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
+  #navdrawer .nvbadge{ position:absolute; top:2px; right:2px; min-width:16px; text-align:center; font-size:var(--fs-xs); line-height:16px; padding:0 3px; }
+  #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
   #navcollapse{ display:none; }
-  #navscrim{
-    position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.55);
-    backdrop-filter:blur(2px); opacity:0; pointer-events:none;
-    transition:opacity .2s ease; display:block;
+  #navdrawer .navitem::after{
+    content:attr(data-tip); position:fixed; left:56px;
+    transform:translateY(-50%); white-space:nowrap; background:var(--card);
+    border:1px solid var(--border); border-radius:4px; padding:4px 8px;
+    font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
+    transition:opacity .12s ease; z-index:41;
   }
-  body.navopen #navscrim{ opacity:1; pointer-events:auto; }
-  body.navopen{ overflow:hidden; }
-  #navtoggle{ display:inline-flex; }
+  #navdrawer .navitem:hover::after,
+  #navdrawer .navitem:focus-visible::after{ opacity:1; }
+}
+/* LST-229: bottom tab bar (<=639). Fixed to the bottom edge, one horizontal
+   scrollable row of icon buttons; every view stays reachable by scrolling the
+   bar. The page reserves the bar's height at the bottom instead of the rail's
+   width at the left. */
+@media (max-width:639px){
+  body.hasnav{ --rail-now:0px; --tabbar-h:52px; }
+  #navdrawer{
+    top:auto; right:0; bottom:0; left:0; width:auto; height:var(--tabbar-h);
+    flex-direction:row; align-items:stretch; padding:0 4px env(safe-area-inset-bottom);
+    box-sizing:content-box; border-right:0; border-top:1px solid var(--border);
+    overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  }
+  #navdrawer::-webkit-scrollbar{ display:none; }
+  #navdrawer .navbrand,
+  #navdrawer .navsep{ display:none; }
+  #navlist,
+  #navdrawer .navgroup{ display:flex; flex-direction:row; flex:none; }
+  #navdrawer .navitem{ flex:0 0 auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem[aria-current="page"]{ box-shadow:inset 0 -2px 0 var(--accent); }
+  #navdrawer .navitem::after{ display:none; }
+  body.hasnav .page{ padding-left:var(--pad); padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--pad)); }
+  #navscrim,#navtoggle{ display:none; }
 }
 #navtoggle{ display:none; }
 @media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
