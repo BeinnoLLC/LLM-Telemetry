@@ -19,7 +19,7 @@ const path = require('path');
 const DIR = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js');
 const MODULES = ['palette.js', 'table.js', 'charts.js', 'views.js', 'flow.js',
                  'drawer.js', 'diffdom.js', 'live.js', 'routerview.js',
-                 'quotaview.js', 'router.js', 'main.js'];
+                 'quotaview.js', 'router.js', 'main.js', 'state.js'];
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {

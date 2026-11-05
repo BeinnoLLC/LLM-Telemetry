@@ -37,7 +37,7 @@ UTILITIES_PATH = os.path.join(HERE, "web", "css", "utilities.css")
 # module list is just the SPA's, in dependency order (main boots last and is
 # the only one that runs anything while loading).
 JS_ORDER = ["palette.js", "table.js", "charts.js", "views.js", "flow.js", "drawer.js",
-            "diffdom.js", "live.js", "routerview.js", "quotaview.js", "router.js", "main.js"]
+            "diffdom.js", "live.js", "routerview.js", "quotaview.js", "router.js", "main.js", "state.js"]
 # A top-level declaration: the only thing that starts a block.
 DECL_RE = re.compile(r"^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
                      r"([A-Za-z_$][\w$]*)")
