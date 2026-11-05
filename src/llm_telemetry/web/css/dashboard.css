@@ -551,7 +551,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   #navdrawer .navsep{ display:none; }
   #navlist,
   #navdrawer .navgroup{ display:flex; flex-direction:row; flex:none; }
-  #navdrawer .navitem{ flex:0 0 auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem{ flex:0 0 auto; width:auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem .nvlabel{ display:none; }
   #navdrawer .navitem[aria-current="page"]{ box-shadow:inset 0 -2px 0 var(--accent); }
   #navdrawer .navitem::after{ display:none; }
   body.hasnav .page{ padding-left:var(--pad); padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--pad)); }
