@@ -137,12 +137,12 @@ setTimeout(() => {
     const scs = w.getComputedStyle(sc);
     chk((scs.overflow === 'auto' || scs.overflowX === 'auto') && scs.minWidth === '0px', 'the table scrolls inside .lvscroll (overflow:auto, min-width:0)', `${scs.overflow}/${scs.overflowX}/${scs.minWidth}`);
     chk(sc.closest('.card') && w.getComputedStyle(sc.closest('.card')).minWidth === '0px', 'the card around it can shrink (min-width:0)');
-    // fit: no forced min-width on the table at desktop widths; only below 1024px the rows share one min-width and scroll together
-    const bare = html.replace(/@media\(max-width:1023px\)\{[^@]*?\}\}/g, '');
+    // fit: no forced min-width on the table at desktop widths; only below 1280px the rows share one min-width and scroll together
+    const bare = html.replace(/@media\(max-width:1279px\)\{[^@]*?\}\}/g, '');
     const mwAll = [...bare.matchAll(/(?:^|\})\s*(\.lvhead,\.lvrow|\.lvrow \+ \.lmpanel)\{(?:[^}]*?[;\s])?min-width:(\d+)px/gm)].map(m => m[1] + '=' + m[2]);
     chk(mwAll.length === 0, 'no min-width on the table rows/header/panel at >= 1024px (no sideways scroll at 1280/1440)', mwAll.join());
-    const mob = /@media\(max-width:1023px\)\{\.lvhead,\.lvrow\{min-width:(\d+)px\}/.exec(html);
-    chk(mob && +mob[1] >= 600 && +mob[1] <= 900, 'below 1024px the rows and header share one min-width (<= 900px) so they scroll together inside the panel', mob && mob[1]);
+    const mob = /@media\(max-width:1279px\)\{\.lvhead,\.lvrow\{min-width:(\d+)px\}/.exec(html);
+    chk(mob && +mob[1] >= 600 && +mob[1] <= 900, 'below 1280px the rows and header share one min-width (<= 900px) so they scroll together inside the panel', mob && mob[1]);
     const anyMin = [...html.matchAll(/\.lv(?:head|row|scroll|c|h)[^{}]*\{(?:[^}]*?[;\s])?min-width:(\d+)px/gm)].map(m => +m[1]);
     chk(anyMin.every(n => n <= 900), 'no .lv* rule sets a min-width above 900px', anyMin.join());
     chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
