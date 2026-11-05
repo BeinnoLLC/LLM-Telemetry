@@ -10,6 +10,7 @@
 import { $, esc, escA, trapFocus } from './palette.js';
 import { current } from './charts.js';
 import { DATA } from './main.js';
+import { renderEmpty } from './state.js';
 
 // One fixed hue per tier, so the same tier is the same colour in the chart,
 // the matrix and the decision log.
@@ -358,7 +359,7 @@ export function renderRouterView(){
   const sub = $('routersub');
   if (sub) sub.textContent = meta.collected_at
     ? `refreshed hourly · last ${rtAgo(meta.collected_at)}` : 'refreshed hourly';
-  if (!names.length) { el.innerHTML = '<div class="card rt-card muted">No router data — run <code>llm-telemetry router</code>.</div>'; return; }
+  if (!names.length) { renderEmpty(el, {icon: '\u2205', message: 'No router data — run <code>llm-telemetry router</code>.'}); return; }
   // No profile switcher here: the header chip strip already switches profile,
   // and a second one mid-page invited the wrong click. What the tab needs is a
   // way through its OWN content, so the strip picks a sub-page — one question
