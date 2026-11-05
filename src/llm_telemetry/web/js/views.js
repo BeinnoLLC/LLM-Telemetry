@@ -7,6 +7,7 @@ import {
   $, AC, AGE_CUTS, buildCuts, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
 } from './palette.js';
 import { TABLE_SORT, enhanceTable, sortValues } from './table.js';
+import { renderSkeleton, renderEmpty, renderError } from './state.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, sparkSvg, weightValue,
 } from './charts.js';
@@ -971,6 +972,10 @@ export function renderXfer(rows){
 // so middle-click and keyboard both work; the click handler routes in-page.
 export function renderHome(inR){
   const box = $('homecards'); if (!box) return;
+  if (!DATA.profiles || !DATA.profiles[current]) {
+    renderEmpty(box, {icon: '\u2205', message: 'No telemetry for this profile yet.'});
+    return;
+  }
   const p = DATA.profiles[current] || {};
   // inR is render()'s date-range predicate, passed in rather than reached for:
   // it is a local of render(), so calling it from here failed with a
@@ -2342,9 +2347,9 @@ export function renderHealth(rows){
   const box = $('healthgrid');
   if(!box) return;
   if(!H.length){
-    box.innerHTML = PROJECT_FILTER
-      ? `<div class="muted text-[length:var(--fs-sm)]">No calls recorded for "${esc(PROJECT_FILTER)}" in this range.</div>`
-      : '<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>';
+    renderEmpty(box, {icon: '\u2205', message: PROJECT_FILTER
+      ? `No calls recorded for "${esc(PROJECT_FILTER)}" in this range.`
+      : 'No calls recorded.'});
   }
   else {
     box.innerHTML = H.slice(0,14).map(h=>{
@@ -3131,8 +3136,9 @@ export function renderPrices(){
   const data = window.COSTS_DATA;
   if (!el) return;
   if (!$('priceSearch')) {           // shell mounts once; rebuild only if wiped
+    if (data === undefined) { renderSkeleton(el); return; }
     if (!data || !Array.isArray(data.models)) {
-      el.innerHTML = '<div class="muted p-6">Prices data not embedded in this build \u2014 run scripts/refresh-dashboard.sh.</div>';
+      renderEmpty(el, {icon: '\u2205', message: 'Prices data not embedded in this build \u2014 run scripts/refresh-dashboard.sh.'});
       return;
     }
     if (!priceTouched) priceState.q = '';   // fresh mount starts clean
@@ -3519,9 +3525,13 @@ function renderRankings(){
     const le = d && d.last_error;
     const why = le ? `${esc(le.reason || 'collector failed')}${le.at ? ` (at ${esc(le.at)})` : ''}`
                    : esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.');
-    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${why}` +
-      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') +
-      `<div class="muted mt-2" style="font-size:var(--fs-xs)">Check the collector: <code>${esc(timerHint)}</code></div></div>`;
+    if (!RANKINGS_DATA) { renderEmpty(host, {icon: '\u2205', message: 'No rankings data embedded in this build.'}); return; }
+    renderError(host, {
+      message: '<b>Rankings unavailable.</b> ' + why +
+        (d.as_of ? ' <span class="muted">Last good data ' + esc(d.as_of) + '.</span>' : ''),
+      lastError: le ? why : '',
+      whereToLook: '<code>' + esc(timerHint) + '</code>',
+    });
     return;
   }
   const wins = ['day', 'week', 'month'].filter(k => d.views[k]);

@@ -21,6 +21,7 @@
 import { $, esc, escA } from './palette.js';
 import { current } from './charts.js';
 import { DATA } from './main.js';
+import { renderEmpty } from './state.js';
 import { rtLogo, rtAgo } from './routerview.js';
 
 // One question per sub-page, as on the Router tab: four dense cards per profile
@@ -498,7 +499,7 @@ export function renderQuotaView(){
       ? `refreshed hourly · last ${rtAgo(meta.collected_at)}` : 'refreshed hourly';
   }
   if (!names.length) {
-    el.innerHTML = '<div class="card rt-card muted">No quota data — the Hermes quota plugin has not cached any profile yet.</div>';
+    renderEmpty(el, {icon: '\u2205', message: 'No quota data — the Hermes quota plugin has not cached any profile yet.'});
     return;
   }
   const page = qvPageGet();
