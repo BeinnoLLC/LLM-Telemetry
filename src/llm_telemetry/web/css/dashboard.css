@@ -1666,6 +1666,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    column before squeezing the bar: the bar is the point of the tab, the reset
    time is supplementary and survives as the row's title. */
 @media (max-width:520px){.qv-win{grid-template-columns:minmax(56px,auto) 46px minmax(48px,1fr)}.qv-reset{display:none}}
+/* Life-quota row: provider name | status badge | bar. Flexbox so the badge
+   never overlaps the bar regardless of badge text length. */
+.qv-liferow{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;flex-wrap:wrap}
+.qv-liferow+.qv-liferow{border-top:1px solid var(--border)}
+.qv-liferow .qv-wname{flex:0 0 auto;min-width:60px;font-weight:600}
+.qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
+.qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}

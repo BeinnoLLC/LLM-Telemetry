@@ -533,7 +533,7 @@ export function renderLifeQuota(){
   const all = DATA.quota || {};
   const name = (current && current !== 'All' && all[current]) ? current : Object.keys(all)[0];
   const pdata = name ? (all[name] || {}) : {};
-  const provs = Object.values(pdata.providers || {});
+  const provs = Object.values(pdata.providers || {}).filter(p => !p.unavailable_reason);
   if (sub) sub.textContent = name ? `${name} · ${provs.length} provider${provs.length === 1 ? '' : 's'}` : '';
   if (!provs.length){
     el.innerHTML = '<div class="muted">No quota data cached for this profile.</div>';
@@ -551,10 +551,10 @@ export function renderLifeQuota(){
       : (worst === null ? '<span class="rt-auth rt-mute">no reading</span>'
         : `<span class="rt-auth rt-${lvl === 'bad' ? 'warn' : lvl === 'warn' ? 'warn' : 'ok'}">${worst}% used</span>`);
     const bar = qvBar(worst, att);
-    return `<div class="qv-win" data-level="${lvl}">
+    return `<div class="qv-liferow" data-level="${lvl}">
       <span class="qv-wname">${esc(p.label || p.id || '')}</span>
       ${status}
-      ${bar}
+      <span class="qv-lifebar">${bar}</span>
     </div>`;
   }).join('');
   el.innerHTML = qvKpis(pdata) + `<div class="qv-provs">${rows}</div>`;
