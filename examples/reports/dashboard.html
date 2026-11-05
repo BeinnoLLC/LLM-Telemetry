@@ -116,7 +116,7 @@
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
-  --accent2:#7d9bab;
+  --accent2:#7793a2;
 
   
   --wash-indigo:rgba(99,110,164,.12);
@@ -125,9 +125,9 @@
   --wash-amber:rgba(178,138,88,.13);
   --wash-mint:rgba(88,150,115,.12);
 
-  --z-ok:#3f8358;
-  --z-warn:#a58436;
-  --z-bad:#b3564f;
+  --z-ok:#39764f;
+  --z-warn:#7c6328;
+  --z-bad:#a14d47;
   --z-ok-fg:#e4f0e9;
   --z-warn-fg:#f4ecd7;
   --z-bad-fg:#f7e4e4;
@@ -136,7 +136,7 @@
   --pal-indigo:#7c86b0;
   --pal-rose:#b87383;
   --pal-slate:#71868f;
-  --pal-amber:#b5905f;
+  --pal-amber:#ac895a;
   --pal-mint:#5f9e78;
 
   
@@ -1674,6 +1674,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-win{display:grid;grid-template-columns:minmax(70px,auto) 52px minmax(48px,1fr) auto;gap:.5rem;align-items:center;padding:.3rem 0}
 
 @media (max-width:520px){.qv-win{grid-template-columns:minmax(56px,auto) 46px minmax(48px,1fr)}.qv-reset{display:none}}
+
+.qv-liferow{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;flex-wrap:wrap}
+.qv-liferow+.qv-liferow{border-top:1px solid var(--border)}
+.qv-liferow .qv-wname{flex:0 0 auto;min-width:60px;font-weight:600}
+.qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
+.qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
@@ -3923,7 +3929,7 @@ function renderLifeQuota(){
   const all = DATA.quota || {};
   const name = (current && current !== 'All' && all[current]) ? current : Object.keys(all)[0];
   const pdata = name ? (all[name] || {}) : {};
-  const provs = Object.values(pdata.providers || {});
+  const provs = Object.values(pdata.providers || {}).filter(p => !p.unavailable_reason);
   if (sub) sub.textContent = name ? `${name} · ${provs.length} provider${provs.length === 1 ? '' : 's'}` : '';
   if (!provs.length){
     el.innerHTML = '<div class="muted">No quota data cached for this profile.</div>';
@@ -3941,10 +3947,10 @@ function renderLifeQuota(){
       : (worst === null ? '<span class="rt-auth rt-mute">no reading</span>'
         : `<span class="rt-auth rt-${lvl === 'bad' ? 'warn' : lvl === 'warn' ? 'warn' : 'ok'}">${worst}% used</span>`);
     const bar = qvBar(worst, att);
-    return `<div class="qv-win" data-level="${lvl}">
+    return `<div class="qv-liferow" data-level="${lvl}">
       <span class="qv-wname">${esc(p.label || p.id || '')}</span>
       ${status}
-      ${bar}
+      <span class="qv-lifebar">${bar}</span>
     </div>`;
   }).join('');
   el.innerHTML = qvKpis(pdata) + `<div class="qv-provs">${rows}</div>`;
