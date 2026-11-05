@@ -13,7 +13,7 @@ import {
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
-import { renderRouterView, routerStat } from './routerview.js';
+import { renderRouterView, routerStat, RT_SVG, RT_LOGO } from './routerview.js';
 import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
@@ -206,9 +206,12 @@ export function provOf(p, model, url){
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
+  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || '#8b98ab', name:key||'unknown'};
+  const d = rt.svg && RT_SVG[rt.svg];
+  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
-    <span style="font-size:var(--fs-xs)">${s.icon}</span>${key}</span>`;
+    ${mark}${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
 // glyph prefixed to the model name: "◆ step-3.7-flash". rowsForModel lets a
