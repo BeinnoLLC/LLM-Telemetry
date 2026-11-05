@@ -29,7 +29,24 @@
  *
  * Page-specific tokens are deliberately NOT here: the dashboard keeps its type
  * scale, spacing scale, gauge sizing and nav metrics; the price sheet keeps its
- * per-provider accent colours. */
+ * per-provider accent colours.
+ *
+ * LST-238 contrast audit (WCAG 2.1 AA; ratios computed with the sRGB relative-
+ * luminance formula, text 4.5:1, large text / graphics 3:1).
+ *   LIGHT  fg 16.6 / muted 4.77 / accent 5.76 (accent-ink on accent 5.76) on card: pass.
+ *          --z-ok 3.9->4.63 fg-on-fill, --z-warn 2.99->4.85, --z-bad 3.94->4.68 (fills
+ *          darkened so --z-*-fg badge text passes); as text on bg: ok 5.23, warn 5.52,
+ *          bad 5.53 (warn was 3.40, ok 4.41). --accent2 2.94->3.24 and --pal-amber
+ *          2.95->3.24 (graphics on white card). Other --pal-* on card: indigo 3.56,
+ *          rose 3.61, slate 3.81, mint 3.16 (all >=3).
+ *   DARK   fg 10.9 / muted 5.39 / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
+ *          z-warn 7.03, z-bad 4.67 as text; --pal-* on card 4.84-8.54: all pass, unchanged.
+ *   KNOWN, not fixable in tokens alone: --z-*-fg is used both as text on the card
+ *          (dark: fine, 10+) and as text on a solid --z-* fill (.navbadge.alert,
+ *          #logbtn .n). In dark the fill pairs are ok 2.68 / warn 2.09 / bad 3.01 and
+ *          in light the --z-*-fg tints as text on the card are ~1.2; both need
+ *          dashboard.css usages split into dedicated tokens (follow-up).
+ *   --border is a decorative hairline (1.27:1 both themes), exempt as non-essential. */
 
 :root,
 [data-theme="light"]{
@@ -44,7 +61,7 @@
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
-  --accent2:#7d9bab;
+  --accent2:#7793a2;
 
   /* pastel washes on white cards */
   --wash-indigo:rgba(99,110,164,.12);
@@ -53,9 +70,9 @@
   --wash-amber:rgba(178,138,88,.13);
   --wash-mint:rgba(88,150,115,.12);
 
-  --z-ok:#3f8358;
-  --z-warn:#a58436;
-  --z-bad:#b3564f;
+  --z-ok:#39764f;
+  --z-warn:#7c6328;
+  --z-bad:#a14d47;
   --z-ok-fg:#e4f0e9;
   --z-warn-fg:#f4ecd7;
   --z-bad-fg:#f7e4e4;
@@ -64,7 +81,7 @@
   --pal-indigo:#7c86b0;
   --pal-rose:#b87383;
   --pal-slate:#71868f;
-  --pal-amber:#b5905f;
+  --pal-amber:#ac895a;
   --pal-mint:#5f9e78;
 
   /* LST-213 material layer */
