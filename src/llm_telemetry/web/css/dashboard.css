@@ -2185,7 +2185,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 /* state.js renderers */
 .state-skeleton { padding: 12px; }
-.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2, #222) 25%, var(--surface-3, #333) 50%, var(--surface-2, #222) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
 @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
 .state-empty, .state-error { padding: 16px; text-align: center; }
