@@ -1016,48 +1016,54 @@ export function renderHome(inR){
     ? `${esc(topProject[0])} \u00b7 ${unattrPct} unattributed`
     : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
 
+  // LST-179: single data table of homecards (title/value/blurb/route) instead
+  // of positional tuples. Each row carries the derived stat it already used.
   const cards = [
     // #173: Live IS Home now; a card pointing at the page it sits on is noise.
-    ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
-      models.size + (models.size === 1 ? ' model' : ' models')],
-    ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',
-      routerStat()],
-    ['Quota', icon('scale'), PAL[4], 'How much headroom is left on each provider',
-      qvStat()],
-    ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
-    ['Sessions', icon('folder'), PAL[5], 'Spend and calls broken down by project',
-      projStat],
-    ['Cost', icon('dollar'), PAL[4], 'What the traffic is worth at public rates',
-      '$' + cost.toFixed(2)],
-    ['Health', icon('check'), PAL[6], 'Success rate and recent failures',
-      okPct + (fails ? ' \u00b7 ' + fails + ' recent' : '')],
-    ['Detail', icon('grid'), PAL[2], 'Per-model table and the activity calendar',
-      rows.length + ' rows'],
-    ['Settings', icon('cog'), MU, 'Electricity tariff and hardware behind local cost',
-      '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
+    {title:'Flow', icon:icon('swap'), color:AC, blurb:'Provider \u2192 model \u2192 task routing',
+      value:models.size + (models.size === 1 ? ' model' : ' models'), route:'Flow'},
+    {title:'Router', icon:icon('target'), color:PAL[5], blurb:'Which model handles which kind of work, and why',
+      value:routerStat(), route:'Router'},
+    {title:'Quota', icon:icon('scale'), color:PAL[4], blurb:'How much headroom is left on each provider',
+      value:qvStat(), route:'Quota'},
+    {title:'Usage', icon:icon('layers'), color:PAL[1], blurb:'Calls and tokens over time',
+      value:fmt(calls) + ' calls', route:'Usage'},
+    {title:'Sessions', icon:icon('folder'), color:PAL[5], blurb:'Spend and calls broken down by project',
+      value:projStat, route:'Sessions'},
+    {title:'Cost', icon:icon('dollar'), color:PAL[4], blurb:'What the traffic is worth at public rates',
+      value:'$' + cost.toFixed(2), route:'Cost'},
+    {title:'Health', icon:icon('check'), color:PAL[6], blurb:'Success rate and recent failures',
+      value:okPct + (fails ? ' \u00b7 ' + fails + ' recent' : ''), route:'Health'},
+    {title:'Detail', icon:icon('grid'), color:PAL[2], blurb:'Per-model table and the activity calendar',
+      value:rows.length + ' rows', route:'Detail'},
+    {title:'Settings', icon:icon('cog'), color:MU, blurb:'Electricity tariff and hardware behind local cost',
+      value:'$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh', route:'Settings'},
   ];
 
   // LST-178: each strip card is one compact row (icon, title, headline value,
   // one-line blurb) with the same derived stats as before. rel on every link.
-  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view) => `
-    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}" title="${escA(desc)}">
-      <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
-        <span class="hc-ico" aria-hidden="true">${ico}</span></span>
+  // LST-179: render from the single data table above (title/value/blurb/route).
+  const xc = (c) => `
+    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}" title="${escA(c.blurb)}">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${c.color} 14%,var(--card));color:${c.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${c.color} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${c.icon}</span></span>
       <span class="xp-body">
-        <span class="xp-row"><span class="xp-title">${label}</span><span class="hc-stat">${stat}</span></span>
-        <span class="xp-blurb">${desc}</span>
+        <span class="xp-row"><span class="xp-title">${c.title}</span><span class="hc-stat">${c.value}</span></span>
+        <span class="xp-blurb">${c.blurb}</span>
       </span>
     </a>`;
-  let html = cards.map(([view, ico, color, desc, stat]) => xc(view, ico, color, desc, stat)).join('');
+  let html = cards.map(xc).join('');
 
   // Bandwidth: both directions together, labelled "est." — a derived number
   // that looks measured is the failure this project guards against.
-  html += xc('Usage', icon('updown'), PAL[0], 'Estimated from tokens, not measured',
-    `<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    'Bandwidth (est.)', 'usage');
+  html += xc({title:'Bandwidth (est.)', icon:icon('updown'), color:PAL[0],
+    blurb:'Estimated from tokens, not measured',
+    value:`<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
+    route:'Usage'});
 
   // Prices is an in-app view now (was the standalone costs.html page).
-  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'Price sheet', 'Prices', 'Prices');
+  html += xc({title:'Prices', icon:icon('scale'), color:PAL[8],
+    blurb:'Per-million-token rates &amp; spend', value:'Price sheet', route:'Prices', href:'Prices'});
 
   box.innerHTML = html;
   // Route in-page instead of relying on the hash alone, so a card works even
