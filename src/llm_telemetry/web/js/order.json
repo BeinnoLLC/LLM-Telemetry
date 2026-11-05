@@ -747,6 +747,22 @@
   },
   {
    "mod": "views",
+   "name": "KANBAN_BOARD"
+  },
+  {
+   "mod": "views",
+   "name": "renderKanban"
+  },
+  {
+   "mod": "views",
+   "name": "syncAppBar"
+  },
+  {
+   "mod": "views",
+   "name": "initAppBar"
+  },
+  {
+   "mod": "views",
    "name": "priceRow"
   },
   {
@@ -2504,6 +2520,10 @@
   {
    "mod": "live",
    "name": "tickLiveStamp"
+  },
+  {
+   "mod": "live",
+   "name": "announceLive"
   },
   {
    "mod": "live",
