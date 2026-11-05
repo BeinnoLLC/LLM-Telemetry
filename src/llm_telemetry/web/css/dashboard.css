@@ -2219,3 +2219,18 @@ canvas, img {
     min-width: 44px;
   }
 }
+
+/* ---- LST-226/227: app bar (56px). Sticky above the page; clears the nav rail
+   the same way .page does. */
+#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
+  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
+body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
+#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
+#appbar .ab-sep{opacity:.4}
+#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#appbar .ab-spacer{flex:1}
+#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
+#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
+#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }

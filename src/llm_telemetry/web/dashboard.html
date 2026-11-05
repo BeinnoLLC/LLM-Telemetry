@@ -18,7 +18,18 @@ __DASHBOARD_CSS__
  <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail" aria-label="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <section id="notices" class="notices" aria-label="Notifications"></section>
-<main class="page flex flex-col gap-4">
+<!-- LST-226/227: 56px app bar. Title, current tab, global freshness pill and
+     theme toggle; views.js mirrors #crumb/#meta into it and delegates the
+     toggle to #theme so there is one theme code path. -->
+<div id="appbar" role="banner">
+ <span class="ab-title">LLM Telemetry</span>
+ <span class="ab-sep" aria-hidden="true">/</span>
+ <span id="ab-tab" class="ab-tab"></span>
+ <span class="ab-spacer"></span>
+ <span id="ab-fresh" class="ab-fresh" data-fresh-state="unknown" role="status"></span>
+ <button id="ab-theme" class="chip" type="button" title="Toggle theme" aria-label="Toggle theme">&#9788;</button>
+</div>
+<mainclass="page flex flex-col gap-4">
  <header id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
