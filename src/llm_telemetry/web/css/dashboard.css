@@ -2234,3 +2234,14 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
 #ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
 @media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
+
+/* LST-239/243: Orchestration graph */
+.orch-card{padding:1rem;overflow-x:auto}
+.orch-empty{padding:1rem}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
+.orch-head{fill:var(--muted)}
+.orch-lbl{fill:var(--muted);font-size:10px}
+.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
+.orch-name{fill:var(--text, currentColor);font-size:12px}
+.orch-kind{font-size:10px;font-weight:600}

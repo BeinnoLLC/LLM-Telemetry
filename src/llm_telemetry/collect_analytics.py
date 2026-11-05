@@ -723,6 +723,42 @@ def classify_profile(name, sess, home=None):
         kind = "bot" if name_bot else "profile"
     return {"kind": kind, "sources": counts}
 
+def build_orchestration(db_path="~/.local/share/llm-telemetry/analytics.db"):
+    """Aggregate analytics_store orchestration_edges into graph nodes + edges.
+
+    Read-only: a missing store yields an empty graph rather than creating one.
+    Nodes are keyed "kind:name" (kind is hermes or pi); edges are directed
+    trigger -> target, one per (from, to, signal_type).
+    """
+    empty = {"nodes": [], "edges": []}
+    path = os.path.expanduser(str(db_path))
+    if not os.path.exists(path):
+        return empty
+    try:
+        from .analytics_store import AnalyticsStore
+        rows = AnalyticsStore(path).get_orchestration_edges(limit=5000)
+    except Exception:
+        return empty
+    edges = {}
+    nodes = {}
+    for r in rows:
+        src_kind = r["trigger_source"] or "external"
+        src = r["trigger_profile_or_agent"]
+        tgt_kind, _, tgt_raw = (r["triggered_target"] or "").partition(":")
+        tgt = r["triggered_agent_or_profile"] or tgt_raw or tgt_kind
+        if not tgt_raw:
+            tgt_kind = "external"
+        a, b = f"{src_kind}:{src}", f"{tgt_kind}:{tgt}"
+        for nid, kind, name in ((a, src_kind, src), (b, tgt_kind, tgt)):
+            nodes.setdefault(nid, {"id": nid, "name": name, "kind": kind})
+        e = edges.setdefault((a, b, r["signal_type"]), {
+            "from": a, "to": b, "type": r["signal_type"], "count": 0, "last": 0})
+        e["count"] += 1
+        e["last"] = max(e["last"], r["timestamp"])
+    return {"nodes": sorted(nodes.values(), key=lambda n: n["id"]),
+            "edges": sorted(edges.values(), key=lambda e: -e["count"])}
+
+
 def build():
     out = {"generated": datetime.datetime.now().isoformat(timespec="seconds"), "profiles": {}}
     catalog, catsrc = pricing.fetch_catalog()
@@ -891,6 +927,7 @@ def build():
     session_index_by_profile = SI.build_session_index_by_profile()
     for n, p in out["profiles"].items():
         p["session_index"] = session_index_by_profile.get(n, [])
+    out["orchestration"] = build_orchestration()
     return stamp(out)
 
 if __name__ == "__main__":

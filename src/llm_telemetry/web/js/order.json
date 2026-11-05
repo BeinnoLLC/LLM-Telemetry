@@ -743,6 +743,10 @@
   },
   {
    "mod": "views",
+   "name": "renderOrchestration"
+  },
+  {
+   "mod": "views",
    "name": "priceRow"
   },
   {
