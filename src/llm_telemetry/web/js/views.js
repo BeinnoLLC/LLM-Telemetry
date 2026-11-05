@@ -533,6 +533,35 @@ export function renderAlerts(alerts){
 // exactly as the collector shipped it -- no client-side re-query, no
 // full-text over message content (explicitly out of scope; see the
 // modal's own footer note).
+// LST-226/227: app bar. Mirrors the breadcrumb (#crumb) and the header stamp
+// (#meta) into #appbar, and delegates the theme toggle to the existing #theme
+// button so there is a single theme code path (main.js owns persistence).
+export function syncAppBar(){
+  const tab = $('ab-tab'), fresh = $('ab-fresh');
+  if (tab) tab.textContent = ($('crumb') || {}).textContent || '';
+  const meta = $('meta');
+  if (fresh && meta) {
+    fresh.textContent = meta.textContent || '';
+    fresh.dataset.freshState = meta.dataset.stampState || 'unknown';
+  }
+  const th = $('ab-theme');
+  if (th) th.setAttribute('aria-pressed', document.documentElement.getAttribute('data-theme') === 'dark' ? 'true' : 'false');
+}
+export function initAppBar(){
+  const th = $('ab-theme');
+  if (!th) return;
+  th.onclick = () => { const t = $('theme'); if (t) t.click(); syncAppBar(); };
+  if (typeof MutationObserver === 'function') {
+    const mo = new MutationObserver(syncAppBar);
+    for (const id of ['crumb', 'meta']) {
+      const el = $(id);
+      if (el) mo.observe(el, { childList: true, characterData: true, subtree: true, attributes: true });
+    }
+  }
+  syncAppBar();
+}
+if (typeof document !== 'undefined' && document.getElementById('appbar')) initAppBar();
+
 export function render(){
   const p = DATA.profiles[current];
   renderAlerts(p.alerts);
