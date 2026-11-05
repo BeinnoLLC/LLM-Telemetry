@@ -2193,3 +2193,29 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .state-msg { margin: 4px 0; }
 .state-action { display: inline-block; margin-top: 8px; }
 .state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
+
+/* LST-230/232: mobile 390px pass — overflow offenders */
+.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
+  max-width: 100%;
+}
+.model-name, .modelname, td.model, .tbl-model, .cell-model {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+canvas, img {
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 480px) {
+  button, a, [role="button"], .btn, .chip, .tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
