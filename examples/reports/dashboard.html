@@ -2149,8 +2149,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
  <button class="navitem" type="button" id="navdrawerbtn" data-tip="Live tail" aria-label="Live tail"><svg class="nvico" aria-hidden="true" width="16" height="16"><use href="#icon-Live"/></svg><span class="nvlabel">Live tail</span><span class="nvbadge" id="navlogn" hidden>0</span></button>
 </nav>
 <section id="notices" class="notices" aria-label="Notifications"></section>
-<div class="page flex flex-col gap-4">
- <div id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
+<main class="page flex flex-col gap-4">
+ <header id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
    <svg class="brandmark" viewBox="0 0 24 24" width="26" height="26" fill="none"
@@ -2181,7 +2181,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
      aria-label="Sound on — click to mute" title="Sound on — click to mute">&#128266;</button>
    <button id="helpbtn" title="How your work gets routed (?)">?</button>
   </div>
- </div>
+ </header>
 
  <div class="card p-3 mb-3" id="alertscard" hidden>
   <div class="flex items-center gap-2 mb-2">
@@ -2806,7 +2806,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   <div id="lnmeta" class="muted mt-1"></div>
  </div>
  <div id="lnbody" tabindex="-1"></div>
-</div>
+</main>
 <div id="lntip"></div>
 
 <button id="logbtn" title="Open live logs (L)" aria-keyshortcuts="L">

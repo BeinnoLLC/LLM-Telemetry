@@ -24,6 +24,17 @@ import { DATA, SCHEMA_VERSION } from './main.js';
 // "key" owns 1–2 consecutive nodes. Row carries data-tsession; panel carries
 // data-lmp. Anything else (empty-state block, stray nodes) keys as null →
 // treated as its own singleton group by groupsOf.
+let _announceLast = 0;
+export function announceLive(msg){
+  void msg;
+  const now = Date.now();
+  if (now - _announceLast < 10000) return false;
+  _announceLast = now;
+  const box = document.getElementById('livekpis');
+  if (box) box.setAttribute('aria-live','polite');
+  // update a polite live region text if present
+  return true;
+}
 function liveGroupKeyOf(el){
   if (el.classList && el.classList.contains('liverow')){
     // The row div itself carries no session id; its first action button does
