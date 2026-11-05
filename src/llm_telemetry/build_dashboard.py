@@ -31,7 +31,7 @@ if os.environ.get("LLM_TELEMETRY_NO_COLLECT"):
 else:
     subprocess.run([sys.executable, "-m", "llm_telemetry.collect_analytics", "-o", DATA], check=True)
     MAX_AGE_S = 65 * 60
-    for _name in ("router", "quota"):
+    for _name in ("router", "quota", "kanban"):
         _p = CFG.reports_dir / f"{_name}-data.json"
         if not _p.exists() or time.time() - _p.stat().st_mtime > MAX_AGE_S:
             subprocess.run([sys.executable, "-m", f"llm_telemetry.collect_{_name}", str(_p)], check=True)
@@ -70,6 +70,8 @@ _rd = _load_versioned(CFG.reports_dir / "router-data.json")
 data["orchestration"] = data.get("orchestration") or {"nodes": [], "edges": []}
 data["router"] = _rd["profiles"]
 data["router_meta"] = {"vocab": _rd.get("vocab") or {}, "collected_at": _rd.get("collected_at")}
+_kd = _load_versioned_opt(CFG.reports_dir / "kanban-data.json")
+data["kanban"] = {"boards": _kd.get("boards") or [], "collected_at": _kd.get("collected_at")}
 _qd = _load_versioned_opt(CFG.reports_dir / "quota-data.json")
 data["quota"] = _qd.get("profiles") or {}
 data["quota_meta"] = {"collected_at": _qd.get("collected_at"),

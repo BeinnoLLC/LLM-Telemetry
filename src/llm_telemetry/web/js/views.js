@@ -680,6 +680,7 @@ export function render(){
   // before the empty-range return too.
   if (view === 'Router') renderRouterView();
   if (view === 'Orchestration') renderOrchestration();
+  if (view === 'Kanban') renderKanban();
   // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
   if (view === 'Quota') renderQuotaView();
   if (view === 'Life') renderLifeQuota();
@@ -3474,6 +3475,36 @@ function renderOrchestration(){
   el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
     `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
     `${paths}${boxes}</svg></div>`;
+}
+
+// LST-249: Kanban tab. DATA.kanban = {boards:[{name,total,counts,columns:[
+// {status,count,tasks:[{id,title,assignee,priority,...}]}]}]} from
+// collect_kanban.py. One board at a time (selector), one swimlane per status.
+let KANBAN_BOARD = '';
+function renderKanban(){
+  const el = document.getElementById('kanbanview');
+  if (!el) return;
+  const boards = (DATA.kanban && DATA.kanban.boards) || [];
+  const sub = document.getElementById('kanbansub');
+  if (sub) sub.textContent = boards.length ? `${boards.length} boards · ${boards.reduce((n, b) => n + b.total, 0)} tasks` : '';
+  if (!boards.length) {
+    el.innerHTML = '<div class="card kb-empty muted">No kanban boards found — boards appear here once Hermes creates tasks under its kanban directory.</div>';
+    return;
+  }
+  if (!boards.some(b => b.name === KANBAN_BOARD)) KANBAN_BOARD = boards[0].name;
+  const b = boards.find(x => x.name === KANBAN_BOARD);
+  const opts = boards.map(x => `<option value="${escA(x.name)}"${x.name === b.name ? ' selected' : ''}>${esc(x.name)} (${x.total})</option>`).join('');
+  const lanes = b.columns.map(c => {
+    const cards = c.tasks.map(t => `<div class="kb-card" title="${escA(t.id)}">` +
+      `<div class="kb-title">${esc(t.title)}</div>` +
+      `<div class="kb-meta muted">${esc(t.assignee || 'unassigned')}${t.priority ? ` · P${esc(String(t.priority))}` : ''}</div></div>`).join('');
+    const more = c.count > c.tasks.length ? `<div class="kb-more muted">+${c.count - c.tasks.length} more</div>` : '';
+    return `<section class="kb-lane" data-status="${escA(c.status)}"><header class="kb-head"><span>${esc(c.status)}</span><span class="kb-count">${c.count}</span></header>` +
+      `<div class="kb-cards">${cards || '<div class="kb-none muted">empty</div>'}${more}</div></section>`;
+  }).join('');
+  el.innerHTML = `<div class="kb-bar"><label class="muted" for="kb-board">Board</label>` +
+    `<select id="kb-board" class="kb-select">${opts}</select></div><div class="kb-board">${lanes}</div>`;
+  document.getElementById('kb-board').addEventListener('change', e => { KANBAN_BOARD = e.target.value; renderKanban(); });
 }
 
 function renderRankings(){

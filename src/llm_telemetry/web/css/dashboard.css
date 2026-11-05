@@ -2245,3 +2245,18 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 .orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
 .orch-name{fill:var(--text, currentColor);font-size:12px}
 .orch-kind{font-size:10px;font-weight:600}
+
+/* LST-249: Kanban board */
+.kb-empty{padding:1rem}
+.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
+.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
+.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
+.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
+.kb-count{color:var(--muted);font-weight:400}
+.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
+.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
+.kb-title{overflow-wrap:anywhere}
+.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
+.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
+.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}
