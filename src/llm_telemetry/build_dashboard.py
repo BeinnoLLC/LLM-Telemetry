@@ -67,6 +67,7 @@ def _load_versioned_opt(path):
 
 data = _load_versioned(DATA)
 _rd = _load_versioned(CFG.reports_dir / "router-data.json")
+data["orchestration"] = data.get("orchestration") or {"nodes": [], "edges": []}
 data["router"] = _rd["profiles"]
 data["router_meta"] = {"vocab": _rd.get("vocab") or {}, "collected_at": _rd.get("collected_at")}
 _qd = _load_versioned_opt(CFG.reports_dir / "quota-data.json")

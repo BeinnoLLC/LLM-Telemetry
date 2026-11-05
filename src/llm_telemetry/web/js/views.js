@@ -679,6 +679,7 @@ export function render(){
   // Router tab (#130) reads DATA.router, not the ledger rows, so it renders
   // before the empty-range return too.
   if (view === 'Router') renderRouterView();
+  if (view === 'Orchestration') renderOrchestration();
   // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
   if (view === 'Quota') renderQuotaView();
   if (view === 'Life') renderLifeQuota();
@@ -3429,6 +3430,51 @@ function installPriceControls(){
 // old page so muscle memory carries over. Model names come from a third
 // party and are escaped here like everywhere else.
 let RANKINGS_STATE = { window: 'week' };
+
+// LST-239/243: Orchestration tab. DATA.orchestration = {nodes:[{id,name,kind}],
+// edges:[{from,to,type,count,last}]} from analytics_store. Hermes nodes sit in
+// the left column (blue), PI in the right (green); an edge is a directed
+// trigger labelled with its signal type and count.
+const ORCH_KIND = {hermes: ['Hermes', 'var(--accent, #5b9cf6)'], pi: ['PI', 'var(--ok, #34c38f)']};
+function renderOrchestration(){
+  const el = document.getElementById('orchview');
+  if (!el) return;
+  const o = DATA.orchestration || {};
+  const nodes = o.nodes || [], edges = o.edges || [];
+  const sub = document.getElementById('orchsub');
+  if (sub) sub.textContent = edges.length ? `${edges.length} trigger paths \u00b7 ${nodes.length} agents` : '';
+  if (!edges.length) {
+    el.innerHTML = '<div class="card orch-empty muted">No orchestration detected yet \u2014 Hermes\u2194PI triggers appear here once agents start handing work to each other.</div>';
+    return;
+  }
+  const cols = {hermes: [], pi: [], other: []};
+  nodes.forEach(n => (cols[n.kind] || cols.other).push(n));
+  const lane = {};
+  const NW = 150, NH = 34, GAP = 22, PAD = 20, W = 640;
+  const x = {hermes: PAD, other: W / 2 - NW / 2, pi: W - PAD - NW};
+  Object.keys(cols).forEach(k => cols[k].forEach((n, i) => { lane[n.id] = {x: x[k], y: PAD + i * (NH + GAP)}; }));
+  const H = PAD * 2 + Math.max(1, ...Object.values(cols).map(c => c.length)) * (NH + GAP) - GAP;
+  const maxc = Math.max(1, ...edges.map(e => e.count));
+  const paths = edges.map(e => {
+    const a = lane[e.from], b = lane[e.to];
+    if (!a || !b) return '';
+    const right = b.x >= a.x;
+    const x1 = a.x + (right ? NW : 0), y1 = a.y + NH / 2, x2 = b.x + (right ? 0 : NW), y2 = b.y + NH / 2;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const w = 1 + 3 * e.count / maxc;
+    return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" class="orch-edge" stroke-width="${w.toFixed(1)}" marker-end="url(#orch-arrow)"><title>${escA(e.from)} \u2192 ${escA(e.to)}: ${escA(e.type)} \u00d7${e.count}</title></path>` +
+      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle">${esc(e.type)} \u00d7${e.count}</text>`;
+  }).join('');
+  const boxes = nodes.map(n => {
+    const p = lane[n.id], [lab, c] = ORCH_KIND[n.kind] || [n.kind, 'var(--muted)'];
+    return `<g class="orch-node"><rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="6" style="stroke:${c}"/>` +
+      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name">${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</text>` +
+      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}">${esc(lab)}</text></g>`;
+  }).join('');
+  el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
+    `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
+    `${paths}${boxes}</svg></div>`;
+}
 
 function renderRankings(){
   const host = document.getElementById('view-rankings-container');
