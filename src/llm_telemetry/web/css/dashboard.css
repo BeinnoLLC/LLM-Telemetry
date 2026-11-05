@@ -2182,3 +2182,14 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 /* LST-230: 390px pass — nothing may widen the page; wide tables scroll inside
    their own panel; charts stay readable; touch controls reach the 44px floor. */
+
+/* state.js renderers */
+.state-skeleton { padding: 12px; }
+.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2, #222) 25%, var(--surface-3, #333) 50%, var(--surface-2, #222) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
+.state-empty, .state-error { padding: 16px; text-align: center; }
+.state-icon { font-size: 28px; margin-bottom: 8px; }
+.state-msg { margin: 4px 0; }
+.state-action { display: inline-block; margin-top: 8px; }
+.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
