@@ -228,6 +228,15 @@ export function provIcon(sm){
   const key = MODEL_PROV[sm] || provOf('', sm, '');
   return (PROV[key]||{icon:'○'}).icon;
 }
+// Provider brand mark as an inline SVG (from routerview's RT_SVG), falling back
+// to the unicode glyph when no brand mark exists.
+export function provLogoSvg(sm){
+  const key = MODEL_PROV[sm] || provOf('', sm, '');
+  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
+  const d = s.svg && RT_SVG[s.svg];
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
+  return `<span style="color:${s.c}">${esc(s.mono)}</span>`;
+}
 // Prefix a provider glyph to a model label for chart axes/legends.
 export function resendOf(r){
   const fresh = (+r.input_tokens||0) + (+r.cache_write_tokens||0);
@@ -310,7 +319,7 @@ export function renderBandwidthPanel(p, inR){
         const hot = med && o.x >= 2 * med;
         return `<div class="bwrrow${hot ? ' hot' : ''}" data-model="${short(o.model)}" data-x="${o.x.toFixed(2)}"
                   title="${o.sent.toLocaleString()} prompt tokens sent · ${o.fresh.toLocaleString()} fresh · ${o.calls.toLocaleString()} calls">
-          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${short(o.model)}</span>
+          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${provLogoSvg(short(o.model))} ${short(o.model)}</span>
           <span class="bwrbar"><i style="width:${Math.max(2, 100 * o.x / max).toFixed(1)}%"></i></span>
           <span class="bwrx">${o.x.toFixed(1)}&times;</span>
           ${hot ? '<span class="bwrflag" title="At least 2x the fleet median">&#9650; high</span>' : '<span class="bwrflag"></span>'}
@@ -502,7 +511,7 @@ export function renderResend(p, inR){
     const name = esc(r.title || r.id);
     return `<tr class="resendrow" data-sid="${escA(r.id)}" style="border-top:1px solid var(--border)">
       <td class="py-1 pr-2 resendname" title="${escA(r.id)}">${name}</td>
-      <td class="pr-2 rsx" style="white-space:nowrap">${esc(short(r.model))}</td>
+      <td class="pr-2 rsx" style="white-space:nowrap">${provLogoSvg(short(r.model))} ${esc(short(r.model))}</td>
       <td class="text-right">${r.calls.toLocaleString()}</td>
       <td class="text-right rsx">${fmt(r.ctx_per_call)}</td>
       <td class="text-right">${r.cread_pct.toFixed(1)}%</td>
@@ -1124,7 +1133,7 @@ export function modelsShare(ms, cur){
   }).join('');
   const legend = ms.map((m, i) => {
     const nm = short(m.model), pct = vals[i] / tot * 100;
-    const icon = provIcon(nm);
+    const icon = provLogoSvg(nm);
     return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
       + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${icon ? icon + ' ' : ''}${esc(nm)}`
       + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
@@ -1645,7 +1654,7 @@ export function pdOpen(project, rows, _highlightModel){
   const statRow = (k, v) => `<div class="pdstat"><span class="k">${esc(k)}</span><span>${v}</span></div>`;
   const bar = (label, icon, cost, total) => {
     const pct = total > 0 ? (100 * cost / total) : 0;
-    return `<div class="pdstat"><span class="k">${esc(icon ? icon + ' ' : '')}${esc(label)}</span>` +
+    return `<div class="pdstat"><span class="k">${icon ? icon + ' ' : ''}${esc(label)}</span>` +
       `<span>$${cost.toFixed(2)} <span class="muted">(${pct.toFixed(0)}%)</span></span></div>`;
   };
 
@@ -1663,11 +1672,11 @@ export function pdOpen(project, rows, _highlightModel){
     </div>
     <div class="pdsection">
       <div class="lbl">Model breakdown</div>
-      ${topModels.map(([m, c]) => bar(short(m), provIcon(short(m)), c, totalAct || totalEst)).join('')}
+      ${topModels.map(([m, c]) => bar(short(m), provLogoSvg(short(m)), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Provider breakdown</div>
-      ${topProviders.map(([p, c]) => bar(p, (PROV[p] || {}).icon || '\u25CB', c, totalAct || totalEst)).join('')}
+      ${topProviders.map(([p, c]) => bar(p, provLogoSvg(p), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Task / tool mix</div>

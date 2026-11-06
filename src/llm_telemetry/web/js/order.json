@@ -554,6 +554,10 @@
       "name": "provIcon"
     },
     {
+      "mod": "views",
+      "name": "provLogoSvg"
+    },
+    {
       "mod": "palette",
       "name": "ic"
     },
@@ -1320,10 +1324,6 @@
     {
       "mod": "live",
       "name": "KIND_LOGO"
-    },
-    {
-      "mod": "live",
-      "name": "provLogoSvg"
     },
     {
       "mod": "live",

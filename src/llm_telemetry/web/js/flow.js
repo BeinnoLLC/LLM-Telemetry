@@ -4,7 +4,7 @@
  */
 import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
-import { PROV, provOf, render } from './views.js';
+import { PROV, provLogoSvg, provOf, render } from './views.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
@@ -270,15 +270,14 @@ export function carTip(it){
       + row('position', `${it.pos} of ${it.depth}`) + row('state', 'queued at the Ollama host');
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
-  const provIcon = (m) => (PROV[provOf('', m || '', '')] || {}).icon || '';
   if (it.kind === 'r'){
     return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
-      + row('engine', kindMeta(it.eng).label) + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim()) + row('profile', it.profile)
+      + row('engine', kindMeta(it.eng).label) + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>` + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim())
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>`
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
