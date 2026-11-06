@@ -108,9 +108,9 @@ setTimeout(() => {
     const rowsTxt = [...d.querySelectorAll('#livelist > div')].map(r => r.textContent).join(' ');
     chk(!/LAN\s/.test(rowsTxt), 'live rows carry no "LAN x MB" label');
     const hb = d.getElementById('livebw');
-    chk(!!hb, 'bandwidth total sits on the "In progress now" heading');
+    chk(!!hb, 'bandwidth total sits on the "Workers" heading');
     const hdr = hb && hb.parentElement;
-    chk(!!hdr && /In progress now/i.test(hdr.textContent), 'total is on the same line as the heading text');
+    chk(!!hdr && /Workers/i.test(hdr.textContent), 'total is on the same line as the heading text');
     chk(/\.livebw\{[^}]*margin-left:auto/.test(raw), 'total is pushed to the far right');
     const uniq = [...new Map(sessions.map(L => [L.id, L])).values()];
     const want = uniq.reduce((a,L)=>a+(+L.up_bytes||0)+(+L.lan_up_bytes||0),0);

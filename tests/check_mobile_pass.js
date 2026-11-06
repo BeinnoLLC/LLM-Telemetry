@@ -64,7 +64,7 @@ setTimeout(() => {
 
     // Live rows carry a stable class so the mobile stacking rule can target them.
     const liverows = d.querySelectorAll('#livelist .liverow');
-    chk(liverows.length > 0, '"In progress now" rows carry a stable .liverow class', liverows.length);
+    chk(liverows.length > 0, '"Workers" rows carry a stable .liverow class', liverows.length);
     liverows.forEach(r => {
       chk(!!r.querySelector('.metacol'), 'every liverow still has its metacol');
       chk(!!r.querySelector('.loecol'), 'every liverow still has its loecol (gauge)');

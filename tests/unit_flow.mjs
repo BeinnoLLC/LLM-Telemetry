@@ -137,6 +137,9 @@ function harness(els = {}){
       inFlight: p => { const seen = new Set(); return ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).map(S => ({ kind: 'hermes', S })); },
       kindMeta: k => ({ sig: '*', label: k, color: 'kc:' + k }),
     },
+    'router.js': {
+      profileHue: m => 'ph:' + (m || ''),
+    },
   };
   return { ids, rec, DATA, stubs };
 }
@@ -350,16 +353,16 @@ const lblOf = c => c._qt.label;
   eq(h.ids.get('qt-n-queued').textContent, '0', 'depot: clamped count is zero');
   ok(!h.ids.get('qtrain').classList.contains('backed'), 'depot: no longer backed up');
 
-  // Cap: 39 balls and a "+N" chip from 41 up; the lid keeps the true total.
+  // No cap: every task is drawn as a ball; the lid keeps the true total.
   h.DATA.ollama.hosts = [{ label: 'big', queue: 70 }];
   D.renderQueue();
-  eq(cars(qb).length, 39, 'depot: 70 waiting -> 39 balls drawn');
+  eq(cars(qb).length, 70, 'depot: 70 waiting -> 70 balls drawn');
   eq(h.ids.get('qt-n-queued').textContent, '70', 'depot: the lid shows the true count');
-  eq(qb._qtChip && qb._qtChip.textContent, '+31', 'depot: a "+31" chip takes the 40th slot');
+  ok(!qb._qtChip, 'depot: no chip when all are drawn');
   h.DATA.ollama.hosts = [{ label: 'big', queue: 40 }];
   D.renderQueue();
   eq(cars(qb).length, 40, 'depot: exactly 40 -> all drawn');
-  eq(qb._qtChip, null, 'depot: and no chip');
+  ok(!qb._qtChip, 'depot: and no chip');
 
   h.DATA.ollama.hosts = [{ label: 'a', queue: 0 }, { label: 'b', queue: 0 }];
   D.renderQueue();
@@ -398,7 +401,7 @@ const lblOf = c => c._qt.label;
   eq(run.map(c => c.dataset.key), ['s:b', 's:a'], 'line: most recently active first, duplicate ids dropped');
   eq(run.map(lblOf), ['Fix parser', 'kimi-k3'], 'line: title as-is; (untitled) falls back to the short model');
   eq(run.map(c => c.dataset.state), ['running', 'running'], 'line: balls carry a live state');
-  eq(run[1].style['--k'], 'kc:hermes', 'line: ball colour comes from the agent family');
+  eq(run[1].style['--k'], 'hsl(ph:work 65% 52%)', 'line: ball colour comes from the profile');
   ok(run.every(c => c.classList.contains('qt-run')), 'line: running balls are clips');
   eq(run[0].attrs['aria-label'], 'running: Fix parser · m2 · 1s ago · #b', 'line: ball has an accessible label');
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
@@ -421,11 +424,10 @@ const lblOf = c => c._qt.label;
   ok(!D.carTip(yard[0]._qt).includes('ran for'), 'yard: no duration -> no "ran for" row');
   ok(D.carTip(yard[1]._qt).includes('<span>ran for</span><b>0s</b>'), 'yard: negative duration clamps to zero');
 
-  // Many finished tasks: 39 balls + a chip, honest lid.
+  // Many finished tasks: all drawn, honest lid.
   h.DATA.profiles.p1 = { live: [], recent_sessions: Array.from({ length: 120 }, (_, i) => ({ id: 'x' + i, title: 'Task number ' + i + ' with a long wrapped title', model: 'm', last_ts: 1000 + i })) };
   D.renderQueue();
-  eq(cars(h.ids.get('qt-done')).length, 39, 'yard: 120 done -> 39 balls');
-  eq(h.ids.get('qt-done')._qtChip.textContent, '+81', 'yard: a "+81" chip for the rest');
+  ok(cars(h.ids.get('qt-done')).length > 40, 'yard: 120 done -> more than 40 balls (no artificial cap)');
   eq(h.ids.get('qt-n-done').textContent, '120', 'yard: the lid count is honest');
 
   // No model at all: 'session', never "undefined" (#138).
@@ -519,6 +521,17 @@ const lblOf = c => c._qt.label;
   ok(els.every(c => parseFloat(c.style.top) < 120 && parseFloat(c.style.left) < 200), 'layout: nothing is placed outside the box');
   const few = els.slice(0, 5); D.qtLayout(box, few);
   eq(few[0].style['--sz'], '28px', 'layout: a few balls stay at 28px');
+  // no ball is ever clipped by the roof or covered by the +N chip: what does not fit joins the count
+  const keys39 = Array.from({ length: 39 }, (_, i) => 's:fit' + i);
+  for (const [fw, fh] of [[304, 92], [251, 152], [382, 202]]) {
+    for (const more of [false, true]) {
+      const n = D.qtFit(keys39, fw, fh, more), pk = D.qtPack(keys39.slice(39 - n), fw, fh, 18, more || n < 39);
+      ok(pk.ok && pk.balls.every(p => p.y - 18 * 0.57 >= 2 && p.x - 9 >= 0 && p.x + 9 <= fw), `fit: ${n} of 39 balls sit whole in ${fw}x${fh}${more ? ' with the chip' : ''}`);
+      ok(!pk.balls.some(p => (more || n < 39) && p.x + 9 > fw - 56 && p.y - 9 < 50), `fit: no ball sits under the +N chip in ${fw}x${fh}`);
+    }
+  }
+  eq(D.qtFit(keys39.slice(0, 3), 304, 92, false), 3, 'fit: a few balls all fit');
+  eq(D.qtFit(keys39, 40, 20, true), 0, 'fit: a box too small for any ball draws none');
   // popover: carPop adds cost, session and the way into the session
   const pop = D.carPop({ kind: 'd', sid: 'abcdefghij', label: '<b>t</b>', profile: 'p', cost: 0.5, last_ts: 1 });
   ok(pop.includes('<span>cost</span><b>$0.5000</b>') && pop.includes('#cdefghij') && pop.includes('class="pp-open"'), 'popover: cost, session id and the Open session button');

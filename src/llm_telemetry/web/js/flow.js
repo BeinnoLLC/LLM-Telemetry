@@ -4,9 +4,10 @@
  */
 import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
-import { PROV, provOf, render } from './views.js';
+import { PROV, provLogoSvg, provOf, render } from './views.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
+import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
 
 // LST-261: the queue is three glass jars of small balls. Depot = requests waiting at an Ollama
@@ -104,34 +105,52 @@ export function qtSeed(key){
   h ^= h >>> 13; h = Math.imul(h, 1274126177); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-export const QT_CAP = 40;                     // balls drawn per jar; the 40th slot becomes a "+N" chip
+export const QT_CAP = Infinity;                     // no cap: fit as many balls as the jar holds
 // Ball px: start at QT_MAX and step down to QT_MIN until the pile fits in QT_FILL of the jar.
 export const QT_MAX = 28;
 export const QT_MIN = 18;
 // One bold letter per agent family, centred on its ball (and in the legend). Near-black on every
 // family colour (contrast 5.4-8.8:1, white would be 2.3-3.7:1). A logo blurs at 18px; a letter reads.
 export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
-export function qtGlyphKey(it){ return it.kind === 'q' ? 'ollama' : it.kind === 'r' ? (it.eng || 'hermes') : 'hermes'; }
+export function qtGlyphKey(it){
+  if (it.kind === 'q') return 'ollama';
+  const p = provOf('', it.model || '', '');
+  const familyMap = { anthropic:'claude', 'openai-codex':'codex', 'opencode-go':'pi', 'opencode':'pi', local:'ollama', 'ollama-cloud':'ollama', nous:'hermes' };
+  return familyMap[p] || p || 'cloud';
+}
 export const QT_FILL = 0.5;
 
 // Pour the balls in, oldest first: each one drops from a seeded column (best of six, so it
 // rolls into a valley) and rests on whatever is below. Only earlier balls matter, so
 // appending a task never moves the existing pile. Centres, in px, inside a w x h box.
-export function qtPack(keys, w, h, size){
-  const r = size / 2, d = size * 0.9, pad = 7, balls = [];
-  let top = h;
+export function qtPack(keys, w, h, size, chip){
+  const r = size / 2, d = size * 0.9, pad = 7, balls = [], chipW = 56, chipH = 50;   // the +N button, top right (44px tap target on touch)
+  let top = h, ok = true;
+  // A ball is clipped by the roof of the box (a running ball is 1.14x tall) or hidden by the +N chip.
+  const fits = (x, y) => y - r * 1.14 >= 2 && !(chip && x + r > w - chipW && y - r < chipH);
   keys.forEach(k => {
     let best = null;
     for (let t = 0; t < 6; t++){
       const x = r + pad + qtSeed(k + ':' + t) * Math.max(0, w - size - 2 * pad);
       let y = h - r - pad;
       for (const b of balls){ const dx = Math.abs(b.x - x); if (dx < d) y = Math.min(y, b.y - Math.sqrt(d * d - dx * dx)); }
-      if (!best || y > best.y) best = { x, y };
+      const good = fits(x, y);
+      if (!best || (good && !best.good) || (good === best.good && y > best.y)) best = { x, y, good };
     }
+    if (!best.good) ok = false;
     balls.push({ x: best.x, y: best.y, rz: (qtSeed(k + ':r') - 0.5) * 44 });
     top = Math.min(top, best.y - r);
   });
-  return { balls, top };
+  return { balls, top, ok };
+}
+
+// How many of the newest `keys` (oldest first) can sit in the box at the smallest ball size with
+// none clipped or covered. Whatever does not fit joins the "+N" count, so a ball is never half hidden.
+export function qtFit(keys, w, h, more){
+  for (let n = keys.length; n > 0; n--){
+    if (qtPack(keys.slice(keys.length - n), w, h, QT_MIN, more || n < keys.length).ok) return n;
+  }
+  return 0;
 }
 
 // Size the whole jar (steps down from 28px to 18px as it fills), pack it and write the
@@ -139,8 +158,9 @@ export function qtPack(keys, w, h, size){
 export function qtLayout(box, els){
   const w = box.clientWidth || 200, h = box.clientHeight || 240;
   const keys = els.map(c => c.dataset.key);
-  let size = QT_MAX, pk = qtPack(keys, w, h, size);
-  while (size > QT_MIN && pk.top < h * (1 - QT_FILL)){ size--; pk = qtPack(keys, w, h, size); }
+  const chip = !!box._qtMore;
+  let size = QT_MAX, pk = qtPack(keys, w, h, size, chip);
+  while (size > QT_MIN && (pk.top < h * (1 - QT_FILL) || !pk.ok)){ size--; pk = qtPack(keys, w, h, size, chip); }
   const pos = pk.balls.map(b => [b.x.toFixed(1) + 'px', b.y.toFixed(1) + 'px']);
   const moved = els.some((c, i) => c._qtL !== undefined && (c._qtL !== pos[i][0] || c._qtT !== pos[i][1] || c._qtS !== size));
   if (moved){
@@ -182,8 +202,12 @@ export function paintBalls(box, items, decorate, elsewhere){
     if (!seq.has(items[i].key)) seq.set(items[i].key, box._qtN = (box._qtN || 0) + 1);
   }
   const byNew = items.slice().sort((a, b) => seq.get(b.key) - seq.get(a.key));
-  const vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  let vis = byNew.slice(0, byNew.length > QT_CAP ? QT_CAP - 1 : byNew.length).reverse();
+  // Never draw a ball the jar cannot hold whole (short phone jars): the rest go into the +N count.
+  const fit = qtFit(vis.map(it => it.key), box.clientWidth || 200, box.clientHeight || 240, vis.length < items.length);
+  if (fit < vis.length) vis = vis.slice(vis.length - fit);
   const hidden = items.length - vis.length;
+  box._qtMore = hidden > 0;
   const where = { q: 'waiting', r: 'running', d: 'finished' };
   const keep = new Set(), fresh = [], els = [];
   vis.forEach(it => {
@@ -195,7 +219,8 @@ export function paintBalls(box, items, decorate, elsewhere){
     const gk = qtGlyphKey(it);
     let gl = c.querySelector('.qt-gl');
     if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
-    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = QT_GLYPH[gk]; }
+    const icon = QT_GLYPH[gk] || (PROV[gk] && PROV[gk].icon) || (gk ? gk[0].toUpperCase() : '•');
+    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = icon; }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -247,12 +272,12 @@ export function carTip(it){
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
   if (it.kind === 'r'){
     return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
-      + row('engine', kindMeta(it.eng).label) + row('model', it.model) + row('profile', it.profile)
+      + row('engine', kindMeta(it.eng).label) + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>` + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', it.model)
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>`
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
@@ -322,6 +347,10 @@ export function paintTrain(queued, running, done){
   if (!tr || !qb || !rb || !db) return;
   const nq = queued.length, nr = running.length, nd = done.length;
   const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
+  // Slosh: shake jars whose count changed since the last paint.
+  const prevCounts = tr._qtCounts || { q: nq, r: nr, d: nd };
+  const changed = [prevCounts.q !== nq, prevCounts.r !== nr, prevCounts.d !== nd];
+  tr._qtCounts = { q: nq, r: nr, d: nd };
 
   // Where every ball is right now, so a task that changes jar flies across.
   const before = new Map();
@@ -351,10 +380,12 @@ export function paintTrain(queued, running, done){
   const freshR = paintBalls(rb, running, (c, it) => {
     c.dataset.kind = it.eng;
     c.dataset.state = it.state;
-    c.style.setProperty('--k', kindMeta(it.eng).color);
+    // Per-profile colour for Hermes balls; engine colour for fleet-wide agents.
+    const hue = (it.eng === 'hermes' || !it.eng) ? profileHue(it.profile || '') : null;
+    c.style.setProperty('--k', hue != null ? `hsl(${hue} 65% 52%)` : kindMeta(it.eng).color);
   }, elsewhere);
-  const freshD = paintBalls(db, done, (c) => {
-    c.style.setProperty('--k', kindMeta('hermes').color);
+  const freshD = paintBalls(db, done, (c, it) => {
+    c.style.setProperty('--k', `hsl(${profileHue((it && it.profile) || current || '')} 65% 52%)`);
   }, elsewhere);
 
   // line -> yard is an exact identity (same session id in both feeds).
@@ -375,6 +406,18 @@ export function paintTrain(queued, running, done){
   if (painted) [...freshQ, ...freshR, ...freshD].forEach(c => { if (!flown.has(c)) c.classList.add('qt-arrive'); });
 
   if (painted && nd > prevDone && !flewYard) qtSplash(db.closest && db.closest('.qt-jar'));
+
+  // Slosh: shake jars whose count changed this paint (water sloshing).
+  if (painted) {
+    const boxes = [qb, rb, db];
+    boxes.forEach((box, i) => {
+      if (!changed[i]) return;
+      const jar = box.closest && box.closest('.qt-jar');
+      if (!jar) return;
+      jar.classList.remove('qt-slosh'); void jar.offsetWidth; jar.classList.add('qt-slosh');
+      setTimeout(() => jar.classList.remove('qt-slosh'), 700);
+    });
+  }
 
   [['qt-n-queued', nq], ['qt-n-running', nr], ['qt-n-done', nd]].forEach(([id, n]) => {
     const el = $(id);

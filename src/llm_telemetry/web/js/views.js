@@ -7,13 +7,14 @@ import {
   $, AC, AGE_CUTS, buildCuts, BD, MU, PAL, ago, colorOf, costCell, emptyHTML, esc, escA, fade, fmt, fmtB, ic, icon, money, short, stampFreshness, trapFocus, trapTab,
 } from './palette.js';
 import { TABLE_SORT, enhanceTable, sortValues } from './table.js';
+import { renderSkeleton, renderEmpty, renderError } from './state.js';
 import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
-import { renderRouterView, routerStat } from './routerview.js';
-import { renderQuotaView, qvStat } from './quotaview.js';
+import { renderRouterView, routerStat, RT_SVG, RT_LOGO } from './routerview.js';
+import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
   hydrateViewParams, pickView, setCrossFilter, setHash, setViewParam, view,
@@ -205,9 +206,12 @@ export function provOf(p, model, url){
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
+  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || '#8b98ab', name:key||'unknown'};
+  const d = rt.svg && RT_SVG[rt.svg];
+  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
-    <span style="font-size:var(--fs-xs)">${s.icon}</span>${key}</span>`;
+    ${mark}${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
 // glyph prefixed to the model name: "◆ step-3.7-flash". rowsForModel lets a
@@ -223,6 +227,15 @@ export function buildModelProv(rows){
 export function provIcon(sm){
   const key = MODEL_PROV[sm] || provOf('', sm, '');
   return (PROV[key]||{icon:'○'}).icon;
+}
+// Provider brand mark as an inline SVG (from routerview's RT_SVG), falling back
+// to the unicode glyph when no brand mark exists.
+export function provLogoSvg(sm){
+  const key = MODEL_PROV[sm] || provOf('', sm, '');
+  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
+  const d = s.svg && RT_SVG[s.svg];
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
+  return `<span style="color:${s.c}">${esc(s.mono)}</span>`;
 }
 // Prefix a provider glyph to a model label for chart axes/legends.
 export function resendOf(r){
@@ -306,7 +319,7 @@ export function renderBandwidthPanel(p, inR){
         const hot = med && o.x >= 2 * med;
         return `<div class="bwrrow${hot ? ' hot' : ''}" data-model="${short(o.model)}" data-x="${o.x.toFixed(2)}"
                   title="${o.sent.toLocaleString()} prompt tokens sent · ${o.fresh.toLocaleString()} fresh · ${o.calls.toLocaleString()} calls">
-          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${short(o.model)}</span>
+          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${provLogoSvg(short(o.model))} ${short(o.model)}</span>
           <span class="bwrbar"><i style="width:${Math.max(2, 100 * o.x / max).toFixed(1)}%"></i></span>
           <span class="bwrx">${o.x.toFixed(1)}&times;</span>
           ${hot ? '<span class="bwrflag" title="At least 2x the fleet median">&#9650; high</span>' : '<span class="bwrflag"></span>'}
@@ -498,7 +511,7 @@ export function renderResend(p, inR){
     const name = esc(r.title || r.id);
     return `<tr class="resendrow" data-sid="${escA(r.id)}" style="border-top:1px solid var(--border)">
       <td class="py-1 pr-2 resendname" title="${escA(r.id)}">${name}</td>
-      <td class="pr-2 rsx" style="white-space:nowrap">${esc(short(r.model))}</td>
+      <td class="pr-2 rsx" style="white-space:nowrap">${provLogoSvg(short(r.model))} ${esc(short(r.model))}</td>
       <td class="text-right">${r.calls.toLocaleString()}</td>
       <td class="text-right rsx">${fmt(r.ctx_per_call)}</td>
       <td class="text-right">${r.cread_pct.toFixed(1)}%</td>
@@ -533,6 +546,35 @@ export function renderAlerts(alerts){
 // exactly as the collector shipped it -- no client-side re-query, no
 // full-text over message content (explicitly out of scope; see the
 // modal's own footer note).
+// LST-226/227: app bar. Mirrors the breadcrumb (#crumb) and the header stamp
+// (#meta) into #appbar, and delegates the theme toggle to the existing #theme
+// button so there is a single theme code path (main.js owns persistence).
+export function syncAppBar(){
+  const tab = $('ab-tab'), fresh = $('ab-fresh');
+  if (tab) tab.textContent = ($('crumb') || {}).textContent || '';
+  const meta = $('meta');
+  if (fresh && meta) {
+    fresh.textContent = meta.textContent || '';
+    fresh.dataset.freshState = meta.dataset.stampState || 'unknown';
+  }
+  const th = $('ab-theme');
+  if (th) th.setAttribute('aria-pressed', document.documentElement.getAttribute('data-theme') === 'dark' ? 'true' : 'false');
+}
+export function initAppBar(){
+  const th = $('ab-theme');
+  if (!th) return;
+  th.onclick = () => { const t = $('theme'); if (t) t.click(); syncAppBar(); };
+  if (typeof MutationObserver === 'function') {
+    const mo = new MutationObserver(syncAppBar);
+    for (const id of ['crumb', 'meta']) {
+      const el = $(id);
+      if (el) mo.observe(el, { childList: true, characterData: true, subtree: true, attributes: true });
+    }
+  }
+  syncAppBar();
+}
+if (typeof document !== 'undefined' && document.getElementById('appbar')) initAppBar();
+
 export function render(){
   const p = DATA.profiles[current];
   renderAlerts(p.alerts);
@@ -650,8 +692,11 @@ export function render(){
   // Router tab (#130) reads DATA.router, not the ledger rows, so it renders
   // before the empty-range return too.
   if (view === 'Router') renderRouterView();
+  if (view === 'Orchestration') renderOrchestration();
+  if (view === 'Kanban') renderKanban();
   // Quota tab (#115) also reads its own payload (DATA.quota), not the ledger.
   if (view === 'Quota') renderQuotaView();
+  if (view === 'Life') renderLifeQuota();
   if (view === 'Prices') renderPrices();
   if (view === 'Rankings') renderRankings();
 
@@ -750,7 +795,7 @@ export function render(){
     [{data:hv,backgroundColor:PAL[4],borderRadius:2}],
     {...noLeg,scales:{x:{grid:{display:false}},y:{grid:{color:BD}}}});
   const bp=agg(rows,r=>provOf(r.provider,r.model,r.base_url),r=>r.calls);
-  mk('cProv','doughnut',bp.map(x=>x[0]),[{data:bp.map(x=>x[1]),
+  mk('cProv','doughnut',bp.map(x=>{const s=PROV[x[0]]||{icon:'○'};return s.icon+' '+x[0];}),[{data:bp.map(x=>x[1]),
       backgroundColor:bp.map(x=>(PROV[x[0]]||{fg:MU}).fg),borderWidth:0}],
     {plugins:{legend:{position:'right',labels:{boxWidth:8,padding:6}}},cutout:'55%'});
 
@@ -939,6 +984,10 @@ export function renderXfer(rows){
 // so middle-click and keyboard both work; the click handler routes in-page.
 export function renderHome(inR){
   const box = $('homecards'); if (!box) return;
+  if (!DATA.profiles || !DATA.profiles[current]) {
+    renderEmpty(box, {icon: '\u2205', message: 'No telemetry for this profile yet.'});
+    return;
+  }
   const p = DATA.profiles[current] || {};
   // inR is render()'s date-range predicate, passed in rather than reached for:
   // it is a local of render(), so calling it from here failed with a
@@ -979,48 +1028,54 @@ export function renderHome(inR){
     ? `${esc(topProject[0])} \u00b7 ${unattrPct} unattributed`
     : (totalSpend > 0 ? `${unattrPct} unattributed` : 'No data');
 
+  // LST-179: single data table of homecards (title/value/blurb/route) instead
+  // of positional tuples. Each row carries the derived stat it already used.
   const cards = [
     // #173: Live IS Home now; a card pointing at the page it sits on is noise.
-    ['Flow', icon('swap'), AC, 'Provider \u2192 model \u2192 task routing',
-      models.size + (models.size === 1 ? ' model' : ' models')],
-    ['Router', icon('target'), PAL[5], 'Which model handles which kind of work, and why',
-      routerStat()],
-    ['Quota', icon('scale'), PAL[4], 'How much headroom is left on each provider',
-      qvStat()],
-    ['Usage', icon('layers'), PAL[1], 'Calls and tokens over time', fmt(calls) + ' calls'],
-    ['Sessions', icon('folder'), PAL[5], 'Spend and calls broken down by project',
-      projStat],
-    ['Cost', icon('dollar'), PAL[4], 'What the traffic is worth at public rates',
-      '$' + cost.toFixed(2)],
-    ['Health', icon('check'), PAL[6], 'Success rate and recent failures',
-      okPct + (fails ? ' \u00b7 ' + fails + ' recent' : '')],
-    ['Detail', icon('grid'), PAL[2], 'Per-model table and the activity calendar',
-      rows.length + ' rows'],
-    ['Settings', icon('cog'), MU, 'Electricity tariff and hardware behind local cost',
-      '$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh'],
+    {title:'Flow', icon:icon('swap'), color:AC, blurb:'Provider \u2192 model \u2192 task routing',
+      value:models.size + (models.size === 1 ? ' model' : ' models'), route:'Flow'},
+    {title:'Router', icon:icon('target'), color:PAL[5], blurb:'Which model handles which kind of work, and why',
+      value:routerStat(), route:'Router'},
+    {title:'Quota', icon:icon('scale'), color:PAL[4], blurb:'How much headroom is left on each provider',
+      value:qvStat(), route:'Quota'},
+    {title:'Usage', icon:icon('layers'), color:PAL[1], blurb:'Calls and tokens over time',
+      value:fmt(calls) + ' calls', route:'Usage'},
+    {title:'Sessions', icon:icon('folder'), color:PAL[5], blurb:'Spend and calls broken down by project',
+      value:projStat, route:'Sessions'},
+    {title:'Cost', icon:icon('dollar'), color:PAL[4], blurb:'What the traffic is worth at public rates',
+      value:'$' + cost.toFixed(2), route:'Cost'},
+    {title:'Health', icon:icon('check'), color:PAL[6], blurb:'Success rate and recent failures',
+      value:okPct + (fails ? ' \u00b7 ' + fails + ' recent' : ''), route:'Health'},
+    {title:'Detail', icon:icon('grid'), color:PAL[2], blurb:'Per-model table and the activity calendar',
+      value:rows.length + ' rows', route:'Detail'},
+    {title:'Settings', icon:icon('cog'), color:MU, blurb:'Electricity tariff and hardware behind local cost',
+      value:'$' + (+POWER.tariff.electricity_rate_kwh) + ' / kWh', route:'Settings'},
   ];
 
   // LST-178: each strip card is one compact row (icon, title, headline value,
   // one-line blurb) with the same derived stats as before. rel on every link.
-  const xc = (view, ico, color, desc, stat, label = view, href = view.toLowerCase(), go = view, sec = '') => `
-    <a class="card xcard homecard" href="#/${href}" rel="noopener noreferrer" data-gohome="${go}"${sec ? ` data-sec="${sec}"` : ''} title="${escA(desc)}">
-      <span class="kpi-badge" style="background:color-mix(in srgb,${color} 14%,var(--card));color:${color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${color} 30%,transparent)">
-        <span class="hc-ico" aria-hidden="true">${ico}</span></span>
+  // LST-179: render from the single data table above (title/value/blurb/route).
+  const xc = (c) => `
+    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}" title="${escA(c.blurb)}">
+      <span class="kpi-badge" style="background:color-mix(in srgb,${c.color} 14%,var(--card));color:${c.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${c.color} 30%,transparent)">
+        <span class="hc-ico" aria-hidden="true">${c.icon}</span></span>
       <span class="xp-body">
-        <span class="xp-row"><span class="xp-title">${label}</span><span class="hc-stat">${stat}</span></span>
-        <span class="xp-blurb">${desc}</span>
+        <span class="xp-row"><span class="xp-title">${c.title}</span><span class="hc-stat">${c.value}</span></span>
+        <span class="xp-blurb">${c.blurb}</span>
       </span>
     </a>`;
-  let html = cards.map(([view, ico, color, desc, stat]) => xc(view, ico, color, desc, stat)).join('');
+  let html = cards.map(xc).join('');
 
   // Bandwidth: both directions together, labelled "est." — a derived number
   // that looks measured is the failure this project guards against.
-  html += xc('Usage', icon('updown'), PAL[0], 'Estimated from tokens, not measured',
-    `<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    'Bandwidth (est.)', 'usage?s=bandwidth', 'Usage', 'bwpanel');
+  html += xc({title:'Bandwidth (est.)', icon:icon('updown'), color:PAL[0],
+    blurb:'Estimated from tokens, not measured',
+    value:`<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
+    route:'Usage'});
 
   // Prices is an in-app view now (was the standalone costs.html page).
-  html += xc('Prices', icon('scale'), PAL[8], 'Per-million-token rates &amp; spend', 'per 1M tokens', 'Prices', 'prices', 'Prices');
+  html += xc({title:'Prices', icon:icon('scale'), color:PAL[8],
+    blurb:'Per-million-token rates &amp; spend', value:'Price sheet', route:'Prices', href:'Prices'});
 
   box.innerHTML = html;
   // Route in-page instead of relying on the hash alone, so a card works even
@@ -1079,8 +1134,9 @@ export function modelsShare(ms, cur){
   }).join('');
   const legend = ms.map((m, i) => {
     const nm = short(m.model), pct = vals[i] / tot * 100;
+    const icon = provLogoSvg(nm);
     return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
-      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${esc(nm)}`
+      + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${icon ? icon + ' ' : ''}${esc(nm)}`
       + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
   }).join('');
   return `<div class="lmbar" role="img"
@@ -1599,7 +1655,7 @@ export function pdOpen(project, rows, _highlightModel){
   const statRow = (k, v) => `<div class="pdstat"><span class="k">${esc(k)}</span><span>${v}</span></div>`;
   const bar = (label, icon, cost, total) => {
     const pct = total > 0 ? (100 * cost / total) : 0;
-    return `<div class="pdstat"><span class="k">${esc(icon ? icon + ' ' : '')}${esc(label)}</span>` +
+    return `<div class="pdstat"><span class="k">${icon ? icon + ' ' : ''}${esc(label)}</span>` +
       `<span>$${cost.toFixed(2)} <span class="muted">(${pct.toFixed(0)}%)</span></span></div>`;
   };
 
@@ -1617,11 +1673,11 @@ export function pdOpen(project, rows, _highlightModel){
     </div>
     <div class="pdsection">
       <div class="lbl">Model breakdown</div>
-      ${topModels.map(([m, c]) => bar(short(m), provIcon(short(m)), c, totalAct || totalEst)).join('')}
+      ${topModels.map(([m, c]) => bar(short(m), provLogoSvg(short(m)), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Provider breakdown</div>
-      ${topProviders.map(([p, c]) => bar(p, (PROV[p] || {}).icon || '\u25CB', c, totalAct || totalEst)).join('')}
+      ${topProviders.map(([p, c]) => bar(p, provLogoSvg(p), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Task / tool mix</div>
@@ -2310,9 +2366,9 @@ export function renderHealth(rows){
   const box = $('healthgrid');
   if(!box) return;
   if(!H.length){
-    box.innerHTML = PROJECT_FILTER
-      ? `<div class="muted text-[length:var(--fs-sm)]">No calls recorded for "${esc(PROJECT_FILTER)}" in this range.</div>`
-      : '<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>';
+    renderEmpty(box, {icon: '\u2205', message: PROJECT_FILTER
+      ? `No calls recorded for "${esc(PROJECT_FILTER)}" in this range.`
+      : 'No calls recorded.'});
   }
   else {
     box.innerHTML = H.slice(0,14).map(h=>{
@@ -3121,8 +3177,9 @@ export function renderPrices(){
   const data = window.COSTS_DATA;
   if (!el) return;
   if (!$('priceSearch')) {           // shell mounts once; rebuild only if wiped
+    if (data === undefined) { renderSkeleton(el); return; }
     if (!data || !Array.isArray(data.models)) {
-      el.innerHTML = '<div class="muted p-6">Prices data not embedded in this build \u2014 run scripts/refresh-dashboard.sh.</div>';
+      renderEmpty(el, {icon: '\u2205', message: 'Prices data not embedded in this build \u2014 run scripts/refresh-dashboard.sh.'});
       return;
     }
     if (!priceTouched) priceState.q = '';   // fresh mount starts clean
@@ -3422,6 +3479,81 @@ function installPriceControls(){
 // party and are escaped here like everywhere else.
 let RANKINGS_STATE = { window: 'week' };
 
+// LST-239/243: Orchestration tab. DATA.orchestration = {nodes:[{id,name,kind}],
+// edges:[{from,to,type,count,last}]} from analytics_store. Hermes nodes sit in
+// the left column (blue), PI in the right (green); an edge is a directed
+// trigger labelled with its signal type and count.
+const ORCH_KIND = {hermes: ['Hermes', 'var(--accent, #5b9cf6)'], pi: ['PI', 'var(--ok, #34c38f)']};
+function renderOrchestration(){
+  const el = document.getElementById('orchview');
+  if (!el) return;
+  const o = DATA.orchestration || {};
+  const nodes = o.nodes || [], edges = o.edges || [];
+  const sub = document.getElementById('orchsub');
+  if (sub) sub.textContent = edges.length ? `${edges.length} trigger paths \u00b7 ${nodes.length} agents` : '';
+  if (!edges.length) {
+    el.innerHTML = '<div class="card orch-empty muted">No orchestration detected yet \u2014 Hermes\u2194PI triggers appear here once agents start handing work to each other.</div>';
+    return;
+  }
+  const cols = {hermes: [], pi: [], other: []};
+  nodes.forEach(n => (cols[n.kind] || cols.other).push(n));
+  const lane = {};
+  const NW = 150, NH = 34, GAP = 22, PAD = 20, W = 640;
+  const x = {hermes: PAD, other: W / 2 - NW / 2, pi: W - PAD - NW};
+  Object.keys(cols).forEach(k => cols[k].forEach((n, i) => { lane[n.id] = {x: x[k], y: PAD + i * (NH + GAP)}; }));
+  const H = PAD * 2 + Math.max(1, ...Object.values(cols).map(c => c.length)) * (NH + GAP) - GAP;
+  const maxc = Math.max(1, ...edges.map(e => e.count));
+  const paths = edges.map(e => {
+    const a = lane[e.from], b = lane[e.to];
+    if (!a || !b) return '';
+    const right = b.x >= a.x;
+    const x1 = a.x + (right ? NW : 0), y1 = a.y + NH / 2, x2 = b.x + (right ? 0 : NW), y2 = b.y + NH / 2;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const w = 1 + 3 * e.count / maxc;
+    return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" class="orch-edge" stroke-width="${w.toFixed(1)}" marker-end="url(#orch-arrow)"><title>${escA(e.from)} \u2192 ${escA(e.to)}: ${escA(e.type)} \u00d7${e.count}</title></path>` +
+      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle">${esc(e.type)} \u00d7${e.count}</text>`;
+  }).join('');
+  const boxes = nodes.map(n => {
+    const p = lane[n.id], [lab, c] = ORCH_KIND[n.kind] || [n.kind, 'var(--muted)'];
+    return `<g class="orch-node"><rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="6" style="stroke:${c}"/>` +
+      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name">${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</text>` +
+      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}">${esc(lab)}</text></g>`;
+  }).join('');
+  el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
+    `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
+    `${paths}${boxes}</svg></div>`;
+}
+
+// LST-249: Kanban tab. DATA.kanban = {boards:[{name,total,counts,columns:[
+// {status,count,tasks:[{id,title,assignee,priority,...}]}]}]} from
+// collect_kanban.py. One board at a time (selector), one swimlane per status.
+let KANBAN_BOARD = '';
+function renderKanban(){
+  const el = document.getElementById('kanbanview');
+  if (!el) return;
+  const boards = (DATA.kanban && DATA.kanban.boards) || [];
+  const sub = document.getElementById('kanbansub');
+  if (sub) sub.textContent = boards.length ? `${boards.length} boards · ${boards.reduce((n, b) => n + b.total, 0)} tasks` : '';
+  if (!boards.length) {
+    el.innerHTML = '<div class="card kb-empty muted">No kanban boards found — boards appear here once Hermes creates tasks under its kanban directory.</div>';
+    return;
+  }
+  if (!boards.some(b => b.name === KANBAN_BOARD)) KANBAN_BOARD = boards[0].name;
+  const b = boards.find(x => x.name === KANBAN_BOARD);
+  const opts = boards.map(x => `<option value="${escA(x.name)}"${x.name === b.name ? ' selected' : ''}>${esc(x.name)} (${x.total})</option>`).join('');
+  const lanes = b.columns.map(c => {
+    const cards = c.tasks.map(t => `<div class="kb-card" title="${escA(t.id)}">` +
+      `<div class="kb-title">${esc(t.title)}</div>` +
+      `<div class="kb-meta muted">${esc(t.assignee || 'unassigned')}${t.priority ? ` · P${esc(String(t.priority))}` : ''}</div></div>`).join('');
+    const more = c.count > c.tasks.length ? `<div class="kb-more muted">+${c.count - c.tasks.length} more</div>` : '';
+    return `<section class="kb-lane" data-status="${escA(c.status)}"><header class="kb-head"><span>${esc(c.status)}</span><span class="kb-count">${c.count}</span></header>` +
+      `<div class="kb-cards">${cards || '<div class="kb-none muted">empty</div>'}${more}</div></section>`;
+  }).join('');
+  el.innerHTML = `<div class="kb-bar"><label class="muted" for="kb-board">Board</label>` +
+    `<select id="kb-board" class="kb-select">${opts}</select></div><div class="kb-board">${lanes}</div>`;
+  document.getElementById('kb-board').addEventListener('change', e => { KANBAN_BOARD = e.target.value; renderKanban(); });
+}
+
 function renderRankings(){
   const host = document.getElementById('view-rankings-container');
   if (!host) return;
@@ -3434,9 +3566,13 @@ function renderRankings(){
     const le = d && d.last_error;
     const why = le ? `${esc(le.reason || 'collector failed')}${le.at ? ` (at ${esc(le.at)})` : ''}`
                    : esc(d && d.detail || 'Set OPENROUTER_API_KEY and run the rankings collector; nothing is shown rather than a guess.');
-    host.innerHTML = `<div class="card p-4"><b>Rankings unavailable.</b> ${why}` +
-      (d && d.as_of ? ` <span class="muted">Last good data ${esc(d.as_of)}.</span>` : '') +
-      `<div class="muted mt-2" style="font-size:var(--fs-xs)">Check the collector: <code>${esc(timerHint)}</code></div></div>`;
+    if (!RANKINGS_DATA) { renderEmpty(host, {icon: '\u2205', message: 'No rankings data embedded in this build.'}); return; }
+    renderError(host, {
+      message: '<b>Rankings unavailable.</b> ' + why +
+        (d.as_of ? ' <span class="muted">Last good data ' + esc(d.as_of) + '.</span>' : ''),
+      lastError: le ? why : '',
+      whereToLook: '<code>' + esc(timerHint) + '</code>',
+    });
     return;
   }
   const wins = ['day', 'week', 'month'].filter(k => d.views[k]);

@@ -21,6 +21,7 @@
 import { $, esc, escA } from './palette.js';
 import { current } from './charts.js';
 import { DATA } from './main.js';
+import { renderEmpty } from './state.js';
 import { rtLogo, rtAgo } from './routerview.js';
 
 // One question per sub-page, as on the Router tab: four dense cards per profile
@@ -498,7 +499,7 @@ export function renderQuotaView(){
       ? `refreshed hourly · last ${rtAgo(meta.collected_at)}` : 'refreshed hourly';
   }
   if (!names.length) {
-    el.innerHTML = '<div class="card rt-card muted">No quota data — the Hermes quota plugin has not cached any profile yet.</div>';
+    renderEmpty(el, {icon: '\u2205', message: 'No quota data — the Hermes quota plugin has not cached any profile yet.'});
     return;
   }
   const page = qvPageGet();
@@ -522,4 +523,39 @@ export function renderQuotaView(){
   }));
   el.querySelectorAll('[data-qvpage]').forEach(b =>
     b.addEventListener('click', () => qvPageSet(b.dataset.qvpage)));
+}
+// Simple quota summary for the Life view: KPI strip + compact provider list.
+// Not the full Quota page — just enough to see who is near a limit.
+export function renderLifeQuota(){
+  const el = $('lifequotabody');
+  const sub = $('lifequotasub');
+  if (!el) return;
+  const all = DATA.quota || {};
+  const name = (current && current !== 'All' && all[current]) ? current : Object.keys(all)[0];
+  const pdata = name ? (all[name] || {}) : {};
+  const provs = Object.values(pdata.providers || {}).filter(p => !p.unavailable_reason);
+  if (sub) sub.textContent = name ? `${name} · ${provs.length} provider${provs.length === 1 ? '' : 's'}` : '';
+  if (!provs.length){
+    el.innerHTML = '<div class="muted">No quota data cached for this profile.</div>';
+    return;
+  }
+  const att = qvAttention();
+  const rows = provs.map(p => {
+    const worst = (p.windows || []).reduce((a, w) => {
+      const pct = qvPct(w.used_percent);
+      return (pct !== null && (a === null || pct > a)) ? pct : a;
+    }, null);
+    const lvl = qvLevel(worst, att);
+    const status = p.unavailable_reason
+      ? `<span class="rt-auth rt-mute">${esc(p.unavailable_reason)}</span>`
+      : (worst === null ? '<span class="rt-auth rt-mute">no reading</span>'
+        : `<span class="rt-auth rt-${lvl === 'bad' ? 'warn' : lvl === 'warn' ? 'warn' : 'ok'}">${worst}% used</span>`);
+    const bar = qvBar(worst, att);
+    return `<div class="qv-liferow" data-level="${lvl}">
+      <span class="qv-wname">${esc(p.label || p.id || '')}</span>
+      ${status}
+      <span class="qv-lifebar">${bar}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = qvKpis(pdata) + `<div class="qv-provs">${rows}</div>`;
 }

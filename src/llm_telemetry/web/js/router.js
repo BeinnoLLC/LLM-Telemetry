@@ -743,7 +743,7 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
   Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
@@ -754,7 +754,7 @@ export const NAV_ICONS = {
 export const NAV_GROUPS = [
   // #173: 'Live' is gone from the rail — Home IS the live board. `#/live`
   // still routes there via VIEW_ALIASES.
-  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Quota']},
+  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Orchestration', 'Kanban', 'Quota']},
   {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
   {name:'System',    views:['Detail', 'Logs', 'Settings']},
 ];
@@ -940,7 +940,7 @@ export function navInstall(){
   navSetOpen(false);
 }
 export function views(){
-  $('views').innerHTML=['Home','Live','Flow','Router','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
+  $('views').innerHTML=['Home','Life','Live','Flow','Router','Orchestration','Kanban','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){

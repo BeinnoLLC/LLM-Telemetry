@@ -514,28 +514,53 @@ body.navcollapsed #navdrawer .navitem::after{
 }
 body.navcollapsed #navdrawer .navitem:hover::after,
 body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
-/* Off-canvas (<=640): the rail slides over the content and reserves nothing.
-   Full width here — a 60px strip is harder to hit than a real panel. */
-@media (max-width:640px){
-  #navdrawer{ width:264px; transform:translateX(-100%); box-shadow:0 8px 28px rgba(0,0,0,.35); }
-  body.navopen #navdrawer{ transform:translateX(0); }
-  /* Mobile shows labels regardless of the desktop collapse state. */
-  body.navcollapsed #navdrawer .nvlabel,
-  body.navcollapsed #navdrawer .navbrand .brandword{ display:inline; }
-  body.navcollapsed #navdrawer .navitem{ justify-content:flex-start; padding:8px 10px; }
-  body.navcollapsed #navdrawer .nvbadge{ position:static; padding:1px 6px; font-size:var(--fs-xs); line-height:inherit; }
-  body.navcollapsed #navdrawer .navbrand{ justify-content:flex-start; padding:4px 8px 12px; }
-  body.navcollapsed #navdrawer .navitem::after{ display:none; }
-  body.hasnav .page{ padding-left:var(--pad); }
+/* LST-229: icon rail (<=1023). Forced regardless of the collapse toggle: below
+   desktop width there is no room for labels, so the rail is always 48px,
+   icon-only, and the toggle is hidden. Same --rail-now variable, so .page and
+   #appbar follow it. */
+@media (max-width:1023px){
+  body.hasnav{ --rail-now:48px; }
+  #navdrawer{ padding:10px 4px; }
+  #navdrawer .nvlabel,
+  #navdrawer .navbrand .brandword,
+  #navdrawer .navgroup-h{ display:none; }
+  #navdrawer .navitem{ justify-content:center; padding:9px 0; position:relative; }
+  #navdrawer .nvbadge{ position:absolute; top:2px; right:2px; min-width:16px; text-align:center; font-size:var(--fs-xs); line-height:16px; padding:0 3px; }
+  #navdrawer .navbrand{ justify-content:center; padding:4px 0 12px; }
   #navcollapse{ display:none; }
-  #navscrim{
-    position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.55);
-    backdrop-filter:blur(2px); opacity:0; pointer-events:none;
-    transition:opacity .2s ease; display:block;
+  #navdrawer .navitem::after{
+    content:attr(data-tip); position:fixed; left:56px;
+    transform:translateY(-50%); white-space:nowrap; background:var(--card);
+    border:1px solid var(--border); border-radius:4px; padding:4px 8px;
+    font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
+    transition:opacity .12s ease; z-index:41;
   }
-  body.navopen #navscrim{ opacity:1; pointer-events:auto; }
-  body.navopen{ overflow:hidden; }
-  #navtoggle{ display:inline-flex; }
+  #navdrawer .navitem:hover::after,
+  #navdrawer .navitem:focus-visible::after{ opacity:1; }
+}
+/* LST-229: bottom tab bar (<=639). Fixed to the bottom edge, one horizontal
+   scrollable row of icon buttons; every view stays reachable by scrolling the
+   bar. The page reserves the bar's height at the bottom instead of the rail's
+   width at the left. */
+@media (max-width:639px){
+  body.hasnav{ --rail-now:0px; --tabbar-h:52px; }
+  #navdrawer{
+    top:auto; right:0; bottom:0; left:0; width:auto; height:var(--tabbar-h);
+    flex-direction:row; align-items:stretch; padding:0 4px env(safe-area-inset-bottom);
+    box-sizing:content-box; border-right:0; border-top:1px solid var(--border);
+    overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  }
+  #navdrawer::-webkit-scrollbar{ display:none; }
+  #navdrawer .navbrand,
+  #navdrawer .navsep{ display:none; }
+  #navlist,
+  #navdrawer .navgroup{ display:flex; flex-direction:row; flex:none; }
+  #navdrawer .navitem{ flex:0 0 auto; width:auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem .nvlabel{ display:none; }
+  #navdrawer .navitem[aria-current="page"]{ box-shadow:inset 0 -2px 0 var(--accent); }
+  #navdrawer .navitem::after{ display:none; }
+  body.hasnav .page{ padding-left:var(--pad); padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--pad)); }
+  #navscrim,#navtoggle{ display:none; }
 }
 #navtoggle{ display:none; }
 @media (prefers-reduced-motion:reduce){ #navdrawer,#navscrim,#navcollapse{ transition:none; } }
@@ -849,7 +874,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
   filter:drop-shadow(0 0 .7px rgba(255,255,255,.75)) drop-shadow(0 0 1px rgba(255,255,255,.3))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 72%)}
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px),
@@ -878,14 +903,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:linear-gradient(90deg,rgba(0,0,0,.22),transparent 16%,transparent 84%,rgba(0,0,0,.18)),
     linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,black 10%));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
-.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:9px;margin-bottom:-1px;pointer-events:none;transform-origin:50% 100%;
-  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 55%,white 15%) 98%,transparent) 0 0/28px 9px repeat-x;
+.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:12px;margin-bottom:-2px;pointer-events:none;transform-origin:50% 100%;
+  background:
+    radial-gradient(ellipse 30px 10px at 50% 100%,color-mix(in srgb,var(--jc) 60%,white 20%) 98%,transparent) 0 0/60px 12px repeat-x,
+    radial-gradient(ellipse 18px 5px at 50% 100%,color-mix(in srgb,var(--jc) 40%,white 30%) 98%,transparent) 15px 2px/36px 12px repeat-x;
   border-bottom:2px solid color-mix(in srgb,var(--jc) 30%,white 70%);
-  opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 3.2s linear infinite}
+  opacity:var(--wv,1);transition:bottom .8s cubic-bezier(.22,1,.36,1);animation:qt-wave 4s linear infinite}
 .qt-jar.qt-splash .qt-body::after{animation:qt-wave 3.2s linear infinite,qt-splash 1s ease-out}
 .qt-jar.qt-splash .qt-body::before{animation:qt-glow 1s ease-out}
-@keyframes qt-wave{to{background-position-x:28px}}
+@keyframes qt-wave{to{background-position:60px 0,-36px 2px}}
 @keyframes qt-splash{35%{transform:scaleY(2.4);border-bottom-color:white}to{transform:none}}
+.qt-jar.qt-slosh{animation:qt-slosh .65s ease-out}
+@keyframes qt-slosh{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-4px) rotate(-2deg)}30%{transform:translateX(5px) rotate(2.5deg)}45%{transform:translateX(-4px) rotate(-1.5deg)}60%{transform:translateX(3px) rotate(1.5deg)}75%{transform:translateX(-2px) rotate(-.8deg)}90%{transform:translateX(1px) rotate(.4deg)}100%{transform:translateX(0) rotate(0deg)}}
 @keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
@@ -1156,6 +1185,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .kring svg{width:100%;height:100%;display:block}
 .kspwrap{display:inline-block;width:60px;height:20px;vertical-align:middle;flex:none}
 .kspark{width:100%;height:100%;display:block}
+.lvspark{margin-top:2px;height:12px;pointer-events:none}
+.lvspark .kspark{width:100%;height:100%;display:block}
 .kpi-icon{display:flex;line-height:1}
 .olspwrap{display:inline-block;width:44px;height:14px;vertical-align:middle;margin-left:6px}
 
@@ -1393,7 +1424,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .livegrid{display:grid;gap:var(--gap);align-items:start;
    grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:1023px){
+ @media(max-width:1279px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    /* the list is height-capped for the side-by-side case; unpin it when stacked */
    .livegrid > .card:first-child{max-height:none !important}
@@ -1413,6 +1444,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .page[data-pageview="Home"] > .view[data-view="Home"] > .livegrid{order:-20}
  .page[data-pageview="Home"] > #alertscard{order:-15}
  .page[data-pageview="Home"] > .view[data-view="Home"] > .home-late{order:5}
+ .page[data-pageview="Life"] > .pagehead{order:-40}
+.page[data-pageview="Life"] > .view[data-view="Life"]{display:contents}
+.page[data-pageview="Life"] > .view[data-view="Life"] > *{order:-10;margin-top:0;margin-bottom:0}
+.page[data-pageview="Life"] > #filterbar{order:-34}
+.page[data-pageview="Life"] > #alertscard{display:none}
  /* Mobile */
  @media(max-width:640px){
    :root{--fs:14px;--gap:12px;--pad:12px}
@@ -1635,6 +1671,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    column before squeezing the bar: the bar is the point of the tab, the reset
    time is supplementary and survives as the row's title. */
 @media (max-width:520px){.qv-win{grid-template-columns:minmax(56px,auto) 46px minmax(48px,1fr)}.qv-reset{display:none}}
+/* Life-quota row: provider name | status badge | bar. Flexbox so the badge
+   never overlaps the bar regardless of badge text length. */
+.qv-liferow{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;flex-wrap:wrap}
+.qv-liferow+.qv-liferow{border-top:1px solid var(--border)}
+.qv-liferow .qv-wname{flex:0 0 auto;min-width:60px;font-weight:600}
+.qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
+.qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
@@ -1865,7 +1908,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
      view on desktop. Only below 1024px does the panel scroll sideways. */
   --lvcols:36px minmax(96px,1.3fr) minmax(88px,1fr) 156px 60px 70px minmax(88px,1.3fr) 124px}
 .lvhead,.lvrow{display:grid;grid-template-columns:var(--lvcols);column-gap:8px;align-items:center;padding:0 12px}
-@media(max-width:1023px){.lvhead,.lvrow{min-width:792px}.lvrow + .lmpanel{min-width:792px}}
+@media(max-width:1279px){.lvhead,.lvrow{min-width:792px}.lvrow + .lmpanel{min-width:792px}}
 .lvhgrp{display:flex;flex-direction:row;align-items:center;gap:10px;height:100%;min-width:0;white-space:nowrap}
 .lvhgrp>.lvh{height:100%;flex:none;justify-content:flex-start}
 .lvhead{position:sticky;top:0;z-index:2;height:44px;background:var(--card);border-bottom:1px solid var(--border)}
@@ -2059,7 +2102,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dkpi .lbl,.dkpi .dkl,.qv-kpi span,.qv-fkpi span{order:-1;font:500 13px/18px var(--font);letter-spacing:.04em;
   text-transform:uppercase;color:var(--muted)}
 .dkpi-n,.dkpi .dkv,.qv-kpi .qv-kv,.qv-fkpi .qv-kv{font:600 28px/38px var(--font);font-variant-numeric:tabular-nums}
-
 /* ---- UI pass U-2: one filter bar ------------------------------------------
    Range = segmented radiogroup (+ Custom date popover); Session / Provider /
    Model = searchable comboboxes; active values show as removable chips. */
@@ -2116,3 +2158,141 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .fb-done{display:inline-flex;align-items:center;justify-content:center}
   .rangepop{left:12px;right:12px}
 }
+@media (max-width:390px){
+  html,body{max-width:100vw;overflow-x:hidden}
+  .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
+  .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
+  .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
+  .grid-home > *{min-width:0}
+  div:has(>canvas){width:100%;max-width:100%;min-height:160px}
+  canvas{max-width:100%}
+  .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .navitem,.combo-btn,.chip,.tab,.tabbtn,[role=tab],.pk-btn,.pchip,.kseg,select.chip{min-height:44px}
+  .combo-btn{max-width:100%}
+  .combo-pop{max-width:calc(100vw - 16px)}
+}
+
+/* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
+   rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
+   light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
+:root:not([data-theme="dark"]) #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
+:root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
+:root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
+:root:not([data-theme="dark"]) #qcard .qt-yard{--jc:var(--accent)}
+:root:not([data-theme="dark"]) #qcard .qt-jar{filter:drop-shadow(1.5px 0 0 var(--jar-edge)) drop-shadow(-1.5px 0 0 var(--jar-edge)) drop-shadow(0 1.5px 0 var(--jar-edge))}
+:root:not([data-theme="dark"]) #qcard .qt-sec::before{left:2%;right:2%;bottom:20px;height:22px;filter:blur(3px);
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 75%)}
+:root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
+  background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
+  box-shadow:inset 7px 0 9px -6px hsl(220 25% 45% / .22),inset -7px 0 9px -6px hsl(220 25% 45% / .16),inset 0 -16px 18px -12px hsl(220 25% 45% / .22)}
+:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,hsl(0 0% 100% / .95),hsl(0 0% 100% / .55) 60%,hsl(0 0% 100% / 0));filter:blur(1.5px)}
+:root:not([data-theme="dark"]) #qcard .qt-body::before{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 30%,transparent))}
+:root:not([data-theme="dark"]) #qcard .qt-body::after{
+  background:radial-gradient(ellipse 14px 6px at 50% 100%,color-mix(in srgb,var(--jc) 30%,transparent) 98%,transparent) 0 0/28px 9px repeat-x;
+  border-bottom:2px solid color-mix(in srgb,var(--jc) 70%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-lid{border:1.5px solid var(--jar-edge);border-bottom:3px solid var(--jc);
+  background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
+  box-shadow:inset 0 1px 0 hsl(0 0% 100% / .95),inset 0 -2px 3px -1px hsl(220 25% 45% / .16),0 2px 4px hsl(220 30% 20% / .18)}
+:root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px hsl(220 30% 20% / .18)}
+:root:not([data-theme="dark"]) #qcard .qt-n{color:var(--jar-ink);text-shadow:none}
+:root:not([data-theme="dark"]) #qcard .qt-name{color:var(--jar-label)}
+:root:not([data-theme="dark"]) #qcard .qt-cars:not(:has(.qt-ball))::after{color:var(--jar-label-soft)}
+:root:not([data-theme="dark"]) #qcard .qt-legend{color:var(--jar-label-soft)}
+:root:not([data-theme="dark"]) #qcard .qt-ball{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-ball:hover,:root:not([data-theme="dark"]) #qcard .qt-ball:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-tip-on{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .45),0 4px 7px -2px hsl(220 30% 15% / .45)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-run{
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-run .qt-ball-g{box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 70%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn{outline:2px dashed var(--jar-ring);outline-offset:3px;
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn.qt-tip-on{outline:2px solid var(--accent)}
+:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px hsl(0 0% 0% / .28),inset 0 1px 1px hsl(0 0% 100% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-sw-glow{--k:var(--jar-glow);background:var(--jar-glass);
+  box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
+  box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
+
+
+/* LST-230: 390px pass — nothing may widen the page; wide tables scroll inside
+   their own panel; charts stay readable; touch controls reach the 44px floor. */
+
+/* state.js renderers */
+.state-skeleton { padding: 12px; }
+.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
+.state-empty, .state-error { padding: 16px; text-align: center; }
+.state-icon { font-size: 28px; margin-bottom: 8px; }
+.state-msg { margin: 4px 0; }
+.state-action { display: inline-block; margin-top: 8px; }
+.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
+
+/* LST-230/232: mobile 390px pass — overflow offenders */
+.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
+  max-width: 100%;
+}
+.model-name, .modelname, td.model, .tbl-model, .cell-model {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+canvas, img {
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 480px) {
+  button, a, [role="button"], .btn, .chip, .tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ---- LST-226/227: app bar (56px). Sticky above the page; clears the nav rail
+   the same way .page does. */
+#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
+  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
+body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
+#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
+#appbar .ab-sep{opacity:.4}
+#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#appbar .ab-spacer{flex:1}
+#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
+#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
+#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
+
+/* LST-239/243: Orchestration graph */
+.orch-card{padding:1rem;overflow-x:auto}
+.orch-empty{padding:1rem}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
+.orch-head{fill:var(--muted)}
+.orch-lbl{fill:var(--muted);font-size:10px}
+.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
+.orch-name{fill:var(--text, currentColor);font-size:12px}
+.orch-kind{font-size:10px;font-weight:600}
+
+/* LST-249: Kanban board */
+.kb-empty{padding:1rem}
+.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
+.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
+.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
+.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
+.kb-count{color:var(--muted);font-weight:400}
+.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
+.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
+.kb-title{overflow-wrap:anywhere}
+.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
+.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
+.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}

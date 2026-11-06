@@ -1,2533 +1,2565 @@
 {
- "prelude": "\n",
- "order": [
-  {
-   "mod": "main",
-   "name": "DATA"
-  },
-  {
-   "mod": "main",
-   "name": "COSTS_DATA"
-  },
-  {
-   "mod": "main",
-   "name": "RANKINGS_DATA"
-  },
-  {
-   "mod": "main",
-   "name": "LOCAL_HOSTS"
-  },
-  {
-   "mod": "main",
-   "name": "SCHEMA_VERSION"
-  },
-  {
-   "mod": "views",
-   "name": "schemaProblem"
-  },
-  {
-   "mod": "views",
-   "name": "showSchemaError"
-  },
-  {
-   "mod": "views",
-   "name": "flash"
-  },
-  {
-   "mod": "views",
-   "name": "renderResolution"
-  },
-  {
-   "mod": "main",
-   "name": "css"
-  },
-  {
-   "mod": "palette",
-   "name": "AC"
-  },
-  {
-   "mod": "palette",
-   "name": "readTheme"
-  },
-  {
-   "mod": "palette",
-   "name": "PAL"
-  },
-  {
-   "mod": "palette",
-   "name": "ICON_SVG"
-  },
-  {
-   "mod": "palette",
-   "name": "icon"
-  },
-  {
-   "mod": "palette",
-   "name": "fade"
-  },
-  {
-   "mod": "palette",
-   "name": "FAMILY"
-  },
-  {
-   "mod": "palette",
-   "name": "FAM_OTHER"
-  },
-  {
-   "mod": "palette",
-   "name": "hashHue"
-  },
-  {
-   "mod": "palette",
-   "name": "famOf"
-  },
-  {
-   "mod": "palette",
-   "name": "FAM_HUE_SPREAD"
-  },
-  {
-   "mod": "palette",
-   "name": "buildColors"
-  },
-  {
-   "mod": "palette",
-   "name": "allModelNames"
-  },
-  {
-   "mod": "palette",
-   "name": "COLORS"
-  },
-  {
-   "mod": "palette",
-   "name": "colorOf"
-  },
-  {
-   "mod": "palette",
-   "name": "fmt"
-  },
-  {
-   "mod": "palette",
-   "name": "fmtB"
-  },
-  {
-   "mod": "palette",
-   "name": "fmtRate"
-  },
-  {
-   "mod": "palette",
-   "name": "bwPrev"
-  },
-  {
-   "mod": "palette",
-   "name": "money"
-  },
-  {
-   "mod": "palette",
-   "name": "short"
-  },
-  {
-   "mod": "palette",
-   "name": "esc"
-  },
-  {
-   "mod": "palette",
-   "name": "$"
-  },
-  {
-   "mod": "palette",
-   "name": "emptyHTML"
-  },
-  {
-   "mod": "charts",
-   "name": "HAS_CHART"
-  },
-  {
-   "mod": "charts",
-   "name": "CHART_MISSING_NOTE"
-  },
-  {
-   "mod": "charts",
-   "name": "charts"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_TIER_HUE"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtHue"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_SVG"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_LOGO"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtLogo"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtModel"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_AUTH"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtAuthBadge"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtStatus"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtAgo"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtTierChip"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtFlowStrip"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtChart"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtMatrix"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtWorkers"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtAuthTable"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtDecisions"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_PAGES"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_PAGE_KEY"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtPageGet"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtPage"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtPageSet"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_FOLD_KEY"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtFolded"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtSaveFold"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_OPEN_KEY"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtOpened"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtSaveOpen"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_COMPACT_AT"
-  },
-  {
-   "mod": "routerview",
-   "name": "RT_POPEN_KEY"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtProfOpened"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtSaveProfOpen"
-  },
-  {
-   "mod": "routerview",
-   "name": "rtSection"
-  },
-  {
-   "mod": "routerview",
-   "name": "routerStat"
-  },
-  {
-   "mod": "routerview",
-   "name": "renderRouterView"
-  },
-  {
-   "mod": "routerview",
-   "name": "helpOpen"
-  },
-  {
-   "mod": "routerview",
-   "name": "helpInstalled"
-  },
-  {
-   "mod": "routerview",
-   "name": "helpKeydown"
-  },
-  {
-   "mod": "routerview",
-   "name": "helpSetOpen"
-  },
-  {
-   "mod": "routerview",
-   "name": "installHelp"
-  },
-  {
-   "mod": "quotaview",
-   "name": "QV_PAGES"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAttention"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvPct"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvLevel"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvCalls"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvIsFree"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvBar"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvWindow"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctLevel"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctState"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctWhy"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctExpiry"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctOrigin"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAcctUsage"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAccount"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvAccounts"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvBalance"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvHead"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvProviders"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvBalances"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvNotes"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvPageGet"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvPageSet"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvFolded"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvSaveFold"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvKpis"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvSection"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvStat"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvFleet"
-  },
-  {
-   "mod": "quotaview",
-   "name": "qvUncached"
-  },
-  {
-   "mod": "quotaview",
-   "name": "renderQuotaView"
-  },
-  {
-   "mod": "router",
-   "name": "view"
-  },
-  {
-   "mod": "router",
-   "name": "HOUR_RANGE"
-  },
-  {
-   "mod": "charts",
-   "name": "CHART_ANIM_DONE"
-  },
-  {
-   "mod": "charts",
-   "name": "noLeg"
-  },
-  {
-   "mod": "charts",
-   "name": "bounds"
-  },
-  {
-   "mod": "router",
-   "name": "setRange"
-  },
-  {
-   "mod": "router",
-   "name": "setHourRange"
-  },
-  {
-   "mod": "router",
-   "name": "hourRowsFor"
-  },
-  {
-   "mod": "router",
-   "name": "updateRangeToggleLabel"
-  },
-  {
-   "mod": "router",
-   "name": "presets"
-  },
-  {
-   "mod": "router",
-   "name": "RANGE_HOURS"
-  },
-  {
-   "mod": "router",
-   "name": "rangeDefs"
-  },
-  {
-   "mod": "router",
-   "name": "rangeKey"
-  },
-  {
-   "mod": "router",
-   "name": "rangeParam"
-  },
-  {
-   "mod": "router",
-   "name": "applyRangeParam"
-  },
-  {
-   "mod": "router",
-   "name": "RANGE_HYDRATED"
-  },
-  {
-   "mod": "router",
-   "name": "RANGE_PICK"
-  },
-  {
-   "mod": "router",
-   "name": "toggleRangePop"
-  },
-  {
-   "mod": "palette",
-   "name": "labelColor"
-  },
-  {
-   "mod": "palette",
-   "name": "LABEL_FONT"
-  },
-  {
-   "mod": "charts",
-   "name": "tintTicks"
-  },
-  {
-   "mod": "charts",
-   "name": "mk"
-  },
-  {
-   "mod": "charts",
-   "name": "seriesStats"
-  },
-  {
-   "mod": "charts",
-   "name": "legendTable"
-  },
-  {
-   "mod": "charts",
-   "name": "agg"
-  },
-  {
-   "mod": "views",
-   "name": "PROV"
-  },
-  {
-   "mod": "views",
-   "name": "LOCAL_RE"
-  },
-  {
-   "mod": "views",
-   "name": "CLOUD_SUFFIX"
-  },
-  {
-   "mod": "views",
-   "name": "provOf"
-  },
-  {
-   "mod": "views",
-   "name": "provBadge"
-  },
-  {
-   "mod": "views",
-   "name": "MODEL_PROV"
-  },
-  {
-   "mod": "views",
-   "name": "buildModelProv"
-  },
-  {
-   "mod": "views",
-   "name": "provIcon"
-  },
-  {
-   "mod": "palette",
-   "name": "ic"
-  },
-  {
-   "mod": "views",
-   "name": "resendOf"
-  },
-  {
-   "mod": "views",
-   "name": "renderBandwidthPanel"
-  },
-  {
-   "mod": "palette",
-   "name": "costCell"
-  },
-  {
-   "mod": "views",
-   "name": "unpricedModels"
-  },
-  {
-   "mod": "views",
-   "name": "NOTICE_MS"
-  },
-  {
-   "mod": "views",
-   "name": "NOTICE_MAX"
-  },
-  {
-   "mod": "views",
-   "name": "NOTICES"
-  },
-  {
-   "mod": "views",
-   "name": "noticeKey"
-  },
-  {
-   "mod": "views",
-   "name": "noticeGet"
-  },
-  {
-   "mod": "views",
-   "name": "noticeSet"
-  },
-  {
-   "mod": "views",
-   "name": "noticeEl"
-  },
-  {
-   "mod": "views",
-   "name": "noticeClose"
-  },
-  {
-   "mod": "views",
-   "name": "noticeArm"
-  },
-  {
-   "mod": "views",
-   "name": "noticePlace"
-  },
-  {
-   "mod": "views",
-   "name": "noticeShow"
-  },
-  {
-   "mod": "views",
-   "name": "noticeChip"
-  },
-  {
-   "mod": "views",
-   "name": "notify"
-  },
-  {
-   "mod": "views",
-   "name": "clearNotice"
-  },
-  {
-   "mod": "views",
-   "name": "renderUnpriced"
-  },
-  {
-   "mod": "views",
-   "name": "RESEND_MIN"
-  },
-  {
-   "mod": "palette",
-   "name": "escA"
-  },
-  {
-   "mod": "views",
-   "name": "renderResend"
-  },
-  {
-   "mod": "views",
-   "name": "ALERT_ICON"
-  },
-  {
-   "mod": "views",
-   "name": "ALERT_COLOR"
-  },
-  {
-   "mod": "views",
-   "name": "renderAlerts"
-  },
-  {
-   "mod": "drawer",
-   "name": "SF_FILTER_KEYS"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfParseQuery"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfMatch"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfSearch"
-  },
-  {
-   "mod": "views",
-   "name": "render"
-  },
-  {
-   "mod": "views",
-   "name": "PRICE_SRC"
-  },
-  {
-   "mod": "views",
-   "name": "PROV_META"
-  },
-  {
-   "mod": "views",
-   "name": "priceState"
-  },
-  {
-   "mod": "views",
-   "name": "priceTouched"
-  },
-  {
-   "mod": "views",
-   "name": "renderPrices"
-  },
-  {
-   "mod": "views",
-   "name": "pricesShell"
-  },
-  {
-   "mod": "views",
-   "name": "priceTabsRow"
-  },
-  {
-   "mod": "views",
-   "name": "renderPriceTable"
-  },
-  {
-   "mod": "views",
-   "name": "priceWhatIfShell"
-  },
-  {
-   "mod": "views",
-   "name": "whatIfInit"
-  },
-  {
-   "mod": "views",
-   "name": "priceWhatIfInstall"
-  },
-  {
-   "mod": "views",
-   "name": "wiParseTokens"
-  },
-  {
-   "mod": "views",
-   "name": "wiMoney"
-  },
-  {
-   "mod": "views",
-   "name": "priceWhatIfCalc"
-  },
-  {
-   "mod": "views",
-   "name": "RANKINGS_STATE"
-  },
-  {
-   "mod": "views",
-   "name": "renderRankings"
-  },
-  {
-   "mod": "views",
-   "name": "priceRow"
-  },
-  {
-   "mod": "views",
-   "name": "fmtN"
-  },
-  {
-   "mod": "views",
-   "name": "fmtMoney"
-  },
-  {
-   "mod": "views",
-   "name": "installPriceControls"
-  },
-  {
-   "mod": "palette",
-   "name": "pick"
-  },
-  {
-   "mod": "palette",
-   "name": "CAT"
-  },
-  {
-   "mod": "palette",
-   "name": "catOf"
-  },
-  {
-   "mod": "palette",
-   "name": "ago"
-  },
-  {
-   "mod": "palette",
-   "name": "CADENCE"
-  },
-  {
-   "mod": "palette",
-   "name": "STALE_FACTOR"
-  },
-  {
-   "mod": "palette",
-   "name": "freshness"
-  },
-  {
-   "mod": "palette",
-   "name": "stampFreshness"
-  },
-  {
-   "mod": "palette",
-   "name": "FOCUS_SEL"
-  },
-  {
-   "mod": "palette",
-   "name": "focusables"
-  },
-  {
-   "mod": "palette",
-   "name": "setAria"
-  },
-  {
-   "mod": "palette",
-   "name": "trapTab"
-  },
-  {
-   "mod": "palette",
-   "name": "trapFocus"
-  },
-  {
-   "mod": "charts",
-   "name": "bwRow"
-  },
-  {
-   "mod": "views",
-   "name": "XF_SEEN"
-  },
-  {
-   "mod": "views",
-   "name": "renderXfer"
-  },
-  {
-   "mod": "views",
-   "name": "renderHome"
-  },
-  {
-   "mod": "views",
-   "name": "liveModelsOpen"
-  },
-  {
-   "mod": "views",
-   "name": "modelsOf"
-  },
-  {
-   "mod": "views",
-   "name": "modelsBadge"
-  },
-  {
-   "mod": "views",
-   "name": "lmMetric"
-  },
-  {
-   "mod": "views",
-   "name": "LM_METRIC"
-  },
-  {
-   "mod": "views",
-   "name": "modelsShare"
-  },
-  {
-   "mod": "views",
-   "name": "modelsPanel"
-  },
-  {
-   "mod": "views",
-   "name": "renderConcurrency"
-  },
-  {
-   "mod": "views",
-   "name": "_unattrPattern"
-  },
-  {
-   "mod": "views",
-   "name": "unattrPattern"
-  },
-  {
-   "mod": "views",
-   "name": "UNATTR_LABEL"
-  },
-  {
-   "mod": "views",
-   "name": "renderLatency"
-  },
-  {
-   "mod": "views",
-   "name": "renderAttribution"
-  },
-  {
-   "mod": "views",
-   "name": "REPO_EXPANDED"
-  },
-  {
-   "mod": "views",
-   "name": "renderRepoBranch"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjects"
-  },
-  {
-   "mod": "views",
-   "name": "PROJ_MATRIX_MAX_COLS"
-  },
-  {
-   "mod": "charts",
-   "name": "PROJ_WEIGHT"
-  },
-  {
-   "mod": "charts",
-   "name": "PROJ_WEIGHT_LABELS"
-  },
-  {
-   "mod": "charts",
-   "name": "weightValue"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjectMatrix"
-  },
-  {
-   "mod": "views",
-   "name": "pdFocusReturn"
-  },
-  {
-   "mod": "views",
-   "name": "pdOpenState"
-  },
-  {
-   "mod": "views",
-   "name": "pdOpen"
-  },
-  {
-   "mod": "views",
-   "name": "pdClose"
-  },
-  {
-   "mod": "views",
-   "name": "pdKeydown"
-  },
-  {
-   "mod": "views",
-   "name": "installProjectDrilldown"
-  },
-  {
-   "mod": "views",
-   "name": "installProjWeight"
-  },
-  {
-   "mod": "views",
-   "name": "PROJ_FILTER_VIEWS"
-  },
-  {
-   "mod": "views",
-   "name": "populateProjFilterSelect"
-  },
-  {
-   "mod": "views",
-   "name": "populateRowFilterSelects"
-  },
-  {
-   "mod": "views",
-   "name": "syncProjFilterUI"
-  },
-  {
-   "mod": "views",
-   "name": "installProjFilter"
-  },
-  {
-   "mod": "views",
-   "name": "FB_FACETS"
-  },
-  {
-   "mod": "views",
-   "name": "comboState"
-  },
-  {
-   "mod": "views",
-   "name": "comboCounts"
-  },
-  {
-   "mod": "views",
-   "name": "comboOptions"
-  },
-  {
-   "mod": "views",
-   "name": "comboHits"
-  },
-  {
-   "mod": "views",
-   "name": "comboMark"
-  },
-  {
-   "mod": "views",
-   "name": "renderComboList"
-  },
-  {
-   "mod": "views",
-   "name": "closeCombo"
-  },
-  {
-   "mod": "views",
-   "name": "openCombo"
-  },
-  {
-   "mod": "views",
-   "name": "pickCombo"
-  },
-  {
-   "mod": "views",
-   "name": "buildFilterCombos"
-  },
-  {
-   "mod": "views",
-   "name": "refreshFilterCombos"
-  },
-  {
-   "mod": "charts",
-   "name": "projDistNormalized"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjectDistribution"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjDistLegend"
-  },
-  {
-   "mod": "views",
-   "name": "PROJ_TREND_TOP_N"
-  },
-  {
-   "mod": "charts",
-   "name": "projTrendStacked"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjectTrend"
-  },
-  {
-   "mod": "views",
-   "name": "renderProjTrendLegend"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_DEMO"
-  },
-  {
-   "mod": "flow",
-   "name": "qtDemoOn"
-  },
-  {
-   "mod": "flow",
-   "name": "qtDemoApply"
-  },
-  {
-   "mod": "flow",
-   "name": "qtDemoWire"
-  },
-  {
-   "mod": "flow",
-   "name": "trainBall"
-  },
-  {
-   "mod": "flow",
-   "name": "qtSeed"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_CAP"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_MAX"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_MIN"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_GLYPH"
-  },
-  {
-   "mod": "flow",
-   "name": "qtGlyphKey"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_FILL"
-  },
-  {
-   "mod": "flow",
-   "name": "qtPack"
-  },
-  {
-   "mod": "flow",
-   "name": "qtLayout"
-  },
-  {
-   "mod": "flow",
-   "name": "qtRelayout"
-  },
-  {
-   "mod": "flow",
-   "name": "paintBalls"
-  },
-  {
-   "mod": "flow",
-   "name": "carMeta"
-  },
-  {
-   "mod": "flow",
-   "name": "ttRow"
-  },
-  {
-   "mod": "flow",
-   "name": "carTip"
-  },
-  {
-   "mod": "flow",
-   "name": "carPop"
-  },
-  {
-   "mod": "flow",
-   "name": "qtSplash"
-  },
-  {
-   "mod": "flow",
-   "name": "QT_FLY"
-  },
-  {
-   "mod": "flow",
-   "name": "qtFly"
-  },
-  {
-   "mod": "flow",
-   "name": "paintTrain"
-  },
-  {
-   "mod": "flow",
-   "name": "qtPlace"
-  },
-  {
-   "mod": "flow",
-   "name": "qtPopClose"
-  },
-  {
-   "mod": "flow",
-   "name": "qtPopOpen"
-  },
-  {
-   "mod": "flow",
-   "name": "qtTipWire"
-  },
-  {
-   "mod": "flow",
-   "name": "renderQueue"
-  },
-  {
-   "mod": "flow",
-   "name": "renderAgents"
-  },
-  {
-   "mod": "diffdom",
-   "name": "motionReduced"
-  },
-  {
-   "mod": "diffdom",
-   "name": "FADE_MS"
-  },
-  {
-   "mod": "diffdom",
-   "name": "planDiff"
-  },
-  {
-   "mod": "diffdom",
-   "name": "invalidate"
-  },
-  {
-   "mod": "diffdom",
-   "name": "applyDiff"
-  },
-  {
-   "mod": "diffdom",
-   "name": "GHOST"
-  },
-  {
-   "mod": "diffdom",
-   "name": "EXITY"
-  },
-  {
-   "mod": "diffdom",
-   "name": "isGhost"
-  },
-  {
-   "mod": "diffdom",
-   "name": "groupsOf"
-  },
-  {
-   "mod": "diffdom",
-   "name": "cacheFor"
-  },
-  {
-   "mod": "diffdom",
-   "name": "freshNodes"
-  },
-  {
-   "mod": "diffdom",
-   "name": "_internal"
-  },
-  {
-   "mod": "live",
-   "name": "liveGroupKeyOf"
-  },
-  {
-   "mod": "live",
-   "name": "TPUT_WINDOW_S"
-  },
-  {
-   "mod": "live",
-   "name": "tputPrev"
-  },
-  {
-   "mod": "live",
-   "name": "tputRing"
-  },
-  {
-   "mod": "live",
-   "name": "sessTotals"
-  },
-  {
-   "mod": "live",
-   "name": "sampleThroughput"
-  },
-  {
-   "mod": "live",
-   "name": "throughputFor"
-  },
-  {
-   "mod": "live",
-   "name": "mergedField"
-  },
-  {
-   "mod": "live",
-   "name": "dedupAgentLive"
-  },
-  {
-   "mod": "live",
-   "name": "inFlight"
-  },
-  {
-   "mod": "live",
-   "name": "inProgressHtml"
-  },
-  {
-   "mod": "live",
-   "name": "statHtml"
-  },
-  {
-   "mod": "live",
-   "name": "meterStat"
-  },
-  {
-   "mod": "live",
-   "name": "liveKpis"
-  },
-  {
-   "mod": "live",
-   "name": "LKPI_SPARK"
-  },
-  {
-   "mod": "live",
-   "name": "paintSpark"
-  },
-  {
-   "mod": "live",
-   "name": "SEV_RANK"
-  },
-  {
-   "mod": "live",
-   "name": "ruleTitle"
-  },
-  {
-   "mod": "live",
-   "name": "alertsStat"
-  },
-  {
-   "mod": "live",
-   "name": "renderLiveKpis"
-  },
-  {
-   "mod": "live",
-   "name": "logoSvg"
-  },
-  {
-   "mod": "live",
-   "name": "KIND_LOGO"
-  },
-  {
-   "mod": "live",
-   "name": "kindLogo"
-  },
-  {
-   "mod": "live",
-   "name": "KIND_META"
-  },
-  {
-   "mod": "live",
-   "name": "KIND_ORDER"
-  },
-  {
-   "mod": "live",
-   "name": "kindMeta"
-  },
-  {
-   "mod": "live",
-   "name": "fleetTiles"
-  },
-  {
-   "mod": "live",
-   "name": "fleetKindCounts"
-  },
-  {
-   "mod": "live",
-   "name": "TILE_IDLE_S"
-  },
-  {
-   "mod": "live",
-   "name": "kindBadge"
-  },
-  {
-   "mod": "live",
-   "name": "LV_COLS"
-  },
-  {
-   "mod": "live",
-   "name": "lvSort"
-  },
-  {
-   "mod": "live",
-   "name": "STATE_RANK"
-  },
-  {
-   "mod": "live",
-   "name": "liveState"
-  },
-  {
-   "mod": "live",
-   "name": "usd"
-  },
-  {
-   "mod": "live",
-   "name": "COVERED_PLAN"
-  },
-  {
-   "mod": "live",
-   "name": "coveredTip"
-  },
-  {
-   "mod": "live",
-   "name": "coveredCost"
-  },
-  {
-   "mod": "live",
-   "name": "ownerBadge"
-  },
-  {
-   "mod": "live",
-   "name": "sidChip"
-  },
-  {
-   "mod": "live",
-   "name": "profileOf"
-  },
-  {
-   "mod": "live",
-   "name": "lvRow"
-  },
-  {
-   "mod": "live",
-   "name": "sortLiveRows"
-  },
-  {
-   "mod": "live",
-   "name": "lvHeadHtml"
-  },
-  {
-   "mod": "live",
-   "name": "orderLiveRows"
-  },
-  {
-   "mod": "live",
-   "name": "installLiveSort"
-  },
-  {
-   "mod": "live",
-   "name": "piLiveRows"
-  },
-  {
-   "mod": "live",
-   "name": "agentLiveRows"
-  },
-  {
-   "mod": "live",
-   "name": "renderLive"
-  },
-  {
-   "mod": "charts",
-   "name": "GAUGE_PREV"
-  },
-  {
-   "mod": "charts",
-   "name": "arcGauge"
-  },
-  {
-   "mod": "charts",
-   "name": "radialRing"
-  },
-  {
-   "mod": "charts",
-   "name": "sparkSvg"
-  },
-  {
-   "mod": "charts",
-   "name": "loeIcon"
-  },
-  {
-   "mod": "live",
-   "name": "mergeDelegations"
-  },
-  {
-   "mod": "live",
-   "name": "HOME_HOURS"
-  },
-  {
-   "mod": "live",
-   "name": "homeSeries"
-  },
-  {
-   "mod": "live",
-   "name": "renderHomeSeries"
-  },
-  {
-   "mod": "main",
-   "name": "buildAll"
-  },
-  {
-   "mod": "views",
-   "name": "FKIND"
-  },
-  {
-   "mod": "views",
-   "name": "installKindCSS"
-  },
-  {
-   "mod": "views",
-   "name": "fk"
-  },
-  {
-   "mod": "views",
-   "name": "FAILTRACK"
-  },
-  {
-   "mod": "views",
-   "name": "rateColor"
-  },
-  {
-   "mod": "views",
-   "name": "renderDeleg"
-  },
-  {
-   "mod": "views",
-   "name": "renderHealth"
-  },
-  {
-   "mod": "views",
-   "name": "STALE_LABELS"
-  },
-  {
-   "mod": "views",
-   "name": "renderStalePolicy"
-  },
-  {
-   "mod": "views",
-   "name": "renderLifecycle"
-  },
-  {
-   "mod": "views",
-   "name": "OUTCOME_ABNORMAL"
-  },
-  {
-   "mod": "views",
-   "name": "OUTCOME_LABELS"
-  },
-  {
-   "mod": "views",
-   "name": "renderOutcomes"
-  },
-  {
-   "mod": "views",
-   "name": "renderToolReliability"
-  },
-  {
-   "mod": "views",
-   "name": "renderHealthSummary"
-  },
-  {
-   "mod": "views",
-   "name": "failMsgClean"
-  },
-  {
-   "mod": "views",
-   "name": "HTTP_WORDS"
-  },
-  {
-   "mod": "views",
-   "name": "failMsgHuman"
-  },
-  {
-   "mod": "views",
-   "name": "groupFailures"
-  },
-  {
-   "mod": "views",
-   "name": "failKind"
-  },
-  {
-   "mod": "views",
-   "name": "renderFailures"
-  },
-  {
-   "mod": "charts",
-   "name": "olBar"
-  },
-  {
-   "mod": "views",
-   "name": "GB"
-  },
-  {
-   "mod": "views",
-   "name": "OL_SEEN"
-  },
-  {
-   "mod": "views",
-   "name": "OL_HIST"
-  },
-  {
-   "mod": "views",
-   "name": "OL_HIST_CAP"
-  },
-  {
-   "mod": "views",
-   "name": "olIdle"
-  },
-  {
-   "mod": "views",
-   "name": "olTrack"
-  },
-  {
-   "mod": "views",
-   "name": "OL_PRESSURE"
-  },
-  {
-   "mod": "views",
-   "name": "olPressureTick"
-  },
-  {
-   "mod": "views",
-   "name": "renderOllama"
-  },
-  {
-   "mod": "flow",
-   "name": "FLOWROWS"
-  },
-  {
-   "mod": "flow",
-   "name": "flowDepth"
-  },
-  {
-   "mod": "flow",
-   "name": "flowData"
-  },
-  {
-   "mod": "flow",
-   "name": "flowFlatten"
-  },
-  {
-   "mod": "palette",
-   "name": "TOOL_FAM"
-  },
-  {
-   "mod": "palette",
-   "name": "toolFam"
-  },
-  {
-   "mod": "palette",
-   "name": "TOOLCOLORS"
-  },
-  {
-   "mod": "palette",
-   "name": "TOOL_ROSTER"
-  },
-  {
-   "mod": "palette",
-   "name": "allToolNames"
-  },
-  {
-   "mod": "palette",
-   "name": "buildToolColors"
-  },
-  {
-   "mod": "palette",
-   "name": "toolColor"
-  },
-  {
-   "mod": "flow",
-   "name": "flowSessions"
-  },
-  {
-   "mod": "flow",
-   "name": "flowColor"
-  },
-  {
-   "mod": "flow",
-   "name": "renderFlow"
-  },
-  {
-   "mod": "flow",
-   "name": "flowControls"
-  },
-  {
-   "mod": "views",
-   "name": "SRC_BADGE"
-  },
-  {
-   "mod": "views",
-   "name": "sesstreeCollapsed"
-  },
-  {
-   "mod": "views",
-   "name": "sesstreeNode"
-  },
-  {
-   "mod": "views",
-   "name": "renderSessionsTree"
-  },
-  {
-   "mod": "charts",
-   "name": "ctxSpark"
-  },
-  {
-   "mod": "views",
-   "name": "renderContext"
-  },
-  {
-   "mod": "views",
-   "name": "installSesstree"
-  },
-  {
-   "mod": "views",
-   "name": "renderHeatmap"
-  },
-  {
-   "mod": "views",
-   "name": "tblCsv"
-  },
-  {
-   "mod": "views",
-   "name": "tableToRows"
-  },
-  {
-   "mod": "views",
-   "name": "csvFilename"
-  },
-  {
-   "mod": "views",
-   "name": "exportTableCsv"
-  },
-  {
-   "mod": "views",
-   "name": "priceFreshness"
-  },
-  {
-   "mod": "palette",
-   "name": "slugOf"
-  },
-  {
-   "mod": "palette",
-   "name": "AGE_CUTS"
-  },
-  {
-   "mod": "palette",
-   "name": "buildCuts"
-  },
-  {
-   "mod": "palette",
-   "name": "FEEDER"
-  },
-  {
-   "mod": "table",
-   "name": "DENSITY_KEY"
-  },
-  {
-   "mod": "table",
-   "name": "TABLE_SORT"
-  },
-  {
-   "mod": "table",
-   "name": "getDensity"
-  },
-  {
-   "mod": "table",
-   "name": "applyDensity"
-  },
-  {
-   "mod": "table",
-   "name": "setDensity"
-  },
-  {
-   "mod": "table",
-   "name": "NUM_RE"
-  },
-  {
-   "mod": "table",
-   "name": "MULT"
-  },
-  {
-   "mod": "table",
-   "name": "parseNum"
-  },
-  {
-   "mod": "table",
-   "name": "sortValues"
-  },
-  {
-   "mod": "table",
-   "name": "cellValue"
-  },
-  {
-   "mod": "table",
-   "name": "isRightAligned"
-  },
-  {
-   "mod": "table",
-   "name": "headerAndRows"
-  },
-  {
-   "mod": "table",
-   "name": "densityBar"
-  },
-  {
-   "mod": "table",
-   "name": "sortGlyph"
-  },
-  {
-   "mod": "table",
-   "name": "applySort"
-  },
-  {
-   "mod": "table",
-   "name": "sortBy"
-  },
-  {
-   "mod": "table",
-   "name": "enhanceTable"
-  },
-  {
-   "mod": "router",
-   "name": "PROJECT_FILTER"
-  },
-  {
-   "mod": "router",
-   "name": "PROVIDER_FILTER"
-  },
-  {
-   "mod": "router",
-   "name": "MODEL_FILTER"
-  },
-  {
-   "mod": "router",
-   "name": "VIEW_PARAMS"
-  },
-  {
-   "mod": "router",
-   "name": "setHash"
-  },
-  {
-   "mod": "router",
-   "name": "VIEW_ALIASES"
-  },
-  {
-   "mod": "router",
-   "name": "viewFromHash"
-  },
-  {
-   "mod": "router",
-   "name": "projectFromHash"
-  },
-  {
-   "mod": "router",
-   "name": "filterFromHash"
-  },
-  {
-   "mod": "router",
-   "name": "setCrossFilter"
-  },
-  {
-   "mod": "router",
-   "name": "clearCrossFilters"
-  },
-  {
-   "mod": "router",
-   "name": "setFiltersFromHash"
-  },
-  {
-   "mod": "router",
-   "name": "POWER"
-  },
-  {
-   "mod": "router",
-   "name": "SET_DEFAULTS"
-  },
-  {
-   "mod": "router",
-   "name": "setState"
-  },
-  {
-   "mod": "charts",
-   "name": "usdPerSec"
-  },
-  {
-   "mod": "charts",
-   "name": "outPer1M"
-  },
-  {
-   "mod": "router",
-   "name": "setRead"
-  },
-  {
-   "mod": "router",
-   "name": "setWrite"
-  },
-  {
-   "mod": "router",
-   "name": "setInvalid"
-  },
-  {
-   "mod": "router",
-   "name": "renderSetDeriv"
-  },
-  {
-   "mod": "router",
-   "name": "renderSetFacts"
-  },
-  {
-   "mod": "router",
-   "name": "setMsg"
-  },
-  {
-   "mod": "router",
-   "name": "renderSettings"
-  },
-  {
-   "mod": "router",
-   "name": "setColorSwatch"
-  },
-  {
-   "mod": "router",
-   "name": "renderSetColors"
-  },
-  {
-   "mod": "router",
-   "name": "setColorsInstall"
-  },
-  {
-   "mod": "router",
-   "name": "setLogoRow"
-  },
-  {
-   "mod": "router",
-   "name": "renderSetLogos"
-  },
-  {
-   "mod": "router",
-   "name": "setLogosInstall"
-  },
-  {
-   "mod": "router",
-   "name": "loadSettings"
-  },
-  {
-   "mod": "router",
-   "name": "saveSettings"
-  },
-  {
-   "mod": "router",
-   "name": "INTERVAL_DEFAULTS"
-  },
-  {
-   "mod": "router",
-   "name": "intervalsRead"
-  },
-  {
-   "mod": "router",
-   "name": "intervalsWrite"
-  },
-  {
-   "mod": "router",
-   "name": "intervalsInvalid"
-  },
-  {
-   "mod": "router",
-   "name": "intervalsMsg"
-  },
-  {
-   "mod": "router",
-   "name": "renderIntervals"
-  },
-  {
-   "mod": "router",
-   "name": "applyIntervals"
-  },
-  {
-   "mod": "router",
-   "name": "saveIntervals"
-  },
-  {
-   "mod": "router",
-   "name": "intervalsInstall"
-  },
-  {
-   "mod": "router",
-   "name": "settingsInstall"
-  },
-  {
-   "mod": "router",
-   "name": "setCrumb"
-  },
-  {
-   "mod": "router",
-   "name": "NAV_ICONS"
-  },
-  {
-   "mod": "router",
-   "name": "NAV_GROUPS"
-  },
-  {
-   "mod": "router",
-   "name": "NAV_FALLBACK_GROUP"
-  },
-  {
-   "mod": "router",
-   "name": "navViews"
-  },
-  {
-   "mod": "router",
-   "name": "navGroups"
-  },
-  {
-   "mod": "router",
-   "name": "renderNav"
-  },
-  {
-   "mod": "router",
-   "name": "navSync"
-  },
-  {
-   "mod": "router",
-   "name": "navOpen"
-  },
-  {
-   "mod": "router",
-   "name": "isOffCanvas"
-  },
-  {
-   "mod": "router",
-   "name": "navFocusables"
-  },
-  {
-   "mod": "router",
-   "name": "navTrap"
-  },
-  {
-   "mod": "router",
-   "name": "navSetOpen"
-  },
-  {
-   "mod": "router",
-   "name": "NAVKEY"
-  },
-  {
-   "mod": "router",
-   "name": "navCollapsed"
-  },
-  {
-   "mod": "router",
-   "name": "navApplyCollapsed"
-  },
-  {
-   "mod": "router",
-   "name": "navSetCollapsed"
-  },
-  {
-   "mod": "drawer",
-   "name": "LOGS"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgSel"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgWindow"
-  },
-  {
-   "mod": "drawer",
-   "name": "loadLogs"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgProfile"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgMatch"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgChips"
-  },
-  {
-   "mod": "drawer",
-   "name": "lgActiveLabel"
-  },
-  {
-   "mod": "drawer",
-   "name": "LG_FACET_NAMES"
-  },
-  {
-   "mod": "drawer",
-   "name": "renderLgActive"
-  },
-  {
-   "mod": "drawer",
-   "name": "renderLogs"
-  },
-  {
-   "mod": "drawer",
-   "name": "logsInstall"
-  },
-  {
-   "mod": "router",
-   "name": "navInstall"
-  },
-  {
-   "mod": "router",
-   "name": "views"
-  },
-  {
-   "mod": "router",
-   "name": "pickView"
-  },
-  {
-   "mod": "main",
-   "name": "installAll"
-  },
-  {
-   "mod": "router",
-   "name": "PV_OFF"
-  },
-  {
-   "mod": "router",
-   "name": "pvKey"
-  },
-  {
-   "mod": "router",
-   "name": "pvOff"
-  },
-  {
-   "mod": "router",
-   "name": "pvSet"
-  },
-  {
-   "mod": "router",
-   "name": "pvOnProfiles"
-  },
-  {
-   "mod": "router",
-   "name": "PV_HUE"
-  },
-  {
-   "mod": "router",
-   "name": "pvHueKey"
-  },
-  {
-   "mod": "router",
-   "name": "pvHueOverride"
-  },
-  {
-   "mod": "router",
-   "name": "pvHueSet"
-  },
-  {
-   "mod": "router",
-   "name": "profileHue"
-  },
-  {
-   "mod": "router",
-   "name": "PROFILE_LOGO_MAX_BYTES"
-  },
-  {
-   "mod": "router",
-   "name": "PV_LOGO"
-  },
-  {
-   "mod": "router",
-   "name": "pvLogoKey"
-  },
-  {
-   "mod": "router",
-   "name": "profileLogo"
-  },
-  {
-   "mod": "router",
-   "name": "profileLogoSet"
-  },
-  {
-   "mod": "router",
-   "name": "profileIconHtml"
-  },
-  {
-   "mod": "router",
-   "name": "PV_ALL"
-  },
-  {
-   "mod": "router",
-   "name": "pvFilter"
-  },
-  {
-   "mod": "router",
-   "name": "pvSyncCurrent"
-  },
-  {
-   "mod": "router",
-   "name": "pvToggle"
-  },
-  {
-   "mod": "router",
-   "name": "fbKindGet"
-  },
-  {
-   "mod": "router",
-   "name": "fbProfileKind"
-  },
-  {
-   "mod": "router",
-   "name": "FB_GROUPS"
-  },
-  {
-   "mod": "router",
-   "name": "fbSplit"
-  },
-  {
-   "mod": "router",
-   "name": "fbChipHtml"
-  },
-  {
-   "mod": "router",
-   "name": "fbKindsHtml"
-  },
-  {
-   "mod": "router",
-   "name": "FB_ROVE"
-  },
-  {
-   "mod": "router",
-   "name": "fbRoveApply"
-  },
-  {
-   "mod": "router",
-   "name": "fbRoveSet"
-  },
-  {
-   "mod": "router",
-   "name": "fbRoveKey"
-  },
-  {
-   "mod": "router",
-   "name": "tabs"
-  },
-  {
-   "mod": "router",
-   "name": "fbKindSet"
-  },
-  {
-   "mod": "router",
-   "name": "fbDialogOpen"
-  },
-  {
-   "mod": "router",
-   "name": "fbGroupList"
-  },
-  {
-   "mod": "router",
-   "name": "fbDialogHtml"
-  },
-  {
-   "mod": "router",
-   "name": "fbDialogRender"
-  },
-  {
-   "mod": "router",
-   "name": "fbDialogClosed"
-  },
-  {
-   "mod": "router",
-   "name": "fbDialogToggle"
-  },
-  {
-   "mod": "router",
-   "name": "fbSetMany"
-  },
-  {
-   "mod": "router",
-   "name": "fbOtherOverlayOpen"
-  },
-  {
-   "mod": "router",
-   "name": "fbPopOpen"
-  },
-  {
-   "mod": "router",
-   "name": "fbPopToggle"
-  },
-  {
-   "mod": "router",
-   "name": "fbInstall"
-  },
-  {
-   "mod": "router",
-   "name": "fbInstallDialog"
-  },
-  {
-   "mod": "router",
-   "name": "pvMenu"
-  },
-  {
-   "mod": "router",
-   "name": "exitHourRange"
-  },
-  {
-   "mod": "router",
-   "name": "setViewParam"
-  },
-  {
-   "mod": "router",
-   "name": "hydrateViewParams"
-  },
-  {
-   "mod": "router",
-   "name": "triggerRefresh"
-  },
-  {
-   "mod": "main",
-   "name": "saved"
-  },
-  {
-   "mod": "main",
-   "name": "bootDone"
-  },
-  {
-   "mod": "live",
-   "name": "doRefresh"
-  },
-  {
-   "mod": "live",
-   "name": "LIVE_MS_DEFAULT"
-  },
-  {
-   "mod": "live",
-   "name": "LIVE_MS"
-  },
-  {
-   "mod": "live",
-   "name": "liveBusy"
-  },
-  {
-   "mod": "live",
-   "name": "soundOn"
-  },
-  {
-   "mod": "live",
-   "name": "audioCtx"
-  },
-  {
-   "mod": "live",
-   "name": "soundBaseline"
-  },
-  {
-   "mod": "live",
-   "name": "seenEnded"
-  },
-  {
-   "mod": "live",
-   "name": "seenDeleg"
-  },
-  {
-   "mod": "live",
-   "name": "soundDebounceUntil"
-  },
-  {
-   "mod": "live",
-   "name": "ensureAudioCtx"
-  },
-  {
-   "mod": "live",
-   "name": "playTone"
-  },
-  {
-   "mod": "live",
-   "name": "pendingKind"
-  },
-  {
-   "mod": "live",
-   "name": "soundTimerPending"
-  },
-  {
-   "mod": "live",
-   "name": "scheduleTone"
-  },
-  {
-   "mod": "live",
-   "name": "checkCompletions"
-  },
-  {
-   "mod": "live",
-   "name": "audioUnlocked"
-  },
-  {
-   "mod": "live",
-   "name": "unlockAudio"
-  },
-  {
-   "mod": "live",
-   "name": "armAudioUnlock"
-  },
-  {
-   "mod": "live",
-   "name": "checkCriticalAlerts"
-  },
-  {
-   "mod": "live",
-   "name": "soundToggleInstall"
-  },
-  {
-   "mod": "drawer",
-   "name": "dFilter"
-  },
-  {
-   "mod": "drawer",
-   "name": "dTrap"
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerEvents"
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerSync"
-  },
-  {
-   "mod": "drawer",
-   "name": "drawerOpen"
-  },
-  {
-   "mod": "drawer",
-   "name": "installDrawerDrag"
-  },
-  {
-   "mod": "drawer",
-   "name": "installDrawer"
-  },
-  {
-   "mod": "live",
-   "name": "pollLive"
-  },
-  {
-   "mod": "drawer",
-   "name": "tOpen"
-  },
-  {
-   "mod": "drawer",
-   "name": "TCACHE"
-  },
-  {
-   "mod": "drawer",
-   "name": "tEscape"
-  },
-  {
-   "mod": "drawer",
-   "name": "tRenderContent"
-  },
-  {
-   "mod": "drawer",
-   "name": "tRenderMsg"
-  },
-  {
-   "mod": "drawer",
-   "name": "tOpenModal"
-  },
-  {
-   "mod": "drawer",
-   "name": "tCloseModal"
-  },
-  {
-   "mod": "drawer",
-   "name": "tKeydown"
-  },
-  {
-   "mod": "drawer",
-   "name": "installTranscriptModal"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpen"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfRowsHtml"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfRender"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpenPalette"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfClosePalette"
-  },
-  {
-   "mod": "drawer",
-   "name": "sfOpenSelected"
-  },
-  {
-   "mod": "drawer",
-   "name": "installSessionFinder"
-  },
-  {
-   "mod": "drawer",
-   "name": "LN_LANES"
-  },
-  {
-   "mod": "drawer",
-   "name": "LN_LANE_LABELS"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnOpen"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnOpenAt"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnOpenModal"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnRenderTimeline"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnCloseModal"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnKeydown"
-  },
-  {
-   "mod": "drawer",
-   "name": "lnColorOf"
-  },
-  {
-   "mod": "drawer",
-   "name": "installTimelineModal"
-  },
-  {
-   "mod": "live",
-   "name": "scheduleLivePoll"
-  },
-  {
-   "mod": "live",
-   "name": "liveTimer"
-  },
-  {
-   "mod": "live",
-   "name": "liveUpdatedAt"
-  },
-  {
-   "mod": "live",
-   "name": "tickLiveStamp"
-  },
-  {
-   "mod": "live",
-   "name": "liveStampTimer"
-  },
-  {
-   "mod": "live",
-   "name": "scheduleLiveStampTick"
-  },
-  {
-   "mod": "live",
-   "name": "REBUILD_MS"
-  },
-  {
-   "mod": "live",
-   "name": "scheduleRebuild"
-  },
-  {
-   "mod": "live",
-   "name": "rebuildTimer"
-  }
- ]
+  "prelude": "\n",
+  "order": [
+    {
+      "mod": "main",
+      "name": "DATA"
+    },
+    {
+      "mod": "main",
+      "name": "COSTS_DATA"
+    },
+    {
+      "mod": "main",
+      "name": "RANKINGS_DATA"
+    },
+    {
+      "mod": "main",
+      "name": "LOCAL_HOSTS"
+    },
+    {
+      "mod": "main",
+      "name": "SCHEMA_VERSION"
+    },
+    {
+      "mod": "views",
+      "name": "schemaProblem"
+    },
+    {
+      "mod": "views",
+      "name": "showSchemaError"
+    },
+    {
+      "mod": "views",
+      "name": "flash"
+    },
+    {
+      "mod": "views",
+      "name": "renderResolution"
+    },
+    {
+      "mod": "main",
+      "name": "css"
+    },
+    {
+      "mod": "palette",
+      "name": "AC"
+    },
+    {
+      "mod": "palette",
+      "name": "readTheme"
+    },
+    {
+      "mod": "palette",
+      "name": "PAL"
+    },
+    {
+      "mod": "palette",
+      "name": "ICON_SVG"
+    },
+    {
+      "mod": "palette",
+      "name": "icon"
+    },
+    {
+      "mod": "palette",
+      "name": "fade"
+    },
+    {
+      "mod": "palette",
+      "name": "FAMILY"
+    },
+    {
+      "mod": "palette",
+      "name": "FAM_OTHER"
+    },
+    {
+      "mod": "palette",
+      "name": "hashHue"
+    },
+    {
+      "mod": "palette",
+      "name": "famOf"
+    },
+    {
+      "mod": "palette",
+      "name": "FAM_HUE_SPREAD"
+    },
+    {
+      "mod": "palette",
+      "name": "buildColors"
+    },
+    {
+      "mod": "palette",
+      "name": "allModelNames"
+    },
+    {
+      "mod": "palette",
+      "name": "COLORS"
+    },
+    {
+      "mod": "palette",
+      "name": "colorOf"
+    },
+    {
+      "mod": "palette",
+      "name": "fmt"
+    },
+    {
+      "mod": "palette",
+      "name": "fmtB"
+    },
+    {
+      "mod": "palette",
+      "name": "fmtRate"
+    },
+    {
+      "mod": "palette",
+      "name": "bwPrev"
+    },
+    {
+      "mod": "palette",
+      "name": "money"
+    },
+    {
+      "mod": "palette",
+      "name": "short"
+    },
+    {
+      "mod": "palette",
+      "name": "esc"
+    },
+    {
+      "mod": "palette",
+      "name": "$"
+    },
+    {
+      "mod": "palette",
+      "name": "emptyHTML"
+    },
+    {
+      "mod": "charts",
+      "name": "HAS_CHART"
+    },
+    {
+      "mod": "charts",
+      "name": "CHART_MISSING_NOTE"
+    },
+    {
+      "mod": "charts",
+      "name": "charts"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_TIER_HUE"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtHue"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_SVG"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_LOGO"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtLogo"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtModel"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_AUTH"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtAuthBadge"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtStatus"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtAgo"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtTierChip"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtFlowStrip"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtChart"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtMatrix"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtWorkers"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtAuthTable"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtDecisions"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_PAGES"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_PAGE_KEY"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtPageGet"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtPage"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtPageSet"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_FOLD_KEY"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtFolded"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtSaveFold"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_OPEN_KEY"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtOpened"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtSaveOpen"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtSection"
+    },
+    {
+      "mod": "routerview",
+      "name": "routerStat"
+    },
+    {
+      "mod": "routerview",
+      "name": "renderRouterView"
+    },
+    {
+      "mod": "routerview",
+      "name": "helpOpen"
+    },
+    {
+      "mod": "routerview",
+      "name": "helpInstalled"
+    },
+    {
+      "mod": "routerview",
+      "name": "helpKeydown"
+    },
+    {
+      "mod": "routerview",
+      "name": "helpSetOpen"
+    },
+    {
+      "mod": "routerview",
+      "name": "installHelp"
+    },
+    {
+      "mod": "quotaview",
+      "name": "QV_PAGES"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAttention"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvPct"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvLevel"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvCalls"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvIsFree"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvBar"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvWindow"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctLevel"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctState"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctWhy"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctExpiry"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctOrigin"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAcctUsage"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAccount"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvAccounts"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvBalance"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvHead"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvProviders"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvBalances"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvNotes"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvPageGet"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvPageSet"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvFolded"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvSaveFold"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvKpis"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvSection"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvStat"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvFleet"
+    },
+    {
+      "mod": "quotaview",
+      "name": "qvUncached"
+    },
+    {
+      "mod": "quotaview",
+      "name": "renderQuotaView"
+    },
+    {
+      "mod": "quotaview",
+      "name": "renderLifeQuota"
+    },
+    {
+      "mod": "router",
+      "name": "view"
+    },
+    {
+      "mod": "router",
+      "name": "HOUR_RANGE"
+    },
+    {
+      "mod": "charts",
+      "name": "CHART_ANIM_DONE"
+    },
+    {
+      "mod": "charts",
+      "name": "noLeg"
+    },
+    {
+      "mod": "charts",
+      "name": "bounds"
+    },
+    {
+      "mod": "router",
+      "name": "setRange"
+    },
+    {
+      "mod": "router",
+      "name": "setHourRange"
+    },
+    {
+      "mod": "router",
+      "name": "hourRowsFor"
+    },
+    {
+      "mod": "router",
+      "name": "updateRangeToggleLabel"
+    },
+    {
+      "mod": "router",
+      "name": "presets"
+    },
+    {
+      "mod": "router",
+      "name": "RANGE_HOURS"
+    },
+    {
+      "mod": "router",
+      "name": "rangeDefs"
+    },
+    {
+      "mod": "router",
+      "name": "rangeKey"
+    },
+    {
+      "mod": "router",
+      "name": "rangeParam"
+    },
+    {
+      "mod": "router",
+      "name": "applyRangeParam"
+    },
+    {
+      "mod": "router",
+      "name": "RANGE_HYDRATED"
+    },
+    {
+      "mod": "router",
+      "name": "RANGE_PICK"
+    },
+    {
+      "mod": "router",
+      "name": "toggleRangePop"
+    },
+    {
+      "mod": "palette",
+      "name": "labelColor"
+    },
+    {
+      "mod": "palette",
+      "name": "LABEL_FONT"
+    },
+    {
+      "mod": "charts",
+      "name": "tintTicks"
+    },
+    {
+      "mod": "charts",
+      "name": "mk"
+    },
+    {
+      "mod": "charts",
+      "name": "seriesStats"
+    },
+    {
+      "mod": "charts",
+      "name": "legendTable"
+    },
+    {
+      "mod": "charts",
+      "name": "agg"
+    },
+    {
+      "mod": "views",
+      "name": "PROV"
+    },
+    {
+      "mod": "views",
+      "name": "LOCAL_RE"
+    },
+    {
+      "mod": "views",
+      "name": "CLOUD_SUFFIX"
+    },
+    {
+      "mod": "views",
+      "name": "provOf"
+    },
+    {
+      "mod": "views",
+      "name": "provBadge"
+    },
+    {
+      "mod": "views",
+      "name": "MODEL_PROV"
+    },
+    {
+      "mod": "views",
+      "name": "buildModelProv"
+    },
+    {
+      "mod": "views",
+      "name": "provIcon"
+    },
+    {
+      "mod": "views",
+      "name": "provLogoSvg"
+    },
+    {
+      "mod": "palette",
+      "name": "ic"
+    },
+    {
+      "mod": "views",
+      "name": "resendOf"
+    },
+    {
+      "mod": "views",
+      "name": "renderBandwidthPanel"
+    },
+    {
+      "mod": "palette",
+      "name": "costCell"
+    },
+    {
+      "mod": "views",
+      "name": "unpricedModels"
+    },
+    {
+      "mod": "views",
+      "name": "NOTICE_MS"
+    },
+    {
+      "mod": "views",
+      "name": "NOTICE_MAX"
+    },
+    {
+      "mod": "views",
+      "name": "NOTICES"
+    },
+    {
+      "mod": "views",
+      "name": "noticeKey"
+    },
+    {
+      "mod": "views",
+      "name": "noticeGet"
+    },
+    {
+      "mod": "views",
+      "name": "noticeSet"
+    },
+    {
+      "mod": "views",
+      "name": "noticeEl"
+    },
+    {
+      "mod": "views",
+      "name": "noticeClose"
+    },
+    {
+      "mod": "views",
+      "name": "noticeArm"
+    },
+    {
+      "mod": "views",
+      "name": "noticePlace"
+    },
+    {
+      "mod": "views",
+      "name": "noticeShow"
+    },
+    {
+      "mod": "views",
+      "name": "noticeChip"
+    },
+    {
+      "mod": "views",
+      "name": "notify"
+    },
+    {
+      "mod": "views",
+      "name": "clearNotice"
+    },
+    {
+      "mod": "views",
+      "name": "renderUnpriced"
+    },
+    {
+      "mod": "views",
+      "name": "RESEND_MIN"
+    },
+    {
+      "mod": "palette",
+      "name": "escA"
+    },
+    {
+      "mod": "views",
+      "name": "renderResend"
+    },
+    {
+      "mod": "views",
+      "name": "ALERT_ICON"
+    },
+    {
+      "mod": "views",
+      "name": "ALERT_COLOR"
+    },
+    {
+      "mod": "views",
+      "name": "renderAlerts"
+    },
+    {
+      "mod": "drawer",
+      "name": "SF_FILTER_KEYS"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfParseQuery"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfMatch"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfSearch"
+    },
+    {
+      "mod": "views",
+      "name": "render"
+    },
+    {
+      "mod": "views",
+      "name": "PRICE_SRC"
+    },
+    {
+      "mod": "views",
+      "name": "PROV_META"
+    },
+    {
+      "mod": "views",
+      "name": "priceState"
+    },
+    {
+      "mod": "views",
+      "name": "priceTouched"
+    },
+    {
+      "mod": "views",
+      "name": "renderPrices"
+    },
+    {
+      "mod": "views",
+      "name": "pricesShell"
+    },
+    {
+      "mod": "views",
+      "name": "priceTabsRow"
+    },
+    {
+      "mod": "views",
+      "name": "renderPriceTable"
+    },
+    {
+      "mod": "views",
+      "name": "priceWhatIfShell"
+    },
+    {
+      "mod": "views",
+      "name": "whatIfInit"
+    },
+    {
+      "mod": "views",
+      "name": "priceWhatIfInstall"
+    },
+    {
+      "mod": "views",
+      "name": "wiParseTokens"
+    },
+    {
+      "mod": "views",
+      "name": "wiMoney"
+    },
+    {
+      "mod": "views",
+      "name": "priceWhatIfCalc"
+    },
+    {
+      "mod": "views",
+      "name": "RANKINGS_STATE"
+    },
+    {
+      "mod": "views",
+      "name": "renderRankings"
+    },
+    {
+      "mod": "views",
+      "name": "renderOrchestration"
+    },
+    {
+      "mod": "views",
+      "name": "KANBAN_BOARD"
+    },
+    {
+      "mod": "views",
+      "name": "renderKanban"
+    },
+    {
+      "mod": "views",
+      "name": "syncAppBar"
+    },
+    {
+      "mod": "views",
+      "name": "initAppBar"
+    },
+    {
+      "mod": "views",
+      "name": "priceRow"
+    },
+    {
+      "mod": "views",
+      "name": "fmtN"
+    },
+    {
+      "mod": "views",
+      "name": "fmtMoney"
+    },
+    {
+      "mod": "views",
+      "name": "installPriceControls"
+    },
+    {
+      "mod": "palette",
+      "name": "pick"
+    },
+    {
+      "mod": "palette",
+      "name": "CAT"
+    },
+    {
+      "mod": "palette",
+      "name": "catOf"
+    },
+    {
+      "mod": "palette",
+      "name": "ago"
+    },
+    {
+      "mod": "palette",
+      "name": "CADENCE"
+    },
+    {
+      "mod": "palette",
+      "name": "STALE_FACTOR"
+    },
+    {
+      "mod": "palette",
+      "name": "freshness"
+    },
+    {
+      "mod": "palette",
+      "name": "stampFreshness"
+    },
+    {
+      "mod": "palette",
+      "name": "FOCUS_SEL"
+    },
+    {
+      "mod": "palette",
+      "name": "focusables"
+    },
+    {
+      "mod": "palette",
+      "name": "setAria"
+    },
+    {
+      "mod": "palette",
+      "name": "trapTab"
+    },
+    {
+      "mod": "palette",
+      "name": "trapFocus"
+    },
+    {
+      "mod": "charts",
+      "name": "bwRow"
+    },
+    {
+      "mod": "views",
+      "name": "XF_SEEN"
+    },
+    {
+      "mod": "views",
+      "name": "renderXfer"
+    },
+    {
+      "mod": "views",
+      "name": "renderHome"
+    },
+    {
+      "mod": "views",
+      "name": "liveModelsOpen"
+    },
+    {
+      "mod": "views",
+      "name": "modelsOf"
+    },
+    {
+      "mod": "views",
+      "name": "modelsBadge"
+    },
+    {
+      "mod": "views",
+      "name": "lmMetric"
+    },
+    {
+      "mod": "views",
+      "name": "LM_METRIC"
+    },
+    {
+      "mod": "views",
+      "name": "modelsShare"
+    },
+    {
+      "mod": "views",
+      "name": "modelsPanel"
+    },
+    {
+      "mod": "views",
+      "name": "renderConcurrency"
+    },
+    {
+      "mod": "views",
+      "name": "_unattrPattern"
+    },
+    {
+      "mod": "views",
+      "name": "unattrPattern"
+    },
+    {
+      "mod": "views",
+      "name": "UNATTR_LABEL"
+    },
+    {
+      "mod": "views",
+      "name": "renderLatency"
+    },
+    {
+      "mod": "views",
+      "name": "renderAttribution"
+    },
+    {
+      "mod": "views",
+      "name": "REPO_EXPANDED"
+    },
+    {
+      "mod": "views",
+      "name": "renderRepoBranch"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjects"
+    },
+    {
+      "mod": "views",
+      "name": "PROJ_MATRIX_MAX_COLS"
+    },
+    {
+      "mod": "charts",
+      "name": "PROJ_WEIGHT"
+    },
+    {
+      "mod": "charts",
+      "name": "PROJ_WEIGHT_LABELS"
+    },
+    {
+      "mod": "charts",
+      "name": "weightValue"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjectMatrix"
+    },
+    {
+      "mod": "views",
+      "name": "pdFocusReturn"
+    },
+    {
+      "mod": "views",
+      "name": "pdOpenState"
+    },
+    {
+      "mod": "views",
+      "name": "pdOpen"
+    },
+    {
+      "mod": "views",
+      "name": "pdClose"
+    },
+    {
+      "mod": "views",
+      "name": "pdKeydown"
+    },
+    {
+      "mod": "views",
+      "name": "installProjectDrilldown"
+    },
+    {
+      "mod": "views",
+      "name": "installProjWeight"
+    },
+    {
+      "mod": "views",
+      "name": "PROJ_FILTER_VIEWS"
+    },
+    {
+      "mod": "views",
+      "name": "populateProjFilterSelect"
+    },
+    {
+      "mod": "views",
+      "name": "populateRowFilterSelects"
+    },
+    {
+      "mod": "views",
+      "name": "syncProjFilterUI"
+    },
+    {
+      "mod": "views",
+      "name": "installProjFilter"
+    },
+    {
+      "mod": "views",
+      "name": "FB_FACETS"
+    },
+    {
+      "mod": "views",
+      "name": "comboState"
+    },
+    {
+      "mod": "views",
+      "name": "comboCounts"
+    },
+    {
+      "mod": "views",
+      "name": "comboOptions"
+    },
+    {
+      "mod": "views",
+      "name": "comboHits"
+    },
+    {
+      "mod": "views",
+      "name": "comboMark"
+    },
+    {
+      "mod": "views",
+      "name": "renderComboList"
+    },
+    {
+      "mod": "views",
+      "name": "closeCombo"
+    },
+    {
+      "mod": "views",
+      "name": "openCombo"
+    },
+    {
+      "mod": "views",
+      "name": "pickCombo"
+    },
+    {
+      "mod": "views",
+      "name": "buildFilterCombos"
+    },
+    {
+      "mod": "views",
+      "name": "refreshFilterCombos"
+    },
+    {
+      "mod": "charts",
+      "name": "projDistNormalized"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjectDistribution"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjDistLegend"
+    },
+    {
+      "mod": "views",
+      "name": "PROJ_TREND_TOP_N"
+    },
+    {
+      "mod": "charts",
+      "name": "projTrendStacked"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjectTrend"
+    },
+    {
+      "mod": "views",
+      "name": "renderProjTrendLegend"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_DEMO"
+    },
+    {
+      "mod": "flow",
+      "name": "qtDemoOn"
+    },
+    {
+      "mod": "flow",
+      "name": "qtDemoApply"
+    },
+    {
+      "mod": "flow",
+      "name": "qtDemoWire"
+    },
+    {
+      "mod": "flow",
+      "name": "trainBall"
+    },
+    {
+      "mod": "flow",
+      "name": "qtSeed"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_CAP"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_MAX"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_MIN"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_GLYPH"
+    },
+    {
+      "mod": "flow",
+      "name": "qtGlyphKey"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_FILL"
+    },
+    {
+      "mod": "flow",
+      "name": "qtPack"
+    },
+    {
+      "mod": "flow",
+      "name": "qtFit"
+    },
+    {
+      "mod": "flow",
+      "name": "qtLayout"
+    },
+    {
+      "mod": "flow",
+      "name": "qtRelayout"
+    },
+    {
+      "mod": "flow",
+      "name": "paintBalls"
+    },
+    {
+      "mod": "flow",
+      "name": "carMeta"
+    },
+    {
+      "mod": "flow",
+      "name": "ttRow"
+    },
+    {
+      "mod": "flow",
+      "name": "carTip"
+    },
+    {
+      "mod": "flow",
+      "name": "carPop"
+    },
+    {
+      "mod": "flow",
+      "name": "qtSplash"
+    },
+    {
+      "mod": "flow",
+      "name": "QT_FLY"
+    },
+    {
+      "mod": "flow",
+      "name": "qtFly"
+    },
+    {
+      "mod": "flow",
+      "name": "paintTrain"
+    },
+    {
+      "mod": "flow",
+      "name": "qtPlace"
+    },
+    {
+      "mod": "flow",
+      "name": "qtPopClose"
+    },
+    {
+      "mod": "flow",
+      "name": "qtPopOpen"
+    },
+    {
+      "mod": "flow",
+      "name": "qtTipWire"
+    },
+    {
+      "mod": "flow",
+      "name": "renderQueue"
+    },
+    {
+      "mod": "flow",
+      "name": "renderAgents"
+    },
+    {
+      "mod": "diffdom",
+      "name": "motionReduced"
+    },
+    {
+      "mod": "diffdom",
+      "name": "FADE_MS"
+    },
+    {
+      "mod": "diffdom",
+      "name": "planDiff"
+    },
+    {
+      "mod": "diffdom",
+      "name": "invalidate"
+    },
+    {
+      "mod": "diffdom",
+      "name": "applyDiff"
+    },
+    {
+      "mod": "diffdom",
+      "name": "GHOST"
+    },
+    {
+      "mod": "diffdom",
+      "name": "EXITY"
+    },
+    {
+      "mod": "diffdom",
+      "name": "isGhost"
+    },
+    {
+      "mod": "diffdom",
+      "name": "groupsOf"
+    },
+    {
+      "mod": "diffdom",
+      "name": "cacheFor"
+    },
+    {
+      "mod": "diffdom",
+      "name": "freshNodes"
+    },
+    {
+      "mod": "diffdom",
+      "name": "_internal"
+    },
+    {
+      "mod": "live",
+      "name": "liveGroupKeyOf"
+    },
+    {
+      "mod": "live",
+      "name": "TPUT_WINDOW_S"
+    },
+    {
+      "mod": "live",
+      "name": "tputPrev"
+    },
+    {
+      "mod": "live",
+      "name": "tputRing"
+    },
+    {
+      "mod": "live",
+      "name": "sessTotals"
+    },
+    {
+      "mod": "live",
+      "name": "WORKER_TOK_HIST"
+    },
+    {
+      "mod": "live",
+      "name": "workerTokPush"
+    },
+    {
+      "mod": "live",
+      "name": "sampleThroughput"
+    },
+    {
+      "mod": "live",
+      "name": "throughputFor"
+    },
+    {
+      "mod": "live",
+      "name": "mergedField"
+    },
+    {
+      "mod": "live",
+      "name": "dedupAgentLive"
+    },
+    {
+      "mod": "live",
+      "name": "inFlight"
+    },
+    {
+      "mod": "live",
+      "name": "inProgressHtml"
+    },
+    {
+      "mod": "live",
+      "name": "statHtml"
+    },
+    {
+      "mod": "live",
+      "name": "meterStat"
+    },
+    {
+      "mod": "live",
+      "name": "liveKpis"
+    },
+    {
+      "mod": "live",
+      "name": "LKPI_SPARK"
+    },
+    {
+      "mod": "live",
+      "name": "paintSpark"
+    },
+    {
+      "mod": "live",
+      "name": "SEV_RANK"
+    },
+    {
+      "mod": "live",
+      "name": "ruleTitle"
+    },
+    {
+      "mod": "live",
+      "name": "alertsStat"
+    },
+    {
+      "mod": "live",
+      "name": "renderLiveKpis"
+    },
+    {
+      "mod": "live",
+      "name": "logoSvg"
+    },
+    {
+      "mod": "live",
+      "name": "KIND_LOGO"
+    },
+    {
+      "mod": "live",
+      "name": "kindLogo"
+    },
+    {
+      "mod": "live",
+      "name": "KIND_META"
+    },
+    {
+      "mod": "live",
+      "name": "KIND_ORDER"
+    },
+    {
+      "mod": "live",
+      "name": "kindMeta"
+    },
+    {
+      "mod": "live",
+      "name": "fleetTiles"
+    },
+    {
+      "mod": "live",
+      "name": "fleetKindCounts"
+    },
+    {
+      "mod": "live",
+      "name": "TILE_IDLE_S"
+    },
+    {
+      "mod": "live",
+      "name": "kindBadge"
+    },
+    {
+      "mod": "live",
+      "name": "LV_COLS"
+    },
+    {
+      "mod": "live",
+      "name": "lvSort"
+    },
+    {
+      "mod": "live",
+      "name": "STATE_RANK"
+    },
+    {
+      "mod": "live",
+      "name": "liveState"
+    },
+    {
+      "mod": "live",
+      "name": "usd"
+    },
+    {
+      "mod": "live",
+      "name": "COVERED_PLAN"
+    },
+    {
+      "mod": "live",
+      "name": "coveredTip"
+    },
+    {
+      "mod": "live",
+      "name": "coveredCost"
+    },
+    {
+      "mod": "live",
+      "name": "ownerBadge"
+    },
+    {
+      "mod": "live",
+      "name": "sidChip"
+    },
+    {
+      "mod": "live",
+      "name": "profileOf"
+    },
+    {
+      "mod": "live",
+      "name": "lvRow"
+    },
+    {
+      "mod": "live",
+      "name": "sortLiveRows"
+    },
+    {
+      "mod": "live",
+      "name": "lvHeadHtml"
+    },
+    {
+      "mod": "live",
+      "name": "orderLiveRows"
+    },
+    {
+      "mod": "live",
+      "name": "installLiveSort"
+    },
+    {
+      "mod": "live",
+      "name": "piLiveRows"
+    },
+    {
+      "mod": "live",
+      "name": "agentLiveRows"
+    },
+    {
+      "mod": "live",
+      "name": "renderLive"
+    },
+    {
+      "mod": "charts",
+      "name": "GAUGE_PREV"
+    },
+    {
+      "mod": "charts",
+      "name": "arcGauge"
+    },
+    {
+      "mod": "charts",
+      "name": "radialRing"
+    },
+    {
+      "mod": "charts",
+      "name": "sparkSvg"
+    },
+    {
+      "mod": "charts",
+      "name": "loeIcon"
+    },
+    {
+      "mod": "live",
+      "name": "mergeDelegations"
+    },
+    {
+      "mod": "live",
+      "name": "HOME_HOURS"
+    },
+    {
+      "mod": "live",
+      "name": "homeSeries"
+    },
+    {
+      "mod": "live",
+      "name": "renderHomeSeries"
+    },
+    {
+      "mod": "main",
+      "name": "buildAll"
+    },
+    {
+      "mod": "views",
+      "name": "FKIND"
+    },
+    {
+      "mod": "views",
+      "name": "installKindCSS"
+    },
+    {
+      "mod": "views",
+      "name": "fk"
+    },
+    {
+      "mod": "views",
+      "name": "FAILTRACK"
+    },
+    {
+      "mod": "views",
+      "name": "rateColor"
+    },
+    {
+      "mod": "views",
+      "name": "renderDeleg"
+    },
+    {
+      "mod": "views",
+      "name": "renderHealth"
+    },
+    {
+      "mod": "views",
+      "name": "STALE_LABELS"
+    },
+    {
+      "mod": "views",
+      "name": "renderStalePolicy"
+    },
+    {
+      "mod": "views",
+      "name": "renderLifecycle"
+    },
+    {
+      "mod": "views",
+      "name": "OUTCOME_ABNORMAL"
+    },
+    {
+      "mod": "views",
+      "name": "OUTCOME_LABELS"
+    },
+    {
+      "mod": "views",
+      "name": "renderOutcomes"
+    },
+    {
+      "mod": "views",
+      "name": "renderToolReliability"
+    },
+    {
+      "mod": "views",
+      "name": "renderHealthSummary"
+    },
+    {
+      "mod": "views",
+      "name": "failMsgClean"
+    },
+    {
+      "mod": "views",
+      "name": "groupFailures"
+    },
+    {
+      "mod": "views",
+      "name": "failKind"
+    },
+    {
+      "mod": "views",
+      "name": "renderFailures"
+    },
+    {
+      "mod": "charts",
+      "name": "olBar"
+    },
+    {
+      "mod": "views",
+      "name": "GB"
+    },
+    {
+      "mod": "views",
+      "name": "OL_SEEN"
+    },
+    {
+      "mod": "views",
+      "name": "OL_HIST"
+    },
+    {
+      "mod": "views",
+      "name": "OL_HIST_CAP"
+    },
+    {
+      "mod": "views",
+      "name": "olIdle"
+    },
+    {
+      "mod": "views",
+      "name": "olTrack"
+    },
+    {
+      "mod": "views",
+      "name": "OL_PRESSURE"
+    },
+    {
+      "mod": "views",
+      "name": "olPressureTick"
+    },
+    {
+      "mod": "views",
+      "name": "renderOllama"
+    },
+    {
+      "mod": "flow",
+      "name": "FLOWROWS"
+    },
+    {
+      "mod": "flow",
+      "name": "flowDepth"
+    },
+    {
+      "mod": "flow",
+      "name": "flowData"
+    },
+    {
+      "mod": "flow",
+      "name": "flowFlatten"
+    },
+    {
+      "mod": "palette",
+      "name": "TOOL_FAM"
+    },
+    {
+      "mod": "palette",
+      "name": "toolFam"
+    },
+    {
+      "mod": "palette",
+      "name": "TOOLCOLORS"
+    },
+    {
+      "mod": "palette",
+      "name": "TOOL_ROSTER"
+    },
+    {
+      "mod": "palette",
+      "name": "allToolNames"
+    },
+    {
+      "mod": "palette",
+      "name": "buildToolColors"
+    },
+    {
+      "mod": "palette",
+      "name": "toolColor"
+    },
+    {
+      "mod": "flow",
+      "name": "flowSessions"
+    },
+    {
+      "mod": "flow",
+      "name": "flowColor"
+    },
+    {
+      "mod": "flow",
+      "name": "renderFlow"
+    },
+    {
+      "mod": "flow",
+      "name": "flowControls"
+    },
+    {
+      "mod": "views",
+      "name": "SRC_BADGE"
+    },
+    {
+      "mod": "views",
+      "name": "sesstreeCollapsed"
+    },
+    {
+      "mod": "views",
+      "name": "sesstreeNode"
+    },
+    {
+      "mod": "views",
+      "name": "renderSessionsTree"
+    },
+    {
+      "mod": "charts",
+      "name": "ctxSpark"
+    },
+    {
+      "mod": "views",
+      "name": "renderContext"
+    },
+    {
+      "mod": "views",
+      "name": "installSesstree"
+    },
+    {
+      "mod": "views",
+      "name": "renderHeatmap"
+    },
+    {
+      "mod": "views",
+      "name": "tblCsv"
+    },
+    {
+      "mod": "views",
+      "name": "tableToRows"
+    },
+    {
+      "mod": "views",
+      "name": "csvFilename"
+    },
+    {
+      "mod": "views",
+      "name": "exportTableCsv"
+    },
+    {
+      "mod": "views",
+      "name": "priceFreshness"
+    },
+    {
+      "mod": "palette",
+      "name": "slugOf"
+    },
+    {
+      "mod": "palette",
+      "name": "AGE_CUTS"
+    },
+    {
+      "mod": "palette",
+      "name": "buildCuts"
+    },
+    {
+      "mod": "palette",
+      "name": "FEEDER"
+    },
+    {
+      "mod": "table",
+      "name": "DENSITY_KEY"
+    },
+    {
+      "mod": "table",
+      "name": "TABLE_SORT"
+    },
+    {
+      "mod": "table",
+      "name": "getDensity"
+    },
+    {
+      "mod": "table",
+      "name": "applyDensity"
+    },
+    {
+      "mod": "table",
+      "name": "setDensity"
+    },
+    {
+      "mod": "table",
+      "name": "NUM_RE"
+    },
+    {
+      "mod": "table",
+      "name": "MULT"
+    },
+    {
+      "mod": "table",
+      "name": "parseNum"
+    },
+    {
+      "mod": "table",
+      "name": "sortValues"
+    },
+    {
+      "mod": "table",
+      "name": "cellValue"
+    },
+    {
+      "mod": "table",
+      "name": "isRightAligned"
+    },
+    {
+      "mod": "table",
+      "name": "headerAndRows"
+    },
+    {
+      "mod": "table",
+      "name": "densityBar"
+    },
+    {
+      "mod": "table",
+      "name": "sortGlyph"
+    },
+    {
+      "mod": "table",
+      "name": "applySort"
+    },
+    {
+      "mod": "table",
+      "name": "sortBy"
+    },
+    {
+      "mod": "table",
+      "name": "enhanceTable"
+    },
+    {
+      "mod": "router",
+      "name": "PROJECT_FILTER"
+    },
+    {
+      "mod": "router",
+      "name": "PROVIDER_FILTER"
+    },
+    {
+      "mod": "router",
+      "name": "MODEL_FILTER"
+    },
+    {
+      "mod": "router",
+      "name": "VIEW_PARAMS"
+    },
+    {
+      "mod": "router",
+      "name": "setHash"
+    },
+    {
+      "mod": "router",
+      "name": "VIEW_ALIASES"
+    },
+    {
+      "mod": "router",
+      "name": "viewFromHash"
+    },
+    {
+      "mod": "router",
+      "name": "projectFromHash"
+    },
+    {
+      "mod": "router",
+      "name": "filterFromHash"
+    },
+    {
+      "mod": "router",
+      "name": "setCrossFilter"
+    },
+    {
+      "mod": "router",
+      "name": "clearCrossFilters"
+    },
+    {
+      "mod": "router",
+      "name": "setFiltersFromHash"
+    },
+    {
+      "mod": "router",
+      "name": "POWER"
+    },
+    {
+      "mod": "router",
+      "name": "SET_DEFAULTS"
+    },
+    {
+      "mod": "router",
+      "name": "setState"
+    },
+    {
+      "mod": "charts",
+      "name": "usdPerSec"
+    },
+    {
+      "mod": "charts",
+      "name": "outPer1M"
+    },
+    {
+      "mod": "router",
+      "name": "setRead"
+    },
+    {
+      "mod": "router",
+      "name": "setWrite"
+    },
+    {
+      "mod": "router",
+      "name": "setInvalid"
+    },
+    {
+      "mod": "router",
+      "name": "renderSetDeriv"
+    },
+    {
+      "mod": "router",
+      "name": "renderSetFacts"
+    },
+    {
+      "mod": "router",
+      "name": "setMsg"
+    },
+    {
+      "mod": "router",
+      "name": "renderSettings"
+    },
+    {
+      "mod": "router",
+      "name": "setColorSwatch"
+    },
+    {
+      "mod": "router",
+      "name": "renderSetColors"
+    },
+    {
+      "mod": "router",
+      "name": "setColorsInstall"
+    },
+    {
+      "mod": "router",
+      "name": "setLogoRow"
+    },
+    {
+      "mod": "router",
+      "name": "renderSetLogos"
+    },
+    {
+      "mod": "router",
+      "name": "setLogosInstall"
+    },
+    {
+      "mod": "router",
+      "name": "loadSettings"
+    },
+    {
+      "mod": "router",
+      "name": "saveSettings"
+    },
+    {
+      "mod": "router",
+      "name": "INTERVAL_DEFAULTS"
+    },
+    {
+      "mod": "router",
+      "name": "intervalsRead"
+    },
+    {
+      "mod": "router",
+      "name": "intervalsWrite"
+    },
+    {
+      "mod": "router",
+      "name": "intervalsInvalid"
+    },
+    {
+      "mod": "router",
+      "name": "intervalsMsg"
+    },
+    {
+      "mod": "router",
+      "name": "renderIntervals"
+    },
+    {
+      "mod": "router",
+      "name": "applyIntervals"
+    },
+    {
+      "mod": "router",
+      "name": "saveIntervals"
+    },
+    {
+      "mod": "router",
+      "name": "intervalsInstall"
+    },
+    {
+      "mod": "router",
+      "name": "settingsInstall"
+    },
+    {
+      "mod": "router",
+      "name": "setCrumb"
+    },
+    {
+      "mod": "router",
+      "name": "NAV_ICONS"
+    },
+    {
+      "mod": "router",
+      "name": "NAV_GROUPS"
+    },
+    {
+      "mod": "router",
+      "name": "NAV_FALLBACK_GROUP"
+    },
+    {
+      "mod": "router",
+      "name": "navViews"
+    },
+    {
+      "mod": "router",
+      "name": "navGroups"
+    },
+    {
+      "mod": "router",
+      "name": "renderNav"
+    },
+    {
+      "mod": "router",
+      "name": "navSync"
+    },
+    {
+      "mod": "router",
+      "name": "navOpen"
+    },
+    {
+      "mod": "router",
+      "name": "isOffCanvas"
+    },
+    {
+      "mod": "router",
+      "name": "navFocusables"
+    },
+    {
+      "mod": "router",
+      "name": "navTrap"
+    },
+    {
+      "mod": "router",
+      "name": "navSetOpen"
+    },
+    {
+      "mod": "router",
+      "name": "NAVKEY"
+    },
+    {
+      "mod": "router",
+      "name": "navCollapsed"
+    },
+    {
+      "mod": "router",
+      "name": "navApplyCollapsed"
+    },
+    {
+      "mod": "router",
+      "name": "navSetCollapsed"
+    },
+    {
+      "mod": "drawer",
+      "name": "LOGS"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgSel"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgWindow"
+    },
+    {
+      "mod": "drawer",
+      "name": "loadLogs"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgProfile"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgMatch"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgChips"
+    },
+    {
+      "mod": "drawer",
+      "name": "lgActiveLabel"
+    },
+    {
+      "mod": "drawer",
+      "name": "LG_FACET_NAMES"
+    },
+    {
+      "mod": "drawer",
+      "name": "renderLgActive"
+    },
+    {
+      "mod": "drawer",
+      "name": "renderLogs"
+    },
+    {
+      "mod": "drawer",
+      "name": "logsInstall"
+    },
+    {
+      "mod": "router",
+      "name": "navInstall"
+    },
+    {
+      "mod": "router",
+      "name": "views"
+    },
+    {
+      "mod": "router",
+      "name": "pickView"
+    },
+    {
+      "mod": "main",
+      "name": "installAll"
+    },
+    {
+      "mod": "router",
+      "name": "PV_OFF"
+    },
+    {
+      "mod": "router",
+      "name": "pvKey"
+    },
+    {
+      "mod": "router",
+      "name": "pvOff"
+    },
+    {
+      "mod": "router",
+      "name": "pvSet"
+    },
+    {
+      "mod": "router",
+      "name": "pvOnProfiles"
+    },
+    {
+      "mod": "router",
+      "name": "PV_HUE"
+    },
+    {
+      "mod": "router",
+      "name": "pvHueKey"
+    },
+    {
+      "mod": "router",
+      "name": "pvHueOverride"
+    },
+    {
+      "mod": "router",
+      "name": "pvHueSet"
+    },
+    {
+      "mod": "router",
+      "name": "profileHue"
+    },
+    {
+      "mod": "router",
+      "name": "PROFILE_LOGO_MAX_BYTES"
+    },
+    {
+      "mod": "router",
+      "name": "PV_LOGO"
+    },
+    {
+      "mod": "router",
+      "name": "pvLogoKey"
+    },
+    {
+      "mod": "router",
+      "name": "profileLogo"
+    },
+    {
+      "mod": "router",
+      "name": "profileLogoSet"
+    },
+    {
+      "mod": "router",
+      "name": "profileIconHtml"
+    },
+    {
+      "mod": "router",
+      "name": "PV_ALL"
+    },
+    {
+      "mod": "router",
+      "name": "pvFilter"
+    },
+    {
+      "mod": "router",
+      "name": "pvSyncCurrent"
+    },
+    {
+      "mod": "router",
+      "name": "pvToggle"
+    },
+    {
+      "mod": "router",
+      "name": "fbKindGet"
+    },
+    {
+      "mod": "router",
+      "name": "fbProfileKind"
+    },
+    {
+      "mod": "router",
+      "name": "FB_GROUPS"
+    },
+    {
+      "mod": "router",
+      "name": "fbSplit"
+    },
+    {
+      "mod": "router",
+      "name": "fbChipHtml"
+    },
+    {
+      "mod": "router",
+      "name": "fbKindsHtml"
+    },
+    {
+      "mod": "router",
+      "name": "FB_ROVE"
+    },
+    {
+      "mod": "router",
+      "name": "fbRoveApply"
+    },
+    {
+      "mod": "router",
+      "name": "fbRoveSet"
+    },
+    {
+      "mod": "router",
+      "name": "fbRoveKey"
+    },
+    {
+      "mod": "router",
+      "name": "tabs"
+    },
+    {
+      "mod": "router",
+      "name": "fbKindSet"
+    },
+    {
+      "mod": "router",
+      "name": "fbDialogOpen"
+    },
+    {
+      "mod": "router",
+      "name": "fbGroupList"
+    },
+    {
+      "mod": "router",
+      "name": "fbDialogHtml"
+    },
+    {
+      "mod": "router",
+      "name": "fbDialogRender"
+    },
+    {
+      "mod": "router",
+      "name": "fbDialogClosed"
+    },
+    {
+      "mod": "router",
+      "name": "fbDialogToggle"
+    },
+    {
+      "mod": "router",
+      "name": "fbSetMany"
+    },
+    {
+      "mod": "router",
+      "name": "fbOtherOverlayOpen"
+    },
+    {
+      "mod": "router",
+      "name": "fbPopOpen"
+    },
+    {
+      "mod": "router",
+      "name": "fbPopToggle"
+    },
+    {
+      "mod": "router",
+      "name": "fbInstall"
+    },
+    {
+      "mod": "router",
+      "name": "fbInstallDialog"
+    },
+    {
+      "mod": "router",
+      "name": "pvMenu"
+    },
+    {
+      "mod": "router",
+      "name": "exitHourRange"
+    },
+    {
+      "mod": "router",
+      "name": "setViewParam"
+    },
+    {
+      "mod": "router",
+      "name": "hydrateViewParams"
+    },
+    {
+      "mod": "router",
+      "name": "triggerRefresh"
+    },
+    {
+      "mod": "main",
+      "name": "saved"
+    },
+    {
+      "mod": "main",
+      "name": "bootDone"
+    },
+    {
+      "mod": "live",
+      "name": "doRefresh"
+    },
+    {
+      "mod": "live",
+      "name": "LIVE_MS_DEFAULT"
+    },
+    {
+      "mod": "live",
+      "name": "LIVE_MS"
+    },
+    {
+      "mod": "live",
+      "name": "liveBusy"
+    },
+    {
+      "mod": "live",
+      "name": "soundOn"
+    },
+    {
+      "mod": "live",
+      "name": "audioCtx"
+    },
+    {
+      "mod": "live",
+      "name": "soundBaseline"
+    },
+    {
+      "mod": "live",
+      "name": "seenEnded"
+    },
+    {
+      "mod": "live",
+      "name": "seenDeleg"
+    },
+    {
+      "mod": "live",
+      "name": "soundDebounceUntil"
+    },
+    {
+      "mod": "live",
+      "name": "ensureAudioCtx"
+    },
+    {
+      "mod": "live",
+      "name": "playTone"
+    },
+    {
+      "mod": "live",
+      "name": "pendingKind"
+    },
+    {
+      "mod": "live",
+      "name": "soundTimerPending"
+    },
+    {
+      "mod": "live",
+      "name": "scheduleTone"
+    },
+    {
+      "mod": "live",
+      "name": "checkCompletions"
+    },
+    {
+      "mod": "live",
+      "name": "audioUnlocked"
+    },
+    {
+      "mod": "live",
+      "name": "unlockAudio"
+    },
+    {
+      "mod": "live",
+      "name": "armAudioUnlock"
+    },
+    {
+      "mod": "live",
+      "name": "checkCriticalAlerts"
+    },
+    {
+      "mod": "live",
+      "name": "soundToggleInstall"
+    },
+    {
+      "mod": "drawer",
+      "name": "dFilter"
+    },
+    {
+      "mod": "drawer",
+      "name": "dTrap"
+    },
+    {
+      "mod": "drawer",
+      "name": "drawerEvents"
+    },
+    {
+      "mod": "drawer",
+      "name": "drawerSync"
+    },
+    {
+      "mod": "drawer",
+      "name": "drawerOpen"
+    },
+    {
+      "mod": "drawer",
+      "name": "installDrawerDrag"
+    },
+    {
+      "mod": "drawer",
+      "name": "installDrawer"
+    },
+    {
+      "mod": "live",
+      "name": "pollLive"
+    },
+    {
+      "mod": "drawer",
+      "name": "tOpen"
+    },
+    {
+      "mod": "drawer",
+      "name": "TCACHE"
+    },
+    {
+      "mod": "drawer",
+      "name": "tEscape"
+    },
+    {
+      "mod": "drawer",
+      "name": "tRenderContent"
+    },
+    {
+      "mod": "drawer",
+      "name": "tRenderMsg"
+    },
+    {
+      "mod": "drawer",
+      "name": "tOpenModal"
+    },
+    {
+      "mod": "drawer",
+      "name": "tCloseModal"
+    },
+    {
+      "mod": "drawer",
+      "name": "tKeydown"
+    },
+    {
+      "mod": "drawer",
+      "name": "installTranscriptModal"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfOpen"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfRowsHtml"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfRender"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfOpenPalette"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfClosePalette"
+    },
+    {
+      "mod": "drawer",
+      "name": "sfOpenSelected"
+    },
+    {
+      "mod": "drawer",
+      "name": "installSessionFinder"
+    },
+    {
+      "mod": "drawer",
+      "name": "LN_LANES"
+    },
+    {
+      "mod": "drawer",
+      "name": "LN_LANE_LABELS"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnOpen"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnOpenAt"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnOpenModal"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnRenderTimeline"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnCloseModal"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnKeydown"
+    },
+    {
+      "mod": "drawer",
+      "name": "lnColorOf"
+    },
+    {
+      "mod": "drawer",
+      "name": "installTimelineModal"
+    },
+    {
+      "mod": "live",
+      "name": "scheduleLivePoll"
+    },
+    {
+      "mod": "live",
+      "name": "liveTimer"
+    },
+    {
+      "mod": "live",
+      "name": "liveUpdatedAt"
+    },
+    {
+      "mod": "live",
+      "name": "tickLiveStamp"
+    },
+    {
+      "mod": "live",
+      "name": "announceLive"
+    },
+    {
+      "mod": "live",
+      "name": "liveStampTimer"
+    },
+    {
+      "mod": "live",
+      "name": "scheduleLiveStampTick"
+    },
+    {
+      "mod": "live",
+      "name": "REBUILD_MS"
+    },
+    {
+      "mod": "live",
+      "name": "scheduleRebuild"
+    },
+    {
+      "mod": "live",
+      "name": "rebuildTimer"
+    },
+    {
+      "mod": "state",
+      "name": "renderSkeleton"
+    },
+    {
+      "mod": "state",
+      "name": "renderEmpty"
+    },
+    {
+      "mod": "state",
+      "name": "renderError"
+    }
+  ]
 }
