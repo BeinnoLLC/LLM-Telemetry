@@ -7,7 +7,7 @@ import {
   trapFocus, trapTab,
 } from './palette.js';
 import { current } from './charts.js';
-import { PROV, provOf, schemaProblem } from './views.js';
+import { PROV, provLogoSvg, provOf, schemaProblem } from './views.js';
 import { pickView } from './router.js';
 import { DATA } from './main.js';
 
@@ -325,7 +325,7 @@ export function drawerSync(){
 
   body.innerHTML = rows.length ? rows.map(e => {
     const t = new Date(e.ts).toLocaleTimeString([], {hour12:false});
-    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${(PROV[provOf('', e.model || '', '')] || {}).icon || ''} ${short(e.model)}</span> ` : '';
+    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${provLogoSvg(short(e.model))} ${short(e.model)}</span> ` : '';
     // Tool events get the tool's own palette colour, same contract as models.
     const twho = e.tool ? `<span class="evt" style="color:${toolColor(e.tool)}">${esc(e.tool)}</span> ` : '';
     const pf = e.profile ? `<span class="muted">[${e.profile}]</span> ` : '';
@@ -418,6 +418,8 @@ export function installDrawerDrag(){
   handle.addEventListener('pointermove', onMove);
   handle.addEventListener('pointerup', onUp);
   handle.addEventListener('pointercancel', onUp);
+  handle.addEventListener('touchstart', onDown);
+  handle.addEventListener('mousedown', onDown);
 }
 
 export function installDrawer(){
@@ -427,6 +429,7 @@ export function installDrawer(){
   // carries the unread badge. Optional-chained, so the markup stays the source
   // of truth for which controls exist.
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
+  $('logbtn')?.addEventListener('click', () => drawerOpen(true));
   // The drawer's "All logs" link hands off to the full view: close the panel,
   // then navigate, so the page you asked for is not sitting behind a sheet.
   $('dfull')?.addEventListener('click', e => {

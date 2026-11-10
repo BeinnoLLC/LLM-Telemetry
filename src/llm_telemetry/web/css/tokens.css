@@ -58,6 +58,7 @@
   --fg:#1a201c;
   --muted:#6f746f;
   --border:rgba(26,32,28,.12);
+  --border-input:#6b6e78;        /* control boundaries: 3:1 on the card (WCAG 1.4.11) */
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
@@ -138,6 +139,7 @@
   --fg:#ccccdc;
   --muted:#8e8f9a;
   --border:#2c2e33;
+  --border-input:#6b6e78;        /* control boundaries: 3.4:1 on the card (WCAG 1.4.11) */
   /* the single calm accent: Grafana blue */
   --accent:#6e9fff;
   --accent-ink:#0b0c0e;          /* text/icon on accent fills */

@@ -478,7 +478,7 @@ export function renderUnpriced(rows){
   notify({id: 'unpriced', sev: 'warn',
     title: `${un.length} model${un.length === 1 ? '' : 's'} ${un.length === 1 ? 'has' : 'have'} no price`,
     text: `Est. cost leaves out ${calls.toLocaleString()} calls (${names}), so it is too low.`,
-    action: {label: 'Open Prices', href: '#/prices'},
+    action: {label: 'Open Prices', href: '#/Prices'},
     sig: un.map(([m]) => m).sort().join(','), chip: `${un.length} unpriced`});
   return un.length;
 }
@@ -858,7 +858,7 @@ export function render(){
     <th class="text-right">Est. cost</th>
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
-      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
+      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span>${provLogoSvg(short(m))}<span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
         <td>${provBadge(pr)}</td>
         <td class="text-right">${v.calls.toLocaleString()}</td><td class="text-right">${fmt(v.inp)}</td><td class="text-right">${fmt(v.outp)}</td>
         <td class="text-right">${fmt(v.cache)}</td>
@@ -1056,7 +1056,7 @@ export function renderHome(inR){
   // one-line blurb) with the same derived stats as before. rel on every link.
   // LST-179: render from the single data table above (title/value/blurb/route).
   const xc = (c) => `
-    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}" title="${escA(c.blurb)}">
+    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}"${c.sec ? ` data-sec="${c.sec}"` : ''} title="${escA(c.blurb)}">
       <span class="kpi-badge" style="background:color-mix(in srgb,${c.color} 14%,var(--card));color:${c.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${c.color} 30%,transparent)">
         <span class="hc-ico" aria-hidden="true">${c.icon}</span></span>
       <span class="xp-body">
@@ -1071,11 +1071,11 @@ export function renderHome(inR){
   html += xc({title:'Bandwidth (est.)', icon:icon('updown'), color:PAL[0],
     blurb:'Estimated from tokens, not measured',
     value:`<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    route:'Usage'});
+    route:'Usage', href:'usage?s=bandwidth', sec:'bwpanel'});
 
   // Prices is an in-app view now (was the standalone costs.html page).
   html += xc({title:'Prices', icon:icon('scale'), color:PAL[8],
-    blurb:'Per-million-token rates &amp; spend', value:'Price sheet', route:'Prices', href:'Prices'});
+    blurb:'Per-million-token rates &amp; spend', value:'per 1M tokens', route:'Prices', href:'prices'});
 
   box.innerHTML = html;
   // Route in-page instead of relying on the hash alone, so a card works even
@@ -1285,10 +1285,11 @@ export function renderLatency(lat){
   if (!Object.keys(byModel).length){ card.hidden = true; return; }
   card.hidden = false;
 
-  const row = (name, b) => {
+  const row = (name, b, isModel) => {
     const tokS = b.tok_s != null ? `${b.tok_s.toFixed(1)} tok/s` : '';
+    const logo = isModel ? provLogoSvg(short(name)) : '';
     return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
-      <span class="font-semibold flex-1 truncate" title="${esc(name)}">${esc(name)}</span>
+      <span class="font-semibold flex-1 truncate" title="${esc(name)}">${logo}${esc(name)}</span>
       <span class="muted" title="sample size">n=${b.n}</span>
       <span title="p50 / p90 / p99 seconds">${b.p50}s / ${b.p90}s / ${b.p99}s</span>
       <span class="muted" style="min-width:5.5rem;text-align:right">${tokS}</span>
@@ -1297,16 +1298,16 @@ export function renderLatency(lat){
 
   $('latbymodel').innerHTML = Object.entries(byModel)
     .sort((a, b) => b[1].p90 - a[1].p90)
-    .map(([name, b]) => row(name, b)).join('');
+    .map(([name, b]) => row(name, b, true)).join('');
   $('latbyendpoint').innerHTML = Object.entries(byEndpoint)
     .sort((a, b) => b[1].p90 - a[1].p90)
-    .map(([name, b]) => row(name, b)).join('');
+    .map(([name, b]) => row(name, b, false)).join('');
 
   const slowest = (lat && lat.slowest) || [];
   $('latslowest').innerHTML = slowest.length
     ? `<div class="muted text-[length:var(--fs-xs)] mb-1 mt-1">Slowest turns</div>` +
       slowest.map(s => `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
-        <button type="button" class="chip ttitlebtn" data-tsession="${esc(s.session)}" data-tprofile="${esc(current)}">${esc(s.model || '(unknown)')}</button>
+        <button type="button" class="chip ttitlebtn" data-tsession="${esc(s.session)}" data-tprofile="${esc(current)}">${provLogoSvg(short(s.model))}${esc(s.model || '(unknown)')}</button>
         <span class="muted">${s.s}s</span>
       </div>`).join('')
     : '';
@@ -1539,7 +1540,7 @@ export function renderProjectMatrix(rows){
   const grandTotal = weightValue(rows);
 
   const headCells = shownModels.map(m =>
-    `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${esc(short(m))}</th>`).join('');
+    `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${provLogoSvg(short(m))}${esc(short(m))}</th>`).join('');
   const restHeadCell = restModels.length
     ? `<th class="text-right px-2 py-1.5 muted" title="${esc(restModels.map(short).join(', '))}">+${restModels.length} more</th>`
     : '';
@@ -2309,7 +2310,7 @@ export function renderDeleg(){
   const rows = (g.by_model || []).map(m => {
     const w = Math.max(0, Math.min(100, m.rate));
     return `<div class="drow">
-      <div class="dname" title="${esc(m.model)}">${esc(short(m.model))}</div>
+      <div class="dname" title="${esc(m.model)}">${provLogoSvg(short(m.model))} ${esc(short(m.model))}</div>
       <div class="dbar"><span style="width:${w}%" class="${m.rate >= 95 ? 'ok' : 'bad'}"></span></div>
       <div class="dpct ${m.rate >= 95 ? 'ok' : 'bad'}">${m.rate}%</div>
       <div class="dmeta muted">${m.n} run${m.n === 1 ? '' : 's'}${m.wasted_hours ? ` · ${m.wasted_hours}h lost` : ''}</div>
@@ -2344,7 +2345,7 @@ export function renderDeleg(){
     return `<div class="ditem">
       <span class="ddot ${okc ? 'ok' : 'bad'}"></span>
       <div class="dgoal" title="${esc(r.goal || '')}">${esc(r.goal || '(no goal recorded)')}</div>
-      <div class="muted text-[length:var(--fs-xs)]">${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
+      <div class="muted text-[length:var(--fs-xs)]">${provLogoSvg(short(r.model || ''))} ${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
     </div>`;
   }).join('') || '<div class="muted text-[length:var(--fs-xs)]">Nothing yet.</div>';
 }
@@ -2388,7 +2389,7 @@ export function renderHealth(rows){
         ? `${h.ok.toLocaleString()} of ${h.total.toLocaleString()} · <span style="color:${col}">${h.fail.toLocaleString()} failed</span>`
         : `${h.ok.toLocaleString()} of ${h.total.toLocaleString()}`;
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
-        <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
+        <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${provLogoSvg(short(h.model))} ${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
           <div style="width:${okPct}%;background:#5f9e6e"></div>${segs}
         </div>
@@ -2722,7 +2723,7 @@ export function renderFailures(F){
         F.length ? 'Clear the kind/model filter above to see everything.' : undefined)
     : groups.map(g=>`<div class="flex items-start gap-2 text-[length:var(--fs-xs)] py-0.5 frow" data-n="${g.n}">
         <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
-        <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
+        <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${provLogoSvg(short(g.model))} ${short(g.model)}</span>
         <span class="muted shrink-0 text-[length:var(--fs-xs)] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
         <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(failMsgHuman(g.msg))}</span>
         <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
@@ -3511,13 +3512,13 @@ function renderOrchestration(){
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const w = 1 + 3 * e.count / maxc;
     return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" class="orch-edge" stroke-width="${w.toFixed(1)}" marker-end="url(#orch-arrow)"><title>${escA(e.from)} \u2192 ${escA(e.to)}: ${escA(e.type)} \u00d7${e.count}</title></path>` +
-      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle">${esc(e.type)} \u00d7${e.count}</text>`;
+      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle"><tspan>${esc(e.type)} \u00d7${e.count}</tspan></text>`;
   }).join('');
   const boxes = nodes.map(n => {
     const p = lane[n.id], [lab, c] = ORCH_KIND[n.kind] || [n.kind, 'var(--muted)'];
     return `<g class="orch-node"><rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="6" style="stroke:${c}"/>` +
-      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name">${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</text>` +
-      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}">${esc(lab)}</text></g>`;
+      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name"><tspan>${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</tspan></text>` +
+      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}"><tspan>${esc(lab)}</tspan></text></g>`;
   }).join('');
   el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
     `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
@@ -3618,7 +3619,7 @@ function renderRankings(){
   const ntop = cur.top.length;
   let body = cur.top.map(r =>
     `<tr><td class="muted">${r.rank}</td>` +
-    `<td title="${esc(r.model)}"><span class="dot" style="background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span>${esc(short(r.model))}</td>` +
+    `<td title="${esc(r.model)}">${provLogoSvg(short(r.model))} ${esc(short(r.model))}</td>` +
     `<td class="num">${fmt(r.tokens)}</td>` +
     `<td><span class="bar"><span style="width:${Math.min(100, r.share || 0).toFixed(1)}%;background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span></span> ${(r.share || 0).toFixed(1)}%</td>` +
     `<td class="num">${tr(r.trend)}</td></tr>`).join('');

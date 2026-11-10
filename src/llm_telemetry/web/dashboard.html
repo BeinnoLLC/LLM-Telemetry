@@ -8,6 +8,7 @@
 __DASHBOARD_CSS__
 </style></head><body>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Orchestration" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.8l9 4M7.5 17.2l9-4"/></symbol><symbol id="icon-Kanban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="6" rx="1"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
+<a class="skip" href="#main">Skip to content</a>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
 <div id="navscrim"></div>
@@ -29,7 +30,7 @@ __DASHBOARD_CSS__
  <span id="ab-fresh" class="ab-fresh" data-fresh-state="unknown" role="status"></span>
  <button id="ab-theme" class="chip" type="button" title="Toggle theme" aria-label="Toggle theme">&#9788;</button>
 </div>
-<main class="page flex flex-col gap-4">
+<main class="page flex flex-col gap-4" id="main" tabindex="-1">
  <header id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
@@ -46,7 +47,7 @@ __DASHBOARD_CSS__
     <path d="M3 21h18" opacity=".35"/>
    </svg>
    <div>
-    <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
+    <h1 class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</h1><span class="sr-only" id="h1view">Home</span>
     <div class="muted text-[length:var(--fs-xs)] mt-0.5 flex items-center gap-1.5">
      <span class="dot"></span><span id="meta" class="stamp"></span>
      <span id="resinfo" class="resinfo"></span>
@@ -158,6 +159,14 @@ __DASHBOARD_CSS__
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
+  <!-- Hex arena: homage to anoma.ly/hex/ — the fleet's live agents orbit,
+       bounce off the hex walls and clash on the ring. Purely presentational;
+       bloom and speed are driven by the same live counts that fill the KPI
+       cards above. Painted by renderArena (arena.js) each 5s live poll. -->
+  <div class="card p-4 mt-3" id="arenacard">
+   <div class="lbl mb-2.5">Agent arena<span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="arenasub"></span></div>
+   <div class="arenabox"><canvas id="arenacv" aria-hidden="true"></canvas></div>
+  </div>
   <!-- Task queue: always directly under the four scorecards, above "In
        progress now", at every width (Home feedback 2026-10-28). -->
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
@@ -260,6 +269,14 @@ __DASHBOARD_CSS__
       Explains each number, recomputes live, and saves to the SAME config file
       the collectors read via the serve process (POST /api/settings). -->
  <div class="view" data-view="Settings" hidden>
+  <!-- P1-5/Pass A: in-page section nav — five anchors into the long page. -->
+  <nav class="setnav" id="setnav" aria-label="Settings sections">
+   <button type="button" data-setgo="setcard">Electricity &amp; hardware</button>
+   <button type="button" data-setgo="setpricecard">Local token pricing</button>
+   <button type="button" data-setgo="setintervalscard">Refresh intervals</button>
+   <button type="button" data-setgo="setcolorcard">Profile colours</button>
+   <button type="button" data-setgo="setlogocard">Profile logos</button>
+  </nav>
   <div class="card p-4 mb-3" id="setcard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
     <div class="lbl">Electricity &amp; hardware</div>
@@ -299,7 +316,7 @@ __DASHBOARD_CSS__
     <span class="text-[length:var(--fs-xs)]" id="setmsg" role="status"></span>
    </div>
   </div>
-  <div class="card p-4 mb-3">
+  <div class="card p-4 mb-3" id="setpricecard">
    <div class="lbl mb-1">How a local token is priced</div>
    <p class="muted text-[length:var(--fs-xs)] mb-2">Read-only: measured on this hardware and fixed in
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
@@ -809,7 +826,7 @@ __DASHBOARD_CSS__
   Live Claude Code and Codex sessions count their tokens and show the same API-price equivalent
   with a <b>sub</b> badge (covered by your Claude / ChatGPT subscription); it is never added to Est. cost.
  </details>
-</div><!-- /.page — the drawer must live OUTSIDE it, as a direct child of
+</main><!-- /.page — the drawer must live OUTSIDE it, as a direct child of
      <body>: a position:fixed element is trapped by any ancestor with a
      transform/filter/contain, and .page is exactly the kind of container that
      grows one later. Keeping it at body level makes that impossible. -->
@@ -826,6 +843,7 @@ __DASHBOARD_CSS__
 </div>
 
 <div id="scrim"></div>
+<button id="logbtn" type="button" aria-label="Live logs"><span id="logn" hidden>0</span></button>
 <div id="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
  <div id="draghandle"></div>
  <div class="dhead">
@@ -882,11 +900,6 @@ __DASHBOARD_CSS__
  <div id="lnbody" tabindex="-1"></div>
 </main>
 <div id="lntip"></div>
-
-<button id="logbtn" title="Open live logs (L)" aria-keyshortcuts="L">
- <span style="color:var(--accent)">&#9776;</span> Logs
- <span class="n" id="logn" hidden>0</span>
-</button>
 
 <!-- P4-07 (#44): project drill-down panel. -->
 <div id="pdscrim"></div>

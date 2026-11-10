@@ -23,7 +23,7 @@ const chk = (ok, l, x) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l}${x ? '  
 
 // The dashboard's modules. costs.js is the price sheet's own page, inlined by
 // build_costs.py against its own list, so it is not part of this manifest.
-const DASHBOARD_MODULES = ['palette', 'table', 'charts', 'views', 'flow', 'drawer', 'diffdom', 'live',
+const DASHBOARD_MODULES = ['palette', 'table', 'charts', 'views', 'flow', 'drawer', 'diffdom', 'live', 'arena',
                            'routerview', 'quotaview', 'router', 'main', 'state'];
 
 // Top-level declarations a module makes, exported or not: the flattening puts
