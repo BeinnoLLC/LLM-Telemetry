@@ -7,7 +7,7 @@ import {
 } from './palette.js';
 import { bwRow, current, loeIcon, mk, sparkSvg } from './charts.js';
 import {
-  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
+  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provIcon, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
 import { renderAgents, renderQueue } from './flow.js';
 import { renderArena } from './arena.js';
@@ -15,7 +15,7 @@ import {
   drawerSync, installDrawer, installSessionFinder, installTimelineModal, installTranscriptModal,
 } from './drawer.js';
 import {
-  POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
+  POWER, PV_ALL, intervalsInstall, navSync, profileHue, profileIconHtml, pvFilter, settingsInstall, tabs,
 } from './router.js';
 import { installHelp } from './routerview.js';
 import { applyDiff, motionReduced, invalidate } from './diffdom.js';
@@ -156,7 +156,7 @@ export function inProgressHtml(p, piLive, agentLive){
     // PI and Hermes keep the coloured dot.
     const mark = (k === 'claude' || k === 'codex') && kindLogo(k)
       ? `<span class="kpi-logo" aria-hidden="true" style="color:${m.color}">${kindLogo(k)}</span>`
-      : `<i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>`;
+      : profileIconHtml(m.label, 12);
     return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}">${mark}${c[k]} ${esc(m.label)}</span>`;
   }).join('');
   return chips ? `<span class="kpi-kinds">${chips}</span>` : '';

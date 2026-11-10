@@ -186,6 +186,7 @@ async function boot(opt = {}){
       intervalsInstall(){ logs.installs.push('intervalsInstall'); },
       navSync(){ logs.navSync++; },
       profileHue: n => { logs.profileHue.push(n); return 42; },
+      profileIconHtml: (n, px) => '<icon>',
       pvFilter: () => { logs.pvFilter++; return opt.afterFilter || {}; },
       settingsInstall(){ logs.installs.push('settingsInstall'); },
       tabs(){ logs.tabs++; },

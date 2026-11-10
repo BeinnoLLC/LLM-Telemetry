@@ -230,12 +230,13 @@ export function provIcon(sm){
 }
 // Provider brand mark as an inline SVG (from routerview's RT_SVG), falling back
 // to the unicode glyph when no brand mark exists.
-export function provLogoSvg(sm){
+export function provLogoSvg(sm, px){
+  px = px || 14;
   const key = MODEL_PROV[sm] || provOf('', sm, '');
   const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
   const d = s.svg && RT_SVG[s.svg];
-  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
-  return `<span style="color:${s.c}">${esc(s.mono)}</span>`;
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
+  return `<span style="color:${s.c};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
 }
 // Prefix a provider glyph to a model label for chart axes/legends.
 export function resendOf(r){

@@ -3,12 +3,12 @@
  * Settings page, the nav drawer and the per-profile colour/logo controls.
  */
 import {
-  $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, esc, escA, hashHue, pick, slugOf,
+  $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, esc, escA, hashHue, pick, short, slugOf,
 } from './palette.js';
 import {
   bounds, charts, current, outPer1M, projDistNormalized, projTrendStacked, usdPerSec,
 } from './charts.js';
-import { flash, render, renderResolution, syncProjFilterUI } from './views.js';
+import { flash, provLogoSvg, render, renderResolution, syncProjFilterUI } from './views.js';
 import { renderFlow } from './flow.js';
 import { loadLogs, logsInstall } from './drawer.js';
 import { KIND_ORDER, LIVE_MS, REBUILD_MS, fleetKindCounts, kindMeta, renderLive } from './live.js';
@@ -721,7 +721,11 @@ export function settingsInstall(){
   setLogosInstall();
   document.getElementById('setnav')?.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-setgo]');
-    if (b) document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+    if (b){
+      document.querySelectorAll('#setnav [data-setgo]').forEach(x => x.classList.remove('is-active'));
+      b.classList.add('is-active');
+      document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+    }
   });
   loadSettings();
 }
@@ -1068,6 +1072,13 @@ export function profileIconHtml(n, px){
   const uri = profileLogo(n);
   if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
   const h = profileHue(n);
+  const rows = (DATA.profiles && DATA.profiles[n]) || [];
+  const counts = {};
+  rows.forEach(r => { const m = r && r.model; if (m) counts[m] = (counts[m]||0)+1; });
+  const dominant = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || null;
+  if (dominant){
+    return provLogoSvg(short(dominant), px);
+  }
   const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
   return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
 }

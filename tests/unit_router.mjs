@@ -178,7 +178,7 @@ const SUPERSET = {
   'palette.js': {
     $: getEl, allModelNames: () => [], allToolNames: () => [],
     buildColors: P.buildColors, buildToolColors: P.buildToolColors,
-    esc: P.esc, escA: P.escA, hashHue: P.hashHue, slugOf: P.slugOf,
+    esc: P.esc, escA: P.escA, hashHue: P.hashHue, short: (x)=>x, slugOf: P.slugOf,
     pick: () => {},
     COLORS: {}, TOOLCOLORS: {},              // only stubbed for the no-shim probe below
   },
