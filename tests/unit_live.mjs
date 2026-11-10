@@ -77,7 +77,7 @@ async function boot(opt = {}){
 
   const audio = { ctxs: [], notes: [], gains: [] };
   const logs = {
-    fetch: [], deferred: [], mk: [], renderOllama: [], renderQueue: [], renderAgents: [],
+    fetch: [], deferred: [], mk: [], renderOllama: [], renderQueue: [], renderAgents: [], renderArena: [],
     render: [], renderResolution: [], tabs: 0, pvFilter: 0, pick: [], navSync: 0,
     drawerSync: 0, showSchemaError: [], schemaProblem: [], provOf: [], provBadge: [],
     modelsBadge: [], modelsPanel: [], loeIcon: [], bwRow: [], colorOf: [], profileHue: [],
@@ -160,6 +160,7 @@ async function boot(opt = {}){
       modelsBadge: L => { logs.modelsBadge.push(L.id); return `<mbadge>${L.id}</mbadge>`; },
       modelsPanel: L => { logs.modelsPanel.push(L.id); return `<mpanel>${L.id}</mpanel>`; },
       provBadge: p => { logs.provBadge.push(p); return '<pbadge>'; },
+      provLogoSvg: x => { logs.provLogoSvg = (logs.provLogoSvg||0)+1; return '<svg>'; },
       provOf: (kind, model, base) => { logs.provOf.push([kind, model, base]); return { label:'prov' }; },
       render(){ logs.render.push(1); },
       renderOllama(o){ logs.renderOllama.push(o); },
@@ -171,6 +172,9 @@ async function boot(opt = {}){
     'flow.js': {
       renderAgents(a){ logs.renderAgents.push(a); },
       renderQueue(){ logs.renderQueue.push(1); },
+    },
+    'arena.js': {
+      renderArena(a){ logs.renderArena.push(a); },
     },
     'drawer.js': {
       drawerSync(){ logs.drawerSync++; },
@@ -357,6 +361,8 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   eq([h.logs.renderOllama.length, h.logs.renderQueue.length, h.logs.renderAgents.length], [1,1,1],
      'renderLive: the Ollama, queue and agents cards are each refreshed once');
   eq(h.logs.renderAgents[0], [{ id:'a1' }], 'renderLive: the agents panel receives the live agents');
+  eq(h.logs.renderArena.length, 1, 'renderLive: renderArena is called exactly once per render');
+  eq(h.logs.renderArena[0], h.M.fleetKindCounts(h.data.profiles, h.data.pi_live, h.data.agent_live), 'renderLive: renderArena receives the fleetKindCounts result');
 
   // rows with no phase / untitled / a fallback model / more tools than fit
   const h2 = await boot({ data: { profiles: { p1: { live: [
