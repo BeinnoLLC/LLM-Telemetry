@@ -7,7 +7,7 @@ import {
 } from './palette.js';
 import { bwRow, current, loeIcon, mk, sparkSvg } from './charts.js';
 import {
-  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provIcon, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
+  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
 import { renderAgents, renderQueue } from './flow.js';
 import { renderArena } from './arena.js';

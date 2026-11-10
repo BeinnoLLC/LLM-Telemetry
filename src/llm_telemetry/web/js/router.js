@@ -719,11 +719,14 @@ export function settingsInstall(){
   });
   setColorsInstall();
   setLogosInstall();
+  const firstSetNav = document.querySelector('#setnav [data-setgo]');
+  if (firstSetNav){ document.querySelectorAll('#setnav [data-setgo]').forEach(x => x.classList.remove('is-active')); firstSetNav.classList.add('is-active'); firstSetNav.setAttribute('aria-current','true'); }
   document.getElementById('setnav')?.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-setgo]');
     if (b){
-      document.querySelectorAll('#setnav [data-setgo]').forEach(x => x.classList.remove('is-active'));
+      document.querySelectorAll('#setnav [data-setgo]').forEach(x => { x.classList.remove('is-active'); x.removeAttribute('aria-current'); });
       b.classList.add('is-active');
+      b.setAttribute('aria-current', 'true');
       document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
     }
   });
@@ -1072,9 +1075,9 @@ export function profileIconHtml(n, px){
   const uri = profileLogo(n);
   if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
   const h = profileHue(n);
-  const rows = (DATA.profiles && DATA.profiles[n]) || [];
+  const rows = (typeof DATA !== 'undefined' && DATA && DATA.profiles && DATA.profiles[n] && DATA.profiles[n].rows) || [];
   const counts = {};
-  rows.forEach(r => { const m = r && r.model; if (m) counts[m] = (counts[m]||0)+1; });
+  rows.forEach(r => { const m = r && r.model; if (m) counts[m] = (counts[m]||0) + (Number(r.calls) || 1); });
   const dominant = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || null;
   if (dominant){
     return provLogoSvg(short(dominant), px);

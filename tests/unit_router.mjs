@@ -186,7 +186,7 @@ const SUPERSET = {
     bounds: () => ['', ''], charts: [], outPer1M: () => 0, usdPerSec: () => 0,
     current: null, projDistNormalized: null, projTrendStacked: null,
   },
-  'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {} },
+  'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {}, provLogoSvg: (sm, px) => `<svg class="lvprovlogo" data-sm="${sm}"></svg>` },
   'flow.js': { renderFlow: () => {} },
   'drawer.js': { loadLogs: () => {}, logsInstall: () => {} },
   'live.js': {
@@ -733,6 +733,18 @@ const img = R.profileIconHtml('nous', 16);
 ok(img.startsWith('<img'), 'profileIconHtml: an <img> once a logo is set');
 ok(img.includes('width="16"') && img.includes('height="16"'), 'profileIconHtml: the <img> is sized');
 eq(R.profileIconHtml('', 16).includes('>?<'), true, 'profileIconHtml: an empty name still renders ?');
+// Bug 1: DATA.profiles[n] is an object with .rows, not an array
+R.profileLogoSet('nous', '');
+const _rowsBackup = DATA.profiles.nous;
+DATA.profiles.nous = { rows: [{ model: 'claude-sonnet-4', calls: 5 }, { model: 'gpt-4o', calls: 1 }], session_index: [] };
+const _dom = R.profileIconHtml('nous', 18);
+ok(_dom.includes('lvprovlogo') || _dom.includes('<svg'), 'profileIconHtml: dominant model returns provLogoSvg output');
+DATA.profiles.nous = { session_index: [] };
+const _fb = R.profileIconHtml('nous', 18);
+ok(!_fb.includes('lvprovlogo'), 'profileIconHtml: no rows returns fallback tile');
+ok(_fb.includes('data-profile-icon-fallback="1"'), 'profileIconHtml: fallback tile present');
+// no throw
+DATA.profiles.nous = _rowsBackup;
 R.profileLogoSet('nous', '');
 
 // tabs() reads PV_ALL (never the merged DATA key) and reports the on-count

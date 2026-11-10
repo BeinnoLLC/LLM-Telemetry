@@ -1207,6 +1207,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .setnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin-bottom:8px;background:var(--bg)}
  .setnav button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
  .setnav button:hover{border-color:var(--accent)}
+ .setnav button.is-active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
  .view[data-view="Settings"] > .card{scroll-margin-top:56px}
  .setcustom{margin-left:8px;padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
  .setcustom[hidden]{display:none}
