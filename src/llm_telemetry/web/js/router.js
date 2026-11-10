@@ -750,7 +750,7 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Home:'Home', Life:'Life', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
   Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 

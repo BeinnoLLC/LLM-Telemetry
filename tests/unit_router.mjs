@@ -267,8 +267,14 @@ eq(R.NAVKEY, 'hermes-dash-navcollapsed', 'NAVKEY: storage key literal');
 eq(R.NAV_FALLBACK_GROUP, 'More', 'NAV_FALLBACK_GROUP: literal');
 eq(R.PROFILE_LOGO_MAX_BYTES, 204800, 'PROFILE_LOGO_MAX_BYTES: 200 KiB');
 eq(R.NAV_GROUPS.map(g => g.name), ['Overview', 'Analysis', 'System'], 'NAV_GROUPS: group names/order');
-eq(R.NAV_GROUPS.map(g => g.views.length), [4, 6, 3], 'NAV_GROUPS: group sizes (Live folded into Home, #173)');
-eq(Object.keys(R.NAV_ICONS).length, 14, 'NAV_ICONS: one icon per built-in view (incl. Rankings)');
+// Orchestration (LST-239/243) and Kanban (LST-249) deliberately joined
+// Overview after this expectation was written; Life stays in the sanctioned
+// "More" fallback (check_nav_groups.js covers that contract).
+eq(R.NAV_GROUPS.map(g => g.views.length), [6, 6, 3], 'NAV_GROUPS: group sizes');
+ok(!R.NAV_GROUPS.some(g => g.views.includes('Live')), 'NAV_GROUPS: Live is folded into Home, never listed (#173)');
+eq(Object.keys(R.NAV_ICONS).length, 16, 'NAV_ICONS: one icon per built-in view (incl. Rankings, Life)');
+eq(R.NAV_ICONS.Life, 'Life', 'NAV_ICONS: the Life view carries its own icon id (sprite has #icon-Life)');
+ok(!('Live' in R.NAV_ICONS), 'NAV_ICONS: no stale Live key (retired view, #173)');
 
 // ==================================================== slugOf / viewFromHash ==
 eq(R.NAV_ICONS.Home, 'Home', 'NAV_ICONS: Home icon id');
