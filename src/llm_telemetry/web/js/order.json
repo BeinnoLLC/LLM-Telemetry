@@ -263,6 +263,22 @@
     },
     {
       "mod": "routerview",
+      "name": "RT_COMPACT_AT"
+    },
+    {
+      "mod": "routerview",
+      "name": "RT_POPEN_KEY"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtProfOpened"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtSaveProfOpen"
+    },
+    {
+      "mod": "routerview",
       "name": "rtSection"
     },
     {
@@ -1231,6 +1247,10 @@
     },
     {
       "mod": "live",
+      "name": "_announceLast"
+    },
+    {
+      "mod": "live",
       "name": "liveGroupKeyOf"
     },
     {
@@ -1699,7 +1719,19 @@
     },
     {
       "mod": "views",
+      "name": "HTTP_WORDS"
+    },
+    {
+      "mod": "views",
+      "name": "failMsgHuman"
+    },
+    {
+      "mod": "views",
       "name": "priceFreshness"
+    },
+    {
+      "mod": "views",
+      "name": "ORCH_KIND"
     },
     {
       "mod": "palette",
@@ -1716,6 +1748,90 @@
     {
       "mod": "palette",
       "name": "FEEDER"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_FALLBACK"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_GLYPH"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_KINDS"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_PER_KIND"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_MAX_SPARKS"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_MAX_RINGS"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaPlan"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaKindColor"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA_AXES"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaHexProject"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaHexPath"
+    },
+    {
+      "mod": "arena",
+      "name": "ARENA"
+    },
+    {
+      "mod": "arena",
+      "name": "renderArena"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaFit"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaSpawn"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaReweight"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaTick"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaTickFrame"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaBurst"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaAdvance"
+    },
+    {
+      "mod": "arena",
+      "name": "arenaCssVar"
     },
     {
       "mod": "table",
@@ -2280,6 +2396,14 @@
     {
       "mod": "router",
       "name": "triggerRefresh"
+    },
+    {
+      "mod": "router",
+      "name": "_reloadTimer"
+    },
+    {
+      "mod": "router",
+      "name": "scheduleReloadAfter"
     },
     {
       "mod": "main",

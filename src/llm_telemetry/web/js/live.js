@@ -7,14 +7,15 @@ import {
 } from './palette.js';
 import { bwRow, current, loeIcon, mk, sparkSvg } from './charts.js';
 import {
-  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, MODEL_PROV, provBadge, provIcon, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
+  REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
 import { renderAgents, renderQueue } from './flow.js';
+import { renderArena } from './arena.js';
 import {
   drawerSync, installDrawer, installSessionFinder, installTimelineModal, installTranscriptModal,
 } from './drawer.js';
 import {
-  POWER, PV_ALL, intervalsInstall, navSync, profileHue, pvFilter, settingsInstall, tabs,
+  POWER, PV_ALL, intervalsInstall, navSync, profileHue, profileIconHtml, pvFilter, settingsInstall, tabs,
 } from './router.js';
 import { installHelp } from './routerview.js';
 import { applyDiff, motionReduced, invalidate } from './diffdom.js';
@@ -153,9 +154,9 @@ export function inProgressHtml(p, piLive, agentLive){
     const m = kindMeta(k);
     // Claude/Codex lead with their brand mark (inherits the kind colour);
     // PI and Hermes keep the coloured dot.
-    const mark = kindLogo(k)
+    const mark = (k === 'claude' || k === 'codex') && kindLogo(k)
       ? `<span class="kpi-logo" aria-hidden="true" style="color:${m.color}">${kindLogo(k)}</span>`
-      : `<i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>`;
+      : profileIconHtml(m.label, 12);
     return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}">${mark}${c[k]} ${esc(m.label)}</span>`;
   }).join('');
   return chips ? `<span class="kpi-kinds">${chips}</span>` : '';
@@ -297,7 +298,7 @@ export function kindLogo(kind){
   return KIND_LOGO[kind] || '';
 }
 const KIND_META = {
-  pi:     { sig: KIND_LOGO.pi, label: 'PI',     title: 'PI coding agent (pi-worker)' },
+  pi:     { sig: '\u03C0', label: 'PI',     title: 'PI coding agent (pi-worker)' },
   claude: { sig: KIND_LOGO.claude, label: 'Claude', title: 'Claude Code agent (agent-worker)' },
   codex:  { sig: KIND_LOGO.codex, label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
   hermes: { sig: KIND_LOGO.hermes, label: 'Hermes', title: 'Hermes session' },
@@ -371,7 +372,7 @@ const COVERED_PLAN = { claude: 'Claude', codex: 'ChatGPT' };
 const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN[kind] || 'subscription'} subscription`;
 function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
-  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">subscription</span></span>`;
 }
 // Owner badge: the profile / login / agent that owns a row. Hermes profiles are
 // tinted with the same profileHue() the profile tabs use, so one colour means one
@@ -515,7 +516,7 @@ function piLiveRows(list){
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
       sub: ownerBadge(S.agent || 'pi', 'Agent', 'var(--kind-pi)') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
-      mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
+      mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">${provLogoSvg(short(S.init_model))}↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
   });
 }
@@ -541,6 +542,8 @@ function agentLiveRows(list){
 export function renderLive(){
   const p = DATA.profiles[current] || {};
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
+  // Hex arena on Home: real fleet counts re-weight the avatars every poll.
+  renderArena(fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live));
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the
@@ -623,7 +626,7 @@ export function renderLive(){
           + `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" data-title="${escA(L.title)}" title="${escA(L.title)} \u2014 view timeline">Timeline</button>`
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
           + (L.kind==='subagent' ? '<span class="lvsub">\u21b3 subagent</span>' : ''),
-        mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
+        mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">${provLogoSvg(short(L.init_model))}↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
         gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
         panel: modelsPanel(L) });
     });

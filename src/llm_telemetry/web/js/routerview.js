@@ -285,7 +285,23 @@ export function rtSaveOpen(key, open){
   try { localStorage.setItem(RT_OPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
-export function rtSection(name, p, vocab){
+// Past this many profiles the tab becomes a collapsed list (one row per profile,
+// opened on demand) instead of a stack of open sections: 50 profiles made the
+// page ~9,500px tall. Which rows are open is remembered per browser, as the
+// OPENED set (the default-open fold set above would invert the meaning).
+export const RT_COMPACT_AT = 3;
+export const RT_POPEN_KEY = 'hermes-dash-router-profiles-open';
+export function rtProfOpened(){
+  try { return new Set(JSON.parse(localStorage.getItem(RT_POPEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+export function rtSaveProfOpen(key, open){
+  const s = rtProfOpened();
+  if (open) s.add(key); else s.delete(key);
+  try { localStorage.setItem(RT_POPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
+}
+
+export function rtSection(name, p, vocab, compact){
   const tr = p.tier_router;
   const on = tr && tr.enabled;
   const folded = rtFolded();
@@ -325,10 +341,16 @@ export function rtSection(name, p, vocab){
   };
   const body = (PAGES[rtPage] || PAGES.overview)();
   const pkey = `${name}|*`;
-  return `<details class="rt-profile" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${folded.has(pkey) ? '' : ' open'}>
+  const isOpen = compact ? rtProfOpened().has(pkey) : !folded.has(pkey);
+  // Compact rows show only the exception (router off) and one line of preview.
+  const chip = on && compact ? '' : `<span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>`;
+  const pm = (p.primary || {}).model;
+  const preview = on ? `${tr.tiers.length} tiers · default ${esc(tr.default_tier)}`
+    : compact && pm ? `primary ${esc(pm)}` : '';
+  return `<details class="rt-profile${compact ? ' rt-compact' : ''}" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${isOpen ? ' open' : ''}>
     <summary class="rt-phead"><h2>${esc(name)}</h2>
-      <span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>
-      ${on ? `<span class="muted">${tr.tiers.length} tiers · default ${esc(tr.default_tier)}</span>` : ''}
+      ${chip}
+      ${preview ? `<span class="muted">${preview}</span>` : ''}
       <span class="rt-foldall"><button type="button" data-rtall="open">expand all</button><button type="button" data-rtall="close">collapse all</button></span>
     </summary>${body}</details>`;
 }
@@ -369,8 +391,28 @@ export function renderRouterView(){
     return `<button type="button" data-rtpage="${escA(id)}"${on ? ' aria-current="page"' : ''}` +
       ` title="${escA(tip)}" class="rt-page${on ? ' rt-page-on' : ''}">${esc(label)}</button>`;
   }).join('')}</nav>`;
-  el.innerHTML = strip + names.map(n => rtSection(n, all[n], vocab)).join('');
-  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle', () => rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const compact = names.length > RT_COMPACT_AT;
+  const tools = compact
+    ? `<div class="rt-tools"><input type="search" class="rt-find" aria-label="Filter profiles" placeholder="Filter ${names.length} profiles">` +
+      `<button type="button" class="rt-tbtn" data-rtprof="open">Expand all</button><button type="button" class="rt-tbtn" data-rtprof="close">Collapse all</button>` +
+      `<span class="muted rt-count" aria-live="polite">${names.length} profiles</span></div>` : '';
+  el.innerHTML = strip + tools + names.map(n => rtSection(n, all[n], vocab, compact)).join('');
+  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle',
+    () => compact ? rtSaveProfOpen(dt.dataset.rtfold, dt.open) : rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const find = el.querySelector('.rt-find');
+  if (find) find.addEventListener('input', () => {
+    const q = find.value.trim().toLowerCase();
+    let n = 0;
+    el.querySelectorAll('.rt-profile').forEach(dt => {
+      const hit = !q || dt.dataset.profile.toLowerCase().includes(q);
+      dt.hidden = !hit; if (hit) n++;
+    });
+    el.querySelector('.rt-count').textContent = q ? `${n} of ${names.length} profiles` : `${names.length} profiles`;
+  });
+  el.querySelectorAll('[data-rtprof]').forEach(b => b.addEventListener('click', () => {
+    const open = b.dataset.rtprof === 'open';
+    el.querySelectorAll('.rt-profile:not([hidden])').forEach(dt => { dt.open = open; });
+  }));
   el.querySelectorAll('details[data-rtopen]').forEach(dt => dt.addEventListener('toggle', () => rtSaveOpen(dt.dataset.rtopen, dt.open)));
   el.querySelectorAll('[data-rtall]').forEach(b => b.addEventListener('click', ev => {
     ev.preventDefault(); ev.stopPropagation();   // inside <summary>: don't fold the profile

@@ -57,7 +57,7 @@ setTimeout(() => {
     const cell = (id, n = 1) => row(id).querySelectorAll('.lvnum')[n]; // tokens, cost (Elapsed moved to the State cell)
     const c = cell('c-1'), x = cell('x-1');
     chk(c.querySelector('.lvcov') && c.textContent.includes('$123.46'), 'claude cost cell shows the API-equivalent value', c.textContent);
-    chk(c.querySelector('.lvsubb') && c.querySelector('.lvsubb').textContent === 'sub', 'claude cost cell carries the "sub" badge');
+    chk(c.querySelector('.lvsubb') && c.querySelector('.lvsubb').textContent === 'subscription', 'claude cost cell carries the "subscription" badge');
     chk(/covered by your Claude subscription/.test(c.title) && /API-price equivalent/.test(c.title), 'claude cell title explains it', c.title);
     chk(/covered by your ChatGPT subscription/.test(x.title), 'codex cell title names the ChatGPT subscription', x.title);
     chk(/\$0\.018/.test(x.textContent) && x.querySelector('.lvsubb'), 'codex cell shows value + badge', x.textContent);

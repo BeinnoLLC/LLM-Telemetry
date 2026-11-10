@@ -113,6 +113,7 @@
   --fg:#1a201c;
   --muted:#6f746f;
   --border:rgba(26,32,28,.12);
+  --border-input:#6b6e78;        
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
@@ -185,6 +186,7 @@
   --fg:#ccccdc;
   --muted:#8e8f9a;
   --border:#2c2e33;
+  --border-input:#6b6e78;        
   
   --accent:#6e9fff;
   --accent-ink:#0b0c0e;          
@@ -238,17 +240,14 @@
    
    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
    --nav-w:240px; --rail-w:60px; --bar-h:52px;
-   
-   --logtab-w:52px; --logtab-gap:12px;
-   --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
-;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+   --ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  
- .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+ .page{width:100%;padding:var(--pad) var(--pad) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  
  .card{background:var(--card);border:1px solid var(--border);border-radius:4px;box-shadow:var(--elev-1)}
  .card-hover{transition:box-shadow .15s ease,transform .15s ease;will-change:box-shadow}
@@ -380,7 +379,7 @@
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
 .fbwrap{min-width:0}
 
 @media (max-width:960px){
@@ -427,9 +426,17 @@
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
+ 
+ h1,h2,h3{margin:0;font:inherit}
+ .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+ .skip{position:fixed;left:8px;top:-60px;z-index:200;padding:8px 14px;border-radius:4px;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
+ .skip:focus{top:8px}
+ main:focus{outline:none}
  .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
- .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+ 
+ .dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
+ :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn)}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
  
  .grid-auto{display:grid;gap:var(--gap);
@@ -696,7 +703,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   #navdrawer .navsep{ display:none; }
   #navlist,
   #navdrawer .navgroup{ display:flex; flex-direction:row; flex:none; }
-  #navdrawer .navitem{ flex:0 0 auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem{ flex:0 0 auto; width:auto; min-width:48px; min-height:var(--tabbar-h); padding:0 10px; border-left:0; }
+  #navdrawer .navitem .nvlabel{ display:none; }
   #navdrawer .navitem[aria-current="page"]{ box-shadow:inset 0 -2px 0 var(--accent); }
   #navdrawer .navitem::after{ display:none; }
   body.hasnav .page{ padding-left:var(--pad); padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--pad)); }
@@ -1202,7 +1210,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  
- .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:0;text-transform:none;
    padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
@@ -1261,6 +1269,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
  
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin-bottom:8px;background:var(--bg)}
+ .setnav button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+ .setnav button:hover{border-color:var(--accent)}
+ .setnav button.is-active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
+ .view[data-view="Settings"] > .card{scroll-margin-top:56px}
+ .setcustom{margin-left:8px;padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
+ .setcustom[hidden]{display:none}
+ .setup{cursor:pointer;height:32px;display:inline-flex;align-items:center}
+ .setup:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+ #setcolorgrid .setf,#setlogogrid .setf{padding:8px 10px;gap:2px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:4px;padding:10px}
  .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
@@ -1279,24 +1297,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
 
  
- #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
-   display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 0;
-   width:var(--logtab-w);box-sizing:border-box;overflow:hidden;
-   border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
-   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
-   font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
-   box-shadow:-4px 0 18px rgba(0,0,0,.35)}
- 
- #logbtn:hover{border-color:var(--accent)}
- #logbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
- 
- #logbtn.hidden{opacity:0;pointer-events:none}
-  
- 
- @media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }
- #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
-   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
- #logbtn .n[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
@@ -1465,7 +1465,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .livegrid{display:grid;gap:var(--gap);align-items:start;
    grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:1279px){
+ @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    
    .livegrid > .card:first-child{max-height:none !important}
@@ -1594,6 +1594,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-foldall button{font-size:var(--fs-xs);padding:.15rem .5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer}
 .rt-foldall button:hover{color:var(--fg);border-color:var(--accent)}
 .rt-phead h2{font-size:var(--fs-lg);font-weight:600;margin:0}
+.rt-compact{margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.rt-compact > .rt-phead{margin:0;padding:10px 12px;min-height:48px}
+.rt-compact[open] > .rt-phead{border-bottom:1px solid var(--border);margin-bottom:.6rem}
+.rt-compact > .rt-card{margin:0 12px .6rem}
+.rt-compact:not([open]) .rt-foldall{display:none}
+.rt-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .8rem}
+.rt-find{flex:1 1 220px;max-width:340px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);font:inherit;color-scheme:dark}
+.rt-tbtn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.rt-tbtn:hover{color:var(--fg);border-color:var(--accent)}
 
 .rt-pages{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem;position:sticky;top:0;z-index:3;
   background:var(--bg);padding:.35rem 0}
@@ -2108,6 +2117,91 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 }
 
 
+.arenabox{position:relative;height:clamp(160px,18vw,260px);width:100%}
+#arenacv{display:block;width:100%;height:100%;border-radius:var(--radius-sm,6px)}
+
+
+#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
+  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
+body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
+#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
+#appbar .ab-sep{opacity:.4}
+#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#appbar .ab-spacer{flex:1}
+#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
+#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
+#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
+
+
+.orch-card{padding:1rem;overflow-x:auto}
+.orch-empty{padding:1rem}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
+.orch-head{fill:var(--muted)}
+.orch-lbl{fill:var(--muted);font-size:13px}
+.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
+.orch-name{fill:var(--text, currentColor);font-size:13px}
+.orch-kind{font-size:13px;font-weight:600}
+
+
+.kb-empty{padding:1rem}
+.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
+.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
+.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
+.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
+.kb-count{color:var(--muted);font-weight:400}
+.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
+.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
+.kb-title{overflow-wrap:anywhere}
+.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
+.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
+.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}
+
+
+
+
+
+
+.state-skeleton { padding: 12px; }
+.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
+.state-empty, .state-error { padding: 16px; text-align: center; }
+.state-icon { font-size: 28px; margin-bottom: 8px; }
+.state-msg { margin: 4px 0; }
+.state-action { display: inline-block; margin-top: 8px; }
+.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
+
+
+.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
+  max-width: 100%;
+}
+.model-name, .modelname, td.model, .tbl-model, .cell-model {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+canvas, img {
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 480px) {
+  button, a, [role="button"], .btn, .chip, .tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+
 :root:not([data-theme="dark"]) #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
 :root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
 :root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
@@ -2151,85 +2245,9 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 
 
-
-.state-skeleton { padding: 12px; }
-.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
-@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
-.state-empty, .state-error { padding: 16px; text-align: center; }
-.state-icon { font-size: 28px; margin-bottom: 8px; }
-.state-msg { margin: 4px 0; }
-.state-action { display: inline-block; margin-top: 8px; }
-.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
-
-
-.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
-  max-width: 100%;
-}
-.model-name, .modelname, td.model, .tbl-model, .cell-model {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-canvas, img {
-  max-width: 100%;
-  height: auto;
-}
-@media (max-width: 480px) {
-  button, a, [role="button"], .btn, .chip, .tab {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-
-#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
-  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
-body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
-#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
-#appbar .ab-sep{opacity:.4}
-#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-#appbar .ab-spacer{flex:1}
-#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
-#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
-#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
-#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
-@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
-
-
-.orch-card{padding:1rem;overflow-x:auto}
-.orch-empty{padding:1rem}
-.orch-svg{width:100%;min-width:480px;height:auto;display:block}
-.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
-.orch-head{fill:var(--muted)}
-.orch-lbl{fill:var(--muted);font-size:10px}
-.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
-.orch-name{fill:var(--text, currentColor);font-size:12px}
-.orch-kind{font-size:10px;font-weight:600}
-
-
-.kb-empty{padding:1rem}
-.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
-.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
-.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
-.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
-.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
-.kb-count{color:var(--muted);font-weight:400}
-.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
-.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
-.kb-title{overflow-wrap:anywhere}
-.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
-.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
-.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}
-
 </style></head><body>
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Orchestration" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.8l9 4M7.5 17.2l9-4"/></symbol><symbol id="icon-Kanban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="6" rx="1"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs><symbol id="icon-Home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="icon-Live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="icon-Life" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></symbol><symbol id="icon-Flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol><symbol id="icon-Router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="icon-Orchestration" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.8l9 4M7.5 17.2l9-4"/></symbol><symbol id="icon-Kanban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="6" rx="1"/></symbol><symbol id="icon-Quota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol><symbol id="icon-Usage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></symbol><symbol id="icon-Sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v5"/></symbol><symbol id="icon-Cost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol><symbol id="icon-Prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></symbol><symbol id="icon-Rankings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20V7"/></symbol><symbol id="icon-Health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10V5l7-3 7 3v6c0 5.5-7 10-7 10z"/></symbol><symbol id="icon-Detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="icon-Logs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol><symbol id="icon-Settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol></defs></svg>
+<a class="skip" href="#main">Skip to content</a>
 <div id="boot"><div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="lbl">loading analytics</div></div>
 <div id="navscrim"></div>
@@ -2248,7 +2266,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
  <span id="ab-fresh" class="ab-fresh" data-fresh-state="unknown" role="status"></span>
  <button id="ab-theme" class="chip" type="button" title="Toggle theme" aria-label="Toggle theme">&#9788;</button>
 </div>
-<main class="page flex flex-col gap-4">
+<main class="page flex flex-col gap-4" id="main" tabindex="-1">
  <header id="pagehead" class="flex items-end justify-between flex-wrap gap-3 pagehead">
   <div class="flex items-center gap-2">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
@@ -2262,7 +2280,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
     <path d="M3 21h18" opacity=".35"/>
    </svg>
    <div>
-    <div class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</div>
+    <h1 class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</h1><span class="sr-only" id="h1view">Home</span>
     <div class="muted text-[length:var(--fs-xs)] mt-0.5 flex items-center gap-1.5">
      <span class="dot"></span><span id="meta" class="stamp"></span>
      <span id="resinfo" class="resinfo"></span>
@@ -2332,6 +2350,10 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 
  <div class="view" data-view="Home">
   <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
+  <div class="card p-4 mt-3" id="arenacard">
+   <div class="lbl mb-2.5">Agent arena<span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="arenasub"></span></div>
+   <div class="arenabox"><canvas id="arenacv" aria-hidden="true"></canvas></div>
+  </div>
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
   <div class="card p-4 mt-3 home-late" id="olcard" hidden>
    <div class="lbl mb-2.5">Local inference hosts
@@ -2415,6 +2437,13 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
  </div>
 
  <div class="view" data-view="Settings" hidden>
+  <nav class="setnav" id="setnav" aria-label="Settings sections">
+   <button type="button" data-setgo="setcard">Electricity &amp; hardware</button>
+   <button type="button" data-setgo="setpricecard">Local token pricing</button>
+   <button type="button" data-setgo="setintervalscard">Refresh intervals</button>
+   <button type="button" data-setgo="setcolorcard">Profile colours</button>
+   <button type="button" data-setgo="setlogocard">Profile logos</button>
+  </nav>
   <div class="card p-4 mb-3" id="setcard">
    <div class="flex items-center gap-2 flex-wrap mb-1">
     <div class="lbl">Electricity &amp; hardware</div>
@@ -2454,7 +2483,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
     <span class="text-[length:var(--fs-xs)]" id="setmsg" role="status"></span>
    </div>
   </div>
-  <div class="card p-4 mb-3">
+  <div class="card p-4 mb-3" id="setpricecard">
    <div class="lbl mb-1">How a local token is priced</div>
    <p class="muted text-[length:var(--fs-xs)] mb-2">Read-only: measured on this hardware and fixed in
     <code>energy.py</code>. Shown so a number you disagree with is visible before it is used.</p>
@@ -2860,7 +2889,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
   Live Claude Code and Codex sessions count their tokens and show the same API-price equivalent
   with a <b>sub</b> badge (covered by your Claude / ChatGPT subscription); it is never added to Est. cost.
  </details>
-</div><div id="helpwrap" role="dialog" aria-modal="true" aria-label="How routing works">
+</main><div id="helpwrap" role="dialog" aria-modal="true" aria-label="How routing works">
  <div id="helpscrim"></div>
  <div id="helppanel">
   <button id="helpclose" aria-label="Close">&times;</button>
@@ -2921,11 +2950,6 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
  <div id="lnbody" tabindex="-1"></div>
 </main>
 <div id="lntip"></div>
-
-<button id="logbtn" title="Open live logs (L)" aria-keyshortcuts="L">
- <span style="color:var(--accent)">&#9776;</span> Logs
- <span class="n" id="logn" hidden>0</span>
-</button>
 
 <div id="pdscrim"></div>
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
@@ -3429,7 +3453,19 @@ function rtSaveOpen(key, open){
   try { localStorage.setItem(RT_OPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
 }
 
-function rtSection(name, p, vocab){
+const RT_COMPACT_AT = 3;
+const RT_POPEN_KEY = 'hermes-dash-router-profiles-open';
+function rtProfOpened(){
+  try { return new Set(JSON.parse(localStorage.getItem(RT_POPEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function rtSaveProfOpen(key, open){
+  const s = rtProfOpened();
+  if (open) s.add(key); else s.delete(key);
+  try { localStorage.setItem(RT_POPEN_KEY, JSON.stringify([...s])); } catch { /* private mode */ }
+}
+
+function rtSection(name, p, vocab, compact){
   const tr = p.tier_router;
   const on = tr && tr.enabled;
   const folded = rtFolded();
@@ -3463,10 +3499,15 @@ function rtSection(name, p, vocab){
   };
   const body = (PAGES[rtPage] || PAGES.overview)();
   const pkey = `${name}|*`;
-  return `<details class="rt-profile" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${folded.has(pkey) ? '' : ' open'}>
+  const isOpen = compact ? rtProfOpened().has(pkey) : !folded.has(pkey);
+  const chip = on && compact ? '' : `<span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>`;
+  const pm = (p.primary || {}).model;
+  const preview = on ? `${tr.tiers.length} tiers · default ${esc(tr.default_tier)}`
+    : compact && pm ? `primary ${esc(pm)}` : '';
+  return `<details class="rt-profile${compact ? ' rt-compact' : ''}" data-profile="${escA(name)}" data-rtfold="${escA(pkey)}"${isOpen ? ' open' : ''}>
     <summary class="rt-phead"><h2>${esc(name)}</h2>
-      <span class="rt-auth ${on ? 'rt-ok' : 'rt-mute'}">${on ? 'router on' : 'router off'}</span>
-      ${on ? `<span class="muted">${tr.tiers.length} tiers · default ${esc(tr.default_tier)}</span>` : ''}
+      ${chip}
+      ${preview ? `<span class="muted">${preview}</span>` : ''}
       <span class="rt-foldall"><button type="button" data-rtall="open">expand all</button><button type="button" data-rtall="close">collapse all</button></span>
     </summary>${body}</details>`;
 }
@@ -3500,8 +3541,28 @@ function renderRouterView(){
     return `<button type="button" data-rtpage="${escA(id)}"${on ? ' aria-current="page"' : ''}` +
       ` title="${escA(tip)}" class="rt-page${on ? ' rt-page-on' : ''}">${esc(label)}</button>`;
   }).join('')}</nav>`;
-  el.innerHTML = strip + names.map(n => rtSection(n, all[n], vocab)).join('');
-  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle', () => rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const compact = names.length > RT_COMPACT_AT;
+  const tools = compact
+    ? `<div class="rt-tools"><input type="search" class="rt-find" aria-label="Filter profiles" placeholder="Filter ${names.length} profiles">` +
+      `<button type="button" class="rt-tbtn" data-rtprof="open">Expand all</button><button type="button" class="rt-tbtn" data-rtprof="close">Collapse all</button>` +
+      `<span class="muted rt-count" aria-live="polite">${names.length} profiles</span></div>` : '';
+  el.innerHTML = strip + tools + names.map(n => rtSection(n, all[n], vocab, compact)).join('');
+  el.querySelectorAll('details[data-rtfold]').forEach(dt => dt.addEventListener('toggle',
+    () => compact ? rtSaveProfOpen(dt.dataset.rtfold, dt.open) : rtSaveFold(dt.dataset.rtfold, dt.open)));
+  const find = el.querySelector('.rt-find');
+  if (find) find.addEventListener('input', () => {
+    const q = find.value.trim().toLowerCase();
+    let n = 0;
+    el.querySelectorAll('.rt-profile').forEach(dt => {
+      const hit = !q || dt.dataset.profile.toLowerCase().includes(q);
+      dt.hidden = !hit; if (hit) n++;
+    });
+    el.querySelector('.rt-count').textContent = q ? `${n} of ${names.length} profiles` : `${names.length} profiles`;
+  });
+  el.querySelectorAll('[data-rtprof]').forEach(b => b.addEventListener('click', () => {
+    const open = b.dataset.rtprof === 'open';
+    el.querySelectorAll('.rt-profile:not([hidden])').forEach(dt => { dt.open = open; });
+  }));
   el.querySelectorAll('details[data-rtopen]').forEach(dt => dt.addEventListener('toggle', () => rtSaveOpen(dt.dataset.rtopen, dt.open)));
   el.querySelectorAll('[data-rtall]').forEach(b => b.addEventListener('click', ev => {
     ev.preventDefault(); ev.stopPropagation();   // inside <summary>: don't fold the profile
@@ -4229,9 +4290,12 @@ function provOf(p, model, url){
 function provBadge(p){
   const key=(p||'').toLowerCase().trim();
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
+  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || '#8b98ab', name:key||'unknown'};
+  const d = rt.svg && RT_SVG[rt.svg];
+  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
-    <span style="font-size:var(--fs-xs)">${s.icon}</span>${key}</span>`;
+    ${mark}${key}</span>`;
 }
 let MODEL_PROV = {};
 function buildModelProv(rows){
@@ -4244,6 +4308,14 @@ function buildModelProv(rows){
 function provIcon(sm){
   const key = MODEL_PROV[sm] || provOf('', sm, '');
   return (PROV[key]||{icon:'○'}).icon;
+}
+function provLogoSvg(sm, px){
+  px = px || 14;
+  const key = MODEL_PROV[sm] || provOf('', sm, '');
+  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
+  const d = s.svg && RT_SVG[s.svg];
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
+  return `<span style="color:${s.c};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
 }
 function ic(sm){ return provIcon(sm) + ' ' + sm; }
 
@@ -4321,7 +4393,7 @@ function renderBandwidthPanel(p, inR){
         const hot = med && o.x >= 2 * med;
         return `<div class="bwrrow${hot ? ' hot' : ''}" data-model="${short(o.model)}" data-x="${o.x.toFixed(2)}"
                   title="${o.sent.toLocaleString()} prompt tokens sent · ${o.fresh.toLocaleString()} fresh · ${o.calls.toLocaleString()} calls">
-          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${short(o.model)}</span>
+          <span class="bwrm truncate" style="color:${colorOf(short(o.model))}">${provLogoSvg(short(o.model))} ${short(o.model)}</span>
           <span class="bwrbar"><i style="width:${Math.max(2, 100 * o.x / max).toFixed(1)}%"></i></span>
           <span class="bwrx">${o.x.toFixed(1)}&times;</span>
           ${hot ? '<span class="bwrflag" title="At least 2x the fleet median">&#9650; high</span>' : '<span class="bwrflag"></span>'}
@@ -4342,7 +4414,7 @@ function costCell(v, local, state){
   if (state === 'freetier') return `<span class="freetier" title="Published $0 tier (OpenRouter :free or an OpenCode Zen free SKU): genuinely $0 per token.">$0 <span class="ftmark">free tier</span></span>`;
   if (!local) return '$' + v.toFixed(2);
   const s = v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toFixed(4) : '0';
-  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">elec</span></span>`;
+  return `<span class="eleccost" title="Electricity at your tariff (electricity_rate_kwh). Not billed by any provider.">~$${s} <span class="elecmark">electricity</span></span>`;
 }
 
 function unpricedModels(rows){
@@ -4500,7 +4572,7 @@ function renderResend(p, inR){
     const name = esc(r.title || r.id);
     return `<tr class="resendrow" data-sid="${escA(r.id)}" style="border-top:1px solid var(--border)">
       <td class="py-1 pr-2 resendname" title="${escA(r.id)}">${name}</td>
-      <td class="pr-2 rsx" style="white-space:nowrap">${esc(short(r.model))}</td>
+      <td class="pr-2 rsx" style="white-space:nowrap">${provLogoSvg(short(r.model))} ${esc(short(r.model))}</td>
       <td class="text-right">${r.calls.toLocaleString()}</td>
       <td class="text-right rsx">${fmt(r.ctx_per_call)}</td>
       <td class="text-right">${r.cread_pct.toFixed(1)}%</td>
@@ -4805,7 +4877,7 @@ function render(){
     <th class="text-right">Est. cost</th>
     <th class="text-left pl-3">Tasks</th></tr>`+
     Object.entries(t).sort((a,b)=>b[1].calls-a[1].calls).map(([k,v])=>{const [m,pr]=k.split('|');
-      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span><span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
+      return `<tr data-model="${esc(m)}" data-cost="${v.local?'local':'other'}" style="border-top:1px solid ${BD}"><td class="py-1.5"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${colorOf(m)};margin-right:6px"></span>${provLogoSvg(short(m))}<span class="text-[length:var(--fs-md)] font-semibold" style="color:${colorOf(m)}">${m}</span></td>
         <td>${provBadge(pr)}</td>
         <td class="text-right">${v.calls.toLocaleString()}</td><td class="text-right">${fmt(v.inp)}</td><td class="text-right">${fmt(v.outp)}</td>
         <td class="text-right">${fmt(v.cache)}</td>
@@ -5100,7 +5172,7 @@ function renderRankings(){
   const ntop = cur.top.length;
   let body = cur.top.map(r =>
     `<tr><td class="muted">${r.rank}</td>` +
-    `<td title="${esc(r.model)}"><span class="dot" style="background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span>${esc(short(r.model))}</td>` +
+    `<td title="${esc(r.model)}">${provLogoSvg(short(r.model))} ${esc(short(r.model))}</td>` +
     `<td class="num">${fmt(r.tokens)}</td>` +
     `<td><span class="bar"><span style="width:${Math.min(100, r.share || 0).toFixed(1)}%;background:var(--pal-${['mint','indigo','amber','rose','slate'][((r.rank || 1) - 1) % 5]})"></span></span> ${(r.share || 0).toFixed(1)}%</td>` +
     `<td class="num">${tr(r.trend)}</td></tr>`).join('');
@@ -5176,13 +5248,13 @@ function renderOrchestration(){
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const w = 1 + 3 * e.count / maxc;
     return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" class="orch-edge" stroke-width="${w.toFixed(1)}" marker-end="url(#orch-arrow)"><title>${escA(e.from)} \u2192 ${escA(e.to)}: ${escA(e.type)} \u00d7${e.count}</title></path>` +
-      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle">${esc(e.type)} \u00d7${e.count}</text>`;
+      `<text x="${mx}" y="${my - 4}" class="orch-lbl" text-anchor="middle"><tspan>${esc(e.type)} \u00d7${e.count}</tspan></text>`;
   }).join('');
   const boxes = nodes.map(n => {
     const p = lane[n.id], [lab, c] = ORCH_KIND[n.kind] || [n.kind, 'var(--muted)'];
     return `<g class="orch-node"><rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="6" style="stroke:${c}"/>` +
-      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name">${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</text>` +
-      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}">${esc(lab)}</text></g>`;
+      `<text x="${p.x + 8}" y="${p.y + NH / 2 + 4}" class="orch-name"><tspan>${esc(n.name.length > 18 ? n.name.slice(0, 17) + '\u2026' : n.name)}</tspan></text>` +
+      `<text x="${p.x + NW - 8}" y="${p.y + NH / 2 + 4}" class="orch-kind" text-anchor="end" style="fill:${c}"><tspan>${esc(lab)}</tspan></text></g>`;
   }).join('');
   el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
     `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
@@ -5542,7 +5614,7 @@ function renderHome(inR){
   ];
 
   const xc = (c) => `
-    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}" title="${escA(c.blurb)}">
+    <a class="card xcard homecard" href="#/${c.href || c.route.toLowerCase()}" rel="noopener noreferrer" data-gohome="${c.route}"${c.sec ? ` data-sec="${c.sec}"` : ''} title="${escA(c.blurb)}">
       <span class="kpi-badge" style="background:color-mix(in srgb,${c.color} 14%,var(--card));color:${c.color};box-shadow:inset 0 0 0 1px color-mix(in srgb,${c.color} 30%,transparent)">
         <span class="hc-ico" aria-hidden="true">${c.icon}</span></span>
       <span class="xp-body">
@@ -5555,16 +5627,17 @@ function renderHome(inR){
   html += xc({title:'Bandwidth (est.)', icon:icon('updown'), color:PAL[0],
     blurb:'Estimated from tokens, not measured',
     value:`<span class="bwup">\u2191 ${fmtB(upB)}</span><span class="muted" style="font-weight:400"> / </span><span class="bwdown">\u2193 ${fmtB(downB)}</span>`,
-    route:'Usage'});
+    route:'Usage', href:'usage?s=bandwidth', sec:'bwpanel'});
 
   html += xc({title:'Prices', icon:icon('scale'), color:PAL[8],
-    blurb:'Per-million-token rates &amp; spend', value:'Price sheet', route:'Prices', href:'Prices'});
+    blurb:'Per-million-token rates &amp; spend', value:'per 1M tokens', route:'Prices', href:'prices'});
 
   box.innerHTML = html;
   box.querySelectorAll('[data-gohome]').forEach(a => {
     a.addEventListener('click', (e) => {
       e.preventDefault();
       pickView(a.dataset.gohome);
+      if (a.dataset.sec) document.getElementById(a.dataset.sec)?.scrollIntoView?.({block: 'start'});
     });
   });
 }
@@ -5603,7 +5676,7 @@ function modelsShare(ms, cur){
   }).join('');
   const legend = ms.map((m, i) => {
     const nm = short(m.model), pct = vals[i] / tot * 100;
-    const icon = provIcon(nm);
+    const icon = provLogoSvg(nm);
     return `<span class="lmkey${nm === cur ? ' cur' : ''}">`
       + `<span class="lmdot" style="background:${colorOf(nm)}"></span>${icon ? icon + ' ' : ''}${esc(nm)}`
       + `<span class="muted"> ${pct < 0.1 && pct > 0 ? '<0.1' : pct.toFixed(1)}%</span></span>`;
@@ -5725,10 +5798,11 @@ function renderLatency(lat){
   if (!Object.keys(byModel).length){ card.hidden = true; return; }
   card.hidden = false;
 
-  const row = (name, b) => {
+  const row = (name, b, isModel) => {
     const tokS = b.tok_s != null ? `${b.tok_s.toFixed(1)} tok/s` : '';
+    const logo = isModel ? provLogoSvg(short(name)) : '';
     return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
-      <span class="font-semibold flex-1 truncate" title="${esc(name)}">${esc(name)}</span>
+      <span class="font-semibold flex-1 truncate" title="${esc(name)}">${logo}${esc(name)}</span>
       <span class="muted" title="sample size">n=${b.n}</span>
       <span title="p50 / p90 / p99 seconds">${b.p50}s / ${b.p90}s / ${b.p99}s</span>
       <span class="muted" style="min-width:5.5rem;text-align:right">${tokS}</span>
@@ -5737,16 +5811,16 @@ function renderLatency(lat){
 
   $('latbymodel').innerHTML = Object.entries(byModel)
     .sort((a, b) => b[1].p90 - a[1].p90)
-    .map(([name, b]) => row(name, b)).join('');
+    .map(([name, b]) => row(name, b, true)).join('');
   $('latbyendpoint').innerHTML = Object.entries(byEndpoint)
     .sort((a, b) => b[1].p90 - a[1].p90)
-    .map(([name, b]) => row(name, b)).join('');
+    .map(([name, b]) => row(name, b, false)).join('');
 
   const slowest = (lat && lat.slowest) || [];
   $('latslowest').innerHTML = slowest.length
     ? `<div class="muted text-[length:var(--fs-xs)] mb-1 mt-1">Slowest turns</div>` +
       slowest.map(s => `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-0.5">
-        <button type="button" class="chip ttitlebtn" data-tsession="${esc(s.session)}" data-tprofile="${esc(current)}">${esc(s.model || '(unknown)')}</button>
+        <button type="button" class="chip ttitlebtn" data-tsession="${esc(s.session)}" data-tprofile="${esc(current)}">${provLogoSvg(short(s.model))}${esc(s.model || '(unknown)')}</button>
         <span class="muted">${s.s}s</span>
       </div>`).join('')
     : '';
@@ -5968,7 +6042,7 @@ function renderProjectMatrix(rows){
   const grandTotal = weightValue(rows);
 
   const headCells = shownModels.map(m =>
-    `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${esc(short(m))}</th>`).join('');
+    `<th class="text-right px-2 py-1.5" style="color:${colorOf(m)}">${provLogoSvg(short(m))}${esc(short(m))}</th>`).join('');
   const restHeadCell = restModels.length
     ? `<th class="text-right px-2 py-1.5 muted" title="${esc(restModels.map(short).join(', '))}">+${restModels.length} more</th>`
     : '';
@@ -6065,7 +6139,7 @@ function pdOpen(project, rows, _highlightModel){
   const statRow = (k, v) => `<div class="pdstat"><span class="k">${esc(k)}</span><span>${v}</span></div>`;
   const bar = (label, icon, cost, total) => {
     const pct = total > 0 ? (100 * cost / total) : 0;
-    return `<div class="pdstat"><span class="k">${esc(icon ? icon + ' ' : '')}${esc(label)}</span>` +
+    return `<div class="pdstat"><span class="k">${icon ? icon + ' ' : ''}${esc(label)}</span>` +
       `<span>$${cost.toFixed(2)} <span class="muted">(${pct.toFixed(0)}%)</span></span></div>`;
   };
 
@@ -6083,11 +6157,11 @@ function pdOpen(project, rows, _highlightModel){
     </div>
     <div class="pdsection">
       <div class="lbl">Model breakdown</div>
-      ${topModels.map(([m, c]) => bar(short(m), provIcon(short(m)), c, totalAct || totalEst)).join('')}
+      ${topModels.map(([m, c]) => bar(short(m), provLogoSvg(short(m)), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Provider breakdown</div>
-      ${topProviders.map(([p, c]) => bar(p, (PROV[p] || {}).icon || '\u25CB', c, totalAct || totalEst)).join('')}
+      ${topProviders.map(([p, c]) => bar(p, provLogoSvg(p), c, totalAct || totalEst)).join('')}
     </div>
     <div class="pdsection">
       <div class="lbl">Task / tool mix</div>
@@ -6749,15 +6823,14 @@ function carTip(it){
       + row('position', `${it.pos} of ${it.depth}`) + row('state', 'queued at the Ollama host');
   }
   const head = `<div class="ft-h">${esc(it.label)}</div>`;
-  const provIcon = (m) => (PROV[provOf('', m || '', '')] || {}).icon || '';
   if (it.kind === 'r'){
     return head + row('state', ({ compressing: 'compressing', waiting: 'waiting on a tool or approval' })[it.state] || 'running')
-      + row('engine', kindMeta(it.eng).label) + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim()) + row('profile', it.profile)
+      + row('engine', kindMeta(it.eng).label) + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>` + row('profile', it.profile)
       + row('doing', it.phase || it.category)
       + row('last activity', it.idle_s != null ? ago(+it.idle_s) + ' ago' : '')
       + row('tools used', it.tools) + row('models seen', it.nmodels > 1 ? it.nmodels : '');
   }
-  return head + row('profile', it.profile) + row('engine', 'Hermes') + row('model', (provIcon(it.model) + ' ' + (it.model || '')).trim())
+  return head + row('profile', it.profile) + row('engine', 'Hermes') + `<div class="ft-r"><span>${esc('model')}</span><b>${provLogoSvg(it.model)} ${esc(it.model || '')}</b></div>`
     + row('ran for', it.dur_s != null ? ago(Math.max(0, +it.dur_s)) : '')
     + row('finished', it.last_ts ? ago(Math.max(0, Date.now() / 1000 - it.last_ts)) + ' ago' : '')
     + row('tokens', it.tokens ? tk(+it.tokens) : '') + row('API calls', it.api_calls);
@@ -7220,7 +7293,8 @@ function freshNodes(tmp, html){
   return [...tmp.content.children]; // multi-root friendly
 }
 
-const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };function liveGroupKeyOf(el){
+const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };let _announceLast = 0;
+function liveGroupKeyOf(el){
   if (el.classList && el.classList.contains('liverow')){
     const btn = el.querySelector('[data-tsession]');
     if (btn) return btn.getAttribute('data-tsession');
@@ -7310,9 +7384,9 @@ function inProgressHtml(p, piLive, agentLive){
   inFlight(p, piLive, agentLive).forEach(t => { c[t.kind]++; });
   const chips = KIND_ORDER.filter(k => c[k]).map(k => {
     const m = kindMeta(k);
-    const mark = kindLogo(k)
+    const mark = (k === 'claude' || k === 'codex') && kindLogo(k)
       ? `<span class="kpi-logo" aria-hidden="true" style="color:${m.color}">${kindLogo(k)}</span>`
-      : `<i class="kpi-dot" aria-hidden="true" style="background:${m.color}"></i>`;
+      : profileIconHtml(m.label, 12);
     return `<span class="kpi-kind" data-kind="${k}" title="${c[k]} ${escA(m.label)}">${mark}${c[k]} ${esc(m.label)}</span>`;
   }).join('');
   return chips ? `<span class="kpi-kinds">${chips}</span>` : '';
@@ -7418,15 +7492,17 @@ function logoSvg(kind, d){
 const KIND_LOGO = {
   claude: logoSvg('claude', 'm4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z'),
   codex:  logoSvg('codex', 'M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z'),
+  hermes: logoSvg('hermes', 'M11.981.009c.226-.012.453-.011.679 0 .247.01.495.024.74.062.401.064.798.157 1.19.273.463.138.92.299 1.356.511a7.31 7.31 0 012.948 2.642c.292.469.536.963.739 1.479.219.556.446 1.11.623 1.683.204.654.329 1.326.458 1.997.097.504.182 1.01.29 1.511.156.722.329 1.44.494 2.16.186.812.4 1.615.63 2.415.102.355.193.713.282 1.072.11.436.202.876.254 1.323.031.278.066.557.073.837a7.56 7.56 0 01-.017.88c-.037.413-.1.818-.226 1.212a5.017 5.017 0 01-.915 1.649l-.13.156.018.023c.043-.023.088-.041.127-.068.2-.138.373-.307.531-.49.4-.46.721-.973.975-1.529a3.59 3.59 0 00.325-1.72c-.024-.424-.097-.834-.3-1.213-.013-.027-.015-.06-.03-.121.05.035.082.048.101.072.107.13.22.258.315.398.33.494.46 1.052.486 1.64a3.75 3.75 0 01-.47 1.97c-.36.655-.887 1.14-1.526 1.506-.193.111-.394.21-.595.308-.157.078-.248.211-.318.365a.522.522 0 00-.033.406.359.359 0 01.013.139c-.005.077-.077.155-.14.162-.054.006-.125-.043-.15-.116a1.206 1.206 0 01-.06-.233c-.04-.314-.155-.6-.308-.87a3.906 3.906 0 00-.73-.91 2.129 2.129 0 00-.897-.524 4.093 4.093 0 00-.692-.131c-.075-.008-.15-.04-.22.01.18.06.363.11.538.18.434.173.82.43 1.18.728.308.255.58.543.794.884.098.155.186.315.227.496.027.123.042.25.067.375.013.062-.002.109-.053.144-.047.033-.122.034-.163-.01a.455.455 0 01-.08-.14c-.03-.073-.038-.159-.078-.225a7.314 7.314 0 00-1.423-1.664c-.16-.137-.329-.26-.537-.323-.376-.114-.753-.203-1.15-.154-.213.025-.427.032-.64.053a1.6 1.6 0 00-.736.278 5.14 5.14 0 00-.834.72c-.329.342-.642.699-.955 1.055-.136.155-.264.319-.314.531a5.227 5.227 0 00-.012.051.096.096 0 01-.09.076h-.31c-.046 0-.082-.048-.072-.094.023-.108.045-.216.07-.324.075-.325.19-.635.368-.917.024-.039.04-.088.104-.08l.01.049.027.077c.28-.435.571-.834.996-1.135.283-.204.584-.378.89-.55a.196.196 0 00-.098-.002c-.162.043-.325.084-.485.134-.402.124-.764.33-1.11.566-.147.1-.298.193-.414.333a7.314 7.314 0 00-1.07 1.767.845.845 0 00-.04.12.075.075 0 01-.072.056h-.494c-.04 0-.062-.051-.036-.082.123-.14.246-.282.377-.415.275-.281.58-.532.777-.884.027-.048.063-.09.095-.135.238-.333.54-.607.818-.902.082-.086.175-.16.26-.24.029-.027.053-.057.079-.085l-.018-.025-.135.041c-.034.017-.07.031-.102.05-.248.144-.494.292-.743.433-.408.23-.825.439-1.209.711-.281.2-.591.358-.889.533-.02.012-.044.015-.08.028-.015-.135.143-.201.108-.336-.033.014-.064.02-.085.038-.111.096-.227.19-.328.296-.148.157-.284.325-.425.488-.125.143-.25.286-.373.431A.153.153 0 019.89 24H8.762a.316.316 0 00.016-.042c.028-.09.085-.172.083-.28-.091-.018-.162.001-.212.077a4.45 4.45 0 00-.136.215c-.01.016-.024.03-.042.03h-.093c-.019 0-.029-.022-.017-.037.071-.088.14-.178.209-.268.001-.002-.006-.012-.012-.024-.014.004-.03.006-.045.013-.176.09-.352.181-.527.274a.363.363 0 01-.168.042H5.202c-.026 0-.039-.036-.019-.053.21-.178.402-.374.558-.605.335-.496.538-1.047.667-1.629.004-.02-.003-.043-.006-.091-.037.048-.059.072-.076.1a1.943 1.943 0 01-.334.415c-.28.258-.59.448-.983.464-.297.012-.588 0-.865-.127-.46-.21-.722-.57-.794-1.072-.025-.17-.017-.171-.182-.219A3.513 3.513 0 011.97 20.6a2.286 2.286 0 01-.808-1.13 3.569 3.569 0 01-.16-1.245c.002-.034.016-.067.024-.1.032.023.046.043.05.066.033.153.059.308.096.46.086.355.257.664.516.92.258.256.571.419.91.532.358.118.717.138 1.07-.016a1.89 1.89 0 00.621-.452c.328-.348.533-.76.648-1.223.009-.034.005-.071.007-.11-.015.006-.026.006-.03.011-.031.05-.064.1-.093.152-.284.502-.679.887-1.196 1.135-.351.17-.718.255-1.11.159a1.607 1.607 0 01-.971-.64 2.006 2.006 0 01-.368-.924 2.903 2.903 0 01.02-.886c.05-.439.466-1.17.742-1.271-.02.063-.035.112-.053.16-.043.116-.097.227-.13.345a1.901 1.901 0 00-.05.82c.033.212.09.416.204.6.147.236.346.407.62.465.11.023.225.014.338.018a.576.576 0 00.386-.131c.164-.128.282-.292.366-.481.168-.375.24-.777.309-1.179.05-.296.093-.594.133-.893.039-.281.071-.563.104-.845.026-.232.048-.464.074-.696.024-.228.052-.455.076-.683.024-.227.047-.455.069-.683.013-.14.022-.28.034-.42l.037-.417c.022-.25.041-.5.065-.748.008-.082-.02-.132-.09-.177a2.46 2.46 0 01-.492-.418c-.1-.109-.188-.228-.282-.342-.035-.042-.056-.097-.116-.118a2.084 2.084 0 00.275.597c.06.092.131.176.196.265.063.086.182.115.234.226-.028.003-.046.01-.06.006a4.74 4.74 0 01-.22-.057 2.71 2.71 0 01-1.287-.819c-.435-.487-.656-1.076-.71-1.723a5.206 5.206 0 01.014-1.06c.072-.602.22-1.186.45-1.745.155-.376.338-.741.526-1.102.205-.393.466-.75.765-1.076.512-.559 1.104-1.024 1.726-1.448.717-.49 1.478-.898 2.277-1.233C8.244.828 8.767.632 9.31.494c.655-.166 1.31-.33 1.982-.415.229-.03.458-.058.688-.07zm-1.847 22.82c-.07.06-.147.111-.207.18-.238.27-.464.549-.668.869l-.044.108a.177.177 0 00.093-.057c.174-.19.351-.378.519-.574.104-.122.195-.255.288-.386.024-.034.03-.08.046-.12l-.027-.02zm1.65-3.695a5.51 5.51 0 00-.653.593l-.37.386a.963.963 0 01-.377.25 1.372 1.372 0 01-.467.09c-.044 0-.087.006-.151.012.028.058.043.097.064.131.15.242.301.482.45.724.136.22.276.438.399.666.068.125.105.267.156.404.077.027.14-.018.202-.048.29-.135.579-.274.867-.412.213-.101.437-.186.636-.31.347-.215.68-.455 1.018-.685.015-.01.026-.028.042-.046-.023-.019-.038-.037-.056-.044-.287-.111-.527-.3-.77-.482a5.319 5.319 0 01-.506-.42 1.757 1.757 0 01-.41-.653c-.019-.049-.045-.095-.075-.156zm-5.847.264c-.06.096-.097.194-.132.293a3.38 3.38 0 01-.555 1.01c-.2.25-.455.412-.762.493-.23.06-.464.076-.7.07-.048-.002-.097.002-.158.005.016.04.021.066.035.085.1.145.23.246.4.295.157.046.316.034.498.023.181-.037.343-.115.485-.234.238-.199.402-.454.536-.732.175-.363.264-.751.342-1.144.01-.053.008-.11.011-.164zm14.945-4.586c.008.029.016.057.027.107.024.155.051.31.072.464.03.219.067.437.078.657.017.344.027.689-.014 1.033-.037.315-.063.633-.116.946a6.153 6.153 0 01-.46 1.518c-.008.018-.01.039-.02.082.047-.03.077-.042.098-.064.085-.083.17-.167.248-.255.271-.305.458-.66.596-1.043.18-.498.228-1.011.145-1.531-.103-.65-.33-1.263-.597-1.881a9.055 9.055 0 00-.024-.055l-.033.022zM5.797 8.29a.26.26 0 00.018.153c.124.251.25.501.379.75.025.049.066.09.03.163-.284.06-.578.119-.88.255.059.038.097.06.132.087.042.032.112.058.09.12-.01.033-.075.048-.117.072.017.01.043.021.067.036.166.102.33.207.447.368.138.192.229.404.188.644-.079.469-.306.85-.69 1.132-.054.04-.106.083-.161.122a.243.243 0 00-.103.245.77.77 0 00.055.195c.083.196.22.35.375.492.083.076.159.164.222.257a.37.37 0 01.025.377c-.023.05-.05.099-.076.148-.03.06-.028.111.022.162.041.042.08.089.112.138.038.058.078.079.147.05a.486.486 0 01.333-.006c.16.046.302.126.444.21.13.077.264.149.4.219.067.035.14.05.219.026.071-.022.124.01.145.076.02.064-.003.108-.074.139-.07.03-.137.063-.209.088-.1.035-.201.073-.314.077-.013-.107.11-.088.127-.159-.206-.126-.643-.145-.801-.034.063.112.035.21-.096.313-.13-.1-.025-.202.002-.3a.209.209 0 00-.249.17c-.015.101.067.216.178.224.108.007.218-.005.326-.012.06-.005.12-.027.199 0-.103.123-.248.127-.357.19.002.05.07.086.019.131-.053.048-.095-.001-.132-.03-.08-.063-.16-.126-.231-.197a.474.474 0 01-.157-.311.52.52 0 00-.043-.172c-.032-.074-.032-.137.033-.19-.018-.03-.028-.053-.045-.072a1.222 1.222 0 01-.196-.369c-.053-.137-.046-.264.048-.381.024-.03.05-.06.064-.095a.664.664 0 00.047-.168c.017-.165-.064-.287-.182-.387-.186-.156-.36-.322-.46-.551-.005-.011-.024-.017-.037-.026-.011.017-.024.027-.025.038-.019.185-.045.37-.052.557-.014.377.058.743.162 1.104.118.41.289.798.488 1.173.267.502.537 1.002.812 1.5.055.098.13.189.208.27.198.202.452.272.724.273.202 0 .404-.006.605-.026.295-.03.59-.073.884-.113.183-.025.365-.057.548-.08.21-.026.38.073.522.21.16.156.305.327.447.5.22.265.397.56.554.867.05.098.07.1.147.03.13-.121.26-.242.394-.36.067-.059.088-.12.067-.213a3.535 3.535 0 01-.085-.796c.002-.157.006-.314.018-.471.015-.224.03-.45.06-.672a59.114 59.114 0 01.362-2.298c.087-.493.182-.984.268-1.477.06-.347.118-.694.162-1.043.034-.273.055-.55.063-.825.011-.332.003-.665.002-.998 0-.077.004-.155-.01-.23-.028-.142-.01-.155-.162-.19a5.826 5.826 0 00-.607-.107c-.146-.018-.207-.053-.221-.19-.006-.049-.025-.098-.041-.146-.009-.025-.024-.048-.046-.09l-.025.264c-.009.096-.029.116-.127.115-.055 0-.11-.008-.164-.008-.476 0-.952-.008-1.426.032-.095.008-.173-.015-.226-.103-.04-.066-.088-.126-.134-.186-.063-.084-.086-.093-.182-.06-.195.068-.388.138-.582.21a2.71 2.71 0 00-.675.394.986.986 0 01-.323.168c-.033.01-.07.008-.127.013.02-.066.024-.114.047-.15.064-.105.135-.205.205-.306.023-.033.049-.063.073-.095l-.015-.023-.201.037c-.146.04-.296.07-.437.122-.148.053-.266.023-.386-.072a3.623 3.623 0 01-.733-.786l-.093-.132zm8.592 8.963l-.147.09c-.22.134-.44.266-.659.402-.093.058-.184.12-.27.188-.085.07-.124.161-.072.272.047.1.093.2.147.294.047.08.124.138.213.147.11.01.228.012.336-.012.217-.05.372-.205.528-.357a.291.291 0 00.087-.308c-.046-.18-.079-.365-.118-.547-.011-.052-.027-.103-.045-.169zm-.257-2.409c-.12.291-.205.597-.325.91-.151.433-.294.87-.435 1.323.036-.01.054-.01.067-.018.261-.16.522-.324.785-.484.054-.033.071-.078.065-.138-.012-.13-.024-.262-.034-.393l-.068-.886c-.008-.103-.02-.206-.029-.31-.009 0-.017-.002-.026-.004zm3.081-8.13l.099.285c.08.231.159.463.24.714l.58 1.952c.187.63.372 1.262.558 1.893.114.382.235.762.343 1.146.072.257.126.519.186.799.044.206.087.413.127.64.034.106.023.226.077.325l.025-.006-.068-.362c-.038-.206-.077-.412-.113-.638-.015-.07-.029-.141-.046-.211-.095-.396-.177-.796-.29-1.187-.196-.685-.413-1.364-.618-2.046-.165-.549-.322-1.1-.488-1.648-.069-.227-.15-.45-.226-.695l-.117-.336c-.037-.107-.075-.216-.115-.322-.04-.106-.084-.21-.127-.314a7.558 7.558 0 01-.027.01zM6.225 14.304c-.063-.001-.115.014-.134.083a.35.35 0 00.41.012 4.533 4.533 0 00-.276-.095zM5.23 11.98c-.026-.027-.057-.048-.075.002-.012.032-.007.07-.01.113.082-.037.082-.037.085-.115zm.062-1.189a.135.135 0 00-.088.056.197.197 0 00-.025.11c.005.152.01.306.026.457a.751.751 0 00.066.218c.061.136.157.167.288.101.055-.027.06-.054.025-.11a4.52 4.52 0 01-.129-.211c-.015-.068-.066-.131-.033-.207.04-.09-.076-.116-.074-.19V10.874c-.003-.038-.006-.087-.056-.083zm-.017-.968a.867.867 0 00-.467.127c-.076.045-.084.07-.05.158.034.087.07.173.115.254.064.117.09.125.21.077a.657.657 0 01.336-.053c.202.022.357.136.504.264l.092.077c.007-.006.014-.013.022-.018-.019-.105-.035-.226-.149-.264-.157-.053-.324-.075-.508-.117l-.24-.005c.24-.169.452-.044.687.009-.063-.115-.153-.147-.23-.193-.082-.05-.17-.092-.25-.144-.06-.037-.12-.08-.072-.172zm10.233.325c-.23-.01-.427.08-.608.211-.034.026-.06.065-.105.117.087.026.15.046.232.065.044-.015.088-.03.13-.046.306-.114.61-.115.904.031.126.063.237.04.366-.005-.02-.031-.03-.054-.045-.071a.986.986 0 00-.448-.273c-.14-.044-.284-.024-.426-.03zM7.99 6.483a.308.308 0 00.002.133c.08.321.156.643.242.962.104.387.27.75.456 1.103.02.037.061.08.098.087a.404.404 0 00.253-.051l-.472-.84c-.23-.448-.405-.92-.579-1.394zM10.397.497c-.2-.008-.405.004-.603.034-.236.035-.47.087-.7.152-.287.08-.569.18-.852.273-.04.013-.074.038-.11.058.028.014.05.018.07.014.287-.068.58-.085.873-.09.134-.002.269.009.402.025.19.024.382.048.57.09.456.104.874.3 1.265.556.464.306.888.66 1.257 1.078.205.232.395.475.56.739.17.274.315.561.449.856.273.601.456 1.232.6 1.876.04.173.07.348.1.524.017.104.065.167.17.19.122.028.2.105.22.251-.003.102-.06.174-.129.24a1.065 1.065 0 00-.268.358.164.164 0 00.083-.039c.08-.086.162-.172.235-.265a.56.56 0 00.13-.333c.009-.05.022-.1.024-.15.007-.124-.017-.15-.143-.168-.025-.004-.049-.014-.073-.015-.082-.007-.125-.063-.137-.131-.033-.198-.004-.355.247-.408.086-.018.174-.03.26-.042.158-.023.315-.053.473-.067.14-.012.19.033.226.167.008.029.018.057.021.087.019.179-.008.225-.141.288-.027.013-.055.024-.078.042a.148.148 0 00-.051.067c-.039.144.073.382.206.445l.673.32c.023.011.05.015.075.023l.018-.026c-.015-.008-.032-.013-.044-.024a2.27 2.27 0 00-.544-.32 4.898 4.898 0 00-.173-.075.203.203 0 01-.126-.191c-.003-.085.045-.154.128-.187l.059-.025c.099-.044.118-.076.112-.187a.384.384 0 00-.008-.063c-.067-.294-.123-.59-.205-.88a9.478 9.478 0 00-.826-2.036 7.465 7.465 0 00-1.39-1.805 4.536 4.536 0 00-1.177-.824 3.656 3.656 0 00-1.016-.328 6.155 6.155 0 00-.712-.074zm6.719 5.955c.01.014.018.028.038.034l-.022-.044-.016.01zM4.103 3.917a.062.062 0 01-.03.012.455.455 0 01-.04.039c-.01.01-.02.02-.045.04l-.363.354c-.088.085-.17.178-.266.253-.284.22-.425.53-.544.855a.132.132 0 00-.007.071c.013.055.033.108.052.168l.074.026c-.017.056-.03.105-.047.152-.058.164-.118.327-.175.491-.005.015.008.036.019.077.08-.175.158-.33.225-.489.228-.544.484-1.074.819-1.561.09-.133.182-.266.283-.401.004-.006.007-.013.022-.03.001-.016.003-.032.015-.04l.008-.017zm12.976 2.408a.023.023 0 01.009.019.073.073 0 00-.006.01.188.188 0 00.007.02l.018.022c.002-.007.007-.016.005-.021-.003-.01-.012-.018-.02-.038a1.331 1.331 0 01-.013-.012zM4.199 4.48c-.003.004-.008.008-.027.014-.005.013-.011.025-.031.047a2.085 2.085 0 01-.124.167c-.048.07-.116.055-.181.041-.134-.028-.228.016-.287.143-.089.187-.187.37-.273.56-.049.108-.11.216-.118.36.081.003.154.007.228.008h.228a2.563 2.563 0 01-.079.264c-.01.052-.022.103-.033.155l.02.004c.018-.046.037-.092.067-.153.066-.142.13-.285.2-.426.02-.04.034-.1.116-.092 0 .043.004.084 0 .124-.005.045-.017.09-.028.143.141.043.086.174.115.269.102-.022.104-.195.248-.144v.205l.017.002.439-1.059c-.13 0-.246-.02-.358.033-.024.011-.058-.001-.108-.004.075-.15.139-.278.211-.417a.128.128 0 01.025-.036c0-.015-.001-.03.008-.038l.006-.02c-.005.006-.01.011-.028.017-.004.012-.009.024-.026.045a.085.085 0 01-.032.033c-.123.157-.09.164-.258.106-.079-.027-.078-.028-.047-.144.028-.046.056-.093.098-.15 0-.016-.001-.032.007-.042L4.2 4.48zm2.073-.67c-.003.006-.007.011-.027.016-.094.125-.194.246-.28.377-.155.238-.301.481-.451.723-.14.224-.345.368-.575.481-.017.008-.04.006-.079.011.012-.059.016-.109.033-.153a6.076 6.076 0 01.229-.518l-.007-.02a.138.138 0 01-.035.025c-.028.05-.055.1-.093.164-.26.424-.443.817-.442.95.024.004.048.011.073.013.177.013.188.007.26-.165.03-.07.077-.12.147-.15l.175-.07c.044-.018.085-.057.146-.032.003.05-.01.11.014.145.042.062.044.125.047.193.002.049.017.098.026.147.029-.034.039-.065.05-.097.142-.39.277-.782.428-1.17.1-.256.22-.504.33-.756.013-.03.013-.067.03-.092V3.81zm3.987-.34c0 .045.01.084.021.123.042.16.094.318.124.48.024.133.023.27.028.406 0 .033-.019.067-.032.11-.094-.058-.047-.158-.106-.215h-.125c-.015.072-.01.152-.046.2-.066.085-.155.154-.236.227-.043.038-.078.018-.103-.025l-.046-.087c-.065.035-.117.069-.172.093-.116.051-.235.095-.35.147-.085.038-.09.053-.07.147.014.075.034.148.047.223.013.072.05.109.123.124.233.05.462.115.657.265.058-.102.058-.102.168-.151.03-.014.06-.03.092-.042.08-.03.115-.017.15.06.023.048.041.098.066.158.06-.14-.042-.267.017-.416.157.18.24.39.375.567a.235.235 0 00.022-.098c.002-.124 0-.247.002-.371 0-.034.013-.067.02-.1l.032-.003c.11.155.13.354.226.52a3.036 3.036 0 00-.01-.392c-.004-.045 0-.074.05-.088.08.036.116.14.215.158-.03-.275-.423-1.137-.798-1.635-.114-.127-.2-.28-.34-.386zm-2.667.696c-.019.034-.03.05-.037.067-.061.185-.125.37-.18.556-.031.105-.087.169-.195.19-.09.019-.178.052-.268.073-.038.009-.089.015-.118-.003-.024-.016-.025-.069-.036-.106-.064.076-.082.087-.17.047-.133-.062-.262-.135-.393-.201-.048-.025-.093-.063-.17-.03-.043.12-.091.25-.137.382-.099.28-.087.242.095.453.046.048.102.03.154.023.054-.009.106-.03.16-.036.13-.013.26-.08.367-.015.204-.064.387-.122.571-.178.05-.015.089.005.114.054.022.042.034.093.082.121.038-.056-.013-.128.063-.178l.14.241-.042-1.46zm.278.358c-.096-.01-.107.01-.11.108-.002.038-.003.078.002.115.03.2.099.386.174.57.002.006.012.01.022.015l.078-.05c.052.036.081.088.153.088.205-.002.41.014.616.012.099-.001.158.042.205.12.018.03.024.077.088.066l-.08-.394c-.05-.195-.085-.395-.172-.589-.057.057-.114.068-.18.046a.72.72 0 00-.135-.028c-.22-.028-.44-.059-.66-.08zm10.254-1.727c.089.163.155.316.139.491-.016.168.026.342-.044.516-.047-.033-.088-.082-.112-.075-.117.035-.164-.057-.227-.115a4.772 4.772 0 01-.286-.29l-.104-.113a4.856 4.856 0 01-.023.019c.035.046.07.093.11.156.04.064.084.127.122.193.034.058.065.118.031.205-.082-.01-.164-.019-.246-.032-.06-.01-.101 0-.124.07-.031.098-.037.096-.15.09.02.042.036.08.057.116.041.074.03.138-.03.196-.06.06-.118.122-.178.181a.175.175 0 01-.185.046c-.222-.061-.447-.113-.67-.174-.032-.009-.063-.04-.086-.068-.03-.04-.052-.087-.08-.13-.044-.07-.09-.138-.136-.207a.18.18 0 00-.014.105c.012.127.03.253.035.38.005.1-.024.12-.121.104-.104-.017-.206-.04-.31-.058-.064-.012-.131-.028-.202.03l.081.208c.09 0 .166-.01.237.002a.819.819 0 01.458.251c.078.083.154.168.241.26l.018-.005c-.004-.006-.008-.013-.01-.04.014-.056-.062-.118.018-.178.031.03.064.057.088.09.058.078.111.159.169.257l.089.141.024-.013a2093.819 2093.819 0 01-.427-.934c.055.007.083.007.108.016.193.07.385.142.577.216.074.028.147.06.219.094.062.028.112.018.157-.033.05-.056.102-.112.154-.167.05-.051.095-.046.132.014.016.025.026.053.04.08.071.138.143.277.217.433l.159.308.025-.011c-.044-.106-.07-.218-.138-.334-.057-.182-.168-.346-.206-.545.136.034.362.326.567.732l.057.074.018-.011a1.563 1.563 0 01-.052-.127c-.046-.145-.097-.29-.136-.436-.022-.083-.036-.173.022-.26l.109.058-.026-.207.027-.016c.022.02.05.036.065.06.073.108.143.22.215.33.01.016.029.029.043.043-.036-.217-.2-.38-.229-.626l.155.112c.014-.166.012-.319.042-.465.032-.158-.023-.297-.063-.445.024.004.036.006.055.025.092.124.183.249.277.371.02.027.05.047.069.087l.04.063.019-.015a.293.293 0 01-.053-.082 27.922 27.922 0 01-.332-.49c-.221-.311-.363-.467-.485-.521zm-6.57.327c-.003.161.092.275.069.415l-.368.087c.09.139.032.237-.052.331-.05.057-.092.122-.143.178-.037.04-.046.078-.018.126l.16.275c.029.048.072.066.128.064.076-.003.152 0 .228-.001.116-.003.216.022.275.137.006.014.02.024.044.052.004-.059-.003-.098.01-.13.016-.04.04-.099.072-.108.084-.023.173-.024.26-.03.013-.001.027.018.04.029l.071.065c.019-.11-.082-.198-.024-.31l.126.04c-.026-.123-.07-.245-.071-.366 0-.123.051-.243.115-.36.107.062.16.156.234.253.183.265.36.533.494.834.165-.078.27.068.407.088-.003-.106-.133-.441-.197-.492a.142.142 0 00-.102-.028c-.06.011-.119.039-.191.063-.025-.039-.056-.078-.077-.122a3.936 3.936 0 00-.473-.783c-.076-.094-.16-.182-.228-.26l-.391.285c-.049.035-.094.03-.132-.017l-.169-.207c-.025-.03-.053-.059-.097-.108z'),
+  pi: `<svg class="pv-kindlogo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F09082" d="M4.9587 4.9587H15.5208V12H12V8.4795H4.9587Z"/><path fill="#4D9ABF" d="M4.9587 8.4795H8.4795V12H12V15.5208H8.4795V19.0416H4.9587Z"/><path fill="#F1BE58" d="M15.5208 12H19.0416V19.0416H15.5208Z"/></svg>`,
 };
 function kindLogo(kind){
   return KIND_LOGO[kind] || '';
 }
 const KIND_META = {
-  pi:     { sig: '\u2699', label: 'PI',     title: 'PI coding agent (pi-worker)' },
+  pi:     { sig: '\u03C0', label: 'PI',     title: 'PI coding agent (pi-worker)' },
   claude: { sig: KIND_LOGO.claude, label: 'Claude', title: 'Claude Code agent (agent-worker)' },
   codex:  { sig: KIND_LOGO.codex, label: 'Codex',  title: 'Codex CLI agent (agent-worker)' },
-  hermes: { sig: '\u25C9', label: 'Hermes', title: 'Hermes session' },
+  hermes: { sig: KIND_LOGO.hermes, label: 'Hermes', title: 'Hermes session' },
 };
 const KIND_ORDER = ['hermes', 'pi', 'claude', 'codex'];
 function kindMeta(kind){
@@ -7481,7 +7557,7 @@ const COVERED_PLAN = { claude: 'Claude', codex: 'ChatGPT' };
 const coveredTip = kind => `API-price equivalent, covered by your ${COVERED_PLAN[kind] || 'subscription'} subscription`;
 function coveredCost(kind, text){
   const tip = escA(coveredTip(kind));
-  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">sub</span></span>`;
+  return `<span class="lvcov" role="img" title="${tip}" aria-label="${escA(text)}, ${tip}">${esc(text)}<span class="lvsubb">subscription</span></span>`;
 }
 function ownerBadge(name, what, kindColor){
   const n = name || '';
@@ -7513,7 +7589,7 @@ function lvRow(o){
   const allTools = escA((o.tools || []).filter(Boolean).join(', '));
   const tools = (o.tools || []).slice(0, 5).map(t =>
     `<span class="lvtool" title="${escA(t)}">${esc(t)}</span>`).join('');
-  const _pi = provIcon(short(o.model)) ? `<span class="lvprovicon" style="margin-right:4px">${provIcon(short(o.model))}</span>` : '';
+  const _pi = `<span class="lvprovicon" style="margin-right:4px">${provLogoSvg(short(o.model))}</span>`;
   const html = `<div class="liverow lvrow items-center" role="row" data-lvstate="${st.toLowerCase()}"${S.idle_s > 86400 ? ' data-longidle="1"' : ''}${o.attrs}>
       <div class="lvc lvc-kind" role="cell">${kindBadge(o.kind)}</div>
       ${o.sub ? `<div class="lvc lvc-sess lvc-sess2" role="cell"><div class="lvstk"><div class="lvs1">${o.lead || ''}${o.title}</div><div class="lvs2">${o.sub}</div></div></div>`
@@ -7601,7 +7677,7 @@ function piLiveRows(list){
       title: `<span class="lvtitle text-[length:var(--fs-md)] font-semibold" title="${escA(S.title || '')}">${esc(S.title || S.agent || 'pi session')}</span>`,
       sub: ownerBadge(S.agent || 'pi', 'Agent', 'var(--kind-pi)') + `<span class="lvsrc" title="Session source">PI</span>` + sidChip(S.session_id),
       model: S.model, mcol: colorOf(short(S.model)),
-      mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">↯ from ${esc(short(S.init_model))}</span>` : '',
+      mextra: S.switched ? `<span class="lvswitch" title="started on ${escA(short(S.init_model))}">${provLogoSvg(short(S.init_model))}↯ from ${esc(short(S.init_model))}</span>` : '',
       gauge: loeIcon({...S, tools:S.tools_gauge||S.tools}, {id:'pi:'+(S.session_id||''), size:'sm', label:(S.title&&S.title!=='pi session')?S.title:'session load'}) });
   });
 }
@@ -7624,6 +7700,7 @@ function agentLiveRows(list){
 function renderLive(){
   const p = DATA.profiles[current] || {};
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
+  renderArena(fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live));
   renderOllama(DATA.ollama);
   renderQueue();
   renderAgents(current === 'All' ? mergedField(DATA.profiles, 'agents') : p.agents);
@@ -7686,7 +7763,7 @@ function renderLive(){
           + `<button type="button" class="chip lntimelinebtn" data-tsession="${escA(L.id)}" data-tprofile="${escA(prof)}" data-title="${escA(L.title)}" title="${escA(L.title)} \u2014 view timeline">Timeline</button>`
           + `<span class="lvcatl" style="color:${c.c}" title="${escA(L.category)}">${esc(L.category)}</span>`
           + (L.kind==='subagent' ? '<span class="lvsub">\u21b3 subagent</span>' : ''),
-        mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
+        mextra: (L.switched ? `<span class="lvswitch" title="router fell back from ${escA(short(L.init_model))}">${provLogoSvg(short(L.init_model))}↯ from ${esc(short(L.init_model))}</span>` : '') + modelsBadge(L),
         gauge: loeIcon(L, {id:L.id, size:'sm', label:(L.title&&L.title!=='(untitled)')?L.title:'session load'}), bw: bwRow(L),
         panel: modelsPanel(L) });
     });
@@ -7995,7 +8072,7 @@ function renderDeleg(){
   const rows = (g.by_model || []).map(m => {
     const w = Math.max(0, Math.min(100, m.rate));
     return `<div class="drow">
-      <div class="dname" title="${esc(m.model)}">${esc(short(m.model))}</div>
+      <div class="dname" title="${esc(m.model)}">${provLogoSvg(short(m.model))} ${esc(short(m.model))}</div>
       <div class="dbar"><span style="width:${w}%" class="${m.rate >= 95 ? 'ok' : 'bad'}"></span></div>
       <div class="dpct ${m.rate >= 95 ? 'ok' : 'bad'}">${m.rate}%</div>
       <div class="dmeta muted">${m.n} run${m.n === 1 ? '' : 's'}${m.wasted_hours ? ` · ${m.wasted_hours}h lost` : ''}</div>
@@ -8025,7 +8102,7 @@ function renderDeleg(){
     return `<div class="ditem">
       <span class="ddot ${okc ? 'ok' : 'bad'}"></span>
       <div class="dgoal" title="${esc(r.goal || '')}">${esc(r.goal || '(no goal recorded)')}</div>
-      <div class="muted text-[length:var(--fs-xs)]">${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
+      <div class="muted text-[length:var(--fs-xs)]">${provLogoSvg(short(r.model || ''))} ${esc(short(r.model || ''))} · ${ago(r.seconds)}${okc ? '' : ' · ' + esc(why)}</div>
     </div>`;
   }).join('') || '<div class="muted text-[length:var(--fs-xs)]">Nothing yet.</div>';
 }
@@ -8059,7 +8136,7 @@ function renderHealth(rows){
         ? `${h.ok.toLocaleString()} of ${h.total.toLocaleString()} · <span style="color:${col}">${h.fail.toLocaleString()} failed</span>`
         : `${h.ok.toLocaleString()} of ${h.total.toLocaleString()}`;
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
-        <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${short(h.model)}</div>
+        <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${provLogoSvg(short(h.model))} ${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
           <div style="width:${okPct}%;background:#5f9e6e"></div>${segs}
         </div>
@@ -8121,7 +8198,7 @@ function renderLifecycle(pressure){
         <span class="muted">${bits.map(esc).join(' · ')}</span>
         ${s.error ? `<span style="color:var(--z-bad)" title="${esc(s.error)}">error</span>` : ''}
       </div>` +
-      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${esc(s.error)}</div>` : '');
+      (s.error ? `<div class="text-[length:var(--fs-xs)] muted pl-1" style="overflow-wrap:anywhere" title="${esc(s.error)}">${esc(failMsgHuman(s.error))}</div>` : '');
     }).join('');
 }
 
@@ -8336,9 +8413,9 @@ function renderFailures(F){
         F.length ? 'Clear the kind/model filter above to see everything.' : undefined)
     : groups.map(g=>`<div class="flex items-start gap-2 text-[length:var(--fs-xs)] py-0.5 frow" data-n="${g.n}">
         <span class="text-[length:var(--fs-xs)] px-1 rounded shrink-0 fkind" style="background:${fk(g.kind).c}22;color:${fk(g.kind).c}">${fk(g.kind).t}</span>
-        <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${short(g.model)}</span>
+        <span class="shrink-0 text-[length:var(--fs-md)] font-semibold truncate fmodel" style="color:${colorOf(short(g.model))}" title="${short(g.model)}">${provLogoSvg(short(g.model))} ${short(g.model)}</span>
         <span class="muted shrink-0 text-[length:var(--fs-xs)] fwhen">${g.n > 1 && g.first.slice(5,16) !== g.last.slice(5,16) ? `${g.first.slice(5,16)} → ${g.last.slice(11,16)}` : g.last.slice(5,16)}</span>
-        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(g.msg)}</span>
+        <span class="truncate text-[length:var(--fs-xs)] fmsg" title="${esc(g.raw)}">${esc(failMsgHuman(g.msg))}</span>
         <span class="fcnt shrink-0"${g.n > 1 ? ` title="${g.n} identical failures">&times;${g.n}` : ' style="visibility:hidden">'}</span>
       </div>`).join('');
 
@@ -9251,6 +9328,25 @@ document.addEventListener('click', e => {
   if (e.target && e.target.id === 'csvexport') exportTableCsv();
 });
 
+const HTTP_WORDS = {400:'Bad request', 401:'Not authorised', 403:'Forbidden', 404:'Not found', 408:'Request timed out',
+  413:'Request too large', 429:'Rate limited', 500:'Provider server error', 502:'Bad gateway', 503:'Provider unavailable',
+  504:'Gateway timeout', 524:'Provider timed out'};
+function failMsgHuman(m){
+  const s = String(m || '').trim();
+  const json = s.match(/"(?:message|detail|title)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const kv = s.match(/\b\w+=\S/g) || [];
+  const et = s.match(/\berror_type=([A-Za-z_.]+)/);
+  const host = s.match(/\bbase_url=(?:https?:\/\/)?([^\s\/,'")]+)/);
+  const code = s.match(/\b(?:HTTP|status(?:_code)?[= :]+)\s*(\d{3})\b/i);
+  if (!json && !et && !host && kv.length < 2) return s;
+  const words = code && HTTP_WORDS[code[1]];
+  let why = json ? json[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')
+    : et ? et[1].split('.').pop().replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase()) : '';
+  if (!why && !words) why = s.replace(/\b\w+=\S+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const out = [words ? `${words} (HTTP ${code[1]})` : code ? `HTTP ${code[1]}` : '', why, host ? `via ${host[1]}` : '']
+    .filter(Boolean).join(' · ');
+  return out.length > 160 ? out.slice(0, 157) + '…' : out;
+}
 function priceFreshness(fresh){
   const PRICE_CUTS = {warn: 24 * 3600, bad: 72 * 3600};
   const f = fresh || {};
@@ -9263,6 +9359,7 @@ function priceFreshness(fresh){
           hint: `catalogue fetched ${ago(ageS)} ago · amber past 24h, red past 72h · fed by llm-telemetry-build.timer`};
 }
 
+const ORCH_KIND = {hermes: ['Hermes', 'var(--accent, #5b9cf6)'], pi: ['PI', 'var(--ok, #34c38f)']};
 function slugOf(v){ return String(v).toLowerCase(); }
 
 const AGE_CUTS = { liveboard: {warn: 30, bad: 90}, dashboard: {warn: 600, bad: 900} };
@@ -9279,6 +9376,313 @@ const FEEDER = {
   quota: 'llm-telemetry-quota.timer',
 };
 
+const ARENA_FALLBACK = { hermes: 'hsl(199 60% 56%)', pi: 'hsl(265 55% 64%)', claude: 'hsl(18 70% 60%)', codex: 'hsl(152 50% 52%)' };
+const ARENA_GLYPH = { hermes: 'H', pi: '\u03c0', claude: 'C', codex: 'X' };
+const ARENA_KINDS = ['hermes', 'pi', 'claude', 'codex'];
+const ARENA_PER_KIND = 2;
+const ARENA_MAX_SPARKS = 90;
+const ARENA_MAX_RINGS = 12;
+
+function arenaPlan(counts){
+  const c = counts || {};
+  return ARENA_KINDS.map(kind => {
+    const n = c[kind] || 0;
+    return {
+      kind,
+      n: ARENA_PER_KIND,
+      alpha: n > 0 ? 1 : 0.35,
+      spd: n > 0 ? 1 + Math.min(n, 5) * 0.12 : 0.8,
+      weight: n
+    };
+  });
+}
+
+function arenaKindColor(kind){
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--kind-' + kind).trim();
+    if (v) return v;
+  } catch (e) { /* JSDOM: computed style carries no vars */ }
+  return ARENA_FALLBACK[kind] || '#999';
+}
+
+const ARENA_AXES = [0, 60, 120].map(d => {
+  const r = d * Math.PI / 180;
+  return { x: Math.cos(r), y: Math.sin(r) };
+});
+
+function arenaHexProject(px, py, apothem){
+  let best = null, worst = 0;
+  for (const ax of ARENA_AXES){
+    const d = (px * ax.x + py * ax.y) / apothem;
+    if (Math.abs(d) > worst){ worst = Math.abs(d); best = { x: (d < 0 ? ax.x : -ax.x), y: (d < 0 ? ax.y : -ax.y), over: (Math.abs(d) - 1) * apothem }; }
+  }
+  return worst > 1 ? best : null;
+}
+
+function arenaHexPath(ctx, cx, cy, r, rot){
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++){
+    const a = rot + (30 + i * 60) * Math.PI / 180;
+    const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+const ARENA = { on: false, agents: [], sparks: [], rings: [], counts: null, last: 0, w: 0, h: 0, dpr: 1};
+
+function renderArena(counts){
+  const cv = document.getElementById('arenacv');
+  if (!cv) return;
+  let ctx = null;
+  try { ctx = cv.getContext && cv.getContext('2d'); } catch (e) { ctx = null; }
+  ARENA.counts = counts || {};
+  const sub = document.getElementById('arenasub');
+  if (sub){
+    const plan = arenaPlan(ARENA.counts);
+    const active = plan.filter(p => p.weight > 0).map(p => ARENA_GLYPH[p.kind]).join(' ');
+    sub.textContent = active ? ('in flight: ' + active) : 'fleet idle';
+  }
+  if (!ctx) return;
+  if (!ARENA.on){
+    ARENA.on = true;
+    arenaSpawn(cv);
+    const reduced = (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+    if (reduced){
+      const c = arenaFit(cv); if (c) arenaTickFrame(cv, c, 0);
+    } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(arenaTick);
+    } else {
+      arenaTickFrame(cv, ctx, 0); // static fallback: draw once, no loop
+    }
+  }
+  arenaReweight(cv);
+}
+
+function arenaFit(cv){
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  if (w === ARENA.w && h === ARENA.h && dpr === ARENA.dpr){
+    try { return cv.getContext('2d'); } catch (e) { return null; }
+  }
+  ARENA.w = w; ARENA.h = h; ARENA.dpr = dpr;
+  cv.width = Math.max(1, Math.round(w * dpr));
+  cv.height = Math.max(1, Math.round(h * dpr));
+  try { return cv.getContext('2d'); } catch (e) { return null; }
+}
+
+function arenaSpawn(_cv){
+  const plan = arenaPlan(ARENA.counts);
+  ARENA.agents = [];
+  for (const p of plan){
+    for (let i = 0; i < p.n; i++){
+      const a = Math.random() * Math.PI * 2;
+      const rr = 0.25 + Math.random() * 0.55;
+      ARENA.agents.push({
+        kind: p.kind, alpha: p.alpha, spd: p.spd, plan: p, flash: 0,
+        x: Math.cos(a) * rr, y: Math.sin(a) * rr,
+        dx: Math.cos(a + Math.PI / 2), dy: Math.sin(a + Math.PI / 2),
+        v: 0.35 + Math.random() * 0.25, turn: 0.9 + Math.random() * 0.5
+      });
+    }
+  }
+}
+
+function arenaReweight(_cv){
+  const plan = arenaPlan(ARENA.counts);
+  const byKind = {};
+  plan.forEach(p => { byKind[p.kind] = p; });
+  for (const ag of ARENA.agents){
+    const p = byKind[ag.kind];
+    if (!p) continue;
+    ag.alpha = p.alpha; ag.spd = p.spd; ag.plan = p;
+  }
+}
+
+function arenaTick(ts){
+  const cv = document.getElementById('arenacv');
+  if (!cv){ ARENA.on = false; return; } // view torn down: stop the loop
+  window.requestAnimationFrame(arenaTick);
+  if (document.hidden) return;
+  const view = cv.closest('.view');
+  if (view && view.hidden) return;
+  const ctx = arenaFit(cv);
+  if (!ctx) return;
+  arenaTickFrame(cv, ctx, ts);
+}
+
+function arenaTickFrame(cv, ctx, ts){
+  const W = ARENA.w || cv.clientWidth || 320, H = ARENA.h || cv.clientHeight || 200;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(H / 2, Math.min(W, H) / 2 * 1.6) * 0.88;
+  const apothem = R * Math.sin(Math.PI / 3);
+  const dt = ARENA.last && ts ? Math.min(0.05, (ts - ARENA.last) / 1000) : 0.016;
+  ARENA.last = ts || 0;
+  const scale = apothem; // sim runs in unit space, drawn as (x * scale)
+
+  const s = ARENA.agents;
+  for (const ag of s){
+    if (!ts) continue; // static fallback frame: no physics
+    const nx = ag.x, ny = ag.y;
+    const len = Math.hypot(nx, ny) || 1;
+    const tanx = -ny / len, tany = nx / len;
+    const wantSpd = ag.v * ag.spd * scale / 100;
+    ag.dx += (tanx * wantSpd - ag.dx) * 0.02 + (Math.random() - 0.5) * 0.01 * ag.turn;
+    ag.dy += (tany * wantSpd - ag.dy) * 0.02 + (Math.random() - 0.5) * 0.01 * ag.turn;
+    ag.x += ag.dx * dt * scale / 100;
+    ag.y += ag.dy * dt * scale / 100;
+    ag.flash = Math.max(0, ag.flash - dt * 3);
+    const hit = arenaHexProject(ag.x, ag.y, 1);
+    if (hit){
+      ag.x += hit.x * (hit.over + 0.02);
+      ag.y += hit.y * (hit.over + 0.02);
+      const d = ag.dx * hit.x + ag.dy * hit.y;
+      if (d < 0){ ag.dx -= 2 * d * hit.x; ag.dy -= 2 * d * hit.y; }
+    }
+    if (!Number.isFinite(ag.x) || !Number.isFinite(ag.y) || !Number.isFinite(ag.dx) || !Number.isFinite(ag.dy)){
+      const a = Math.random() * Math.PI * 2;
+      const rr = 0.25 + Math.random() * 0.55;
+      ag.x = Math.cos(a) * rr; ag.y = Math.sin(a) * rr;
+      ag.dx = Math.cos(a + Math.PI / 2) * 0.1; ag.dy = Math.sin(a + Math.PI / 2) * 0.1;
+    }
+  }
+  if (ts) for (let i = 0; i < s.length; i++) for (let j = i + 1; j < s.length; j++){
+    const a = s[i], b = s[j];
+    const px = (a.x - b.x) * scale, py = (a.y - b.y) * scale;
+    if (px * px + py * py > 400) continue; // ~20px clash radius, unit space
+    if (a.flash > 0.5 || b.flash > 0.5) continue;
+    a.flash = 1; b.flash = 1;
+    const mx = cx + (a.x + b.x) / 2 * scale, my = cy + (a.y + b.y) / 2 * scale;
+    arenaBurst(mx, my);
+    const ux = (a.x - b.x) || 0.01, uy = (a.y - b.y) || 0.01;
+    const ul = Math.hypot(ux, uy);
+    a.dx += ux / ul * 0.35; a.dy += uy / ul * 0.35;
+    b.dx -= ux / ul * 0.35; b.dy -= uy / ul * 0.35;
+  }
+  for (const ag of s){
+    const sp = Math.hypot(ag.dx, ag.dy);
+    if (sp > 1.5){ ag.dx = ag.dx / sp * 1.5; ag.dy = ag.dy / sp * 1.5; }
+  }
+  if (ts) arenaAdvance(dt, ARENA.w, ARENA.h);
+
+  ctx.setTransform(ARENA.dpr, 0, 0, ARENA.dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const accent = arenaCssVar('--accent', '#7aa2f7');
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = accent;
+  arenaHexPath(ctx, cx, cy, R * 0.98, ts ? ts / 24000 : 0);
+  ctx.fill();
+  ctx.restore();
+  const border = arenaCssVar('--border', '#333');
+  const fg = arenaCssVar('--fg', '#eee');
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = border;
+  arenaHexPath(ctx, cx, cy, R, ts ? ts / 24000 : 0);
+  ctx.stroke();
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  arenaHexPath(ctx, cx, cy, R * 0.24, ts ? -ts / 5000 : 0);
+  ctx.stroke();
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = accent;
+  arenaHexPath(ctx, cx, cy, R * 0.24, ts ? -ts / 5000 : 0);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.fillStyle = fg;
+  ctx.font = '700 11px ui-sans-serif, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String((ARENA.counts && ARENA.counts.all) || 0), cx, cy);
+  ctx.restore();
+  for (const r of ARENA.rings){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, r.a) * 0.6;
+    ctx.strokeStyle = r.c;
+    ctx.lineWidth = 1.5;
+    arenaHexPath(ctx, r.x, r.y, r.r, ts ? ts / 9000 : 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+  for (const ag of s){
+    const ax = cx + ag.x * scale, ay = cy + ag.y * scale;
+    const col = arenaKindColor(ag.kind);
+    const rad = 7;
+    ctx.save();
+    ctx.globalAlpha = ag.alpha;
+    ctx.beginPath();
+    ctx.arc(ax, ay, rad * 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.globalAlpha = ag.alpha * (0.10 + 0.22 * ag.flash + 0.06 * (ag.plan && ag.plan.weight ? 1 : 0));
+    ctx.fill();
+    ctx.globalAlpha = ag.alpha;
+    ctx.beginPath();
+    ctx.arc(ax, ay, rad, 0, Math.PI * 2);
+    ctx.fill();
+    if (ag.flash > 0){
+      ctx.globalAlpha = ag.alpha * ag.flash;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(ax, ay, rad + 2 + 4 * (1 - ag.flash), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.min(1, ag.alpha + 0.25);
+    ctx.fillStyle = '#0b1220';
+    ctx.font = '700 10px ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ARENA_GLYPH[ag.kind] || '?', ax, ay + 0.5);
+    ctx.restore();
+  }
+  if (ARENA.sparks.length){
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    for (const sp of ARENA.sparks){
+      ctx.globalAlpha = Math.max(0, sp.a);
+      ctx.strokeStyle = sp.c;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(sp.x, sp.y);
+      ctx.lineTo(sp.x - sp.dx * 4, sp.y - sp.dy * 4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function arenaBurst(x, y){
+  if (ARENA.sparks.length > ARENA_MAX_SPARKS) ARENA.sparks.splice(0, ARENA.sparks.length - ARENA_MAX_SPARKS);
+  const kinds = ARENA.agents;
+  const col = kinds.length ? arenaKindColor(kinds[Math.floor(Math.random() * kinds.length)].kind) : '#ffd27f';
+  for (let i = 0; i < 10; i++){
+    const a = Math.random() * Math.PI * 2, v = 0.6 + Math.random() * 0.9;
+    ARENA.sparks.push({ x, y, dx: Math.cos(a) * v, dy: Math.sin(a) * v, c: col, a: 0.5 + Math.random() * 0.4 });
+  }
+  if (ARENA.rings.length > ARENA_MAX_RINGS) ARENA.rings.splice(0, ARENA.rings.length - ARENA_MAX_RINGS);
+  ARENA.rings.push({ x, y, r: 6, a: 0.8, c: col });
+}
+
+function arenaAdvance(dt, W, _H){
+  for (const sp of ARENA.sparks){ sp.x += sp.dx * dt * 60; sp.y += sp.dy * dt * 60; sp.dx *= 0.94; sp.dy *= 0.94; sp.a -= dt * 1.6; }
+  ARENA.sparks = ARENA.sparks.filter(sp => sp.a > 0);
+  for (const r of ARENA.rings){ r.r += dt * 60 * 1.4; r.a -= dt * 1.6; }
+  ARENA.rings = ARENA.rings.filter(r => r.a > 0 && r.r < (ARENA.w || W) / 2);
+}
+
+function arenaCssVar(name, fb){
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (v) return v;
+  } catch (e) { /* node harness */ }
+  return fb;
+}
+
+{ ARENA, arenaSpawn, arenaTickFrame };
 const DENSITY_KEY = 'llmt.density';
 const TABLE_SORT = {};
 
@@ -9602,13 +10006,12 @@ function setColorSwatch(n){
   const h = profileHue(n);
   const overridden = pvHueOverride(n) !== null;
   return `<div class="setf" data-scname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${overridden ? '' : ' hidden'}>Custom</span></span>
     <span class="setin">
       <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
-      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
-      <span class="muted text-[length:var(--fs-xs)]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" aria-label="${escA(n)} hue" style="flex:1;min-width:0">
+      <span class="muted text-[length:var(--fs-xs)]" style="min-width:4.6em;text-align:right" data-schuen="${escA(n)}">hue ${h}°</span>
     </span>
-    <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
   </div>`;
 }
 function renderSetColors(){
@@ -9633,9 +10036,9 @@ function setColorsInstall(){
       const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
       if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
       const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
-      if (readout) readout.textContent = deg + '°';
-      const hint = row.querySelector('.seth');
-      if (hint) hint.textContent = 'Custom — used for its tab, badges and live dots.';
+      if (readout) readout.textContent = 'hue ' + deg + '°';
+      const tag = row.querySelector('.setcustom');
+      if (tag) tag.hidden = false;
     }
     tabs(); renderLive();
   });
@@ -9653,13 +10056,12 @@ function setColorsInstall(){
 function setLogoRow(n){
   const logo = profileLogo(n);
   return `<div class="setf" data-slname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${logo ? '' : ' hidden'}>Custom</span></span>
     <span class="setin" style="gap:8px">
       ${profileIconHtml(n, 28)}
-      <input type="file" accept="image/*" data-slfile="${escA(n)}" style="flex:1;min-width:0;font-size:var(--fs-xs)">
+      <label class="chip setup">Upload logo<input type="file" class="sr-only" accept="image/*" data-slfile="${escA(n)}"></label>
       ${logo ? `<button type="button" data-slclear="${escA(n)}" class="chip" style="padding:2px 8px">Clear</button>` : ''}
     </span>
-    <span class="seth" data-slmsg="${escA(n)}">${logo ? 'Custom logo set.' : 'No logo — showing the name-derived initial.'}</span>
   </div>`;
 }
 function renderSetLogos(){
@@ -9674,8 +10076,9 @@ function setLogosInstall(){
   const setRowMsg = (n, text, kind) => {
     const row = box.querySelector(`[data-slname="${CSS.escape(n)}"]`);
     if (!row) return;
-    const msg = row.querySelector('.seth');
-    if (msg) { msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : ''); }
+    let msg = row.querySelector('.seth');
+    if (!msg) { msg = document.createElement('span'); row.appendChild(msg); }
+    msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : '');
   };
   box.addEventListener('change', e => {
     const inp = e.target.closest && e.target.closest('[data-slfile]');
@@ -9828,16 +10231,29 @@ function settingsInstall(){
   });
   setColorsInstall();
   setLogosInstall();
+  const firstSetNav = document.querySelector('#setnav [data-setgo]');
+  if (firstSetNav){ document.querySelectorAll('#setnav [data-setgo]').forEach(x => x.classList.remove('is-active')); firstSetNav.classList.add('is-active'); firstSetNav.setAttribute('aria-current','true'); }
+  document.getElementById('setnav')?.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-setgo]');
+    if (b){
+      document.querySelectorAll('#setnav [data-setgo]').forEach(x => { x.classList.remove('is-active'); x.removeAttribute('aria-current'); });
+      b.classList.add('is-active');
+      b.setAttribute('aria-current', 'true');
+      document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+    }
+  });
   loadSettings();
 }
 
 function setCrumb(v){
   const el = document.getElementById('crumb');
   if (el) el.textContent = v || '';
+  const h = document.getElementById('h1view');
+  if (h) h.textContent = v ? ': ' + v : '';
 }
 
 const NAV_ICONS = {
-  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Home:'Home', Life:'Life', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
   Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
@@ -10188,12 +10604,14 @@ function pickView(v){
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
   });
+  const sec = ({bandwidth: 'bwpanel'})[filterFromHash('s')];
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
   setCrumb(v);
   navSync();
   syncProjFilterUI();
   render();
+  if (sec) document.getElementById(sec)?.scrollIntoView?.({block: 'start'});
   if (v === 'Logs') loadLogs();
   if (v === 'Flow') requestAnimationFrame(() => {
     const p = DATA.profiles[current];
@@ -10273,6 +10691,13 @@ function profileIconHtml(n, px){
   const uri = profileLogo(n);
   if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
   const h = profileHue(n);
+  const rows = (typeof DATA !== 'undefined' && DATA && DATA.profiles && DATA.profiles[n] && DATA.profiles[n].rows) || [];
+  const counts = {};
+  rows.forEach(r => { const m = r && r.model; if (m) counts[m] = (counts[m]||0) + (Number(r.calls) || 1); });
+  const dominant = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || null;
+  if (dominant){
+    return provLogoSvg(short(dominant), px);
+  }
   const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
   return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
 }
@@ -10677,6 +11102,21 @@ async function triggerRefresh(msgFn, where){
   }
 }
 
+let _reloadTimer = null;
+function scheduleReloadAfter(beforeStamp){
+  if (_reloadTimer) clearInterval(_reloadTimer);
+  const started = Date.now();
+  const before = Date.parse(beforeStamp || '') || 0;
+  _reloadTimer = setInterval(async () => {
+    if (Date.now() - started > 20000) { clearInterval(_reloadTimer); _reloadTimer = null; return; }
+    try {
+      const r = await fetch('dashboard.html', {method: 'HEAD', cache: 'no-store'});
+      const lm = Date.parse(r.headers.get('last-modified') || '') || 0;
+      if (lm && lm > before) { clearInterval(_reloadTimer); _reloadTimer = null; location.reload(); }
+    } catch (e) { /* keep polling; the timer is the backstop */ }
+  }, 1500);
+}
+
 const saved = localStorage.getItem('hermes-dash-theme');
 if(saved==='light') document.documentElement.removeAttribute('data-theme');
 else document.documentElement.setAttribute('data-theme','dark');
@@ -10937,7 +11377,7 @@ function drawerSync(){
   const errs = all.filter(e => e.level === 'error');
 
   const unread = dOpen ? 0 : Math.max(0, errs.length - dSeen);
-  for (const bid of ['logn','logn2']){
+  for (const bid of ['navlogn']){
     const badge = $(bid);
     if (badge){ badge.textContent = unread; badge.hidden = unread === 0; }
   }
@@ -10950,7 +11390,7 @@ function drawerSync(){
 
   body.innerHTML = rows.length ? rows.map(e => {
     const t = new Date(e.ts).toLocaleTimeString([], {hour12:false});
-    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${(PROV[provOf('', e.model || '', '')] || {}).icon || ''} ${short(e.model)}</span> ` : '';
+    const who = e.model ? `<span class="evm" style="color:${colorOf(short(e.model))}">${provLogoSvg(short(e.model))} ${short(e.model)}</span> ` : '';
     const twho = e.tool ? `<span class="evt" style="color:${toolColor(e.tool)}">${esc(e.tool)}</span> ` : '';
     const pf = e.profile ? `<span class="muted">[${e.profile}]</span> ` : '';
     return `<div class="ev ${e.level==='error'?'err':''}">
@@ -10972,7 +11412,6 @@ function drawerOpen(on){
   $('drawer')?.classList.toggle('open', on);
   $('scrim')?.classList.toggle('open', on);
   $('drawer')?.setAttribute('aria-hidden', String(!on));
-  $('logbtn')?.classList.toggle('hidden', on);
   if (on && !dTrap) dTrap = trapFocus($('drawer'), $('scrim'), null);
   if (!on && dTrap){ dTrap.release(); dTrap = null; }
   if (on){
@@ -11030,12 +11469,12 @@ function installDrawerDrag(){
   handle.addEventListener('pointermove', onMove);
   handle.addEventListener('pointerup', onUp);
   handle.addEventListener('pointercancel', onUp);
+  handle.addEventListener('touchstart', onDown);
+  handle.addEventListener('mousedown', onDown);
 }
 
 function installDrawer(){
   installDrawerDrag();
-  $('logbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
-  $('logbtn2')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
   $('dfull')?.addEventListener('click', e => {
     e.preventDefault();

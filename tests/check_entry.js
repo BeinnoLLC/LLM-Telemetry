@@ -24,22 +24,21 @@ setTimeout(()=>{
  // legitimate navigation, not the header chip #116 removed.
  const headerRow = d.querySelector('.page .flex.gap-2.items-center');
  const drawer=d.getElementById('drawer');
- const hdr=d.getElementById('logbtn2'), edge=d.getElementById('logbtn');
+ const hdr=d.getElementById('logbtn2');
  chk(!!headerRow,'header row located for scoping');
- chk(!!edge,'edge Logs tab exists');
  chk(!hdr,'header Logs chip REMOVED (#116)');
  chk(headerRow && !headerRow.querySelector('a[href="costs.html"]'),
      'no header costs.html link (page deleted — Rates lives in-app)');
  chk(headerRow && [...headerRow.querySelectorAll('a')].every(
      a => !/^\$?\s*Rates/.test(a.textContent.trim())),
      'no Rates control anywhere in the header');
- chk(!edge.closest('#tabs'),'edge tab is not part of the tab strip');
- // the edge tab opens and closes the drawer
- edge.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
- chk(drawer.classList.contains('open'),'edge tab OPENS drawer');
- edge.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
- chk(!drawer.classList.contains('open'),'edge tab toggles closed');
- edge.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+ // UI pass A removed the floating edge tab; the drawer opens via the 'l'
+ // shortcut (or the rail's Live tail item).
+ d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'l',bubbles:true}));
+ chk(drawer.classList.contains('open'),'keyboard shortcut OPENS drawer');
+ d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'l',bubbles:true}));
+ chk(!drawer.classList.contains('open'),'keyboard shortcut toggles closed');
+ d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'l',bubbles:true}));
  chk(d.querySelectorAll('#dbody .ev').length>0,'drawer has events',
      `(${d.querySelectorAll('#dbody .ev').length})`);
  console.log(`\n${f===0?'ALL PASS':'FAILED'}  (${p} passed, ${f} failed)`);

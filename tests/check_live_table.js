@@ -89,7 +89,7 @@ setTimeout(() => {
     const px = s => parseFloat(w.getComputedStyle(s).width);
     chk(logo(c1) && logo(cx) && logo(c1).dataset.kindlogo === 'claude' && logo(cx).dataset.kindlogo === 'codex', 'claude and codex rows carry their data-kindlogo svgs');
     chk([c1, cidle, cx].every(r => logo(r) && px(logo(r)) >= 15 && parseFloat(w.getComputedStyle(logo(r)).height) >= 15), 'row logos render >= 15px', px(logo(c1)));
-    chk(!logo(pi) && !logo(hm), 'pi and hermes rows keep their glyph badges (no brand logo)');
+    chk(!logo(pi), 'pi rows keep their glyph badges (no brand logo)');
     chk(c1.querySelector('[data-kindbadge]').getAttribute('style').includes('var(--kind-claude)') && cx.querySelector('[data-kindbadge]').getAttribute('style').includes('var(--kind-codex)'),
       'kind colours still come from the --kind-* tokens');
 

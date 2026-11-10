@@ -23,19 +23,14 @@
    /* gauge severity zones + palette: single source = tokens.css */
    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
    --nav-w:240px; --rail-w:60px; --bar-h:52px;
-   /* Logs edge tab (#254): ONE source of truth. The tab is exactly --logtab-w
-      wide (fixed, so fonts and the count badge cannot widen it) and the page
-      reserves --logtab-w + --logtab-gap on the right, so it never covers content. */
-   --logtab-w:52px; --logtab-gap:12px;
-   --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));
-;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+   --ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  /* Full viewport width — no max-width cap */
- .page{width:100%;padding:var(--pad) max(var(--pad),var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+ .page{width:100%;padding:var(--pad) var(--pad) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  /* LST-220: cards sit one step off the page instead of being flat outlines, and
     interactive ones answer hover/press with the token state layers. The lift is
     deliberately small (elev-1 resting, elev-2 on hover) — this is a dense
@@ -184,7 +179,7 @@
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 4px;border:1px solid var(--border);border-radius:3px;font-size:13px;line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
 .fbwrap{min-width:0}
 /* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
 @media (max-width:960px){
@@ -236,9 +231,18 @@
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
  tbody tr:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
  .kpi{font-size:clamp(18px,2vw,26px);font-weight:600;letter-spacing:-.02em}
+ /* Headings carry the semantics only: the visual classes keep owning size,
+    weight and spacing, so turning a title div into an h2 changes nothing. */
+ h1,h2,h3{margin:0;font:inherit}
+ .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+ .skip{position:fixed;left:8px;top:-60px;z-index:200;padding:8px 14px;border-radius:4px;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
+ .skip:focus{top:8px}
+ main:focus{outline:none}
  .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
- .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+ /* Freshness dot: green while the feed is fresh, amber once its stamp is old or stale. */
+ .dot{width:7px;height:7px;border-radius:50%;background:var(--z-ok);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
+ :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn)}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
  /* Responsive grid helpers */
  .grid-auto{display:grid;gap:var(--gap);
@@ -1129,7 +1133,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     without shouting — opacity only, no layout shift. */
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  /* Local electricity cost (P7-04, #68): distinct from billed spend. */
- .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+ .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:0;text-transform:none;
    padding:0 4px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
  .kpisub{font-size:var(--fs-xs);font-weight:500;margin-top:1px;color:var(--muted)}
 
@@ -1198,6 +1202,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media (max-width:560px){#resendtbl .rsx{display:none} .resendname{max-width:130px}}
  /* Settings (P7-03, #67) */
  .setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+ .setnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin-bottom:8px;background:var(--bg)}
+ .setnav button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+ .setnav button:hover{border-color:var(--accent)}
+ .setnav button.is-active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
+ .view[data-view="Settings"] > .card{scroll-margin-top:56px}
+ .setcustom{margin-left:8px;padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
+ .setcustom[hidden]{display:none}
+ .setup{cursor:pointer;height:32px;display:inline-flex;align-items:center}
+ .setup:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+ #setcolorgrid .setf,#setlogogrid .setf{padding:8px 10px;gap:2px}
  .setf{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:4px;padding:10px}
  .setl{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  .setin{display:flex;align-items:center;gap:6px;font-size:var(--fs-md)}
@@ -1218,24 +1232,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* ---- Logs drawer -------------------------------------------------------
     Fixed to the right edge, above everything, and translated off-screen when
     closed so it costs nothing until opened. */
- #logbtn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;
-   display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 0;
-   width:var(--logtab-w);box-sizing:border-box;overflow:hidden;
-   border-radius:7px 0 0 7px;border:1px solid var(--border);border-right:none;
-   background:var(--card);color:var(--fg);cursor:pointer;font-size:var(--fs-sm);
-   font-weight:600;letter-spacing:.04em;writing-mode:vertical-rl;
-   box-shadow:-4px 0 18px rgba(0,0,0,.35)}
- /* Hover must not change the footprint the page reserved: colour only. */
- #logbtn:hover{border-color:var(--accent)}
- #logbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
- /* Hide the tab itself while the drawer is open — it would sit under the panel. */
- #logbtn.hidden{opacity:0;pointer-events:none}
-  /* 44px = the mobile touch-target floor (button min-width), so it cannot go lower. */
- /* <=600px: the floating tab is hidden (the sidebar Live tail item remains) and reserves nothing. */
- @media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }
- #logbtn .n{background:var(--z-bad);color:var(--z-bad-fg);border-radius:999px;padding:1px 6px;
-   font-size:var(--fs-xs);font-weight:600;line-height:1.5}
- #logbtn .n[hidden]{display:none}
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
@@ -1429,7 +1425,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .livegrid{display:grid;gap:var(--gap);align-items:start;
    grid-template-columns:minmax(0,1fr)}
  .livegrid > *{min-width:0}
- @media(max-width:1279px){
+ @media(max-width:1023px){
    .livegrid{grid-template-columns:minmax(0,1fr)}
    /* the list is height-capped for the side-by-side case; unpin it when stacked */
    .livegrid > .card:first-child{max-height:none !important}
@@ -1577,6 +1573,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-foldall button{font-size:var(--fs-xs);padding:.15rem .5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer}
 .rt-foldall button:hover{color:var(--fg);border-color:var(--accent)}
 .rt-phead h2{font-size:var(--fs-lg);font-weight:600;margin:0}
+.rt-compact{margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.rt-compact > .rt-phead{margin:0;padding:10px 12px;min-height:48px}
+.rt-compact[open] > .rt-phead{border-bottom:1px solid var(--border);margin-bottom:.6rem}
+.rt-compact > .rt-card{margin:0 12px .6rem}
+.rt-compact:not([open]) .rt-foldall{display:none}
+.rt-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .8rem}
+.rt-find{flex:1 1 220px;max-width:340px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);font:inherit;color-scheme:dark}
+.rt-tbtn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.rt-tbtn:hover{color:var(--fg);border-color:var(--accent)}
 /* Sub-page strip (#130). Not a profile switcher — the header chips do that, and
    a second one mid-page invited the wrong click. This picks a page of the
    tab's own content. Sticky so the way back is always in reach on a long page. */
@@ -2168,6 +2173,95 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .combo-pop{max-width:calc(100vw - 16px)}
 }
 
+/* Agent arena (homage to anoma.ly/hex/) */
+.arenabox{position:relative;height:clamp(160px,18vw,260px);width:100%}
+#arenacv{display:block;width:100%;height:100%;border-radius:var(--radius-sm,6px)}
+
+/* ---- LST-226/227: app bar (56px). Sticky above the page; clears the nav rail
+   the same way .page does. */
+#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
+  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
+body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
+#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
+#appbar .ab-sep{opacity:.4}
+#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#appbar .ab-spacer{flex:1}
+#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
+#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
+#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
+
+/* LST-239/243: Orchestration graph */
+.orch-card{padding:1rem;overflow-x:auto}
+.orch-empty{padding:1rem}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
+.orch-head{fill:var(--muted)}
+.orch-lbl{fill:var(--muted);font-size:13px}
+.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
+.orch-name{fill:var(--text, currentColor);font-size:13px}
+.orch-kind{font-size:13px;font-weight:600}
+
+/* LST-249: Kanban board */
+.kb-empty{padding:1rem}
+.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
+.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
+.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
+.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
+.kb-count{color:var(--muted);font-weight:400}
+.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
+.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
+.kb-title{overflow-wrap:anywhere}
+.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
+.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
+.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}
+
+
+
+/* LST-230: 390px pass — nothing may widen the page; wide tables scroll inside
+   their own panel; charts stay readable; touch controls reach the 44px floor. */
+
+/* state.js renderers */
+.state-skeleton { padding: 12px; }
+.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
+.state-empty, .state-error { padding: 16px; text-align: center; }
+.state-icon { font-size: 28px; margin-bottom: 8px; }
+.state-msg { margin: 4px 0; }
+.state-action { display: inline-block; margin-top: 8px; }
+.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
+
+/* LST-230/232: mobile 390px pass — overflow offenders */
+.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
+  max-width: 100%;
+}
+.model-name, .modelname, td.model, .tbl-model, .cell-model {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+canvas, img {
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 480px) {
+  button, a, [role="button"], .btn, .chip, .tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+/* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
+   rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
+   light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
 /* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
    rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
    light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
@@ -2212,83 +2306,4 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 
 
-/* LST-230: 390px pass — nothing may widen the page; wide tables scroll inside
-   their own panel; charts stay readable; touch controls reach the 44px floor. */
 
-/* state.js renderers */
-.state-skeleton { padding: 12px; }
-.skel-line { height: 12px; margin: 8px 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
-@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
-.state-empty, .state-error { padding: 16px; text-align: center; }
-.state-icon { font-size: 28px; margin-bottom: 8px; }
-.state-msg { margin: 4px 0; }
-.state-action { display: inline-block; margin-top: 8px; }
-.state-lasterr, .state-where { font-size: var(--fs-xs, 11px); opacity: .7; margin-top: 4px; }
-
-/* LST-230/232: mobile 390px pass — overflow offenders */
-.tablewrap, .lvtable, .table-scroll, .tblwrap, .table-container {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.tablewrap table, .lvtable table, .table-scroll table, .tblwrap table, .table-container table {
-  max-width: 100%;
-}
-.model-name, .modelname, td.model, .tbl-model, .cell-model {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-canvas, img {
-  max-width: 100%;
-  height: auto;
-}
-@media (max-width: 480px) {
-  button, a, [role="button"], .btn, .chip, .tab {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* ---- LST-226/227: app bar (56px). Sticky above the page; clears the nav rail
-   the same way .page does. */
-#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
-  padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
-body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
-#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
-#appbar .ab-sep{opacity:.4}
-#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-#appbar .ab-spacer{flex:1}
-#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
-#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
-#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
-#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
-@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
-
-/* LST-239/243: Orchestration graph */
-.orch-card{padding:1rem;overflow-x:auto}
-.orch-empty{padding:1rem}
-.orch-svg{width:100%;min-width:480px;height:auto;display:block}
-.orch-edge{fill:none;stroke:var(--muted);opacity:.7}
-.orch-head{fill:var(--muted)}
-.orch-lbl{fill:var(--muted);font-size:10px}
-.orch-node rect{fill:var(--card, transparent);stroke-width:1.5}
-.orch-name{fill:var(--text, currentColor);font-size:12px}
-.orch-kind{font-size:10px;font-weight:600}
-
-/* LST-249: Kanban board */
-.kb-empty{padding:1rem}
-.kb-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
-.kb-select{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;min-height:36px}
-.kb-board{display:flex;gap:.75rem;overflow-x:auto;align-items:flex-start;padding-bottom:.5rem}
-.kb-lane{flex:0 0 260px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:4px}
-.kb-head{display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600;text-transform:capitalize}
-.kb-count{color:var(--muted);font-weight:400}
-.kb-cards{display:flex;flex-direction:column;gap:.5rem;padding:.5rem;max-height:70vh;overflow-y:auto}
-.kb-card{border:1px solid var(--border);border-radius:4px;padding:.5rem .625rem}
-.kb-title{overflow-wrap:anywhere}
-.kb-meta,.kb-none,.kb-more{font-size:var(--fs-xs)}
-.kb-lane[data-status=running] .kb-card{border-left:3px solid var(--accent)}
-.kb-lane[data-status=blocked] .kb-card{border-left:3px solid var(--z-bad)}

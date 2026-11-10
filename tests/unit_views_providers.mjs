@@ -130,7 +130,7 @@ const load = () => isolate('views.js', {
   },
   'flow.js': { flowControls: {}, renderFlow(){} },
   'live.js': { renderLive(){ liveCalls++; } },
-  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; } },
+  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; }, RT_SVG: {}, RT_LOGO: {} },
   'quotaview.js': { renderQuotaView(){ quotaCalls++; }, qvStat(){ return 'QS'; } },
   'main.js': { DATA, LOCAL_HOSTS: ['localhost', '192.168.'], SCHEMA_VERSION: 1, css: () => '' },
 }, { document: fakeDocument });
@@ -641,8 +641,11 @@ const BW_ROWS = [
   has(e.resendtbl.innerHTML, 'Re-sent cost</th>', 'renderResend: cost column');
   has(e.resendtbl.innerHTML, 'data-sid="s&lt;1&gt;"', 'renderResend: row keyed by escaped session id');
   has(e.resendtbl.innerHTML, 'resendname" title="s&lt;1&gt;">My "chat"</td>', 'renderResend: title used as the name');
-  has(e.resendtbl.innerHTML, '<td class="pr-2 rsx" style="white-space:nowrap">opus</td>',
-    'renderResend: provider prefix stripped from the model');
+  // LST-262: the model cell carries the provLogoSvg mark before the short
+  // name ("acme/opus" -> cloud monogram CL + "opus", the provider prefix
+  // still stripped from the name itself).
+  has(e.resendtbl.innerHTML, '<td class="pr-2 rsx" style="white-space:nowrap"><span style="color:#8b98ab;font-size:6px">CL</span> opus</td>',
+    'renderResend: provider mark + short model, provider prefix stripped from the name');
   has(e.resendtbl.innerHTML, '<td class="text-right">12</td>', 'renderResend: call count for the cloud row');
   has(e.resendtbl.innerHTML, '<td class="text-right rsx">12.3K</td>', 'renderResend: average context via fmt');
   has(e.resendtbl.innerHTML, '<td class="text-right">87.5%</td>', 'renderResend: cached share to one decimal');
@@ -652,7 +655,7 @@ const BW_ROWS = [
 
   const local = e.resendtbl.innerHTML.slice(e.resendtbl.innerHTML.indexOf('data-sid="s2"'));
   has(local, '>s2</td>', 'renderResend: an empty title falls back to the id');
-  has(local, '~$0.250 <span class="elecmark">elec</span>', 'renderResend: a local row shows electricity, not a bill');
+  has(local, '~$0.250 <span class="elecmark">electricity</span>', 'renderResend: a local row shows electricity, not a bill');
   has(local, 'width:16.666', 'renderResend: bar width is proportional');
   has(local, '<td class="text-right">50.0%</td>', 'renderResend: 50 renders as 50.0%');
 
@@ -802,8 +805,11 @@ const D2 = await load();
   has(h, '<span class="hc-stat">QS</span>', 'renderHome: quota card delegates to qvStat');
   has(h, '>Bandwidth (est.)</span>', 'renderHome: bandwidth card is explicitly an estimate');
   has(h, 'href="#/usage"', 'renderHome: bandwidth deep-links into usage');
-  has(h, 'href="#/Prices"', 'renderHome: rates deep-links to the in-app Prices view');
-  has(h, '<span class="hc-stat">Price sheet</span>', 'renderHome: rates card names the price sheet');
+  // UI pass A (a165e2a) deliberately retired "Price sheet" and the
+  // capitalised slug (check_ui_a.js enforces both): the card deep-links with
+  // the router's lowercase slug convention and states the rate basis.
+  has(h, 'href="#/prices"', 'renderHome: prices card deep-links to the in-app Prices view');
+  has(h, '<span class="hc-stat">per 1M tokens</span>', 'renderHome: prices card states the rate basis');
   has(h, '<span class="hc-stat"><span class="bwup">\u2191 150 B</span>',
     'renderHome: up bytes are live+LAN and labelled as estimated');
   has(h, '<span class="bwdown">\u2193 15 B</span>', 'renderHome: down bytes are live+LAN');

@@ -25,6 +25,11 @@
 // fails, re-read the module rather than copying what it printed.
 import { isolate } from './lib/isolate.mjs';
 
+// state.js has no sibling imports, so it loads standalone. views.js delegates
+// its empty states to renderEmpty (LST-235) and the tests assert the REAL
+// single-card markup it renders — a no-op stub would fake the outcome.
+import { renderEmpty } from '../src/llm_telemetry/web/js/state.js';
+
 let pass = 0, fail = 0;
 function ok(cond, msg){ if (cond) { pass++; return; } fail++; console.log(`  FAIL: ${msg}`); }
 function eq(a, b, msg){ ok(a === b, `${msg}\n        got ${JSON.stringify(a)}\n        exp ${JSON.stringify(b)}`); }
@@ -79,9 +84,12 @@ function noThrow(fn, msg){
 // so a fake document is installed for the evaluation only.
 const styles = [];
 const fakeDocument = {
-  createElement: () => ({}),
+  getElementById: () => null,
+  documentElement: { getAttribute: () => null, dataset: {} },
+  createElement: () => ({ style: {} }),
   head: { appendChild: s => styles.push(s) },
   addEventListener: () => {},
+  querySelectorAll: () => [],
 };
 
 // The load-time guards (schema check, zero-profiles notice) throw or bail on a
@@ -103,6 +111,8 @@ const load = (o = {}) => (Object.keys(DATA.profiles).length || (DATA.profiles = 
     ctxSpark: (series, comps) => `[spark ${series.length} ${(comps || []).length}]`,
   },
   'router.js': { PROJECT_FILTER: o.PROJECT_FILTER || '' },
+  'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {} },
+  'state.js': { renderSkeleton: () => {}, renderEmpty, renderError: () => {} },
   'main.js': { DATA, SCHEMA_VERSION: 1, LOCAL_HOSTS: [] },
 }, { document: fakeDocument }));
 
@@ -227,7 +237,11 @@ const rowsOf = html => html.split('<div class="flex items-center gap-2.5 hrow').
   has(a, '<div style="width:100.00%;background:#5f9e6e"></div>', 'health alpha: ok segment 100.00%');
   has(a, 'color:#5f9e6e">100%</div>', 'health alpha: rate green');
   has(a, '>10 of 10</div>', 'health alpha: count without failures');
-  has(a, 'style="width:172px;color:col:alpha" title="alpha">alpha</div>', 'health alpha: short name, colorOf');
+  // Short name + colorOf on the name div, and the provider mark (LST-262:
+  // provLogoSvg's monogram fallback — unknown "alpha" resolves to cloud,
+  // mono "CL", default #8b98ab at round(14*0.42)=6px).
+  has(a, 'style="width:172px;color:col:alpha" title="alpha"><span style="color:#8b98ab;font-size:6px">CL</span> alpha</div>',
+    'health alpha: provider mark + short name, colorOf');
 
   ok(b.startsWith(' hthin"'), 'health beta: <5 calls is thin');
   has(b, 'title="Fewer than 5 calls — too few to judge"', 'health beta: thin tooltip');
@@ -252,7 +266,9 @@ const rowsOf = html => html.split('<div class="flex items-center gap-2.5 hrow').
 
   DATA.profiles = { p1: { health: [] } };
   D.renderHealth(null);
-  eq(healthgrid.innerHTML, '<div class="muted text-[length:var(--fs-sm)]">No calls recorded.</div>', 'health: empty message');
+  eq(healthgrid.innerHTML,
+    '<div class="state-empty"><div class="state-icon">∅</div><p class="state-msg">No calls recorded.</p></div>',
+    'health: empty message');
 
   DATA.profiles = {};
   D.renderHealth(null);
@@ -267,11 +283,12 @@ const rowsOf = html => html.split('<div class="flex items-center gap-2.5 hrow').
   DP.renderHealth([{ model: 'p/alpha' }, { model: 'p/alpha' }]);
   const R = rowsOf(healthgrid.innerHTML);
   eq(R.length, 1, 'health filter: only models the project used');
-  has(R[0], '>alpha</div>', 'health filter: alpha kept');
+  has(R[0], 'title="alpha"><span style="color:#8b98ab;font-size:6px">CL</span> alpha</div>', 'health filter: alpha kept');
   has(R[0], 'color:#5f9e6e">100%</div>', 'health filter: rate unchanged');
 
   DP.renderHealth([{ model: 'other' }]);
-  eq(healthgrid.innerHTML, '<div class="muted text-[length:var(--fs-sm)]">No calls recorded for "R&amp;D" in this range.</div>',
+  eq(healthgrid.innerHTML,
+    '<div class="state-empty"><div class="state-icon">∅</div><p class="state-msg">No calls recorded for "R&amp;D" in this range.</p></div>',
     'health filter: empty message names the (escaped) project');
 
   DP.renderHealth(null);
@@ -295,7 +312,7 @@ const FAILS = () => ([
   eq(fc.textContent, '3 failures in 2 groups · last 7 days', 'failures: unfiltered count line');
   const rows = fl.innerHTML.split('frow"').slice(1);
   eq(rows.length, 2, 'failures: two groups');
-  has(rows[0], 'title="m2">m2</span>', 'failures: newest group (auth, 10-02) first');
+  has(rows[0], 'title="m2"><span style="color:#8b98ab;font-size:6px">CL</span> m2</span>', 'failures: newest group (auth, 10-02) first');
   has(rows[0], 'title="&lt;denied> &amp; &quot;no&quot;">&lt;denied> &amp; &quot;no&quot;</span>',
     'failures: message escaped with the local attribute-safe esc');
   has(rows[0], '>10-02 09:00</span>', 'failures: single event shows MM-DD HH:MM');
@@ -361,7 +378,9 @@ const FAILS = () => ([
   lacks(h, '0 ineffective', 'lifecycle: zero counts omitted');
   has(h, '3 ineffective', 'lifecycle: ineffective bit');
   has(h, 'title="boom">error</span>', 'lifecycle: error marker');
-  eq(count(h, 'ui-monospace'), 1, 'lifecycle: error detail line only for the erroring session');
+  // UI pass A restyled the detail line (was ui-monospace) to a wrapped
+  // human-readable message; it must still appear exactly once.
+  eq(count(h, 'overflow-wrap:anywhere'), 1, 'lifecycle: error detail line only for the erroring session');
 
   D.renderLifecycle(Array.from({ length: 25 }, (_, i) => ({ id: 's' + i, title: 't' + i })));
   eq(count(lifepressure.innerHTML, 'py-0.5"'), 20, 'lifecycle: capped at 20 rows');
@@ -772,7 +791,7 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
   has(el.delegkpi.innerHTML, '<span class="dkpi-n">$0.01</span>', 'deleg kpi: a sub-cent spend rounds to $0.01 (money() is 2dp)');
 
   const mods = el.delegmodels.innerHTML;
-  has(mods, '<div class="dname" title="anthropic/claude-sonnet-5">claude-sonnet-5</div>', 'deleg models: title keeps the full id, the label is short()');
+  has(mods, '<div class="dname" title="anthropic/claude-sonnet-5"><span style="color:#8b98ab;font-size:6px">AN</span> claude-sonnet-5</div>', 'deleg models: title keeps the full id, the label is the provider mark + short()');
   has(mods, '<span style="width:100%" class="ok"></span>', 'deleg models: 100% bar is ok and full width');
   has(mods, '<div class="dpct ok">100%</div>', 'deleg models: 100% is printed raw');
   has(mods, '1 run</div>', 'deleg models: singular run, and no "lost" suffix at 0 wasted hours');
@@ -795,7 +814,7 @@ const LEAF = () => ({ id: 's1', title: 'Fix <bug>', source: 'cron', model: 'm', 
   has(rec, '<span class="ddot ok"></span>', 'deleg recent: completed -> ok dot');
   has(rec, '<span class="ddot bad"></span>', 'deleg recent: failed -> bad dot');
   has(rec, 'title="summarise &lt;the&gt; file">summarise &lt;the&gt; file</div>', 'deleg recent: goal is escaped in title and text');
-  has(rec, '<div class="muted text-[length:var(--fs-xs)]">claude-sonnet-5 · 2m</div>', 'deleg recent: short(model) + ago(seconds), no reason when completed');
+  has(rec, '<div class="muted text-[length:var(--fs-xs)]"><span style="color:#8b98ab;font-size:6px">AN</span> claude-sonnet-5 · 2m</div>', 'deleg recent: provider mark + short(model) + ago(seconds), no reason when completed');
   has(rec, '(no goal recorded)', 'deleg recent: a missing goal placeholder');
   has(rec, 'm2 · 1h · timeout', 'deleg recent: failure_reason preferred over exit_reason/status');
 

@@ -3,12 +3,12 @@
  * Settings page, the nav drawer and the per-profile colour/logo controls.
  */
 import {
-  $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, esc, escA, hashHue, pick, slugOf,
+  $, COLORS, TOOLCOLORS, allModelNames, allToolNames, buildColors, buildToolColors, esc, escA, hashHue, pick, short, slugOf,
 } from './palette.js';
 import {
   bounds, charts, current, outPer1M, projDistNormalized, projTrendStacked, usdPerSec,
 } from './charts.js';
-import { flash, render, renderResolution, syncProjFilterUI } from './views.js';
+import { flash, provLogoSvg, render, renderResolution, syncProjFilterUI } from './views.js';
 import { renderFlow } from './flow.js';
 import { loadLogs, logsInstall } from './drawer.js';
 import { KIND_ORDER, LIVE_MS, REBUILD_MS, fleetKindCounts, kindMeta, renderLive } from './live.js';
@@ -415,13 +415,12 @@ export function setColorSwatch(n){
   const h = profileHue(n);
   const overridden = pvHueOverride(n) !== null;
   return `<div class="setf" data-scname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${overridden ? '' : ' hidden'}>Custom</span></span>
     <span class="setin">
       <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
-      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" style="flex:1;min-width:0">
-      <span class="muted text-[length:var(--fs-xs)]" style="min-width:2.6em;text-align:right" data-schuen="${escA(n)}">${h}°</span>
+      <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" aria-label="${escA(n)} hue" style="flex:1;min-width:0">
+      <span class="muted text-[length:var(--fs-xs)]" style="min-width:4.6em;text-align:right" data-schuen="${escA(n)}">hue ${h}°</span>
     </span>
-    <span class="seth">${overridden ? 'Custom — ' : 'Default (from name) — '}used for its tab, badges and live dots.</span>
   </div>`;
 }
 export function renderSetColors(){
@@ -450,9 +449,9 @@ export function setColorsInstall(){
       const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
       if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
       const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
-      if (readout) readout.textContent = deg + '°';
-      const hint = row.querySelector('.seth');
-      if (hint) hint.textContent = 'Custom — used for its tab, badges and live dots.';
+      if (readout) readout.textContent = 'hue ' + deg + '°';
+      const tag = row.querySelector('.setcustom');
+      if (tag) tag.hidden = false;
     }
     // Everywhere else that draws this profile's colour must pick it up
     // immediately, not just on the next poll — a settings change with no
@@ -477,13 +476,12 @@ export function setColorsInstall(){
 export function setLogoRow(n){
   const logo = profileLogo(n);
   return `<div class="setf" data-slname="${escA(n)}">
-    <span class="setl">${esc(n)}</span>
+    <span class="setl">${esc(n)}<span class="setcustom"${logo ? '' : ' hidden'}>Custom</span></span>
     <span class="setin" style="gap:8px">
       ${profileIconHtml(n, 28)}
-      <input type="file" accept="image/*" data-slfile="${escA(n)}" style="flex:1;min-width:0;font-size:var(--fs-xs)">
+      <label class="chip setup">Upload logo<input type="file" class="sr-only" accept="image/*" data-slfile="${escA(n)}"></label>
       ${logo ? `<button type="button" data-slclear="${escA(n)}" class="chip" style="padding:2px 8px">Clear</button>` : ''}
     </span>
-    <span class="seth" data-slmsg="${escA(n)}">${logo ? 'Custom logo set.' : 'No logo — showing the name-derived initial.'}</span>
   </div>`;
 }
 export function renderSetLogos(){
@@ -500,8 +498,10 @@ export function setLogosInstall(){
   const setRowMsg = (n, text, kind) => {
     const row = box.querySelector(`[data-slname="${CSS.escape(n)}"]`);
     if (!row) return;
-    const msg = row.querySelector('.seth');
-    if (msg) { msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : ''); }
+    // Messages exist only when there is something to say (no repeated boilerplate per row).
+    let msg = row.querySelector('.seth');
+    if (!msg) { msg = document.createElement('span'); row.appendChild(msg); }
+    msg.textContent = text; msg.className = 'seth' + (kind ? ' ' + kind : '');
   };
   box.addEventListener('change', e => {
     const inp = e.target.closest && e.target.closest('[data-slfile]');
@@ -719,6 +719,17 @@ export function settingsInstall(){
   });
   setColorsInstall();
   setLogosInstall();
+  const firstSetNav = document.querySelector('#setnav [data-setgo]');
+  if (firstSetNav){ document.querySelectorAll('#setnav [data-setgo]').forEach(x => x.classList.remove('is-active')); firstSetNav.classList.add('is-active'); firstSetNav.setAttribute('aria-current','true'); }
+  document.getElementById('setnav')?.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-setgo]');
+    if (b){
+      document.querySelectorAll('#setnav [data-setgo]').forEach(x => { x.classList.remove('is-active'); x.removeAttribute('aria-current'); });
+      b.classList.add('is-active');
+      b.setAttribute('aria-current', 'true');
+      document.getElementById(b.dataset.setgo)?.scrollIntoView?.({block: 'start', behavior: 'smooth'});
+    }
+  });
   loadSettings();
 }
 
@@ -728,6 +739,9 @@ export function settingsInstall(){
 export function setCrumb(v){
   const el = document.getElementById('crumb');
   if (el) el.textContent = v || '';
+  // The page's one h1 names the view for screen readers (visually the crumb does).
+  const h = document.getElementById('h1view');
+  if (h) h.textContent = v ? ': ' + v : '';
 }
 
 // ---- Left nav drawer (#3) -------------------------------------------------
@@ -736,7 +750,7 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'Home', Live:'Live', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Home:'Home', Life:'Life', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
   Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
@@ -949,12 +963,15 @@ export function pickView(v){
     const on=b.dataset.vtab===v;
     b.className='px-3 py-1 rounded-md border text-[length:var(--fs-sm)] '+(on?'tabon':'taboff');
   });
+  // `#/usage?s=bandwidth` deep-links a panel; setHash below drops the param, so read it first.
+  const sec = ({bandwidth: 'bwpanel'})[filterFromHash('s')];
   localStorage.setItem('hermes-dash-view', v);
   setHash(v);
   setCrumb(v);
   navSync();
   syncProjFilterUI();
   render();
+  if (sec) document.getElementById(sec)?.scrollIntoView?.({block: 'start'});
   // The logs payload is ~1.3 MB and most visits never open this view, so it
   // is fetched on first navigation rather than with the page.
   if (v === 'Logs') loadLogs();
@@ -1058,6 +1075,13 @@ export function profileIconHtml(n, px){
   const uri = profileLogo(n);
   if (uri) return `<img src="${escA(uri)}" alt="" width="${px}" height="${px}" style="border-radius:4px;object-fit:cover;flex:none" onerror="this.remove()">`;
   const h = profileHue(n);
+  const rows = (typeof DATA !== 'undefined' && DATA && DATA.profiles && DATA.profiles[n] && DATA.profiles[n].rows) || [];
+  const counts = {};
+  rows.forEach(r => { const m = r && r.model; if (m) counts[m] = (counts[m]||0) + (Number(r.calls) || 1); });
+  const dominant = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || null;
+  if (dominant){
+    return provLogoSvg(short(dominant), px);
+  }
   const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
   return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
 }

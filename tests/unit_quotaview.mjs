@@ -12,6 +12,11 @@
 // guard against the built HTML — do not weaken either side.
 import { isolate } from './lib/isolate.mjs';
 
+// state.js has no sibling imports, so it loads standalone. quotaview delegates
+// its empty state to renderEmpty (LST-235), and the test asserts the REAL
+// single-card markup it renders — a stubbed no-op would fake the outcome.
+import { renderEmpty } from '../src/llm_telemetry/web/js/state.js';
+
 let pass = 0, fail = 0;
 function ok(cond, msg){ if (cond) { pass++; return; } fail++; console.log(`  FAIL: ${msg}`); }
 function eq(a, b, msg){ ok(a === b, `${msg}\n        got ${JSON.stringify(a)}\n        exp ${JSON.stringify(b)}`); }
@@ -38,6 +43,7 @@ const load = (o = {}) => isolate('quotaview.js', {
   'palette.js': { $: o.$ || (() => null), esc: P.esc, escA: P.escA },
   'charts.js': { current: 'current' in o ? o.current : null },
   'main.js': { DATA: o.DATA || {} },
+  'state.js': { renderEmpty },
   'routerview.js': {
     rtLogo: o.rtLogo || ((id, sz) => `[logo ${id} ${sz}]`),
     rtAgo: o.rtAgo || (() => 'AGO'),
@@ -502,7 +508,8 @@ try {
   setLS(fakeLS());
   Rv.renderQuotaView();
   eq(qvEl.innerHTML,
-    '<div class="card rt-card muted">No quota data — the Hermes quota plugin has not cached any profile yet.</div>',
+    '<div class="state-empty"><div class="state-icon">∅</div><p class="state-msg">' +
+    'No quota data — the Hermes quota plugin has not cached any profile yet.</p></div>',
     'empty quota renders the single message card');
   eq(subEl.textContent, 'refreshed hourly', 'sub line without a collected_at stamp');
 

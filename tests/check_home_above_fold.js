@@ -23,7 +23,7 @@ function chk(ok, name, got) {
 
 // ---- CSS / markup contract (no layout engine needed) -----------------------
 const css = (re, name) => chk(re.test(html), name);
-css(/@media\(max-width:1279px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)\}/,
+css(/@media\(max-width:1023px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)\}/,
   'agents panel column stacks under the table below 1280px');
 css(/\.livegrid\{[^}]*grid-template-columns:minmax\(0,1fr\)\}/,
   'table takes the full width; the agents panel stacks under it (category/tool charts removed)');

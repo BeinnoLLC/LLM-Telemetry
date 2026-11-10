@@ -37,11 +37,11 @@ const chk = (ok, label, extra) => {
 setTimeout(() => {
   console.log('== drawer elements ==');
   const drawer = d.getElementById('drawer');
-  const btn = d.getElementById('logbtn');
+  const btn = d.getElementById('navdrawerbtn');
   const scrim = d.getElementById('scrim');
   const body = d.getElementById('dbody');
   chk(!!drawer, 'drawer exists');
-  chk(!!btn, 'log button exists');
+  chk(!!btn, 'Live tail button exists');
   chk(!!scrim, 'scrim exists');
   chk(!!body, 'log body exists');
 

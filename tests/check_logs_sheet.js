@@ -69,14 +69,14 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     const drawer = d.getElementById('drawer');
-    const logbtn = d.getElementById('logbtn');
+    const logbtn = d.getElementById('navdrawerbtn');
     chk(!!drawer, '#drawer exists');
-    chk(!!logbtn, '#logbtn entry point exists (floating tab, reachable from every view since it sits outside per-view content)');
+    chk(!!logbtn, '#navdrawerbtn entry point exists (rail Live tail item; the floating tab was retired by UI pass A)');
 
     // Opening pushes a history state (for Android/gesture back to close it).
     const beforeLen = w.history.length;
     logbtn.click();
-    chk(drawer.classList.contains('open'), 'clicking #logbtn opens the drawer');
+    chk(drawer.classList.contains('open'), 'clicking the rail Live tail opens the drawer');
     chk(w.history.length > beforeLen, 'opening the drawer pushes a history entry (so back closes it, #17)');
 
     // Body scroll gets locked while open.

@@ -178,7 +178,7 @@ const SUPERSET = {
   'palette.js': {
     $: getEl, allModelNames: () => [], allToolNames: () => [],
     buildColors: P.buildColors, buildToolColors: P.buildToolColors,
-    esc: P.esc, escA: P.escA, hashHue: P.hashHue, slugOf: P.slugOf,
+    esc: P.esc, escA: P.escA, hashHue: P.hashHue, short: (x)=>x, slugOf: P.slugOf,
     pick: () => {},
     COLORS: {}, TOOLCOLORS: {},              // only stubbed for the no-shim probe below
   },
@@ -186,7 +186,7 @@ const SUPERSET = {
     bounds: () => ['', ''], charts: [], outPer1M: () => 0, usdPerSec: () => 0,
     current: null, projDistNormalized: null, projTrendStacked: null,
   },
-  'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {} },
+  'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {}, provLogoSvg: (sm, px) => `<svg class="lvprovlogo" data-sm="${sm}"></svg>` },
   'flow.js': { renderFlow: () => {} },
   'drawer.js': { loadLogs: () => {}, logsInstall: () => {} },
   'live.js': {
@@ -267,8 +267,14 @@ eq(R.NAVKEY, 'hermes-dash-navcollapsed', 'NAVKEY: storage key literal');
 eq(R.NAV_FALLBACK_GROUP, 'More', 'NAV_FALLBACK_GROUP: literal');
 eq(R.PROFILE_LOGO_MAX_BYTES, 204800, 'PROFILE_LOGO_MAX_BYTES: 200 KiB');
 eq(R.NAV_GROUPS.map(g => g.name), ['Overview', 'Analysis', 'System'], 'NAV_GROUPS: group names/order');
-eq(R.NAV_GROUPS.map(g => g.views.length), [4, 6, 3], 'NAV_GROUPS: group sizes (Live folded into Home, #173)');
-eq(Object.keys(R.NAV_ICONS).length, 14, 'NAV_ICONS: one icon per built-in view (incl. Rankings)');
+// Orchestration (LST-239/243) and Kanban (LST-249) deliberately joined
+// Overview after this expectation was written; Life stays in the sanctioned
+// "More" fallback (check_nav_groups.js covers that contract).
+eq(R.NAV_GROUPS.map(g => g.views.length), [6, 6, 3], 'NAV_GROUPS: group sizes');
+ok(!R.NAV_GROUPS.some(g => g.views.includes('Live')), 'NAV_GROUPS: Live is folded into Home, never listed (#173)');
+eq(Object.keys(R.NAV_ICONS).length, 16, 'NAV_ICONS: one icon per built-in view (incl. Rankings, Life)');
+eq(R.NAV_ICONS.Life, 'Life', 'NAV_ICONS: the Life view carries its own icon id (sprite has #icon-Life)');
+ok(!('Live' in R.NAV_ICONS), 'NAV_ICONS: no stale Live key (retired view, #173)');
 
 // ==================================================== slugOf / viewFromHash ==
 eq(R.NAV_ICONS.Home, 'Home', 'NAV_ICONS: Home icon id');
@@ -733,6 +739,18 @@ const img = R.profileIconHtml('nous', 16);
 ok(img.startsWith('<img'), 'profileIconHtml: an <img> once a logo is set');
 ok(img.includes('width="16"') && img.includes('height="16"'), 'profileIconHtml: the <img> is sized');
 eq(R.profileIconHtml('', 16).includes('>?<'), true, 'profileIconHtml: an empty name still renders ?');
+// Bug 1: DATA.profiles[n] is an object with .rows, not an array
+R.profileLogoSet('nous', '');
+const _rowsBackup = DATA.profiles.nous;
+DATA.profiles.nous = { rows: [{ model: 'claude-sonnet-4', calls: 5 }, { model: 'gpt-4o', calls: 1 }], session_index: [] };
+const _dom = R.profileIconHtml('nous', 18);
+ok(_dom.includes('lvprovlogo') || _dom.includes('<svg'), 'profileIconHtml: dominant model returns provLogoSvg output');
+DATA.profiles.nous = { session_index: [] };
+const _fb = R.profileIconHtml('nous', 18);
+ok(!_fb.includes('lvprovlogo'), 'profileIconHtml: no rows returns fallback tile');
+ok(_fb.includes('data-profile-icon-fallback="1"'), 'profileIconHtml: fallback tile present');
+// no throw
+DATA.profiles.nous = _rowsBackup;
 R.profileLogoSet('nous', '');
 
 // tabs() reads PV_ALL (never the merged DATA key) and reports the on-count

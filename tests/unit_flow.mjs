@@ -129,6 +129,7 @@ function harness(els = {}){
     'views.js': {
       PROV: { fireworks: { fg: '#ff8a3d' }, nous: { fg: '#7c9cff' } },
       provOf: (p, _m, u) => String(u || '').includes('fireworks') ? 'fireworks' : (p || 'local'),
+      provLogoSvg: () => '<svg></svg>',
       render: () => { rec.render++; },
     },
     'main.js': { DATA, css: v => `var(${v})` },
@@ -407,7 +408,7 @@ const lblOf = c => c._qt.label;
   eq(h.ids.get('qt-n-running').textContent, '2', 'line: count');
   ok(h.ids.get('qtrain').classList.contains('moving'), 'line: flagged as moving');
   eq(D.carTip(run[1]._qt),
-    '<div class="ft-h">kimi-k3</div><div class="ft-r"><span>state</span><b>running</b></div><div class="ft-r"><span>engine</span><b>hermes</b></div><div class="ft-r"><span>model</span><b>kimi-k3</b></div>'
+    '<div class="ft-h">kimi-k3</div><div class="ft-r"><span>state</span><b>running</b></div><div class="ft-r"><span>engine</span><b>hermes</b></div><div class="ft-r"><span>model</span><b><svg></svg> kimi-k3</b></div>'
     + '<div class="ft-r"><span>profile</span><b>work</b></div><div class="ft-r"><span>doing</span><b>receiving stream response</b></div>'
     + '<div class="ft-r"><span>last activity</span><b>30s ago</b></div><div class="ft-r"><span>tools used</span><b>2</b></div>'
     + '<div class="ft-r"><span>models seen</span><b>3</b></div>', 'line: hover card for a running session');
