@@ -664,11 +664,17 @@ const DR = [
   has('pdOpen: last seen date', body, '2026-01-05');
   has('pdOpen: per-model breakdown', body, 'gpt-x');
   has('pdOpen: per-model breakdown second model', body, 'claude-y');
-  has('pdOpen: model row shows the model-share icon', body, '<span class="k">◉ gpt-x</span>');
+  // LST-262: rows carry provLogoSvg() marks now. With RT_LOGO/RT_SVG stubbed
+  // empty, the mark is the monogram fallback: "gpt-x" resolves to
+  // openai-codex (mono "OP"), the unregistered "openai" slot key falls through
+  // provOf to cloud (mono "CL"), default #8b98ab at round(14*0.42)=6px.
+  has('pdOpen: model row shows the model mark + name', body,
+    '<span class="k"><span style="color:#8b98ab;font-size:6px">OP</span> gpt-x</span>');
   has('pdOpen: heaviest model is 100% of the drawer total', body, '<span class="muted">(100%)</span>');
   has('pdOpen: second model share is rounded to a whole percent', body, '(67%)'); // 0.50/0.75
   has('pdOpen: per-provider breakdown', body, V2.provOf('openai', 'gpt-x', ''));
-  has('pdOpen: provider row shows the provider icon', body, '<span class="k">○ openai</span>');
+  has('pdOpen: provider row shows the provider mark + name', body,
+    '<span class="k"><span style="color:#8b98ab;font-size:6px">CL</span> openai</span>');
   has('pdOpen: session rows carry id and date', body, '<div class="pdsessrow">s1 <span class="muted">· 2026-01-02</span></div>');
   has('pdOpen: task mix includes the named task', body, 'chat');
   has('pdOpen: blank tasks are bucketed as unspecified', body, 'unspecified');
@@ -683,8 +689,10 @@ const DR = [
   has('pdOpen: unknown project cost is zero', emptyBody, '$0.00');
   has('pdOpen: unknown project tokens are zeroed', emptyBody, '0 / 0');
   has('pdOpen: unknown project sessions stat is an em dash', emptyBody, '<span class="k">Sessions</span><span>—</span>');
+  // Bar rows with a mark are the model/provider rows (task rows pass icon=''),
+  // so the mark prefix is what must be absent when the project has no rows.
   ck('pdOpen: unknown project renders no model or provider rows',
-     emptyBody.indexOf('◉') === -1 && emptyBody.indexOf('✳') === -1);
+     emptyBody.indexOf('<span class="k"><span') === -1);
   ck('pdOpen: unknown project has no task rows', emptyBody.indexOf('unspecified') === -1 || emptyBody.indexOf('No task data') !== -1);
 
   // recent-session cap: 12 rows
