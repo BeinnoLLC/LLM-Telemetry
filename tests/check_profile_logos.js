@@ -66,9 +66,17 @@ setTimeout(() => {
         'a fresh profile has no logo override');
     const chipBefore = chips().find(c => c.dataset.tab === n);
     chk(!chipBefore.querySelector('img'),
-        'with no logo set, the tab chip renders NO <img> (falls back to the initial)');
-    chk(!!chipBefore.querySelector('span[data-profile-icon-fallback]'),
-        'the tab chip renders the initial-letter fallback icon instead');
+        'with no logo set, the tab chip renders NO <img> (falls back to the default mark)');
+    // LST-262: the default mark is the dominant model's provider logo
+    // (svg.lvprovlogo or its monogram span), or the initial-letter marble when
+    // the profile has no rows to resolve a provider from.
+    const defaultMark = c => c.querySelector('.av > svg.lvprovlogo, .av > span');
+    const markBeforeHTML = defaultMark(chipBefore) && defaultMark(chipBefore).outerHTML;
+    chk(!!markBeforeHTML,
+        'the tab chip renders the default generated mark (provider logo or marble) instead');
+    const marble = w.eval(`profileIconHtml('zz-empty-profile', 18)`);
+    chk(marble.includes('data-profile-icon-fallback="1"') && marble.includes('>Z</span>'),
+        'a profile with no rows falls back to the initial-letter marble');
 
     // ---- Settings page: the logo uploader ----------------------------------
     w.eval(`pickView('Settings');`);
@@ -102,8 +110,8 @@ setTimeout(() => {
     chk(!!img, 'after setting a logo, the tab chip now renders an <img>');
     chk(!!img && img.getAttribute('src') === FAKE_LOGO,
         'the <img> src is exactly the stored data URI (not re-encoded/mangled)', img && img.getAttribute('src'));
-    chk(!chipAfter.querySelector('span[data-profile-icon-fallback]'),
-        'the initial-letter fallback is gone once a real logo is set');
+    chk(!defaultMark(chipAfter),
+        'the default mark is gone once a real logo is set');
 
     // Settings row itself repaints with a Clear button + live preview once set.
     const gridAfter = d.getElementById('setlogogrid');
@@ -119,8 +127,9 @@ setTimeout(() => {
         'Clear removes the stored override');
     const chipCleared = chips().find(c => c.dataset.tab === n);
     chk(!chipCleared.querySelector('img'), 'after Clear, the tab chip has no <img> again');
-    chk(!!chipCleared.querySelector('span[data-profile-icon-fallback]'),
-        'after Clear, the initial-letter fallback is back on the chip');
+    const markCleared = defaultMark(chipCleared);
+    chk(!!markCleared && markCleared.outerHTML === markBeforeHTML,
+        'after Clear, the default generated mark is back on the chip (identical to before)');
 
     // ---- persistence across a session (acceptance: "setting persists
     // across sessions (read from config on load)") — this dashboard's

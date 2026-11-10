@@ -87,15 +87,16 @@ setTimeout(()=>{
  chk(fm.every(e=>size(e)>=13),'failure names >= 13px',`(${size(fm[0])}px)`);
  chk(fm.every(e=>!grey(col(e))),'failure names coloured',`(${col(fm[0])})`);
 
- // 4. detail table
+ // 4. detail table (the name span is the direct-child .font-semibold — the
+ // provider mark (LST-262) may sit before it as an <svg> or a monogram span)
  view('Detail');
- const tm=[...d.querySelectorAll('#tbl tr td:first-child span:nth-child(2)')];
+ const tm=[...d.querySelectorAll('#tbl tr td:first-child > span.font-semibold')];
  chk(tm.length>0,'detail table model names',`(${tm.length})`);
  chk(tm.every(e=>size(e)>=14),'detail names >= 14px',`(${size(tm[0])}px)`);
  chk(tm.every(e=>!grey(col(e))),'detail names coloured',`(${col(tm[0])})`);
 
  // 5. drawer log lines
- click(d.getElementById('logbtn'));
+ click(d.getElementById('navdrawerbtn'));
  const dm=[...d.querySelectorAll('#dbody .evm')];
  chk(dm.length>0,'drawer model names',`(${dm.length})`);
  // jsdom does not resolve CSS custom properties in computed style (var(--fs-md)

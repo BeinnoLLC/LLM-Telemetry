@@ -86,11 +86,19 @@ setTimeout(() => {
     chk(chipEls.map(e => e.dataset.kind).join(',') === wantOrder.join(','), 'chips follow KIND_ORDER, zero kinds omitted', chipEls.map(e => e.dataset.kind).join(','));
     chk(/2\s*Claude/.test(kpi().textContent) && /1\s*Codex/.test(kpi().textContent), 'KPI chips have labelled text with counts', kpi().textContent.trim());
     chk(chipText(chipEls[0]).match(/\d+ (Hermes|Pi)/), 'first chip is the lowest KIND_ORDER kind with words', chipText(chipEls[0]));
-    // Claude/Codex lead with their brand mark, PI/Hermes with the kind-coloured dot.
+    // Claude/Codex lead with their brand mark; PI/Hermes lead with the family
+    // marble (LST-262 icons sweep: profileIconHtml's initial-letter icon in the
+    // profile hue — the bare .kpi-dot is gone).
     const isLogo = e => e.dataset.kind === 'claude' || e.dataset.kind === 'codex';
-    chk(chipEls.filter(e => !isLogo(e)).every(e => e.querySelector('.kpi-dot')), 'PI/Hermes chips have a kind-coloured dot');
-    chk(chipEls.filter(e => !isLogo(e)).every(e => e.querySelector('.kpi-dot').style.background === `var(--kind-${e.dataset.kind})`), 'dot colour follows the --kind-* token');
-    chk(chipEls.filter(isLogo).every(e => !e.querySelector('.kpi-dot')), 'Claude/Codex chips swap the dot for the brand mark');
+    const marble = e => e.querySelector('[data-profile-icon-fallback]');
+    chk(chipEls.filter(e => !isLogo(e)).every(marble), 'PI/Hermes chips lead with the family marble');
+    chk(chipEls.filter(e => !isLogo(e)).every(e => marble(e).textContent === (e.dataset.kind === 'pi' ? 'P' : 'H')),
+        'the marble shows the family initial');
+    chk(chipEls.filter(e => !isLogo(e)).every(e => /background:hsl\(/.test(marble(e).getAttribute('style'))),
+        'the marble is coloured from the profile hue');
+    chk(chipEls.filter(e => !isLogo(e)).every(e => marble(e).getAttribute('aria-hidden') === 'true'),
+        'the marble is decorative (aria-hidden)');
+    chk(chipEls.filter(isLogo).every(e => !marble(e)), 'Claude/Codex chips swap the dot/marble for the brand mark');
     // Real brand marks: an inline svg with path data, only on claude/codex.
     const logoOf = el => el && el.querySelector('svg[data-kindlogo] path[d]');
     ['claude', 'codex'].forEach(k => {
