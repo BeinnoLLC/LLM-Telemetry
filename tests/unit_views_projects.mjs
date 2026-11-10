@@ -271,7 +271,7 @@ async function load(over = {}) {
     'charts.js': baseChartsStub(over.charts),
     'flow.js': { flowControls: [], renderFlow() {} },
     'live.js': { renderLive() {} },
-    'routerview.js': { renderRouterView() {}, routerStat: () => '' },
+    'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {} },
     'quotaview.js': { renderQuotaView() {}, qvStat: () => '' },
     'router.js': {
       HOUR_RANGE: 'all', MODEL_FILTER: '', POWER: '', PROJECT_FILTER: '',

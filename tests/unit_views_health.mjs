@@ -79,9 +79,12 @@ function noThrow(fn, msg){
 // so a fake document is installed for the evaluation only.
 const styles = [];
 const fakeDocument = {
-  createElement: () => ({}),
+  getElementById: () => null,
+  documentElement: { getAttribute: () => null, dataset: {} },
+  createElement: () => ({ style: {} }),
   head: { appendChild: s => styles.push(s) },
   addEventListener: () => {},
+  querySelectorAll: () => [],
 };
 
 // The load-time guards (schema check, zero-profiles notice) throw or bail on a
@@ -103,6 +106,8 @@ const load = (o = {}) => (Object.keys(DATA.profiles).length || (DATA.profiles = 
     ctxSpark: (series, comps) => `[spark ${series.length} ${(comps || []).length}]`,
   },
   'router.js': { PROJECT_FILTER: o.PROJECT_FILTER || '' },
+  'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {} },
+  'state.js': { renderSkeleton: () => {}, renderEmpty: () => {}, renderError: () => {} },
   'main.js': { DATA, SCHEMA_VERSION: 1, LOCAL_HOSTS: [] },
 }, { document: fakeDocument }));
 

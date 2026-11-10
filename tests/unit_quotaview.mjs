@@ -26,6 +26,7 @@ const P = await isolate('palette.js', {
   'views.js': { PROV: {}, provIcon: () => '', render: () => {} },
   'router.js': { presets: () => {} },
   'main.js': { DATA: {}, css: () => {} },
+  'state.js': { renderEmpty: () => {} },
 });
 
 // Fresh copy of the unit per call. Collaborators are stubbed deterministically:
@@ -38,6 +39,7 @@ const load = (o = {}) => isolate('quotaview.js', {
   'palette.js': { $: o.$ || (() => null), esc: P.esc, escA: P.escA },
   'charts.js': { current: 'current' in o ? o.current : null },
   'main.js': { DATA: o.DATA || {} },
+  'state.js': { renderEmpty: () => {} },
   'routerview.js': {
     rtLogo: o.rtLogo || ((id, sz) => `[logo ${id} ${sz}]`),
     rtAgo: o.rtAgo || (() => 'AGO'),

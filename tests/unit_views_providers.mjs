@@ -130,7 +130,7 @@ const load = () => isolate('views.js', {
   },
   'flow.js': { flowControls: {}, renderFlow(){} },
   'live.js': { renderLive(){ liveCalls++; } },
-  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; } },
+  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; }, RT_SVG: {}, RT_LOGO: {} },
   'quotaview.js': { renderQuotaView(){ quotaCalls++; }, qvStat(){ return 'QS'; } },
   'main.js': { DATA, LOCAL_HOSTS: ['localhost', '192.168.'], SCHEMA_VERSION: 1, css: () => '' },
 }, { document: fakeDocument });

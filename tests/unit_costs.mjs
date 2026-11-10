@@ -36,7 +36,7 @@ const mkEl = () => ({
   appendChild(c) { this.children.push(c); if (this.tag === 'select') this.options.push(c); },
   addEventListener(type, fn) { ((this._on ||= {})[type] ||= []).push(fn); },
   append(...c) { this.children.push(...c); }, prepend(...c) { this.children.unshift(...c); },
-  remove() {}, setAttribute() {}, classList: { add() {}, toggle() {}, remove() {} },
+  remove() {}, setAttribute() {}, getAttribute(k) { return this.dataset && this.dataset[k.replace('data-','')] || null; }, classList: { add() {}, toggle() {}, remove() {} },
 });
 const registry = {};
 const el = id => (registry[id] ||= mkEl());
