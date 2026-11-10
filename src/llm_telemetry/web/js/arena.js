@@ -188,10 +188,16 @@ function arenaTickFrame(cv, ctx, ts){
     // violated edge so agents truly bounce off the hex walls.
     const hit = arenaHexProject(ag.x, ag.y, 1);
     if (hit){
-      ag.x -= hit.x * (hit.over + 0.02);
-      ag.y -= hit.y * (hit.over + 0.02);
+      ag.x += hit.x * (hit.over + 0.02);
+      ag.y += hit.y * (hit.over + 0.02);
       const d = ag.dx * hit.x + ag.dy * hit.y;
-      if (d > 0){ ag.dx -= 2 * d * hit.x; ag.dy -= 2 * d * hit.y; }
+      if (d < 0){ ag.dx -= 2 * d * hit.x; ag.dy -= 2 * d * hit.y; }
+    }
+    if (!Number.isFinite(ag.x) || !Number.isFinite(ag.y) || !Number.isFinite(ag.dx) || !Number.isFinite(ag.dy)){
+      const a = Math.random() * Math.PI * 2;
+      const rr = 0.25 + Math.random() * 0.55;
+      ag.x = Math.cos(a) * rr; ag.y = Math.sin(a) * rr;
+      ag.dx = Math.cos(a + Math.PI / 2) * 0.1; ag.dy = Math.sin(a + Math.PI / 2) * 0.1;
     }
   }
   // Clashes: agents that meet throw sparks and bounce apart.
@@ -207,6 +213,10 @@ function arenaTickFrame(cv, ctx, ts){
     const ul = Math.hypot(ux, uy);
     a.dx += ux / ul * 0.35; a.dy += uy / ul * 0.35;
     b.dx -= ux / ul * 0.35; b.dy -= uy / ul * 0.35;
+  }
+  for (const ag of s){
+    const sp = Math.hypot(ag.dx, ag.dy);
+    if (sp > 1.5){ ag.dx = ag.dx / sp * 1.5; ag.dy = ag.dy / sp * 1.5; }
   }
   if (ts) arenaAdvance(dt, ARENA.w, ARENA.h);
 
@@ -337,3 +347,5 @@ function arenaCssVar(name, fb){
   } catch (e) { /* node harness */ }
   return fb;
 }
+
+export { ARENA, arenaSpawn, arenaTickFrame };
