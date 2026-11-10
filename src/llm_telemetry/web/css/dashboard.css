@@ -23,16 +23,14 @@
    /* gauge severity zones + palette: single source = tokens.css */
    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
    --nav-w:240px; --rail-w:60px; --bar-h:52px;
-   --logtab-w:52px; --logtab-gap:4px; --logtab-gutter:calc(var(--logtab-w) + var(--logtab-gap));  ;--ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
+   --ctl-sm:28px;--ctl-md:32px;--ctl-lg:44px}
 
  *{box-sizing:border-box}
  html,body{background:var(--bg);color:var(--fg);margin:0;padding:0;height:100%}
  body{font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       -webkit-font-smoothing:antialiased;--shell-pad:var(--nav-w)}
  /* Full viewport width — no max-width cap */
- .page{width:100%;padding:var(--pad) max(var(--pad), var(--logtab-gutter)) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
- #logbtn{position:fixed;right:0;width:var(--logtab-w);box-sizing:border-box;overflow:hidden;bottom:40px;z-index:50;background:var(--card);border:1px solid var(--border);border-radius:4px 0 0 4px;padding:8px 4px;cursor:pointer}
- #logbtn:focus-visible{outline:2px solid var(--accent)}
+ .page{width:100%;padding:var(--pad) var(--pad) 40px var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
  /* LST-220: cards sit one step off the page instead of being flat outlines, and
     interactive ones answer hover/press with the token state layers. The lift is
     deliberately small (elev-1 resting, elev-2 on hover) — this is a dense
@@ -2309,4 +2307,3 @@ canvas, img {
 
 
 
-@media (max-width:600px){ :root{--logtab-w:0px;--logtab-gap:0px} #logbtn{display:none} }

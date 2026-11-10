@@ -1,5 +1,10 @@
-// The fixed #logbtn tab sits on the right edge; .page must reserve at least its
-// width on the right so no content ends up underneath it.
+// LST-254's fixed #logbtn edge tab is RETIRED (UI pass A moved the unread
+// badge to the rail's Live tail item and the drawer opens from there or the
+// 'l' shortcut). The tab used to reserve a right-hand gutter on .page; this
+// suite guards the source-level removal — no tab markup, no --logtab-* CSS,
+// no reserved gutter — so the dead geometry cannot creep back, alongside the
+// misc CSS hygiene checks it has always carried. check_ui_a.js guards the
+// same removal on the built page.
 const fs = require('fs'), path = require('path');
 const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css', 'dashboard.css'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'dashboard.html'), 'utf8');
@@ -7,17 +12,13 @@ let pass = 0, fail = 0;
 const chk = (ok, label, extra) => { console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${label}${extra ? '  ' + extra : ''}`); ok ? pass++ : fail++; };
 
 const rule = sel => { const m = css.match(new RegExp('(?:^|\\n)\\s*' + sel.replace(/[.#]/g, '\\$&') + '\\{([^}]*)\\}')); return m && m[1]; };
-const px = v => { const m = /(\d+(?:\.\d+)?)px/.exec(v || ''); return m ? Number(m[1]) : NaN; };
 
-const page = rule('.page'), btn = rule('#logbtn');
-chk(!!page && !!btn, '.page and #logbtn rules found');
-// LST-254: the tab is a fixed --logtab-w wide (hover cannot grow it) and .page
-// reserves --logtab-gutter = tab width + gap; see check_logs_tab_reserve.js.
-chk(/padding:\s*\S+\s+max\(\s*var\(--pad\)\s*,\s*var\(--logtab-gutter\)\s*\)/.test(page || ''), '.page right padding is max(var(--pad), var(--logtab-gutter))');
-const w = Number((/--logtab-w:(\d+)px/.exec(css) || [])[1]), gap = Number((/--logtab-gap:(\d+)px/.exec(css) || [])[1]);
-chk(/#logbtn\{[^}]*width:var\(--logtab-w\)/.test(css), '#logbtn width is var(--logtab-w)');
-chk(w + gap >= 51 + 4, `gutter ${w + gap}px >= old tab 51px + hover growth 4px`);
-chk(!/#logbtn:hover\{[^}]*padding/.test(css), 'hover does not change the tab footprint');
+chk(!/logbtn|logtab/.test(css), 'no floating Logs tab CSS left (no #logbtn rule, no --logtab-* variable)');
+chk(!/logbtn|logtab/.test(html), 'no floating Logs tab markup in dashboard.html');
+chk(!/max\(\s*var\(--pad\)\s*,\s*var\(--logtab-gutter\)\s*\)/.test(css), '.page no longer reserves the dead edge-tab gutter');
+chk(/\.page\{[^}]*padding:var\(--pad\) var\(--pad\) 40px var\(--pad\)/.test(css), '.page pads symmetrically left/right');
+
+// misc CSS hygiene (unchanged behaviour)
 chk(!/padding-right/.test(css.match(/body\.hasnav \.page\{[^}]*\}/g).join('')), 'nav rules only touch padding-left');
 chk(!/mask-image/.test(rule('.qt-cars') || ''), 'jar tiles carry no chopper mask');
 chk(!/\n\s*\.n2\{/.test(css), 'dead .n2 rule stays removed');

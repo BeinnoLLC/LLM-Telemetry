@@ -429,7 +429,6 @@ export function installDrawer(){
   // carries the unread badge. Optional-chained, so the markup stays the source
   // of truth for which controls exist.
   $('navdrawerbtn')?.addEventListener('click', () => drawerOpen(!dOpen));
-  $('logbtn')?.addEventListener('click', () => drawerOpen(true));
   // The drawer's "All logs" link hands off to the full view: close the panel,
   // then navigate, so the page you asked for is not sitting behind a sheet.
   $('dfull')?.addEventListener('click', e => {
