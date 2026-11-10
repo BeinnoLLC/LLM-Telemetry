@@ -7,7 +7,7 @@ import {
   trapFocus, trapTab,
 } from './palette.js';
 import { current } from './charts.js';
-import { PROV, provLogoSvg, provOf, schemaProblem } from './views.js';
+import { provLogoSvg, schemaProblem } from './views.js';
 import { pickView } from './router.js';
 import { DATA } from './main.js';
 

@@ -121,7 +121,7 @@ function arenaFit(cv){
   try { return cv.getContext('2d'); } catch (e) { return null; }
 }
 
-function arenaSpawn(cv){
+function arenaSpawn(_cv){
   const plan = arenaPlan(ARENA.counts);
   ARENA.agents = [];
   for (const p of plan){
@@ -138,7 +138,7 @@ function arenaSpawn(cv){
   }
 }
 
-function arenaReweight(cv){
+function arenaReweight(_cv){
   const plan = arenaPlan(ARENA.counts);
   const byKind = {};
   plan.forEach(p => { byKind[p.kind] = p; });
@@ -323,7 +323,7 @@ function arenaBurst(x, y){
   ARENA.rings.push({ x, y, r: 6, a: 0.8, c: col });
 }
 
-function arenaAdvance(dt, W, H){
+function arenaAdvance(dt, W, _H){
   for (const sp of ARENA.sparks){ sp.x += sp.dx * dt * 60; sp.y += sp.dy * dt * 60; sp.dx *= 0.94; sp.dy *= 0.94; sp.a -= dt * 1.6; }
   ARENA.sparks = ARENA.sparks.filter(sp => sp.a > 0);
   for (const r of ARENA.rings){ r.r += dt * 60 * 1.4; r.a -= dt * 1.6; }
