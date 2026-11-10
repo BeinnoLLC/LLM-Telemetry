@@ -160,7 +160,6 @@ async function boot(opt = {}){
       modelsBadge: L => { logs.modelsBadge.push(L.id); return `<mbadge>${L.id}</mbadge>`; },
       modelsPanel: L => { logs.modelsPanel.push(L.id); return `<mpanel>${L.id}</mpanel>`; },
       provBadge: p => { logs.provBadge.push(p); return '<pbadge>'; },
-      provIcon: sm => { logs.provIcon = logs.provIcon || []; logs.provIcon.push(sm); return '<icon>'; },
       provOf: (kind, model, base) => { logs.provOf.push([kind, model, base]); return { label:'prov' }; },
       render(){ logs.render.push(1); },
       renderOllama(o){ logs.renderOllama.push(o); },
