@@ -466,12 +466,14 @@ body.hasnav #views{ display:none; }
    disagree with the rail about how wide it is. The old code hard-coded 232px
    in one place and 60px in another, which is how .page ended up 232px wider
    than the viewport (width:100% + margin-left) and clipped the right edge. */
+#navdrawer::-webkit-scrollbar{display:none}
 #navdrawer{
   position:fixed; top:0; left:0; bottom:0; z-index:40;
   width:var(--rail-now);
   background:var(--card); border-right:1px solid var(--border);
   display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
-  scrollbar-gutter:stable; scrollbar-width:thin;
+  scrollbar-gutter:stable; scrollbar-width:none;
+  scrollbar-width:none;
   padding:14px 10px; transition:width .18s ease, transform .2s ease;
 }
 /* Reserve the scrollbar's width always (expanded) so items never narrow when the
@@ -1901,7 +1903,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
    header and the rows scroll sideways together inside the card. Rows are
    48-64px tall with two-line cells (primary on top, muted detail beneath);
    sizes are fixed px so the table reads the same at every viewport. */
-.lvscroll{overflow:auto;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;
+.lvscroll{overflow-x:auto;overflow-y:visible;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;
   /* Eight tracks (Elapsed rides on the State cell's second line). Kind/State/
      Tokens/Cost/Load are fixed to their content width; Session, Model and Last
      activity share the slack and WRAP to two lines (line-clamp, full text in
@@ -1912,7 +1914,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 @media(max-width:1279px){.lvhead,.lvrow{min-width:792px}.lvrow + .lmpanel{min-width:792px}}
 .lvhgrp{display:flex;flex-direction:row;align-items:center;gap:10px;height:100%;min-width:0;white-space:nowrap}
 .lvhgrp>.lvh{height:100%;flex:none;justify-content:flex-start}
-.lvhead{position:sticky;top:0;z-index:2;height:44px;background:var(--card);border-bottom:1px solid var(--border)}
+.lvhead{position:sticky;top:56px;z-index:2;height:44px;background:var(--card);border-bottom:1px solid var(--border)}
 .lvhead[hidden]{display:none}
 .lvh{font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none;
   display:flex;align-items:center;gap:4px;height:100%;overflow:hidden}
@@ -1920,11 +1922,11 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvh:hover,.lvh[aria-sort]:not([aria-sort=none]){color:var(--fg)}
 .lvh:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .lvarr{font-size:13px;width:9px}
-.lvrow{min-height:52px;max-height:64px;padding-top:8px;padding-bottom:8px;border-bottom:1px solid var(--border);transition:background-color .12s ease}
+.lvrow{min-height:52px;padding-top:8px;padding-bottom:8px;border-bottom:1px solid var(--border);transition:background-color .12s ease}
 .lvc:not(.metacol){font-size:14px}  /* model size comes from its own rule below */
 .lvrow:hover{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 @media(prefers-reduced-motion:reduce){.lvrow{transition:none}}
-.lvc{min-width:0;margin:-4px 0;max-height:56px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
+.lvc{min-width:0;margin:-4px 0;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
 .lvc-act{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px}
 .lva1{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;min-width:0;max-width:100%}
 .lvel{font-size:13px;line-height:1.2;color:var(--muted);font-variant-numeric:tabular-nums}
