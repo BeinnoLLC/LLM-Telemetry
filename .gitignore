@@ -32,3 +32,6 @@ tests/node_modules
 examples/reports/_*.html
 
 .preview/
+
+# Git worktrees live only here (never outside the project folder)
+.worktrees/
