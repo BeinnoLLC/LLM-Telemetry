@@ -48,19 +48,23 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     // ---- markup/structure checks (viewport-independent) -------------------
-    const fbar = d.getElementById('filterbar');
-    chk(!!fbar, '#filterbar exists (one filter card, U-2)');
-    const seg = d.getElementById('presets');
-    chk(seg && seg.getAttribute('role') === 'radiogroup', 'the range presets are one radiogroup');
-    chk(seg.querySelectorAll('[role=radio]').length === 8, 'seven presets plus Custom are radios', seg.querySelectorAll('[role=radio]').length);
-    const cu = seg.querySelector('[data-key=custom]');
-    chk(cu.getAttribute('aria-controls') === 'rangepop', 'Custom names the popover it opens (a11y)');
-    chk(d.getElementById('rangepop').hidden, 'the date popover starts closed');
-    cu.click();
-    chk(!d.getElementById('rangepop').hidden && cu.getAttribute('aria-expanded') === 'true', 'clicking Custom opens the date popover');
-    d.getElementById('rangeapply').click();
-    chk(d.getElementById('rangepop').hidden && cu.getAttribute('aria-expanded') === 'false', 'Apply closes it');
-    chk(!!d.getElementById('fbfilters') && !!d.getElementById('fbsheet'), 'phones get a Filters button and a bottom sheet');
+    const rangebar = d.getElementById('rangebar');
+    chk(!!rangebar, '#rangebar exists (collapsible range card, #13)');
+    const rangetoggle = d.getElementById('rangetoggle');
+    chk(!!rangetoggle, '#rangetoggle chip exists');
+    chk(rangetoggle.getAttribute('aria-controls') === 'rangebar', 'rangetoggle names the region it controls (a11y)');
+
+    // Clicking the toggle opens/closes the bar via a real class, not inline style.
+    chk(!rangebar.classList.contains('rangeopen'), 'range card starts collapsed');
+    rangetoggle.click();
+    chk(rangebar.classList.contains('rangeopen'), 'clicking the toggle opens the range card');
+    chk(rangetoggle.getAttribute('aria-expanded') === 'true', 'aria-expanded flips to true when open');
+    rangetoggle.click();
+    chk(!rangebar.classList.contains('rangeopen'), 'clicking again closes it');
+    chk(rangetoggle.getAttribute('aria-expanded') === 'false', 'aria-expanded flips back to false');
+
+    // The toggle's label reflects the actual selected range, not a static string.
+    chk(/\d{4}-\d{2}-\d{2}/.test(rangetoggle.textContent), 'the collapsed chip shows the real active date range', rangetoggle.textContent);
 
     // Live rows carry a stable class so the mobile stacking rule can target them.
     const liverows = d.querySelectorAll('#livelist .liverow');
@@ -72,10 +76,11 @@ setTimeout(() => {
 
     // ---- CSS rule checks (source-level, since jsdom does not evaluate media
     // queries) — confirm the actual rules this ticket asked for exist. -------
-    chk(/@media\(max-width:899px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:span 6\} \}/.test(html),
-        'KPI cards go 2-up at <=899px');
-    chk(/@media\(max-width:359px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:1\/-1\} \}/.test(html),
-        'KPI cards stay 2-up on phones and go to 1 column only below 360px');
+    chk(/@media\(max-width:640px\)\{[^}]*\.grid-kpi\{grid-template-columns:repeat\(2/.test(html) ||
+        /grid-kpi\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/.test(html),
+        'KPI strip goes to 2 columns at <=640px');
+    chk(/@media\(max-width:340px\)\{\.grid-kpi\{grid-template-columns:1fr\}\}/.test(html),
+        'KPI strip stays 2-up on phones and goes to 1 column only below 340px (LST-261)');
     chk(/\.lvscroll\{overflow:auto;[^}]*min-width:0/.test(html),
         'live table scrolls inside its own panel (overflow:auto, min-width:0) at every width');
     chk(!/#livelist \.liverow\{flex-direction:column/.test(html),
@@ -84,8 +89,8 @@ setTimeout(() => {
         '.olgrid (Ollama host cards) forced to a single column at mobile width (was minmax(310px,1fr))');
     chk(/\.chip, button\{min-height:44px;min-width:44px/.test(html),
         'chips/buttons get a 44x44 minimum tap target at mobile width');
-    chk(/\.filterbar \.seg-btn\{min-height:44px/.test(html) && /\.filterbar\.sheet-open \.fb-sheet\{display:flex\}/.test(html),
-        'phones: 44px range segments and the filters bottom sheet');
+    chk(/#rangebar\{flex-direction:column/.test(html),
+        'the range card itself switches to a stacked column layout at mobile width');
 
     // ---- no regression on desktop: the mobile rules must live INSIDE the
     // max-width:640px block, not leak out unconditionally. -----------------
@@ -93,6 +98,7 @@ setTimeout(() => {
     chk(!!mobileBlockMatch, 'the mobile rules are scoped inside a single @media(max-width:640px) block');
     if (mobileBlockMatch) {
       const block = mobileBlockMatch[1];
+      chk(block.includes('.grid-kpi{grid-template-columns:repeat(2'), 'KPI 2-col rule lives inside the mobile block');
       chk(block.includes('.olgrid{grid-template-columns:1fr}'), 'olgrid 1-col rule lives inside the mobile block');
     }
   } catch (e) {

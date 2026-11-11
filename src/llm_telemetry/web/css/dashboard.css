@@ -2036,7 +2036,8 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 /* LST-261: the cost note only matters where money is shown. */
 .page:not([data-pageview="Home"]):not([data-pageview="Cost"]):not([data-pageview="Prices"]) .costhow{display:none}
 /* UI pass U-1 (P1-1): the totals strip and the Transferred bar are Home's, not every tab's. */
-.page:not([data-pageview="Home"]) > #kpis,.page:not([data-pageview="Home"]) > #xfercard{display:none}
+.page:not([data-pageview="Home"]) > #kpis{display:none}
+.page:not([data-pageview="Home"]) > #xfercard{display:none}
 
 /* ---- Notices (UI pass U-1): toast overlay + app-bar chip ---------------------
    The stack floats over the page and never takes layout space, so a notice
