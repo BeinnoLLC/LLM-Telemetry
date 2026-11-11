@@ -2628,6 +2628,28 @@ export function failMsgHuman(m){
     .filter(Boolean).join(' · ');
   return out.length > 160 ? out.slice(0, 157) + '…' : out;
 }
+// One readable line for the Failures and Lifecycle rows. The raw text (error_type=…
+// base_url=… key=value runs, JSON payloads) stays in the row's title; this only
+// keeps the part a person acts on: what happened, which status, which host.
+export const HTTP_WORDS = {400:'Bad request', 401:'Not authorised', 403:'Forbidden', 404:'Not found', 408:'Request timed out',
+  413:'Request too large', 429:'Rate limited', 500:'Provider server error', 502:'Bad gateway', 503:'Provider unavailable',
+  504:'Gateway timeout', 524:'Provider timed out'};
+export function failMsgHuman(m){
+  const s = String(m || '').trim();
+  const json = s.match(/"(?:message|detail|title)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const kv = s.match(/\b\w+=\S/g) || [];
+  const et = s.match(/\berror_type=([A-Za-z_.]+)/);
+  const host = s.match(/\bbase_url=(?:https?:\/\/)?([^\s\/,'")]+)/);
+  const code = s.match(/\b(?:HTTP|status(?:_code)?[= :]+)\s*(\d{3})\b/i);
+  if (!json && !et && !host && kv.length < 2) return s;
+  const words = code && HTTP_WORDS[code[1]];
+  let why = json ? json[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')
+    : et ? et[1].split('.').pop().replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase()) : '';
+  if (!why && !words) why = s.replace(/\b\w+=\S+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const out = [words ? `${words} (HTTP ${code[1]})` : code ? `HTTP ${code[1]}` : '', why, host ? `via ${host[1]}` : '']
+    .filter(Boolean).join(' · ');
+  return out.length > 160 ? out.slice(0, 157) + '…' : out;
+}
 export function groupFailures(F){
   const g = new Map();
   F.forEach(f => {
