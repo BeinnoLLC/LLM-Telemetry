@@ -937,11 +937,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65)}
 .qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid rgba(255,255,255,.4);pointer-events:none}
-/* The family letter: upright whatever the pile rotation, above the gloss, near-black for AA contrast. */
+/* User rule: balls show provider icons. Do not replace with letters. The white contrast disc
+   keeps the mark legible on every ball colour at QT_MIN 18px; the icon scales with the ball. */
 .qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
-  font:800 max(10px,calc(var(--sz,28px) * .52))/1 system-ui,sans-serif;color:hsl(225 25% 6%);
-  rotate:calc(var(--rz,0deg) * -1);text-shadow:0 1px 0 rgba(255,255,255,.35)}
-.qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg);font-size:max(10px,calc(var(--sz,28px) * .46))}
+  rotate:calc(var(--rz,0deg) * -1)}
+.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:rgba(255,255,255,.88);
+  box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.qt-gl svg{width:60%;height:60%;position:relative}
+.qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
+.qt-run .qt-gl svg{width:50%;height:50%}
 .qt-ghost .qt-gl{rotate:0deg}
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
@@ -969,7 +973,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
 .qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
-.qt-sw .qt-gl{position:static;inset:auto;--sz:21px;rotate:none}
+.qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
 .qt-sw-claude{--k:var(--kind-claude)}

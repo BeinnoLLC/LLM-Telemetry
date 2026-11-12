@@ -121,7 +121,7 @@ setTimeout(() => {
       chk(!!car && car.classList.contains('qt-run'), `${k} ball is a running clip`);
     });
     const her = badgeCar('hermes');
-    chk(!!her && !her.querySelector('svg') && /^hsl\(/.test(her.style.getPropertyValue('--k')), 'Hermes ball is plain, in the profile colour', her && her.style.getPropertyValue('--k'));
+    chk(!!her && !!her.querySelector('.qt-gl svg') && /^hsl\(/.test(her.style.getPropertyValue('--k')), 'Hermes ball shows a provider svg, in the profile colour', her && her.style.getPropertyValue('--k'));
     // Live rows and the provider badges reuse the same shared logos.
     w.eval('renderLive();');
     const rowBadge = k => d.querySelector(`#livelist [data-kindbadge="${k}"]`);
