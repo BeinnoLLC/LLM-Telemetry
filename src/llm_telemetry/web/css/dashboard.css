@@ -1011,10 +1011,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   .qt-body::before,.qt-body::after,.qt-jar.qt-splash .qt-body::before,.qt-jar.qt-splash .qt-body::after{transition:none;animation:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
- .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
+ .flowctl button,.zoomctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);
    background:transparent;color:var(--muted);cursor:pointer}
  .flowctl button.on{border-color:var(--accent);color:var(--accent)}
+/* Shared zoom controls (LLMTELEMET-279): +/−/Fit over any zoomable graph. */
+.zoomctl{position:absolute;top:8px;right:8px;display:flex;gap:4px;align-items:center;z-index:2}
 
 
  /* ---- Ollama host panel (Live tab) -----------------------------------
@@ -2057,10 +2059,10 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 @media (max-width:1100px){.grid-home{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:700px){.grid-home{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* One control size scale (LST-261): sm 28 / md 32 / lg 44 on touch. */
-.csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
+.csvbtn,.dt-dens button,.flowctl button,.zoomctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
 .chip,.fb-btn,.pk-btn,select.chip,.pchip,.kseg{min-height:var(--ctl-md)}
 @media (max-width:600px){
-  .csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
+  .csvbtn,.dt-dens button,.flowctl button,.zoomctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
 }
 /* Empty cards collapse to one line (LST-261): the chart box and header hints go, the message stays. */
 .card:has(> [id$="empty"]:not([hidden])) > div[style*="height"],.card:has(> [id$="empty"]:not([hidden])) > #concpeak,.card:has(> [id$="empty"]:not([hidden])) > #projhdr{display:none}
@@ -2205,7 +2207,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 /* LST-239/243: Orchestration graph */
 .orch-card{padding:1rem;overflow-x:auto}
 .orch-empty{padding:1rem}
-.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block;cursor:grab;touch-action:none}
 .orch-edge{fill:none;stroke:var(--muted);opacity:.7}
 .orch-head{fill:var(--muted)}
 .orch-lbl{fill:var(--muted);font-size:13px}

@@ -36,7 +36,7 @@ UTILITIES_PATH = os.path.join(HERE, "web", "css", "utilities.css")
 # The rankings payload rides in-app too (#113): no standalone page, so the
 # module list is just the SPA's, in dependency order (main boots last and is
 # the only one that runs anything while loading).
-JS_ORDER = ["palette.js", "table.js", "charts.js", "views.js", "flow.js", "drawer.js",
+JS_ORDER = ["palette.js", "table.js", "charts.js", "zoom.js", "views.js", "flow.js", "drawer.js",
             "diffdom.js", "live.js", "arena.js", "routerview.js", "quotaview.js", "router.js",
             "main.js", "state.js"]
 # A top-level declaration: the only thing that starts a block.

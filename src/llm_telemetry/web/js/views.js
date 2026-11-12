@@ -12,6 +12,7 @@ import {
   PROJ_WEIGHT, PROJ_WEIGHT_LABELS, agg, charts, ctxSpark, current, mk, noLeg, olBar, projDistNormalized, projTrendStacked, sparkSvg, weightValue,
 } from './charts.js';
 import { flowControls, renderFlow } from './flow.js';
+import { attachZoom } from './zoom.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
 import { renderRouterView, routerStat, RT_SVG, RT_LOGO } from './routerview.js';
 import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
@@ -3526,6 +3527,14 @@ function renderOrchestration(){
   el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
     `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
     `${paths}${boxes}</svg></div>`;
+  // LLMTELEMET-279: the same shared zoom as Flow/Life (wheel zoom to cursor,
+  // drag pan, double-click reset, +/−/Fit). Keyed by 'orch' (not the element:
+  // this render throws the old <svg> away) so the zoom survives live refresh.
+  const orchSvg = el.querySelector('.orch-svg');
+  if (orchSvg) attachZoom(orchSvg, {
+    key: 'orch',
+    getBase: () => ({ x: 0, y: 0, w: W, h: H }),
+  });
 }
 
 // LST-249: Kanban tab. DATA.kanban = {boards:[{name,total,counts,columns:[

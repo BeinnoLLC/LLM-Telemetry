@@ -1074,6 +1074,18 @@
       "name": "renderProjTrendLegend"
     },
     {
+      "mod": "zoom",
+      "name": "ZOOMS"
+    },
+    {
+      "mod": "zoom",
+      "name": "attachZoom"
+    },
+    {
+      "mod": "zoom",
+      "name": "newHandle"
+    },
+    {
       "mod": "flow",
       "name": "QT_DEMO"
     },
