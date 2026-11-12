@@ -76,8 +76,8 @@ setTimeout(() => {
         'KPI cards go 2-up at <=899px');
     chk(/@media\(max-width:359px\)\{ \.statgrid\.live>\.stat,\.statgrid\.totals>\.stat\{grid-column:1\/-1\} \}/.test(html),
         'KPI cards stay 2-up on phones and go to 1 column only below 360px');
-    chk(/\.lvscroll\{overflow:auto;[^}]*min-width:0/.test(html),
-        'live table scrolls inside its own panel (overflow:auto, min-width:0) at every width');
+    chk(/\.lvscroll\{overflow-x:auto;[^}]*min-width:0/.test(html),
+        'live table scrolls sideways inside its own panel (overflow-x:auto, min-width:0); vertical scrolling is page-level (single scroll container)');
     chk(!/#livelist \.liverow\{flex-direction:column/.test(html),
         'live rows no longer stack as cards at mobile width');
     chk(/\.olgrid\{grid-template-columns:1fr\}/.test(html),
