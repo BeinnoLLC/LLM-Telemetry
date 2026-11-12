@@ -147,8 +147,9 @@ setTimeout(() => {
     chk(!!hive, 'a Hive placeholder view exists');
     chk(!!hive && /Hive is coming: parity port of the standalone Hive in progress/.test(hive.textContent),
         'placeholder carries the coming-soon sentence');
-    chk(!!hive && !!hive.querySelector('a[href="http://192.168.1.11:8790"]'),
-        'placeholder links to the standalone Hive at 192.168.1.11:8790');
+    const expectedHive = w.location.protocol + '//' + w.location.hostname + ':8790';
+    chk(!!hive && !!hive.querySelector('a[href="' + expectedHive + '"]'),
+        'placeholder links to the standalone Hive at runtime-derived URL ' + expectedHive);
     chk(!!hive && !hive.querySelector('canvas, table, img, svg'),
         'placeholder renders text and a link only — no fake data, no simulation');
 
