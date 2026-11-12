@@ -109,14 +109,25 @@ export const QT_CAP = Infinity;                     // no cap: fit as many balls
 // Ball px: start at QT_MAX and step down to QT_MIN until the pile fits in QT_FILL of the jar.
 export const QT_MAX = 28;
 export const QT_MIN = 18;
-// One bold letter per agent family, centred on its ball (and in the legend). Near-black on every
-// family colour (contrast 5.4-8.8:1, white would be 2.3-3.7:1). A logo blurs at 18px; a letter reads.
-export const QT_GLYPH = { hermes: 'H', pi: '\u03C0', claude: 'C', codex: 'X', ollama: 'O' };
-export function qtGlyphKey(it){
-  if (it.kind === 'q') return 'ollama';
-  const p = provOf('', it.model || '', '');
-  const familyMap = { anthropic:'claude', 'openai-codex':'codex', 'opencode-go':'pi', 'opencode':'pi', local:'ollama', 'ollama-cloud':'ollama', nous:'hermes' };
-  return familyMap[p] || p || 'cloud';
+// User rule: balls show provider icons. Do not replace with letters.
+// Every ball (and the legend) carries its provider's brand SVG via provLogoSvg/provOf from
+// views.js. A depot/queue ball has no model — it is a request waiting at an Ollama host — so it
+// shows the Ollama logo; a provider with no brand mark gets a neutral hexagon, never a letter.
+export function qtBallIcon(it){
+  const model = it.model || '';
+  const html = provLogoSvg(model, 14, it.kind === 'q' && !model ? 'local' : '');
+  // provLogoSvg sizes the mark for inline text (fixed px in the style); the ball scales the icon
+  // from the ball itself in CSS instead, so drop the fixed size and keep the brand fill.
+  const svg = /<svg[\s>]/.test(html) ? html.replace(/width:\d+px;height:\d+px;?/, '') : '';
+  if (svg) return svg;
+  // No brand mark for this provider: a neutral hexagon, never the monogram letters.
+  return '<svg class="qt-generic" viewBox="0 0 24 24" aria-hidden="true" style="fill:#5b6472"><path d="M12 2.6 20.2 7.1v9.8L12 21.4 3.8 16.9V7.1z"/></svg>';
+}
+// The legend swatch is filled from the very same icon path as the balls (user rule: the jar
+// legend shows provider icons too, never letters).
+export function qtLegend(){
+  const gl = $('qt-leg-ico');
+  if (gl && !gl.firstChild) gl.innerHTML = qtBallIcon({ kind: 'q' });
 }
 export const QT_FILL = 0.5;
 
@@ -216,11 +227,10 @@ export function paintBalls(box, items, decorate, elsewhere){
     keep.add(c); els.push(c);
     const eng = it.eng && it.eng !== 'hermes' ? ` · ${kindMeta(it.eng).label} agent` : '';
     const when = carMeta(it);
-    const gk = qtGlyphKey(it);
+    const ik = it.model || ('#' + it.kind);
     let gl = c.querySelector('.qt-gl');
     if (!gl){ gl = document.createElement('span'); gl.className = 'qt-gl'; gl.setAttribute('aria-hidden', 'true'); c.appendChild(gl); }
-    const icon = QT_GLYPH[gk] || (PROV[gk] && PROV[gk].icon) || (gk ? gk[0].toUpperCase() : '•');
-    if (gl.dataset.g !== gk){ gl.dataset.g = gk; gl.textContent = icon; }
+    if (gl.dataset.g !== ik){ gl.dataset.g = ik; gl.innerHTML = qtBallIcon(it); }
     c.setAttribute('aria-label', `${where[it.kind] || ''}: ${it.label}${it.model ? ' · ' + it.model : ''}${eng}${when ? ' · ' + when : ''}`);
     c._qt = it;
     c.classList.toggle('qt-run', it.kind === 'r');
@@ -345,6 +355,7 @@ export function qtFly(tr, fromRect, toEl, cls){
 export function paintTrain(queued, running, done){
   const tr = $('qtrain'), qb = $('qt-queued'), rb = $('qt-running'), db = $('qt-done');
   if (!tr || !qb || !rb || !db) return;
+  qtLegend();
   const nq = queued.length, nr = running.length, nd = done.length;
   const prevDone = +($('qt-n-done') || {}).textContent || 0, painted = !!tr.dataset.tip;
   // Slosh: shake jars whose count changed since the last paint.
