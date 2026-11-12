@@ -1111,11 +1111,11 @@
     },
     {
       "mod": "flow",
-      "name": "QT_GLYPH"
+      "name": "qtBallIcon"
     },
     {
       "mod": "flow",
-      "name": "qtGlyphKey"
+      "name": "qtLegend"
     },
     {
       "mod": "flow",

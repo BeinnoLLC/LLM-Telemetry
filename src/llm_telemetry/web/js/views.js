@@ -229,10 +229,12 @@ export function provIcon(sm){
   return (PROV[key]||{icon:'○'}).icon;
 }
 // Provider brand mark as an inline SVG (from routerview's RT_SVG), falling back
-// to the unicode glyph when no brand mark exists.
-export function provLogoSvg(sm, px){
+// to the unicode glyph when no brand mark exists. provKey overrides resolution:
+// the jar balls need it because a depot/queue slot carries no model at all and
+// must still show the Ollama logo (flow.js qtBallIcon).
+export function provLogoSvg(sm, px, provKey){
   px = px || 14;
-  const key = MODEL_PROV[sm] || provOf('', sm, '');
+  const key = provKey || MODEL_PROV[sm] || provOf('', sm, '');
   const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
   const d = s.svg && RT_SVG[s.svg];
   if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;

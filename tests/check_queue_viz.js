@@ -164,22 +164,24 @@ setTimeout(() => {
     // with 150 tasks the jar overflows its physical space, so a +N chip is shown for the rest
     chk(!!db.querySelector('.qt-overflow'), 'yard: overflow chip shown for tasks that do not fit physically');
     chk(!qb.querySelector('.qt-overflow'), 'depot at exactly 40: no chip');
-    // ---- glyphs: every ball carries its family letter, the legend shows the same ones ----
-    const G = w.eval('QT_GLYPH');
-    chk(G.hermes === 'H' && G.pi === '\u03C0' && G.claude === 'C' && G.codex === 'X' && G.ollama === 'O', 'glyph map: H, pi, C, X, O');
-    chk(cars(qb).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === 'O'), 'depot balls show O');
-    chk(cars(db).every(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent === '\u2601'), 'yard balls show provider (cloud) icon');
-    const sw = fam => { const e = d.querySelector('.qt-legend .qt-sw-' + fam + ' .qt-gl'); return e && e.textContent; };
-    chk(sw('wait') === G.ollama, 'legend shows the Ollama request swatch');
-    chk(/\.qt-gl\{[^}]*color:hsl\(225 25% 6%\)/.test(html) && /\.qt-gl\{[^}]*max\(10px,/.test(html), 'glyph is near-black and never under 10px');
+    // ---- provider icons: every ball carries its provider's brand SVG (user rule: never letters) ----
+    const ollamaPath = w.eval('RT_SVG.ollama');
+    chk(!/QT_GLYPH/.test(html), 'the built page has no QT_GLYPH letter table');
+    chk(cars(qb).every(c => c.querySelector('.qt-gl svg')), 'depot balls show a provider SVG, never a letter');
+    chk(cars(qb).every(c => c.querySelector('.qt-gl svg path').getAttribute('d') === ollamaPath), 'depot (no-model) balls show the Ollama logo');
+    chk(cars(db).every(c => c.querySelector('.qt-gl svg') && c.textContent.trim().length !== 1), 'yard balls show provider SVGs, no single-letter glyph');
+    const leg = d.querySelector('.qt-legend .qt-sw-wait .qt-gl');
+    chk(!!leg && !!leg.querySelector('svg') && leg.querySelector('path').getAttribute('d') === ollamaPath, 'legend swatch shows the same Ollama icon');
+    chk(!!leg && leg.textContent.trim().length !== 1, 'legend swatch shows no letter glyph');
+    chk(/\.qt-gl\{[^}]*display:flex/.test(html) && /\.qt-gl::before\{[^}]*border-radius:50%/.test(html), 'icons sit on a white contrast disc and scale with the ball');
     chk(/\.qt-cars\{[^}]*overflow:hidden/.test(html) && w.eval('QT_MAX') === 28 && w.eval('QT_MIN') === 18, 'no scrolling in a jar; ball ladder 28px -> 18px');
     chk(cars(db).every(c => c.tabIndex === 0), 'yard: every tile is focusable');
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true }));
     chk(tip.classList.contains('on') && tip.textContent.includes(cars(db)[3]._qt.label), 'yard: tooltip carries the full title');
     cars(db)[3].dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true, relatedTarget: d.body }));
     w.eval(`paintTrain([], ['hermes','pi','claude','codex'].map((e, i) => ({key:'g:' + e, kind:'r', eng:e, label:'T' + e, state: i === 3 ? 'waiting' : 'running', idle_s:1, hue:10})), [])`);
-    const gl = cars(rb).map(c => c.querySelector('.qt-gl') && c.querySelector('.qt-gl').textContent).sort().join('');
-    chk(gl === ['\u2601', '\u2601', '\u2601', '\u2601'].sort().join(''), 'running clips show provider (cloud) icon', gl);
+    chk(cars(rb).every(c => c.querySelector('.qt-gl svg')), 'running balls carry provider SVG icons');
+    chk(cars(rb).every(c => c.textContent.trim().length !== 1), 'running balls never show a letter glyph');
   } catch (e) {
     chk(false, 'queue checks crashed', e.message);
     console.log((e.stack || '').split('\n').slice(0, 4).join('\n'));
