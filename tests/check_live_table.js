@@ -145,7 +145,7 @@ setTimeout(() => {
     chk(mob && +mob[1] >= 600 && +mob[1] <= 900, 'below 1280px the rows and header share one min-width (<= 900px) so they scroll together inside the panel', mob && mob[1]);
     const anyMin = [...html.matchAll(/\.lv(?:head|row|scroll|c|h)[^{}]*\{(?:[^}]*?[;\s])?min-width:(\d+)px/gm)].map(m => +m[1]);
     chk(anyMin.every(n => n <= 900), 'no .lv* rule sets a min-width above 900px', anyMin.join());
-    chk(/\.lvhead\{position:sticky;top:0/.test(html), 'the header is sticky');
+    chk(/\.lvhead\{position:sticky;top:56px/.test(html) && /@media\(min-width:1280px\)\{\.lvscroll\{overflow:visible\}\}/.test(html), 'the header sticks below the 56px app bar (the page is the single scroll container; the panel is not a scrollport at >= 1280px)');
     const r0s = w.getComputedStyle(rows()[0]);
     chk(parseFloat(r0s.minHeight) >= 48, 'row min-height is >= 48px', r0s.minHeight);
     chk(parseFloat(r0s.maxHeight) <= 64 && parseFloat(r0s.maxHeight) >= parseFloat(r0s.minHeight), 'row height stays capped (<= 64px) so rows are uniform', r0s.maxHeight);
