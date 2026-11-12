@@ -21,6 +21,10 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { isolate, JS_DIR } from './lib/isolate.mjs';
+// The zoom maths under test below (exact viewBox values) lives in zoom.js now
+// (LLMTELEMET-279): flow.js calls the shared helper, so the suite pins the
+// REAL helper here instead of a fake — zoom.js is dependency-free by design.
+import { attachZoom } from '../src/llm_telemetry/web/js/zoom.js';
 
 const TARGET = process.env.FLOW_UNIT_FILE
   ? (path.isAbsolute(process.env.FLOW_UNIT_FILE)
@@ -91,6 +95,11 @@ function fakeEl(tag = 'div'){
     setAttribute(k, v){ el.attrs[k] = String(v); },
     getAttribute(k){ return k in el.attrs ? el.attrs[k] : null; },
     addEventListener(t, f){ (el._ls[t] ||= []).push(f); },
+    removeEventListener(t, f){
+      const l = el._ls[t];
+      const i = l ? l.indexOf(f) : -1;
+      if (i >= 0) l.splice(i, 1);
+    },
     fire(t, ev){ (el._ls[t] || []).slice().forEach(f => f(ev || {})); },
     getBoundingClientRect(){ return el._rect || { left: 0, top: 0, width: 0, height: 0 }; },
     setPointerCapture(){}, releasePointerCapture(){},
@@ -141,6 +150,7 @@ function harness(els = {}){
     'router.js': {
       profileHue: m => 'ph:' + (m || ''),
     },
+    'zoom.js': { attachZoom },
   };
   return { ids, rec, DATA, stubs };
 }

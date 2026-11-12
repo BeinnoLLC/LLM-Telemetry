@@ -9,6 +9,7 @@ import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
+import { attachZoom } from './zoom.js';
 
 // LST-261: the queue is three glass jars of small balls. Depot = requests waiting at an Ollama
 // host, on the line = live sessions (Hermes, Pi, Claude, Codex), yard = finished sessions. One
@@ -874,7 +875,17 @@ export function renderFlow(rows){
     });
   });
 
-  svg.addEventListener('pointermove', ev => {
+  // The svg-level drag handlers are rebound, not stacked: renderFlow re-runs on
+  // every live refresh and the old wiring used to add one more listener set per
+  // render, each closing over a stale layout.
+  if (svg._flowDragOff) svg._flowDragOff();
+  const dragOffs = [];
+  const dragOn = (type, fn) => {
+    svg.addEventListener(type, fn);
+    dragOffs.push(() => svg.removeEventListener(type, fn));
+  };
+  svg._flowDragOff = () => { while (dragOffs.length) dragOffs.pop()(); };
+  dragOn('pointermove', ev => {
     if (!drag) return;
     const p = toSvg(ev);
     drag.moved = true;
@@ -891,116 +902,34 @@ export function renderFlow(rows){
     try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
     drag = null;
   }
-  svg.addEventListener('pointerup', endDrag);
-  svg.addEventListener('pointercancel', endDrag);
+  dragOn('pointerup', endDrag);
+  dragOn('pointercancel', endDrag);
 
-  // #18: pan + pinch-zoom via viewBox, independent of node-drag (drag only
-  // starts from a node's own pointerdown, so background pointerdowns are
-  // always free for panning). Two active pointers = pinch; one = pan.
-  const view = { x: 0, y: 0, w: W, h: H }; // current viewBox rect, in SVG units
-  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
-  const active = new Map(); // pointerId -> last client {x,y}
-  let panStart = null, pinchStart = null;
-
-  function applyView(){
-    svg.setAttribute('viewBox', `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}`);
-    // Below ~60% of the fitted scale, the graph is more zoomed-out than its
-    // initial fit — thin the labels so it doesn't turn into a tangle.
-    svg.classList.toggle('zoomedout', view.w > W * 1.4);
-  }
-  function clampView(){
-    // Zoom out capped at 3x the fitted size (nothing new to see past that),
-    // zoom in capped so a pinch cannot shrink the viewBox to nothing.
-    view.w = Math.max(W * 0.15, Math.min(W * 3, view.w));
-    view.h = Math.max(H * 0.15, Math.min(H * 3, view.h));
-  }
-  function zoomAt(clientX, clientY, factor){
-    const b = svg.getBoundingClientRect();
-    // The point under the cursor/pinch-centre, in viewBox units, stays fixed.
-    const px = view.x + (clientX - b.left) / b.width  * view.w;
-    const py = view.y + (clientY - b.top)  / b.height * view.h;
-    view.w /= factor; view.h /= factor;
-    clampView();
-    view.x = px - (clientX - b.left) / b.width  * view.w;
-    view.y = py - (clientY - b.top)  / b.height * view.h;
-    applyView();
-  }
-  function fitView(){
-    view.x = 0; view.y = 0; view.w = W; view.h = H;
-    applyView();
-  }
+  // #18/#LLMTELEMET-279: pan, pinch and wheel zoom live in the shared helper
+  // (web/js/zoom.js) so Flow/Life, Orchestration and the future Hive page use
+  // ONE implementation — and so the zoom survives the live re-renders that
+  // rebuilt this per-render view state (and stacked listeners) before. Node
+  // drag above stays flow's own: panFilter keeps background pans off the nodes.
+  const zoomApi = attachZoom(svg, {
+    getBase: () => ({ x: 0, y: 0, w: W, h: H }),
+    // Below ~60% of the fitted scale, thin the labels so it doesn't turn into
+    // a tangle (the #18 zoomedout class).
+    onChange: v => svg.classList.toggle('zoomedout', v.w > W * 1.4),
+    panFilter: ev => !(ev.target && ev.target.closest && ev.target.closest('.nd')),
+    // #18's original clamp, kept: zoom out capped at 3x the fitted size
+    // (nothing new to see past that), zoom in at 0.15x of it.
+    kMin: 1 / 3,
+    kMax: 20 / 3,
+    controls: false, // #flowctl already carries the visible +/-/Fit buttons
+  });
+  const fitView = () => zoomApi.reset();
   svg._flowFit = fitView; // exposed for the #flowctl "Fit" button
   // #111: keyboard-reachable zoom, centred on the SVG's own midpoint (no
   // cursor/finger position to anchor on from a button click).
   svg._flowZoom = factor => {
     const b = svg.getBoundingClientRect();
-    zoomAt(b.left + b.width / 2, b.top + b.height / 2, factor);
+    zoomApi.zoomAt(b.left + b.width / 2, b.top + b.height / 2, factor);
   };
-
-  svg.addEventListener('pointerdown', ev => {
-    if (drag) return; // a node drag owns this pointer
-    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    if (active.size === 1){
-      panStart = { view: { ...view }, p: { x: ev.clientX, y: ev.clientY } };
-    } else if (active.size === 2){
-      const pts = [...active.values()];
-      pinchStart = {
-        view: { ...view },
-        d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-        cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2,
-      };
-      panStart = null;
-    }
-  });
-  svg.addEventListener('pointermove', ev => {
-    if (drag || !active.has(ev.pointerId)) return;
-    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    const b = svg.getBoundingClientRect();
-    if (active.size === 2 && pinchStart){
-      const pts = [...active.values()];
-      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
-      const factor = d / (pinchStart.d || 1);
-      view.w = pinchStart.view.w / factor;
-      view.h = pinchStart.view.h / factor;
-      clampView();
-      const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
-      // Two-finger pan happens naturally alongside the pinch: keep the
-      // midpoint under the fingers, not just the zoom centred on itself.
-      const px = pinchStart.view.x + (pinchStart.cx - b.left) / b.width  * pinchStart.view.w;
-      const py = pinchStart.view.y + (pinchStart.cy - b.top)  / b.height * pinchStart.view.h;
-      view.x = px - (cx - b.left) / b.width  * view.w;
-      view.y = py - (cy - b.top)  / b.height * view.h;
-      applyView();
-    } else if (active.size === 1 && panStart){
-      const dx = (ev.clientX - panStart.p.x) / b.width  * panStart.view.w;
-      const dy = (ev.clientY - panStart.p.y) / b.height * panStart.view.h;
-      view.x = panStart.view.x - dx;
-      view.y = panStart.view.y - dy;
-      applyView();
-    }
-  });
-  function endPointer(ev){
-    active.delete(ev.pointerId);
-    if (active.size < 2) pinchStart = null;
-    if (active.size === 1){
-      const [p] = active.values();
-      panStart = { view: { ...view }, p };
-    } else if (active.size === 0) panStart = null;
-  }
-  svg.addEventListener('pointerup', endPointer);
-  svg.addEventListener('pointercancel', endPointer);
-  svg.addEventListener('pointerleave', endPointer);
-
-  // Trackpad pinch and mouse-wheel zoom (desktop): ctrlKey is how browsers
-  // report a trackpad pinch gesture via wheel events.
-  svg.addEventListener('wheel', ev => {
-    ev.preventDefault();
-    const factor = Math.exp(-ev.deltaY * 0.0035);
-    zoomAt(ev.clientX, ev.clientY, factor);
-  }, { passive: false });
-
-  // Double-tap/double-click resets to the fitted view.
-  svg.addEventListener('dblclick', () => fitView());
 
   // #18: re-run the layout (debounced) when the wrapper resizes, only while Flow is on screen.
   if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){

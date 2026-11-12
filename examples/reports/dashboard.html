@@ -1099,10 +1099,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   .qt-body::before,.qt-body::after,.qt-jar.qt-splash .qt-body::before,.qt-jar.qt-splash .qt-body::after{transition:none;animation:none}
 }
 .flowctl{float:right;display:flex;gap:4px;align-items:center}
- .flowctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
+ .flowctl button,.zoomctl button{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
    padding:2px 8px;border-radius:4px;border:1px solid var(--border);
    background:transparent;color:var(--muted);cursor:pointer}
  .flowctl button.on{border-color:var(--accent);color:var(--accent)}
+
+.zoomctl{position:absolute;top:8px;right:8px;display:flex;gap:4px;align-items:center;z-index:2}
 
 
  
@@ -1999,10 +2001,10 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 @media (max-width:1100px){.grid-home{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:700px){.grid-home{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-.csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
+.csvbtn,.dt-dens button,.flowctl button,.zoomctl button,.lmbtn,.lvrow button,.lvhead button{min-height:var(--ctl-sm);box-sizing:border-box;display:inline-flex;align-items:center}
 .chip,.fb-btn,.pk-btn,select.chip,.pchip,.kseg{min-height:var(--ctl-md)}
 @media (max-width:600px){
-  .csvbtn,.dt-dens button,.flowctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
+  .csvbtn,.dt-dens button,.flowctl button,.zoomctl button,.lmbtn,.lvrow button,.chip,.pk-btn,.pchip,.kseg,select.chip{min-height:var(--ctl-lg)}
 }
 
 .card:has(> [id$="empty"]:not([hidden])) > div[style*="height"],.card:has(> [id$="empty"]:not([hidden])) > #concpeak,.card:has(> [id$="empty"]:not([hidden])) > #projhdr{display:none}
@@ -2140,7 +2142,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 
 .orch-card{padding:1rem;overflow-x:auto}
 .orch-empty{padding:1rem}
-.orch-svg{width:100%;min-width:480px;height:auto;display:block}
+.orch-svg{width:100%;min-width:480px;height:auto;display:block;cursor:grab;touch-action:none}
 .orch-edge{fill:none;stroke:var(--muted);opacity:.7}
 .orch-head{fill:var(--muted)}
 .orch-lbl{fill:var(--muted);font-size:13px}
@@ -5262,6 +5264,11 @@ function renderOrchestration(){
   el.innerHTML = `<div class="card orch-card"><svg class="orch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent orchestration graph">` +
     `<defs><marker id="orch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" class="orch-head"/></marker></defs>` +
     `${paths}${boxes}</svg></div>`;
+  const orchSvg = el.querySelector('.orch-svg');
+  if (orchSvg) attachZoom(orchSvg, {
+    key: 'orch',
+    getBase: () => ({ x: 0, y: 0, w: W, h: H }),
+  });
 }
 
 let KANBAN_BOARD = '';
@@ -6642,6 +6649,172 @@ function renderProjTrendLegend(datasets){
   });
 }
 
+const ZOOMS = new Map();
+
+function attachZoom(svg, opts = {}){
+  const key = opts.key || svg;
+  let h = ZOOMS.get(key), carry = null;
+  if (h && h.svg !== svg) { carry = h.state; h.unbind(); h = null; }
+  h = h || newHandle(key, svg, opts, carry);
+  h.opts = opts;
+  if (h.state.k !== 1 || h.state.ox || h.state.oy) h.apply();
+  return h.api;
+}
+
+function newHandle(key, svg, opts, carry){
+  const state = carry || { k: 1, ox: 0, oy: 0 };
+  const handle = { key, svg, state, opts: opts || {} };
+  ZOOMS.set(key, handle);
+  const kMin = () => (handle.opts.kMin == null ? 0.5 : handle.opts.kMin);
+  const kMax = () => (handle.opts.kMax == null ? 8 : handle.opts.kMax);
+  const clampK = k => Math.max(kMin(), Math.min(kMax(), k));
+  const baseOf = () => handle.opts.getBase && handle.opts.getBase();
+
+  function viewOf(){
+    const base = baseOf();
+    if (!base) return null;
+    const w = base.w / state.k, h = base.h / state.k;
+    const cx = base.x + base.w / 2 + state.ox, cy = base.y + base.h / 2 + state.oy;
+    return { x: cx - w / 2, y: cy - h / 2, w, h };
+  }
+  function apply(){
+    const v = viewOf();
+    if (!v) return;
+    svg.setAttribute('viewBox', `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.w.toFixed(1)} ${v.h.toFixed(1)}`);
+    if (handle.opts.onChange) handle.opts.onChange(v, state);
+  }
+
+  function zoomAt(clientX, clientY, factor){
+    const base = baseOf(), v = viewOf();
+    if (!base || !v) return;
+    const b = svg.getBoundingClientRect();
+    const relx = b.width ? (clientX - b.left) / b.width : 0.5;
+    const rely = b.height ? (clientY - b.top) / b.height : 0.5;
+    const px = v.x + relx * v.w, py = v.y + rely * v.h;
+    const nk = clampK(state.k * factor), f = state.k / nk;
+    const cx = base.x + base.w / 2 + state.ox, cy = base.y + base.h / 2 + state.oy;
+    state.ox = px + (cx - px) * f - (base.x + base.w / 2);
+    state.oy = py + (cy - py) * f - (base.y + base.h / 2);
+    state.k = nk;
+    apply();
+  }
+
+  function fitView(){
+    state.k = 1; state.ox = 0; state.oy = 0;
+    apply();
+  }
+
+  const offs = [];
+  const on = (type, fn, o) => {
+    svg.addEventListener(type, fn, o);
+    offs.push(() => svg.removeEventListener(type, fn, o));
+  };
+
+  const active = new Map(); // pointerId -> last client {x,y}
+  let panStart = null, pinchStart = null;
+  const panOK = ev => !handle.opts.panFilter || handle.opts.panFilter(ev);
+  on('pointerdown', ev => {
+    if (ev.button != null && ev.button !== 0) return;
+    if (!panOK(ev)) return;
+    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (active.size === 1){
+      panStart = { s: { ...state }, p: { x: ev.clientX, y: ev.clientY } };
+    } else if (active.size === 2){
+      const pts = [...active.values()];
+      pinchStart = {
+        s: { ...state },
+        d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2,
+      };
+      panStart = null;
+    }
+  });
+  on('pointermove', ev => {
+    if (!active.has(ev.pointerId)) return;
+    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const b = svg.getBoundingClientRect();
+    const bw = b.width || 1, bh = b.height || 1;
+    const base = baseOf();
+    if (!base) return;
+    if (active.size === 2 && pinchStart){
+      const pts = [...active.values()];
+      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      const factor = d / (pinchStart.d || 1);
+      const s0 = pinchStart.s, w0 = base.w / s0.k, h0 = base.h / s0.k;
+      const c0x = base.x + base.w / 2 + s0.ox, c0y = base.y + base.h / 2 + s0.oy;
+      const px = c0x - w0 / 2 + (pinchStart.cx - b.left) / bw * w0;
+      const py = c0y - h0 / 2 + (pinchStart.cy - b.top) / bh * h0;
+      const nk = clampK(s0.k * factor), w = base.w / nk, h = base.h / nk;
+      const mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+      state.k = nk;
+      state.ox = px - (mx - b.left) / bw * w + w / 2 - (base.x + base.w / 2);
+      state.oy = py - (my - b.top) / bh * h + h / 2 - (base.y + base.h / 2);
+      apply();
+    } else if (active.size === 1 && panStart){
+      const s0 = panStart.s, w0 = base.w / s0.k, h0 = base.h / s0.k;
+      state.ox = s0.ox - (ev.clientX - panStart.p.x) / bw * w0;
+      state.oy = s0.oy - (ev.clientY - panStart.p.y) / bh * h0;
+      apply();
+    }
+  });
+  function endPointer(ev){
+    active.delete(ev.pointerId);
+    if (active.size < 2) pinchStart = null;
+    if (active.size === 1){
+      const [p] = active.values();
+      panStart = { s: { ...state }, p };
+    } else if (active.size === 0) panStart = null;
+  }
+  on('pointerup', endPointer);
+  on('pointercancel', endPointer);
+  on('pointerleave', endPointer);
+
+  on('wheel', ev => {
+    ev.preventDefault();
+    const factor = Math.exp(-ev.deltaY * (ev.deltaMode ? 0.05 : 0.0035));
+    zoomAt(ev.clientX, ev.clientY, factor);
+  }, { passive: false });
+
+  svg.addEventListener('dblclick', () => fitView());
+
+  if (handle.opts.controls !== false){
+    const host = svg.parentElement;
+    if (host && !host.querySelector('.zoomctl')){
+      const view = (host.ownerDocument && host.ownerDocument.defaultView) || (typeof window !== 'undefined' ? window : null);
+      const cs = view && view.getComputedStyle ? view.getComputedStyle(host) : null;
+      if (cs && (!cs.position || cs.position === 'static')) host.style.position = 'relative';
+      const box = host.ownerDocument.createElement('div');
+      box.className = 'zoomctl';
+      const mkBtn = (label, title, fn) => {
+        const b = host.ownerDocument.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.title = title;
+        b.setAttribute('aria-label', title);
+        b.addEventListener('click', fn);
+        return b;
+      };
+      box.appendChild(mkBtn('\u2212', 'Zoom out', () => {
+        const b = svg.getBoundingClientRect();
+        zoomAt(b.left + b.width / 2, b.top + b.height / 2, 1 / 1.4);
+      }));
+      box.appendChild(mkBtn('+', 'Zoom in', () => {
+        const b = svg.getBoundingClientRect();
+        zoomAt(b.left + b.width / 2, b.top + b.height / 2, 1.4);
+      }));
+      box.appendChild(mkBtn('Fit', 'Reset pan/zoom to fit', fitView));
+      host.appendChild(box);
+    }
+  }
+
+  handle.unbind = () => {
+    while (offs.length) offs.pop()();
+    ZOOMS.delete(key);
+  };
+  handle.apply = apply;
+  handle.api = { state, zoomAt, reset: fitView, apply };
+  return handle;
+}
 const QT_DEMO = { on: null, step: 0, timer: 0, last: null };
 function qtDemoOn(){
   if (QT_DEMO.on === null) QT_DEMO.on = /[?&]demoQueue=1(?:&|$)/.test((typeof window !== 'undefined' && window.location && window.location.search) || '');
@@ -8859,7 +9032,14 @@ function renderFlow(rows){
     });
   });
 
-  svg.addEventListener('pointermove', ev => {
+  if (svg._flowDragOff) svg._flowDragOff();
+  const dragOffs = [];
+  const dragOn = (type, fn) => {
+    svg.addEventListener(type, fn);
+    dragOffs.push(() => svg.removeEventListener(type, fn));
+  };
+  svg._flowDragOff = () => { while (dragOffs.length) dragOffs.pop()(); };
+  dragOn('pointermove', ev => {
     if (!drag) return;
     const p = toSvg(ev);
     drag.moved = true;
@@ -8874,101 +9054,23 @@ function renderFlow(rows){
     try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
     drag = null;
   }
-  svg.addEventListener('pointerup', endDrag);
-  svg.addEventListener('pointercancel', endDrag);
+  dragOn('pointerup', endDrag);
+  dragOn('pointercancel', endDrag);
 
-  const view = { x: 0, y: 0, w: W, h: H }; // current viewBox rect, in SVG units
-  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
-  const active = new Map(); // pointerId -> last client {x,y}
-  let panStart = null, pinchStart = null;
-
-  function applyView(){
-    svg.setAttribute('viewBox', `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}`);
-    svg.classList.toggle('zoomedout', view.w > W * 1.4);
-  }
-  function clampView(){
-    view.w = Math.max(W * 0.15, Math.min(W * 3, view.w));
-    view.h = Math.max(H * 0.15, Math.min(H * 3, view.h));
-  }
-  function zoomAt(clientX, clientY, factor){
-    const b = svg.getBoundingClientRect();
-    const px = view.x + (clientX - b.left) / b.width  * view.w;
-    const py = view.y + (clientY - b.top)  / b.height * view.h;
-    view.w /= factor; view.h /= factor;
-    clampView();
-    view.x = px - (clientX - b.left) / b.width  * view.w;
-    view.y = py - (clientY - b.top)  / b.height * view.h;
-    applyView();
-  }
-  function fitView(){
-    view.x = 0; view.y = 0; view.w = W; view.h = H;
-    applyView();
-  }
+  const zoomApi = attachZoom(svg, {
+    getBase: () => ({ x: 0, y: 0, w: W, h: H }),
+    onChange: v => svg.classList.toggle('zoomedout', v.w > W * 1.4),
+    panFilter: ev => !(ev.target && ev.target.closest && ev.target.closest('.nd')),
+    kMin: 1 / 3,
+    kMax: 20 / 3,
+    controls: false, // #flowctl already carries the visible +/-/Fit buttons
+  });
+  const fitView = () => zoomApi.reset();
   svg._flowFit = fitView; // exposed for the #flowctl "Fit" button
   svg._flowZoom = factor => {
     const b = svg.getBoundingClientRect();
-    zoomAt(b.left + b.width / 2, b.top + b.height / 2, factor);
+    zoomApi.zoomAt(b.left + b.width / 2, b.top + b.height / 2, factor);
   };
-
-  svg.addEventListener('pointerdown', ev => {
-    if (drag) return; // a node drag owns this pointer
-    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    if (active.size === 1){
-      panStart = { view: { ...view }, p: { x: ev.clientX, y: ev.clientY } };
-    } else if (active.size === 2){
-      const pts = [...active.values()];
-      pinchStart = {
-        view: { ...view },
-        d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-        cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2,
-      };
-      panStart = null;
-    }
-  });
-  svg.addEventListener('pointermove', ev => {
-    if (drag || !active.has(ev.pointerId)) return;
-    active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    const b = svg.getBoundingClientRect();
-    if (active.size === 2 && pinchStart){
-      const pts = [...active.values()];
-      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
-      const factor = d / (pinchStart.d || 1);
-      view.w = pinchStart.view.w / factor;
-      view.h = pinchStart.view.h / factor;
-      clampView();
-      const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
-      const px = pinchStart.view.x + (pinchStart.cx - b.left) / b.width  * pinchStart.view.w;
-      const py = pinchStart.view.y + (pinchStart.cy - b.top)  / b.height * pinchStart.view.h;
-      view.x = px - (cx - b.left) / b.width  * view.w;
-      view.y = py - (cy - b.top)  / b.height * view.h;
-      applyView();
-    } else if (active.size === 1 && panStart){
-      const dx = (ev.clientX - panStart.p.x) / b.width  * panStart.view.w;
-      const dy = (ev.clientY - panStart.p.y) / b.height * panStart.view.h;
-      view.x = panStart.view.x - dx;
-      view.y = panStart.view.y - dy;
-      applyView();
-    }
-  });
-  function endPointer(ev){
-    active.delete(ev.pointerId);
-    if (active.size < 2) pinchStart = null;
-    if (active.size === 1){
-      const [p] = active.values();
-      panStart = { view: { ...view }, p };
-    } else if (active.size === 0) panStart = null;
-  }
-  svg.addEventListener('pointerup', endPointer);
-  svg.addEventListener('pointercancel', endPointer);
-  svg.addEventListener('pointerleave', endPointer);
-
-  svg.addEventListener('wheel', ev => {
-    ev.preventDefault();
-    const factor = Math.exp(-ev.deltaY * 0.0035);
-    zoomAt(ev.clientX, ev.clientY, factor);
-  }, { passive: false });
-
-  svg.addEventListener('dblclick', () => fitView());
 
   if (!wrap._flowResizeWired && typeof ResizeObserver !== 'undefined'){
     wrap._flowResizeWired = true;
