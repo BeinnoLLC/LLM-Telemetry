@@ -241,6 +241,8 @@ export function setViewParam(view, key, value){
 
 // #173: retired slugs that must keep resolving. 'live' was its own view until
 // Home became the live board; bookmarks, tests and the README all say #/live.
+// LLMTELEMET-277 kept this contract through the nav regroup: 'Live' is now a
+// GROUP name in the rail, never a view slug, so the alias still owns it.
 export const VIEW_ALIASES = { live: 'Home' };
 
 // Resolve a hash to a real view name, case-insensitively, falling back to the
@@ -750,20 +752,29 @@ export function setCrumb(v){
 // sections exist. Items are <a href="#/slug"> so middle-click and "copy link"
 // behave, with a click handler for in-page routing.
 export const NAV_ICONS = {
-  Home:'Home', Life:'Life', Flow:'Flow', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
+  Home:'Home', Life:'Life', Flow:'Flow', Hive:'Hive', Router:'Router', Orchestration:'Orchestration', Kanban:'Kanban', Quota:'Quota', Usage:'Usage', Sessions:'Sessions',
   Cost:'Cost', Prices:'Prices', Rankings:'Rankings', Health:'Health', Detail:'Detail', Logs:'Logs', Settings:'Settings'
 };
 
-// Grouped sections (#122). The rail is grouped by what a view is FOR, so the
-// list stays scannable as it grows. The order here is the display order.
-// A view with no entry falls into the trailing "More" group rather than
-// disappearing — a new view must never be silently missing from the nav.
+// Grouped sections (#122, regrouped by LLMTELEMET-277). The rail is grouped by
+// what a view is FOR, so the list stays scannable as it grows. The order here
+// is the display order. A view with no entry falls into the trailing "More"
+// group rather than disappearing — a new view must never be silently missing
+// from the nav.
+// LLMTELEMET-277: 'Live' leads with the real-time surfaces — Home (the live
+// board, #173), Life (task queue + workers), Flow (provider -> model -> task,
+// both rendered by flow.js) and Hive (placeholder until the standalone-Hive
+// parity port lands). No view was renamed or removed, so every pre-regroup
+// #/slug still resolves to its own view and `#/live` keeps resolving through
+// VIEW_ALIASES. The only dead entry removed was the redundant 'Live' chip in
+// the legacy strip below: it duplicated Home and its chip could never be the
+// active one.
 export const NAV_GROUPS = [
-  // #173: 'Live' is gone from the rail — Home IS the live board. `#/live`
-  // still routes there via VIEW_ALIASES.
-  {name:'Overview',  views:['Home', 'Flow', 'Router', 'Orchestration', 'Kanban', 'Quota']},
-  {name:'Analysis',  views:['Usage', 'Sessions', 'Cost', 'Prices', 'Rankings', 'Health']},
-  {name:'System',    views:['Detail', 'Logs', 'Settings']},
+  {name:'Live',               views:['Home', 'Life', 'Flow', 'Hive']},
+  {name:'Usage & Costs',      views:['Usage', 'Cost', 'Prices', 'Sessions']},
+  {name:'Models & Providers', views:['Router', 'Rankings', 'Quota', 'Health']},
+  {name:'Tasks & Queue',      views:['Kanban', 'Orchestration']},
+  {name:'System',             views:['Detail', 'Logs', 'Settings']},
 ];
 export const NAV_FALLBACK_GROUP = 'More';
 
@@ -947,7 +958,9 @@ export function navInstall(){
   navSetOpen(false);
 }
 export function views(){
-  $('views').innerHTML=['Home','Life','Live','Flow','Router','Orchestration','Kanban','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
+  // LLMTELEMET-277: 'Hive' joins the strip so it agrees with the rail; the dead
+  // 'Live' chip is gone — it just re-rendered Home (#/live survives as a slug).
+  $('views').innerHTML=['Home','Life','Flow','Hive','Router','Orchestration','Kanban','Quota','Usage','Sessions','Cost','Prices','Rankings','Health','Detail','Logs','Settings']
     .map(v=>`<button data-vtab="${v}" onclick="pickView('${v}')" class="px-3 py-1 rounded-md border text-[length:var(--fs-sm)] taboff">${v}</button>`).join('');
 }
 export function pickView(v){

@@ -23,7 +23,8 @@ setTimeout(() => {
   const w = dom.window, d = w.document;
   try {
     const views = [...d.querySelectorAll('.view')].map(v => v.dataset.view);
-    chk(views.length === 16, '16 routes', String(views.length));
+    // LLMTELEMET-277: the Hive placeholder view joined the 16 existing views.
+    chk(views.length === 17, '17 routes', String(views.length));
     for (const v of views) {
       w.eval(`pickView(${JSON.stringify(v)})`);
       const hs = [...d.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(h => !h.closest('[hidden]') && !h.closest('[aria-hidden="true"]') && !h.closest('dialog,#fbdialog,#pdrawer,#sfmodal,#helpwrap,#drawer,#lnpanel'));

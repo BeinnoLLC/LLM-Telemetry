@@ -266,14 +266,18 @@ eq(R.INTERVAL_DEFAULTS, { live_poll_interval_s: 7, analytics_rebuild_interval_s:
 eq(R.NAVKEY, 'hermes-dash-navcollapsed', 'NAVKEY: storage key literal');
 eq(R.NAV_FALLBACK_GROUP, 'More', 'NAV_FALLBACK_GROUP: literal');
 eq(R.PROFILE_LOGO_MAX_BYTES, 204800, 'PROFILE_LOGO_MAX_BYTES: 200 KiB');
-eq(R.NAV_GROUPS.map(g => g.name), ['Overview', 'Analysis', 'System'], 'NAV_GROUPS: group names/order');
-// Orchestration (LST-239/243) and Kanban (LST-249) deliberately joined
-// Overview after this expectation was written; Life stays in the sanctioned
-// "More" fallback (check_nav_groups.js covers that contract).
-eq(R.NAV_GROUPS.map(g => g.views.length), [6, 6, 3], 'NAV_GROUPS: group sizes');
-ok(!R.NAV_GROUPS.some(g => g.views.includes('Live')), 'NAV_GROUPS: Live is folded into Home, never listed (#173)');
-eq(Object.keys(R.NAV_ICONS).length, 16, 'NAV_ICONS: one icon per built-in view (incl. Rankings, Life)');
+// LLMTELEMET-277 regroup: the rail leads with a 'Live' group — Home (the live
+// board, #173), Life (task queue + workers), Flow (provider -> model -> task,
+// both from flow.js) and Hive (placeholder for the standalone-Hive parity
+// port). Every pre-regroup view name survives untouched; nothing is renamed,
+// so old #/slugs resolve without new aliases.
+eq(R.NAV_GROUPS.map(g => g.name), ['Live', 'Usage & Costs', 'Models & Providers', 'Tasks & Queue', 'System'], 'NAV_GROUPS: group names/order');
+eq(R.NAV_GROUPS.map(g => g.views.length), [4, 4, 4, 2, 3], 'NAV_GROUPS: group sizes');
+eq(R.NAV_GROUPS[0].views, ['Home', 'Life', 'Flow', 'Hive'], 'NAV_GROUPS: Live leads with the real-time surfaces');
+ok(!R.NAV_GROUPS.some(g => g.views.includes('Live')), 'NAV_GROUPS: no view named Live — Live is the group; #/live aliases Home (#173)');
+eq(Object.keys(R.NAV_ICONS).length, 17, 'NAV_ICONS: one icon per built-in view (incl. Rankings, Life, Hive)');
 eq(R.NAV_ICONS.Life, 'Life', 'NAV_ICONS: the Life view carries its own icon id (sprite has #icon-Life)');
+eq(R.NAV_ICONS.Hive, 'Hive', 'NAV_ICONS: Hive carries its own icon id (sprite has #icon-Hive)');
 ok(!('Live' in R.NAV_ICONS), 'NAV_ICONS: no stale Live key (retired view, #173)');
 
 // ==================================================== slugOf / viewFromHash ==
@@ -602,22 +606,27 @@ eq(R.rangeParam(), '', 'rangeParam: no bounds means no param (All)');
 
 // =============================================================== nav drawer =
 eq(R.navViews(), BASE_VIEWS.concat(EXTRA_VIEWS), 'navViews: every .view in DOM order');
-eq(R.navGroups().map(g => g.name), ['Overview', 'Analysis', 'System', 'More'],
-  'navGroups: the three declared groups plus the fallback for unlisted views');
-eq(R.navGroups()[3], { name: 'More', views: EXTRA_VIEWS },
+// LLMTELEMET-277 regroup. The fixture DOM has no Life/Hive/Rankings/Kanban/
+// Orchestration views, so Live filters to its two present members, Models &
+// Providers drops Rankings, and Tasks & Queue is omitted as empty.
+eq(R.navGroups().map(g => g.name), ['Live', 'Usage & Costs', 'Models & Providers', 'System', 'More'],
+  'navGroups: the non-empty declared groups plus the fallback for unlisted views');
+eq(R.navGroups()[4], { name: 'More', views: EXTRA_VIEWS },
   'navGroups: unlisted views land in More, in DOM order');
 const flat = R.navGroups().flatMap(g => g.views);
 eq(flat.slice().sort(), R.navViews().slice().sort(), 'navGroups: covers every view, none invented');
 eq(new Set(flat).size, flat.length, 'navGroups: no view appears twice');
-eq(R.navGroups()[0], { name: 'Overview', views: ['Home', 'Flow', 'Router', 'Quota'] },
-  'navGroups: Overview keeps the declared view list');
+eq(R.navGroups()[0], { name: 'Live', views: ['Home', 'Flow'] },
+  'navGroups: Live keeps the declared view list (filtered to what exists)');
+eq(R.navGroups()[2], { name: 'Models & Providers', views: ['Router', 'Quota', 'Health'] },
+  'navGroups: a group lists only the views that exist, in declared order');
 const spare = viewEls.splice(0);
 viewEls.length = 0;
 eq(R.navGroups(), [], 'navGroups: no views -> no groups at all');
 const homeOnly = mkEl('section');
 homeOnly.dataset.view = 'Home';
 viewEls.push(homeOnly);
-eq(R.navGroups(), [{ name: 'Overview', views: ['Home'] }],
+eq(R.navGroups(), [{ name: 'Live', views: ['Home'] }],
   'navGroups: an empty group is omitted, not emitted empty');
 viewEls.length = 0; viewEls.push(...spare);
 

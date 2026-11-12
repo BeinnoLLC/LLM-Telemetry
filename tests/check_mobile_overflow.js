@@ -16,7 +16,12 @@ const path = require('path');
   const views = await page.$$eval('[data-view]', els => els.map(e => e.getAttribute('data-view')));
   let fail = 0;
   for (const v of views) {
-    await page.click(`[data-view="${v}"]`).catch(() => {});
+    // LLMTELEMET-277: navigate by hash, not by clicking the view panel. A
+    // hidden panel is not actionable, so the old click() waited out its full
+    // 30s timeout for every hidden view and the suite could never finish once
+    // playwright was installed. The hash actually reveals the view, which is
+    // what the overflow measurement needs anyway.
+    await page.evaluate(name => { location.hash = '#/' + String(name).toLowerCase(); }, v);
     await page.waitForTimeout(200);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     if (overflow) { fail++; console.log('  FAIL horizontal scroll on view ' + v); }
