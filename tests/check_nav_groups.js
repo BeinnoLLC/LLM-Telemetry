@@ -142,16 +142,13 @@ setTimeout(() => {
     w.dispatchEvent(new w.HashChangeEvent('hashchange'));
     chk(w.eval('view') === 'Home', '#/live lands on Home through VIEW_ALIASES', String(w.eval('view')));
 
-    // ---- LLMTELEMET-277: the Hive placeholder is honest -------------------
+    // ---- LLMTELEMET-271: the Hive view is the real page (placeholder retired) ---
     const hive = d.querySelector('.view[data-view="Hive"]');
-    chk(!!hive, 'a Hive placeholder view exists');
-    chk(!!hive && /Hive is coming: parity port of the standalone Hive in progress/.test(hive.textContent),
-        'placeholder carries the coming-soon sentence');
+    chk(!!hive && !!hive.querySelector('#hive-stage svg#hive-svg'), 'the Hive view holds the stage svg');
+    chk(!!hive && !/Hive is coming/.test(hive.textContent), 'the coming-soon placeholder is gone');
     const expectedHive = w.location.protocol + '//' + w.location.hostname + ':8790';
     chk(!!hive && !!hive.querySelector('a[href="' + expectedHive + '"]'),
-        'placeholder links to the standalone Hive at runtime-derived URL ' + expectedHive);
-    chk(!!hive && !hive.querySelector('canvas, table, img, svg'),
-        'placeholder renders text and a link only — no fake data, no simulation');
+        'the standalone Hive stays linked until it retires: ' + expectedHive);
 
     // ---- active state and badges survived the restructure -----------------
     chk(!!d.querySelector('#navlist [data-nav][aria-current="page"]') ||

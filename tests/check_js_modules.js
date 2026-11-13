@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DIR = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'js');
-const MODULES = ['palette.js', 'table.js', 'charts.js', 'zoom.js', 'views.js', 'flow.js',
+const MODULES = ['palette.js', 'table.js', 'charts.js', 'zoom.js', 'views.js', 'flow.js', 'hive.js',
                  'drawer.js', 'diffdom.js', 'live.js', 'routerview.js',
                  'quotaview.js', 'router.js', 'main.js', 'state.js'];
 
