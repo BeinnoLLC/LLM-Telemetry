@@ -188,6 +188,7 @@ const SUPERSET = {
   },
   'views.js': { flash: () => {}, render: () => {}, renderResolution: () => {}, syncProjFilterUI: () => {}, provLogoSvg: (sm, px) => `<svg class="lvprovlogo" data-sm="${sm}"></svg>` },
   'flow.js': { renderFlow: () => {} },
+  'hive.js': { hvShow: () => {} },
   'drawer.js': { loadLogs: () => {}, logsInstall: () => {} },
   'live.js': {
     renderLive: () => {}, LIVE_MS: 0, REBUILD_MS: 0,

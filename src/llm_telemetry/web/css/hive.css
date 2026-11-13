@@ -25,9 +25,9 @@
 .hv-uglow{fill:var(--c);opacity:.07}
 .hv-orbit{fill:none;stroke:var(--c);stroke-opacity:.35;stroke-dasharray:4 6}
 .hv-crown{fill:var(--z-warn);stroke:var(--z-warn);stroke-linejoin:round}
-.hv-lbl{fill:var(--fg);font-size:11px;text-anchor:middle;font-weight:600}
-.hv-sub{fill:var(--muted);font-size:10px;text-anchor:middle}
-.hv-fam{font-size:11px;font-weight:700;letter-spacing:.08em;text-anchor:middle}
+.hv-lbl{fill:var(--fg);font-size:var(--fs-xs);text-anchor:middle;font-weight:600}
+.hv-sub{fill:var(--muted);font-size:var(--fs-xs);text-anchor:middle}
+.hv-fam{font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-anchor:middle}
 .hv-bob{animation:hv-bob 4s ease-in-out infinite}
 @keyframes hv-bob{50%{transform:translateY(-3px)}}
 .hv-white,.hv-shine{fill:var(--fg)}.hv-pupil{fill:var(--bg)}.hv-cheek{fill:var(--z-bad);opacity:.5}
@@ -35,7 +35,7 @@
 .hv-thick{stroke-width:2.6}.hv-red,.hv-brow{stroke:var(--z-bad)}.hv-brow{stroke-width:2.4}
 .hv-fill{fill:var(--fg);stroke:var(--fg)}
 .hv-lid{fill:var(--card)}
-.hv-zzz{fill:var(--muted);font-size:10px}
+.hv-zzz{fill:var(--muted);font-size:var(--fs-xs)}
 .hv-eyes{animation:hv-blink 5s infinite;transform-origin:0 0}
 @keyframes hv-blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
 .hv-look{animation:hv-look 6s infinite}

@@ -19,6 +19,7 @@ export const HV_COL = {root: '#5cd0ff', pixelvent: '#ff5fc8', acasia: '#5dff9a',
 export const HV_EGG = {rx: 55, ry: 72, crown: 80, r: 62};
 export const HV_PAD = 5;
 export const HV_ACTIVE_S = 300;
+export const HV_COMPACT = .62;   // below this scale the second label line is dropped
 export const hvHooks = {onClick: null, onRender: null};
 
 export const hvCol = f => HV_COL[f] || ('hsl(' + [...String(f)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7) + ',70%,62%)');
@@ -127,9 +128,9 @@ export function hvModel(snap, view = 'all') {
 // ---- layout (px space, origin = stage centre, 1 SVG unit = 1 CSS px) ----
 export const hvClamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export function hvFoot(it, k) {
-  const egg = it.kind === 'egg', r = egg ? HV_EGG.rx * 1.12 : it.r * k, w1 = it.label.length * 6.4 / 2, w2 = it.sub.length * 5.6 / 2;
-  const half = Math.max(r, w1, w2, it.title ? it.title.length * 6.4 / 2 : 0), lab = (it.sub ? 31 : 17) * Math.min(1, .6 + k / 2);
-  return {l: -half, r: half, t: egg ? -(HV_EGG.crown + 4) : -(r + (it.title ? 16 : 2)), b: egg ? HV_EGG.ry * 1.12 + lab : r + lab};
+  const egg = it.kind === 'egg', r = egg ? HV_EGG.rx * 1.12 : it.r * k, w1 = it.label.length * 7.6 / 2, w2 = k < HV_COMPACT ? 0 : it.sub.length * 6.8 / 2;
+  const half = Math.max(r, w1, w2, it.title ? it.title.length * 8.4 / 2 : 0), lab = (it.sub && k >= HV_COMPACT ? 36 : 20) * Math.min(1, .7 + k / 3);
+  return {l: -half, r: half, t: egg ? -(HV_EGG.crown + 4) : -(r + (it.title ? 20 : 2)), b: egg ? HV_EGG.ry * 1.12 + lab : r + lab};
 }
 export const hvHit = (a, b, gap = 2 * HV_PAD) => Math.min(a.x + a.r, b.x + b.r) - Math.max(a.x + a.l, b.x + b.l) + gap > 0
   && Math.min(a.y + a.b, b.y + b.b) - Math.max(a.y + a.t, b.y + b.t) + gap > 0;
@@ -249,10 +250,10 @@ export function hvDrawNode(it, pos, k) {
   n.g.setAttribute('class', `hv-node hv-${it.kind} ${it.hot ? 'hot' : 'idle'}${it.blocked ? ' blocked' : ''}${it.data ? '' : ' nodata'}${it.pool ? ' pool' : ''}`);
   n.g.style.setProperty('--c', hvCol(it.fam));
   const tight = it.kind === 'worker';
-  n.t1.setAttribute('y', (r + (tight ? 13 : 16) * Math.max(.6, k)).toFixed(1)); n.t2.setAttribute('y', (r + (tight ? 24 : 29) * Math.max(.6, k)).toFixed(1));
-  if (it.kind === 'egg') { n.t1.setAttribute('y', (HV_EGG.ry + 18).toFixed(1)); n.t2.setAttribute('y', (HV_EGG.ry + 31).toFixed(1)); }
-  n.t1.textContent = hvClip(it.label, tight ? 13 : 17); n.t2.textContent = hvClip(it.sub, tight ? 15 : 26);
-  if (n.title) { n.title.textContent = it.title; n.title.setAttribute('y', (-(r + 6)).toFixed(1)); n.title.style.fill = hvCol(it.fam); }
+  n.t1.setAttribute('y', (r + (tight ? 15 : 18) * Math.max(.7, k)).toFixed(1)); n.t2.setAttribute('y', (r + (tight ? 29 : 34) * Math.max(.7, k)).toFixed(1));
+  if (it.kind === 'egg') { n.t1.setAttribute('y', (HV_EGG.ry + 19).toFixed(1)); n.t2.setAttribute('y', (HV_EGG.ry + 35).toFixed(1)); }
+  n.t1.textContent = hvClip(it.label, tight ? 13 : 17); n.t2.textContent = k < HV_COMPACT ? '' : hvClip(it.sub, tight ? 15 : 26);
+  if (n.title) { n.title.textContent = it.title; n.title.setAttribute('y', (-(r + 7)).toFixed(1)); n.title.style.fill = hvCol(it.fam); }
   const mood = n.temp || it.mood;
   if (n.mood !== mood) { n.fg.innerHTML = hvFace(hvFaceR({...it, r}), mood); n.fg.setAttribute('transform', it.kind === 'egg' ? `translate(0,${(HV_EGG.ry * .1).toFixed(1)})` : ''); n.mood = mood; }
   n.g.dataset.mood = mood;
