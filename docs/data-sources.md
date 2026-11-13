@@ -22,6 +22,17 @@ command for each is in [setup-and-deploy.md](setup-and-deploy.md).
 | Transcript modal | `collect_transcripts.py` | `transcripts` | `transcripts.json` | 60 s |
 | Session timeline | `collect_session_timeline.py` | `session-timeline` | `sessions/<profile>/<id>.json` | 60 s |
 | Hermes + PI into durable store | `collect_hermes_profiles.py`, `collect_pi_agents.py` via `ingest_all.py`, `ingest_pi.py` | `ingest`, `ingest-pi` | analytics store SQLite (`analytics_store.py`) | manual / not in the shipped timers |
+| Hive per-face model + spend join | `hive.py` (`collect()` / `/api/hive`) | (served by `serve`) | reads `live-data.json`, `analytics-data.json`, `costs-data.json`, `ollama-data.json` (read-only, fresh read per snapshot, no cache; stale/missing tolerated) | per snapshot |
+
+Hive faces (`hive.py`, LST-270): each face carries `model` (newest live session
+of the profile in `live-data.json`; null when stale or not live), `model_info`
+(rates from `costs-data.json`, `local: true` if loaded in `ollama-data.json`)
+and `spend {usd, window: "today", cost_class, stale}` summed from
+`analytics-data.json` rows. Only `metered` billed USD counts toward `usd`
+(Est. Cost); Claude Code / Codex subscription usage is reported separately as
+`covered_usd` with `label: "covered by subscription"` and `covered_by_subscription`.
+A missing, unreadable or profile-less artifact gives `spend: null`; an unmapped
+profile gives a data-less face. Nothing is estimated.
 
 Other modules `collect_context_compaction.py`, `collect_repo_branch.py` and
 `collect_session_index.py` are called by `collect_analytics.py` and add the
