@@ -1,5 +1,13 @@
 /* Theme tokens — the ONE place the shared palette is declared.
  *
+ * LST-278 (Hive look, app-wide): the dark theme IS the Hive palette — bg #05060a,
+ * fg #f5f5f5, mute #8a8f9a, card #0f1118, borders #1d2130/#262a36, active #8af/#5f8,
+ * live dot #5f8 with glow, 10px radius + 1px border on cards/buttons/chips/inputs,
+ * animated #6cf/#f6c/#7f9/#fc6 title gradient, tabular numbers. Components read
+ * only the semantic tokens below (--radius-ctl, --font, --grad-title, --live-dot,
+ * --glow-live, --glow-active, --border-strong); no component carries a colour.
+ * The light theme gets the same roles at AA values. Contrast table: tests/check_hive_tokens.js.
+ *
  * Both pages inline this file first (see src/llm_telemetry/webassets.py): the
  * dashboard's stylesheet and the price sheet's stylesheet then carry only the
  * tokens that are theirs. Before this file existed the block was duplicated in
@@ -39,7 +47,7 @@
  *          bad 5.53 (warn was 3.40, ok 4.41). --accent2 2.94->3.24 and --pal-amber
  *          2.95->3.24 (graphics on white card). Other --pal-* on card: indigo 3.56,
  *          rose 3.61, slate 3.81, mint 3.16 (all >=3).
- *   DARK   fg 10.9 / muted 5.39 / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
+ *   DARK   fg 10.9 / muted 5.82 (6.25 on page bg #05060a) / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
  *          z-warn 7.03, z-bad 4.67 as text; --pal-* on card 4.84-8.54: all pass, unchanged.
  *   KNOWN, not fixable in tokens alone: --z-*-fg is used both as text on the card
  *          (dark: fine, 10+) and as text on a solid --z-* fill (.navbadge.alert).
@@ -63,6 +71,13 @@
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
   --accent2:#7793a2;
+  --border-strong:rgba(26,32,28,.22);
+  --active-a:#1f62c9;            /* active glow pair, light: blue / green (AA on card) */
+  --active-b:#1a7f3c;
+  --live-dot:#1a7f3c;
+  --glow-live:0 0 0 2px rgba(26,127,60,.18);
+  --glow-active:0 0 0 1px var(--active-a),0 0 10px rgba(31,98,201,.28);
+  --grad-title:linear-gradient(90deg,#0b6fb3,#b0287a,#1a7f3c,#8a5a00,#0b6fb3);
 
   /* pastel washes on white cards */
   --wash-indigo:rgba(99,110,164,.12);
@@ -122,10 +137,13 @@
    Declared on :root only — they resolve per-element, so [data-theme] flips the
    surfaces with it. */
 :root{
+  --radius-ctl:10px;
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --num:tabular-nums;
   --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
   --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
   --fb-h:32px;
-  --fb-r:4px;
+  --fb-r:var(--radius-ctl);
   --kind-hermes:hsl(199 60% 56%);
   --kind-pi:hsl(265 55% 64%);
   --kind-claude:hsl(18 70% 60%);
@@ -133,18 +151,25 @@
 }
 
 [data-theme="dark"]{
-  /* base surfaces: Grafana neutral blue-grey night values */
-  --bg:#111217;
-  --card:#181b1f;
-  --fg:#ccccdc;
-  --muted:#8e8f9a;
-  --border:#2c2e33;
+  /* base surfaces: Hive neutral blue-grey night values */
+  --bg:#05060a;
+  --card:#0f1118;
+  --fg:#f5f5f5;
+  --muted:#8a8f9a;
+  --border:#1d2130;
   --border-input:#6b6e78;        /* control boundaries: 3.4:1 on the card (WCAG 1.4.11) */
-  /* the single calm accent: Grafana blue */
-  --accent:#6e9fff;
-  --accent-ink:#0b0c0e;          /* text/icon on accent fills */
-  --accent-wash:rgba(110,159,255,.14);
-  --accent2:#b877d9;             /* muted steel blue — charts' secondary */
+  /* the single calm accent: Hive periwinkle blue */
+  --accent:#88aaff;
+  --accent-ink:#05060a;          /* text/icon on accent fills */
+  --accent-wash:rgba(136,170,255,.14);
+  --border-strong:#262a36;
+  --active-a:#88aaff;            /* Hive active glow pair: #8af / #5f8 */
+  --active-b:#55ff88;
+  --live-dot:#55ff88;
+  --glow-live:0 0 8px 2px rgba(85,255,136,.55);
+  --glow-active:0 0 0 1px var(--active-a),0 0 12px rgba(85,255,136,.35);
+  --grad-title:linear-gradient(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66,#66ccff);
+  --accent2:#b877d9;             /* muted violet — charts' secondary */
 
   /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
   --wash-indigo:rgba(87,148,242,.14);
@@ -172,5 +197,5 @@
   --elev-1:0 1px 2px rgba(0,0,0,.30),0 1px 1px rgba(0,0,0,.20);
   --elev-2:0 2px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
   --elev-3:0 6px 16px rgba(0,0,0,.40),0 2px 4px rgba(0,0,0,.30);
-  --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(110,159,255,.30);
+  --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(136,170,255,.40);
 }
