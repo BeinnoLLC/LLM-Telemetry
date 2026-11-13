@@ -13,6 +13,7 @@ never simulated. No HTTP serving here; that is H-2.
 """
 from __future__ import annotations
 
+import collections
 import glob
 import json
 import os
@@ -20,6 +21,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -910,6 +912,132 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None):
     feed = comms(fams, home, now)
     return stamp({"kind": "hive", "at": now, "families": families, "comms": feed[-120:], "hosts": host_list,
                   "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks})
+
+
+# ---------------- live feed (LST-269, H-2) ----------------
+
+def diff_tasks(old, new):
+    """Real status changes between two ``tasks`` maps (port of hive/server.py diff)."""
+    ev = []
+    for tid, t in new.items():
+        o = old.get(tid)
+        if o is None:
+            if t["status"] != "done":
+                ev.append({"kind": "new", "id": tid, **t})
+        elif o["status"] != t["status"]:
+            ev.append({"kind": "status", "id": tid, "from": o["status"], **t})
+    for tid, o in old.items():   # a worker process that ended
+        if o.get("worker") and tid not in new:
+            ev.append({"kind": "status", "id": tid, **o, "from": o["status"], "status": "finished"})
+    return ev
+
+
+def _user_sig(usr):
+    return json.dumps({k: v for k, v in (usr or {}).items() if k != "at"}, sort_keys=True, default=str)
+
+
+class HiveFeed:
+    """Polls ``collect`` on a background thread and keeps a bounded ring of
+    sequenced frames, so SSE streams and ``?since=`` polling share one source.
+
+    Snapshot at seq N is the state after frame N. ``since(n)`` replays exactly
+    frames > n, or answers ``reset`` with a fresh snapshot when n is outside the
+    ring (too old, or from a previous server run).
+    """
+
+    def __init__(self, collect_fn=None, interval=3.0, ring=512):
+        self._collect = collect_fn or collect
+        self.interval = interval
+        self._cond = threading.Condition()
+        self._ring = collections.deque(maxlen=ring)
+        self._seq = 0
+        self._snap = None
+        self._tasks = {}
+        self._seen = set()
+        self._user = None
+        self._thread = None
+        self._stop = threading.Event()
+        self.errors = 0
+        self.last_error = None
+
+    def start(self):
+        """Lazy start: the first request spawns the collector thread."""
+        with self._cond:
+            if self._thread is None:
+                self._thread = threading.Thread(target=self._run, name="hive-feed", daemon=True)
+                self._thread.start()
+
+    def stop(self):
+        self._stop.set()
+        with self._cond:
+            self._cond.notify_all()
+
+    def _run(self):
+        while not self._stop.is_set():
+            self.tick()
+            self._stop.wait(self.interval)
+
+    def tick(self):
+        t0 = time.time()
+        try:
+            snap = self._collect()
+        except Exception as e:  # keep serving the last good snapshot
+            with self._cond:
+                self.errors += 1
+                self.last_error = repr(e)
+            return
+        took = round(time.time() - t0, 3)
+        tasks = snap.get("tasks") or {}
+        comms = snap.get("comms") or []
+        with self._cond:
+            first = self._snap is None
+            at = snap.get("at") or time.time()
+            frames = [] if first else [{"type": "event", "at": at, **e} for e in diff_tasks(self._tasks, tasks)]
+            fresh = [c for c in comms if c.get("id") not in self._seen]
+            self._seen.update(c.get("id") for c in comms)
+            if not first:
+                frames += [{"type": "comm", **c} for c in fresh[-25:]]
+                if _user_sig(snap.get("user")) != self._user:
+                    frames.append({"type": "user", "at": at, "user": snap.get("user")})
+            self._user = _user_sig(snap.get("user"))
+            for fr in frames:
+                self._seq += 1
+                self._ring.append({"seq": self._seq, **fr})
+            self._tasks = tasks
+            self._snap = {**snap, "type": "snapshot", "seq": self._seq, "collect_s": took}
+            self._cond.notify_all()
+
+    def wait_ready(self, timeout):
+        with self._cond:
+            return self._cond.wait_for(lambda: self._snap is not None, timeout)
+
+    def snapshot(self):
+        with self._cond:
+            return self._snap
+
+    def since(self, n):
+        """-> delta frame, or a reset carrying a fresh snapshot. None before the first collect."""
+        with self._cond:
+            if self._snap is None:
+                return None
+            cur = self._seq
+            oldest = self._ring[0]["seq"] if self._ring else cur + 1
+            if n > cur or n < oldest - 1:
+                return {"type": "reset", "snapshot": self._snap}
+            return {"type": "delta", "from": n, "to": cur,
+                    "events": [f for f in self._ring if f["seq"] > n]}
+
+    def wait_after(self, n, timeout):
+        """Block up to ``timeout`` for frames newer than seq ``n``.
+        -> (frames, snapshot_or_None); snapshot set when ``n`` fell out of the ring."""
+        with self._cond:
+            self._cond.wait_for(lambda: self._seq > n or self._stop.is_set(), timeout)
+            if self._seq <= n:
+                return [], None
+            oldest = self._ring[0]["seq"] if self._ring else self._seq + 1
+            if n < oldest - 1:
+                return [], self._snap
+            return [f for f in self._ring if f["seq"] > n], None
 
 
 def main(argv=None):
