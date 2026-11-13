@@ -159,14 +159,6 @@ __DASHBOARD_CSS__
        (derived poll-to-poll from the live feed, #184), and active alerts.
        Painted by renderLiveKpis on every live poll. -->
   <div class="statgrid live mb-3" id="livekpis" aria-live="polite"></div>
-  <!-- Hex arena: homage to anoma.ly/hex/ — the fleet's live agents orbit,
-       bounce off the hex walls and clash on the ring. Purely presentational;
-       bloom and speed are driven by the same live counts that fill the KPI
-       cards above. Painted by renderArena (arena.js) each 5s live poll. -->
-  <div class="card p-4 mt-3" id="arenacard">
-   <div class="lbl mb-2.5">Agent arena<span class="muted normal-case tracking-normal text-[length:var(--fs-xs)] ml-1" id="arenasub"></span></div>
-   <div class="arenabox"><canvas id="arenacv" aria-hidden="true"></canvas></div>
-  </div>
   <!-- Task queue: always directly under the four scorecards, above "In
        progress now", at every width (Home feedback 2026-10-28). -->
   <div class="card p-4 mt-3" id="homeseries"><div class="lbl mb-2.5">Calls &amp; tokens &middot; last 6h</div><div style="height:clamp(150px,14vw,200px);position:relative"><canvas id="cHome6h"></canvas></div></div>
