@@ -836,7 +836,180 @@ def _worker_title(w):
 
 # ---------------- snapshot ----------------
 
-def collect(home=None, now=None, hosts=None, scan=True, boards=None):
+# ---------------- per-face live model + spend (LST-270, H-3) ----------------
+
+ARTIFACT_MAX_AGE = {"live-data.json": 300, "ollama-data.json": 300, "analytics-data.json": 900,
+                    "costs-data.json": 6 * 3600 + 900}
+SPEND_WINDOW = "today"
+UNCOVERED_CLASSES = ("subscription", "local", "free", "preset")
+
+
+def default_reports():
+    """Reports directory of the LLM-Telemetry config (None if the config cannot be read)."""
+    try:
+        from . import config as C
+        return Path(C.get().reports_dir)
+    except Exception:
+        return None
+
+
+def read_artifact(path, now):
+    """Fresh, uncached read of one reports JSON.
+
+    Opens the file anew on every call (never memoised). Writers replace it atomically,
+    so a reader sees the old or the new file; a half-parsed read is retried once.
+    Returns ``{"data", "age", "stale"}`` or None when missing/unreadable/not an object.
+    """
+    path = Path(path)
+    for attempt in (0, 1):
+        try:
+            with open(path, "rb") as fh:
+                mtime = os.fstat(fh.fileno()).st_mtime
+                data = json.loads(fh.read())
+        except (OSError, ValueError):
+            if attempt == 0 and path.exists():
+                time.sleep(0.05)
+                continue
+            return None
+        if not isinstance(data, dict):
+            return None
+        age = max(0.0, now - mtime)
+        return {"data": data, "age": age, "stale": age > ARTIFACT_MAX_AGE.get(path.name, 900)}
+    return None
+
+
+def load_artifacts(reports, now):
+    """{name: artifact|None} for the four joined reports files."""
+    rep = Path(reports) if reports else None
+    return {n: (read_artifact(rep / f"{n}-data.json", now) if rep else None)
+            for n in ("live", "analytics", "costs", "ollama")}
+
+
+def _loaded_ollama(art):
+    names = set()
+    for h in ((art or {}).get("data") or {}).get("hosts") or []:
+        for m in h.get("loaded") or []:
+            n = m.get("name") or m.get("model") if isinstance(m, dict) else m
+            if n:
+                names.add(str(n))
+    return names
+
+
+def _live_model(art, profile):
+    """(model, base_url) of the profile's newest live session, or (None, None)."""
+    if not art or art["stale"]:
+        return None, None
+    entry = ((art["data"].get("profiles") or {}).get(profile)) or {}
+    live = [s for s in entry.get("live") or [] if isinstance(s, dict) and s.get("model")]
+    if not live:
+        return None, None
+    best = min(live, key=lambda s: s.get("idle_s") if isinstance(s.get("idle_s"), (int, float)) else 1e12)
+    return best["model"], best.get("base_url")
+
+
+def _model_info(art, model):
+    for m in ((art or {}).get("data") or {}).get("models") or []:
+        if m.get("model") == model or m.get("short") == model:
+            return {k: m.get(k) for k in ("in_1m", "out_1m", "rate_origin", "served_by") if k in m}
+    return None
+
+
+def _spend(art, profile, now):
+    """Profile spend for today from analytics rows; None when the artifact has no such profile."""
+    if not art:
+        return None
+    entry = ((art["data"].get("profiles") or {}).get(profile))
+    if not isinstance(entry, dict):
+        return None
+    today = time.strftime("%Y-%m-%d", time.localtime(now))
+    usd = covered = 0.0
+    value = {}
+    for r in entry.get("rows") or []:
+        if r.get("date") != today:
+            continue
+        cls = r.get("cost_class") or "unknown"
+        mv = float(r.get("market_value_usd") or 0)
+        value[cls] = value.get(cls, 0.0) + mv
+        if cls == "subscription":
+            covered += mv
+        elif cls not in UNCOVERED_CLASSES:
+            usd += float(r.get("billed_usd") or 0)
+    cls = max(value, key=value.get) if any(value.values()) else (next(iter(value), None) or "none")
+    if "metered" in value and usd > 0:
+        cls = "metered"
+    out = {"usd": round(usd, 6), "window": SPEND_WINDOW, "cost_class": cls, "stale": art["stale"]}
+    if covered:
+        out["covered_by_subscription"] = True
+        out["covered_usd"] = round(covered, 6)
+        out["label"] = "covered by subscription"
+    return out
+
+
+def face_data(profile, arts, now):
+    """``{"model", "model_info", "spend"}`` for one telemetry profile; all None when unmapped/missing."""
+    model, base = _live_model(arts.get("live"), profile)
+    info = _model_info(arts.get("costs"), model) if model else None
+    spend = _spend(arts.get("analytics"), profile, now)
+    if model and model in _loaded_ollama(arts.get("ollama")):   # local model: free, never a bogus price
+        info = {**(info or {}), "local": True}
+        if spend is not None and not spend["usd"]:
+            spend = {**spend, "cost_class": "local", "label": "local"}
+    return {"model": model, "model_info": info, "spend": spend}
+
+
+def worker_spend(w, live):
+    """Spend of a Claude Code / Codex worker from ``agent_live``; subscription-covered, never billed."""
+    if w.get("engine") not in ("claude", "codex"):
+        return None
+    art = live
+    sess = [s for s in ((art or {}).get("data") or {}).get("agent_live") or []
+            if s.get("engine") == w["engine"] and not art["stale"]
+            and (s.get("title") or "").lower() == (w.get("project") or "").lower()]
+    if len(sess) != 1:   # ambiguous or no match: label the class, never guess an amount
+        return {"usd": None, "window": "session", "cost_class": "subscription",
+                "covered_by_subscription": True, "covered_usd": None, "label": "covered by subscription"}
+    s = sess[0]
+    return {"usd": 0.0, "window": "session", "cost_class": "subscription", "covered_by_subscription": True,
+            "covered_usd": s.get("cost_usd"), "label": "covered by subscription"}
+
+
+def enrich(snap, arts, home, now):
+    """Attach ``model`` + ``spend`` to every face of a snapshot (in place; idempotent)."""
+    live = arts.get("live")
+
+    def tag(face, profile):
+        d = face_data(profile, arts, now) if profile else {"model": None, "model_info": None, "spend": None}
+        face.update(d)
+
+    for fam in snap["families"]:
+        a = fam["assistant"]
+        tag(a, a["id"])
+        bot_ids = [b["id"] for b in fam["bots"]]
+        for b in fam["bots"]:
+            tag(b, b["id"])
+        for br in fam["brains"]:
+            tag(br, br["id"])
+            for ag in br["agents"]:
+                cand = [ag["id"]] + [b for b in bot_ids if b.endswith("-" + ag["id"])]
+                tag(ag, next((c for c in cand if (Path(home) / "profiles" / c).is_dir()), None))
+        for face in [a] + fam["bots"] + fam["brains"]:
+            for w in face.get("workers") or []:
+                _tag_worker(w, live, arts)
+    for w in snap.get("unattributed") or []:
+        _tag_worker(w, live, arts)
+    for h in snap.get("hosts") or []:
+        for w in h.get("agents") or []:
+            _tag_worker(w, live, arts)
+    return snap
+
+
+def _tag_worker(w, live, arts):
+    w["model"] = w.get("model") or None
+    w["model_info"] = _model_info(arts.get("costs"), w["model"]) if w["model"] else None
+    w["spend"] = worker_spend(w, live)
+
+
+def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=None):
     """One JSON-serialisable Hive snapshot.
 
     home   Hermes home (default $HERMES_HOME or ~/.hermes)
@@ -845,6 +1018,8 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None):
            default $HIVE_HOSTS
     scan   False skips the /proc + ssh scan; only pre-built host dicts then supply workers
     boards None reads every brain's kanban.db; or {board: [tasks]} to inject
+    reports reports dir joined for per-face model + spend (default: configured reports_dir);
+           False skips the join (faces carry model/spend None)
     """
     home = Path(home) if home else default_home()
     now = time.time() if now is None else now
@@ -910,8 +1085,11 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None):
                                                 "title": _worker_title(w)}
         pres[f"w:{w['id']}"] = {"kind": "worker", **pressure({}, [w])}
     feed = comms(fams, home, now)
-    return stamp({"kind": "hive", "at": now, "families": families, "comms": feed[-120:], "hosts": host_list,
-                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks})
+    snap = {"kind": "hive", "at": now, "families": families, "comms": feed[-120:], "hosts": host_list,
+                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks}
+    rdir = default_reports() if reports is None else (reports or None)
+    enrich(snap, load_artifacts(rdir, now), home, now)
+    return stamp(snap)
 
 
 # ---------------- live feed (LST-269, H-2) ----------------
