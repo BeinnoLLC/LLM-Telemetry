@@ -39,12 +39,17 @@ import ipaddress
 import json
 import os
 import sys
+import select
 import tempfile
+import threading
+import time
 import webbrowser
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 from . import config as C
+from . import hive as H
+from urllib.parse import parse_qs, urlsplit
 
 DIRECTORY = str(C.get().reports_dir)
 
@@ -124,6 +129,50 @@ def start_refresh() -> dict:
     _REFRESH["started"] = _t.time()
     return {"accepted": True, "pid": proc.pid,
             "detail": "rebuild started; the page will pick it up on its next poll"}
+
+
+# LST-269: /api/hive (snapshot / ?since= polling) and /api/hive/stream (SSE).
+# Read-only: the feed only reads ~/.hermes via llm_telemetry.hive.
+HIVE_MAX_STREAMS = 8        # the next stream gets 503 + Retry-After
+HIVE_HEARTBEAT_S = 15.0     # ": heartbeat" comment cadence (<= 20 s by contract)
+HIVE_IDLE_CLOSE_S = 600.0   # clients reconnect with Last-Event-ID, nothing is lost
+HIVE_READY_WAIT_S = 20.0    # first collect may scan ssh hosts
+_HIVE: dict = {"feed": None, "streams": 0}
+_HIVE_LOCK = threading.Lock()
+
+
+def hive_feed():
+    """The process-wide feed, created and started on first use."""
+    with _HIVE_LOCK:
+        if _HIVE["feed"] is None:
+            _HIVE["feed"] = H.HiveFeed()
+        feed = _HIVE["feed"]
+    feed.start()
+    return feed
+
+
+def set_hive_feed(feed):
+    """Swap the feed (tests inject a fake collector); -> the previous one."""
+    with _HIVE_LOCK:
+        old, _HIVE["feed"] = _HIVE["feed"], feed
+    return old
+
+
+def hive_streams():
+    return _HIVE["streams"]
+
+
+def _hive_acquire():
+    with _HIVE_LOCK:
+        if _HIVE["streams"] >= HIVE_MAX_STREAMS:
+            return False
+        _HIVE["streams"] += 1
+        return True
+
+
+def _hive_release():
+    with _HIVE_LOCK:
+        _HIVE["streams"] -= 1
 
 
 def config_path():
@@ -255,7 +304,98 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         # accepted and the page should poll; the body says what actually happened.
         return self._json(202, payload)
 
+    def _hive(self, query):
+        try:
+            since = query.get("since", [None])[0]
+            since = None if since is None else int(since)
+        except ValueError:
+            return self._json(400, {"error": "since must be an integer"})
+        feed = hive_feed()
+        if not feed.wait_ready(HIVE_READY_WAIT_S):
+            return self._json(503, {"error": "hive collector warming up", "detail": feed.last_error})
+        return self._json(200, feed.snapshot() if since is None else feed.since(since))
+
+    def _sse(self, data, seq=None, event=None):
+        out = ""
+        if seq is not None:
+            out += f"id: {seq}\n"
+        if event:
+            out += f"event: {event}\n"
+        out += "".join(f"data: {ln}\n" for ln in json.dumps(data).split("\n")) + "\n"
+        self.wfile.write(out.encode())
+        self.wfile.flush()
+
+    def _peer_closed(self):
+        """True once the client hung up (readable + EOF), so an idle stream frees its thread."""
+        try:
+            r, _, _ = select.select([self.connection], [], [], 0)
+            return bool(r) and self.connection.recv(1, 0x2) == b""   # MSG_PEEK
+        except (OSError, ValueError):
+            return True
+
+    def _hive_stream(self, query):
+        if not _hive_acquire():
+            data = json.dumps({"error": "too many hive streams"}).encode()
+            self.send_response(503)
+            self.send_header("Retry-After", "5")
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        try:
+            feed = hive_feed()
+            last = self.headers.get("Last-Event-ID") or query.get("last", [None])[0]
+            try:
+                last = None if last is None else int(last)
+            except ValueError:
+                last = None
+            if not feed.wait_ready(HIVE_READY_WAIT_S):
+                return self._json(503, {"error": "hive collector warming up"})
+            self.protocol_version = "HTTP/1.1"   # route-local: stream stays open until close
+            self.close_connection = True
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Connection", "close")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            self.wfile.flush()
+            first = feed.since(last) if last is not None else None
+            if first and first["type"] == "delta":
+                for fr in first["events"]:
+                    self._sse(fr, fr["seq"], "delta")
+                last = first["to"]
+            else:
+                snap = first["snapshot"] if first else feed.snapshot()
+                self._sse(snap, snap["seq"], "snapshot")
+                last = snap["seq"]
+            started = beat = time.monotonic()
+            while True:
+                now = time.monotonic()
+                if now - started > HIVE_IDLE_CLOSE_S or self._peer_closed():
+                    return
+                frames, snap = feed.wait_after(last, min(1.0, max(0.05, HIVE_HEARTBEAT_S - (now - beat))))
+                if snap is not None:
+                    self._sse(snap, snap["seq"], "snapshot")
+                    last, beat = snap["seq"], time.monotonic()
+                for fr in frames:
+                    self._sse(fr, fr["seq"], "delta")
+                    last, beat = fr["seq"], time.monotonic()
+                if time.monotonic() - beat >= HIVE_HEARTBEAT_S:
+                    self.wfile.write(b": heartbeat\n\n")
+                    self.wfile.flush()
+                    beat = time.monotonic()
+        except (BrokenPipeError, ConnectionResetError, TimeoutError, OSError):
+            return   # client went away: drop it, free the thread
+        finally:
+            _hive_release()
+
     def do_GET(self):
+        url = urlsplit(self.path)
+        if url.path == "/api/hive":
+            return self._hive(parse_qs(url.query))
+        if url.path == "/api/hive/stream":
+            return self._hive_stream(parse_qs(url.query))
         if self.path.split("?")[0] == "/api/settings":
             return self._json(200, {"values": current(),
                                     "config_file": _tilde(config_path()),
