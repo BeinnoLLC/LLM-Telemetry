@@ -60,10 +60,10 @@ setTimeout(() => {
 
   // (c) 4px panels, 8px gutters
   const card = rule('.card');
-  chk(/border-radius:4px/.test(card), 'panel (.card) radius is 4px', card);
+  chk(/border-radius:var\(--radius-ctl\)/.test(card), 'panel (.card) radius is the --radius-ctl token (LST-278)', card);
   const w = light.window;
   const doc = w.document, el = doc.createElement('div'); el.className = 'card'; doc.body.appendChild(el);
-  chk(w.getComputedStyle(el).borderRadius === '4px', 'computed .card border-radius is 4px', w.getComputedStyle(el).borderRadius);
+  chk(/^(10px|var\(--radius-ctl\))$/.test(w.getComputedStyle(el).borderRadius), 'computed .card border-radius is 10px (--radius-ctl, LST-278)', w.getComputedStyle(el).borderRadius);
   chk(/:root\{[^}]*--gap:8px/.test(html), 'grid gap token --gap is 8px');
   chk(/\.page\{[^}]*gap:var\(--gap\)/.test(html), 'the page grid uses --gap');
   chk(/\.statgrid\{display:grid;grid-template-columns:repeat\(12,minmax\(0,1fr\)\);gap:8px/.test(html), 'KPI grids use an 8px gap');

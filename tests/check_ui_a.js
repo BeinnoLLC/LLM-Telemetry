@@ -59,7 +59,7 @@ setTimeout(() => {
 
     // ---- status dot ------------------------------------------------------
     const dot = (css.match(/\n \.dot\{[^}]*\}/) || [''])[0];
-    chk(/var\(--z-ok\)/.test(dot) && !/accent2/.test(dot), 'freshness dot is green by default');
+    chk(/var\(--live-dot\)/.test(dot) && !/accent2/.test(dot), 'freshness dot is green by default');
     chk(/\.stamp\.old,> \.stamp\.stale\) > \.dot,[^{]*\.dot\{background:var\(--z-warn\)\}/.test(css), 'dot turns amber when the stamp is old or stale');
 
     // ---- humanised errors -----------------------------------------------
