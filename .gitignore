@@ -26,6 +26,14 @@ venv/
 node_modules/
 tests/node_modules
 
+# Next.js workspace (apps/web, T-0 / LST-281): build output and tool state,
+# never committed. deps stay pinned in package-lock.json instead.
+apps/web/.next/
+apps/web/out/
+*.tsbuildinfo
+apps/web/test-results/
+apps/web/playwright-report/
+
 .DS_Store
 *.png
 !docs/*.png
