@@ -20,8 +20,8 @@
 .hv-node.hot .hv-hex{stroke-width:2.4;filter:drop-shadow(0 0 6px var(--c))}
 .hv-node.idle .hv-hex{stroke-opacity:.6}
 .hv-node.blocked .hv-hex{stroke:var(--z-bad);stroke-dasharray:5 4}
-.hv-node.nodata .hv-hex,.hv-node.nodata .hv-egg{stroke-dasharray:2 4;opacity:.7}
 .hv-egg{fill:var(--card);stroke:var(--c);stroke-width:2.2}
+.hv-node.nodata .hv-hex,.hv-node.nodata .hv-egg{stroke-dasharray:2 4;opacity:.7}
 .hv-uglow{fill:var(--c);opacity:.07}
 .hv-orbit{fill:none;stroke:var(--c);stroke-opacity:.35;stroke-dasharray:4 6}
 .hv-crown{fill:var(--z-warn);stroke:var(--z-warn);stroke-linejoin:round}
@@ -30,9 +30,9 @@
 .hv-fam{font-size:11px;font-weight:700;letter-spacing:.08em;text-anchor:middle}
 .hv-bob{animation:hv-bob 4s ease-in-out infinite}
 @keyframes hv-bob{50%{transform:translateY(-3px)}}
-.hv-white{fill:#fff}.hv-pupil{fill:#111}.hv-shine{fill:#fff}.hv-cheek{fill:#f9a;opacity:.6}
+.hv-white,.hv-shine{fill:var(--fg)}.hv-pupil{fill:var(--bg)}.hv-cheek{fill:var(--z-bad);opacity:.5}
 .hv-line,.hv-x,.hv-brow,.hv-teeth{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.hv-thick{stroke-width:2.6}.hv-red{stroke:#f77}.hv-brow{stroke:#f77;stroke-width:2.4}
+.hv-thick{stroke-width:2.6}.hv-red,.hv-brow{stroke:var(--z-bad)}.hv-brow{stroke-width:2.4}
 .hv-fill{fill:var(--fg);stroke:var(--fg)}
 .hv-lid{fill:var(--card)}
 .hv-zzz{fill:var(--muted);font-size:10px}

@@ -32,7 +32,7 @@ export const hvEggPts = (rx, ry) => [...Array(28)].map((_, i) => {
   return (rx * Math.cos(a) * (1 - .12 * s)).toFixed(1) + ',' + (ry * s).toFixed(1);
 }).join(' ');
 
-// Face as SVG markup: polygons and paths only, never a <circle>.
+// Face as SVG markup: polygons and paths only.
 export function hvFace(r, mood) {
   const ex = r * .36, ey = -r * .14, er = r * .24, my = r * .42, P = (cx, cy, rx, c, n = 12) => `<polygon points="${hvNgon(cx, cy, rx, rx, n)}" class="${c}"/>`;
   if (mood === 'sleep') return `<path d="M${-ex - er},${ey} q${er},${er * .9} ${er * 2},0 M${ex - er},${ey} q${er},${er * .9} ${er * 2},0" class="hv-line"/>${P(0, r * .38, r * .08, 'hv-line', 10)}<text class="hv-zzz" x="${r * .6}" y="${-r * .7}">z</text>`;
