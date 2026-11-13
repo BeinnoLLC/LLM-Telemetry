@@ -10,6 +10,7 @@ import {
 } from './charts.js';
 import { flash, provLogoSvg, render, renderResolution, syncProjFilterUI } from './views.js';
 import { renderFlow } from './flow.js';
+import { hvShow } from './hive.js';
 import { loadLogs, logsInstall } from './drawer.js';
 import { KIND_ORDER, LIVE_MS, REBUILD_MS, fleetKindCounts, kindMeta, renderLive } from './live.js';
 import { DATA, buildAll, installAll } from './main.js';
@@ -988,6 +989,7 @@ export function pickView(v){
   // The logs payload is ~1.3 MB and most visits never open this view, so it
   // is fetched on first navigation rather than with the page.
   if (v === 'Logs') loadLogs();
+  hvShow(v === 'Hive');
   // Re-render the graph AFTER the view is unhidden: the force layout needs the
   // real wrapper size, and while the tab was hidden it measured 0 — which
   // collapsed every node into a single clump in the corner.

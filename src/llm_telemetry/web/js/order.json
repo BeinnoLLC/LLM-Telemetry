@@ -1682,6 +1682,178 @@
       "name": "flowControls"
     },
     {
+      "mod": "hive",
+      "name": "HV_MOODS"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_COL"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_EGG"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_PAD"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_ACTIVE_S"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHooks"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCol"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNgon"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHex"
+    },
+    {
+      "mod": "hive",
+      "name": "hvEggPts"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFace"
+    },
+    {
+      "mod": "hive",
+      "name": "hvProvMark"
+    },
+    {
+      "mod": "hive",
+      "name": "hvShort"
+    },
+    {
+      "mod": "hive",
+      "name": "hvClip"
+    },
+    {
+      "mod": "hive",
+      "name": "hvAct"
+    },
+    {
+      "mod": "hive",
+      "name": "hvUserMood"
+    },
+    {
+      "mod": "hive",
+      "name": "hvModel"
+    },
+    {
+      "mod": "hive",
+      "name": "hvClamp"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFoot"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHit"
+    },
+    {
+      "mod": "hive",
+      "name": "hvOverlaps"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_OFFS"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_LV"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTry"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLayout"
+    },
+    {
+      "mod": "hive",
+      "name": "hvS"
+    },
+    {
+      "mod": "hive",
+      "name": "hvState"
+    },
+    {
+      "mod": "hive",
+      "name": "SVGNS"
+    },
+    {
+      "mod": "hive",
+      "name": "hvEl"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNodeShape"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFaceR"
+    },
+    {
+      "mod": "hive",
+      "name": "hvDrawNode"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSetMood"
+    },
+    {
+      "mod": "hive",
+      "name": "hvStage"
+    },
+    {
+      "mod": "hive",
+      "name": "hvRender"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTabs"
+    },
+    {
+      "mod": "hive",
+      "name": "hvViews"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSetView"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPill"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPoll"
+    },
+    {
+      "mod": "hive",
+      "name": "hvConnect"
+    },
+    {
+      "mod": "hive",
+      "name": "hvStop"
+    },
+    {
+      "mod": "hive",
+      "name": "hvShow"
+    },
+    {
       "mod": "views",
       "name": "SRC_BADGE"
     },
