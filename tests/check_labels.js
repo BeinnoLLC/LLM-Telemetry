@@ -20,7 +20,9 @@ const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,
 const w=dom.window,d=w.document;
 let p=0,f=0; const chk=(ok,l,x)=>{console.log(`  ${ok?'OK  ':'FAIL'} ${l}${x?'  '+x:''}`);ok?p++:f++;};
 setTimeout(()=>{
- for(const v of ['Live','Usage','Cost','Health','Detail'])
+ // LLMTELEMET-277: 'Live' left the chip strip (it just re-rendered Home), so
+ // the Home chip stands in for the live board here.
+ for(const v of ['Home','Usage','Cost','Health','Detail'])
    [...d.querySelectorAll('#views button')].find(b=>b.textContent.trim()===v)
      .dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
  const ids=Object.keys(charts);

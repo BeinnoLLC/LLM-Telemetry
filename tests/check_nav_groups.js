@@ -1,6 +1,9 @@
 // #122: the nav rail groups its views into labelled sections with separators,
 // and — the load-bearing part — a view added later with no explicit group must
 // still appear in the rail rather than being silently dropped.
+// LLMTELEMET-277: the groups were regrouped (Live leads with Home/Life/Flow/
+// Hive); this suite pins the new membership AND the redirect contract — every
+// pre-regroup #/slug, 'live' included, must still resolve to a real view.
 // Loads the BUILT dashboard from examples/reports/dashboard.html.
 const fs = require('fs');
 const path = require('path');
@@ -54,7 +57,7 @@ setTimeout(() => {
     const groups = [...d.querySelectorAll('#navlist .navgroup')];
     const names = groups.map(g => g.dataset.navgroup);
     chk(groups.length >= 2, 'nav renders multiple groups', names.join(','));
-    chk(names[0] === 'Overview', 'first group is Overview', names[0]);
+    chk(names[0] === 'Live', 'first group is Live (LLMTELEMET-277)', names[0]);
 
     // every group carries a heading, and headings come first in the group
     const headed = groups.every(g => {
@@ -80,15 +83,21 @@ setTimeout(() => {
     const missing = real.filter(v => !navViews.includes(v));
     chk(missing.length === 0, 'no view dropped by grouping', missing.join(','));
 
-    // declared membership actually holds
+    // declared membership actually holds (LLMTELEMET-277 regroup)
     const inGroup = (g, v) => !!d.querySelector(`#navlist .navgroup[data-navgroup="${g}"] [data-nav="${v}"]`);
-    chk(inGroup('Overview', 'Home') && inGroup('Overview', 'Flow'),
-        'Overview holds Home/Flow');
-    chk(!d.querySelector('#navlist [data-nav="Live"]'), 'no separate Live rail item (#173: Home is the live board)');
-    chk(inGroup('Analysis', 'Usage') && inGroup('Analysis', 'Cost') && inGroup('Analysis', 'Health'),
-        'Analysis holds Usage/Cost/Health');
-    chk(inGroup('System', 'Settings') && inGroup('System', 'Logs'),
-        'System holds Logs/Settings');
+    chk(inGroup('Live', 'Home') && inGroup('Live', 'Life') && inGroup('Live', 'Flow') && inGroup('Live', 'Hive'),
+        'Live holds Home/Life/Flow/Hive');
+    chk(!d.querySelector('#navlist [data-nav="Live"]'), 'no separate Live rail item (#173: Live is the group, not a view)');
+    chk(inGroup('Usage & Costs', 'Usage') && inGroup('Usage & Costs', 'Cost') &&
+        inGroup('Usage & Costs', 'Prices') && inGroup('Usage & Costs', 'Sessions'),
+        'Usage & Costs holds Usage/Cost/Prices/Sessions');
+    chk(inGroup('Models & Providers', 'Router') && inGroup('Models & Providers', 'Rankings') &&
+        inGroup('Models & Providers', 'Quota') && inGroup('Models & Providers', 'Health'),
+        'Models & Providers holds Router/Rankings/Quota/Health');
+    chk(inGroup('Tasks & Queue', 'Kanban') && inGroup('Tasks & Queue', 'Orchestration'),
+        'Tasks & Queue holds Kanban/Orchestration');
+    chk(inGroup('System', 'Detail') && inGroup('System', 'Logs') && inGroup('System', 'Settings'),
+        'System holds Detail/Logs/Settings');
 
     // ---- the fallback: a brand-new view with no group entry --------------
     // Inject a view the way a future page would, then re-render the nav; it
@@ -113,6 +122,36 @@ setTimeout(() => {
     // and it is last, so it never displaces the declared sections
     const gAfter = [...d.querySelectorAll('#navlist .navgroup')].map(g => g.dataset.navgroup);
     chk(gAfter[gAfter.length - 1] === 'More', 'More group is last', gAfter.join(','));
+
+    // ---- LLMTELEMET-277: every pre-regroup #/slug still resolves ----------
+    // The regroup moved views between groups but renamed and removed none, so
+    // the whole legacy slug set — and the retired 'live' — must each land on a
+    // real .view element, directly or through VIEW_ALIASES.
+    const viewEls = new Set([...d.querySelectorAll('.view')].map(el => el.dataset.view));
+    const legacy = ['home', 'life', 'flow', 'router', 'orchestration', 'kanban', 'quota',
+                    'usage', 'sessions', 'cost', 'prices', 'rankings', 'health',
+                    'detail', 'logs', 'settings', 'live'];
+    const unresolved = [];
+    for (const slug of legacy) {
+      w.location.hash = '#/' + slug;
+      const v = w.eval('viewFromHash()');
+      if (!v || !viewEls.has(v)) unresolved.push(slug + '->' + v);
+    }
+    chk(unresolved.length === 0, 'every legacy #/slug resolves to a real view', unresolved.join(','));
+    w.location.hash = '#/live';
+    w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    chk(w.eval('view') === 'Home', '#/live lands on Home through VIEW_ALIASES', String(w.eval('view')));
+
+    // ---- LLMTELEMET-277: the Hive placeholder is honest -------------------
+    const hive = d.querySelector('.view[data-view="Hive"]');
+    chk(!!hive, 'a Hive placeholder view exists');
+    chk(!!hive && /Hive is coming: parity port of the standalone Hive in progress/.test(hive.textContent),
+        'placeholder carries the coming-soon sentence');
+    const expectedHive = w.location.protocol + '//' + w.location.hostname + ':8790';
+    chk(!!hive && !!hive.querySelector('a[href="' + expectedHive + '"]'),
+        'placeholder links to the standalone Hive at runtime-derived URL ' + expectedHive);
+    chk(!!hive && !hive.querySelector('canvas, table, img, svg'),
+        'placeholder renders text and a link only — no fake data, no simulation');
 
     // ---- active state and badges survived the restructure -----------------
     chk(!!d.querySelector('#navlist [data-nav][aria-current="page"]') ||
