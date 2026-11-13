@@ -268,8 +268,8 @@ def _brain_lines(home, cut):
                 pass
             running = meta.get("status") == "running" and meta.get("query") == q
             if log.exists() and not running:
-                body = [l for l in log.read_text(errors="replace").splitlines()
-                        if l.strip() and not l.startswith("↻ Resumed") and not l.startswith("session_id:")]
+                body = [ln for ln in log.read_text(errors="replace").splitlines()
+                        if ln.strip() and not ln.startswith("↻ Resumed") and not ln.startswith("session_id:")]
                 if body:
                     out.append({"id": "bl:" + asst + ":" + stem + ":r", "at": os.path.getmtime(log), "from": brain, "to": asst,
                                 "kind": "reply", "via": "line", "text": clean(" ".join(body))})
@@ -443,16 +443,16 @@ def user_state(fams, home=None, now=None):
                       "last_user_at": p["last_user_at"], "last_reply_at": p["last_reply_at"],
                       "active_turn": p["turn"], "why": why, "sources": p["sources"], "errors": p["errors"]})
     g, best = "idle", None
-    for l in links:   # freshest transient wins, then question > waiting > idle
-        if l["state"] in ("sending", "reply"):
-            age = now - (l["last_user_at"] if l["state"] == "sending" else l["last_reply_at"])
+    for lk in links:   # freshest transient wins, then question > waiting > idle
+        if lk["state"] in ("sending", "reply"):
+            age = now - (lk["last_user_at"] if lk["state"] == "sending" else lk["last_reply_at"])
             if best is None or age < best[0]:
-                best = (age, l["state"])
+                best = (age, lk["state"])
     if best:
         g = best[1]
-    elif any(l["state"] == "question" for l in links):
+    elif any(lk["state"] == "question" for lk in links):
         g = "question"
-    elif any(l["state"] == "waiting" for l in links):
+    elif any(lk["state"] == "waiting" for lk in links):
         g = "waiting"
     return {"state": g, "at": now, "links": links}
 
