@@ -34,7 +34,8 @@ scheduler units can call either stack with only the interpreter swapped.
 - **Single-writer rule**: Node artifacts go to `LLM_TELEMETRY_NODE_REPORTS_DIR`
   (config key `node_reports_dir`, default `~/.local/share/llm-telemetry/
   reports-node` — a non-production path). The writer REFUSES the Python
-  `reports_dir` and `~/.hermes/reports`; `LLM_TELEMETRY_SHARED_REPORTS=1` is
+  `reports_dir` and `~/.hermes/reports`, and any path inside either (subdirs
+  like `sessions/` hold Python artifacts too); `LLM_TELEMETRY_SHARED_REPORTS=1` is
   the deliberate cutover switch (plan §12) and nothing else.
 
 ## Config port

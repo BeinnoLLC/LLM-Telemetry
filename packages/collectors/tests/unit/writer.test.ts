@@ -125,6 +125,41 @@ describe("single-writer rule: Node never overwrites Python artifacts", () => {
     expect(listDir(hermesReports)).toEqual(before); // untouched, read-only check
   });
 
+  it("refuses any path INSIDE the Python reports dirs, not just the roots", () => {
+    const cfg = new Config();
+    cfg.reports_dir = join(dir, "python-reports");
+    // The Python session-timeline artifacts live at <reports>/sessions/... —
+    // an exact-match guard would wave a subdirectory straight through.
+    expect(() => assertSafeOutDir(join(cfg.reports_dir, "sessions"), cfg)).toThrow(
+      ArtifactWriteError,
+    );
+    expect(() => assertSafeOutDir(expand("~/.hermes/reports/sessions"), new Config())).toThrow(
+      ArtifactWriteError,
+    );
+  });
+
+  it("still allows the reports-node sibling (path boundary, not string prefix)", () => {
+    expect(() =>
+      assertSafeOutDir(
+        expand("~/.local/share/llm-telemetry/reports-node"),
+        new Config(),
+      ),
+    ).not.toThrow();
+  });
+
+  it("refuses a filename descending into a Python dir from an ancestor out dir", () => {
+    const cfg = new Config();
+    cfg.reports_dir = join(dir, "python-reports");
+    // `dir` itself is fine to write to — but not `dir/python-reports/<f>`.
+    expect(() =>
+      writeArtifact(join("python-reports", "sessions", "x.json"), demoPayload(), {
+        outDir: dir,
+        cfg,
+      }),
+    ).toThrow(ArtifactWriteError);
+    expect(listDir(dir)).toEqual([]); // refused before any mkdir or write
+  });
+
   it("LLM_TELEMETRY_SHARED_REPORTS=1 is the deliberate cutover switch", () => {
     const cfg = new Config();
     cfg.reports_dir = join(dir, "python-reports");

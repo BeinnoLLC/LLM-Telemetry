@@ -10,14 +10,15 @@
  *
  * Single-writer rule (plan §13): during the overlap the Node side writes to a
  * SEPARATE output dir (resolveNodeReportsDir, default `…/reports-node`) and
- * this module refuses the Python reports dir and `~/.hermes/reports` outright
+ * this module refuses the Python reports dir and `~/.hermes/reports` — and
+ * any path inside either — outright
  * unless LLM_TELEMETRY_SHARED_REPORTS=1 — the deliberate cutover switch (plan
  * §12 step 2). Nothing here ever overwrites a Python artifact by accident.
  */
 
 import * as fs from "node:fs";
 import * as os from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { expand, get as getConfig, resolveNodeReportsDir, type Config } from "./config.js";
 import { check, type SchemaTag } from "./schemaCheck.js";
 import { stamp } from "./schema.js";
@@ -29,25 +30,48 @@ export class ArtifactWriteError extends Error {
   }
 }
 
-function samePath(a: string, b: string): boolean {
-  return resolve(a) === resolve(b);
+/** True when `child` is `parent` itself or lives inside it. Path-aware, not a
+ * string prefix: `…/reports-node` is NOT inside `…/reports`. */
+function isInside(child: string, parent: string): boolean {
+  const rel = relative(resolve(parent), resolve(child));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
-/** Refuse output dirs that belong to the Python stack. Checked BEFORE any
- * filesystem side effect, so a refused write touches nothing. */
+function forbiddenRoots(cfg: Config): string[] {
+  return [cfg.reports_dir, expand("~/.hermes/reports")];
+}
+
+function refuse(path: string): never {
+  throw new ArtifactWriteError(
+    `refusing to write into ${resolve(path)}: that is a Python-stack ` +
+      `reports dir (single-writer rule, migration plan §13). Point ` +
+      `LLM_TELEMETRY_NODE_REPORTS_DIR at a separate dir; set ` +
+      `LLM_TELEMETRY_SHARED_REPORTS=1 only at cutover (plan §12).`,
+  );
+}
+
+/** Refuse output dirs that belong to the Python stack — the dir ITSELF or any
+ * path inside it (an exact-match check let `~/.hermes/reports/sessions`
+ * through, which is exactly where the Python session-timeline artifacts
+ * live). Checked BEFORE any filesystem side effect, so a refused write
+ * touches nothing. */
 export function assertSafeOutDir(outDir: string, cfg?: Config): void {
   if (process.env["LLM_TELEMETRY_SHARED_REPORTS"] === "1") return; // cutover switch
   const c = cfg ?? getConfig();
-  const forbidden = [c.reports_dir, expand("~/.hermes/reports")];
-  for (const dir of forbidden) {
-    if (samePath(outDir, dir)) {
-      throw new ArtifactWriteError(
-        `refusing to write into ${resolve(outDir)}: that is a Python-stack ` +
-          `reports dir (single-writer rule, migration plan §13). Point ` +
-          `LLM_TELEMETRY_NODE_REPORTS_DIR at a separate dir; set ` +
-          `LLM_TELEMETRY_SHARED_REPORTS=1 only at cutover (plan §12).`,
-      );
-    }
+  for (const dir of forbiddenRoots(c)) {
+    if (isInside(outDir, dir)) refuse(outDir);
+  }
+}
+
+/** The resolved artifact path must not land inside a Python-stack dir either:
+ * an out dir ABOVE a forbidden root plus a `filename` descending into it
+ * (e.g. `sessions/<profile>/<id>.json`) would otherwise slip past the out-dir
+ * check and overwrite a Python artifact. */
+export function assertSafeTarget(target: string, cfg?: Config): void {
+  if (process.env["LLM_TELEMETRY_SHARED_REPORTS"] === "1") return; // cutover switch
+  const c = cfg ?? getConfig();
+  for (const dir of forbiddenRoots(c)) {
+    if (isInside(target, dir)) refuse(target);
   }
 }
 
@@ -73,11 +97,12 @@ export function writeArtifact(
 ): WriteResult {
   const outDir = opts.outDir ?? resolveNodeReportsDir(opts.cfg);
   assertSafeOutDir(outDir, opts.cfg);
+  const target = join(outDir, filename);
+  assertSafeTarget(target, opts.cfg);
   const stamped = stamp(payload);
   if (opts.tag) check(opts.tag, stamped); // before ANY write, like Python
 
   fs.mkdirSync(outDir, { recursive: true });
-  const target = join(outDir, filename);
   const tmp = target + ".tmp"; // the Python collectors' convention
   try {
     // Compact separators + Date->string replacer: parity with the Python
