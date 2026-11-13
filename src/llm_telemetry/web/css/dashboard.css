@@ -241,7 +241,7 @@
  /* Freshness dot: green while the feed is fresh, amber once its stamp is old or stale. */
  .dot{width:7px;height:7px;border-radius:50%;background:var(--live-dot);box-shadow:var(--glow-live);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
- :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn)}
+ :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn);box-shadow:none}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
  /* Responsive grid helpers */
  .grid-auto{display:grid;gap:var(--gap);
@@ -2284,9 +2284,6 @@ canvas, img {
 /* forced-colors: gradient text would vanish, fall back to system text */
 @media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}}
 
-/* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
-   rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
-   light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
 /* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
    rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
    light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */

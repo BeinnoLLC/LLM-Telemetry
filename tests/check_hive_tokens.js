@@ -40,13 +40,14 @@ const D = { bg: '#05060a', fg: '#f5f5f5', muted: '#8a8f9a', card: '#0f1118', bor
 for (const [k, v] of Object.entries(D)) chk((tok(dark, k) || '').toLowerCase() === v, `dark --${k} is the Hive ${v}`, tok(dark, k));
 chk(/--radius-ctl:10px/.test(tokens), '--radius-ctl is 10px');
 chk(/Inter,/.test(tokens), 'font stack leads with Inter');
-chk(/--grad-title:linear-gradient\(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66\)/.test(dark), 'dark title gradient is #6cf,#f6c,#7f9,#fc6');
+chk(/--grad-title:linear-gradient\(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66,#66ccff\)/.test(dark), 'dark title gradient is #6cf,#f6c,#7f9,#fc6, first stop repeated (cyclic)');
 chk(/font-variant-numeric:var\(--num\)/.test(dash), 'body uses tabular numbers');
 // no hard-coded hex colour inside component rules (comments stripped)
 const code = dash.replace(/\/\*[\s\S]*?\*\//g, '');
 const hex = code.match(/[:(,]\s*#[0-9a-fA-F]{3,8}(?=[;,)\s}!])/g) || [];
 chk(hex.length === 0, 'no hard-coded hex colours in dashboard.css rules', hex.slice(0, 5).join(' '));
 // reduced motion
+chk(/\.dot\{background:var\(--z-warn\);box-shadow:none\}/.test(dash), 'stale/old dot drops the live glow');
 chk(/prefers-reduced-motion:reduce\)\{\s*#appbar \.ab-title[^}]*animation:none/.test(dash), 'reduced motion stops the title gradient animation');
 chk(/prefers-reduced-motion:reduce\)\{[\s\S]*?\.dot[^}]*animation:none;box-shadow:none/.test(dash), 'reduced motion stops the live-dot pulse and glow');
 console.log(`\n${pass} passed, ${fail} failed`);

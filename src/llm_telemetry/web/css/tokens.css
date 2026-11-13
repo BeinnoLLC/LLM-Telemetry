@@ -47,7 +47,7 @@
  *          bad 5.53 (warn was 3.40, ok 4.41). --accent2 2.94->3.24 and --pal-amber
  *          2.95->3.24 (graphics on white card). Other --pal-* on card: indigo 3.56,
  *          rose 3.61, slate 3.81, mint 3.16 (all >=3).
- *   DARK   fg 10.9 / muted 5.39 / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
+ *   DARK   fg 10.9 / muted 5.82 (6.25 on page bg #05060a) / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
  *          z-warn 7.03, z-bad 4.67 as text; --pal-* on card 4.84-8.54: all pass, unchanged.
  *   KNOWN, not fixable in tokens alone: --z-*-fg is used both as text on the card
  *          (dark: fine, 10+) and as text on a solid --z-* fill (.navbadge.alert).
@@ -77,7 +77,7 @@
   --live-dot:#1a7f3c;
   --glow-live:0 0 0 2px rgba(26,127,60,.18);
   --glow-active:0 0 0 1px var(--active-a),0 0 10px rgba(31,98,201,.28);
-  --grad-title:linear-gradient(90deg,#0b6fb3,#b0287a,#1a7f3c,#8a5a00);
+  --grad-title:linear-gradient(90deg,#0b6fb3,#b0287a,#1a7f3c,#8a5a00,#0b6fb3);
 
   /* pastel washes on white cards */
   --wash-indigo:rgba(99,110,164,.12);
@@ -138,7 +138,6 @@
    surfaces with it. */
 :root{
   --radius-ctl:10px;
-  --radius-sm:var(--radius-ctl);
   --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --num:tabular-nums;
   --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
@@ -152,14 +151,14 @@
 }
 
 [data-theme="dark"]{
-  /* base surfaces: Grafana neutral blue-grey night values */
+  /* base surfaces: Hive neutral blue-grey night values */
   --bg:#05060a;
   --card:#0f1118;
   --fg:#f5f5f5;
   --muted:#8a8f9a;
   --border:#1d2130;
   --border-input:#6b6e78;        /* control boundaries: 3.4:1 on the card (WCAG 1.4.11) */
-  /* the single calm accent: Grafana blue */
+  /* the single calm accent: Hive periwinkle blue */
   --accent:#88aaff;
   --accent-ink:#05060a;          /* text/icon on accent fills */
   --accent-wash:rgba(136,170,255,.14);
@@ -169,8 +168,8 @@
   --live-dot:#55ff88;
   --glow-live:0 0 8px 2px rgba(85,255,136,.55);
   --glow-active:0 0 0 1px var(--active-a),0 0 12px rgba(85,255,136,.35);
-  --grad-title:linear-gradient(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66);
-  --accent2:#b877d9;             /* muted steel blue — charts' secondary */
+  --grad-title:linear-gradient(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66,#66ccff);
+  --accent2:#b877d9;             /* muted violet — charts' secondary */
 
   /* calm pastel washes (family/role colours, ~4-7% alpha tints) */
   --wash-indigo:rgba(87,148,242,.14);
