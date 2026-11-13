@@ -310,6 +310,9 @@ export function hvTabs(model) {
 export function hvViews(model) {
   const el = $('hive-views'); if (!el) return;
   const V = [['all', 'All families'], ...model.fams.map(f => [f.id, f.label])];
+  const k = JSON.stringify(V) + '|' + hvS.view;
+  if (el.dataset.k === k) return;   // same roster + selection: keep the buttons (and focus) across refreshes
+  el.dataset.k = k;
   el.innerHTML = V.map(([id, l]) => `<button type="button" class="seg-btn${id === hvS.view ? ' on' : ''}" data-hv="${esc(id)}" aria-pressed="${id === hvS.view}">${esc(l)}</button>`).join('');
 }
 export function hvSetView(v) {
@@ -327,17 +330,24 @@ export function hvPill(live, text) {
 async function hvPoll() {
   try {
     const r = await fetch('/api/hive'); if (!r.ok) throw new Error(r.status);
-    hvRender(await r.json()); hvPill(true, 'live · polling');
+    hvRender(await r.json()); hvPill(true, hvS.es ? 'live' : 'live · polling');
   } catch (_) { hvPill(false, 'reconnecting…'); }
 }
 export function hvConnect() {
   if (hvS.es || hvS.timer) return;
+  // The /api/hive refresher runs in every mode: the stream only speaks when
+  // something changed and closes idle after 10 minutes, but the moods, states
+  // and counters on the faces must keep following real data either way.
+  hvS.timer = setInterval(hvPoll, 5000);
+  hvPoll();
   if (typeof EventSource === 'function') {
     const es = hvS.es = new EventSource('/api/hive/stream');
     es.addEventListener('snapshot', e => { hvRender(JSON.parse(e.data)); hvPill(true, 'live'); });
-    es.addEventListener('delta', () => hvPill(true, 'live'));
-    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); hvS.es = null; hvS.timer = setInterval(hvPoll, 5000); hvPoll(); };
-  } else { hvS.timer = setInterval(hvPoll, 5000); hvPoll(); }
+    // A delta frame is proof real state changed: refresh the snapshot at once
+    // (H-7 applies the event frames directly). Never just acknowledge it.
+    es.addEventListener('delta', () => { hvPill(true, 'live'); hvPoll(); });
+    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); hvS.es = null; };
+  }
 }
 export function hvStop() {
   if (hvS.es) { hvS.es.close(); hvS.es = null; }

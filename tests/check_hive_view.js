@@ -20,7 +20,13 @@ const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true
     w.Chart.defaults = { color: '', borderColor: '', font: {}, plugins: { legend: { labels: { generateLabels: () => [] } } } };
     w.Chart.overrides = { doughnut: { plugins: { legend: { labels: { generateLabels: () => [] } } } } };
     w.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {} });
-    w.fetch = () => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    w.__fetches = [];
+    w.fetch = u => { w.__fetches.push(String(u)); return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) }); };
+    w.EventSource = class {   // tiny fake so the live-feed contract below can be asserted
+      constructor(u) { this.url = String(u); this.listeners = {}; w.__es = this; }
+      addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); }
+      close() {}
+    };
     Object.defineProperty(w.HTMLElement.prototype, 'offsetHeight', { get() { return 700; } });
     w.HTMLElement.prototype.getBoundingClientRect = function () { return { width: W, height: H, top: 0, left: 0, right: W, bottom: H }; };
   } });
@@ -47,6 +53,21 @@ setTimeout(() => {
     d.querySelector('#hive-views [data-hv=acasia]').click();
     chk(w.localStorage.getItem('hiveView') === 'acasia' && nodes().length === 2, 'choosing a family persists and filters', String(nodes().length));
     chk(d.querySelectorAll('#hive-tabs .hv-stat').length === 7, 'seven stat tabs');
+
+    // ---- live-feed contract: the graph must follow real data (review fix) ----
+    w.eval('hvConnect()');
+    const es = w.__es;
+    chk(!!es && /\/api\/hive\/stream$/.test(es.url), 'the Hive tab opens the /api/hive/stream feed');
+    const n0 = w.__fetches.length;
+    (es ? es.listeners.delta || [] : []).forEach(fn => fn({}));
+    chk(w.__fetches.length === n0 + 1 && w.__fetches[n0] === '/api/hive',
+        'a delta frame refreshes the snapshot from /api/hive (no frozen graph)');
+    const btn = d.querySelector('#hive-views [data-hv="all"]');
+    w.eval('hvRender(' + JSON.stringify(snap) + ')');
+    chk(d.querySelector('#hive-views [data-hv="all"]') === btn, 'a re-render keeps the view switcher buttons in place');
+    w.eval('hvSetView("all")');
+    (es ? es.listeners.snapshot || [] : []).forEach(fn => fn({ data: JSON.stringify(snap) }));
+    chk(nodes().length === 6, 'an SSE snapshot renders through the same keyed path', String(nodes().length));
   } catch (e) { chk(false, 'render threw', e.stack); }
   console.log(`${p} passed, ${f} failed`); process.exit(f ? 1 : 0);
 }, 800);
