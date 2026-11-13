@@ -5,7 +5,8 @@
   "description": "Frontend linting for the dashboard's web/ sources. Development-only: the shipped artifact is static files plus stdlib Python, and nothing here is imported at runtime. See P2-05 (#29).",
   "type": "module",
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "packages/collectors"
   ],
   "scripts": {
     "lint": "npm run lint:js && npm run lint:css && npm run lint:inline-sized",

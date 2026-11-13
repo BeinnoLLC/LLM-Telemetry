@@ -1,0 +1,23 @@
+{
+  "name": "@llm-telemetry/collectors",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node port of the LLM-Telemetry collectors: CLI skeleton, atomic artifact writer (schema_version + schema_check parity), config port and scheduler unit templates. T-4 (LST-283) of docs/plans/node-nextjs-migration.md; every collector command is a stub ('not yet ported') until its T-ticket lands.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.2",
+    "vitest": "5.1.0"
+  }
+}
