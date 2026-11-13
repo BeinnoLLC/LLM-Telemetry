@@ -136,6 +136,21 @@ describe("config port (parity with src/llm_telemetry/config.py)", () => {
     expect(def).not.toBe(new Config().reports_dir); // never the Python default
   });
 
+  it("expand keeps UNSET env vars literal (os.path.expandvars parity)", () => {
+    // Python's expandvars leaves an undefined variable as literal text; a
+    // naive empty-string substitution silently redirects "$TYPO/reports" to
+    // the absolute "/reports".
+    setEnv("LLM_TELEMETRY_TEST_UNSET_EXPAND", undefined);
+    expect(expand("$LLM_TELEMETRY_TEST_UNSET_EXPAND/reports")).toContain(
+      "$LLM_TELEMETRY_TEST_UNSET_EXPAND/reports",
+    );
+    expect(expand("${LLM_TELEMETRY_TEST_UNSET_EXPAND}/reports")).toContain(
+      "${LLM_TELEMETRY_TEST_UNSET_EXPAND}/reports",
+    );
+    setEnv("LLM_TELEMETRY_TEST_UNSET_EXPAND", "/resolved");
+    expect(expand("$LLM_TELEMETRY_TEST_UNSET_EXPAND/reports")).toBe("/resolved/reports");
+  });
+
   it("python reports_dir default resolves identically (migration plan §14.6)", () => {
     expect(new Config().reports_dir).toBe(expand("~/.local/share/llm-telemetry/reports"));
     const cfg = load(join(dir, "missing-config.json")); // falls through to defaults

@@ -28,9 +28,13 @@ export function expand(p: string): string {
   // os.path.expanduser + os.path.expandvars + os.path.abspath, in that order.
   const home = os.homedir();
   let out = p.replace(/^~(?=$|[/\\])/, home);
-  out = out.replace(/\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, (_m, braced, bare) => {
+  out = out.replace(/\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, (m, braced, bare) => {
     const name = (braced ?? bare) as string;
-    return process.env[name] ?? "";
+    const val = process.env[name];
+    // os.path.expandvars parity: an UNSET variable stays literal. Substituting
+    // "" (the naive port) silently redirects e.g. "$TYPO/reports" to the
+    // absolute "/reports"; Python leaves the literal text in place.
+    return val === undefined ? m : val;
   });
   return isAbsolute(out) ? resolvePath(out) : resolvePath(process.cwd(), out);
 }
