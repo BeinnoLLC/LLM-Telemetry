@@ -91,6 +91,20 @@ def test_parse_fleet_spec():
     assert set(s["bots"]) == {"git", "missing"} and s["bots"]["git"]["display"] == "Git Bot"
 
 
+def test_parse_fleet_spec_inline_flow_mappings():
+    s = hive.parse_fleet_spec(
+        "family: pv\norchestrators:\n"
+        "  - {project: pixelvent-launchpad, name: pixelvent-launchpad-brain, folder: /x/pl}\n"
+        "  - {project: 'a, b', name: \"q-brain\", display: 'Hi: there, you', assistant: false}\n"
+        "  - {project: pal, name: pv-pal, assistant: true}  # c\n"
+        "bots:\n  git:\n    display: G\n")
+    o = s["orchestrators"]
+    assert [x["name"] for x in o] == ["pixelvent-launchpad-brain", "q-brain", "pv-pal"]
+    assert o[0]["project"] == "pixelvent-launchpad" and o[0]["folder"] == "/x/pl"
+    assert o[1]["project"] == "a, b" and o[1]["display"] == "Hi: there, you" and o[1]["assistant"] is False
+    assert o[2]["assistant"] is True and set(s["bots"]) == {"git"}
+
+
 def test_load_families_roster(home):
     (fam,) = hive.load_families(home)
     assert fam["id"] == "acme" and fam["label"] == "Acme Co"

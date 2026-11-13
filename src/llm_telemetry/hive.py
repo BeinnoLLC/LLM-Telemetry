@@ -64,6 +64,61 @@ def _scalar(v):
     return v
 
 
+def _flow_pairs(body):
+    """Split the inside of a ``{...}`` flow mapping into (key, value) pairs; commas and
+    colons inside single/double quotes (or nested braces/brackets) do not split."""
+    parts, buf, quote, depth = [], [], None, 0
+    for ch in body:
+        if quote:
+            buf.append(ch)
+            if ch == quote:
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+            buf.append(ch)
+        elif ch in "{[":
+            depth += 1
+            buf.append(ch)
+        elif ch in "}]":
+            depth -= 1
+            buf.append(ch)
+        elif ch == "," and depth == 0:
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    parts.append("".join(buf))
+    pairs = []
+    for part in parts:
+        quote, idx = None, -1
+        for i, ch in enumerate(part):
+            if quote:
+                quote = None if ch == quote else quote
+            elif ch in "'\"":
+                quote = ch
+            elif ch == ":" and (i + 1 == len(part) or part[i + 1] in " \t"):
+                idx = i
+                break
+        if idx > 0:
+            pairs.append((_scalar(part[:idx]), part[idx + 1:].strip()))
+    return pairs
+
+
+def _flow_map(line):
+    """Parse ``{k: v, ...}`` into a dict, or None when ``line`` is not a flow mapping."""
+    line = line.strip()
+    if line.startswith("{") and "}" in line:
+        line = line[:line.rindex("}") + 1]  # drop a trailing "# comment"
+    if not (line.startswith("{") and line.endswith("}")):
+        return None
+    return {k: v for k, v in _flow_pairs(line[1:-1])}
+
+
+def _typed(val):
+    val = _scalar(val)
+    return (val.lower() == "true") if val.lower() in ("true", "false") else val
+
+
 def parse_fleet_spec(text):
     """Minimal reader for the fleet YAML subset Hive needs (no PyYAML): top-level scalars,
     the ``orchestrators:`` list of flat mappings, and ``bots:`` -> name -> display."""
@@ -86,6 +141,10 @@ def parse_fleet_spec(text):
             if line.startswith("- "):
                 orch.append({})
                 line = line[2:].strip()
+                flow = _flow_map(line)
+                if flow is not None:
+                    orch[-1].update({k: _typed(v) for k, v in flow.items() if v})
+                    continue
             if orch and ":" in line and indent <= 4 + (2 if raw.lstrip().startswith("- ") else 0):
                 k, _, v = line.partition(":")
                 if v.strip() and not v.strip().startswith(("&", "|", ">")):
