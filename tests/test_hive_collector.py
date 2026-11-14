@@ -255,3 +255,13 @@ def test_collect_real_scan_smoke(home):
     snap = hive.collect(home, hosts=[])
     json.dumps(snap)
     assert snap["hosts"][0]["name"] == "local"
+
+
+def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
+    now = time.time()
+    first = hive.collect(home, now=now, scan=False, hosts=[])
+    assert "acme:t4" in first["tasks"]
+    monkeypatch.setattr(hive, "read_board", lambda h, b: None)   # sqlite hiccup this tick
+    again = hive.collect(home, now=now + 5, scan=False, hosts=[])
+    assert "acme:t4" in again["tasks"] and again["families"][0]["brains"][0]["counts"]["done"] == 1
+    assert hive.diff_tasks(first["tasks"], again["tasks"]) == []   # no phantom events from the hiccup

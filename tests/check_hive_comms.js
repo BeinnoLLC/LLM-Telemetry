@@ -79,17 +79,37 @@ const snap = { at: 1000, seq: 5, user: { state: 'idle' }, comms: [],
   }
   chk(H.hvClip('short', 48) === 'short' && H.hvClip('y'.repeat(60), 48).length === 48, 'hvClip leaves short text and caps long text at 48');
   {
-    const was = C.bt.size; H.hvBubble('a:root', 'tmp', 'v', 'root'); const ft = C.ft;
+    const was = C.bt.size; H.hvBubble('a:root', 'tmp', 'v', 'root'); 
     chk(C.bt.size === was + 1, 'a bubble registers its removal timer');
     C.fire = true; H.hvPlayComm({ id: 'ft1', at: 995, from: 'donna', to: 'llm-telemetry-brain', kind: 'ask', via: 'line', text: 'any update?' });
-    chk(C.ft && C.ft !== ft, 'firing mode registers the 280 ms delay timer');
+    chk(C.ft.size === 1, 'firing mode registers the 280 ms delay timer in the set');
    
     H.hvStop(); S.show = true;
+    chk(C.ft.size === 0, 'hvStop empties the firing timer set');
     chk(C.bt.size === 0, 'hvStop cancels bubble removal timers');
     // the cancelled delay never blasts: no bolt packet appears afterwards
     S.last = {}; await new Promise(r => realST(r, 350));
     chk(!('blast' in S.last), 'hvStop cancels the 280 ms firing delay (no blast afterwards)', Object.keys(S.last));
     C.fire = false; box.innerHTML = ''; document.getElementById('hive-pk').innerHTML = '';
+  }
+  {
+    // two firing comms 100 ms apart must both blast: the second must not cancel the first's pending delay
+    const pk = document.getElementById('hive-pk'); pk.innerHTML = ''; C.fire = true;
+    let made = 0; const obs = new w.MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.tagName === 'polygon') made++; }))); obs.observe(pk, { childList: true });   // a packet may be removed again at once when rAF is absent
+    const c1 = { id: 'ft2', at: 995, from: 'donna', to: 'llm-telemetry-brain', kind: 'ask', via: 'line', text: 'one' };
+    H.hvPlayComm(c1); await new Promise(r => realST(r, 100)); H.hvPlayComm({ ...c1, id: 'ft3', text: 'two' });
+    chk(C.ft.size === 2, 'two firing comms hold two pending delay timers', C.ft.size);
+    await new Promise(r => realST(r, 330));
+    await new Promise(r => realST(r, 0));
+    chk(made >= 2, 'both firing comms produced a bolt packet', made);
+    chk(C.ft.size === 0, 'fired delay timers delete themselves from the set', C.ft.size);
+    S.last = {}; made = 0;
+    H.hvPlayComm({ ...c1, id: 'ft4' }); await new Promise(r => realST(r, 100)); H.hvPlayComm({ ...c1, id: 'ft5' });
+    H.hvStop(); S.show = true; await new Promise(r => realST(r, 450));
+    await new Promise(r => realST(r, 0));
+    chk(C.ft.size === 0 && made === 0 && !('blast' in S.last), 'hvStop cancels both pending firing delays', [C.ft.size, made]);
+    obs.disconnect();
+    C.fire = false; box.innerHTML = ''; pk.innerHTML = '';
   }
 
   // ---- every comm kind renders (F38) + pending chip ----

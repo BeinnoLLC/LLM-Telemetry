@@ -8957,9 +8957,15 @@ const HV_ACTIVE_S = 300;
 const HV_COMPACT = .62;
 const hvHooks = {onClick: null, onRender: null};
 
+const hvColMemo = {theme: null, map: new Map()};
 const hvCol = f => {
+ const th = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || '' : '';
+ if (th !== hvColMemo.theme) { hvColMemo.map.clear(); hvColMemo.theme = th; }
+ let c = hvColMemo.map.get(f); if (c) return c;
  let v = ''; try { v = getComputedStyle(document.documentElement).getPropertyValue('--hv-fam-' + f).trim(); } catch (_) { /* no DOM */ }
- return v || ('hsl(' + [...String(f)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7) + ',70%,62%)');
+ c = v || ('hsl(' + [...String(f)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7) + ',70%,62%)');
+ if (v) hvColMemo.map.set(f, c);
+ return c;
 };
 const hvNgon = (cx, cy, rx, ry, n = 12) => [...Array(n)].map((_, i) => {
  const a = Math.PI * 2 * i / n;
@@ -9434,7 +9440,7 @@ function hvStop() {
  if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
  if (hvS.es) { hvS.es.close(); hvS.es = null; }
  if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
- hvC.rt.forEach(clearTimeout); hvC.rt = []; hvC.bt.forEach(clearTimeout); hvC.bt.clear(); clearTimeout(hvC.ft); clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+ hvC.rt.forEach(clearTimeout); hvC.rt = []; hvC.bt.forEach(clearTimeout); hvC.bt.clear(); hvC.ft.forEach(clearTimeout); hvC.ft.clear(); clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 function hvShow(on) {
@@ -9631,9 +9637,10 @@ function hvWrap(t, w = 34, max = 3) {
 const hvVia = (c, o) => (o.replay ? 'replay · ' + ago(Math.max(0, o.now - c.at)) + ' ago · ' : '') + (o.project ? o.project.toUpperCase() + ' · ' : '')
  + `${hvWho(c.from, o.pm, o.lbl)} → ${hvWho(c.to, o.pm, o.lbl)} · ${c.via}${c.task ? ' · ' + c.task.slice(0, 30) : ''}`;
 
-const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], bt: new Set(), ft: 0, pollAt: 0, retry: 0};
+const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], bt: new Set(), ft: new Set(), pollAt: 0, retry: 0};
 const hvHas = id => !!hvS.nodes[id];
 const hvNLabel = id => hvS.nodes[id] && hvS.nodes[id].label;
+const hvFamId = id => id === 'hazem' ? 'root' : String(id).split(':')[1];
 const hvInView = (c, view, snap) => {
  const pm = hvPmap(snap), a = hvResolve(c.from, c.board, snap, hvHas, pm), b = hvResolve(c.to, c.board, snap, hvHas, pm);
  return view === 'all' || [a, b].some(x => x && hvFamId(x) === view) || hvFamOf(c.from) === view || hvFamOf(c.to) === view;
@@ -9660,6 +9667,7 @@ function hvPuff(id, cls, n = 0, v = 120, fam = '') {
 }
 const hvBump = v => { hvC.bump = hvClamp(hvC.bump + v, -.3, .4); };
 
+const HV_VIA_MAX = 48;
 function hvBubble(id, text, via, fam, ms = 5200) {
  const n = hvS.nodes[id], box = $('hive-bubbles'); if (!n || n.x == null || !text || !box) return null;
  while (box.children.length >= 2) box.firstChild.remove();
@@ -9686,7 +9694,7 @@ function hvPlayComm(c, {replay = false} = {}) {
  };
  if (!ev) hvSay(c.from, `${who(c.from)} ${c.kind === 'reply' ? 'reports to' : c.kind === 'comment' ? 'notes for' : 'asks'}${c.to && c.to !== 'board' ? ' ' + who(c.to) : ''}: ${words(16)}`, pj, hvLvOf(hvS.a), '');
  if (!b || b === a) { hvSetMood(a, 'talk', 2500); arrive(); return true; }
- if (fire) { hvSetMood(a, 'fire', 1400); hvPlay('charge'); clearTimeout(hvC.ft); hvC.ft = setTimeout(() => { hvPlay('blast', fam); hvPacket(a, b, fam, {bolt: true, then: arrive}); }, 280); }
+ if (fire) { hvSetMood(a, 'fire', 1400); hvPlay('charge'); const ft = setTimeout(() => { hvC.ft.delete(ft); hvPlay('blast', fam); hvPacket(a, b, fam, {bolt: true, then: arrive}); }, 280); hvC.ft.add(ft); }
  else { hvSetMood(a, 'talk', 2000); hvPacket(a, b, fam, {then: arrive}); }
  return true;
 }
