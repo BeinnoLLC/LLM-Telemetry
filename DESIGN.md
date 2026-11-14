@@ -951,7 +951,7 @@ scream audio, raw colours, letters as provider marks.
 
 ### Standalone Hive page (read-only reference)
 
-`/home/hazemhagrass/workspace/beinno/hive/index.html` (2,455 lines, one inline `<style>`,
+`~/workspace/beinno/hive/index.html` (2,455 lines, one inline `<style>`,
 not in git) is the standalone `beinno-hive` page. **READ ONLY — never edit it and never
 restart the `beinno-hive` service.** It is reference material for the in-app Hive tab only.
 
@@ -1201,7 +1201,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     `hive.js:194` `hvRgb`; map the four families to `--hv-fam-<id>`, hash colour only as a
     documented fallback. *ticket: LLMTELEMET-329*
 25. **Standalone Hive drifts from tokens.css, no light theme** — med —
-    `/home/hazemhagrass/workspace/beinno/hive/index.html`: `#2a2f40`/`#9aa4b8` (line 189),
+    `~/workspace/beinno/hive/index.html`: `#2a2f40`/`#9aa4b8` (line 189),
     `Impact,"Arial Black"` (line 121), 9 radius one-offs, font stack missing `Roboto`,
     4 variables vs 60+ tokens, permanently dark. Reconcile during the Hive move
     (LLMTELEMET-267/H-9); light theme out of scope unless Hazem asks. *ticket: LLMTELEMET-330*
