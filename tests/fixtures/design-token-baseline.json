@@ -330,6 +330,31 @@
     "matched": "hsl(, hsl("
   },
   {
+    "path": "src/llm_telemetry/web/js/charts.js",
+    "line": 338,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/charts.js",
+    "line": 355,
+    "matched": "#c66a6a, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/drawer.js",
+    "line": 800,
+    "matched": "#c4a06e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/drawer.js",
+    "line": 801,
+    "matched": "#64748b"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/drawer.js",
+    "line": 802,
+    "matched": "hsl("
+  },
+  {
     "path": "src/llm_telemetry/web/js/flow.js",
     "line": 125,
     "matched": "#5b6472"
@@ -363,6 +388,221 @@
     "path": "src/llm_telemetry/web/js/hive.js",
     "line": 194,
     "matched": "rgb("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/live.js",
+    "line": 293,
+    "matched": "#F09082, #4D9ABF, #F1BE58"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/live.js",
+    "line": 308,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/live.js",
+    "line": 384,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/live.js",
+    "line": 426,
+    "matched": "#888"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/live.js",
+    "line": 1005,
+    "matched": "#128266, #128263"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/main.js",
+    "line": 30,
+    "matched": "#888"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 17,
+    "matched": "#5794f2, #73bf69, #ff9830, #b877d9, #f2cc0c, #8ab8ff, #f2495c, #705da0, #37872d, #fade2a"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 51,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 106,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 116,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 148,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 230,
+    "matched": "#c4a06e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 231,
+    "matched": "#5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 232,
+    "matched": "#818cb4"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 233,
+    "matched": "#9a86b8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 234,
+    "matched": "#7fa3b5"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 235,
+    "matched": "#7c909c"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 236,
+    "matched": "#c47c8c"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 237,
+    "matched": "#a8a29e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 238,
+    "matched": "#baa984"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 239,
+    "matched": "#84a893"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 240,
+    "matched": "#6b7280"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 242,
+    "matched": "#6b7280"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 471,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 480,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/palette.js",
+    "line": 485,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/router.js",
+    "line": 423,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/router.js",
+    "line": 453,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/router.js",
+    "line": 1101,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 38,
+    "matched": "#d97757"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 39,
+    "matched": "#10a37f"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 40,
+    "matched": "#10a37f"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 41,
+    "matched": "#4f8df5"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 42,
+    "matched": "#5b9cf6"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 43,
+    "matched": "#38bdf8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 44,
+    "matched": "#8b5cf6"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 45,
+    "matched": "#a3a3a3"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 46,
+    "matched": "#7c6cf2"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 47,
+    "matched": "#4d6bfe"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 48,
+    "matched": "#eab308"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 49,
+    "matched": "#ff663d"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 50,
+    "matched": "#f472b6"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/routerview.js",
+    "line": 53,
+    "matched": "#8b98ab"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
