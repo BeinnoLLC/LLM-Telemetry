@@ -151,6 +151,22 @@ const snap = { at: 1000, seq: 5, user: { state: 'idle' }, comms: [],
   fetched.length = 0; H.hvState.es = {}; await H.hvPoll();
   chk(fetched.length === 1 && fetched[0] === '/api/hive', 'with a live stream the poll is a plain snapshot refresh');
 
+  // ---- review fixes: confetti colour, event guard, replay timers, poll debounce ----
+  document.getElementById('hive-pk').innerHTML = '';
+  const conf = [], mo = new w.MutationObserver(rs => rs.forEach(r => r.addedNodes.forEach(n => { if (n.classList && n.classList.contains('hv-p') && n.classList.contains('conf')) conf.push(n); })));
+  mo.observe(document.getElementById('hive-pk'), { childList: true });
+  H.hvPlayEvent({ ...ev, status: 'done' });
+  await new Promise(r => realST(r, 100)); mo.disconnect();
+  chk(conf.length > 0 && conf.every(e => /^(#|hsl)/.test(e.style.getPropertyValue('--c'))), 'done confetti carry the conf class and a family colour in --c', conf.length);
+  let threw = null; try { H.hvPlayComm({ id: 'g1', from: 'coder', to: 'llm-telemetry-brain', board: 'llm-telemetry', kind: 'event', via: 'line', at: 999 }); } catch (e) { threw = e; }
+  chk(!threw && !/undefined/.test(document.getElementById('hive-bubbles').textContent), 'an event comm with no event or text neither throws nor shows undefined', threw && threw.message);
+  C.log.length = 0; for (let i = 0; i < 12; i++) C.log.push(mk('q' + i, { at: 900 + i }));
+  H.hvReplay(); const rt1 = C.rt.slice(); H.hvReplay();
+  chk(rt1.length === 8 && C.rt.length === 8 && C.rt.every(t => !rt1.includes(t)), 'a new replay cancels the previous one and keeps 8 timer ids');
+  H.hvState.es = null; H.hvStop(); S.show = true;
+  chk(C.rt.length === 0, 'hvStop clears the pending replay timers');
+  C.log.length = 0;
+
   // ---- firing toggle persists (F33, F44) ----
   w.localStorage.setItem('hiveFire', '0'); C.bound = false; w.document.body.insertAdjacentHTML('beforeend', '<button id="hive-fire"></button><button id="hive-replay"></button>');
   H.hvCommInit(); clearInterval(C.hb); C.hb = 0;

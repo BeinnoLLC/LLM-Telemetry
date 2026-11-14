@@ -509,19 +509,21 @@ export function hvConnect() {
   // and counters on the faces must keep following real data either way.
   hvS.timer = setInterval(hvPoll, 5000);
   hvPoll();
-  if (typeof EventSource === 'function') {
+  const open = () => {   // also the retry path after a stream error
+    if (hvS.es || !hvS.timer || typeof EventSource !== 'function') return;
     const es = hvS.es = new EventSource('/api/hive/stream');
     es.addEventListener('snapshot', e => { hvSnapshot(JSON.parse(e.data), true); hvPill(true, 'live'); });
-    // A delta frame is real change: apply it (feed + animation), then refresh the snapshot at once.
-    es.addEventListener('delta', e => { try { hvApply(JSON.parse(e.data)); } catch (_) { /* heartbeat or malformed */ } hvPill(true, 'live'); hvPoll(); });
-    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); hvS.es = null; };
-  }
+    // A delta frame is real change: apply it (feed + animation), then refresh the snapshot (at most once a second).
+    es.addEventListener('delta', e => { try { hvApply(JSON.parse(e.data)); } catch (_) { /* heartbeat or malformed */ } hvPill(true, 'live'); if (Date.now() - hvC.pollAt >= 1000) { hvC.pollAt = Date.now(); hvPoll(); } });
+    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); if (hvS.es === es) hvS.es = null; hvC.retry = setTimeout(open, 5000); };
+  };
+  open();
 }
 export function hvStop() {
   if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
-  clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  hvC.rt.forEach(clearTimeout); hvC.rt = []; clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 // Called by the router whenever the Hive tab is shown or hidden.
@@ -731,7 +733,7 @@ export function hvWrap(t, w = 34, max = 3) {
 export const hvVia = (c, o) => (o.replay ? 'replay · ' + ago(Math.max(0, o.now - c.at)) + ' ago · ' : '') + (o.project ? o.project.toUpperCase() + ' · ' : '')
   + `${hvWho(c.from, o.pm, o.lbl)} → ${hvWho(c.to, o.pm, o.lbl)} · ${c.via}${c.task ? ' · ' + c.task.slice(0, 30) : ''}`;
 
-export const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false};
+export const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], pollAt: 0, retry: 0};
 const hvHas = id => !!hvS.nodes[id];
 const hvNLabel = id => hvS.nodes[id] && hvS.nodes[id].label;
 const hvFamId = id => id === 'hazem' ? 'root' : String(id).split(':')[1];
@@ -753,9 +755,10 @@ function hvPacket(a, b, fam, o = {}) {
   e.style.setProperty('--c', hvCol(fam));
   hvTween(Math.max(260, Math.hypot(dx, dy) * (o.bolt ? 1 : 2)), u => e.setAttribute('transform', `translate(${(A.x + dx * u).toFixed(1)},${(A.y + dy * u).toFixed(1)}) rotate(${rot})`), () => { e.remove(); if (o.then) o.then(); });
 }
-function hvPuff(id, cls, n = 0, v = 120) {   // n confetti polygons thrown out and faded, or (n = 0) one expanding wave ring
+function hvPuff(id, cls, n = 0, v = 120, fam = '') {   // n confetti polygons thrown out and faded, or (n = 0) one expanding wave ring
   const N = hvS.nodes[id], g = $('hive-pk'); if (!N || !g || N.x == null) return;
-  const ps = [...Array(n || 1)].map((_, i) => ({e: hvEl('polygon', {class: n ? 'hv-p' : 'hv-wave ' + cls, points: n ? hvNgon(0, 0, 2.6, 2.6, 4) : hvHex(1)}, g), a: Math.PI * 2 * i / n + Math.random(), v: 46 * (.5 + Math.random())}));
+  const ps = [...Array(n || 1)].map((_, i) => ({e: hvEl('polygon', {class: n ? 'hv-p conf' : 'hv-wave ' + cls, points: n ? hvNgon(0, 0, 2.6, 2.6, 4) : hvHex(1)}, g), a: Math.PI * 2 * i / n + Math.random(), v: 46 * (.5 + Math.random())}));
+  if (n) ps.forEach(p => p.e.style.setProperty('--c', hvCol(fam || (N.fam) || hvFamId(id))));
   hvTween(n ? 900 : 700, u => ps.forEach(p => { p.e.style.opacity = 1 - u; p.e.setAttribute('transform', n ? `translate(${(N.x + Math.cos(p.a) * p.v * u).toFixed(1)},${(N.y + Math.sin(p.a) * p.v * u + 34 * u * u).toFixed(1)}) rotate(${Math.round(u * 360)})` : `translate(${N.x.toFixed(1)},${N.y.toFixed(1)}) scale(${(14 + v * u).toFixed(1)})`); }), () => ps.forEach(p => p.e.remove()));
 }
 const hvBump = v => { hvC.bump = hvClamp(hvC.bump + v, -.3, .4); };   // a transient lift on the data-derived anger; decays in hvFx
@@ -778,9 +781,9 @@ export function hvPlayComm(c, {replay = false} = {}) {
   const fam = (hvS.nodes[a] && hvS.nodes[a].fam) || hvFamId(a), o = hvOutcome(c), pj = hvProject(c, snap), ev = c.kind === 'event', who = p => hvWho(p, pm, hvNLabel), fire = hvC.fire;
   const via = hvVia(c, {replay, now: Date.now() / 1000, project: pj, pm, lbl: hvNLabel}), words = n => String(c.text || '').replace(/https?:\S+/g, 'link').split(/\s+/).slice(0, n).join(' ');
   const arrive = () => {
-    const t = b || a, lv = Math.max(1, hvLvOf(hvS.a)), say = m => ev && hvSay(c.from, `${hvCommLine(c)} ${who(c.from)}: ${String(c.event).replace('_', ' ')}. ${words(8)}`, pj, o === 'angry' ? lv : 0, m);
-    hvBubble(ev ? t : a, ev ? `${c.event.replace('_', ' ')}: ${c.text}` : c.text, via, fam);
-    if (o === 'happy') { const was = hvLvOf(hvS.a); hvBump(-.15); hvSetMood(t, 'happy', 3500); hvPuff(t, '', 18); hvPlay('done', fam); if (was) hvPlay('calm'); say('happy'); }
+    const t = b || a, lv = Math.max(1, hvLvOf(hvS.a)), say = m => ev && hvSay(c.from, `${hvCommLine(c)} ${who(c.from)}: ${String(c.event || '').replace('_', ' ')}. ${words(8)}`, pj, o === 'angry' ? lv : 0, m);
+    hvBubble(ev ? t : a, ev ? [String(c.event || '').replace('_', ' '), c.text].filter(Boolean).join(': ') : c.text, via, fam);
+    if (o === 'happy') { const was = hvLvOf(hvS.a); hvBump(-.15); hvSetMood(t, 'happy', 3500); hvPuff(t, '', 18, 120, fam); hvPlay('done', fam); if (was) hvPlay('calm'); say('happy'); }
     else if (o === 'angry') { hvBump(.25); hvSetMood(t, lv >= 2 ? 'fire' : 'angry', 3500 + lv * 1000); if (t !== a) hvSetMood(a, 'angry', 3000); hvPuff(t, 'bad', 0, 140 + lv * 60); hvKick('hv-flash'); hvPlay('rage', lv); if (fire && lv >= 3) hvPlay('boom'); say('angry'); }
     else if (o === 'dizzy') { hvSetMood(t, 'dizzy', 4000); hvPlay('dizzy'); say('dizzy'); }
     else { hvSetMood(t, 'wow', 1600); hvPlay(fire ? 'hit' : 'arrive', fam); }
@@ -834,16 +837,17 @@ export function hvHops(ev, has = hvHas) {
 export function hvPlayEvent(ev) {
   const {aid, end, hops} = hvHops(ev); if (!hvHas(aid)) return false;
   const fam = ev.family, st = ev.status, finish = () => {
-    if (st === 'done' || st === 'finished') { if (st === 'done') { hvPuff(end, '', 22); hvKick('hv-flash-ok'); } hvPuff(end, 'ok', 0, 200); hvPlay('done', fam); }
+    if (st === 'done' || st === 'finished') { if (st === 'done') { hvPuff(end, '', 22, 120, fam); hvKick('hv-flash-ok'); } hvPuff(end, 'ok', 0, 200); hvPlay('done', fam); }
     else if (st === 'blocked') { hvBump(.2); hvPuff(end, 'bad', 0, 200); hvPlay('rage', Math.max(1, hvLvOf(hvS.a))); hvKick('hv-flash'); }
-    else if (ev.kind === 'new') { hvPuff(end, '', 0, 150); hvPuff(end, '', 14); hvPlay('newTask', fam); }
+    else if (ev.kind === 'new') { hvPuff(end, '', 0, 150); hvPuff(end, '', 14, 120, fam); hvPlay('newTask', fam); }
     else { hvPuff(end, '', 0, 120); hvPlay('running', fam); }
   }, run = i => i < hops.length ? hvPacket(hops[i][0], hops[i][1], fam, {then: () => run(i + 1)}) : finish();
   run(0); return true;
 }
 export function hvReplay() {   // the last 8 conversations, 1.5 s apart
   hvUnlock();
-  return hvVisible().slice(-8).map((c, i) => { setTimeout(() => hvPlayComm(c, {replay: true}), i * 1500); return i * 1500; });
+  hvC.rt.forEach(clearTimeout); hvC.rt = [];
+  return hvVisible().slice(-8).map((c, i) => { hvC.rt.push(setTimeout(() => hvPlayComm(c, {replay: true}), i * 1500)); return i * 1500; });
 }
 
 // Honest heartbeat: how fresh the data is and when the last real message happened; nothing else

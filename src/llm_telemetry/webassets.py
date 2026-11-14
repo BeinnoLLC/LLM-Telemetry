@@ -130,6 +130,8 @@ def split_blocks(text):
 
 
 _REGEX_PRECEDERS = "(,=:[!&|?{};+-*%<>~^"
+# A keyword before "/" starts a regex (`return /x/`), not a division.
+_REGEX_KEYWORD = re.compile(r"(?<![\w$.])(?:return|typeof|case|in|of|void|delete|yield|await|else|do|instanceof|new|throw)\s*$")
 
 
 def _dedent(line):
@@ -215,7 +217,7 @@ def strip_js_line_comments(text, dedent=False):
                 break
             elif c == "/" and line.startswith("/*", i):
                 in_block, i = True, i + 2
-            elif c == "/" and (last == "" or last in _REGEX_PRECEDERS):
+            elif c == "/" and (last == "" or last in _REGEX_PRECEDERS or _REGEX_KEYWORD.search(line, 0, i)):
                 j, cls = i + 1, False
                 while j < n and (cls or line[j] != "/"):
                     if line[j] == "\\":

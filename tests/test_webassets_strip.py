@@ -95,3 +95,19 @@ def test_css_trim_drops_indentation_and_blank_lines_only():
     src = "a {\n    color: red;  \n\n\n    content: \"a  b\";\n}\n/*! lic */\n.b {\n  background: url(a  b.png);\n}\n"
     out = _css_trim(strip_css_comments(src))
     assert out == "a {\ncolor: red;\ncontent: \"a  b\";\n}\n/*! lic */\n.b {\nbackground: url(a  b.png);\n}\n"
+
+
+def test_regex_after_keyword_is_not_division():
+    assert strip("function f(s) {\n  return /\\/\\//g.test(s); // c\n}\n") == "function f(s) {\n  return /\\/\\//g.test(s);\n}\n"
+    src = "const t = typeof /a'b/ === 'x'; // c\nconst u = 'https://x';\n"
+    assert strip(src) == src.replace(" // c", "")
+    assert strip("x = a in /[/]/ ? 1 : 2;\n") == "x = a in /[/]/ ? 1 : 2;\n"
+    assert strip("y = a / b; // c\nz = obj.return / 2; // d\n") == "y = a / b;\nz = obj.return / 2;\n"
+
+
+def test_css_string_containing_comment_opener_stays_intact():
+    from llm_telemetry.webassets import _css_trim, strip_css_comments
+    src = "a::before {\n  content: \"/* not a comment */\";\n}\n/* gone */\nb { color: red; }\n"
+    out = _css_trim(strip_css_comments(src))
+    assert 'content: "/* not a comment */";' in out
+    assert "gone" not in out
