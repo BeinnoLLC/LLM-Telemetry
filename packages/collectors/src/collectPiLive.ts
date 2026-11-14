@@ -8,6 +8,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { isoToUnix, parsePiSessionJsonl } from "./collectPiAgents.js";
+import { pyRound } from "./pricing.js";
 
 export const STALE_WINDOW_S = 180;
 export const PHASE_TEXT_MAX = 80;
@@ -62,7 +63,10 @@ export function lastEventPhase(events: readonly Ev[]): [number | null, string] {
     for (const item of contentItems(msg)) {
       const kind = item["type"];
       if (kind === "toolCall") {
-        tool = typeof item["name"] === "string" ? item["name"] : null;
+        // Python keeps the raw tool name (`f"running {tool_name}"`): no
+        // safeName/escaping here, a name like `weird tool!` renders verbatim.
+        const name = item["name"];
+        tool = name ? String(name) : null;
       } else if (kind === "text" && item["text"]) {
         text = typeof item["text"] === "string" ? item["text"] : null;
       } else if (kind === "thinking") {
@@ -72,7 +76,7 @@ export function lastEventPhase(events: readonly Ev[]): [number | null, string] {
     if (tool) {
       phase = `running ${tool}`;
     } else if (text) {
-      const first = text.trim().split("\n")[0] ?? "";
+      const first = text.trim().split(/\r\n|[\r\n\v\f\x1c\x1d\x1e\x85\u2028\u2029]/)[0] ?? "";
       phase = first.slice(0, PHASE_TEXT_MAX);
     } else if (thinking) {
       phase = "thinking";
@@ -130,6 +134,11 @@ export function startedAt(sessionTs: string | null): number | null {
 export function discoverLiveJsonl(piHome: string, now: number, staleWindowS: number): string[] {
   if (!fs.existsSync(piHome)) return [];
   const out: string[] = [];
+  // Python: `pi_home.glob("agent*/sessions/*/*.jsonl")` — each `*` is exactly
+  // one path segment and (glob semantics) never matches a dot-prefixed name,
+  // so session files live exactly at `agent*/sessions/<slug>/<file>.jsonl`
+  // (depth 2 under `sessions/`, NOT 3 — the old walk looked one level too
+  // deep and skipped every real session file).
   const walk = (base: string, depth: number): void => {
     let entries: fs.Dirent[];
     try {
@@ -138,10 +147,11 @@ export function discoverLiveJsonl(piHome: string, now: number, staleWindowS: num
       return;
     }
     for (const e of entries) {
+      if (e.name.startsWith(".")) continue; // glob `*` skips dot names
       const full = path.join(base, e.name);
       if (e.isDirectory()) {
-        if (depth < 3) walk(full, depth + 1);
-      } else if (e.isFile() && e.name.endsWith(".jsonl") && depth === 3) {
+        if (depth < 2) walk(full, depth + 1);
+      } else if (e.isFile() && e.name.endsWith(".jsonl") && depth === 2) {
         try {
           const mtime = fs.statSync(full).mtimeMs / 1000;
           if (now - mtime <= staleWindowS) out.push(full);
@@ -154,7 +164,7 @@ export function discoverLiveJsonl(piHome: string, now: number, staleWindowS: num
   // agent*/sessions/*/*.jsonl
   let agents: string[] = [];
   try {
-    agents = fs.readdirSync(piHome).filter((n) => n.startsWith("agent"));
+    agents = fs.readdirSync(piHome).filter((n) => n.startsWith("agent") && !n.startsWith("."));
   } catch {
     return [];
   }
@@ -224,11 +234,10 @@ export function buildPiLive(opts: {
   return out;
 }
 
-/** round(x, 1)/round(x, 4) stand-ins (toFixed: ties-away vs Python
- * ties-even; parity fixtures avoid exact ties). */
+/** round(x, 1)/round(x, 4): Python ties-even round, shared `pyRound`. */
 export function pyRound1(x: number): number {
-  return Number(x.toFixed(1));
+  return pyRound(x, 1);
 }
 export function pyRound1_4(x: number): number {
-  return Number(x.toFixed(4));
+  return pyRound(x, 4);
 }

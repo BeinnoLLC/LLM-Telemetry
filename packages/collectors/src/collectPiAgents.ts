@@ -29,14 +29,31 @@ export function isoToUnix(ts: string): number {
   return Number.isNaN(ms) ? Date.now() / 1000 : ms / 1000;
 }
 
-function num(v: unknown): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+/** Python `int`/`float` semantics for `usage += v` mirrors: a missing key takes
+ * the default, bools count as 1/0 (bool is an int in Python), anything else
+ * raises TypeError so the whole session drops exactly like Python's
+ * `except (json.JSONDecodeError, KeyError, TypeError)`.
+ */
+function usageNum(u: Record<string, unknown>, key: string, dflt: number): number {
+  const v = u[key];
+  if (v === undefined) return dflt;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "boolean") return v ? 1 : 0;
+  throw new TypeError(`usage.${key} is not numeric`);
 }
 
-/** Parse one PI session JSONL file. Divergence note: Python's `+=` on a
- * non-numeric usage value raises TypeError and drops the whole session; this
- * port coerces non-numeric values to 0 instead (parity fixtures use numeric
- * usage). */
+/** Python truthiness for the `if usage:` gate ({} / [] / "" / 0 / null are
+ * falsy there). */
+function pyTruthy(v: unknown): boolean {
+  if (v === null || v === undefined || v === false || v === 0 || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v).length > 0;
+  return true;
+}
+
+/** Parse one PI session JSONL file. Matches `parse_pi_session_jsonl` exactly:
+ * a non-numeric usage value raises TypeError inside Python's `+=` chain and
+ * drops the whole session (it is never coerced to 0). */
 export function parsePiSessionJsonl(jsonlPath: string): PiParsedSession | null {
   let lines: string[];
   try {
@@ -83,16 +100,19 @@ export function parsePiSessionJsonl(jsonlPath: string): PiParsedSession | null {
         const msg = (event["message"] ?? {}) as Record<string, unknown>;
         if (msg["role"] === "assistant") {
           const usage = event["usage"];
-          if (usage && typeof usage === "object") {
+          if (pyTruthy(usage)) {
+            if (!usage || typeof usage !== "object" || Array.isArray(usage)) {
+              throw new TypeError("usage is not a mapping");
+            }
             const u = usage as Record<string, unknown>;
-            session.inputTokens += num(u["input"]);
-            session.outputTokens += num(u["output"]);
-            session.cacheReadTokens += num(u["cacheRead"]);
-            session.cacheWriteTokens += num(u["cacheWrite"]);
-            session.totalTokens += num(u["totalTokens"]);
+            session.inputTokens += usageNum(u, "input", 0);
+            session.outputTokens += usageNum(u, "output", 0);
+            session.cacheReadTokens += usageNum(u, "cacheRead", 0);
+            session.cacheWriteTokens += usageNum(u, "cacheWrite", 0);
+            session.totalTokens += usageNum(u, "totalTokens", 0);
             const cost = u["cost"];
-            if (cost && typeof cost === "object") {
-              session.totalCost += num((cost as Record<string, unknown>)["total"]);
+            if (cost !== null && typeof cost === "object" && !Array.isArray(cost)) {
+              session.totalCost += usageNum(cost as Record<string, unknown>, "total", 0.0);
             }
           }
         }

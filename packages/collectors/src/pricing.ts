@@ -7,9 +7,9 @@
  * public API rates") without ever pretending it is money spent.
  *
  * Rounding note: Python's round() is ties-to-even on the exact binary value,
- * JS toFixed() is ties-away. The parity fixture uses rate/token values whose
- * products land exactly on representable values, so the two agree; see
- * parity/liveFixtures.ts.
+ * JS toFixed() is ties-away. `pyRound` below implements the Python behaviour
+ * exactly (BigInt round of the IEEE-754 value), so all pricing/idle/cost
+ * rounding here matches CPython bit for bit.
  */
 import type { Config } from "./config.js";
 import { localRates } from "./energy.js";
@@ -371,8 +371,42 @@ export function priceRow(
   };
 }
 
-/** round(x, ndigits) stand-in (toFixed: ties-away vs Python ties-even; the
- * parity fixture avoids exact ties). */
+/** round(x, digits) parity: Python's round() is ties-to-even on the exact
+ * binary value of the float. `toFixed` is ties-away and disagrees on exact
+ * ties (round(0.125, 2) is 0.12 in Python, 0.13 via toFixed), so this rounds
+ * the IEEE-754 value exactly with BigInt and converts to a Number only at the
+ * end — the same correctly-rounded result Python gives. */
 export function pyRound(x: number, digits: number): number {
-  return Number(x.toFixed(digits));
+  if (!Number.isFinite(x)) return x;
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, x);
+  const bits = view.getBigUint64(0);
+  const neg = (bits >> 63n) === 1n;
+  const exp2 = Number((bits >> 52n) & 0x7ffn);
+  const frac = bits & 0xfffffffffffffn;
+  // |x| == mant * 2^exp exactly.
+  let mant: bigint;
+  let exp: number;
+  if (exp2 === 0) {
+    mant = frac;
+    exp = -1074;
+  } else {
+    mant = frac | (1n << 52n);
+    exp = exp2 - 1075;
+  }
+  if (mant === 0n) return 0;
+  // |x| * 10^digits == mant * 5^digits * 2^(exp + digits); round that to the
+  // nearest integer, exact halves to even.
+  const scaled = mant * 5n ** BigInt(digits);
+  const shift = -(exp + digits);
+  let n: bigint;
+  if (shift <= 0) {
+    n = scaled << BigInt(-shift); // already an exact integer
+  } else {
+    const q = scaled >> BigInt(shift);
+    const rem = scaled - (q << BigInt(shift));
+    const half = 1n << BigInt(shift - 1);
+    n = rem > half || (rem === half && q % 2n === 1n) ? q + 1n : q;
+  }
+  return (neg ? -1 : 1) * Number(n) / 10 ** digits;
 }

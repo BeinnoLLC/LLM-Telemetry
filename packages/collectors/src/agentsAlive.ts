@@ -11,6 +11,7 @@ export const HEARTBEAT_INTERVAL_S = 60;
 export const ALIVE_THRESHOLD_S = HEARTBEAT_INTERVAL_S * 2;
 
 import * as fs from "node:fs";
+import { pyRound } from "./pricing.js";
 
 export interface Heartbeat {
   backend_id: string;
@@ -71,8 +72,11 @@ export function buildAgents(
     let pid: number | null = null;
     for (const part of holder.split(":")) {
       if (part.startsWith("pid=")) {
-        const n = Number(part.slice(4));
-        pid = Number.isInteger(n) ? n : null;
+        // Python: `int(part[4:])` inside try/except ValueError -> None.
+        // Number("") is 0 which silently invents a pid=0 lease; parse the
+        // integer strictly so garbage means "no pid", never 0.
+        const m = /^[+-]?\d+$/.exec(part.slice(4).trim());
+        pid = m ? Number(m[0]) : null;
         break;
       }
     }
@@ -91,7 +95,7 @@ export function buildAgents(
       host: hb.host,
       pid: hb.pid,
       last_heartbeat: hb.last_heartbeat,
-      age_s: Number(age.toFixed(1)),
+      age_s: pyRound(age, 1),
       state,
       leases: leaseCounts.get(hb.pid) ?? 0,
       kill_hint: state === "dead" ? `kill ${String(hb.pid)}` : null,

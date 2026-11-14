@@ -12,7 +12,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { Config } from "./config.js";
 import { isoToUnix } from "./collectPiAgents.js";
-import { priceRow, type Catalog, type PriceRowInput } from "./pricing.js";
+import { priceRow, pyRound, type Catalog, type PriceRowInput } from "./pricing.js";
 
 export const STALE_WINDOW_S = 180;
 export const TAIL_BYTES = 256 * 1024;
@@ -25,6 +25,10 @@ export const ENGINE_PROVIDER: Record<string, string> = {
 };
 
 type Ev = Record<string, unknown>;
+
+function isEv(v: unknown): v is Ev {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
 
 export function safeName(name: unknown): string {
   return String(name).replace(SAFE_NAME_RE, "").slice(0, NAME_MAX);
@@ -58,10 +62,12 @@ function readEvents(p: string, head = false): Ev[] {
   }
   const out: Ev[] = [];
   for (const line of data.toString("utf8").split(/\r?\n/)) {
+    // Python splits on \n and keeps every non-empty chunk, including a final
+    // line with no trailing newline (`start == 0` keeps the whole chunk).
     if (!line) continue;
     try {
       const obj = JSON.parse(line) as unknown;
-      if (obj && typeof obj === "object" && !Array.isArray(obj)) out.push(obj as Ev);
+      if (isEv(obj)) out.push(obj);
     } catch {
       continue;
     }
@@ -103,33 +109,41 @@ function recent(globs: string[], now: number, staleWindowS: number): Array<[stri
   return out;
 }
 
-/** Minimal `glob.glob` equivalent for the two fixed patterns used here. */
+/** Segment-exact `glob.glob` for the fixed patterns used here. Each `*`
+ * matches exactly ONE path segment (never a dot-prefixed name, like Python's
+ * glob — and unlike recursive walks that over- or under-match depth). */
 function expandGlob(pattern: string): string[] {
-  // Patterns: <home>/projects/*/*.jsonl  and  <home>/sessions/*/*/*/rollout-*.jsonl
-  const rollout = pattern.includes("rollout-*.jsonl");
-  const base = pattern.split("*")[0] ?? "";
+  const segs = pattern.split(path.sep).filter((s) => s !== "");
+  const root = path.isAbsolute(pattern) ? path.sep : "";
   const out: string[] = [];
-  const walk = (dir: string, depth: number, maxDepth: number, filter: (n: string) => boolean): void => {
+  const walk = (base: string, i: number): void => {
+    if (i === segs.length) {
+      out.push(base);
+      return;
+    }
+    const seg = segs[i] ?? "";
+    const isLast = i === segs.length - 1;
+    const dirMatch = !seg.includes("*");
+    if (dirMatch) {
+      walk(path.join(base, seg), i + 1);
+      return;
+    }
+    const [pre, post] = seg.split("*", 2);
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
+      entries = fs.readdirSync(base, { withFileTypes: true });
     } catch {
       return;
     }
     for (const e of entries) {
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) {
-        if (depth < maxDepth) walk(full, depth + 1, maxDepth, filter);
-      } else if (e.isFile() && filter(e.name)) {
-        out.push(full);
-      }
+      if (e.name.startsWith(".")) continue; // glob `*` skips dot names
+      const nameOk = e.name.startsWith(pre ?? "") &&
+        e.name.endsWith(post ?? "") &&
+        (isLast ? e.isFile() : e.isDirectory());
+      if (nameOk) walk(path.join(base, e.name), i + 1);
     }
   };
-  if (rollout) {
-    walk(base, 1, 3, (n) => n.startsWith("rollout-") && n.endsWith(".jsonl"));
-  } else {
-    walk(base, 1, 1, (n) => n.endsWith(".jsonl"));
-  }
+  walk(root, 0);
   return out;
 }
 
@@ -171,19 +185,20 @@ export function loginName(home: string, env: NodeJS.ProcessEnv = process.env): s
 export function claudePhase(event: Ev): string | null {
   const typ = event["type"];
   const msg = event["message"];
-  if (!msg || typeof msg !== "object") return null;
-  const m = msg as Ev;
-  const content = m["content"];
+  if (!isEv(msg)) return null;
+  const content = msg["content"];
   if (typ === "assistant") {
     if (!Array.isArray(content)) return "responding";
     let tool: string | null = null;
     let thinking = false;
     for (const item of content) {
-      if (!item || typeof item !== "object") continue;
-      const it = item as Ev;
-      if (it["type"] === "tool_use" && it["name"]) {
-        tool = safeName(it["name"]);
-      } else if (it["type"] === "thinking") {
+      if (!isEv(item)) continue;
+      if (item["type"] === "tool_use" && item["name"]) {
+        // Python: `tool = _safe_name(item["name"])` — the LAST tool_use in the
+        // content wins, not the first (a multi-tool assistant turn reports the
+        // tool it is running at the end).
+        tool = safeName(item["name"]);
+      } else if (item["type"] === "thinking") {
         thinking = true;
       }
     }
@@ -194,127 +209,169 @@ export function claudePhase(event: Ev): string | null {
   return null;
 }
 
+/** Python's `_codex_phase`: all eight branches, in order. */
+export function codexPhase(event: Ev): string | null {
+  const typ = event["type"];
+  const payload = event["payload"];
+  if (typ === "response_item" && isEv(payload)) {
+    const t = payload["type"];
+    if (t === "function_call" || t === "custom_tool_call" || t === "local_shell_call") {
+      const name = t === "local_shell_call" ? (payload["name"] || "shell") : payload["name"];
+      return name ? `running ${safeName(name)}` : "running tool";
+    }
+    if (t === "function_call_output" || t === "custom_tool_call_output" || t === "reasoning") {
+      return "thinking";
+    }
+    if (t === "message") {
+      return payload["role"] === "user" ? "thinking" : "responding";
+    }
+  }
+  if (typ === "event_msg" && isEv(payload)) {
+    const t = payload["type"];
+    if (t === "task_complete" || t === "turn_aborted" || t === "shutdown_complete") return "idle";
+    if (t === "task_started" || t === "user_message") return "thinking";
+    return null;
+  }
+  return null;
+}
+
 export interface ParsedClaudeSession {
-  sessionId: string | null;
+  sessionId: string;
   model: string | null;
   phase: string | null;
-  cwd: string | null;
+  cwd: string;
   lastTs: number | null;
 }
 
-export function parseClaudeSession(p: string): ParsedClaudeSession {
-  const head = readEvents(p, true);
+export function parseClaudeSession(p: string): ParsedClaudeSession | null {
   const tail = readEvents(p);
-  let sessionId: string | null = null;
+  const head = readEvents(p, true);
+  if (head.length === 0 && tail.length === 0) return null; // Python: `if not head and not tail: return None`
+  // Python `parse_claude_session`: session identity is the FILE STEM — a
+  // resumed/forked transcript repeats message-level sessionIds across files,
+  // and the stem is the only stable identity. message-level `sessionId` is
+  // never trusted.
+  const sessionId = path.basename(p, path.extname(p));
   let model: string | null = null;
-  let phase: string | null = null;
-  let cwd: string | null = null;
+  let phase: string | null = "idle"; // Python: phase starts "idle"
+  let cwd: string | null = null; // Python: cwd starts None
   let lastTs: number | null = null;
   for (const ev of head) {
+    // Python: `if cwd is None and isinstance(ev.get("cwd"), str): cwd =
+    // ev["cwd"]` — the FIRST string cwd wins in the head scan, even "".
     const v = ev["cwd"];
-    if (typeof v === "string" && v) {
-      cwd = v;
-      break;
-    }
+    if (cwd === null && typeof v === "string") cwd = v;
   }
   for (const ev of tail) {
     const t = ts(ev);
     if (t !== null && (lastTs === null || t >= lastTs)) lastTs = t;
     const v = ev["cwd"];
-    if (typeof v === "string" && v) cwd = v;
-    if (ev["type"] === "assistant") {
-      sessionId = typeof ev["sessionId"] === "string" ? ev["sessionId"] : sessionId;
-      const msg = (ev["message"] ?? {}) as Ev;
+    if (typeof v === "string") cwd = v; // Python: any string, last one wins (even "")
+    const msg = isEv(ev["message"]) ? ev["message"] : null;
+    if (ev["type"] === "assistant" && msg) {
       const m = modelStr(msg["model"]) ?? modelStr(ev["requestedModel"]);
       if (m && !m.startsWith("<")) model = m;
     }
     const ph = claudePhase(ev);
     if (ph !== null) {
       phase = ph;
-      const msg = (ev["message"] ?? {}) as Ev;
-      if (ev["type"] === "assistant" && msg["stop_reason"] === "end_turn") phase = "idle";
+    }
+    // A finished turn: the last assistant record ended with end_turn. Any
+    // later user/tool record overwrites this via _claude_phase above.
+    if (ev["type"] === "assistant" && msg && msg["stop_reason"] === "end_turn") {
+      phase = "idle";
     }
   }
-  return { sessionId, model, phase, cwd, lastTs };
+  return { sessionId, model, phase, cwd: cwd ?? "", lastTs };
 }
 
 export interface ParsedCodexSession {
-  sessionId: string | null;
+  sessionId: string;
   model: string | null;
   phase: string | null;
-  cwd: string | null;
+  cwd: string;
   lastTs: number | null;
   tokens: Record<string, Record<string, number>> | null;
 }
 
-export function parseCodexSession(p: string): ParsedCodexSession {
-  const head = readEvents(p, true);
+export function parseCodexSession(p: string): ParsedCodexSession | null {
   const tail = readEvents(p);
-  let sessionId: string | null = null;
+  const head = readEvents(p, true);
+  if (head.length === 0 && tail.length === 0) return null;
+  // Python `parse_codex_session`: identity/cwd/model come from
+  // `payload.session_meta` in the HEAD only (first match wins: `sid = sid or
+  // ...`), and the tail re-reads cwd/model from `turn_context` only — never
+  // arbitrary payload shapes.
+  let sessionId = "";
   let model: string | null = null;
-  let phase: string | null = null;
+  let phase: string | null = "idle";
   let cwd: string | null = null;
   let lastTs: number | null = null;
   for (const ev of head) {
-    const payload = (ev["payload"] ?? {}) as Ev;
-    const v = payload["cwd"];
-    if (typeof v === "string" && v) {
-      cwd = v;
-      break;
-    }
+    const payload = ev["payload"];
+    if (ev["type"] !== "session_meta" || !isEv(payload)) continue;
+    if (!sessionId && typeof payload["id"] === "string") sessionId = payload["id"];
+    if (cwd === null && typeof payload["cwd"] === "string") cwd = payload["cwd"];
+    if (!model) model = modelStr(payload["model"]);
   }
   for (const ev of tail) {
     const t = ts(ev);
     if (t !== null && (lastTs === null || t >= lastTs)) lastTs = t;
-    const typ = ev["type"];
-    const p1 = (ev["payload"] ?? {}) as Ev;
-    const v = p1["cwd"];
-    if (typ === "session_meta" && typeof v === "string" && v) cwd = v;
-    if (typ === "session_meta" && typeof p1["id"] === "string") sessionId = p1["id"];
-    if (p1["model"] && typeof p1["model"] === "string") model = p1["model"];
-    if (typ === "response_item" && p1["type"]) {
-      if (p1["type"] === "reasoning") {
-        phase = "thinking";
-      } else if (p1["type"] === "function_call" && p1["name"]) {
-        phase = `running ${safeName(p1["name"])}`;
-      } else if (p1["type"] === "message") {
-        phase = "responding";
-      }
+    const payload = ev["payload"];
+    if (ev["type"] === "turn_context" && isEv(payload)) {
+      model = modelStr(payload["model"]) || model;
+      if (typeof payload["cwd"] === "string") cwd = payload["cwd"];
     }
+    const ph = codexPhase(ev);
+    if (ph) phase = ph;
   }
-  return { sessionId, model, phase, cwd, lastTs, tokens: codexTokens(tail) };
+  // Python: `m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
+  // [0-9a-f]{12})$", path.stem); sid = m.group(1) if m else path.stem` — a
+  // Codex transcript without a session id keeps the trailing UUID of the file
+  // stem when it has one, else the whole stem.
+  if (!sessionId) {
+    const stem = path.basename(p, path.extname(p));
+    const m = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.exec(stem);
+    sessionId = m?.[1] ?? stem;
+  }
+  return { sessionId, model, phase, cwd: cwd ?? "", lastTs, tokens: codexTokens(tail, model) };
 }
 
 export function codexTokens(
   events: readonly Ev[],
+  model: string | null,
 ): Record<string, Record<string, number>> | null {
-  // token_count events carry a cumulative total_token_usage: the largest seen
-  // per model wins (Codex emits running totals, not per-message deltas).
-  const best: Record<string, Ev> = {};
-  for (const ev of events) {
-    if (ev["type"] !== "token_count") continue;
-    const p = (ev["payload"] ?? {}) as Ev;
-    const model = modelStr(p["model"]) ?? "codex";
-    const t = (p["total_token_usage"] ?? {}) as Ev;
-    const prev = best[model] ?? {};
-    if (usageN(t, "cached_input_tokens") > usageN(prev, "cached_input_tokens") || !(model in best)) {
-      best[model] = t;
+  // Python `codex_tokens`: Codex logs a CUMULATIVE total_token_usage in each
+  // token_count event — an event_msg whose payload.type is "token_count" with
+  // the totals under payload.info.total_token_usage. The newest one in the
+  // tail is the session total; its input_tokens INCLUDES the cached ones,
+  // which are split out here. Grouped under `model or ""`, never invented.
+  for (let i = events.length - 1; i >= 0; i--) {
+    const ev = events[i];
+    if (!ev || ev["type"] !== "event_msg") continue;
+    const payload = ev["payload"];
+    if (!isEv(payload) || payload["type"] !== "token_count") continue;
+    const info = payload["info"];
+    const u = isEv(info) ? info["total_token_usage"] : undefined;
+    if (isEv(u)) {
+      const cached = usageN(u, "cached_input_tokens");
+      return {
+        [model ?? ""]: {
+          input: Math.max(0, usageN(u, "input_tokens") - cached),
+          output: usageN(u, "output_tokens"),
+          cache_read: cached,
+          cache_write: 0,
+        },
+      };
     }
   }
-  const out: Record<string, Record<string, number>> = {};
-  for (const [model, t] of Object.entries(best)) {
-    const input = Math.max(0, usageN(t, "input_tokens") - usageN(t, "cached_input_tokens"));
-    out[model] = {
-      input,
-      output: usageN(t, "output_tokens"),
-      cache_read: usageN(t, "cached_input_tokens"),
-      cache_write: 0,
-    };
-  }
-  return Object.keys(out).length > 0 ? out : null;
+  return null;
 }
 
-/** Per-model tokens -> totals + the subscription-covered API-equivalent cost. */
+/** Per-model tokens -> totals + the subscription-covered API-equivalent cost.
+ * Python `price_tokens`: `cost, priced = 0.0, True` — a session is priced
+ * unless ANY model row lacks a rate, and cost_usd is then null (never a real
+ * $0). */
 export function priceTokens(
   engine: string,
   byModel: Record<string, Record<string, number>> | null,
@@ -327,7 +384,7 @@ export function priceTokens(
   let cacheRead = 0;
   let cacheWrite = 0;
   let cost = 0.0;
-  let priced = false;
+  let priced = true;
   for (const [model, t] of Object.entries(byModel)) {
     input += t["input"] ?? 0;
     output += t["output"] ?? 0;
@@ -349,14 +406,14 @@ export function priceTokens(
       cfg.endpoint_aliases ?? {},
     );
     cost += pricedRow.market_value_usd;
-    priced = priced || pricedRow.priced;
+    priced = priced && pricedRow.priced;
   }
   return {
     in_tok: input,
     out_tok: output,
     cache_read_tok: cacheRead,
     cache_write_tok: cacheWrite,
-    cost_usd: Math.round(cost * 1e6) / 1e6,
+    cost_usd: priced ? pyRound(cost, 4) : null,
     priced,
     cost_class: "subscription",
     rate_source: "api",
@@ -366,7 +423,7 @@ export function priceTokens(
 export interface AgentLiveRow {
   engine: string;
   login: string;
-  session_id: string | null;
+  session_id: string;
   title: string;
   model: string | null;
   idle_s: number;
@@ -413,15 +470,19 @@ export function buildAgentLive(opts: {
     ["codex", codexFound] as const,
   ]) {
     for (const [p, mtime, home] of found) {
-      const s = engine === "claude"
-        ? (() => {
-            const c = parseClaudeSession(p);
-            return { ...c, tokens: claudeTokens(p) };
-          })()
-        : parseCodexSession(p);
-      const tokens = engine === "codex"
-        ? s.tokens
-        : claudeTokens(p);
+      let s: ParsedClaudeSession | ParsedCodexSession | null;
+      let tokens: Record<string, Record<string, number>> | null;
+      if (engine === "claude") {
+        s = parseClaudeSession(p);
+        // Python: `tokens = s.get("tokens") if engine == "codex" else
+        // claude_tokens(path)` — exactly ONE token scan per file (NIT 13).
+        tokens = s === null ? null : claudeTokens(p);
+      } else {
+        const cs = parseCodexSession(p);
+        s = cs;
+        tokens = cs === null ? null : cs.tokens;
+      }
+      if (s === null) continue;
       const last = s.lastTs !== null ? s.lastTs : mtime;
       const cwd = s.cwd;
       const title = cwd ? path.basename(cwd.replace(/\/+$/, "")) : "";
@@ -431,12 +492,14 @@ export function buildAgentLive(opts: {
         session_id: s.sessionId,
         title: title || engine,
         model: s.model,
-        idle_s: pyRound1(Math.max(0, opts.now - last)),
+        idle_s: pyRound(Math.max(0, opts.now - last), 1),
         phase: s.phase,
         mtime,
         ...priceTokens(engine, tokens, opts.catalog, opts.cfg),
       };
-      const key = `${engine}:${String(s.sessionId)}`;
+      // One row per engine:session_id (a resumed/forked transcript can repeat
+      // an id across files): keep the most recently written.
+      const key = `${engine}:${s.sessionId}`;
       const prev = best.get(key);
       if (!prev || mtime > prev["mtime"]) best.set(key, row);
     }
@@ -448,6 +511,10 @@ export function buildAgentLive(opts: {
 
 const CLAUDE_SCAN = new Map<string, { off: number; msgs: Map<string, [string, number, number, number, number]> }>();
 
+/** Per-model token totals of a Claude Code transcript. A message streams as
+ * several records sharing message.id, each repeating its usage: the last one
+ * per id wins. The file is read incrementally (offset kept per path) as it
+ * can be tens of MB and is polled every few seconds. */
 export function claudeTokens(
   p: string,
 ): Record<string, Record<string, number>> | null {
@@ -486,12 +553,14 @@ export function claudeTokens(
         continue;
       }
       const msg = ev["message"];
-      const usage = msg && typeof msg === "object" ? (msg as Ev)["usage"] : undefined;
-      if (!msg || ev["type"] !== "assistant" || !usage || typeof usage !== "object") continue;
-      const model = modelStr((msg as Ev)["model"]);
+      const usage = isEv(msg) ? msg["usage"] : undefined;
+      if (!isEv(msg) || ev["type"] !== "assistant" || !isEv(usage)) continue;
+      const model = modelStr(msg["model"]);
       if (!model || model.startsWith("<")) continue;
       const u = usage as Ev;
-      const mid = String((msg as Ev)["id"] ?? ev["uuid"] ?? `@${st.off}:${st.msgs.size}`);
+      // Python: `mid = msg.get("id") or ev.get("uuid") or f"@{st['off']}:{len(st['msgs'])}"`
+      // — truthy `or`, so an empty-string id falls through (not `??`).
+      const mid = String(msg["id"] || ev["uuid"] || `@${st.off}:${st.msgs.size}`);
       st.msgs.set(mid, [
         model,
         usageN(u, "input_tokens"),
@@ -510,8 +579,4 @@ export function claudeTokens(
     t["cache_write"] = (t["cache_write"] ?? 0) + cw;
   }
   return Object.keys(out).length > 0 ? out : null;
-}
-
-function pyRound1(x: number): number {
-  return Number(x.toFixed(1));
 }

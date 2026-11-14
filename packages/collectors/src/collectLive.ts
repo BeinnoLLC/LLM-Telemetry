@@ -352,6 +352,13 @@ const CATEGORIES: Array<[string, string[], string[]]> = [
   ["Reading", ["read_file", "skill", "reading"], ["read_file", "skill_view", "chat_history_lookup"]],
 ];
 
+/** Local-time `datetime.now().isoformat(timespec="seconds")` parity:
+ * `YYYY-MM-DDTHH:MM:SS` in the host's wall clock, no offset suffix. */
+export function localIsoSeconds(d: Date): string {
+  const p = (n: number, w = 2): string => String(n).padStart(w, "0");
+  return `${p(d.getFullYear(), 4)}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 export function buildLive(opts: {
   cfg: Config;
   env?: NodeJS.ProcessEnv;
@@ -367,7 +374,10 @@ export function buildLive(opts: {
   const pinned = opts.now;
   const cfg = opts.cfg;
   const out: LivePayload = {
-    generated: new Date().toISOString().slice(0, 19),
+    // Python: `datetime.datetime.now().isoformat(timespec="seconds")` — LOCAL
+    // wall time with no offset, not UTC (the old toISOString() silently
+    // shifted the stamp by the host's UTC offset).
+    generated: localIsoSeconds(new Date()),
     profiles: {},
     errors: tailErrors(cfg, now, 60, 7200).map((e) => ({ ...e })),
     ollama: readOllama(cfg, now),
