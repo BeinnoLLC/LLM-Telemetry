@@ -29,3 +29,9 @@ def test_keeps_lines_inside_block_comment_and_licence():
 def test_regex_with_quote_or_backtick_does_not_derail():
     src = "const r = /['`\"]/g;\n// drop\nconst s = 1;\n"
     assert strip(src) == "const r = /['`\"]/g;\nconst s = 1;\n"
+
+
+def test_dedent_collapses_code_indent_but_not_template_or_block_content():
+    src = "function f(){\n  const t = `a\n    b`;\n  /* c\n     d */\n  return 1;\n}\n"
+    assert strip(src, dedent=True) == "function f(){\n const t = `a\n    b`;\n /* c\n     d */\n return 1;\n}\n"
+    assert strip(src) == src
