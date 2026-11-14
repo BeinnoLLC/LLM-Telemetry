@@ -111,13 +111,19 @@ export const COMMANDS: Record<string, Command> = {
       const outArg = args[0];
       const outDir = outArg ? path.dirname(outArg) : undefined;
       const filename = outArg ? path.basename(outArg) : "live-data.json";
-      const res = writeArtifact(filename, buildLive() as unknown as Record<string, unknown>, {
+      const payload = buildLive({ cfg: cfg() }) as unknown as Record<string, unknown>;
+      const res = writeArtifact(filename, payload, {
         tag: "live",
         cfg: cfg(),
         ...(outDir ? { outDir } : {}),
       });
-      const n = Object.keys((buildLive() as { profiles: Record<string, unknown> }).profiles).length;
-      io.out(`${res.path}  (${n} profiles, 0 live sessions)`);
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { live?: unknown[] }>;
+      const names = Object.keys(profiles);
+      const n = names.reduce(
+        (acc, name) => acc + (profiles[name]?.live?.length ?? 0),
+        0,
+      );
+      io.out(`${res.path}  (${names.length} profiles, ${n} live sessions)`);
       return 0;
     },
   },
