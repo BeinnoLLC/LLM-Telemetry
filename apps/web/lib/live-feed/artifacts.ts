@@ -4,6 +4,7 @@
 // delta frames. Same artifact shape the Python dashboard polls as
 // live-data.json (`collect_live.py`), so the snapshot carries that payload
 // unchanged alongside the derived task map.
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -21,10 +22,33 @@ export interface LiveSessionRow {
 /** Reports dir the collectors write (config-driven in Python; overridable here
  * during the overlap so both stacks can be pointed at the same artifacts). */
 export function reportsDir(): string {
-  return (
-    process.env.LLM_TELEMETRY_REPORTS_DIR ??
-    join(homedir(), ".local/share/llm-telemetry/reports")
-  );
+  const explicit = process.env.LLM_TELEMETRY_REPORTS_DIR;
+  if (explicit) return explicit;
+  // Precedence ported from llm_telemetry.config: $LLM_TELEMETRY_CONFIG,
+  // $XDG_CONFIG_HOME/llm-telemetry/config.json, ~/.config/llm-telemetry/config.json
+  const candidates: string[] = [];
+  const explicitCfg = process.env.LLM_TELEMETRY_CONFIG;
+  if (explicitCfg) candidates.push(expandHome(explicitCfg));
+  const xdg = process.env.XDG_CONFIG_HOME;
+  if (xdg) candidates.push(join(xdg, "llm-telemetry/config.json"));
+  candidates.push(expandHome("~/.config/llm-telemetry/config.json"));
+  for (const path of candidates) {
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+      const dir = (parsed as { reports_dir?: unknown }).reports_dir;
+      if (typeof dir === "string" && dir) return expandHome(dir);
+    } catch {
+      continue; // no such file/unreadable: Python keeps looking too
+    }
+    return join(homedir(), ".local/share/llm-telemetry/reports");
+    // ^ first existing config without reports_dir: the config.py dataclass
+    //   default applies
+  }
+  return join(homedir(), ".local/share/llm-telemetry/reports");
+}
+
+function expandHome(path: string): string {
+  return path.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
 }
 
 /** Derive the diffable `tasks` map from a live-data payload: one row per live

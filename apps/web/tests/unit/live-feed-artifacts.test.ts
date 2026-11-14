@@ -1,12 +1,13 @@
 // @vitest-environment node
 // LLMTELEMET-282 (T-3): the events feed reads the collectors' artifacts
 // (examples/reports/live-data.json is the same shape collect_live.py writes).
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { collectFromLiveArtifact } from "../../lib/live-feed";
+import { collectFromLiveArtifact, reportsDir } from "../../lib/live-feed";
 
 const repoRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
 
@@ -34,5 +35,36 @@ describe("collectFromLiveArtifact", () => {
 
   it("takes at: from the artifact clock, not wall time", () => {
     expect(snap.at).toBe(Number(artifact.generated) || 1700000000);
+  });
+});
+
+describe("reportsDir (llm_telemetry.config precedence, ported)", () => {
+  const saved = {
+    dir: process.env.LLM_TELEMETRY_REPORTS_DIR,
+    cfg: process.env.LLM_TELEMETRY_CONFIG,
+  };
+  afterEach(() => {
+    for (const [k, v] of Object.entries({
+      LLM_TELEMETRY_REPORTS_DIR: saved.dir,
+      LLM_TELEMETRY_CONFIG: saved.cfg,
+    })) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+
+  it("env override wins, config.json reports_dir follows, then the default", () => {
+    delete process.env.LLM_TELEMETRY_REPORTS_DIR;
+    const cfgPath = join(mkdtempSync(join(tmpdir(), "lst-282-cfg-")), "config.json");
+    writeFileSync(cfgPath, JSON.stringify({ reports_dir: "/from/config" }));
+    process.env.LLM_TELEMETRY_CONFIG = cfgPath;
+    expect(reportsDir()).toBe("/from/config");
+    process.env.LLM_TELEMETRY_REPORTS_DIR = "/explicit";
+    expect(reportsDir()).toBe("/explicit");
+    delete process.env.LLM_TELEMETRY_REPORTS_DIR;
+    // A first-existing config without reports_dir falls back to the config.py
+    // dataclass default (llm_telemetry.config), never later config candidates.
+    writeFileSync(cfgPath, JSON.stringify({ _comment: "no reports_dir" }));
+    expect(reportsDir()).toContain(".local/share/llm-telemetry/reports");
   });
 });
