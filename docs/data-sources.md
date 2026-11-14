@@ -22,7 +22,22 @@ command for each is in [setup-and-deploy.md](setup-and-deploy.md).
 | Transcript modal | `collect_transcripts.py` | `transcripts` | `transcripts.json` | 60 s |
 | Session timeline | `collect_session_timeline.py` | `session-timeline` | `sessions/<profile>/<id>.json` | 60 s |
 | Hermes + PI into durable store | `collect_hermes_profiles.py`, `collect_pi_agents.py` via `ingest_all.py`, `ingest_pi.py` | `ingest`, `ingest-pi` | analytics store SQLite (`analytics_store.py`) | manual / not in the shipped timers |
-| Hive per-face model + spend join | `hive.py` (`collect()` / `/api/hive`) | (served by `serve`) | reads `live-data.json`, `analytics-data.json`, `costs-data.json`, `ollama-data.json` (read-only, fresh read per snapshot, no cache; stale/missing tolerated) | per snapshot |
+| Hive family graph, comms, events, per-face model + spend | `hive.py` (`collect()` / `/api/hive`, `/api/hive/stream`) | (served by `serve`) | reads `live-data.json`, `analytics-data.json`, `costs-data.json`, `ollama-data.json` (read-only, fresh read per snapshot, no cache; stale/missing tolerated) | per snapshot |
+
+### Hive — `hive.py`
+
+`collect()` returns one snapshot of every family (assistant, tool bots, brains,
+agents, live workers), pressure scores, the last 12 h of real assistant/brain
+conversation and the Hazem conversation state. It reads Hermes profile files,
+kanban databases (read-only, `mode=ro`) and `/proc`; an unreadable source is
+reported under `errors`, never simulated. `serve.py` runs one lazy collector
+thread and keeps a ring of frames: `GET /api/hive` returns the snapshot, and
+`?since=<seq>` replays exactly the missed frames or answers `reset`. `GET
+/api/hive/stream` is SSE: snapshot on connect, `id:` per frame, heartbeat within
+20 s, `Last-Event-ID` resume, at most 8 concurrent streams (the next gets 503).
+Frames are only real new comms or task-status changes, and `clean()` redacts
+secret-shaped strings before anything leaves the server. The page animates
+nothing without a frame.
 
 Hive faces (`hive.py`, LST-270): each face carries `model` (newest live session
 of the profile in `live-data.json`; null when stale or not live), `model_info`

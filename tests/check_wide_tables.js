@@ -18,7 +18,7 @@ function chk(ok, name, got) {
 }
 
 // ---- dashboard.html: health rows (.hrow) and failure list (.frow) --------
-const mobileBlockMatch = dash.match(/@media\(max-width:640px\)\{([\s\S]*?)\n\s*\}\n @media\(max-width:400px\)/);
+const mobileBlockMatch = dash.match(/@media\(max-width:640px\)\{([\s\S]*?)\s*\}\s*@media\(max-width:400px\)/);
 chk(!!mobileBlockMatch, 'mobile block found in dashboard.html');
 const block = mobileBlockMatch ? mobileBlockMatch[1] : '';
 

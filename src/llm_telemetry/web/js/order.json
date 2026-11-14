@@ -1687,10 +1687,6 @@
     },
     {
       "mod": "hive",
-      "name": "HV_COL"
-    },
-    {
-      "mod": "hive",
       "name": "HV_EGG"
     },
     {
@@ -1708,6 +1704,10 @@
     {
       "mod": "hive",
       "name": "hvHooks"
+    },
+    {
+      "mod": "hive",
+      "name": "hvColMemo"
     },
     {
       "mod": "hive",
@@ -1752,6 +1752,74 @@
     {
       "mod": "hive",
       "name": "hvModel"
+    },
+    {
+      "mod": "hive",
+      "name": "hvScoreP"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameLevel"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameU"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLong"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNodeScore"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSystem"
+    },
+    {
+      "mod": "hive",
+      "name": "hvEase"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_KF"
+    },
+    {
+      "mod": "hive",
+      "name": "hvMix"
+    },
+    {
+      "mod": "hive",
+      "name": "hvKf"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPalette"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCss"
+    },
+    {
+      "mod": "hive",
+      "name": "hvRgb"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameRgb"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHead"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTongue"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlame"
     },
     {
       "mod": "hive",
@@ -1815,6 +1883,26 @@
     },
     {
       "mod": "hive",
+      "name": "HV_STEPS"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPaintHazem"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFx"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTick"
+    },
+    {
+      "mod": "hive",
+      "name": "hvGauge"
+    },
+    {
+      "mod": "hive",
       "name": "hvSetMood"
     },
     {
@@ -1856,6 +1944,262 @@
     {
       "mod": "hive",
       "name": "hvShow"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSnd"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLs"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLvOf"
+    },
+    {
+      "mod": "hive",
+      "name": "hvQuiet"
+    },
+    {
+      "mod": "hive",
+      "name": "hvReduced"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHash"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNote"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTone"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNoise"
+    },
+    {
+      "mod": "hive",
+      "name": "hvT"
+    },
+    {
+      "mod": "hive",
+      "name": "hvN"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_SFX"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_CD"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPlay"
+    },
+    {
+      "mod": "hive",
+      "name": "hvAmbient"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVoice"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLine"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVoices"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSay"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSoundDiff"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPaintSnd"
+    },
+    {
+      "mod": "hive",
+      "name": "hvUnlock"
+    },
+    {
+      "mod": "hive",
+      "name": "hvArm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvDisarm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSndInit"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_VOCAB"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_GOOD"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_BAD"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTx"
+    },
+    {
+      "mod": "hive",
+      "name": "hvOutcome"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCommLine"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFamOf"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPmap"
+    },
+    {
+      "mod": "hive",
+      "name": "hvResolve"
+    },
+    {
+      "mod": "hive",
+      "name": "hvProject"
+    },
+    {
+      "mod": "hive",
+      "name": "hvWho"
+    },
+    {
+      "mod": "hive",
+      "name": "hvWrap"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVia"
+    },
+    {
+      "mod": "hive",
+      "name": "hvC"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHas"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNLabel"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFamId"
+    },
+    {
+      "mod": "hive",
+      "name": "hvInView"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLayers"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTween"
+    },
+    {
+      "mod": "hive",
+      "name": "hvKick"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPacket"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPuff"
+    },
+    {
+      "mod": "hive",
+      "name": "hvBump"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_VIA_MAX"
+    },
+    {
+      "mod": "hive",
+      "name": "hvBubble"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPlayComm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHM"
+    },
+    {
+      "mod": "hive",
+      "name": "hvRow"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVisible"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPk"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCount"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPaintComms"
+    },
+    {
+      "mod": "hive",
+      "name": "hvAddComm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFeed"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHops"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPlayEvent"
+    },
+    {
+      "mod": "hive",
+      "name": "hvReplay"
+    },
+    {
+      "mod": "hive",
+      "name": "hvBeat"
     },
     {
       "mod": "views",
@@ -2788,6 +3132,22 @@
     {
       "mod": "state",
       "name": "renderError"
+    },
+    {
+      "mod": "hive",
+      "name": "hvBeatPaint"
+    },
+    {
+      "mod": "hive",
+      "name": "hvApply"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSnapshot"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCommInit"
     }
   ]
 }
