@@ -1687,10 +1687,6 @@
     },
     {
       "mod": "hive",
-      "name": "HV_COL"
-    },
-    {
-      "mod": "hive",
       "name": "HV_EGG"
     },
     {
@@ -1708,6 +1704,10 @@
     {
       "mod": "hive",
       "name": "hvHooks"
+    },
+    {
+      "mod": "hive",
+      "name": "hvColMemo"
     },
     {
       "mod": "hive",
@@ -2111,6 +2111,10 @@
     },
     {
       "mod": "hive",
+      "name": "hvFamId"
+    },
+    {
+      "mod": "hive",
       "name": "hvInView"
     },
     {
@@ -2136,6 +2140,10 @@
     {
       "mod": "hive",
       "name": "hvBump"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_VIA_MAX"
     },
     {
       "mod": "hive",

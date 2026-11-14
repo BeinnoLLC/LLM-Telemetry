@@ -200,6 +200,9 @@ def _ro(db, timeout=5):
     return sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=timeout)
 
 
+_BOARD_LAST: dict[tuple[str, str], list] = {}   # (home, board) -> last successful read_board result
+
+
 def read_board(home, board):
     """Non-archived tasks of one board; [] if absent, None if unreadable."""
     db = Path(home) / "kanban" / "boards" / str(board) / "kanban.db"
@@ -1028,6 +1031,10 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=Non
     cache = {}
     for b in names:
         r = boards[b] if boards is not None and b in boards else (read_board(home, b) if boards is None else [])
+        if r is None:   # unreadable this tick: keep the last good read so a hiccup never replays every task as new
+            r = _BOARD_LAST.get((str(home), b), [])
+        elif boards is None:
+            _BOARD_LAST[(str(home), b)] = r
         cache[b] = r or []
     if scan:
         pre = [h for h in (hosts or []) if isinstance(h, dict)]
