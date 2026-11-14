@@ -20,9 +20,7 @@
 .hv-node.hot .hv-hex{stroke-width:2.4;filter:drop-shadow(0 0 6px var(--c))}
 .hv-node.idle .hv-hex{stroke-opacity:.6}
 .hv-node.blocked .hv-hex{stroke:var(--z-bad);stroke-dasharray:5 4}
-.hv-egg{fill:var(--card);stroke:var(--c);stroke-width:2.2}
-.hv-node.nodata .hv-hex,.hv-node.nodata .hv-egg{stroke-dasharray:2 4;opacity:.7}
-.hv-uglow{fill:var(--c);opacity:.07}
+.hv-node.nodata .hv-hex{stroke-dasharray:2 4;opacity:.7}
 .hv-orbit{fill:none;stroke:var(--c);stroke-opacity:.35;stroke-dasharray:4 6}
 .hv-crown{fill:var(--z-warn);stroke:var(--z-warn);stroke-linejoin:round}
 .hv-lbl{fill:var(--fg);font-size:var(--fs-xs);text-anchor:middle;font-weight:600}
@@ -44,3 +42,14 @@
 @keyframes hv-talk{from{transform:scaleY(.3)}to{transform:scaleY(1.4)}}
 .hv-pill.fresh{color:var(--z-ok)}
 @media(prefers-reduced-motion:reduce){.hv-bob,.hv-eyes,.hv-look,.hv-talk,.hv-edge.hot{animation:none}}
+/* LST-272: Hazem's neon head (colours = --hv-* tokens; the rim gradient and face are set per anger level by hive.js) */
+.hv-hz-egg{fill:var(--hv-fill)}.hv-hz-bloom{fill:none;stroke-linejoin:round}
+.hv-hz-rim{fill:none;stroke-width:2;stroke-linejoin:round}
+.hv-hz-eye{fill:var(--hv-feat)}.hv-hz-pupil{fill:var(--hv-fill)}.hv-hz-teeth{fill:var(--hv-teeth)}
+.hv-hz-brow{fill:none;stroke:var(--hv-feat);stroke-linecap:round}
+.hv-gauge{position:absolute;top:10px;left:12px;width:200px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--card);font-size:var(--fs-xs);color:var(--muted)}
+.hv-g-top{display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.06em}
+.hv-g-top b{color:var(--fg);font-size:var(--fs-sm);font-variant-numeric:tabular-nums}
+.hv-g-bar{height:6px;margin:6px 0;background:var(--border);border-radius:var(--radius-ctl);overflow:hidden}
+.hv-g-bar i{display:block;height:100%;width:0;background:var(--hv-gauge-lo)}
+.hv-gauge[data-level=mid] .hv-g-bar i{background:var(--hv-gauge-mid)}.hv-gauge[data-level=hi] .hv-g-bar i{background:var(--hv-gauge-hi)}

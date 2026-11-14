@@ -121,8 +121,15 @@ def split_blocks(text):
 _REGEX_PRECEDERS = "(,=:[!&|?{};+-*%<>~^"
 
 
-def strip_js_line_comments(text):
-    """Drop whole-line ``//`` comments from shipped JS (nothing else is minified).
+def _dedent(line):
+    """Collapse code indentation to one space: column 0 still means top level
+    (tools slice shipped functions by a column-0 closing brace)."""
+    body = line.lstrip(" \t")
+    return " " + body if body != line and body.strip() else body
+
+
+def strip_js_line_comments(text, dedent=False):
+    """Drop whole-line ``//`` comments (and, with dedent, code indentation down to one space) from shipped JS.
 
     The source modules keep their comments for maintainers; the page does not
     need to ship ~100 KB of them. A small scanner tracks strings, template
@@ -138,7 +145,9 @@ def strip_js_line_comments(text):
         in_tpl = bool(stack) and stack[-1] == "`"
         if not in_block and not in_tpl and line.lstrip().startswith("//"):
             continue
-        out.append(line)
+        # Indentation is never significant in JS code; inside a template literal
+        # or a block comment it is content, so those lines stay verbatim.
+        out.append(_dedent(line) if dedent and not in_block and not in_tpl else line)
         i, n = 0, len(line)
         while i < n:
             c = line[i]
@@ -227,4 +236,4 @@ def inline_js():
             sys.exit(f"web/js: '{match.group(1)}' is declared twice — flattening "
                      f"the modules into one script scope would collide")
         seen.add(match.group(1))
-    return body
+    return strip_js_line_comments(body, dedent=True)
