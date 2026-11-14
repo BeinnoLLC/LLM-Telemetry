@@ -16,7 +16,7 @@ import { attachZoom } from './zoom.js';
 
 export const HV_MOODS = ['smile', 'talk', 'sleep', 'happy', 'angry', 'fire', 'dizzy', 'worry', 'wow'];
 export const HV_COL = {root: '#5cd0ff', pixelvent: '#ff5fc8', acasia: '#5dff9a', somethingpressing: '#ffc14d'};
-export const HV_EGG = {rx: 55, ry: 72, crown: 80, r: 62};
+export const HV_EGG = {rx: 55, ry: 74, crown: 80, r: 62};   // head 1 : 1.35
 export const HV_PAD = 5;
 export const HV_ACTIVE_S = 300;
 export const HV_COMPACT = .62;   // below this scale the second label line is dropped
@@ -28,8 +28,8 @@ export const hvNgon = (cx, cy, rx, ry, n = 12) => [...Array(n)].map((_, i) => {
   return (cx + rx * Math.cos(a)).toFixed(1) + ',' + (cy + ry * Math.sin(a)).toFixed(1);
 }).join(' ');
 export const hvHex = r => hvNgon(0, 0, r, r, 6);
-export const hvEggPts = (rx, ry) => [...Array(28)].map((_, i) => {
-  const a = Math.PI * 2 * i / 28, s = Math.sin(a);
+export const hvEggPts = (rx, ry, n = 28) => [...Array(n)].map((_, i) => {
+  const a = Math.PI * 2 * i / n, s = Math.sin(a);
   return (rx * Math.cos(a) * (1 - .12 * s)).toFixed(1) + ',' + (ry * s).toFixed(1);
 }).join(' ');
 
@@ -69,16 +69,17 @@ export const hvUserMood = u => !u ? 'smile' : ({sending: 'talk', reply: 'happy',
 // Real-data model: nodes (kind egg | assistant | bot | brain | agent | worker), links, and per-node counts.
 export function hvModel(snap, view = 'all') {
   const items = [], edges = [], c = {assistants: 0, brains: 0, agents: 0, running: 0, queued: 0, blocked: 0, done: 0};
-  const add = (id, o) => { items.push({id, r: 24, label: '', sub: '', mood: 'sleep', hot: false, blocked: false, data: true, pool: false, ...o}); return id; };
+  const add = (id, o) => { items.push({id, r: 24, label: '', sub: '', mood: 'sleep', hot: false, blocked: false, data: true, pool: false, press: 0, ...o}); return id; };
   const link = (a, b, hot, fam, thin) => edges.push({id: a + '|' + b, a, b, hot, fam, thin: !!thin});
   const fams = (snap.families || []).filter(f => view === 'all' || f.id === view);
   const u = snap.user;
-  add('hazem', {kind: 'egg', fam: 'root', r: HV_EGG.r, label: 'Hazem', sub: 'you', mood: hvUserMood(u), hot: !!u && u.state !== 'idle',
-    tip: `<h4>Hazem</h4>You. Every assistant answers to you.${u ? '<br>Link: ' + esc(u.state) : ''}`});
+  const sys = hvSystem(snap);
+  add('hazem', {kind: 'egg', fam: 'root', r: HV_EGG.r, label: 'Hazem', sub: 'you', mood: hvUserMood(u), hot: !!u && u.state !== 'idle', press: sys.p,
+    tip: `<h4>Hazem</h4>You. Every assistant answers to you.${u ? '<br>Link: ' + esc(u.state) : ''}<br>System pressure ${Math.round(sys.p * 100)}% · flames ${hvFlameLevel(sys.p)} · anger ${Math.round(sys.a * 100)}%`});
   const worker = (w, owner, fam) => {
     const run = w.status === 'running', mins = Math.round((w.secs || 0) / 60), id = 'w:' + w.id;
     add(id, {kind: 'worker', fam, r: 11, label: w.ticket || w.role || 'worker', sub: (w.engine || '') + ' · ' + (run ? mins + 'm' : 'queued'),
-      mood: run ? 'talk' : 'sleep', hot: run, owner, pool: !owner, model: w.model,
+      mood: run ? 'talk' : 'sleep', hot: run, owner, pool: !owner, model: w.model, press: hvScoreP(hvNodeScore({}, [w])),
       tip: `<h4>${esc(w.engine || '')} worker · ${esc(w.role || '')}${w.ticket ? ' · ' + esc(w.ticket) : ''}</h4>${run ? 'Running ' + mins + ' min' : 'Waiting for a slot (' + mins + ' min)'}${w.model ? '<br>' + hvProvMark(w.model) + ' ' + esc(w.model) : ''}${w.spend && w.spend.label ? '<br>' + esc(w.spend.label) : ''}`});
     if (owner) link(owner, id, run, fam, true);
     if (run) c.running++; else c.queued++;
@@ -90,14 +91,14 @@ export function hvModel(snap, view = 'all') {
     const hot = run > 0 || hvAct(A.idle);
     c.assistants++;
     add(aid, {kind: 'assistant', fam: f.id, r: 36, label: A.label || A.id, sub: `${f.brains.length} brains · ${run} running`, title: String(f.label || f.id).toUpperCase(),
-      mood: blk ? 'angry' : hot ? 'talk' : 'smile', hot, blocked: blk > 0, data: A.idle != null || run > 0 || blk > 0,
+      mood: blk ? 'angry' : hot ? 'talk' : 'smile', hot, blocked: blk > 0, data: A.idle != null || run > 0 || blk > 0, press: hvScoreP(hvNodeScore({}, A.workers)),
       tip: `<h4>${esc(A.label || A.id)} · ${esc(f.label || f.id)} assistant</h4>Last active ${A.idle == null ? 'unknown' : ago(A.idle)} · ${A.sessions || 0} open session(s)<br>${f.brains.length} brains · ${run} running · ${blk} blocked${model(A)}${spend(A)}`});
     link('hazem', aid, run > 0, f.id);
     (A.workers || []).forEach(w => worker(w, aid, f.id));
     (f.bots || []).forEach(b => {
       const id = `b:${f.id}:${b.id}`, ws = b.workers || [], h = ws.length > 0 || b.sessions > 0 || hvAct(b.idle);
       add(id, {kind: 'bot', fam: f.id, r: 18, label: hvShort(b.id), sub: ws.length ? ws.length + ' worker' + (ws.length > 1 ? 's' : '') : h ? 'working' : '',
-        mood: h ? 'talk' : 'sleep', hot: h, owner: aid, data: b.idle != null || h,
+        mood: h ? 'talk' : 'sleep', hot: h, owner: aid, data: b.idle != null || h, press: hvScoreP(hvNodeScore({}, ws)),
         tip: `<h4>${esc(b.id)} · tool bot</h4>Last active ${b.idle == null ? 'unknown' : ago(b.idle)} · ${b.sessions || 0} open session(s)${model(b)}`});
       link(aid, id, h, f.id, true);
       ws.forEach(w => worker(w, id, f.id));
@@ -107,7 +108,7 @@ export function hvModel(snap, view = 'all') {
       c.brains++; c.running += k.running; c.queued += q; c.blocked += k.blocked; c.done += k.done;
       add(id, {kind: 'brain', fam: f.id, r: 24, label: b.label, owner: aid, hot: h, blocked: k.blocked > 0, data: b.idle != null || h || q > 0 || k.blocked > 0,
         sub: k.running || q || k.blocked ? `${k.running} run · ${q} queued${k.blocked ? ' · ' + k.blocked + ' blk' : ''}` : 'idle' + (b.idle == null ? '' : ' · ' + ago(b.idle)),
-        mood: k.blocked ? 'angry' : k.running ? 'talk' : h ? 'smile' : 'sleep',
+        mood: k.blocked ? 'angry' : k.running ? 'talk' : h ? 'smile' : 'sleep', press: hvScoreP(hvNodeScore(k, b.workers)),
         tip: `<h4>${esc(b.label)} brain</h4>${esc(b.id)} · board ${esc(b.board)}<br>${k.done} done · ${k.running} running · ${q} queued · ${k.blocked} blocked${model(b)}${spend(b)}`});
       link(aid, id, k.running > 0, f.id);
       (b.workers || []).forEach(w => worker(w, id, f.id));
@@ -116,13 +117,123 @@ export function hvModel(snap, view = 'all') {
         c.agents += ar ? 1 : 0;
         add(gid, {kind: 'agent', fam: f.id, r: 13, label: hvShort(a.id), sub: view === 'all' ? '' : a.tasks.length + ' task' + (a.tasks.length > 1 ? 's' : ''),
           mood: ab ? 'angry' : ar ? 'talk' : 'smile', hot: ar, blocked: ab, owner: id, data: a.idle != null || a.tasks.length > 0,
+          press: hvScoreP(hvNodeScore({running: +ar, blocked: +ab}, [])),
           tip: `<h4>${esc(a.id)} · agent</h4>${a.tasks.map(t => `<div>· <b>${esc(t.status)}</b> ${esc(t.title)}</div>`).join('')}${model(a)}`});
         link(id, gid, ar, f.id, true);
       });
     });
   });
   (view === 'all' ? snap.unattributed || [] : []).forEach(w => worker(w, null, 'root'));
-  return {items, edges, counts: c, fams: (snap.families || []).map(f => ({id: f.id, label: f.label || f.id}))};
+  return {items, edges, counts: c, sys, fams: (snap.families || []).map(f => ({id: f.id, label: f.label || f.id}))};
+}
+
+// ---- pressure, anger and flames (LST-272): real snapshot data only, nothing is set by hand ----
+// Node pressure uses the server's formula: 2/running worker + 1.5/queued worker + 1.5/blocked + 1/running task + long-turn bonus.
+export const hvScoreP = s => s <= 0 ? 0 : s <= 3 ? s / 6 : s <= 6 ? .5 + (s - 3) * .4 / 3 : Math.min(1, .9 + (s - 6) * .025);
+export const hvFlameLevel = p => p >= .9 ? 'full blaze' : p >= .8 ? 'medium' : p >= .65 ? 'small' : p >= .5 ? 'smoulder' : 'none';
+export const hvFlameU = p => hvClamp((p - .5) / .5, 0, 1);   // 0 below half pressure (no fire) .. 1 at full blaze
+const hvLong = age => age > 3600 ? 2 : age > 1800 ? 1.5 : age > 900 ? 1 : 0;
+export function hvNodeScore(counts, ws) {
+  counts = counts || {}; ws = ws || [];
+  const run = ws.filter(w => w.status === 'running');
+  return 2 * run.length + 1.5 * (ws.length - run.length) + 1.5 * (counts.blocked || 0) + (counts.running || 0) + hvLong(Math.max(0, ...run.map(w => w.secs || 0)));
+}
+// System pressure p = .5 * hottest node + .5 * mean per-family score; anger target a = .7 p + .3 blocked share (blocked / all open cards).
+// Waiting links (an assistant waits on a reply or a question) add 1.5 each to the score.
+export function hvSystem(snap) {
+  const S = {runW: 0, qW: 0, age: 0, blocked: 0, tasks: 0, todo: 0, waiting: 0}, ws = [], fams = snap.families || [];
+  let hot = 0;
+  const node = (k, w) => { hot = Math.max(hot, hvScoreP(hvNodeScore(k, w))); ws.push(...(w || [])); };
+  fams.forEach(f => {
+    node({}, f.assistant.workers); (f.bots || []).forEach(b => node({}, b.workers));
+    (f.brains || []).forEach(b => { const k = b.counts || {}; node(k, b.workers); S.blocked += k.blocked || 0; S.tasks += k.running || 0; S.todo += (k.todo || 0) + (k.ready || 0); });
+  });
+  ws.push(...(snap.unattributed || []));
+  const run = ws.filter(w => w.status === 'running');
+  S.runW = run.length; S.qW = ws.length - run.length; S.age = Math.max(0, ...run.map(w => w.secs || 0));
+  S.waiting = ((snap.user && snap.user.links) || []).filter(l => l.state === 'waiting' || l.state === 'question').length;
+  const score = 2 * S.runW + 1.5 * S.qW + 1.5 * S.blocked + S.tasks + hvLong(S.age) + 1.5 * S.waiting;
+  const open = S.todo + S.blocked + S.tasks, bs = open ? S.blocked / open : 0, p = hvClamp(.5 * hot + .5 * hvScoreP(score / Math.max(1, fams.length)), 0, 1);
+  return {...S, score, hot, bs, p, a: hvClamp(.7 * p + .3 * bs, 0, 1)};
+}
+export const hvEase = (cur, to, dt, tau) => cur + (to - cur) * (1 - Math.exp(-dt / tau));   // never jumps: a small step per frame
+
+// Hazem's face parameters at the anger keyframes a = 0, .25, .5, .75, 1 (W = head width). brow: inner-end drop in degrees, bt: thickness,
+// gap: brow height over the eyes, ew/eh: eye half width/height, eo: eye brightness, mo: mouth openness, mw/up: mouth width / upper lip,
+// bloom: rim glow strength, teeth: upper teeth share. Rim, mouth and flame colours are the --hv-* tokens, read by hvPalette.
+export const HV_KF = [
+  {a: 0,   brow: 7,  bt: .068, gap: .132, ew: .088, eh: .074, eo: 1,   mo: 0,   mw: .20, up: .016, bloom: .35, teeth: 0},
+  {a: .25, brow: 13, bt: .072, gap: .124, ew: .088, eh: .068, eo: .97, mo: .04, mw: .22, up: .02,  bloom: .52, teeth: 0},
+  {a: .5,  brow: 21, bt: .076, gap: .114, ew: .086, eh: .058, eo: .93, mo: .30, mw: .25, up: .03,  bloom: .72, teeth: .15},
+  {a: .75, brow: 29, bt: .080, gap: .105, ew: .085, eh: .049, eo: .90, mo: .65, mw: .28, up: .04,  bloom: .88, teeth: .45},
+  {a: 1,   brow: 36, bt: .084, gap: .097, ew: .084, eh: .040, eo: .86, mo: 1,   mw: .31, up: .05,  bloom: 1,   teeth: .5}];
+const hvMix = (A, B, u) => Array.isArray(A) ? A.map((v, j) => v + (B[j] - v) * u) : A + (B - A) * u;
+export function hvKf(a, pal) {
+  a = hvClamp(a, 0, 1);
+  const i = Math.min(3, Math.floor(a * 4)), A = HV_KF[i], B = HV_KF[i + 1], u0 = (a - A.a) / (B.a - A.a), u = u0 * u0 * (3 - 2 * u0), o = {a};   // smoothstep inside each segment
+  for (const k in A) if (k !== 'a') o[k] = hvMix(A[k], B[k], u);
+  if (pal) [['top', 'rim-top'], ['bot', 'rim-bot'], ['mc', 'mouth']].forEach(([k, t]) => { o[k] = hvMix(pal[t][i], pal[t][i + 1], u); });
+  return o;
+}
+export function hvPalette(read) {
+  const hx = h => [1, 3, 5].map(i => parseInt(String(h).trim().slice(i, i + 2), 16)), p = {};
+  ['rim-top', 'rim-bot', 'mouth', 'flame'].forEach(t => { p[t] = [0, 1, 2, 3, 4].map(i => hx(read(`--hv-${t}-${i}`))); });
+  return p;
+}
+const hvCss = () => { const cs = getComputedStyle(document.documentElement); return hvPalette(n => cs.getPropertyValue(n)); };
+const hvRgb = c => `rgb(${c.map(Math.round)})`;
+export function hvFlameRgb(q, pal) {   // deep orange -> orange -> yellow -> pale yellow -> white-hot along the flame tokens
+  const T = [.5, .65, .8, .9, 1], i = q >= .9 ? 3 : q >= .8 ? 2 : q >= .65 ? 1 : 0;
+  return hvMix(pal.flame[i], pal.flame[i + 1], hvClamp((q - T[i]) / (T[i + 1] - T[i]), 0, 1));
+}
+
+// Hazem's whole head as SVG markup (polygons and paths only): halo, bloom, egg, brows, eyes, mouth, rim, crown.
+export function hvHead(rx, ry, F) {
+  const W = rx * 2, ex = .19 * W, ey = -.135 * W, my = .30 * W, bl = .1 * W, by = ey - F.gap * W, th = F.brow * Math.PI / 180, f1 = n => n.toFixed(1);
+  const egg = hvEggPts(rx, ry, 48), mw = F.mw * W, up = F.up * W, lo = (.022 + .17 * F.mo) * W, N = 8, lens = [];
+  for (let t = 0; t <= N; t++) lens.push([mw * (t / N - .5), my - 4 * up * (t / N) * (1 - t / N)]);     // upper lip: quadratic arch
+  for (let t = N - 1; t > 0; t--) lens.push([mw * (t / N - .5), my + 4 * lo * (t / N) * (1 - t / N)]);  // lower lip: opens with anger
+  const L = lens.map(p => f1(p[0]) + ',' + f1(p[1])).join(' ');
+  const brows = [-1, 1].map(s => { const bx = s * ex; return `M${f1(bx - s * bl * Math.cos(th))},${f1(by + bl * Math.sin(th))} L${f1(bx + s * bl * Math.cos(th))},${f1(by - bl * Math.sin(th))}`; }).join(' ');
+  const eyes = [-1, 1].map(s => { const bx = s * ex, pr = Math.min(F.eh * .78, F.ew * .55) * W;
+    return `<polygon points="${hvNgon(bx, ey, F.ew * W, F.eh * W, 16)}" class="hv-hz-eye" style="opacity:${F.eo.toFixed(2)}"/><polygon points="${hvNgon(bx - s * .008 * W, ey + .004 * W, pr, pr, 10)}" class="hv-hz-pupil"/>`; }).join('');
+  const cw = rx * .58, c0 = -ry * .6, ch = ry * .34, tY = my - up + (up + lo) * .6 * F.teeth;
+  return `<polygon points="${hvNgon(0, 0, rx * 1.9, ry * 1.5, 32)}" fill="url(#hv-hz-halo)" style="opacity:${(.5 + .4 * F.a).toFixed(2)}"/>`
+    + `<radialGradient id="hv-hz-halo"><stop offset="0" style="stop-color:var(--hv-halo)"/><stop offset="1" style="stop-color:var(--hv-halo);stop-opacity:0"/></radialGradient>`
+    + `<radialGradient id="hv-hz-gloss" cx=".34" cy=".2" r=".5"><stop offset="0" style="stop-color:var(--hv-feat);stop-opacity:.16"/><stop offset="1" style="stop-color:var(--hv-feat);stop-opacity:0"/></radialGradient>`
+    + `<linearGradient id="hv-hz-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hvRgb(F.top)}"/><stop offset="1" stop-color="${hvRgb(F.bot)}"/></linearGradient>`
+    + `<clipPath id="hv-hz-mouth"><polygon points="${L}"/></clipPath>`
+    + `<polygon points="${egg}" class="hv-hz-bloom" stroke="url(#hv-hz-rim)" filter="url(#hv-bloom)" style="stroke-width:${(3 + 3 * F.bloom).toFixed(1)}px;opacity:${(.35 + .55 * F.bloom).toFixed(2)}"/>`
+    + `<polygon points="${egg}" class="hv-hz-egg"/><polygon points="${egg}" fill="url(#hv-hz-gloss)"/>`
+    + `<path d="${brows}" class="hv-hz-brow" style="stroke-width:${f1(F.bt * W)}px"/><g class="hv-eyes" style="transform-origin:0 ${f1(ey)}px">${eyes}</g>`
+    + `<polygon points="${L}" style="fill:${hvRgb(F.mc)}"/>`
+    + (F.teeth > .05 ? `<polygon points="${f1(-mw / 2)},${f1(my - up)} ${f1(mw / 2)},${f1(my - up)} ${f1(mw / 2)},${f1(tY)} ${f1(-mw / 2)},${f1(tY)}" clip-path="url(#hv-hz-mouth)" class="hv-hz-teeth"/>` : '')
+    + `<polygon points="${egg}" class="hv-hz-rim" stroke="url(#hv-hz-rim)"/>`
+    + `<path class="hv-crown" d="M${-cw},${c0} L${-cw},${c0 - ch} L${-cw * .45},${c0 - ch * .52} L0,${c0 - ch * 1.5} L${cw * .45},${c0 - ch * .52} L${cw},${c0 - ch} L${cw},${c0} Z"/>`;
+}
+
+// One node's flame layer: faceted tongues (straight segments, never soft blobs) that grow, rise and flicker with pressure q.
+// None below .5; tongue count, length, width, rise and flicker speed all interpolate continuously up to full blaze at .9+.
+function hvTongue(bx, by, ux, uy, len, w, t, i) {
+  const px = -uy, py = ux, fl = Math.sin(t + i * 2.1), fl2 = Math.cos(t * .7 + i * 1.3), A = [], B = [];
+  for (let s = 1; s <= 4; s++) {
+    const f = s / 4, o = fl * w * .5 * f + (s % 2 ? 1 : -1) * w * .34 * f, cx = bx + ux * len * f + px * o, cy = by + uy * len * f + py * o, hw = w * (1 - f * .92) * (1 + .25 * fl2 * f);
+    A.push([cx - px * hw, cy - py * hw]); B.push([cx + px * hw, cy + py * hw]);
+  }
+  const tip = [bx + ux * len * 1.06 + px * fl * w * .8, by + uy * len * 1.06 + py * fl * w * .8];
+  return 'M' + [[bx - px * w, by - py * w], ...A, tip, ...B.reverse(), [bx + px * w, by + py * w]].map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L') + 'Z';
+}
+export function hvFlame(rx, ry, q, now, seed, upper) {
+  if (q < .5) return null;
+  const u = hvFlameU(q), n = Math.max(3, Math.round(4 + 12 * u)), r = (rx + ry) / 2, rise = .38 + .5 * u, core = Math.max(0, (q - .6) / .4) * .85;
+  let d = '', dc = '';
+  for (let i = 0; i < n; i++) {
+    const ph = now * (.004 + .012 * u) + i * 2.3 + seed * 7, ang = upper ? -Math.PI + Math.PI * (i + .5) / n : seed + i * Math.PI * 2 / n;
+    const dx = Math.cos(ang), dy = Math.sin(ang) - rise, dl = Math.hypot(dx, dy) || 1, len = r * (.26 + .4 * u) * (.72 + .28 * Math.sin(ph)), w = r * (.12 + .14 * u);
+    d += hvTongue(rx * .92 * dx, ry * .92 * Math.sin(ang), dx / dl, dy / dl, len, w, ph, i);
+    if (core > .03) dc += hvTongue(rx * .88 * dx, ry * .88 * Math.sin(ang), dx / dl, dy / dl, len * .62, w * .5, ph * 1.15, i);
+  }
+  return {n, d, dc, alpha: .34 + .36 * u, core};
 }
 
 // ---- layout (px space, origin = stage centre, 1 SVG unit = 1 CSS px) ----
@@ -216,17 +327,13 @@ export function hvLayout(model, W, H) {
 }
 
 // ---- DOM ----
-const hvS = {snap: null, view: 'all', nodes: {}, edges: {}, key: '', L: null, es: null, zoom: null, live: false, at: 0, size: [0, 0]};
+const hvS = {a: null, p: 0, sys: null, fx: {}, pal: null, loop: 0, t: 0, ft: 0, snap: null, view: 'all', nodes: {}, edges: {}, key: '', L: null, es: null, zoom: null, live: false, at: 0, size: [0, 0]};
 export const hvState = hvS;
 const SVGNS = 'http://www.w3.org/2000/svg';
 const hvEl = (tag, attrs, parent) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
 
 export function hvNodeShape(g, it) {
   if (it.kind === 'egg') {
-    const cw = HV_EGG.rx * .58, c0 = -HV_EGG.ry * .6, ch = HV_EGG.ry * .34;
-    hvEl('polygon', {class: 'hv-uglow', points: hvNgon(0, 0, it.r * 1.6, it.r * 1.6, 24)}, g);
-    hvEl('polygon', {class: 'hv-egg', points: hvEggPts(HV_EGG.rx, HV_EGG.ry)}, g);
-    hvEl('path', {class: 'hv-crown', d: `M${-cw},${c0} L${-cw},${c0 - ch} L${-cw * .45},${c0 - ch * .52} L0,${c0 - ch * 1.5} L${cw * .45},${c0 - ch * .52} L${cw},${c0 - ch} L${cw},${c0} Z`}, g);
     hvEl('polygon', {class: 'hv-orbit', points: hvNgon(0, 0, it.r * 1.5, it.r * 1.5, 26)}, g);
   } else hvEl('polygon', {class: 'hv-hex', points: hvHex(it.r)}, g);
 }
@@ -254,9 +361,58 @@ export function hvDrawNode(it, pos, k) {
   if (it.kind === 'egg') { n.t1.setAttribute('y', (HV_EGG.ry + 19).toFixed(1)); n.t2.setAttribute('y', (HV_EGG.ry + 35).toFixed(1)); }
   n.t1.textContent = hvClip(it.label, tight ? 13 : 17); n.t2.textContent = k < HV_COMPACT ? '' : hvClip(it.sub, tight ? 15 : 26);
   if (n.title) { n.title.textContent = it.title; n.title.setAttribute('y', (-(r + 7)).toFixed(1)); n.title.style.fill = hvCol(it.fam); }
+  n.rx = it.kind === 'egg' ? HV_EGG.rx : r; n.ry = it.kind === 'egg' ? HV_EGG.ry : r; n.x = pos.x; n.y = pos.y; n.press = it.press;
   const mood = n.temp || it.mood;
-  if (n.mood !== mood) { n.fg.innerHTML = hvFace(hvFaceR({...it, r}), mood); n.fg.setAttribute('transform', it.kind === 'egg' ? `translate(0,${(HV_EGG.ry * .1).toFixed(1)})` : ''); n.mood = mood; }
+  if (it.kind === 'egg') { if (n.mood !== mood) { n.mood = mood; n.lv = -1; } hvPaintHazem(); }   // the head follows the anger value, not the mood
+  else if (n.mood !== mood) { n.fg.innerHTML = hvFace(hvFaceR({...it, r}), mood); n.fg.setAttribute('transform', it.kind === 'egg' ? `translate(0,${(HV_EGG.ry * .1).toFixed(1)})` : ''); n.mood = mood; }
   n.g.dataset.mood = mood;
+}
+
+// Hazem's head at the quantised anger level (HV_STEPS levels): repainted only when the level changes, one cached markup per level.
+const HV_STEPS = 48, hvHeads = {};
+export function hvPaintHazem() {
+  const n = hvS.nodes.hazem; if (!n || hvS.a == null) return;
+  const lv = Math.round(hvS.a * HV_STEPS); if (n.lv === lv) return;
+  n.lv = lv; n.g.dataset.anger = lv;
+  hvS.pal = hvS.pal || hvCss();
+  n.fg.innerHTML = hvHeads[lv] || (hvHeads[lv] = hvHead(HV_EGG.rx, HV_EGG.ry, hvKf(lv / HV_STEPS, hvS.pal)));
+  n.fg.removeAttribute('transform');
+}
+
+// One animation tick: anger and pressure ease toward the live targets; flames are redrawn at ~20 fps for nodes at pressure >= .5 only.
+export function hvFx(now) {
+  const dt = hvS.t ? Math.min(250, now - hvS.t) : 16; hvS.t = now;
+  if (!hvS.sys) return;
+  hvS.a = hvEase(hvS.a, hvS.sys.a, dt, 1500); hvS.p = hvEase(hvS.p, hvS.sys.p, dt, 320);
+  hvPaintHazem(); hvGauge();
+  if (now - (hvS.ft || 0) < 50) return;
+  const k = 1 - Math.exp(-(now - (hvS.ft || now)) / 320), root = $('hive-fx'); hvS.ft = now;
+  if (!root) return;
+  hvS.pal = hvS.pal || hvCss();
+  const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (const id in hvS.nodes) {
+    const n = hvS.nodes[id], tgt = id === 'hazem' ? hvS.sys.p : n.press || 0;
+    n.q = id === 'hazem' ? hvS.p : (n.q || 0) + (tgt - (n.q || 0)) * k;
+    let f = hvS.fx[id];
+    const fl = n.q >= .5 && n.x != null ? hvFlame(n.rx, n.ry, n.q, reduce ? 0 : now, ([...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 97, 7)) / 15, id === 'hazem') : null;
+    if (!fl) { if (f) { f.g.remove(); delete hvS.fx[id]; } continue; }
+    if (!f) { const g = hvEl('g', {}, root); f = hvS.fx[id] = {g, a: hvEl('path', {}, g), c: hvEl('path', {}, g)}; }
+    f.g.setAttribute('transform', `translate(${n.x.toFixed(1)},${n.y.toFixed(1)})`);
+    f.a.setAttribute('d', fl.d); f.a.style.fill = hvRgb(hvFlameRgb(Math.min(n.q, .9), hvS.pal)); f.a.style.fillOpacity = fl.alpha.toFixed(2);
+    f.c.setAttribute('d', fl.dc); f.c.style.fill = hvRgb(hvS.pal.flame[4]); f.c.style.fillOpacity = fl.core.toFixed(2);
+  }
+  for (const id in hvS.fx) if (!hvS.nodes[id]) { hvS.fx[id].g.remove(); delete hvS.fx[id]; }
+}
+const hvTick = now => { if (!hvS.loop) return; hvFx(now); hvS.loop = requestAnimationFrame(hvTick); };
+
+// System pressure gauge (top right of the stage): value, bar and the real inputs behind it.
+export function hvGauge() {
+  const s = hvS.sys, v = $('hive-g-v'); if (!s || !v) return;
+  const pct = Math.round(hvS.p * 100), lvl = hvS.p >= .8 ? 'hi' : hvS.p >= .5 ? 'mid' : 'lo';
+  v.textContent = pct + '%'; $('hive-g-fill').style.width = pct + '%';
+  $('hive-gauge').dataset.level = lvl;
+  $('hive-g-sub').textContent = `flames ${hvFlameLevel(hvS.p)} · anger ${Math.round(hvS.a * 100)}%`;
+  $('hive-gauge').title = `${s.runW} running + ${s.qW} queued workers · ${s.blocked} blocked · ${s.tasks} running tasks · ${s.todo} queued cards · ${s.waiting} waiting on you · blocked share ${Math.round(s.bs * 100)}%`;
 }
 
 // Transient mood hook for H-5/H-7: a real event overrides the status mood for `ms`.
@@ -283,6 +439,11 @@ export function hvRender(snap) {
   const key = [Math.round(W), Math.round(H), hvS.view, model.items.map(i => i.id).join()].join('|');
   if (key !== hvS.key || !hvS.L) { hvS.L = hvLayout(model, W, H); hvS.key = key; }   // positions only move when the roster or stage does
   const L = hvS.L, seen = new Set(), seenE = new Set();
+  hvS.sys = model.sys; if (hvS.a == null || !hvS.loop) { hvS.a = model.sys.a; hvS.p = model.sys.p; }   // first paint (or no animation running): take the live value, then ease
+  if (!$('hive-fx')) {   // one shared bloom filter for the rim, and the flame layer between the links and the nodes
+    const svg = $('hive-svg'), df = hvEl('defs', {}, svg); df.innerHTML = '<filter id="hv-bloom" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>';
+    svg.insertBefore(hvEl('g', {id: 'hive-fx'}), $('hive-nodes'));
+  }
   $('hive-svg').setAttribute('viewBox', `${-W / 2} ${-H / 2} ${W} ${H}`);
   model.edges.forEach(e => {
     if (!L.pos[e.a] || !L.pos[e.b]) return;
@@ -299,6 +460,7 @@ export function hvRender(snap) {
   const nodes = $('hive-nodes'); Object.values(hvS.nodes).forEach(n => { if (n.title) nodes.appendChild(n.g); });
   hvTabs(model); hvViews(model);
   hvS.zoom = attachZoom($('hive-svg'), {key: 'hive', getBase: () => { const [w, h] = hvStage(); return {x: -w / 2, y: -h / 2, w, h}; }});
+  hvPaintHazem(); hvGauge();
   if (hvHooks.onRender) hvHooks.onRender(model, L);
   return {model, L};
 }
@@ -350,6 +512,7 @@ export function hvConnect() {
   }
 }
 export function hvStop() {
+  if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
 }
@@ -365,5 +528,5 @@ export function hvShow(on) {
     else window.addEventListener('resize', () => hvRender());
   }
   hvPill(false, 'connecting…');
-  requestAnimationFrame(() => { if (hvS.snap) hvRender(); hvConnect(); });
+  requestAnimationFrame(() => { if (hvS.snap) hvRender(); hvConnect(); if (!hvS.loop) hvS.loop = requestAnimationFrame(hvTick); });
 }

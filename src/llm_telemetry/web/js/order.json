@@ -1755,6 +1755,74 @@
     },
     {
       "mod": "hive",
+      "name": "hvScoreP"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameLevel"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameU"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLong"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNodeScore"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSystem"
+    },
+    {
+      "mod": "hive",
+      "name": "hvEase"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_KF"
+    },
+    {
+      "mod": "hive",
+      "name": "hvMix"
+    },
+    {
+      "mod": "hive",
+      "name": "hvKf"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPalette"
+    },
+    {
+      "mod": "hive",
+      "name": "hvCss"
+    },
+    {
+      "mod": "hive",
+      "name": "hvRgb"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlameRgb"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHead"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTongue"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFlame"
+    },
+    {
+      "mod": "hive",
       "name": "hvClamp"
     },
     {
@@ -1812,6 +1880,26 @@
     {
       "mod": "hive",
       "name": "hvDrawNode"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_STEPS"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPaintHazem"
+    },
+    {
+      "mod": "hive",
+      "name": "hvFx"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTick"
+    },
+    {
+      "mod": "hive",
+      "name": "hvGauge"
     },
     {
       "mod": "hive",
