@@ -47,7 +47,7 @@ let p = 0, f = 0; const chk = (ok, l, x) => { console.log(`  ${ok ? 'ok  ' : 'FA
   globalThis.localStorage = { _: {}, getItem(k) { return k in this._ ? this._[k] : null; }, setItem(k, v) { this._[k] = String(v); } };
   H.hvSndInit();
   chk(ensured === 0 && ['pointerdown', 'keydown', 'touchend'].every(e => listeners[e]), 'init arms Hive\'s own gesture listeners only (no second armAudioUnlock), still no AudioContext');
-  chk(intervals === 0 && !/setInterval/.test(src.slice(src.indexOf('export function hvSndInit'))), 'sound init starts no timer (no timed narrator)', intervals);
+  chk(intervals === 0 && !/setInterval/.test(src.slice(src.indexOf('export function hvSndInit'), src.indexOf('Comms, events, replay'))), 'sound init starts no timer (no timed narrator)', intervals);
   chk(S.on && S.voice, 'sound and voice default to on');
   listeners.pointerdown();
   chk(ensured === 1 && S.ctx === ctx && S.m, 'first gesture resumes the shared context and builds the master chain');

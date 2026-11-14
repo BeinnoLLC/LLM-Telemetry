@@ -64,10 +64,21 @@ def strip_css_comments(text):
     return _CSS_TOKEN_RE.sub(repl, text)
 
 
+_CSS_WS_RE = re.compile(
+    r"""(?P<keep>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|url\([^)]*\)|/\*!.*?\*/)"""
+    r"""|(?P<ws>[ \t]*\n\s*)""", re.S | re.I)
+
+
+def _css_trim(text):
+    """Drop indentation, trailing blanks and blank lines from CSS; strings,
+    url(...) and /*! */ bodies are matched first and kept verbatim."""
+    return _CSS_WS_RE.sub(lambda m: m.group("keep") or "\n", text).strip() + "\n"
+
+
 def read_tokens():
     """The shared palette tokens, inlined ahead of every page's stylesheet."""
     with open(TOKENS_PATH, encoding="utf-8") as fh:
-        return strip_css_comments(fh.read())
+        return _css_trim(strip_css_comments(fh.read()))
 
 
 def script_json(obj):
@@ -81,7 +92,7 @@ def read_css():
         css = fh.read()
     with open(HIVE_CSS_PATH, encoding="utf-8") as fh:
         css += "\n" + fh.read()
-    return strip_css_comments(css)
+    return _css_trim(strip_css_comments(css))
 
 
 def read_utilities():
@@ -92,7 +103,7 @@ def read_utilities():
     file with no network dependency for layout.
     """
     with open(UTILITIES_PATH, encoding="utf-8") as fh:
-        return strip_css_comments(fh.read())
+        return _css_trim(strip_css_comments(fh.read()))
 
 
 def read_shell():
@@ -119,6 +130,8 @@ def split_blocks(text):
 
 
 _REGEX_PRECEDERS = "(,=:[!&|?{};+-*%<>~^"
+# A keyword before "/" starts a regex (`return /x/`), not a division.
+_REGEX_KEYWORD = re.compile(r"(?<![\w$.])(?:return|typeof|case|in|of|void|delete|yield|await|else|do|instanceof|new|throw)\s*$")
 
 
 def _dedent(line):
@@ -128,8 +141,21 @@ def _dedent(line):
     return " " + body if body != line and body.strip() else body
 
 
+def _whole_line_block_end(lines, idx):
+    """Index of the line closing the block comment opened at the start of
+    ``lines[idx]``, or -1 unless nothing but whitespace follows that ``*/``."""
+    first = lines[idx]
+    pos = first.find("/*") + 2
+    for j in range(idx, len(lines)):
+        line = lines[j]
+        end = line.find("*/", pos if j == idx else 0)
+        if end >= 0:
+            return j if not line[end + 2:].strip() else -1
+    return -1
+
+
 def strip_js_line_comments(text, dedent=False):
-    """Drop whole-line ``//`` comments (and, with dedent, code indentation down to one space) from shipped JS.
+    """Drop ``//`` comments (whole-line and trailing), whole-line ``/* */`` blocks (and, with dedent, code indentation down to one space) from shipped JS.
 
     The source modules keep their comments for maintainers; the page does not
     need to ship ~100 KB of them. A small scanner tracks strings, template
@@ -141,13 +167,22 @@ def strip_js_line_comments(text, dedent=False):
     stack = []            # "`" when inside a template, "{" for a ${ } or plain brace
     in_block = False
     last = ""             # last significant code char, to tell regex from division
-    for line in text.splitlines(True):
+    lines = text.splitlines(True)
+    skip_to = -1          # last line index of a whole-line block comment being dropped
+    for idx, line in enumerate(lines):
+        if idx <= skip_to:
+            continue
         in_tpl = bool(stack) and stack[-1] == "`"
         if not in_block and not in_tpl and line.lstrip().startswith("//"):
             continue
-        # Indentation is never significant in JS code; inside a template literal
-        # or a block comment it is content, so those lines stay verbatim.
-        out.append(_dedent(line) if dedent and not in_block and not in_tpl else line)
+        if not in_block and not in_tpl and line.lstrip().startswith("/*") \
+                and not line.lstrip().startswith("/*!"):
+            end = _whole_line_block_end(lines, idx)
+            if end >= 0:
+                skip_to = end
+                continue
+        verbatim = in_block or in_tpl
+        cut = -1          # start of a trailing // comment found in plain code state
         i, n = 0, len(line)
         while i < n:
             c = line[i]
@@ -178,10 +213,11 @@ def strip_js_line_comments(text, dedent=False):
                 stack.append("`")
                 i += 1
             elif c == "/" and line.startswith("//", i):
+                cut = i
                 break
             elif c == "/" and line.startswith("/*", i):
                 in_block, i = True, i + 2
-            elif c == "/" and (last == "" or last in _REGEX_PRECEDERS):
+            elif c == "/" and (last == "" or last in _REGEX_PRECEDERS or _REGEX_KEYWORD.search(line, 0, i)):
                 j, cls = i + 1, False
                 while j < n and (cls or line[j] != "/"):
                     if line[j] == "\\":
@@ -200,6 +236,14 @@ def strip_js_line_comments(text, dedent=False):
                 if not c.isspace():
                     last = c
                 i += 1
+        if cut >= 0:
+            nl = line[len(line.rstrip("\r\n")):]
+            line = line[:cut].rstrip() + nl
+            if not line.strip():
+                continue
+        # Indentation is never significant in JS code; inside a template literal
+        # or a block comment it is content, so those lines stay verbatim.
+        out.append(_dedent(line) if dedent and not verbatim else line)
     return "".join(out)
 
 

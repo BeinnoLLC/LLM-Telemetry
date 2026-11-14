@@ -350,10 +350,10 @@ export function hvDrawNode(it, pos, k) {
     g.addEventListener('mousemove', e => { const t = $('hive-tip'); t.innerHTML = n.tip; t.style.opacity = 1; t.style.left = Math.min(e.clientX + 14, innerWidth - 340) + 'px'; t.style.top = (e.clientY + 14) + 'px'; });
     g.addEventListener('mouseleave', () => { $('hive-tip').style.opacity = 0; });
     g.addEventListener('click', () => { if (hvHooks.onClick) hvHooks.onClick(it.id, n); });
-    n = hvS.nodes[it.id] = {id: it.id, g, body, fg, t1, t2, title: tt, mood: null, r: -1, kind: it.kind};
+    n = hvS.nodes[it.id] = {id: it.id, label: it.label, g, body, fg, t1, t2, title: tt, mood: null, r: -1, kind: it.kind};
   }
   if (n.r !== r) { n.body.innerHTML = ''; hvNodeShape(n.body, {...it, r}); n.r = r; n.mood = null; }
-  n.tip = it.tip; n.fam = it.fam;
+  n.tip = it.tip; n.fam = it.fam; n.label = it.label;
   n.g.setAttribute('transform', `translate(${pos.x.toFixed(1)},${pos.y.toFixed(1)})`);
   n.g.setAttribute('class', `hv-node hv-${it.kind} ${it.hot ? 'hot' : 'idle'}${it.blocked ? ' blocked' : ''}${it.data ? '' : ' nodata'}${it.pool ? ' pool' : ''}`);
   n.g.style.setProperty('--c', hvCol(it.fam));
@@ -384,7 +384,7 @@ export function hvPaintHazem() {
 export function hvFx(now) {
   const dt = hvS.t ? Math.min(250, now - hvS.t) : 16; hvS.t = now;
   if (!hvS.sys) return;
-  hvS.a = hvEase(hvS.a, hvS.sys.a, dt, 1500); hvS.p = hvEase(hvS.p, hvS.sys.p, dt, 320);
+  hvC.bump = hvC.bump * Math.exp(-dt / 6000); hvS.a = hvEase(hvS.a, hvClamp(hvS.sys.a + hvC.bump, 0, 1), dt, 1500); hvS.p = hvEase(hvS.p, hvS.sys.p, dt, 320);
   hvPaintHazem(); hvGauge();
   if (now - (hvS.ft || 0) < 50) return;
   const k = 1 - Math.exp(-(now - (hvS.ft || now)) / 320), root = $('hive-fx'); hvS.ft = now;
@@ -460,7 +460,7 @@ export function hvRender(snap) {
   for (const id in hvS.edges) if (!seenE.has(id)) { hvS.edges[id].remove(); delete hvS.edges[id]; }
   // labels and family titles always draw on top of bodies and edges
   const nodes = $('hive-nodes'); Object.values(hvS.nodes).forEach(n => { if (n.title) nodes.appendChild(n.g); });
-  hvTabs(model); hvViews(model);
+  hvTabs(model); hvViews(model); hvLayers(); if (fresh) hvPaintComms();
   hvS.zoom = attachZoom($('hive-svg'), {key: 'hive', getBase: () => { const [w, h] = hvStage(); return {x: -w / 2, y: -h / 2, w, h}; }});
   hvPaintHazem(); hvGauge();
   if (hvHooks.onRender) hvHooks.onRender(model, L);
@@ -480,7 +480,7 @@ export function hvViews(model) {
   el.innerHTML = V.map(([id, l]) => `<button type="button" class="seg-btn${id === hvS.view ? ' on' : ''}" data-hv="${esc(id)}" aria-pressed="${id === hvS.view}">${esc(l)}</button>`).join('');
 }
 export function hvSetView(v) {
-  hvS.view = v; hvS.key = '';
+  hvS.view = v; hvS.key = ''; hvC.pk = '';
   try { localStorage.setItem('hiveView', v); } catch (_) { /* private mode */ }
   hvRender();
 }
@@ -491,10 +491,15 @@ export function hvPill(live, text) {
   if (live) p.dataset.stampState = 'fresh'; else delete p.dataset.stampState;
 }
 
-async function hvPoll() {
+export async function hvPoll() {
   try {
+    if (!hvS.es && hvC.seq != null) {   // no live stream: replay exactly the frames missed since the last seen seq
+      const q = await fetch('/api/hive?since=' + hvC.seq), d = q.ok ? await q.json() : null;
+      if (d && d.type === 'reset') hvSnapshot(d.snapshot, true);
+      else if (d && d.type === 'delta') { d.events.forEach(hvApply); hvC.seq = Math.max(hvC.seq, d.to); }
+    }
     const r = await fetch('/api/hive'); if (!r.ok) throw new Error(r.status);
-    hvRender(await r.json()); hvPill(true, hvS.es ? 'live' : 'live · polling');
+    hvSnapshot(await r.json()); hvPill(true, hvS.es ? 'live' : 'live · polling');
   } catch (_) { hvPill(false, 'reconnecting…'); }
 }
 export function hvConnect() {
@@ -504,27 +509,28 @@ export function hvConnect() {
   // and counters on the faces must keep following real data either way.
   hvS.timer = setInterval(hvPoll, 5000);
   hvPoll();
-  if (typeof EventSource === 'function') {
+  const open = () => {   // also the retry path after a stream error
+    if (hvS.es || !hvS.timer || typeof EventSource !== 'function') return;
     const es = hvS.es = new EventSource('/api/hive/stream');
-    es.addEventListener('snapshot', e => { hvRender(JSON.parse(e.data)); hvPill(true, 'live'); });
-    // A delta frame is proof real state changed: refresh the snapshot at once
-    // (H-7 applies the event frames directly). Never just acknowledge it.
-    es.addEventListener('delta', () => { hvPill(true, 'live'); hvPoll(); });
-    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); hvS.es = null; };
-  }
+    es.addEventListener('snapshot', e => { hvSnapshot(JSON.parse(e.data), true); hvPill(true, 'live'); });
+    // A delta frame is real change: apply it (feed + animation), then refresh the snapshot (at most once a second).
+    es.addEventListener('delta', e => { try { hvApply(JSON.parse(e.data)); } catch (_) { /* heartbeat or malformed */ } hvPill(true, 'live'); if (Date.now() - hvC.pollAt >= 1000) { hvC.pollAt = Date.now(); hvPoll(); } });
+    es.onerror = () => { hvPill(false, 'reconnecting…'); es.close(); if (hvS.es === es) hvS.es = null; hvC.retry = setTimeout(open, 5000); };
+  };
+  open();
 }
 export function hvStop() {
   if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
-  hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  hvC.rt.forEach(clearTimeout); hvC.rt = []; clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 // Called by the router whenever the Hive tab is shown or hidden.
 export function hvShow(on) {
   if (!on) { hvStop(); return; }
   try { hvS.view = localStorage.getItem('hiveView') || 'all'; } catch (_) { hvS.view = 'all'; }
-  hvSndInit();
+  hvSndInit(); hvCommInit();
   if (!hvS.bound) {
     hvS.bound = true;
     $('hive-views').addEventListener('click', e => { const b = e.target.closest('[data-hv]'); if (b) hvSetView(b.dataset.hv); });
@@ -539,6 +545,7 @@ export function hvShow(on) {
 // On by default but silent until the first gesture unlocks the shared AudioContext (live.js); toggles persist in localStorage.
 export const hvSnd = {on: true, amb: false, voice: true, vol: .5, ctx: null, m: null, last: {}, prev: null, lv: 0, pb: -1, show: false, unl: [], vs: null, k: 1, pv: 1, a: null};
 const hvLs = (k, d, v) => { try { if (v === undefined) { const x = localStorage.getItem(k); return x == null ? d : x; } localStorage.setItem(k, v); } catch (_) { /* private mode */ } return d; };
+export const hvLvOf = a => a >= .85 ? 3 : a >= .6 ? 2 : a >= .35 ? 1 : 0;
 export const hvQuiet = (h = new Date().getHours()) => h >= 22 || h < 7;   // quiet hours: only done and dizzy, softly; no beds, pressure or barks
 const hvReduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const hvHash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
@@ -632,7 +639,7 @@ export function hvSay(profile, text, project, lv = 0, mood = '') {
 
 // Real changes only: the first snapshot is a baseline, later ones sound per-brain done / blocked / started / queued, anger-level moves and the pressure band.
 export function hvSoundDiff(snap, model) {
-  const S = hvSnd, cur = {}, prev = S.prev, p = model.sys.p, a = model.sys.a, lv = a >= .85 ? 3 : a >= .6 ? 2 : a >= .35 ? 1 : 0, was = S.lv;
+  const S = hvSnd, cur = {}, prev = S.prev, p = model.sys.p, a = model.sys.a, lv = hvLvOf(a), was = S.lv;
   const pb = p >= .9 ? 3 : p >= .8 ? 2 : p >= .7 ? 1 : p >= .5 ? 0 : -1, wasPb = S.pb;
   S.prev = cur; S.lv = lv; S.pb = pb;
   if (S.a && hvQuiet()) hvAmbient(false); else if (!S.a && S.on && S.amb) hvAmbient(true);   // the hum ends when quiet hours begin
@@ -677,4 +684,199 @@ export function hvSndInit() {
     if (b) b.addEventListener('click', () => { S[key] = !S[key]; hvLs(ls, 0, S[key] ? '1' : '0'); hvUnlock(); if (key === 'voice' && S.voice) hvSay('hive', 'Voice on.'); hvAmbient(S.on && S.amb); hvPaintSnd(); }); });
   const v = $('hive-vol'); if (v) { v.value = S.vol * 100; v.addEventListener('input', () => { S.vol = v.value / 100; hvLs('hiveVol', 0, S.vol); if (S.m) S.m.gain.value = S.vol; }); }
   hvPaintSnd();
+}
+
+// ---- Comms, events, replay, firing mode (LLMTELEMET-274, H-7): every animation comes from a real frame or comm, never a timer ----
+export const HV_VOCAB = {
+  ask: ['On it?', 'Status, please.'], reply: ['Got it.', 'Copy that.'], replyGood: ['Shipped it.', 'All green.'], replyBad: ["I'm blocked.", 'That failed.'], comment: ['Checkpoint.'],
+  done: ['Done!'], blocked: ['Blocked!'], crashed: ['Ouch.'], timed_out: ['Timed out.'], gave_up: ['I give up.'], spawned: ['Worker spawned.'], unblocked: ['Free again!'],
+};
+const HV_GOOD = /\b(done|merged|shipped|green|passed|closed|fixed)\b/i;
+const HV_BAD = /\b(blocked|fail(ed)?|error|crash(ed)?|can'?t|broken|timed? ?out|stuck)\b/i;
+const hvTx = c => HV_BAD.test(c.text || '') ? 'Bad' : HV_GOOD.test(c.text || '') ? 'Good' : '';
+export const hvOutcome = c => c.kind === 'event' ? ({done: 'happy', unblocked: 'happy', blocked: 'angry', gave_up: 'angry', crashed: 'dizzy', timed_out: 'dizzy'})[c.event] || null
+  : c.kind === 'reply' || c.kind === 'comment' ? ({Bad: 'angry', Good: 'happy'})[hvTx(c)] || null : null;
+export const hvCommLine = (c, r = Math.random) => {
+  const a = c.kind === 'event' ? HV_VOCAB[c.event] || HV_VOCAB.comment : HV_VOCAB[c.kind === 'reply' ? 'reply' + hvTx(c) : c.kind] || HV_VOCAB.ask;
+  return a[Math.floor(r() * a.length)];
+};
+const hvFamOf = p => /^pv-|pixelvent/.test(p) ? 'pixelvent' : /^acasia/.test(p) ? 'acasia' : /^sp-|aixiom|rebate|somethingpressing/.test(p) ? 'somethingpressing' : 'root';
+
+// profile -> node id for the live roster; resolve() falls back board -> map -> family assistant -> Hazem
+export function hvPmap(snap) {
+  const m = {hazem: 'hazem', cron: 'hazem', system: 'hazem'};
+  ((snap && snap.families) || []).forEach(f => {
+    m[f.assistant.id] = 'a:' + f.id; (f.bots || []).forEach(b => { m[b.id] = `b:${f.id}:${b.id}`; });
+    (f.brains || []).forEach(b => { m[b.id] = `b:${f.id}:${b.id}`; (b.agents || []).forEach(a => { m[a.id] = m[a.id] || `g:${f.id}:${b.id}:${a.id}`; }); });
+  });
+  return m;
+}
+export function hvResolve(p, board, snap, has = () => true, pm = hvPmap(snap)) {
+  if (!p) return null;
+  for (const f of board && snap ? snap.families || [] : []) for (const b of f.brains || []) if (b.board === board) {
+    if (b.id === p) return `b:${f.id}:${b.id}`; if (has(`g:${f.id}:${b.id}:${p}`)) return `g:${f.id}:${b.id}:${p}`; }
+  const a = 'a:' + hvFamOf(p); return pm[p] && has(pm[p]) ? pm[p] : has(a) ? a : has('hazem') ? 'hazem' : null;
+}
+export function hvProject(c, snap) {
+  const nice = x => x.replace(/-brain$/, '').replace(/-/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+  for (const f of (snap && snap.families) || []) for (const b of f.brains || []) if (c.board && b.board === c.board || b.id === c.to || b.id === c.from) return b.label || nice(c.board && b.board === c.board ? b.board : b.id);
+  const t = c.board || [c.to, c.from].find(x => x && /-brain$/.test(x)); return t ? nice(t) : '';
+}
+export const hvWho = (p, pm, lbl) => ({hazem: 'Hazem', cron: 'Cron', board: 'card'})[p] || (lbl && lbl(pm[p])) || hvShort(p);
+export function hvWrap(t, w = 34, max = 3) {
+  const L = [''];
+  for (const x of String(t).split(' ')) {
+    if ((L[L.length - 1] + ' ' + x).trim().length > w) { if (L.length === max) { L[max - 1] += '…'; break; } L.push(x); } else L[L.length - 1] = (L[L.length - 1] + ' ' + x).trim();
+  }
+  return L;
+}
+export const hvVia = (c, o) => (o.replay ? 'replay · ' + ago(Math.max(0, o.now - c.at)) + ' ago · ' : '') + (o.project ? o.project.toUpperCase() + ' · ' : '')
+  + `${hvWho(c.from, o.pm, o.lbl)} → ${hvWho(c.to, o.pm, o.lbl)} · ${c.via}${c.task ? ' · ' + c.task.slice(0, 30) : ''}`;
+
+export const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], pollAt: 0, retry: 0};
+const hvHas = id => !!hvS.nodes[id];
+const hvNLabel = id => hvS.nodes[id] && hvS.nodes[id].label;
+const hvFamId = id => id === 'hazem' ? 'root' : String(id).split(':')[1];
+const hvInView = (c, view, snap) => {
+  const pm = hvPmap(snap), a = hvResolve(c.from, c.board, snap, hvHas, pm), b = hvResolve(c.to, c.board, snap, hvHas, pm);
+  return view === 'all' || [a, b].some(x => x && hvFamId(x) === view) || hvFamOf(c.from) === view || hvFamOf(c.to) === view;
+};
+
+function hvLayers() { const svg = $('hive-svg'); if (svg && !$('hive-bubbles')) ['hive-pk', 'hive-bubbles'].forEach(id => hvEl('g', {id}, svg)); }
+function hvTween(ms, fn, done) {   // a hidden tab pauses rAF: finish at once instead of stalling the choreography
+  if (document.hidden || typeof requestAnimationFrame !== 'function') { fn(1); if (done) done(); return; }
+  let t0; const st = t => { t0 = t0 || t; const u = Math.min(1, (t - t0) / ms); fn(u); if (u < 1) requestAnimationFrame(st); else if (done) done(); }; requestAnimationFrame(st);
+}
+function hvKick(cls) { const s = $('hive-stage'); if (!s) return; s.classList.remove(cls); void s.offsetWidth; s.classList.add(cls); setTimeout(() => s.classList.remove(cls), 900); }
+function hvPacket(a, b, fam, o = {}) {
+  const A = hvS.nodes[a], B = hvS.nodes[b], g = $('hive-pk');
+  if (!A || !B || !g || A.x == null || B.x == null) { if (o.then) o.then(); return; }
+  const e = hvEl('polygon', {class: 'hv-pk', points: o.bolt ? '-10,0 0,-2.5 10,0 0,2.5' : hvHex(5)}, g), dx = B.x - A.x, dy = B.y - A.y, rot = o.bolt ? Math.round(Math.atan2(dy, dx) * 57.3) : 0;
+  e.style.setProperty('--c', hvCol(fam));
+  hvTween(Math.max(260, Math.hypot(dx, dy) * (o.bolt ? 1 : 2)), u => e.setAttribute('transform', `translate(${(A.x + dx * u).toFixed(1)},${(A.y + dy * u).toFixed(1)}) rotate(${rot})`), () => { e.remove(); if (o.then) o.then(); });
+}
+function hvPuff(id, cls, n = 0, v = 120, fam = '') {   // n confetti polygons thrown out and faded, or (n = 0) one expanding wave ring
+  const N = hvS.nodes[id], g = $('hive-pk'); if (!N || !g || N.x == null) return;
+  const ps = [...Array(n || 1)].map((_, i) => ({e: hvEl('polygon', {class: n ? 'hv-p conf' : 'hv-wave ' + cls, points: n ? hvNgon(0, 0, 2.6, 2.6, 4) : hvHex(1)}, g), a: Math.PI * 2 * i / n + Math.random(), v: 46 * (.5 + Math.random())}));
+  if (n) ps.forEach(p => p.e.style.setProperty('--c', hvCol(fam || (N.fam) || hvFamId(id))));
+  hvTween(n ? 900 : 700, u => ps.forEach(p => { p.e.style.opacity = 1 - u; p.e.setAttribute('transform', n ? `translate(${(N.x + Math.cos(p.a) * p.v * u).toFixed(1)},${(N.y + Math.sin(p.a) * p.v * u + 34 * u * u).toFixed(1)}) rotate(${Math.round(u * 360)})` : `translate(${N.x.toFixed(1)},${N.y.toFixed(1)}) scale(${(14 + v * u).toFixed(1)})`); }), () => ps.forEach(p => p.e.remove()));
+}
+const hvBump = v => { hvC.bump = hvClamp(hvC.bump + v, -.3, .4); };   // a transient lift on the data-derived anger; decays in hvFx
+
+// Speech bubble above a node. Never more than 2 on screen: a new one evicts the oldest.
+export function hvBubble(id, text, via, fam, ms = 5200) {
+  const n = hvS.nodes[id], box = $('hive-bubbles'); if (!n || n.x == null || !text || !box) return null;
+  while (box.children.length >= 2) box.firstChild.remove();
+  const L = hvWrap(text), w = Math.max(...L.map(l => l.length * 7.8), via.length * 7.8) + 24, h = L.length * 18 + 32, B = hvS.L ? hvS.L.bounds : {x1: 300, y0: -300};
+  const x = n.x + 30 + w > B.x1 ? n.x - w - 30 : n.x + 30, y = Math.max(B.y0, n.y - h - 24), g = hvEl('g', {class: 'hv-bubble'}, box);
+  g.style.setProperty('--c', hvCol(fam)); hvEl('rect', {x, y, width: w, height: h}, g);
+  hvEl('text', {x: x + 12, y: y + 15, class: 'hv-via'}, g).textContent = via;
+  L.forEach((l, i) => { hvEl('text', {x: x + 12, y: y + 36 + i * 18}, g).textContent = l; });
+  setTimeout(() => g.remove(), ms); return g;
+}
+
+// One real message: sender -> recipient (laser bolt in firing mode, big packet otherwise), then the outcome on arrival.
+export function hvPlayComm(c, {replay = false} = {}) {
+  const snap = hvS.snap, pm = hvPmap(snap), a = hvResolve(c.from, c.board, snap, hvHas, pm), b = hvResolve(c.to === 'board' ? c.from : c.to, c.board, snap, hvHas, pm); if (!a) return false;
+  const fam = (hvS.nodes[a] && hvS.nodes[a].fam) || hvFamId(a), o = hvOutcome(c), pj = hvProject(c, snap), ev = c.kind === 'event', who = p => hvWho(p, pm, hvNLabel), fire = hvC.fire;
+  const via = hvVia(c, {replay, now: Date.now() / 1000, project: pj, pm, lbl: hvNLabel}), words = n => String(c.text || '').replace(/https?:\S+/g, 'link').split(/\s+/).slice(0, n).join(' ');
+  const arrive = () => {
+    const t = b || a, lv = Math.max(1, hvLvOf(hvS.a)), say = m => ev && hvSay(c.from, `${hvCommLine(c)} ${who(c.from)}: ${String(c.event || '').replace('_', ' ')}. ${words(8)}`, pj, o === 'angry' ? lv : 0, m);
+    hvBubble(ev ? t : a, ev ? [String(c.event || '').replace('_', ' '), c.text].filter(Boolean).join(': ') : c.text, via, fam);
+    if (o === 'happy') { const was = hvLvOf(hvS.a); hvBump(-.15); hvSetMood(t, 'happy', 3500); hvPuff(t, '', 18, 120, fam); hvPlay('done', fam); if (was) hvPlay('calm'); say('happy'); }
+    else if (o === 'angry') { hvBump(.25); hvSetMood(t, lv >= 2 ? 'fire' : 'angry', 3500 + lv * 1000); if (t !== a) hvSetMood(a, 'angry', 3000); hvPuff(t, 'bad', 0, 140 + lv * 60); hvKick('hv-flash'); hvPlay('rage', lv); if (fire && lv >= 3) hvPlay('boom'); say('angry'); }
+    else if (o === 'dizzy') { hvSetMood(t, 'dizzy', 4000); hvPlay('dizzy'); say('dizzy'); }
+    else { hvSetMood(t, 'wow', 1600); hvPlay(fire ? 'hit' : 'arrive', fam); }
+  };
+  if (!ev) hvSay(c.from, `${who(c.from)} ${c.kind === 'reply' ? 'reports to' : c.kind === 'comment' ? 'notes for' : 'asks'}${c.to && c.to !== 'board' ? ' ' + who(c.to) : ''}: ${words(16)}`, pj, hvLvOf(hvS.a), '');
+  if (!b || b === a) { hvSetMood(a, 'talk', 2500); arrive(); return true; }
+  if (fire) { hvSetMood(a, 'fire', 1400); hvPlay('charge'); setTimeout(() => { hvPlay('blast', fam); hvPacket(a, b, fam, {bolt: true, then: arrive}); }, 280); }
+  else { hvSetMood(a, 'talk', 2000); hvPacket(a, b, fam, {then: arrive}); }
+  return true;
+}
+
+// Conversations panel
+const hvHM = at => new Date(at * 1000).toTimeString().slice(0, 5);
+const hvRow = c => {
+  const o = hvOutcome(c), pm = hvPmap(hvS.snap), pj = hvProject(c, hvS.snap), who = p => esc(hvWho(p, pm, hvNLabel)), tag = (x, k = '') => `<span class="hv-tag ${k}">${esc(x)}</span>`, d = document.createElement('div');
+  d.className = 'hv-cm' + (c.pending ? ' pending' : '') + (o === 'angry' || o === 'dizzy' ? ' bad' : o === 'happy' ? ' good' : '');
+  d.innerHTML = `<div class="hv-hd"><span style="color:${hvCol(hvFamOf(c.from))}">${who(c.from)}</span>→<span style="color:${hvCol(hvFamOf(c.to === 'board' ? c.from : c.to))}">${who(c.to)}</span>`
+    + `${pj ? tag(pj, 'hv-pj') : ''}${tag(c.via)}${tag(c.kind === 'event' ? c.event : c.kind)}${c.pending ? tag('waiting reply', 'p') : ''}<span class="hv-meta">${hvHM(c.at)}</span></div>`
+    + `<div class="hv-tx">${c.task && c.kind !== 'event' ? `<b>${esc(c.task)}</b> · ` : ''}${esc(c.text)}</div>`;
+  return d;
+};
+const hvVisible = () => hvC.log.filter(c => hvInView(c, hvS.view, hvS.snap));
+const hvPk = () => hvS.view + '|' + hvS.key + '|' + hvC.log.length;
+const hvCount = () => { $('hive-ccount').textContent = `${hvVisible().length} in 12 h`; hvC.pk = hvPk(); };
+export function hvPaintComms() {
+  const list = $('hive-clist'); if (!list || hvC.pk === hvPk()) return;
+  list.innerHTML = ''; hvVisible().slice(-80).reverse().forEach(c => list.appendChild(hvRow(c))); hvCount();
+}
+export function hvAddComm(c, animate) {
+  if (hvC.shown.has(c.id)) return false; hvC.shown.add(c.id); hvC.log.push(c); if (hvC.log.length > 400) hvC.log.shift();
+  if (!hvInView(c, hvS.view, hvS.snap)) return false;
+  const list = $('hive-clist');
+  if (list) { list.prepend(hvRow(c)); while (list.children.length > 80) list.lastChild.remove(); hvCount(); }
+  if (animate) hvPlayComm(c);
+  return true;
+}
+
+// Task-events panel + choreography: Hazem -> assistant -> brain -> agent hops, then the status outcome
+export function hvFeed(ev) {
+  const box = $('hive-feed'); if (!box) return;
+  if ($('hive-feedempty')) $('hive-feedempty').remove();
+  const f = ((hvS.snap && hvS.snap.families) || []).find(x => x.id === ev.family), d = document.createElement('div'), st = esc(ev.status);
+  const verb = ev.worker ? (ev.kind === 'new' ? 'worker started:' : `worker <b>${st}</b>:`) : ev.kind === 'new' ? 'new task for' : `${esc(ev.from)} → <b class="hv-st-${st}">${st}</b> ·`;
+  d.innerHTML = `<time>${hvHM(ev.at)}</time><span><b style="color:${hvCol(ev.family)}">${esc(f ? f.assistant.label : ev.family)}</b> · <b>${esc(ev.board)}</b> · ${verb} ${ev.worker ? '' : `<b>${esc(hvShort(ev.agent))}</b> — `}${esc(ev.title)}</span>`;
+  box.prepend(d); while (box.children.length > 40) box.lastChild.remove();
+}
+export function hvHops(ev, has = hvHas) {
+  const aid = 'a:' + ev.family, b0 = `b:${ev.family}:${ev.brain}`, g = `g:${ev.family}:${ev.brain}:${ev.agent}`, bid = has(b0) ? b0 : aid, end = has(g) ? g : bid;   // an assistant's own worker has no brain node
+  return {aid, end, hops: [['hazem', aid], [aid, bid], [bid, end]].filter(([x, y]) => x !== y && has(x) && has(y))};
+}
+export function hvPlayEvent(ev) {
+  const {aid, end, hops} = hvHops(ev); if (!hvHas(aid)) return false;
+  const fam = ev.family, st = ev.status, finish = () => {
+    if (st === 'done' || st === 'finished') { if (st === 'done') { hvPuff(end, '', 22, 120, fam); hvKick('hv-flash-ok'); } hvPuff(end, 'ok', 0, 200); hvPlay('done', fam); }
+    else if (st === 'blocked') { hvBump(.2); hvPuff(end, 'bad', 0, 200); hvPlay('rage', Math.max(1, hvLvOf(hvS.a))); hvKick('hv-flash'); }
+    else if (ev.kind === 'new') { hvPuff(end, '', 0, 150); hvPuff(end, '', 14, 120, fam); hvPlay('newTask', fam); }
+    else { hvPuff(end, '', 0, 120); hvPlay('running', fam); }
+  }, run = i => i < hops.length ? hvPacket(hops[i][0], hops[i][1], fam, {then: () => run(i + 1)}) : finish();
+  run(0); return true;
+}
+export function hvReplay() {   // the last 8 conversations, 1.5 s apart
+  hvUnlock();
+  hvC.rt.forEach(clearTimeout); hvC.rt = [];
+  return hvVisible().slice(-8).map((c, i) => { hvC.rt.push(setTimeout(() => hvPlayComm(c, {replay: true}), i * 1500)); return i * 1500; });
+}
+
+// Honest heartbeat: how fresh the data is and when the last real message happened; nothing else
+export const hvBeat = (log, lastSnap, now) => {
+  const last = Math.max(0, ...log.map(c => c.at));
+  return {last: last ? `last real message: ${ago(Math.max(0, Math.round(now - last)))} ago` : 'no messages yet', fresh: lastSnap ? `checked ${Math.max(0, Math.round(now - lastSnap))}s ago` : ''};
+};
+function hvBeatPaint() { const b = hvBeat(hvC.log, hvC.lastSnap, Date.now() / 1000); $('hive-lastreal').textContent = b.last; $('hive-fresh').textContent = b.fresh; }
+
+// Frames from the stream or from ?since= polling; a seq we have already seen is ignored, so both paths can run together
+export function hvApply(fr) {
+  if (!fr || (fr.seq != null && hvC.seq != null && fr.seq <= hvC.seq)) return false;
+  if (fr.seq != null) hvC.seq = fr.seq;
+  if (fr.type === 'comm') hvAddComm(fr, true); else if (fr.type === 'event') { hvFeed(fr); hvPlayEvent(fr); }
+  return true;
+}
+// The first snapshot is a baseline (logged, never animated); later ones animate the comms that arrived since.
+export function hvSnapshot(s, reset) {
+  hvRender(s);
+  (s.comms || []).forEach(c => hvAddComm(c, !hvC.first && c.at > hvC.lastSnap - 10));
+  hvC.lastSnap = s.at || 0; hvC.first = false;
+  if (s.seq != null && (reset || hvC.seq == null)) hvC.seq = s.seq;
+  hvPaintComms(); hvBeatPaint();
+}
+export function hvCommInit() {
+  if (!hvC.hb) hvC.hb = setInterval(hvBeatPaint, 1000);
+  if (hvC.bound) return; hvC.bound = true;
+  hvC.fire = hvLs('hiveFire', '1') !== '0';
+  const paint = () => { $('hive-fire').classList.toggle('on', hvC.fire); $('hive-fire').setAttribute('aria-pressed', hvC.fire); };
+  $('hive-fire').addEventListener('click', () => { hvC.fire = !hvC.fire; hvLs('hiveFire', 0, hvC.fire ? '1' : '0'); paint(); hvUnlock(); if (hvC.fire) { hvPlay('charge'); setTimeout(() => hvPlay('boom'), 400); } });
+  $('hive-replay').addEventListener('click', hvReplay); paint();
 }
