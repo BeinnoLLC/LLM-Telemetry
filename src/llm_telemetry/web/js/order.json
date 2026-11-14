@@ -1946,6 +1946,102 @@
       "name": "hvShow"
     },
     {
+      "mod": "hive",
+      "name": "hvSnd"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLs"
+    },
+    {
+      "mod": "hive",
+      "name": "hvQuiet"
+    },
+    {
+      "mod": "hive",
+      "name": "hvReduced"
+    },
+    {
+      "mod": "hive",
+      "name": "hvHash"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNote"
+    },
+    {
+      "mod": "hive",
+      "name": "hvTone"
+    },
+    {
+      "mod": "hive",
+      "name": "hvNoise"
+    },
+    {
+      "mod": "hive",
+      "name": "hvT"
+    },
+    {
+      "mod": "hive",
+      "name": "hvN"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_SFX"
+    },
+    {
+      "mod": "hive",
+      "name": "HV_CD"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPlay"
+    },
+    {
+      "mod": "hive",
+      "name": "hvAmbient"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVoice"
+    },
+    {
+      "mod": "hive",
+      "name": "hvLine"
+    },
+    {
+      "mod": "hive",
+      "name": "hvVoices"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSay"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSoundDiff"
+    },
+    {
+      "mod": "hive",
+      "name": "hvPaintSnd"
+    },
+    {
+      "mod": "hive",
+      "name": "hvUnlock"
+    },
+    {
+      "mod": "hive",
+      "name": "hvArm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvDisarm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvSndInit"
+    },
+    {
       "mod": "views",
       "name": "SRC_BADGE"
     },

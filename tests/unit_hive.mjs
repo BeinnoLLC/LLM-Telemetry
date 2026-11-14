@@ -12,6 +12,7 @@ const H = await isolate('hive.js', {
   'palette.js': { $: () => null, esc: s => String(s == null ? '' : s), ago: s => s + 's' },
   'views.js': { provOf: () => 'cloud', provLogoSvg: () => '<svg class="x"></svg>' },
   'zoom.js': { attachZoom: () => ({}) },
+  'live.js': { ensureAudioCtx: () => null },
 });
 
 const counts = (run = 0, blocked = 0, todo = 0, done = 0) => ({ running: run, blocked, todo, ready: 0, done });

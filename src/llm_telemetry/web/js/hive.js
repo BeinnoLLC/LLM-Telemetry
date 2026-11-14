@@ -13,6 +13,7 @@
 import { $, esc, ago } from './palette.js';
 import { provOf, provLogoSvg } from './views.js';
 import { attachZoom } from './zoom.js';
+import { ensureAudioCtx } from './live.js';
 
 export const HV_MOODS = ['smile', 'talk', 'sleep', 'happy', 'angry', 'fire', 'dizzy', 'worry', 'wow'];
 export const HV_COL = {root: '#5cd0ff', pixelvent: '#ff5fc8', acasia: '#5dff9a', somethingpressing: '#ffc14d'};
@@ -432,14 +433,15 @@ export function hvStage() {
 }
 
 export function hvRender(snap) {
-  if (snap) hvS.snap = snap; snap = hvS.snap;
+  const fresh = !!snap; if (snap) hvS.snap = snap; snap = hvS.snap;
   if (!snap || !$('hive-svg')) return null;
   const [W, H] = hvStage(); if (W < 50 || H < 50) return null;
   const model = hvModel(snap, hvS.view);
   const key = [Math.round(W), Math.round(H), hvS.view, model.items.map(i => i.id).join()].join('|');
   if (key !== hvS.key || !hvS.L) { hvS.L = hvLayout(model, W, H); hvS.key = key; }   // positions only move when the roster or stage does
   const L = hvS.L, seen = new Set(), seenE = new Set();
-  hvS.sys = model.sys; if (hvS.a == null || !hvS.loop) { hvS.a = model.sys.a; hvS.p = model.sys.p; }   // first paint (or no animation running): take the live value, then ease
+  hvS.sys = model.sys; if (fresh) hvSoundDiff(snap, model);
+  if (hvS.a == null || !hvS.loop) { hvS.a = model.sys.a; hvS.p = model.sys.p; }   // first paint (or no animation running): take the live value, then ease
   if (!$('hive-fx')) {   // one shared bloom filter for the rim, and the flame layer between the links and the nodes
     const svg = $('hive-svg'), df = hvEl('defs', {}, svg); df.innerHTML = '<filter id="hv-bloom" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>';
     svg.insertBefore(hvEl('g', {id: 'hive-fx'}), $('hive-nodes'));
@@ -515,12 +517,14 @@ export function hvStop() {
   if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
+  hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 // Called by the router whenever the Hive tab is shown or hidden.
 export function hvShow(on) {
   if (!on) { hvStop(); return; }
   try { hvS.view = localStorage.getItem('hiveView') || 'all'; } catch (_) { hvS.view = 'all'; }
+  hvSndInit();
   if (!hvS.bound) {
     hvS.bound = true;
     $('hive-views').addEventListener('click', e => { const b = e.target.closest('[data-hv]'); if (b) hvSetView(b.dataset.hv); });
@@ -529,4 +533,148 @@ export function hvShow(on) {
   }
   hvPill(false, 'connecting…');
   requestAnimationFrame(() => { if (hvS.snap) hvRender(); hvConnect(); if (!hvS.loop) hvS.loop = requestAnimationFrame(hvTick); });
+}
+
+// ---- Sound + voice (LLMTELEMET-273): Web Audio synth and browser speech, driven only by real snapshot changes ----
+// On by default but silent until the first gesture unlocks the shared AudioContext (live.js); toggles persist in localStorage.
+export const hvSnd = {on: true, amb: false, voice: true, vol: .5, ctx: null, m: null, last: {}, prev: null, lv: 0, pb: -1, show: false, unl: [], vs: null, k: 1, pv: 1, a: null};
+const hvLs = (k, d, v) => { try { if (v === undefined) { const x = localStorage.getItem(k); return x == null ? d : x; } localStorage.setItem(k, v); } catch (_) { /* private mode */ } return d; };
+export const hvQuiet = (h = new Date().getHours()) => h >= 22 || h < 7;   // quiet hours: only done and dizzy, softly; no beds, pressure or barks
+const hvReduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const hvHash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+const hvNote = f => 440 * 2 ** (hvHash(f) % 8 / 12);
+
+function hvTone(f, {d = .15, t = 'sine', v = .2, at = 0, s = 0, a = .005} = {}) {
+  const c = hvSnd.ctx, w = c.currentTime + at, o = c.createOscillator(), g = c.createGain(); f *= hvSnd.pv;
+  o.type = t; o.frequency.setValueAtTime(f, w); if (s) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * s), w + d);
+  g.gain.setValueAtTime(0, w); g.gain.linearRampToValueAtTime(v * .35 * hvSnd.k, w + a); g.gain.exponentialRampToValueAtTime(.0001, w + d);
+  o.connect(g); g.connect(hvSnd.m); o.start(w); o.stop(w + d + .05);
+}
+function hvNoise(d, v, hp, at = 0) {
+  const c = hvSnd.ctx, b = c.createBuffer(1, c.sampleRate * d, c.sampleRate), x = b.getChannelData(0), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  for (let i = 0; i < x.length; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / x.length);
+  s.buffer = b; f.type = 'highpass'; f.frequency.value = hp; g.gain.value = v * .35 * hvSnd.k; s.connect(f); f.connect(g); g.connect(hvSnd.m); s.start(c.currentTime + at);
+}
+const hvT = hvTone;
+const hvN = hvNoise;
+// Every cue the old Hive had (launch..calm) plus a graded kettle/boil/klaxon pressure cue (never a roar or a scream).
+export const HV_SFX = {
+  launch: f => hvT(hvNote(f) * 2, {d: .12, t: 'triangle', v: .08, s: 1.6}),
+  arrive: f => hvT(hvNote(f) * 4, {d: .09, v: .07}),
+  newTask: f => { [1, 1.5, 2].forEach((m, i) => hvT(hvNote(f) * m, {d: .35, t: 'triangle', v: .14, at: i * .07})); hvN(.2, .05, 3000); },
+  done: f => { [1, 1.26, 1.5, 2, 2.52, 3, 4].forEach((m, i) => hvT(hvNote(f) * m, {d: .5, t: 'square', v: .05, at: i * .06})); hvT(hvNote(f) / 2, {d: 1.2, v: .15}); hvN(.5, .08, 5000, .05); },
+  blocked: () => { hvT(110, {d: .6, t: 'sawtooth', v: .12, s: .5}); hvT(116, {d: .6, t: 'sawtooth', v: .1, s: .5}); hvN(.3, .12, 200); },
+  running: f => hvT(hvNote(f) * 4, {d: .18, v: .1, s: 1.25}),
+  whoosh: () => { hvN(.6, .1, 400); hvT(80, {d: .8, v: .25, s: 3}); },
+  click: () => hvT(1200, {d: .04, t: 'square', v: .05}),
+  blast: f => { hvT(hvNote(f) * 3, {d: .18, t: 'sawtooth', v: .12, s: .25}); hvN(.12, .14, 1500); },
+  casings: () => [0, 1, 2].forEach(i => hvT(2600 + Math.random() * 900, {d: .05, t: 'triangle', v: .05, at: .18 + i * .07})),
+  hit: () => { hvN(.22, .18, 300); hvT(70, {d: .25, v: .3, s: .5}); },
+  shatter: () => { hvN(.6, .14, 4000); [0, .05, .11, .18, .26].forEach(t => hvT(3000 + Math.random() * 3000, {d: .12, v: .05, at: t})); },
+  charge: () => hvT(200, {d: .45, t: 'sawtooth', v: .07, s: 4, a: .3}),
+  dizzy: () => [0, 1, 2, 3].forEach(i => hvT(i % 2 ? 660 : 520, {d: .12, v: .08, at: i * .12})),
+  grumble: () => { hvT(90, {d: .5, t: 'sawtooth', v: .14, s: .7}); hvT(97, {d: .5, t: 'square', v: .06, s: .7}); },
+  boom: () => { hvN(.9, .25, 60); hvT(50, {d: 1, v: .4, s: .4}); },
+  rage: lv => { lv = hvClamp(lv | 0, 1, 3);   // 1 huff, 2 growl, 3 growl with stomps: lower, louder, longer; never a roar
+    const f = [0, 120, 92, 70][lv], d = [0, .35, .6, .95][lv], v = [0, .1, .15, .22][lv];
+    hvT(f, {d, t: 'sawtooth', v, s: .65}); hvT(f * 1.07, {d, t: 'square', v: v / 2, s: .6}); hvN(d * .8, v * .7, [0, 900, 400, 150][lv]);
+    if (lv > 1) [0, 1, 2].forEach(i => hvT(f * 2 + i * 9, {d: .09, t: 'sawtooth', v: v / 2, at: .08 + i * .11}));
+    if (lv > 2) [0, .32, .64].forEach(t => { hvT(48, {d: .3, v: .45, at: t, s: .5}); hvN(.18, .2, 60, t); }); },
+  calm: () => { hvT(659, {d: .4, v: .08, s: .75}); hvT(523, {d: .6, v: .07, at: .15}); },
+  // pressure bands: 0 steam + boil bubbles (50-69%), 1 kettle whistle (70-79), 2 fuller whistle (80-89), 3 klaxon honk + whistle (90+)
+  kettle: b => { hvN(.8, .04 + b * .01, 3000);
+    if (!b) return [0, 1].forEach(i => hvT(300 + 150 * i, {d: .08, v: .04, at: .15 + i * .25}));
+    const w = 1300 + b * 60; hvT(w, {d: .9, v: .04 + b * .01, s: 1.04}); if (b > 1) hvT(w * 1.02, {d: .9, v: .04, s: 1.04});
+    if (b > 2) [0, .32].forEach((t, i) => hvT(i ? 330 : 440, {d: .28, t: 'square', v: .06, at: t})); },
+};
+const HV_CD = {kettle: 1600, launch: 90, arrive: 250, click: 60, rage: 1500, calm: 2000};
+
+// Plays one cue; false when sound is off, still locked (no gesture yet), muted by quiet hours / reduced motion (no glass, blast, boom, charge, kettle above 70%), or cooling down.
+export function hvPlay(n, arg) {
+  const S = hvSnd, c = S.ctx, now = Date.now(), q = hvQuiet(), rm = hvReduced();
+  if (!S.show || !S.on || !c || c.state !== 'running' || !HV_SFX[n]) return false;
+  if (q ? n !== 'done' && n !== 'dizzy' : rm && (/^(shatter|blast|boom|charge)$/.test(n) || n === 'kettle' && arg > 0)) return false;
+  if (now - (S.last[n] || 0) < (HV_CD[n] ?? 400)) return false;
+  S.last[n] = now; S.k = q ? .35 : rm ? .5 : 1; S.pv = S.pv === 1 ? 1.06 : 1;   // two pitch variants, alternating
+  HV_SFX[n](arg); return true;
+}
+
+export function hvAmbient(on) {
+  const S = hvSnd, c = S.ctx;
+  if (on && c && S.m && !S.a && S.show && !hvQuiet()) {
+    const g = c.createGain(), f = c.createBiquadFilter(); g.gain.value = 0; g.gain.linearRampToValueAtTime(.05, c.currentTime + 2); f.type = 'lowpass'; f.frequency.value = 400; f.Q.value = 6;
+    S.a = {g, os: [55, 82.4, 110.3].map(r => { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = r; o.connect(f); o.start(); return o; })}; f.connect(g); g.connect(S.m);
+  } else if (!on && S.a) { const a = S.a; S.a = null; a.g.gain.linearRampToValueAtTime(0, c.currentTime + 1); setTimeout(() => a.os.forEach(o => o.stop()), 1200); }
+}
+
+// Voice: a stable voice per profile (hash), angrier = lower, faster, clipped ("!" at level 3); the project name opens every line.
+export function hvVoice(profile, lv = 0, mood = '', nv = 0) {
+  const h = hvHash(profile || 'x'); let pitch = .7 + (h % 9) / 8 - .18 * lv, rate = 1.05 + (h % 5) / 20 + .07 * lv;
+  if (mood === 'happy') { pitch += .25; rate += .05; } else if (mood === 'dizzy' || mood === 'worry') rate -= .15;
+  return {vi: nv ? h % nv : -1, pitch: hvClamp(pitch, .1, 2), rate: hvClamp(rate, .6, 1.7), volume: lv >= 2 ? 1 : .9};
+}
+export const hvLine = (project, text, lv = 0) => { const t = (project ? 'On ' + project + '. ' : '') + text; return lv >= 3 ? t.replace(/[.\s]*$/, '!') : t; };
+// English voices, cached once the browser has any (Chrome fills the list late) so a profile's voice never changes mid-session.
+function hvVoices(ss) {
+  const S = hvSnd; if (S.vs) return S.vs;
+  const vs = (ss.getVoices() || []).filter(v => /^en/i.test(v.lang));
+  if (vs.length) S.vs = vs; return vs;
+}
+export function hvSay(profile, text, project, lv = 0, mood = '') {
+  const S = hvSnd, ss = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
+  if (!S.show || !S.on || !S.voice || !S.ctx || !ss || hvQuiet() || ss.pending || ss.speaking) return false;   // locked before the first gesture, never piles up
+  const vs = hvVoices(ss); if (!vs.length) return false;   // no voice list yet: stay silent rather than switch voice later
+  const p = hvVoice(profile, lv, mood, vs.length), u = new SpeechSynthesisUtterance(hvLine(project, text, lv));
+  if (p.vi >= 0) u.voice = vs[p.vi];
+  u.pitch = p.pitch; u.rate = p.rate; u.volume = p.volume * (hvReduced() ? .5 : 1);
+  ss.speak(u); return true;
+}
+
+// Real changes only: the first snapshot is a baseline, later ones sound per-brain done / blocked / started / queued, anger-level moves and the pressure band.
+export function hvSoundDiff(snap, model) {
+  const S = hvSnd, cur = {}, prev = S.prev, p = model.sys.p, a = model.sys.a, lv = a >= .85 ? 3 : a >= .6 ? 2 : a >= .35 ? 1 : 0, was = S.lv;
+  const pb = p >= .9 ? 3 : p >= .8 ? 2 : p >= .7 ? 1 : p >= .5 ? 0 : -1, wasPb = S.pb;
+  S.prev = cur; S.lv = lv; S.pb = pb;
+  if (S.a && hvQuiet()) hvAmbient(false); else if (!S.a && S.on && S.amb) hvAmbient(true);   // the hum ends when quiet hours begin
+  (snap.families || []).forEach(f => (f.brains || []).forEach(b => { const k = b.counts || {};
+    cur[f.id + b.id] = {r: k.running || 0, b: k.blocked || 0, d: k.done || 0, q: (k.todo || 0) + (k.ready || 0), l: b.label, i: b.id, f: f.id}; }));
+  if (!prev) return;
+  for (const id in cur) {
+    const c = cur[id], o = prev[id], say = (t, m) => hvSay(c.i, t, c.l, lv, m); if (!o) continue;
+    if (c.d > o.d) { hvPlay('done', c.f); say('Task finished.', 'happy'); }
+    else if (c.b > o.b) { hvPlay('blocked'); say('Task blocked.', 'angry'); }
+    else if (c.r > o.r) hvPlay('launch', c.f);
+    else if (c.q > o.q) hvPlay('newTask', c.f);
+  }
+  if (lv > was) hvPlay('rage', lv); else if (lv < was && !lv) hvPlay('calm');
+  if (pb > wasPb) hvPlay('kettle', pb);   // only when the pressure band rises, never at steady pressure
+}
+
+function hvPaintSnd() {
+  const S = hvSnd;
+  [['hive-snd', S.on], ['hive-amb', S.amb && S.on], ['hive-voice', S.voice]].forEach(([id, on]) => { const b = $(id); if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); } });
+}
+// First gesture: resume the shared AudioContext (live.js), build the master chain, greet. Nothing is created or played before it.
+export function hvUnlock() {
+  const S = hvSnd; if (S.m) return S.ctx;
+  try { S.ctx = ensureAudioCtx(); } catch (_) { return null; }
+  const c = S.ctx, k = c.createDynamicsCompressor(); S.m = c.createGain(); S.m.gain.value = S.vol; S.m.connect(k); k.connect(c.destination);
+  hvAmbient(S.on && S.amb); hvSay('hive', 'Hive is live.');
+  return c;
+}
+// First-gesture listeners live only while Hive is showing: leaving the tab removes them, returning re-arms them until unlocked.
+function hvArm() {
+  const S = hvSnd; if (S.m || S.unl.length) return;
+  ['pointerdown', 'keydown', 'touchend'].forEach(e => { const f = () => { if (hvUnlock()) hvDisarm(); }; window.addEventListener(e, f, true); S.unl.push([e, f]); });
+}
+function hvDisarm() { const S = hvSnd; S.unl.forEach(([e, f]) => window.removeEventListener(e, f, true)); S.unl = []; }
+export function hvSndInit() {
+  const S = hvSnd; if (S.bound) { S.show = true; hvArm(); return; } S.bound = true;
+  if (typeof speechSynthesis !== 'undefined' && speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', () => hvVoices(speechSynthesis));
+  S.on = hvLs('hiveSound', '1') !== '0'; S.amb = hvLs('hiveAmb', '0') === '1'; S.voice = hvLs('hiveVoice', '1') !== '0'; S.vol = hvClamp(+hvLs('hiveVol', '.5') || 0, 0, 1);
+  S.show = true; hvArm();
+  [['hive-snd', 'on', 'hiveSound'], ['hive-amb', 'amb', 'hiveAmb'], ['hive-voice', 'voice', 'hiveVoice']].forEach(([id, key, ls]) => { const b = $(id);
+    if (b) b.addEventListener('click', () => { S[key] = !S[key]; hvLs(ls, 0, S[key] ? '1' : '0'); hvUnlock(); if (key === 'voice' && S.voice) hvSay('hive', 'Voice on.'); hvAmbient(S.on && S.amb); hvPaintSnd(); }); });
+  const v = $('hive-vol'); if (v) { v.value = S.vol * 100; v.addEventListener('input', () => { S.vol = v.value / 100; hvLs('hiveVol', 0, S.vol); if (S.m) S.m.gain.value = S.vol; }); }
+  hvPaintSnd();
 }
