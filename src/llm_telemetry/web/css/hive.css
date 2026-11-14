@@ -1,6 +1,8 @@
 /* LLMTELEMET-271: Hive page. Colours come from theme tokens; polygons only. */
 .hv-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
-.hv-views{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.hv-views{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:12px}
+.hv-snd{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
+.hv-snd input{width:70px}
 .hv-link{font-size:var(--fs-xs);text-transform:none;letter-spacing:0}
 .hv-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .hv-stat{display:flex;flex-direction:column;min-width:96px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--card)}

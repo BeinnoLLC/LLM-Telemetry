@@ -12,6 +12,7 @@ const H = await isolate('hive.js', {
   'palette.js': { $: () => null, esc: s => String(s == null ? '' : s), ago: s => s + 's' },
   'views.js': { provOf: () => 'cloud', provLogoSvg: () => '<svg class="x"></svg>' },
   'zoom.js': { attachZoom: () => ({}) },
+  'live.js': { ensureAudioCtx: () => null, armAudioUnlock: () => {} },
 });
 
 // the palette comes from the real tokens, so a missing --hv-* token fails here
