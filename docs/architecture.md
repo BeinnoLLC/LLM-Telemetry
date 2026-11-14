@@ -20,7 +20,8 @@ can show the result.
 | Schema | `src/llm_telemetry/schema.py`, `schema/*.schema.json`, `schema_check.py` | `SCHEMA_VERSION = 3`; JSON-schema subset validated at write time |
 | Builder | `build_dashboard.py`, `webassets.py` | Inlines CSS, JS and payloads into one HTML file |
 | Front end | `src/llm_telemetry/web/` (`dashboard.html` shell, `css/`, `js/`) | Static assets; 11 ES modules in `web/js/` |
-| Server | `serve.py` | Static server with no-store headers and one settings write endpoint |
+| Server | `serve.py` | Static server with no-store headers, one settings write endpoint, and the read-only Hive endpoints `/api/hive` (snapshot, `?since=` replay) and `/api/hive/stream` (SSE, at most 8 streams) |
+| Hive collector | `src/llm_telemetry/hive.py` | Stdlib-only reader of the family graph, live workers, comms and per-face model/spend; feeds the Hive page through `serve.py` (not a timer-driven report file) |
 | CLI | `cli.py` (`llm-telemetry`) | One entry point mapping subcommands to modules |
 | Preflight | `doctor.py` | Read-only health check of the whole chain |
 | Timers | `systemd/*.service`, `*.timer` | Schedules for build, probe, router, quota, rankings, serve |
@@ -55,6 +56,7 @@ flowchart LR
     BC[build_costs / pricing]
     BR[build_rankings /<br/>collect_rankings]
     CLG[collect_logs, collect_transcripts,<br/>collect_session_timeline]
+    HV[hive.py<br/>snapshot + frame ring]
   end
 
   H --> CA & CL & CLG
@@ -66,6 +68,10 @@ flowchart LR
   PR --> BC
   RK --> BR
   PH -->|ollama-data.json| CL
+  H & P --> HV
+  CL -->|live-data.json| HV
+  CA -->|analytics-data.json| HV
+  BC -->|costs-data.json| HV
 
   CA -->|analytics-data.json| BD[build_dashboard]
   CR -->|router-data.json| BD
@@ -78,6 +84,8 @@ flowchart LR
   HTML --> SRV[serve.py :8477]
   SRV --> B[Browser]
   B -->|polls live-data.json every 5s| SRV
+  HV -->|/api/hive snapshot, ?since= replay| SRV
+  SRV -->|/api/hive/stream SSE frames| B
 ```
 
 ### Two refresh paths

@@ -67,6 +67,31 @@ const snap = { at: 1000, seq: 5, user: { state: 'idle' }, comms: [],
   chk(H.hvWrap('aaa bbb ccc ddd eee fff ggg hhh', 8, 2).length === 2 && /…$/.test(H.hvWrap('aaa bbb ccc ddd eee fff ggg hhh', 8, 2)[1]), 'wrap() caps lines and ellipsises');
   chk(timers.includes(5200), 'bubbles live 5.2 s');
 
+  // ---- LLMTELEMET-275: bubble via cap + stage clamp, timer cleanup ----
+  const longVia = 'replay · 10m ago · LLM TELEMETRY · Donna → llm-telemetry-brain · kanban · LST-123456789 ' + 'x'.repeat(200);
+  box.innerHTML = ''; const bx = H.hvState.L.bounds;
+  for (const [nid, px] of [['a:root', bx.x1 - 5], ['a:root', bx.x0 + 2]]) {
+    const nn = H.hvState.nodes[nid], keep = nn.x; nn.x = px;
+    const g = H.hvBubble(nid, 'hello there', longVia, 'root'), r = g.querySelector('rect'), x = +r.getAttribute('x'), wd = +r.getAttribute('width');
+    chk(x >= bx.x0 - 1e-6 && x + wd <= bx.x1 + 1e-6, `bubble at node x=${px.toFixed(0)} stays inside the stage [${bx.x0.toFixed(0)}, ${bx.x1.toFixed(0)}]`, [x, wd]);
+    chk(wd < 48 * 7.8 + 30 && [...g.querySelectorAll('text')].some(t => /…$/.test(t.textContent) && t.textContent.length <= 48), 'a very long via line is cut to ~48 chars with an ellipsis', wd);
+    nn.x = keep; g.remove();
+  }
+  chk(H.hvClip('short', 48) === 'short' && H.hvClip('y'.repeat(60), 48).length === 48, 'hvClip leaves short text and caps long text at 48');
+  {
+    const was = C.bt.size; H.hvBubble('a:root', 'tmp', 'v', 'root'); const ft = C.ft;
+    chk(C.bt.size === was + 1, 'a bubble registers its removal timer');
+    C.fire = true; H.hvPlayComm({ id: 'ft1', at: 995, from: 'donna', to: 'llm-telemetry-brain', kind: 'ask', via: 'line', text: 'any update?' });
+    chk(C.ft && C.ft !== ft, 'firing mode registers the 280 ms delay timer');
+   
+    H.hvStop(); S.show = true;
+    chk(C.bt.size === 0, 'hvStop cancels bubble removal timers');
+    // the cancelled delay never blasts: no bolt packet appears afterwards
+    S.last = {}; await new Promise(r => realST(r, 350));
+    chk(!('blast' in S.last), 'hvStop cancels the 280 ms firing delay (no blast afterwards)', Object.keys(S.last));
+    C.fire = false; box.innerHTML = ''; document.getElementById('hive-pk').innerHTML = '';
+  }
+
   // ---- every comm kind renders (F38) + pending chip ----
   const mk = (id, o) => ({ id, at: 1000 - 5, from: 'donna', to: 'llm-telemetry-brain', kind: 'ask', via: 'line', text: 'hello', ...o });
   const kinds = [mk('1'), mk('2', { kind: 'reply', text: 'merged it', from: 'llm-telemetry-brain', to: 'donna' }), mk('3', { kind: 'comment', to: 'board', board: 'llm-telemetry', via: 'kanban', task: 'LST-1', text: 'checkpoint' }),
@@ -151,6 +176,25 @@ const snap = { at: 1000, seq: 5, user: { state: 'idle' }, comms: [],
   fetched.length = 0; H.hvState.es = {}; await H.hvPoll();
   chk(fetched.length === 1 && fetched[0] === '/api/hive', 'with a live stream the poll is a plain snapshot refresh');
 
+  // ---- stream delta poll debounce (one per second, first immediate) and 5 s retry ----
+  {
+    class ES { constructor(u) { ES.all.push(this); this.l = {}; this.u = u; } addEventListener(n, f) { this.l[n] = f; } close() { this.closed = true; } }
+    ES.all = []; globalThis.EventSource = ES;
+    H.hvState.es = null; H.hvState.timer = 1; C.pollAt = 0; C.seq = 100; fetched.length = 0; reply = u => snap;
+    H.hvState.timer = null;
+    H.hvConnect(); const es = ES.all[0]; clearInterval(H.hvState.timer);
+    const n0 = () => fetched.filter(u => u === '/api/hive').length, base = n0();
+    const d = seq => es.l.delta({ data: JSON.stringify({ seq, type: 'user', user: {} }) });
+    d(101); chk(n0() === base + 1, 'the first stream delta polls the snapshot immediately', [n0(), base]);
+    d(102); d(103); chk(n0() === base + 1, 'further deltas inside one second do not poll again', [n0(), base]);
+    C.pollAt = Date.now() - 1100; d(104); chk(n0() === base + 2, 'after a second the next delta polls again');
+    const t5 = timers.length; es.onerror();
+    chk(es.closed === true && H.hvState.es === null && timers.slice(t5).includes(5000) && C.retry, 'a stream error closes it and schedules a 5 s retry', timers.slice(t5));
+    H.hvStop(); const before = ES.all.length; await new Promise(r => realST(r, 50));
+    chk(ES.all.length === before, 'hvStop cancels the pending 5 s retry (no new EventSource)');
+    H.hvState.es = null; H.hvState.timer = null; delete globalThis.EventSource; S.show = true;
+  }
+
   // ---- review fixes: confetti colour, event guard, replay timers, poll debounce ----
   document.getElementById('hive-pk').innerHTML = '';
   const conf = [], mo = new w.MutationObserver(rs => rs.forEach(r => r.addedNodes.forEach(n => { if (n.classList && n.classList.contains('hv-p') && n.classList.contains('conf')) conf.push(n); })));
@@ -177,6 +221,7 @@ const snap = { at: 1000, seq: 5, user: { state: 'idle' }, comms: [],
 
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src/llm_telemetry/web/js/hive.js'), 'utf8');
   const h7 = src.slice(src.indexOf('Comms, events, replay, firing mode'));
+  chk(!/#[0-9a-fA-F]{3,8}\b/.test(src) && !/HV_COL/.test(src), 'hive.js has no hex colour literals; family colours come from --hv-fam-* tokens');
   chk(!/#[0-9a-fA-F]{3,6}\b/.test(h7) && !/setInterval\([^)]*(playComm|hvPlayComm|hvPlayEvent|hvFeed|hvAddComm)/.test(h7), 'H-7 code has no raw colours and no timer-driven comms');
   chk(!/<circle|createElementNS\([^)]*circle/.test(h7) && !/a_aah|\.mp3/.test(h7), 'polygons only, no scream clip');
   console.log(`${p} passed, ${f} failed`); process.exit(f ? 1 : 0);

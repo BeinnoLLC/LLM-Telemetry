@@ -7,6 +7,12 @@
 - Guard test `tests/check_qt_ball_provider_icons.js` fails if any `.qt-ball` lacks a provider SVG or contains a single-letter glyph. Never delete, skip or loosen it. If it fails, fix the rendering.
 - Legibility is no excuse. If a logo looks small at QT_MIN 18px, add a contrast disc behind it or raise QT_MIN. Do not switch to letters.
 
+## Hive tab
+
+- The Hive page (`src/llm_telemetry/web/js/hive.js`, `css/hive.css`, data from `src/llm_telemetry/hive.py` via `/api/hive` and `/api/hive/stream`) shows real activity only: no invented events, no scream audio.
+- Hive colours come only from `--hv-*` tokens in `tokens.css` (family colour via `--hv-fam-<id>`); no hex literals in `hive.js`.
+- Plan and migration runbook: `docs/plans/hive-tab.md`. Retiring the standalone `beinno-hive` needs Hazem's explicit OK.
+
 ## Working in this repo
 
 - Use `.venv/bin/python` since system python3 lacks `llm_telemetry`.

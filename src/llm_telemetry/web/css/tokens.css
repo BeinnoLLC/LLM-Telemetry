@@ -154,6 +154,7 @@
   --hv-rim-bot-0:#ff963c;--hv-rim-bot-1:#ff8c34;--hv-rim-bot-2:#ff7622;--hv-rim-bot-3:#ff521c;--hv-rim-bot-4:#ff2e1a;
   --hv-mouth-0:#aa768c;--hv-mouth-1:#a0647a;--hv-mouth-2:#8c3742;--hv-mouth-3:#70161e;--hv-mouth-4:#5c0a10;
   --hv-flame-0:#ff5614;--hv-flame-1:#ff841e;--hv-flame-2:#ffc43c;--hv-flame-3:#ffe482;--hv-flame-4:#fffaee;
+  --hv-fam-root:#5cd0ff;--hv-fam-pixelvent:#ff5fc8;--hv-fam-acasia:#5dff9a;--hv-fam-somethingpressing:#ffc14d;
   --hv-gauge-lo:var(--z-ok);--hv-gauge-mid:var(--z-warn);--hv-gauge-hi:var(--z-bad);
 }
 

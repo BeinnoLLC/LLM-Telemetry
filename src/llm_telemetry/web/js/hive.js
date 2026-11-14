@@ -16,14 +16,17 @@ import { attachZoom } from './zoom.js';
 import { ensureAudioCtx } from './live.js';
 
 export const HV_MOODS = ['smile', 'talk', 'sleep', 'happy', 'angry', 'fire', 'dizzy', 'worry', 'wow'];
-export const HV_COL = {root: '#5cd0ff', pixelvent: '#ff5fc8', acasia: '#5dff9a', somethingpressing: '#ffc14d'};
 export const HV_EGG = {rx: 55, ry: 74, crown: 80, r: 62};   // head 1 : 1.35
 export const HV_PAD = 5;
 export const HV_ACTIVE_S = 300;
 export const HV_COMPACT = .62;   // below this scale the second label line is dropped
 export const hvHooks = {onClick: null, onRender: null};
 
-export const hvCol = f => HV_COL[f] || ('hsl(' + [...String(f)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7) + ',70%,62%)');
+// Family colours live in the --hv-fam-<id> tokens (tokens.css); an unknown family falls back to a stable hash hue.
+export const hvCol = f => {
+  let v = ''; try { v = getComputedStyle(document.documentElement).getPropertyValue('--hv-fam-' + f).trim(); } catch (_) { /* no DOM */ }
+  return v || ('hsl(' + [...String(f)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7) + ',70%,62%)');
+};
 export const hvNgon = (cx, cy, rx, ry, n = 12) => [...Array(n)].map((_, i) => {
   const a = Math.PI * 2 * i / n;
   return (cx + rx * Math.cos(a)).toFixed(1) + ',' + (cy + ry * Math.sin(a)).toFixed(1);
@@ -63,7 +66,7 @@ export function hvProvMark(model) {
 }
 
 const hvShort = s => String(s || '').replace(/^(beinno|llm-telemetry)-/, '');
-const hvClip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+export const hvClip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
 const hvAct = i => i != null && i < HV_ACTIVE_S;
 export const hvUserMood = u => !u ? 'smile' : ({sending: 'talk', reply: 'happy', question: 'wow', waiting: 'worry'})[u.state] || 'smile';
 
@@ -523,7 +526,7 @@ export function hvStop() {
   if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
-  hvC.rt.forEach(clearTimeout); hvC.rt = []; clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  hvC.rt.forEach(clearTimeout); hvC.rt = []; hvC.bt.forEach(clearTimeout); hvC.bt.clear(); clearTimeout(hvC.ft); clearTimeout(hvC.retry); clearInterval(hvC.hb); hvC.hb = 0; hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 // Called by the router whenever the Hive tab is shown or hidden.
@@ -733,7 +736,7 @@ export function hvWrap(t, w = 34, max = 3) {
 export const hvVia = (c, o) => (o.replay ? 'replay · ' + ago(Math.max(0, o.now - c.at)) + ' ago · ' : '') + (o.project ? o.project.toUpperCase() + ' · ' : '')
   + `${hvWho(c.from, o.pm, o.lbl)} → ${hvWho(c.to, o.pm, o.lbl)} · ${c.via}${c.task ? ' · ' + c.task.slice(0, 30) : ''}`;
 
-export const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], pollAt: 0, retry: 0};
+export const hvC = {shown: new Set(), log: [], seq: null, first: true, lastSnap: 0, fire: true, bump: 0, hb: 0, pk: '', bound: false, rt: [], bt: new Set(), ft: 0, pollAt: 0, retry: 0};
 const hvHas = id => !!hvS.nodes[id];
 const hvNLabel = id => hvS.nodes[id] && hvS.nodes[id].label;
 const hvFamId = id => id === 'hazem' ? 'root' : String(id).split(':')[1];
@@ -763,16 +766,18 @@ function hvPuff(id, cls, n = 0, v = 120, fam = '') {   // n confetti polygons th
 }
 const hvBump = v => { hvC.bump = hvClamp(hvC.bump + v, -.3, .4); };   // a transient lift on the data-derived anger; decays in hvFx
 
+const HV_VIA_MAX = 48;
 // Speech bubble above a node. Never more than 2 on screen: a new one evicts the oldest.
 export function hvBubble(id, text, via, fam, ms = 5200) {
   const n = hvS.nodes[id], box = $('hive-bubbles'); if (!n || n.x == null || !text || !box) return null;
   while (box.children.length >= 2) box.firstChild.remove();
-  const L = hvWrap(text), w = Math.max(...L.map(l => l.length * 7.8), via.length * 7.8) + 24, h = L.length * 18 + 32, B = hvS.L ? hvS.L.bounds : {x1: 300, y0: -300};
-  const x = n.x + 30 + w > B.x1 ? n.x - w - 30 : n.x + 30, y = Math.max(B.y0, n.y - h - 24), g = hvEl('g', {class: 'hv-bubble'}, box);
+  via = hvClip(via, HV_VIA_MAX);
+  const L = hvWrap(text), w = Math.max(...L.map(l => l.length * 7.8), via.length * 7.8) + 24, h = L.length * 18 + 32, B = hvS.L ? hvS.L.bounds : {x0: -300, x1: 300, y0: -300};
+  const x = hvClamp(n.x + 30 + w > B.x1 ? n.x - w - 30 : n.x + 30, B.x0, Math.max(B.x0, B.x1 - w)), y = Math.max(B.y0, n.y - h - 24), g = hvEl('g', {class: 'hv-bubble'}, box);
   g.style.setProperty('--c', hvCol(fam)); hvEl('rect', {x, y, width: w, height: h}, g);
   hvEl('text', {x: x + 12, y: y + 15, class: 'hv-via'}, g).textContent = via;
   L.forEach((l, i) => { hvEl('text', {x: x + 12, y: y + 36 + i * 18}, g).textContent = l; });
-  setTimeout(() => g.remove(), ms); return g;
+  const t = setTimeout(() => { hvC.bt.delete(t); g.remove(); }, ms); hvC.bt.add(t); return g;
 }
 
 // One real message: sender -> recipient (laser bolt in firing mode, big packet otherwise), then the outcome on arrival.
@@ -790,7 +795,7 @@ export function hvPlayComm(c, {replay = false} = {}) {
   };
   if (!ev) hvSay(c.from, `${who(c.from)} ${c.kind === 'reply' ? 'reports to' : c.kind === 'comment' ? 'notes for' : 'asks'}${c.to && c.to !== 'board' ? ' ' + who(c.to) : ''}: ${words(16)}`, pj, hvLvOf(hvS.a), '');
   if (!b || b === a) { hvSetMood(a, 'talk', 2500); arrive(); return true; }
-  if (fire) { hvSetMood(a, 'fire', 1400); hvPlay('charge'); setTimeout(() => { hvPlay('blast', fam); hvPacket(a, b, fam, {bolt: true, then: arrive}); }, 280); }
+  if (fire) { hvSetMood(a, 'fire', 1400); hvPlay('charge'); clearTimeout(hvC.ft); hvC.ft = setTimeout(() => { hvPlay('blast', fam); hvPacket(a, b, fam, {bolt: true, then: arrive}); }, 280); }
   else { hvSetMood(a, 'talk', 2000); hvPacket(a, b, fam, {then: arrive}); }
   return true;
 }

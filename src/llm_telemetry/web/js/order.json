@@ -1687,10 +1687,6 @@
     },
     {
       "mod": "hive",
-      "name": "HV_COL"
-    },
-    {
-      "mod": "hive",
       "name": "HV_EGG"
     },
     {
