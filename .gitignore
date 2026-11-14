@@ -26,6 +26,10 @@ venv/
 node_modules/
 tests/node_modules
 
+# Parity harness (packages/collectors/parity, T-5 / LLMTELEMET-284): generated
+# py/node artifacts and scratch output, never committed (fixtures ARE).
+packages/collectors/parity/out/
+
 # Next.js workspace (apps/web, T-0 / LST-281): build output and tool state,
 # never committed. deps stay pinned in package-lock.json instead.
 apps/web/.next/

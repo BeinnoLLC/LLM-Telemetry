@@ -12,7 +12,8 @@
     "lint": "npm run lint:js && npm run lint:css && npm run lint:inline-sized",
     "lint:js": "eslint src/llm_telemetry/web/js",
     "lint:css": "stylelint \"src/llm_telemetry/web/css/*.css\"",
-    "lint:inline-sized": "node tests/check_inline_sized_elements.js"
+    "lint:inline-sized": "node tests/check_inline_sized_elements.js",
+    "parity": "node packages/collectors/parity/dist/parity/cli.js"
   },
   "devDependencies": {
     "eslint": "^9.13.0",
