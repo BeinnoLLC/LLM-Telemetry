@@ -1132,76 +1132,76 @@ comment (tokens.css:52-56) already records this split as needing dedicated token
 ## Known mismatches
 
 Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed separately
-(via beinno-plane); IDs get added here once filed. Until then: **ticket: pending**.
+(via beinno-plane).
 
 1. **Raw hex colours in JS (65)** — high — `palette.js:17` `PAL`, `routerview.js` ×14,
-   `views.js:88`, `flow.js:557`; fix: `css()` reads + eslint hex ban. *ticket: pending*
+   `views.js:88`, `flow.js:557`; fix: `css()` reads + eslint hex ban. *ticket: LLMTELEMET-306*
 2. **Raw rgb/hsl in JS (40)** — high — `views.js:1265-1266` canvas fills, `flow.js:125/560`
-   inline styles, `hive.js:32/194`. *ticket: pending*
+   inline styles, `hive.js:32/194`. *ticket: LLMTELEMET-307*
 3. **Status token values duplicated as literals in 4 JS modules** — high —
    `#5f9e6e/#c4a06e/#c66a6a/#64748b` at `charts.js:355`, `flow.js:557/560`,
-   `drawer.js:800-801`, `palette.js:230-231`; fix: one shared `Z` export. *ticket: pending*
+   `drawer.js:800-801`, `palette.js:230-231`; fix: one shared `Z` export. *ticket: LLMTELEMET-308*
 4. **`--z-*-fg` fails contrast on light surfaces** — high — 6 pairs at 1.13-1.22:1
    (dashboard.css:312-313, 322-323, 441-443, 1715); fix per Accessibility proposals:
    `--z-*-text` for text-on-surface, `--z-*-fg` strictly text-on-fill (dark fill pairs
-   also need the proposed dark badge ink). *ticket: pending*
+   also need the proposed dark badge ink). *ticket: LLMTELEMET-309*
 5. **`--accent2` light fails body-text AA** — med — 3.13/3.24:1 (tokens.css:70); proposed
-   `#5b7383`. *ticket: pending*
+   `#5b7383`. *ticket: LLMTELEMET-310*
 6. **Raw rgb/hsl in dashboard.css (66)** — med — e.g. dashboard.css:131, 606, 1936; fix:
-   stylelint value allow-list (`var()|color-mix()|transparent`). *ticket: pending*
+   stylelint value allow-list (`var()|color-mix()|transparent`). *ticket: LLMTELEMET-311*
 7. **Three tooltip implementations** — med — `.qtip` (dashboard.css:977-984), `#lntip`
-   (1325), `.hv-tip` (hive.css:13); unify on `.qtip`. *ticket: pending*
+   (1325), `.hv-tip` (hive.css:13); unify on `.qtip`. *ticket: LLMTELEMET-312*
 8. **Three modal shells and four scrims** — med — `#tmodal`/`#lnmodal`/`#sfmodal` +
-   `#tscrim`/`#lnscrim`/`#sfscrim`/`#pdscrim`; one `.modal` + `.scrim`. *ticket: pending*
+   `#tscrim`/`#lnscrim`/`#sfscrim`/`#pdscrim`; one `.modal` + `.scrim`. *ticket: LLMTELEMET-313*
 9. **Two drawers** — low — `#drawer` (1220) vs `#pdrawer` (1338); name `#pdrawer` the
-   detail-size variant. *ticket: pending*
+   detail-size variant. *ticket: LLMTELEMET-314*
 10. **Two app bars** — med — `.appbar` (670) vs `#appbar` (2166-2168); delete the retired
-    one, keep `#appbar`. *ticket: pending*
+    one, keep `#appbar`. *ticket: LLMTELEMET-315*
 11. **Two dropdown families + 3 chip shapes** — low — `select.chip` (203-211) vs
     `.combo-btn/.combo-pop` (2109-2116), `.chip`/`.fchip`/`.pchip`; one chip spec with
-    select/button variants. *ticket: pending*
+    select/button variants. *ticket: LLMTELEMET-316*
 12. **Jar material tokens are light-only** — med — 15 `--jar-*` (tokens.css:116-130) with
     the restyle gated `:root:not([data-theme="dark"])` (dashboard.css:2254-2264); either add
     a dark block or record "dark jars intentionally plain" (recorded here as the current
-    spec). *ticket: pending*
+    spec). *ticket: LLMTELEMET-317*
 13. **Motion tokens defined but unused; 39 raw durations** — med — `--motion-fast/normal`
     0 uses (tokens.css:109); route transitions through them, add `--motion-slow:300ms`
-    (**proposed**). *ticket: pending*
+    (**proposed**). *ticket: LLMTELEMET-318*
 14. **No z-index layer scale (27 raw values)** — med — proposed `--z-base…--z-drag` scale
-    (Elevation & Depth). *ticket: pending*
+    (Elevation & Depth). *ticket: LLMTELEMET-319*
 15. **Spacing scale bypass + drifting `--sp-2`** — med — 299 raw px spacing declarations
     vs 7 `--sp-*` uses; and **`dashboard.css:16` re-declares `--sp-2:6px` while
     `tokens.css:107` says `--sp-2:8px`** (two conflicting values for one name; the fluid
     `--sp-3..6` overrides at dashboard.css:17-20 drift too). Fix: delete the `dashboard.css`
-    copies — single source `tokens.css`. *ticket: pending*
+    copies — single source `tokens.css`. *ticket: LLMTELEMET-320*
 16. **Radius one-offs (13 raw values off scale)** — low — `999px` ×24, `3px` ×16, `2px` ×17,
     `50%` ×14…; `--radius-sm/md/lg` 0 uses. Proposed: `--radius-pill:999px`,
-    `--radius-full:50%` (**proposed** names). *ticket: pending*
+    `--radius-full:50%` (**proposed** names). *ticket: LLMTELEMET-321*
 17. **Shadows off the `--elev-*` scale** — low — 2 `--elev-*` uses vs 21 raw `box-shadow`
     values; map popovers to `--elev-2`, modals/tooltips to `--elev-3`; `--elev-0` has no
-    dark sibling. *ticket: pending*
+    dark sibling. *ticket: LLMTELEMET-322*
 18. **Type-scale bypass** — med — 57 raw `font-size:13px|14px` declarations; replace with
     `--fs-*`, add `--fs-2xl` for the 22-28px display sizes (**proposed**). Also:
     `--fs-2xs` is used 6× but declared nowhere (utilities.css:113, dashboard.css:1825,
-    1843, 1848, 1857) — declare it or drop it. *ticket: pending*
+    1843, 1848, 1857) — declare it or drop it. *ticket: LLMTELEMET-323*
 19. **Mono stack drift + undeclared `--mono`** — low — 4 spellings;
     `var(--mono,monospace)` at dashboard.css:1058 where `--mono` is declared nowhere;
-    declare `--mono` once next to `--font` (tokens.css:141). *ticket: pending*
+    declare `--mono` once next to `--font` (tokens.css:141). *ticket: LLMTELEMET-324*
 20. **Breakpoint sprawl (27 expressions)** — low — snap stragglers to the named scale
-    480/640/900/1280 (Layout). *ticket: pending*
+    480/640/900/1280 (Layout). *ticket: LLMTELEMET-325*
 21. **No RTL scaffolding** — med — 0 `dir`/logical properties, 51 `left|right:`; stance
     recorded: LTR-only product today; if Arabic ships, convert edges to `inset-inline-*`
-    first. *ticket: pending*
+    first. *ticket: LLMTELEMET-326*
 22. **Icon-only buttons missing `aria-label`** — med — 5 of 43 `<button>` strings labelled
     (e.g. sound toggle `live.js:1005`); label the glyph-only set + a grep-check like
-    `tests/check_inline_sized_elements.js`. *ticket: pending*
+    `tests/check_inline_sized_elements.js`. *ticket: LLMTELEMET-327*
 23. **Single `forced-colors` block** — low — only dashboard.css:2248-2249; add coverage for
-    `.hv-hex`, `.hv-crown`, qt balls. *ticket: pending*
+    `.hv-hex`, `.hv-crown`, qt balls. *ticket: LLMTELEMET-328*
 24. **Hive tab generates raw colours at runtime** — low — `hive.js:32` `hsl(<hash>,…)` and
     `hive.js:194` `hvRgb`; map the four families to `--hv-fam-<id>`, hash colour only as a
-    documented fallback. *ticket: pending*
+    documented fallback. *ticket: LLMTELEMET-329*
 25. **Standalone Hive drifts from tokens.css, no light theme** — med —
     `/home/hazemhagrass/workspace/beinno/hive/index.html`: `#2a2f40`/`#9aa4b8` (line 189),
     `Impact,"Arial Black"` (line 121), 9 radius one-offs, font stack missing `Roboto`,
     4 variables vs 60+ tokens, permanently dark. Reconcile during the Hive move
-    (LLMTELEMET-267/H-9); light theme out of scope unless Hazem asks. *ticket: pending*
+    (LLMTELEMET-267/H-9); light theme out of scope unless Hazem asks. *ticket: LLMTELEMET-330*
