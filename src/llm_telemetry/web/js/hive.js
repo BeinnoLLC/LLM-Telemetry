@@ -13,7 +13,7 @@
 import { $, esc, ago } from './palette.js';
 import { provOf, provLogoSvg } from './views.js';
 import { attachZoom } from './zoom.js';
-import { ensureAudioCtx, armAudioUnlock } from './live.js';
+import { ensureAudioCtx } from './live.js';
 
 export const HV_MOODS = ['smile', 'talk', 'sleep', 'happy', 'angry', 'fire', 'dizzy', 'worry', 'wow'];
 export const HV_COL = {root: '#5cd0ff', pixelvent: '#ff5fc8', acasia: '#5dff9a', somethingpressing: '#ffc14d'};
@@ -517,7 +517,7 @@ export function hvStop() {
   if (hvS.loop) { cancelAnimationFrame(hvS.loop); hvS.loop = 0; hvS.t = 0; }
   if (hvS.es) { hvS.es.close(); hvS.es = null; }
   if (hvS.timer) { clearInterval(hvS.timer); hvS.timer = null; }
-  hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  hvSnd.show = false; hvDisarm(); hvAmbient(false); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 }
 
 // Called by the router whenever the Hive tab is shown or hidden.
@@ -537,7 +537,7 @@ export function hvShow(on) {
 
 // ---- Sound + voice (LLMTELEMET-273): Web Audio synth and browser speech, driven only by real snapshot changes ----
 // On by default but silent until the first gesture unlocks the shared AudioContext (live.js); toggles persist in localStorage.
-export const hvSnd = {on: true, amb: false, voice: true, vol: .5, ctx: null, m: null, last: {}, prev: null, lv: 0, spoke: 0, k: 1, pv: 1, nar: '', a: null};
+export const hvSnd = {on: true, amb: false, voice: true, vol: .5, ctx: null, m: null, last: {}, prev: null, lv: 0, pb: -1, show: false, unl: [], vs: null, k: 1, pv: 1, a: null};
 const hvLs = (k, d, v) => { try { if (v === undefined) { const x = localStorage.getItem(k); return x == null ? d : x; } localStorage.setItem(k, v); } catch (_) { /* private mode */ } return d; };
 export const hvQuiet = (h = new Date().getHours()) => h >= 22 || h < 7;   // quiet hours: only done and dizzy, softly; no beds, pressure or barks
 const hvReduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -592,7 +592,7 @@ const HV_CD = {kettle: 1600, launch: 90, arrive: 250, click: 60, rage: 1500, cal
 // Plays one cue; false when sound is off, still locked (no gesture yet), muted by quiet hours / reduced motion (no glass, blast, boom, charge, kettle above 70%), or cooling down.
 export function hvPlay(n, arg) {
   const S = hvSnd, c = S.ctx, now = Date.now(), q = hvQuiet(), rm = hvReduced();
-  if (!S.on || !c || c.state !== 'running' || !HV_SFX[n]) return false;
+  if (!S.show || !S.on || !c || c.state !== 'running' || !HV_SFX[n]) return false;
   if (q ? n !== 'done' && n !== 'dizzy' : rm && (/^(shatter|blast|boom|charge)$/.test(n) || n === 'kettle' && arg > 0)) return false;
   if (now - (S.last[n] || 0) < (HV_CD[n] ?? 400)) return false;
   S.last[n] = now; S.k = q ? .35 : rm ? .5 : 1; S.pv = S.pv === 1 ? 1.06 : 1;   // two pitch variants, alternating
@@ -601,7 +601,7 @@ export function hvPlay(n, arg) {
 
 export function hvAmbient(on) {
   const S = hvSnd, c = S.ctx;
-  if (on && c && !S.a && !hvQuiet()) {
+  if (on && c && S.m && !S.a && S.show && !hvQuiet()) {
     const g = c.createGain(), f = c.createBiquadFilter(); g.gain.value = 0; g.gain.linearRampToValueAtTime(.05, c.currentTime + 2); f.type = 'lowpass'; f.frequency.value = 400; f.Q.value = 6;
     S.a = {g, os: [55, 82.4, 110.3].map(r => { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = r; o.connect(f); o.start(); return o; })}; f.connect(g); g.connect(S.m);
   } else if (!on && S.a) { const a = S.a; S.a = null; a.g.gain.linearRampToValueAtTime(0, c.currentTime + 1); setTimeout(() => a.os.forEach(o => o.stop()), 1200); }
@@ -614,19 +614,28 @@ export function hvVoice(profile, lv = 0, mood = '', nv = 0) {
   return {vi: nv ? h % nv : -1, pitch: hvClamp(pitch, .1, 2), rate: hvClamp(rate, .6, 1.7), volume: lv >= 2 ? 1 : .9};
 }
 export const hvLine = (project, text, lv = 0) => { const t = (project ? 'On ' + project + '. ' : '') + text; return lv >= 3 ? t.replace(/[.\s]*$/, '!') : t; };
+// English voices, cached once the browser has any (Chrome fills the list late) so a profile's voice never changes mid-session.
+function hvVoices(ss) {
+  const S = hvSnd; if (S.vs) return S.vs;
+  const vs = (ss.getVoices() || []).filter(v => /^en/i.test(v.lang));
+  if (vs.length) S.vs = vs; return vs;
+}
 export function hvSay(profile, text, project, lv = 0, mood = '') {
   const S = hvSnd, ss = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
-  if (!S.on || !S.voice || !S.ctx || !ss || hvQuiet() || ss.pending || ss.speaking) return false;   // locked before the first gesture, never piles up
-  const vs = ss.getVoices().filter(v => /^en/i.test(v.lang)), p = hvVoice(profile, lv, mood, vs.length), u = new SpeechSynthesisUtterance(hvLine(project, text, lv));
+  if (!S.show || !S.on || !S.voice || !S.ctx || !ss || hvQuiet() || ss.pending || ss.speaking) return false;   // locked before the first gesture, never piles up
+  const vs = hvVoices(ss); if (!vs.length) return false;   // no voice list yet: stay silent rather than switch voice later
+  const p = hvVoice(profile, lv, mood, vs.length), u = new SpeechSynthesisUtterance(hvLine(project, text, lv));
   if (p.vi >= 0) u.voice = vs[p.vi];
   u.pitch = p.pitch; u.rate = p.rate; u.volume = p.volume * (hvReduced() ? .5 : 1);
-  S.spoke = Date.now(); ss.speak(u); return true;
+  ss.speak(u); return true;
 }
 
 // Real changes only: the first snapshot is a baseline, later ones sound per-brain done / blocked / started / queued, anger-level moves and the pressure band.
 export function hvSoundDiff(snap, model) {
   const S = hvSnd, cur = {}, prev = S.prev, p = model.sys.p, a = model.sys.a, lv = a >= .85 ? 3 : a >= .6 ? 2 : a >= .35 ? 1 : 0, was = S.lv;
-  S.prev = cur; S.lv = lv; S.cnt = model.counts;
+  const pb = p >= .9 ? 3 : p >= .8 ? 2 : p >= .7 ? 1 : p >= .5 ? 0 : -1, wasPb = S.pb;
+  S.prev = cur; S.lv = lv; S.pb = pb;
+  if (S.a && hvQuiet()) hvAmbient(false); else if (!S.a && S.on && S.amb) hvAmbient(true);   // the hum ends when quiet hours begin
   (snap.families || []).forEach(f => (f.brains || []).forEach(b => { const k = b.counts || {};
     cur[f.id + b.id] = {r: k.running || 0, b: k.blocked || 0, d: k.done || 0, q: (k.todo || 0) + (k.ready || 0), l: b.label, i: b.id, f: f.id}; }));
   if (!prev) return;
@@ -638,7 +647,7 @@ export function hvSoundDiff(snap, model) {
     else if (c.q > o.q) hvPlay('newTask', c.f);
   }
   if (lv > was) hvPlay('rage', lv); else if (lv < was && !lv) hvPlay('calm');
-  if (p >= .5) hvPlay('kettle', p >= .9 ? 3 : p >= .8 ? 2 : p >= .7 ? 1 : 0);
+  if (pb > wasPb) hvPlay('kettle', pb);   // only when the pressure band rises, never at steady pressure
 }
 
 function hvPaintSnd() {
@@ -653,17 +662,19 @@ export function hvUnlock() {
   hvAmbient(S.on && S.amb); hvSay('hive', 'Hive is live.');
   return c;
 }
+// First-gesture listeners live only while Hive is showing: leaving the tab removes them, returning re-arms them until unlocked.
+function hvArm() {
+  const S = hvSnd; if (S.m || S.unl.length) return;
+  ['pointerdown', 'keydown', 'touchend'].forEach(e => { const f = () => { if (hvUnlock()) hvDisarm(); }; window.addEventListener(e, f, true); S.unl.push([e, f]); });
+}
+function hvDisarm() { const S = hvSnd; S.unl.forEach(([e, f]) => window.removeEventListener(e, f, true)); S.unl = []; }
 export function hvSndInit() {
-  const S = hvSnd; if (S.bound) return; S.bound = true;
+  const S = hvSnd; if (S.bound) { S.show = true; hvArm(); return; } S.bound = true;
+  if (typeof speechSynthesis !== 'undefined' && speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', () => hvVoices(speechSynthesis));
   S.on = hvLs('hiveSound', '1') !== '0'; S.amb = hvLs('hiveAmb', '0') === '1'; S.voice = hvLs('hiveVoice', '1') !== '0'; S.vol = hvClamp(+hvLs('hiveVol', '.5') || 0, 0, 1);
-  armAudioUnlock();
-  ['pointerdown', 'keydown', 'touchend'].forEach(e => window.addEventListener(e, function f() { if (hvUnlock()) window.removeEventListener(e, f, true); }, true));
+  S.show = true; hvArm();
   [['hive-snd', 'on', 'hiveSound'], ['hive-amb', 'amb', 'hiveAmb'], ['hive-voice', 'voice', 'hiveVoice']].forEach(([id, key, ls]) => { const b = $(id);
     if (b) b.addEventListener('click', () => { S[key] = !S[key]; hvLs(ls, 0, S[key] ? '1' : '0'); hvUnlock(); if (key === 'voice' && S.voice) hvSay('hive', 'Voice on.'); hvAmbient(S.on && S.amb); hvPaintSnd(); }); });
   const v = $('hive-vol'); if (v) { v.value = S.vol * 100; v.addEventListener('input', () => { S.vol = v.value / 100; hvLs('hiveVol', 0, S.vol); if (S.m) S.m.gain.value = S.vol; }); }
-  setInterval(() => {   // narrator: after ~75 s of silence describe the real current state (last snapshot only), same news at most every 3 min
-    const c = S.cnt, t = c && `Right now ${c.running} running, ${c.queued} queued, ${c.blocked} blocked.`;
-    if (t && Date.now() - S.spoke > 75000 && (t !== S.nar || Date.now() - S.spoke > 180000)) { S.nar = t; hvSay('hive-narrator', t); }
-  }, 15000);
   hvPaintSnd();
 }

@@ -2011,6 +2011,10 @@
     },
     {
       "mod": "hive",
+      "name": "hvVoices"
+    },
+    {
+      "mod": "hive",
       "name": "hvSay"
     },
     {
@@ -2024,6 +2028,14 @@
     {
       "mod": "hive",
       "name": "hvUnlock"
+    },
+    {
+      "mod": "hive",
+      "name": "hvArm"
+    },
+    {
+      "mod": "hive",
+      "name": "hvDisarm"
     },
     {
       "mod": "hive",
