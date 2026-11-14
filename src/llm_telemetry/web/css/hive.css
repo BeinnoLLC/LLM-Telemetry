@@ -57,14 +57,14 @@
 .hv-gauge[data-level=mid] .hv-g-bar i{background:var(--hv-gauge-mid)}.hv-gauge[data-level=hi] .hv-g-bar i{background:var(--hv-gauge-hi)}
 /* LLMTELEMET-274: comms, bubbles, FX, panels (semantic tokens only) */
 .hv-act{display:inline-flex;gap:6px;align-items:center;font-size:var(--fs-xs)}
-.hv-bubble rect,.hv-tail{fill:var(--card)}.hv-bubble rect{stroke:var(--c)}.hv-bubble text{fill:var(--fg);font-size:12px}.hv-bubble .hv-via{fill:var(--muted);font-size:10px}
+.hv-bubble rect,.hv-tail{fill:var(--card)}.hv-bubble rect{stroke:var(--c)}.hv-bubble text{fill:var(--fg);font-size:var(--fs-xs)}.hv-bubble .hv-via{fill:var(--muted);font-size:var(--fs-xs)}
 .hv-pk,.hv-p{fill:var(--c)}.hv-pk{filter:drop-shadow(0 0 4px var(--c))}.hv-p.conf:nth-child(3n+2){fill:var(--z-warn)}.hv-p.conf:nth-child(3n){fill:var(--z-ok)}
 .hv-p.shard{fill:var(--muted)}.hv-p.cas{fill:var(--z-warn)}.hv-wave{fill:none;stroke:var(--fg);stroke-width:.03}.hv-wave.bad{stroke:var(--z-bad)}.hv-wave.ok{stroke:var(--z-ok)}
 .hv-flash,.hv-flash-ok{animation:hv-fl .6s ease-out}.hv-flash-ok{--fl:var(--z-ok)}@keyframes hv-fl{from{box-shadow:inset 0 0 90px var(--fl,var(--z-bad))}}
 .hv-shake{animation:hv-sh .5s}@keyframes hv-sh{25%{transform:translate(-4px,2px)}75%{transform:translate(4px,-2px)}}
 .hv-panels{display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-top:12px}
 .hv-panel{border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--card);padding:8px 10px;min-width:0;font-size:var(--fs-xs)}
-.hv-panel h3{margin:0 0 6px;font-size:var(--fs-sm);display:flex;justify-content:space-between}
+.hv-panel h2{margin:0 0 6px;font-size:var(--fs-sm);display:flex;justify-content:space-between}
 #hive-clist,#hive-feed{max-height:300px;overflow:auto}
 .hv-cm{padding:6px 8px;margin-bottom:4px;border-left:3px solid var(--border)}.hv-cm.good{border-left-color:var(--z-ok)}.hv-cm.bad{border-left-color:var(--z-bad)}
 .hv-hd{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:600}.hv-meta,#hive-feed time{margin-left:auto;color:var(--muted)}.hv-tx{color:var(--muted);overflow-wrap:anywhere}

@@ -767,11 +767,11 @@ const hvBump = v => { hvC.bump = hvClamp(hvC.bump + v, -.3, .4); };   // a trans
 export function hvBubble(id, text, via, fam, ms = 5200) {
   const n = hvS.nodes[id], box = $('hive-bubbles'); if (!n || n.x == null || !text || !box) return null;
   while (box.children.length >= 2) box.firstChild.remove();
-  const L = hvWrap(text), w = Math.max(...L.map(l => l.length * 7.2), via.length * 6.4) + 24, h = L.length * 17 + 30, B = hvS.L ? hvS.L.bounds : {x1: 300, y0: -300};
+  const L = hvWrap(text), w = Math.max(...L.map(l => l.length * 7.8), via.length * 7.8) + 24, h = L.length * 18 + 32, B = hvS.L ? hvS.L.bounds : {x1: 300, y0: -300};
   const x = n.x + 30 + w > B.x1 ? n.x - w - 30 : n.x + 30, y = Math.max(B.y0, n.y - h - 24), g = hvEl('g', {class: 'hv-bubble'}, box);
   g.style.setProperty('--c', hvCol(fam)); hvEl('rect', {x, y, width: w, height: h}, g);
   hvEl('text', {x: x + 12, y: y + 15, class: 'hv-via'}, g).textContent = via;
-  L.forEach((l, i) => { hvEl('text', {x: x + 12, y: y + 34 + i * 17}, g).textContent = l; });
+  L.forEach((l, i) => { hvEl('text', {x: x + 12, y: y + 36 + i * 18}, g).textContent = l; });
   setTimeout(() => g.remove(), ms); return g;
 }
 
