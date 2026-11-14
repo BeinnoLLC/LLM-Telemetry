@@ -16,8 +16,8 @@ function chk(ok, name, got) {
 // ---- source-level CSS assertions -----------------------------------------
 chk(/@media\(min-width:641px\) and \(max-width:1024px\)\{\s*\n\s*#drawer\{width:60vw\}/.test(html),
     'tablet (641-1024px) drawer widens to 60vw');
-const drawerBlockIdx = html.indexOf('@media(max-width:640px){\n   #drawer{top:auto');
-const drawerBlockEnd = html.indexOf("\n }\n #draghandle{display:none}", drawerBlockIdx);
+const drawerBlockIdx = (() => { const m = /@media\(max-width:640px\)\{\s*#drawer\{top:auto/.exec(html); return m ? m.index : -1; })();
+const drawerBlockEnd = (() => { const m = /\s*\}\s*#draghandle\{display:none\}/.exec(html.slice(Math.max(drawerBlockIdx, 0))); return m && drawerBlockIdx !== -1 ? drawerBlockIdx + m.index : -1; })();
 const foundDrawerBlock = drawerBlockIdx !== -1 && drawerBlockEnd !== -1;
 chk(foundDrawerBlock, 'mobile (<=640px) drawer override block found');
 if (foundDrawerBlock) {
