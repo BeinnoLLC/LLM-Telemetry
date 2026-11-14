@@ -10,7 +10,6 @@ import {
   REPO_EXPANDED, installProjFilter, installProjWeight, installProjectDrilldown, installSesstree, modelsBadge, modelsPanel, provBadge, provLogoSvg, provOf, render, renderOllama, renderRepoBranch, renderResolution, schemaProblem, showSchemaError,
 } from './views.js';
 import { renderAgents, renderQueue } from './flow.js';
-import { renderArena } from './arena.js';
 import {
   drawerSync, installDrawer, installSessionFinder, installTimelineModal, installTranscriptModal,
 } from './drawer.js';
@@ -542,8 +541,6 @@ function agentLiveRows(list){
 export function renderLive(){
   const p = DATA.profiles[current] || {};
   renderLiveKpis(p, current, undefined, DATA.profiles, DATA.agent_live, DATA.pi_live);
-  // Hex arena on Home: real fleet counts re-weight the avatars every poll.
-  renderArena(fleetKindCounts(DATA.profiles, DATA.pi_live, DATA.agent_live));
   renderOllama(DATA.ollama);
   renderQueue();
   // The merged All key has no `agents` (see mergedField), which left the

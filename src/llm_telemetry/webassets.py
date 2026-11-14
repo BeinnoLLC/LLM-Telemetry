@@ -20,6 +20,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSS_PATH = os.path.join(HERE, "web", "css", "dashboard.css")
+HIVE_CSS_PATH = os.path.join(HERE, "web", "css", "hive.css")
 SHELL_PATH = os.path.join(HERE, "web", "dashboard.html")
 JS_DIR = os.path.join(HERE, "web", "js")
 ORDER_PATH = os.path.join(JS_DIR, "order.json")
@@ -36,8 +37,8 @@ UTILITIES_PATH = os.path.join(HERE, "web", "css", "utilities.css")
 # The rankings payload rides in-app too (#113): no standalone page, so the
 # module list is just the SPA's, in dependency order (main boots last and is
 # the only one that runs anything while loading).
-JS_ORDER = ["palette.js", "table.js", "charts.js", "zoom.js", "views.js", "flow.js", "drawer.js",
-            "diffdom.js", "live.js", "arena.js", "routerview.js", "quotaview.js", "router.js",
+JS_ORDER = ["palette.js", "table.js", "charts.js", "zoom.js", "views.js", "flow.js", "hive.js", "drawer.js",
+            "diffdom.js", "live.js", "routerview.js", "quotaview.js", "router.js",
             "main.js", "state.js"]
 # A top-level declaration: the only thing that starts a block.
 DECL_RE = re.compile(r"^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+"
@@ -77,7 +78,10 @@ def script_json(obj):
 def read_css():
     """The stylesheet, inlined into <style> so the page needs no sibling file."""
     with open(CSS_PATH, encoding="utf-8") as fh:
-        return strip_css_comments(fh.read())
+        css = fh.read()
+    with open(HIVE_CSS_PATH, encoding="utf-8") as fh:
+        css += "\n" + fh.read()
+    return strip_css_comments(css)
 
 
 def read_utilities():
