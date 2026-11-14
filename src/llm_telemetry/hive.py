@@ -200,7 +200,7 @@ def _ro(db, timeout=5):
     return sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=timeout)
 
 
-_BOARD_LAST = {}   # (home, board) -> last successful read_board result
+_BOARD_LAST: dict[tuple[str, str], list] = {}   # (home, board) -> last successful read_board result
 
 
 def read_board(home, board):
