@@ -1,0 +1,12 @@
+[Unit]
+Description=Probe LLM inference hosts every 5s (Node collector CLI, template)
+
+[Timer]
+OnBootSec=20s
+# 5s: GPU residency, queue depth and resident model change on the scale of a
+# single request (same rationale as systemd/llm-telemetry-probe.timer).
+OnUnitActiveSec=5s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+[Unit]
+# T-4 (LST-283) TEMPLATE — NOT INSTALLED by this ticket. Installation is a
+# cutover-step decision (migration plan §12 step 4) and needs the user's OK.
+# Node twin of systemd/llm-telemetry-live-export: live-data.json on a 5s poll.
+Description=Collect live LLM session state via the Node collector CLI (template)
+
+[Service]
+Type=oneshot
+# Pin the absolute node path (`command -v node`) and the checkout path before
+# use — plan §4 "Collectors as Node jobs" pins the interpreter like the Python
+# units pin .venv/bin/llm-telemetry. LLM_TELEMETRY_NODE_REPORTS_DIR keeps the
+# Node output in a SEPARATE dir from the Python artifacts (single-writer rule,
+# plan §13). NOTE: `live` is a stub until T-6; until then this unit would exit
+# non-zero with "not yet ported".
+Environment=LLM_TELEMETRY_NODE_REPORTS_DIR=%h/.local/share/llm-telemetry/reports-node
+ExecStart=/usr/bin/node %h/workspace/beinno/LLM-Telemtry/packages/collectors/dist/cli.js live

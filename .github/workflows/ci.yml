@@ -143,3 +143,18 @@ jobs:
 
       - name: E2E smoke (Playwright, system Chrome — no browser download)
         run: npm run test:e2e -w apps/web
+
+      # T-4 (LST-283): collector platform gate. Still purely additive — the
+      # `test` job above is the unchanged Python + legacy-web gate and runs in
+      # full; nothing here weakens it (migration plan §8).
+      - name: Lint collectors (ESLint, flat config)
+        run: npm run lint -w packages/collectors
+
+      - name: Typecheck collectors (tsc --noEmit, strict)
+        run: npm run typecheck -w packages/collectors
+
+      - name: Build collectors (tsc -> dist/cli.js)
+        run: npm run build -w packages/collectors
+
+      - name: Collector unit tests (vitest — writer atomicity, schema check, CLI dispatch)
+        run: npm run test -w packages/collectors
