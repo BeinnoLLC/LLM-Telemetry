@@ -114,3 +114,47 @@ jobs:
           path: breakpoint-shots/
           if-no-files-found: ignore
           retention-days: 14
+
+  # T-0 (LST-281): Next.js workspace gate. Purely additive — the `test` job
+  # above is the unchanged Python + legacy-web gate (docs/plans/
+  # node-nextjs-migration.md §8: "Keep: Python job during overlap") and runs
+  # in full; nothing here weakens it.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+
+      - name: Install workspace (root lockfile pins apps/web deps)
+        run: npm ci
+
+      - name: Lint (ESLint, flat config)
+        run: npm run lint -w apps/web
+
+      - name: Typecheck (tsc --noEmit, strict)
+        run: npm run typecheck -w apps/web
+
+      - name: Build (next build)
+        run: npm run build -w apps/web
+
+      - name: Unit tests (vitest, jsdom)
+        run: npm run test -w apps/web
+
+      - name: E2E smoke (Playwright, system Chrome — no browser download)
+        run: npm run test:e2e -w apps/web
+
+      # T-4 (LST-283): collector platform gate. Still purely additive — the
+      # `test` job above is the unchanged Python + legacy-web gate and runs in
+      # full; nothing here weakens it (migration plan §8).
+      - name: Lint collectors (ESLint, flat config)
+        run: npm run lint -w packages/collectors
+
+      - name: Typecheck collectors (tsc --noEmit, strict)
+        run: npm run typecheck -w packages/collectors
+
+      - name: Build collectors (tsc -> dist/cli.js)
+        run: npm run build -w packages/collectors
+
+      - name: Collector unit tests (vitest — writer atomicity, schema check, CLI dispatch)
+        run: npm run test -w packages/collectors

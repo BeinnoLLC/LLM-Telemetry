@@ -1,0 +1,12 @@
+[Unit]
+Description=Collect live LLM session state every 5s (Node collector CLI, template)
+
+[Timer]
+OnBootSec=20s
+# Same cadence as the Python llm-telemetry-probe/live-export timers (§1 of the
+# migration plan): 5s is the scale on which live state changes.
+OnUnitActiveSec=5s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

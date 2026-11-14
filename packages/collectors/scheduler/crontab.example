@@ -1,0 +1,20 @@
+# T-4 (LST-283) TEMPLATE — NOT INSTALLED by this ticket. `crontab -e` is a
+# cutover-step decision (migration plan §12 step 4) and needs the user's OK.
+#
+# Node twin of the Python crontab cadences (migration plan §1): the per-minute
+# dashboard/collect cycle (scripts/refresh-dashboard.sh), hourly router+quota
+# (README "Continuous updates"), and the 6-hourly OpenRouter price catalogue
+# (llm-telemetry-prices.timer). Adjust NODE and CLI to the machine (`command
+# -v node`, repo checkout path).
+#
+# NOTE: dashboard/costs/pricing/rankings/router/quota are CLI STUBS until their
+# T-tickets land (T-15..T-17) and exit 1 with "not yet ported" — this crontab
+# becomes useful at dual-run time, not before.
+
+NODE=/usr/bin/node
+CLI=$HOME/workspace/beinno/LLM-Telemtry/packages/collectors/dist/cli.js
+LLM_TELEMETRY_NODE_REPORTS_DIR=$HOME/.local/share/llm-telemetry/reports-node
+
+* * * * *    $NODE $CLI dashboard >> $LLM_TELEMETRY_NODE_REPORTS_DIR/cron.log 2>&1
+0 * * * *    $NODE $CLI router >> $LLM_TELEMETRY_NODE_REPORTS_DIR/cron.log 2>&1 && $NODE $CLI quota >> $LLM_TELEMETRY_NODE_REPORTS_DIR/cron.log 2>&1
+17 */6 * * * $NODE $CLI pricing --force >> $LLM_TELEMETRY_NODE_REPORTS_DIR/cron.log 2>&1

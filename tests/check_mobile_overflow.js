@@ -9,7 +9,17 @@ catch (e) { console.log('SKIP playwright not available');
 const path = require('path');
 
 (async () => {
-  const browser = await chromium.launch();
+  let browser;
+  try { browser = await chromium.launch(); }
+  catch (e) {
+    // Playwright itself resolved (e.g. hoisted to the root node_modules by the
+    // apps/web npm workspace) but its browser binary was never downloaded — CI
+    // intentionally does not run `npx playwright install` (b573700). Same
+    // contract as the require-skip above: a real 0/0, not a NO RESULT crash.
+    console.log('SKIP playwright browser not installed: ' + String(e.message).split('\n')[0]);
+    console.log('0 passed, 0 failed (skipped — playwright browser not installed)');
+    process.exit(0);
+  }
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const url = 'file://' + path.resolve(__dirname, '..', 'examples', 'reports', 'dashboard.html');
   await page.goto(url);
