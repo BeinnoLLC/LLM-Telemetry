@@ -17,8 +17,10 @@
 
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as path from "node:path";
 import { get as getConfig, type Config } from "./config.js";
 import { writeArtifact } from "./artifactWriter.js";
+import { buildLive } from "./collectLive.js";
 
 export interface CliIo {
   out: (line: string) => void;
@@ -102,7 +104,23 @@ export const COMMANDS: Record<string, Command> = {
   costs: stub("costs — write costs-data.json", "T-17"),
   pricing: stub("pricing — refresh the OpenRouter price catalogue cache", "T-17"),
   rankings: stub("rankings — write rankings-data.json", "T-16"),
-  live: stub("live — write live-data.json", "T-6"),
+  live: {
+    summary: "live — write live-data.json",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "live-data.json";
+      const res = writeArtifact(filename, buildLive() as unknown as Record<string, unknown>, {
+        tag: "live",
+        cfg: cfg(),
+        ...(outDir ? { outDir } : {}),
+      });
+      const n = Object.keys((buildLive() as { profiles: Record<string, unknown> }).profiles).length;
+      io.out(`${res.path}  (${n} profiles, 0 live sessions)`);
+      return 0;
+    },
+  },
   transcripts: stub("transcripts — write transcripts.json", "T-16"),
   "session-timeline": stub("session-timeline — write sessions/<profile>/<id>.json", "T-16"),
   logs: stub("logs — write logs-data.json", "T-16"),

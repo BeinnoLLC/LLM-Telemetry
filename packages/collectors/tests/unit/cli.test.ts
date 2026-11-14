@@ -56,8 +56,8 @@ describe("CLI dispatch", () => {
     }
   });
 
-  it("live and analytics dispatch to stubs (exit code 1)", () => {
-    for (const name of ["live", "analytics"]) {
+  it("analytics dispatches to stub (exit code 1)", () => {
+    for (const name of ["analytics"]) {
       const { io, err } = capture();
       expect(runCli([name], io, () => new Config())).toBe(1);
       expect(err.join("\n")).toContain(`'${name}' is not yet ported`);
