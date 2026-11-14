@@ -1,0 +1,607 @@
+[
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 131,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 141,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 143,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 606,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 663,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 684,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 792,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 796,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 843,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 857,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 859,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 862,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 863,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 865,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 867,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 869,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 875,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 876,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 877,
+    "matched": "rgba(, rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 878,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 880,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 881,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 883,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 885,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 905,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 908,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 909,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 910,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 912,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 915,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 920,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 921,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 926,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 927,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 935,
+    "matched": "rgba(, rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 957,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 977,
+    "matched": "rgba(, rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1223,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1226,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1240,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1249,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1290,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1299,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1301,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1310,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1327,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1335,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1342,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1380,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1393,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1596,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1610,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 1614,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2064,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2116,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2124,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2142,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2263,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2264,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2272,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2273,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2279,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2281,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2283,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2286,
+    "matched": "hsl(, hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2288,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/flow.js",
+    "line": 125,
+    "matched": "#5b6472"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/flow.js",
+    "line": 397,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/flow.js",
+    "line": 400,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/flow.js",
+    "line": 557,
+    "matched": "#5f9e6e, #c4a06e, #c66a6a"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/flow.js",
+    "line": 560,
+    "matched": "#64748b"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/hive.js",
+    "line": 32,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/hive.js",
+    "line": 194,
+    "matched": "rgb("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 89,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 150,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 151,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 152,
+    "matched": "#b07a5e, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 153,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 154,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 155,
+    "matched": "#b87383, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 156,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 157,
+    "matched": "hsl(, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 158,
+    "matched": "#baa984, hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 209,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 210,
+    "matched": "#8b98ab"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 239,
+    "matched": "#8b98ab"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 290,
+    "matched": "#c4a06e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 293,
+    "matched": "#38bdf8, #38bdf8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 300,
+    "matched": "#c4a06e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 302,
+    "matched": "#38bdf8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 530,
+    "matched": "#c66a6a, #c2a15c"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 1241,
+    "matched": "#c66a6a"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 1264,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 1265,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 1267,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2061,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2257,
+    "matched": "#c4a06e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2258,
+    "matched": "#fb923c"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2259,
+    "matched": "#7c909c"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2260,
+    "matched": "#c66a6a"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2261,
+    "matched": "#9a86b8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2265,
+    "matched": "#64b5c9"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2266,
+    "matched": "#818cf8"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2286,
+    "matched": "rgba("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2288,
+    "matched": "#5f9e6e, #c4a06e, #c66a6a"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2398,
+    "matched": "#5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2465,
+    "matched": "#c66a6a, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2466,
+    "matched": "#c4a06e, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2530,
+    "matched": "#c66a6a, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2535,
+    "matched": "#c66a6a, #c4a06e, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 2596,
+    "matched": "#c66a6a, #5f9e6e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3152,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3153,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3154,
+    "matched": "#b07a5e"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3155,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3156,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3157,
+    "matched": "#b87383"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3158,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3159,
+    "matched": "#baa984"
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3421,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/js/views.js",
+    "line": 3491,
+    "matched": "#5b9cf6, #34c38f"
+  }
+]
