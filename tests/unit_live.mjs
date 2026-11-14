@@ -77,7 +77,7 @@ async function boot(opt = {}){
 
   const audio = { ctxs: [], notes: [], gains: [] };
   const logs = {
-    fetch: [], deferred: [], mk: [], renderOllama: [], renderQueue: [], renderAgents: [], renderArena: [],
+    fetch: [], deferred: [], mk: [], renderOllama: [], renderQueue: [], renderAgents: [],
     render: [], renderResolution: [], tabs: 0, pvFilter: 0, pick: [], navSync: 0,
     drawerSync: 0, showSchemaError: [], schemaProblem: [], provOf: [], provBadge: [],
     modelsBadge: [], modelsPanel: [], loeIcon: [], bwRow: [], colorOf: [], profileHue: [],
@@ -172,9 +172,6 @@ async function boot(opt = {}){
     'flow.js': {
       renderAgents(a){ logs.renderAgents.push(a); },
       renderQueue(){ logs.renderQueue.push(1); },
-    },
-    'arena.js': {
-      renderArena(a){ logs.renderArena.push(a); },
     },
     'drawer.js': {
       drawerSync(){ logs.drawerSync++; },
@@ -361,8 +358,6 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   eq([h.logs.renderOllama.length, h.logs.renderQueue.length, h.logs.renderAgents.length], [1,1,1],
      'renderLive: the Ollama, queue and agents cards are each refreshed once');
   eq(h.logs.renderAgents[0], [{ id:'a1' }], 'renderLive: the agents panel receives the live agents');
-  eq(h.logs.renderArena.length, 1, 'renderLive: renderArena is called exactly once per render');
-  eq(h.logs.renderArena[0], h.M.fleetKindCounts(h.data.profiles, h.data.pi_live, h.data.agent_live), 'renderLive: renderArena receives the fleetKindCounts result');
 
   // rows with no phase / untitled / a fallback model / more tools than fit
   const h2 = await boot({ data: { profiles: { p1: { live: [

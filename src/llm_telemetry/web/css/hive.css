@@ -1,0 +1,46 @@
+/* LLMTELEMET-271: Hive page. Colours come from theme tokens; polygons only. */
+.hv-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.hv-views{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.hv-link{font-size:var(--fs-xs);text-transform:none;letter-spacing:0}
+.hv-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.hv-stat{display:flex;flex-direction:column;min-width:96px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--card)}
+.hv-stat b{font-size:var(--fs-lg,18px);font-variant-numeric:tabular-nums}
+.hv-stat span{color:var(--muted);font-size:var(--fs-xs)}
+.hv-stage{position:relative;width:100%;height:70vh;min-height:420px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);overflow:hidden}
+#hive-svg{width:100%;height:100%;display:block;touch-action:none}
+.hv-tip{position:fixed;pointer-events:none;opacity:0;z-index:50;max-width:330px;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-ctl);background:var(--card);color:var(--fg);font-size:var(--fs-xs);transition:opacity .12s}
+.hv-tip h4{margin:0 0 4px;font-size:var(--fs-sm)}
+.hv-prov{fill:var(--muted);vertical-align:-2px}
+.hv-edge{stroke:var(--c,var(--muted));stroke-opacity:.28;stroke-width:1.4}
+.hv-edge.thin{stroke-width:1}
+.hv-edge.hot{stroke-opacity:.85;stroke-dasharray:6 8;animation:hv-flow 1s linear infinite}
+@keyframes hv-flow{to{stroke-dashoffset:-28}}
+.hv-node{cursor:pointer}
+.hv-hex{fill:var(--card);stroke:var(--c);stroke-width:1.6}
+.hv-node.hot .hv-hex{stroke-width:2.4;filter:drop-shadow(0 0 6px var(--c))}
+.hv-node.idle .hv-hex{stroke-opacity:.6}
+.hv-node.blocked .hv-hex{stroke:var(--z-bad);stroke-dasharray:5 4}
+.hv-egg{fill:var(--card);stroke:var(--c);stroke-width:2.2}
+.hv-node.nodata .hv-hex,.hv-node.nodata .hv-egg{stroke-dasharray:2 4;opacity:.7}
+.hv-uglow{fill:var(--c);opacity:.07}
+.hv-orbit{fill:none;stroke:var(--c);stroke-opacity:.35;stroke-dasharray:4 6}
+.hv-crown{fill:var(--z-warn);stroke:var(--z-warn);stroke-linejoin:round}
+.hv-lbl{fill:var(--fg);font-size:var(--fs-xs);text-anchor:middle;font-weight:600}
+.hv-sub{fill:var(--muted);font-size:var(--fs-xs);text-anchor:middle}
+.hv-fam{font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-anchor:middle}
+.hv-bob{animation:hv-bob 4s ease-in-out infinite}
+@keyframes hv-bob{50%{transform:translateY(-3px)}}
+.hv-white,.hv-shine{fill:var(--fg)}.hv-pupil{fill:var(--bg)}.hv-cheek{fill:var(--z-bad);opacity:.5}
+.hv-line,.hv-x,.hv-brow,.hv-teeth{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hv-thick{stroke-width:2.6}.hv-red,.hv-brow{stroke:var(--z-bad)}.hv-brow{stroke-width:2.4}
+.hv-fill{fill:var(--fg);stroke:var(--fg)}
+.hv-lid{fill:var(--card)}
+.hv-zzz{fill:var(--muted);font-size:var(--fs-xs)}
+.hv-eyes{animation:hv-blink 5s infinite;transform-origin:0 0}
+@keyframes hv-blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.hv-look{animation:hv-look 6s infinite}
+@keyframes hv-look{0%,30%,100%{transform:translate(0,0)}40%,55%{transform:translate(-2px,1px)}65%,80%{transform:translate(2px,-1px)}}
+.hv-talk{animation:hv-talk .4s infinite alternate}
+@keyframes hv-talk{from{transform:scaleY(.3)}to{transform:scaleY(1.4)}}
+.hv-pill.fresh{color:var(--z-ok)}
+@media(prefers-reduced-motion:reduce){.hv-bob,.hv-eyes,.hv-look,.hv-talk,.hv-edge.hot{animation:none}}
