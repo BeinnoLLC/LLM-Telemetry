@@ -408,15 +408,16 @@ export function priceTokens(
     cost += pricedRow.market_value_usd;
     priced = priced && pricedRow.priced;
   }
+  // Python `price_tokens` returns exactly six keys (in_tok, out_tok,
+  // cache_read_tok, cache_write_tok, cost_usd, cost_class); the internal
+  // `priced` flag only decides cost_usd, never leaks as a field.
   return {
     in_tok: input,
     out_tok: output,
     cache_read_tok: cacheRead,
     cache_write_tok: cacheWrite,
     cost_usd: priced ? pyRound(cost, 4) : null,
-    priced,
     cost_class: "subscription",
-    rate_source: "api",
   };
 }
 

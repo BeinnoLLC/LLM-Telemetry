@@ -32,7 +32,7 @@ import {
   type AgentLiveRow,
 } from "../../src/collectAgentLive.js";
 import { discoverLiveJsonl, lastEventPhase } from "../../src/collectPiLive.js";
-import { parsePiSessionJsonl } from "../../src/collectPiAgents.js";
+import { isoToUnix, parsePiSessionJsonl } from "../../src/collectPiAgents.js";
 import { Config } from "../../src/config.js";
 import type { Profile } from "../../src/config.js";
 import { makeTmpDir } from "./helpers.js";
@@ -460,21 +460,29 @@ describe("codex phase covers all Python branches", () => {
   });
 });
 
-describe("priceTokens keeps unpriced models honest", () => {
+describe("priceTokens returns exactly the six Python price_tokens keys", () => {
   const cfg = new Config();
   const t = (n: number): Record<string, number> => ({ input: n, output: n, cache_read: 0, cache_write: 0 });
+  const sixKeys = [
+    "cache_read_tok",
+    "cache_write_tok",
+    "cost_class",
+    "cost_usd",
+    "in_tok",
+    "out_tok",
+  ];
 
-  it("priced model: 4-decimal cost and priced=true", () => {
+  it("priced model: 4-decimal cost, no extra priced/rate_source keys", () => {
     const out = priceTokens("codex", { "gpt-6-astra": t(10) }, {}, cfg);
-    expect(out["priced"]).toBe(true);
+    expect(Object.keys(out).sort()).toEqual(sixKeys);
     expect(typeof out["cost_usd"]).toBe("number");
     expect(out["cost_usd"]).toBe(pyRound(out["cost_usd"] as number, 4));
     expect(out["cost_class"]).toBe("subscription");
   });
 
-  it("unpriced model: cost_usd is null and priced is false (never a real $0)", () => {
+  it("unpriced model: cost_usd is null (never a real $0), same six keys", () => {
     const out = priceTokens("claude", { "zz-made-up-model-zz": t(10) }, {}, cfg);
-    expect(out["priced"]).toBe(false);
+    expect(Object.keys(out).sort()).toEqual(sixKeys);
     expect(out["cost_usd"]).toBeNull();
   });
 
@@ -483,13 +491,90 @@ describe("priceTokens keeps unpriced models honest", () => {
       "gpt-6-astra": t(10),
       "zz-made-up-model-zz": t(10),
     }, {}, cfg);
-    expect(out["priced"]).toBe(false);
     expect(out["cost_usd"]).toBeNull();
     expect(out["in_tok"]).toBe(20);
+    expect(out["priced"]).toBeUndefined();
+    expect(out["rate_source"]).toBeUndefined();
   });
 
   it("no tokens at all yields no fields", () => {
     expect(priceTokens("claude", null, {}, cfg)).toEqual({});
+  });
+});
+
+/** Local-wall-time epoch the way Python reads a naive datetime: same
+ * machine, same timezone, so `datetime.timestamp()` and the local Date
+ * constructor must agree. */
+function localEpoch(y: number, mo: number, d: number, h = 0, mi = 0, s = 0, ms = 0): number {
+  const dt = new Date(0);
+  dt.setFullYear(y, mo - 1, d);
+  dt.setHours(h, mi, s, ms);
+  return dt.getTime() / 1000;
+}
+
+describe("isoToUnix matches Python _iso_to_unix (fromisoformat, now fallback)", () => {
+  it("now fallback on unparseable input", () => {
+    const n = Date.now() / 1000;
+    for (const bad of ["abc", "", "2026", "2026-10", "2026-10-15T24:00:00", "2026-02-30", "2026-1-15", "T21:04:60", "2021-W53-1", "20261015T21042"]) {
+      const v = isoToUnix(bad);
+      expect(v).toBeGreaterThanOrEqual(n - 0.5);
+      expect(v).toBeLessThan(n + 5);
+    }
+    // Non-strings raise AttributeError in Python -> same "now" fallback.
+    const v = (isoToUnix as unknown as (x: unknown) => number)(123);
+    expect(v).toBeGreaterThanOrEqual(n - 0.5);
+  });
+
+  it("Z timestamps keep their epoch (existing behavior preserved)", () => {
+    expect(isoToUnix("2026-10-15T21:04:25Z")).toBe(1792098265);
+    expect(isoToUnix("2026-10-15T21:04:25.681Z")).toBe(1792098265.681);
+    expect(isoToUnix("2026-10-15T21:04:25.681212345Z")).toBe(1792098265.681212);
+    expect(isoToUnix("2026-10-15T21:04:25-03:30")).toBe(1792098265 + 3.5 * 3600);
+  });
+
+  it("valid timestamps the old Date.parse path rejected now parse", () => {
+    expect(isoToUnix("2026-10-15T21:04:25+03")).toBe(1792098265 - 3 * 3600);
+    expect(isoToUnix("2026-10-15T21:04:25+0330")).toBe(1792098265 - (3 * 3600 + 30 * 60));
+    expect(isoToUnix("2026-10-15T210425.6812+00:00")).toBe(1792098265.6812);
+  });
+
+  it("compact and separator-variant forms like CPython 3.12", () => {
+    expect(isoToUnix("2026-10-15T210425Z")).toBe(1792098265);
+    expect(isoToUnix("20261015T210425Z")).toBe(1792098265);
+    expect(isoToUnix("2026-10-15 21:04:25+00:00")).toBe(1792098265);
+    expect(isoToUnix("2026-10-15T21,25+00:00")).toBe(1792098000.25);
+    expect(isoToUnix("2026-10-15T21:04.25+00:00")).toBe(1792098240.25);
+  });
+
+  it("naive timestamps read as local wall time, like datetime.timestamp()", () => {
+    expect(isoToUnix("2026-10-15")).toBe(localEpoch(2026, 10, 15));
+    expect(isoToUnix("2026-10-15T21:04:25")).toBe(localEpoch(2026, 10, 15, 21, 4, 25));
+    expect(isoToUnix("20261015")).toBe(localEpoch(2026, 10, 15));
+  });
+
+  it("ISO week dates resolve like date.fromisocalendar", () => {
+    expect(isoToUnix("2026-W42-3")).toBe(localEpoch(2026, 10, 14));
+    expect(isoToUnix("2026W423")).toBe(localEpoch(2026, 10, 14));
+    expect(isoToUnix("2026-W42")).toBe(localEpoch(2026, 10, 12));
+    expect(isoToUnix("2026W42")).toBe(localEpoch(2026, 10, 12));
+    expect(isoToUnix("2020-W53-1")).toBe(localEpoch(2020, 12, 28));
+    expect(isoToUnix("2026-W41-6")).toBe(1791579600);
+  });
+
+  it("Python lenient edge forms (verified against the 3.12.3 venv)", () => {
+    expect(isoToUnix("2026-10-15T21+00:00")).toBe(1792098000); // hour-only + tz
+    expect(isoToUnix("2026-10-15521:04Z")).toBe(1792098240); // digit separator
+    expect(isoToUnix("2026W421Z")).toBe(localEpoch(2026, 10, 12)); // greedy day
+    expect(isoToUnix("2026-10-15T21:04:25+03:60")).toBe(1792098265 - 4 * 3600); // carried offset
+  });
+
+  it("invalid forms Python rejects fall back to now (no false epochs)", () => {
+    const n = Date.now() / 1000;
+    for (const bad of ["2026W4212:04", "2026W9", "2026-W4-2", "2026-02-29", "2026-10-15T21:60", "+24:00"]) {
+      const v = isoToUnix(bad);
+      expect(v).toBeGreaterThanOrEqual(n - 0.5);
+      expect(v).toBeLessThan(n + 5);
+    }
   });
 });
 
