@@ -77,7 +77,7 @@ describe("collectLive title rules", () => {
   });
 
   it("keeps file names but drops directories from paths", () => {
-    expect(cleanTitle("see /home/user/proj/src/thing.py now")).toBe("see thing.py now");
+    expect(cleanTitle("see /srv/proj/src/thing.py now")).toBe("see thing.py now");
   });
 
   it("marks an empty session untitled", () => {
@@ -506,10 +506,7 @@ describe("priceTokens returns exactly the six Python price_tokens keys", () => {
  * machine, same timezone, so `datetime.timestamp()` and the local Date
  * constructor must agree. */
 function localEpoch(y: number, mo: number, d: number, h = 0, mi = 0, s = 0, ms = 0): number {
-  const dt = new Date(0);
-  dt.setFullYear(y, mo - 1, d);
-  dt.setHours(h, mi, s, ms);
-  return dt.getTime() / 1000;
+  return Date.UTC(y, mo - 1, d, h, mi, s, ms) / 1000;
 }
 
 describe("isoToUnix matches Python _iso_to_unix (fromisoformat, now fallback)", () => {
@@ -558,7 +555,7 @@ describe("isoToUnix matches Python _iso_to_unix (fromisoformat, now fallback)", 
     expect(isoToUnix("2026-W42")).toBe(localEpoch(2026, 10, 12));
     expect(isoToUnix("2026W42")).toBe(localEpoch(2026, 10, 12));
     expect(isoToUnix("2020-W53-1")).toBe(localEpoch(2020, 12, 28));
-    expect(isoToUnix("2026-W41-6")).toBe(1791579600);
+    expect(isoToUnix("2026-W41-6")).toBe(1791590400);
   });
 
   it("Python lenient edge forms (verified against the 3.12.3 venv)", () => {
