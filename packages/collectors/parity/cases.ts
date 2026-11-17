@@ -12,6 +12,7 @@
  */
 
 import { collectAnalytics } from "../src/collectAnalytics.js";
+import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
 import { join } from "node:path";
@@ -25,7 +26,8 @@ export interface ParityCase {
   /** Artifact filename both producers write. */
   artifact: string;
   /** Payload schema tag both stacks validate at write time (T-4 writer). */
-  tag: SchemaTag;
+  /** null = the artifact has no payload schema (quota). */
+  tag: SchemaTag | null;
   /** When set, the node side runs this real collector instead of copying the
    * fixture, so a stub/incomplete port FAILS parity instead of passing. For a
    * `dbInputs` case it receives the generated inputs dir. */
@@ -74,6 +76,15 @@ export const CASES: readonly ParityCase[] = [
     inputs: { generator: "make_router_fixture.py", producer: "produce_router.py" },
     nodeCollector: (inputsDir, nowS) =>
       collectRouter({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "quota",
+    fixture: "quota-data.json",
+    artifact: "quota-data.json",
+    tag: null,
+    inputs: { generator: "make_quota_fixture.py", producer: "produce_quota.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectQuota({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
   },
 ];
 

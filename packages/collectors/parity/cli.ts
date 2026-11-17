@@ -87,7 +87,7 @@ export function runCase(
       makeAnalyticsInputs(python, root, inputsDir);
       runPythonAnalytics(python, root, inputsDir, pyDir, c.artifact, nowS);
     } else {
-      runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag);
+      runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag ?? "-");
     }
   } catch (err) {
     return fail(String(err));

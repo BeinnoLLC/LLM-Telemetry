@@ -23,6 +23,7 @@ import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { collectRouter } from "./collectRouter.js";
+import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
 
 export interface CliIo {
@@ -200,7 +201,28 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  quota: stub("quota — write quota-data.json + history", "T-16"),
+  quota: {
+    summary: "quota — write quota-data.json + quota-history.json [OUT [HISTORY]]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      // Positional like the Python CLI: non-dash args are OUT then HISTORY.
+      const pos = args.filter((a) => !a.startsWith("-"));
+      const c = cfg();
+      const payload = collectQuota({ cfg: c });
+      const outDir = pos[0] ? path.dirname(pos[0]) : undefined;
+      const filename = pos[0] ? path.basename(pos[0]) : "quota-data.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const histPath = pos[1] ?? path.join(outDir ?? path.dirname(res.path), HISTORY_NAME);
+      assertSafeOutDir(path.dirname(histPath), c);
+      const now = Math.trunc(Date.now() / 1000);
+      const kept = appendHistory(histPath, historySample(now, payload), now);
+      const s = payload["summary"] as Record<string, number>;
+      const n = Object.keys(payload["profiles"] as object).length;
+      io.out(`${res.path}  (${n} profiles, ${s["providers"]} providers, ` +
+        `${s["available"]} available, ${s["attention"]} near limit; history: ${kept} samples)`);
+      return 0;
+    },
+  },
   serve: stub("serve — serve reports/ (replaced by the Next.js app)", "T-19"),
   doctor: stub("doctor — read-only preflight", "T-27"),
   ingest: stub("ingest — ingest PI and Hermes telemetry into the analytics store", "T-18"),
