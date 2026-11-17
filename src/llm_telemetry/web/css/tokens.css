@@ -114,6 +114,7 @@
      transparent). Theme-invariant: painted shading is black/white in both. */
   --shade:#000000;
   --tint:#ffffff;
+  --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (was #qcard-local in dashboard.css) */
 
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
@@ -217,4 +218,5 @@
      shading is black/white in both themes) */
   --shade:#000000;
   --tint:#ffffff;
+  --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (theme-invariant) */
 }

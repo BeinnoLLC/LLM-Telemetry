@@ -877,12 +877,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     linear-gradient(90deg,color-mix(in srgb,var(--tint) 10%,transparent),color-mix(in srgb,var(--tint) 2%,transparent) 14%,color-mix(in srgb,var(--tint) 1.5%,transparent) 86%,color-mix(in srgb,var(--tint) 7%,transparent)),
     linear-gradient(180deg,color-mix(in srgb,var(--tint) 7%,transparent),color-mix(in srgb,var(--tint) 2%,transparent));
   -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
-  box-shadow:inset 2px 0 0 rgba(255,255,255,.35),inset -2px 0 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(255,255,255,.14),
-    inset 5px 0 8px -4px rgba(255,255,255,.14),inset 0 -22px 24px -14px rgba(0,0,0,.55)}
+  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tint) 35%,transparent),inset -2px 0 0 color-mix(in srgb,var(--tint) 18%,transparent),inset 0 -3px 0 color-mix(in srgb,var(--tint) 14%,transparent),
+    inset 5px 0 8px -4px color-mix(in srgb,var(--tint) 14%,transparent),inset 0 -22px 24px -14px color-mix(in srgb,var(--shade) 55%,transparent)}
 .qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:6px;pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.22) 60%,rgba(255,255,255,.05));filter:blur(2px)}
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 55%,transparent),color-mix(in srgb,var(--tint) 22%,transparent) 60%,color-mix(in srgb,var(--tint) 5%,transparent));filter:blur(2px)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  background:linear-gradient(90deg,rgba(0,0,0,.22),transparent 16%,transparent 84%,rgba(0,0,0,.18)),
+  background:linear-gradient(90deg,color-mix(in srgb,var(--shade) 22%,transparent),transparent 16%,transparent 84%,color-mix(in srgb,var(--shade) 18%,transparent)),
     linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,black 10%));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
 .qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:12px;margin-bottom:-2px;pointer-events:none;transform-origin:50% 100%;
@@ -902,29 +902,29 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
 /* One task = one bead, piled from the floor of the jar by JS (left/top are its centre).
    Resin look: a flat family colour, a soft highlight, a core shadow and a contact shadow. */
-#qcard{--qk-wait:hsl(215 16% 62%)}
+/* --qk-wait (waiting-ball fill) is a token in tokens.css */
 .qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,28px);height:var(--sz,28px);margin:calc(var(--sz,28px) / -2) 0 0 calc(var(--sz,28px) / -2);
   padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
-  background:radial-gradient(circle at 32% 26%,white 0,rgba(255,255,255,.92) 8%,rgba(255,255,255,0) 21%),
-    radial-gradient(circle at 36% 30%,rgba(255,255,255,.3),transparent 50%),
-    radial-gradient(circle at 70% 80%,rgba(0,0,0,.38),transparent 60%),
+  background:radial-gradient(circle at 32% 26%,white 0,color-mix(in srgb,var(--tint) 92%,transparent) 8%,color-mix(in srgb,var(--tint) 0%,transparent) 21%),
+    radial-gradient(circle at 36% 30%,color-mix(in srgb,var(--tint) 30%,transparent),transparent 50%),
+    radial-gradient(circle at 70% 80%,color-mix(in srgb,var(--shade) 38%,transparent),transparent 60%),
     radial-gradient(circle at 45% 42%,var(--k,var(--qk-wait)) 25%,color-mix(in srgb,var(--k,var(--qk-wait)) 72%,black) 100%);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent);
   transition:transform .14s cubic-bezier(.2,.8,.2,1),box-shadow .14s}
 .qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:900;transform:scale(1.22);outline:0;
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.45),0 5px 8px -2px rgba(0,0,0,.7)}
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 45%,transparent),0 5px 8px -2px color-mix(in srgb,var(--shade) 70%,transparent)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 /* Running = a clip: an upright capsule with a bright inner loop, glowing in its own colour. */
 .qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid rgba(255,255,255,.4);pointer-events:none}
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent)}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--tint) 40%,transparent);pointer-events:none}
 /* User rule: balls show provider icons. Do not replace with letters. The white contrast disc
    keeps the mark legible on every ball colour at QT_MIN 18px; the icon scales with the ball. */
 .qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
   rotate:calc(var(--rz,0deg) * -1)}
-.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:rgba(255,255,255,.88);
-  box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:color-mix(in srgb,var(--tint) 88%,transparent);
+  box-shadow:0 1px 2px color-mix(in srgb,var(--shade) 35%,transparent)}
 .qt-gl svg{width:60%;height:60%;position:relative}
 .qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
 .qt-run .qt-gl svg{width:50%;height:50%}
@@ -932,7 +932,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
-.qt-ball.qt-warn{box-shadow:inset 0 -2px 3px rgba(0,0,0,.35),inset 0 1px 1.5px rgba(255,255,255,.4),0 3px 3px -1px rgba(0,0,0,.65),0 0 0 2px var(--z-warn)}
+.qt-ball.qt-warn{box-shadow:inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
 .qt-overflow{position:absolute;z-index:1000;top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
   font-size:14px;font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
