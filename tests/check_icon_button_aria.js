@@ -46,7 +46,7 @@ function tagEnd(s, i) {
 }
 
 const lineOf = (s, i) => s.slice(0, i).split('\n').length;
-const hasName = (attrs) => /\baria-label(ledby)?\s*=/.test(attrs);
+const hasName = (attrs) => /(?:^|\s)aria-label(ledby)?\s*=\s*['"][^'"]+['"]/.test(attrs);
 
 function visibleText(body) {
   let t = body
@@ -54,7 +54,13 @@ function visibleText(body) {
     .replace(/<(\w+)\b[^>]*\baria-hidden=["']true["'][^>]*>[\s\S]*?<\/\1>/g, '')
     .replace(/<[^>]*>/g, '')
     .replace(/&#?\w+;/g, '');
-  if (/\$\{/.test(t)) return true; // dynamic text
+  if (/\$\{/.test(t)) {
+    const stripped = t.replace(/\$\{[^}]*\}/g, '').trim();
+    const exprs = t.match(/\$\{[^}]*\}/g) || [];
+    const glyphOnly = exprs.length > 0 && stripped === '' && exprs.every(e => /glyph|arrow|chevron|triang|\\u25B/.test(e));
+    if (glyphOnly) return false;
+    return true;
+  }
   return /[A-Za-z0-9]/.test(t);
 }
 
@@ -79,11 +85,14 @@ for (const file of walk(WEB)) {
   while ((m = ce.exec(src))) {
     buttons++;
     const win = src.split('\n').slice(lineOf(src, m.index) - 1, lineOf(src, m.index) + 14).join('\n');
-    const named = /aria-label|ariaLabel/.test(win) || /appendChild\(\s*th\.firstChild/.test(win);
+    const named = /aria-label|ariaLabel/.test(win) || /while\s*\(\s*th\.firstChild\s*\)\s*btn\.appendChild\(\s*th\.firstChild\s*\)/.test(win);
     if (!named) bad.push(`${rel}:${lineOf(src, m.index)} createElement('button') with no aria-label`);
   }
 }
 chk(scanned > 0 && buttons > 0, 'scanned web js/html for buttons', `${scanned} files, ${buttons} buttons`);
+// role="button" elements (markup)
+const rb = /<[^>]*\brole=["']button["'][^>]*>/g;
+// (covered by generic tag scan above conceptually; ensure no new failures)
 chk(bad.length === 0, 'every button has visible text or aria-label/aria-labelledby', '\n    ' + bad.join('\n    '));
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

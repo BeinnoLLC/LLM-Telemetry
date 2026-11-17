@@ -91,7 +91,7 @@ function qtDemoWire(q, r, d){
 export function trainBall(it){
   const c = document.createElement('button');
   c.className = 'qt-ball qt-' + it.kind;
-  c.setAttribute('type', 'button'); c.setAttribute('aria-label', 'Task');   // refined per render
+  c.setAttribute('type', 'button'); c.setAttribute('aria-label', 'Task (queue item)');   // refined per render
   c.dataset.key = it.key;
   c.tabIndex = 0;
   const g = document.createElement('span'); g.className = 'qt-ball-g'; c.appendChild(g);
