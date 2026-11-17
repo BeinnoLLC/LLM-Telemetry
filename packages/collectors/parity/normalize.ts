@@ -17,6 +17,9 @@
  *     formatting tolerance of plan §7.3 ("no tolerances except documented
  *     formatting"). Integers (tokens, USD scaled, counts) are compared EXACTLY
  *     and never rounded. -0 normalizes to 0.
+ *     The single other tolerance (live `idle_s`/`uptime_s`, ±5 s) is NOT
+ *     applied here: normalize keeps those keys and diff.ts compares them with
+ *     LIVE_CLOCK_TOLERANCE_S (see structuralDiff).
  *  4. Array order is preserved: ordering is data (rows, series, chains). A
  *     producer that reorders an array is a parity failure, not noise.
  *
@@ -47,12 +50,6 @@ export const RUN_STAMP_KEYS: readonly string[] = [
   "finished_at",
 ];
 
-/** Wall-clock-derived fields of `live[]` rows. SQLite's `strftime('now')`
- * (not injectable into both stacks) computes them, so a run that crosses a
- * second boundary would differ for no real reason. Dropped only under a
- * `live` array; every other timestamp-derived field is compared. */
-export const LIVE_CLOCK_KEYS: readonly string[] = ["idle_s", "uptime_s"];
-
 /** The documented float formatting tolerance (plan §7.3). */
 export const FLOAT_DIGITS = 6;
 
@@ -77,16 +74,14 @@ function walk(
   value: unknown,
   drop: ReadonlySet<string>,
   digits: number,
-  parentKey = "",
 ): unknown {
   if (typeof value === "number") return roundFloat(value, digits);
-  if (Array.isArray(value)) return value.map((v) => walk(v, drop, digits, parentKey));
+  if (Array.isArray(value)) return value.map((v) => walk(v, drop, digits));
   if (isRecord(value)) {
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value).sort()) {
       if (drop.has(key.toLowerCase())) continue;
-      if (parentKey === "live" && LIVE_CLOCK_KEYS.includes(key)) continue;
-      out[key] = walk(value[key], drop, digits, key);
+      out[key] = walk(value[key], drop, digits);
     }
     return out;
   }
