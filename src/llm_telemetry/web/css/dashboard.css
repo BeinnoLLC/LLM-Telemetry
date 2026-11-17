@@ -1220,10 +1220,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
-   box-shadow:-12px 0 40px rgba(0,0,0,.4)}
+   box-shadow:-12px 0 40px color-mix(in srgb,var(--shade) 40%,transparent)}
  #drawer.open{transform:translateX(0)}
  #drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
- #scrim{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.45);opacity:0;
+ #scrim{position:fixed;inset:0;z-index:65;background:color-mix(in srgb,var(--shade) 45%,transparent);opacity:0;
    pointer-events:none;transition:opacity .22s ease}
  #scrim.open{opacity:1;pointer-events:auto}
  .dhead{display:flex;align-items:center;gap:8px;padding:13px 15px;
@@ -1237,7 +1237,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
 /* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
    (this is one session's whole conversation, not a cross-session tail). */
-#tscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+#tscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
 #tscrim.open{opacity:1;pointer-events:auto}
 #tmodal{position:fixed;top:50%;left:50%;z-index:80;
@@ -1246,7 +1246,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   display:flex;flex-direction:column;overflow:hidden;
   transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
   transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
 #tmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
 .thead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
@@ -1287,7 +1287,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    transcript modal — the two answer different questions ("what happened"
    vs "what was said") and must stay independently reachable. */
 }
-#lnscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+#lnscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
 #lnscrim.open{opacity:1;pointer-events:auto}
 #lnmodal{position:fixed;top:50%;left:50%;z-index:80;
@@ -1296,9 +1296,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   display:flex;flex-direction:column;overflow:hidden;
   transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
   transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
 #lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
-#sfscrim{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.55);opacity:0;
+#sfscrim{position:fixed;inset:0;z-index:85;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
   pointer-events:none;transition:opacity .14s ease}
 #sfscrim.open{opacity:1;pointer-events:auto}
 #sfmodal{position:fixed;top:12vh;left:50%;z-index:90;
@@ -1307,7 +1307,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   display:flex;flex-direction:column;overflow:hidden;
   transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;
   transition:transform .12s ease,opacity .12s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
 #sfmodal.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 .sfrow{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:var(--fs-sm);border-left:2px solid transparent}
 .sfrow:hover,.sfrow.sfactive{background:var(--bg)}
@@ -1324,7 +1324,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 #lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
   border-radius:var(--radius-ctl);padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+  box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 40%,transparent);display:none}
 
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own
@@ -1332,14 +1332,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the transcript modal above, same scrim/open-class/focus-trap pattern,
    just a different anchor edge so it reads as "detail alongside the
    matrix" rather than "a whole-screen takeover" on desktop. */
-#pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+#pdscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
 #pdscrim.open{opacity:1;pointer-events:auto}
 #pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
   width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;
   transform:translateX(100%);transition:transform .18s ease;
-  box-shadow:-16px 0 40px rgba(0,0,0,.35)}
+  box-shadow:-16px 0 40px color-mix(in srgb,var(--shade) 35%,transparent)}
 #pdrawer.open{transform:translateX(0)}
 .pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
@@ -1377,7 +1377,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
      border-left:none;border-top:1px solid var(--border);
      border-radius:14px 14px 0 0;
-     transform:translateY(100%);box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+     transform:translateY(100%);box-shadow:0 -12px 40px color-mix(in srgb,var(--shade) 40%,transparent)}
    #drawer.open{transform:translateY(0)}
    #drawer .dhead{padding-top:6px}
    #draghandle{display:block;width:36px;height:4px;border-radius:2px;
@@ -1390,7 +1390,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #dbody{overflow-y:auto;flex:1;padding:4px 0;font-family:ui-monospace,SFMono-Regular,
    Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
  .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
- .ev:hover{background:rgba(127,127,127,.06)}
+ .ev:hover{background:var(--ev-hover)}
  .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
  .ev .b{min-width:0;flex:1;word-break:break-word}
  .ev .k{display:inline-block;padding:0 5px;border-radius:2px;font-size:var(--fs-xs);
@@ -2061,7 +2061,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .toast{pointer-events:auto;display:grid;grid-template-columns:20px minmax(0,1fr) 32px;gap:10px;
   padding:12px 12px 12px 14px;border-radius:var(--radius-ctl);background:var(--card);
   border:1px solid color-mix(in srgb,var(--sev) 45%,var(--border));border-left:4px solid var(--sev);
-  box-shadow:0 0 0 1px var(--border),0 14px 32px -8px rgba(0,0,0,.85);animation:toast-in .18s ease-out}
+  box-shadow:0 0 0 1px var(--border),0 14px 32px -8px color-mix(in srgb,var(--shade) 85%,transparent);animation:toast-in .18s ease-out}
 .toast[data-sev=info]{--sev:var(--accent)}
 .toast[data-sev=ok]{--sev:var(--z-ok)}
 .toast[data-sev=warn]{--sev:var(--z-warn)}
@@ -2113,7 +2113,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-v{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .combo-chev{flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
 .combo-pop{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 45%,transparent)}
 .combo-q{margin:8px;height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);padding:0 8px;font:inherit;font-size:14px}
 .combo-list{max-height:min(320px,50vh);overflow:auto;border-top:1px solid var(--border)}
 .combo-opt{display:flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px;font-size:14px;cursor:pointer}
@@ -2121,7 +2121,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-opt.dim{opacity:.55}
 .combo-tick{flex:none;width:14px;color:var(--accent)}
 .combo-name{flex:1;min-width:0;overflow-wrap:anywhere}
-.combo-name mark{background:rgba(110,159,255,.35);color:var(--fg);border-radius:2px}
+.combo-name mark{background:var(--combo-mark-bg);color:var(--fg);border-radius:2px}
 .combo-n{flex:none;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 .combo-none{padding:12px;font-size:14px}
 .combo-foot{display:flex;justify-content:flex-end;padding:8px;border-top:1px solid var(--border)}
@@ -2139,7 +2139,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .filterbar .fb-meta{order:3;flex-basis:100%;margin-left:0;line-height:20px}
   .filterbar .fb-active{order:2}
   .fb-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:75vh;overflow:auto;flex-direction:column;gap:8px;
-    padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.5)}
+    padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px color-mix(in srgb,var(--shade) 50%,transparent)}
   .filterbar.sheet-open .fb-sheet{display:flex}
   .fb-sheet .fb-combos{flex-direction:column;flex-wrap:nowrap}
   .fb-sheet .combo-btn{width:100%;max-width:none;justify-content:space-between}

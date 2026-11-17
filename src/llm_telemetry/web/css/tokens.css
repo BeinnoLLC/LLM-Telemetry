@@ -115,6 +115,8 @@
   --shade:#000000;
   --tint:#ffffff;
   --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (was #qcard-local in dashboard.css) */
+  --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (neutral, theme-invariant) */
+  --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
 
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
@@ -219,4 +221,6 @@
   --shade:#000000;
   --tint:#ffffff;
   --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (theme-invariant) */
+  --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (theme-invariant) */
+  --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
 }
