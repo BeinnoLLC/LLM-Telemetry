@@ -234,5 +234,5 @@
    tier-hue family is theme-invariant, like the rules that consume it. */
 :root:not([data-theme="dark"]) .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
 :root:not([data-theme="dark"]) .rt-tcard,:root:not([data-theme="dark"]) .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
-[data-theme="dark"] .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
-[data-theme="dark"] .rt-tcard,[data-theme="dark"] .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
+:root[data-theme="dark"] .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
+:root[data-theme="dark"] .rt-tcard,:root[data-theme="dark"] .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
