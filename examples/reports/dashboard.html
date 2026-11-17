@@ -9021,7 +9021,7 @@ function hvModel(snap, view = 'all') {
  const run = w.status === 'running', mins = Math.round((w.secs || 0) / 60), id = 'w:' + w.id;
  add(id, {kind: 'worker', fam, r: 11, label: w.ticket || w.role || 'worker', sub: (w.engine || '') + ' · ' + (run ? mins + 'm' : 'queued'),
  mood: run ? 'talk' : 'sleep', hot: run, owner, pool: !owner, model: w.model, press: hvScoreP(hvNodeScore({}, [w])),
- tip: `<h4>${esc(w.engine || '')} worker · ${esc(w.role || '')}${w.ticket ? ' · ' + esc(w.ticket) : ''}</h4>${run ? 'Running ' + mins + ' min' : 'Waiting for a slot (' + mins + ' min)'}${w.model ? '<br>' + hvProvMark(w.model) + ' ' + esc(w.model) : ''}${w.spend && w.spend.label ? '<br>' + esc(w.spend.label) : ''}`});
+ tip: `<h4>${esc(w.engine || '')} worker · ${esc(w.role || '')}${w.ticket ? ' · ' + esc(w.ticket) : ''}</h4>${run ? 'Running ' + mins + ' min' : 'Waiting for a slot (' + mins + ' min)'}${w.model ? '<br>' + hvProvMark(w.model) + ' ' + esc(w.model) : ''}${w.host && w.host !== 'local' ? '<br>Host ' + esc(w.host) : ''}${w.spend && w.spend.label ? '<br>' + esc(w.spend.label) : ''}`});
  if (owner) link(owner, id, run, fam, true);
  if (run) c.running++; else c.queued++;
  };
