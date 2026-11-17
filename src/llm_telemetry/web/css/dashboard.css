@@ -2291,6 +2291,12 @@ canvas, img {
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
   box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 
+/* LST-309 (light only): light --z-bad-fg is a deep AA ink for text on the light
+   surfaces, so the alert pill pairs its solid --z-bad fill with --card text
+   (the .qv-astat.qv-bad pattern). Dark keeps --z-bad-fg on the fill, unchanged.
+   Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
+:root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
+
 
 
 
