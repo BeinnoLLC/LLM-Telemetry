@@ -954,7 +954,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
-.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.35)}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1px color-mix(in srgb,var(--tint) 35%,transparent)}
 .qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
@@ -2260,8 +2260,8 @@ canvas, img {
   background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),transparent 75%)}
 :root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
-  box-shadow:inset 7px 0 9px -6px hsl(220 25% 45% / .22),inset -7px 0 9px -6px hsl(220 25% 45% / .16),inset 0 -16px 18px -12px hsl(220 25% 45% / .22)}
-:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,hsl(0 0% 100% / .95),hsl(0 0% 100% / .55) 60%,hsl(0 0% 100% / 0));filter:blur(1.5px)}
+  box-shadow:inset 7px 0 9px -6px color-mix(in srgb,var(--jar-glass-shadow) 22%,transparent),inset -7px 0 9px -6px color-mix(in srgb,var(--jar-glass-shadow) 16%,transparent),inset 0 -16px 18px -12px color-mix(in srgb,var(--jar-glass-shadow) 22%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 95%,transparent),color-mix(in srgb,var(--tint) 55%,transparent) 60%,color-mix(in srgb,var(--tint) 0%,transparent));filter:blur(1.5px)}
 :root:not([data-theme="dark"]) #qcard .qt-body::before{
   background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 30%,transparent))}
 :root:not([data-theme="dark"]) #qcard .qt-body::after{
@@ -2269,23 +2269,23 @@ canvas, img {
   border-bottom:2px solid color-mix(in srgb,var(--jc) 70%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-lid{border:1.5px solid var(--jar-edge);border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
-  box-shadow:inset 0 1px 0 hsl(0 0% 100% / .95),inset 0 -2px 3px -1px hsl(220 25% 45% / .16),0 2px 4px hsl(220 30% 20% / .18)}
-:root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px hsl(220 30% 20% / .18)}
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--tint) 95%,transparent),inset 0 -2px 3px -1px color-mix(in srgb,var(--jar-glass-shadow) 16%,transparent),0 2px 4px color-mix(in srgb,var(--jar-lid-shadow) 18%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-lid::after{background:linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));border:1.5px solid var(--jar-edge);box-shadow:0 2px 3px color-mix(in srgb,var(--jar-lid-shadow) 18%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-n{color:var(--jar-ink);text-shadow:none}
 :root:not([data-theme="dark"]) #qcard .qt-name{color:var(--jar-label)}
 :root:not([data-theme="dark"]) #qcard .qt-cars:not(:has(.qt-ball))::after{color:var(--jar-label-soft)}
 :root:not([data-theme="dark"]) #qcard .qt-legend{color:var(--jar-label-soft)}
 :root:not([data-theme="dark"]) #qcard .qt-ball{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 2px 3px -1px color-mix(in srgb,var(--jar-lid-shadow-strong) 40%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball:hover,:root:not([data-theme="dark"]) #qcard .qt-ball:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-tip-on{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .45),0 4px 7px -2px hsl(220 30% 15% / .45)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 45%,transparent),0 4px 7px -2px color-mix(in srgb,var(--jar-lid-shadow-strong) 45%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-run{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-run .qt-ball-g{box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 70%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn{outline:2px dashed var(--jar-ring);outline-offset:3px;
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px hsl(0 0% 0% / .28),inset 0 1px 1.5px hsl(0 0% 100% / .4),0 2px 3px -1px hsl(220 30% 15% / .4)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 2px 3px -1px color-mix(in srgb,var(--jar-lid-shadow-strong) 40%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn.qt-tip-on{outline:2px solid var(--accent)}
-:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px hsl(0 0% 0% / .28),inset 0 1px 1px hsl(0 0% 100% / .4)}
+:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1px color-mix(in srgb,var(--tint) 40%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-glow{--k:var(--jar-glow);background:var(--jar-glass);
   box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);

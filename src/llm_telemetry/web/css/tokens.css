@@ -137,6 +137,12 @@
   --jar-claude:hsl(18 88% 48%);
   --jar-codex:hsl(152 75% 33%);
   --jar-wait:hsl(215 30% 54%);
+  /* glass/lid shading inks for the light jar (dashboard.css mixes them with
+     transparent at use). Declared for both themes as a pair; only the
+     :root:not([data-theme="dark"]) jar rules consume them. */
+  --jar-glass-shadow:hsl(220 25% 45%);
+  --jar-lid-shadow:hsl(220 30% 20%);
+  --jar-lid-shadow-strong:hsl(220 30% 15%);
 }
 
 /* Fleet bar (replaced the old segmented tab strip). Surfaces are derived
@@ -223,6 +229,9 @@
   --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (theme-invariant) */
   --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (theme-invariant) */
   --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
+  --jar-glass-shadow:hsl(220 25% 45%);   /* light-jar glass/lid shading inks (pair values; */
+  --jar-lid-shadow:hsl(220 30% 20%);     /*  only the light-scoped jar rules consume them) */
+  --jar-lid-shadow-strong:hsl(220 30% 15%);
 }
 
 /* LST-311: tier-hue semantic tokens (routerview tier chips, tier cards, share
