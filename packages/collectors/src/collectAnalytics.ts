@@ -17,6 +17,7 @@ import { Config, load as loadConfig } from "./config.js";
 import { canonicalEndpoint, splitRow } from "./bandwidth.js";
 import { cachedCatalog, catalogSize, priceRow, type Catalog } from "./pricing.js";
 import { projectOfSession, type SessionInfo } from "./projects.js";
+import { cmpStr } from "./pySort.js";
 import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
 import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
@@ -211,6 +212,44 @@ export function buildLatency(con: Con, cfg: Config) {
   return { ...result, idle_threshold_s: DEFAULT_IDLE_THRESHOLD_S, idle_n: idle.length };
 }
 
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+/** Python `concurrency_by_hour`: sessions active per local hour, top-level vs
+ * subagent; a session counts in every hour it overlaps. */
+export function concurrencyByHour(
+  intervals: Iterable<readonly unknown[]>,
+  now: number = Date.now() / 1000,
+): Map<string, { top: number; sub: number }> {
+  const buckets = new Map<string, { top: number; sub: number }>();
+  const HOUR = 3600;
+  for (const [startedAt, endedAt, isSub] of intervals) {
+    if (startedAt === null || startedAt === undefined) continue;
+    const start = Number(startedAt);
+    const end = endedAt !== null && endedAt !== undefined ? Number(endedAt) : now;
+    if (end < start) continue;
+    const field = isSub ? "sub" : "top";
+    for (let h = Math.floor(start / HOUR); h <= Math.floor(end / HOUR); h++) {
+      const d = new Date(h * HOUR * 1000);
+      const key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:00`;
+      let b = buckets.get(key);
+      if (!b) buckets.set(key, (b = { top: 0, sub: 0 }));
+      b[field] += 1;
+    }
+  }
+  return buckets;
+}
+
+export function buildCompressionPressure(con: Con) {
+  return tuples(con, SQL.COMPRESSION_PRESSURE).map(([id, title, fb, ic, err]) =>
+    ({ id, title, fallback_streak: fb, ineffective_count: ic, error: err || "" }));
+}
+
+export function buildConcurrency(con: Con, now?: number) {
+  const buckets = concurrencyByHour(tuples(con, SQL.CONCURRENCY_INTERVALS), now);
+  return [...buckets.entries()].sort((a, b) => cmpStr(a[0], b[0]))
+    .map(([hour, v]) => ({ hour, top: v.top, sub: v.sub }));
+}
+
 export interface TreeNode {
   id: string; parent: string | null; source: string; title: string; model: unknown;
   started: unknown; ended: unknown; end_reason: string; msgs: number; tools: number; tok: number;
@@ -344,7 +383,8 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     end_reasons: endReasons, outcomes, tools: toolRel.tools,
     tool_fail_samples: toolRel.tool_fail_samples,
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
-    latency: buildLatency(con, cfg), attribution, sessions_tree: tree,
+    latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
+    concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };

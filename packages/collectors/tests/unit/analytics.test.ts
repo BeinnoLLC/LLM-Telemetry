@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildSessionsTree, buildLatency, buildToolReliability, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
@@ -205,5 +205,39 @@ describe("latency matches Python", () => {
     expect(got.idle_n).toBeGreaterThan(0);
     expect(Object.keys(got.by_model).length).toBeGreaterThan(0);
     expect(got.by_model[Object.keys(got.by_model)[0] as string]?.n).toBeGreaterThan(0);
+  });
+});
+
+describe("compression pressure and concurrency match Python", () => {
+  it("build_compression_pressure rows (COMPRESSION_PRESSURE)", () => {
+    const got = buildCompressionPressure(con);
+    const want = pyAnalytics(inputs, dbPath,
+      "result=[{'id':a,'title':b,'fallback_streak':c,'ineffective_count':d,'error':e or ''}"
+      + " for a,b,c,d,e in con.execute(C.COMPRESSION_PRESSURE)]");
+    expect(got).toEqual(want);
+    expect(got.map((r) => r.id)).toEqual(["s-cron", "s-root", "s-child"]);
+    expect(got.find((r) => r.id === "s-cron")?.title).toBe("Nightly");
+  });
+
+  it("concurrency_by_hour: multi-hour spans, open sessions, bad rows, subagents", () => {
+    const now = Math.floor(Date.now() / 1000);
+    const iv = [
+      [now - 5 * 3600 - 17, now - 2 * 3600, 0], [now - 4 * 3600, now - 3 * 3600 - 5, 1], [now - 3600, null, 0],
+      [null, now, 0], [now - 100, now - 200, 0], [now - 7200, now - 7200, 1], [now - 90 * 86400, now - 89 * 86400, 0],
+    ];
+    const want = pyAnalytics(inputs, dbPath,
+      `iv=json.loads(${JSON.stringify(JSON.stringify(iv))})\nresult=C.concurrency_by_hour(iv, now=${now})`);
+    expect(Object.fromEntries(concurrencyByHour(iv, now))).toEqual(want);
+    expect(concurrencyByHour([], now).size).toBe(0);
+  });
+
+  it("concurrency payload on the fixture DB (sorted, hour/top/sub)", () => {
+    const got = buildConcurrency(con);
+    const want = pyAnalytics(inputs, dbPath,
+      "b=C.concurrency_by_hour(con.execute(C.CONCURRENCY_INTERVALS))\n"
+      + "result=[{'hour':k,'top':v['top'],'sub':v['sub']} for k,v in sorted(b.items())]");
+    expect(got).toEqual(want);
+    expect(got.length).toBeGreaterThan(3);
+    expect(got.some((r) => r.sub > 0)).toBe(true);
   });
 });

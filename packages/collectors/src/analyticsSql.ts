@@ -211,3 +211,22 @@ where m.role = 'assistant'
   and m.timestamp > strftime('%s','now') - 604800
 order by m.session_id, m.timestamp
 `;
+
+export const COMPRESSION_PRESSURE = `
+select id, coalesce(nullif(title,''), nullif(display_name,''), '(untitled)'),
+       compression_fallback_streak, compression_ineffective_count,
+       compression_failure_error
+from sessions
+where started_at > strftime('%s','now') - 2592000
+  and (compression_fallback_streak > 0
+       or compression_ineffective_count > 0
+       or coalesce(compression_failure_error,'') != '')
+order by compression_ineffective_count desc, compression_fallback_streak desc
+limit 40
+`;
+
+export const CONCURRENCY_INTERVALS = `
+select started_at, ended_at, (parent_session_id is not null)
+from sessions
+where started_at > strftime('%s','now') - 7776000
+`;

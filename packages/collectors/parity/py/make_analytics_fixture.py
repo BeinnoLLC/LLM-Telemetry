@@ -111,6 +111,12 @@ def build_state_db(path, now):
             " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (sid, source, model, parent, started, ended, reason, msgs, tools, *tok, cwd, branch,
              act, est, title or None, last_act, "terminal command running" if la is not None else None))
+    # compression pressure: (session, fallback_streak, ineffective_count, error, display_name)
+    for sid, fb, ic, err, dn in [("s-root", 2, 1, "ctx too long", None), ("s-cron", 0, 3, None, "Nightly"),
+                                 ("s-child", 1, 0, "", None), ("s-live", 0, 0, "", None),
+                                 ("s-old", 5, 5, "old", None)]:
+        con.execute("update sessions set compression_fallback_streak=?, compression_ineffective_count=?,"
+                    " compression_failure_error=?, display_name=? where id=?", (fb, ic, err, dn, sid))
     for (sid, model, prov, url, task, calls, inp, outp, cr, cw, rt, est, act, fo, lo) in USAGE:
         con.execute(
             "insert into session_model_usage (session_id, model, billing_provider, billing_base_url,"
