@@ -77,7 +77,7 @@ describe("collectLive title rules", () => {
   });
 
   it("keeps file names but drops directories from paths", () => {
-    expect(cleanTitle("see /home/user/proj/src/thing.py now")).toBe("see thing.py now");
+    expect(cleanTitle("see /srv/proj/src/thing.py now")).toBe("see thing.py now");
   });
 
   it("marks an empty session untitled", () => {

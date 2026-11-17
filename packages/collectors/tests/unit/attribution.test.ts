@@ -8,7 +8,7 @@ import { pyCall } from "./pyOracle.js";
 const day = (back: number): string => new Date(Date.now() - back * 86_400_000).toISOString().slice(0, 10);
 
 const SESSIONS = {
-  root: { title: "Big refactor", cwd: "/home/u/proj-a", parent_session_id: null, git_branch: "main" },
+  root: { title: "Big refactor", cwd: "/srv/proj-a", parent_session_id: null, git_branch: "main" },
   kid: { title: null, cwd: null, parent_session_id: "root", git_branch: "" },
   cron1: { title: "nightly · Sep 25 12:04", cwd: "/tmp", parent_session_id: null, git_branch: " dev " },
   cron2: { title: "nightly · Sep 26 12:04", cwd: "/opt/", parent_session_id: null },
@@ -48,7 +48,7 @@ describe("cost_attribution parity with Python", () => {
 
 describe("projects parity with Python", () => {
   const cases: [string | null, string | null][] = [
-    ["ahwa-health-gate · Sep 25 12:04", null], ["  spaced   out  ", "/x"], [null, "/home/u/Nowinv/"],
+    ["ahwa-health-gate · Sep 25 12:04", null], ["  spaced   out  ", "/x"], [null, "/srv/Nowinv/"],
     [null, "/tmp"], [null, "/opt/"], [null, null], ["", "/a/b"], [" · lead", "/a/b"],
   ];
   it("project_of", () => {

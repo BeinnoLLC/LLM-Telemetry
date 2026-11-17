@@ -33,17 +33,17 @@ D = 86400
 #  tokens(in,out,cr,cw), actual_cost, est_cost, cwd, branch, last_activity_off)
 SESSIONS = [
     ("s-root", None, "cli", "Fix the parser", "gpt-4o", 5 * H, 4 * H, "completed", 12, 5,
-     (1000, 500, 200, 100), None, 0.12, "/home/u/repos/demo", "main", None),
+     (1000, 500, 200, 100), None, 0.12, "/srv/repos/demo", "main", None),
     ("s-child", "s-root", "subagent", "Parser subtask", "gpt-4o", 4.5 * H, 4.2 * H, "error: boom", 4, 2,
-     (300, 100, 0, 0), 0.03, 0.03, "/home/u/repos/demo", "main", None),
+     (300, 100, 0, 0), 0.03, 0.03, "/srv/repos/demo", "main", None),
     ("s-cron", None, "cron", "", "qwen/qwen3-coder", 3 * H, 2.9 * H, None, 6, 1,
-     (400, 200, 50, 0), None, 0.01, "/home/u/repos/other", "dev", None),
+     (400, 200, 50, 0), None, 0.01, "/srv/repos/other", "dev", None),
     ("s-reaped", None, "tui", "Reaped one", "gpt-4o", 26 * H, 25 * H, "startup_orphan_reap", 2, 0,
      (50, 10, 0, 0), None, 0.0, "/opt", None, None),
     ("s-live", None, "desktop", "Live session", "qwen/qwen3-coder", 1 * H, None, None, 8, 3,
-     (700, 300, 100, 50), None, 0.05, "/home/u/repos/demo", "feat/x", 60),
+     (700, 300, 100, 50), None, 0.05, "/srv/repos/demo", "feat/x", 60),
     ("s-old", None, "cli", "Ancient", "gpt-4o", 40 * D, 40 * D - H, "completed", 3, 1,
-     (80, 20, 0, 0), None, 0.01, "/home/u/repos/old", "main", None),
+     (80, 20, 0, 0), None, 0.01, "/srv/repos/old", "main", None),
 ]
 
 # (session, model, provider, base_url, task, calls, in, out, cr, cw, rtok, est, act, first_off, last_off)

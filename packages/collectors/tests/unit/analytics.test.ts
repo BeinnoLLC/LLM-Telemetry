@@ -226,7 +226,7 @@ result=SI.build_session_index_payload(con,t-10*86400,t)`);
   });
 
   it("cwd_tail", () => {
-    for (const c of ["", "/", "/a", "/a/b/", "/home/u/repos/demo", "//x//y//", null]) {
+    for (const c of ["", "/", "/a", "/a/b/", "/srv/repos/demo", "//x//y//", null]) {
       expect(cwdTail(c)).toBe(pyCall("collect_session_index", "_cwd_tail", [c]));
     }
   });
