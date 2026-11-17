@@ -25,6 +25,7 @@ import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collect
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
+import { buildSessionIndexForDb } from "./sessionIndex.js";
 import { buildAlerts } from "./alerts.js";
 import { buildContextForDb } from "./contextCompaction.js";
 import { update as updateBandwidth } from "./bandwidthHistory.js";
@@ -508,6 +509,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     try {
       profiles[p.name] = buildProfile(p.name, con, catalog, cfg);
       profiles[p.name]!["context"] = buildContextForDb(con, now.getTime() / 1000);
+      profiles[p.name]!["session_index"] = buildSessionIndexForDb(con, now.getTime() / 1000);
     } finally {
       con.close();
     }

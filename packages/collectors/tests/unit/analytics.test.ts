@@ -17,6 +17,7 @@ import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
 import { buildAlerts } from "../../src/alerts.js";
+import { buildSessionIndexPayload, cwdTail } from "../../src/sessionIndex.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
 
 let inputs = "";
@@ -172,6 +173,38 @@ result=CX.build_context_payload(now=${now.getTime() / 1000})`);
     expect(a.sessions.some((s) => s.compactions.length > 0)).toBe(true);
     expect(a.cooldowns).toHaveLength(1);
     expect(a.reasoning_by_model.length).toBeGreaterThan(0);
+  });
+});
+
+describe("session_index matches Python", () => {
+  it("collector payload per profile equals build_session_index_by_profile", () => {
+    const now = new Date();
+    const out = collectAnalytics({ inputsDir: inputs, reportsDir: makeTmpDir("an-si-"), now });
+    const got = Object.fromEntries(Object.entries(out["profiles"] as Record<string, Record<string, unknown>>)
+      .map(([n, p]) => [n, p["session_index"]]));
+    const want = pyAnalytics(inputs, dbPath, "from llm_telemetry import collect_session_index as SI\nresult=SI.build_session_index_by_profile()") as Record<string, { id: string; tools: string[]; title: string }[]>;
+    expect(got).toEqual(want);
+    const ids = want["alpha"]!.map((r) => r.id);
+    expect(ids).toContain("s-root");
+    expect(ids).toContain("s-old"); // 40 days old is inside the 90-day window
+  });
+
+  it("explicit range, ordering and a untitled session", () => {
+    const t = Math.floor(Date.now() / 1000);
+    const got = buildSessionIndexPayload(con, t - 10 * 86400, t);
+    const want = pyAnalytics(inputs, dbPath, `from llm_telemetry import collect_session_index as SI
+import time
+t=int(time.time())
+result=SI.build_session_index_payload(con,t-10*86400,t)`);
+    expect(got).toEqual(want);
+    expect(got.find((r) => r.id === "s-cron")?.title).toBe("(untitled)");
+    expect(got.find((r) => r.id === "s-root")?.tools).toEqual(["patch", "read_file", "terminal", "web_search"]);
+  });
+
+  it("cwd_tail", () => {
+    for (const c of ["", "/", "/a", "/a/b/", "/home/u/repos/demo", "//x//y//", null]) {
+      expect(cwdTail(c)).toBe(pyCall("collect_session_index", "_cwd_tail", [c]));
+    }
   });
 });
 
