@@ -18,6 +18,7 @@ import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
 import { buildAlerts } from "../../src/alerts.js";
 import { buildSessionIndexPayload, cwdTail } from "../../src/sessionIndex.js";
+import { buildOrchestration } from "../../src/orchestration.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
 
 let inputs = "";
@@ -173,6 +174,27 @@ result=CX.build_context_payload(now=${now.getTime() / 1000})`);
     expect(a.sessions.some((s) => s.compactions.length > 0)).toBe(true);
     expect(a.cooldowns).toHaveLength(1);
     expect(a.reasoning_by_model.length).toBeGreaterThan(0);
+  });
+});
+
+describe("orchestration matches Python", () => {
+  it("graph from the fixture analytics store", () => {
+    const want = pyAnalytics(inputs, dbPath, "result=C.build_orchestration()") as { nodes: unknown[]; edges: { count: number }[] };
+    const got = buildOrchestration(join(inputs, "home", ".local", "share", "llm-telemetry", "analytics.db"));
+    expect(got).toEqual(want);
+    expect(want.edges.some((e) => e.count === 3)).toBe(true);
+    expect(want.nodes.length).toBeGreaterThan(4);
+    const out = collectAnalytics({ inputsDir: inputs, reportsDir: makeTmpDir("an-or-") });
+    expect(out["orchestration"]).toEqual(want);
+  });
+
+  it("a missing or unreadable store is the empty graph", () => {
+    const dir = makeTmpDir("an-or-missing-");
+    expect(buildOrchestration(join(dir, "nope.db"))).toEqual({ nodes: [], edges: [] });
+    fs.writeFileSync(join(dir, "bad.db"), "not a database");
+    expect(buildOrchestration(join(dir, "bad.db"))).toEqual({ nodes: [], edges: [] });
+    expect(pyAnalytics(inputs, dbPath, `result=C.build_orchestration(${JSON.stringify(join(dir, "nope.db"))})`))
+      .toEqual({ nodes: [], edges: [] });
   });
 });
 

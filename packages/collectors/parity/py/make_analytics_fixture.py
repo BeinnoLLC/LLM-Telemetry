@@ -191,6 +191,26 @@ def build_analytics_db(home, now):
     if os.path.exists(path):
         os.remove(path)
     AnalyticsStore(path).close()
+    # orchestration edges: (trigger_source, trigger, session, target, agent, signal, off).
+    # Covers pi/hermes sources, an untyped target, a NULL agent, an empty source and repeats.
+    edges = [
+        ("hermes", "alpha", "s-root", "pi:worker-1", "worker-1", "delegate_task", 3 * H),
+        ("hermes", "alpha", "s-root", "pi:worker-1", "worker-1", "delegate_task", 2 * H),
+        ("hermes", "alpha", "s-child", "pi:worker-1", "worker-1", "delegate_task", 1 * H),
+        ("hermes", "alpha", "s-root", "hermes:beta-bot", None, "message_agent", 90 * 60),
+        ("pi", "worker-1", "p-1", "hermes:alpha", "alpha", "callback", 30 * 60),
+        ("", "cron", "c-1", "bare-target", None, "schedule", 20 * 60),
+        ("pi", "worker-2", "p-2", "", None, "spawn", 10 * 60),
+    ]
+    con = sqlite3.connect(path)
+    for src, trig, sid, target, agent, sig, off in edges:
+        con.execute(
+            "insert into orchestration_edges (timestamp, trigger_source, trigger_profile_or_agent,"
+            " trigger_session_id, triggered_target, triggered_agent_or_profile, signal_type, payload,"
+            " created_at) values (?,?,?,?,?,?,?,?,?)",
+            (now - off, src, trig, sid, target, agent, sig, "{}", now))
+    con.commit()
+    con.close()
     return path
 
 

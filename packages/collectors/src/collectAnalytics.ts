@@ -25,6 +25,7 @@ import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collect
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
+import { buildOrchestration } from "./orchestration.js";
 import { buildSessionIndexForDb } from "./sessionIndex.js";
 import { buildAlerts } from "./alerts.js";
 import { buildContextForDb } from "./contextCompaction.js";
@@ -514,6 +515,8 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
       con.close();
     }
   }
+  const orchDb = opts.inputsDir !== undefined
+    ? `${opts.inputsDir}/home/.local/share/llm-telemetry/analytics.db` : undefined;
   const reportsDir = opts.reportsDir ?? cfg.reports_dir;
   fs.mkdirSync(reportsDir, { recursive: true });
   const series = updateBandwidth(
@@ -534,6 +537,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     pricing_source: env["LLM_TELEMETRY_CATALOG"] ? "pinned" : "cache",
     pricing_models: catalogSize(catalog),
     resolution: res,
+    orchestration: buildOrchestration(orchDb),
     schema_version: 0,
   };
   return stamp(payload) as AnalyticsPayload;
