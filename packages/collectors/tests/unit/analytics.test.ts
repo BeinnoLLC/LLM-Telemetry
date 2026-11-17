@@ -11,6 +11,7 @@ import { cachedCatalog } from "../../src/pricing.js";
 import { computeGaps, type TurnRow } from "../../src/latency.js";
 import { canonicalEndpoint } from "../../src/bandwidth.js";
 import { forProfile } from "../../src/failures.js";
+import { collect as collectDelegations } from "../../src/delegations.js";
 import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
@@ -335,6 +336,15 @@ health.sort(key=lambda h:(-h["fail"],-h["total"]))
 result={"stats":fs_,"recent":fr,"health":health}`) as typeof got;
     expect(Object.keys(stats).length).toBeGreaterThan(1);
     expect(recent.length).toBeGreaterThan(2);
+    expect(got).toEqual(want);
+  });
+});
+
+describe("delegations match Python", () => {
+  it("collect(con)", () => {
+    const got = collectDelegations(con);
+    const want = pyAnalytics(inputs, dbPath, "from llm_telemetry import delegations\nresult=delegations.collect(con)");
+    expect(got).not.toBeNull();
     expect(got).toEqual(want);
   });
 });

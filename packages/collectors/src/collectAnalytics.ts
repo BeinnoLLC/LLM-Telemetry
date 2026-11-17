@@ -23,6 +23,7 @@ import { buildRepoBranch } from "./repoBranch.js";
 import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
 import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collectLive.js";
 import { forProfile } from "./failures.js";
+import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
@@ -455,6 +456,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
     concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
     health: buildHealth(rows, failStats), failures_recent: failRecent,
+    delegations: collectDelegations(con),
     live: buildLiveRows(con, name), resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,

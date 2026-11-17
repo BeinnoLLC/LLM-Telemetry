@@ -130,6 +130,24 @@ def build_state_db(path, now):
             "insert into messages (session_id, role, content, tool_name, effect_disposition,"
             " finish_reason, timestamp, token_count) values (?,?,?,?,?,?,?,?)",
             (sid, role, content, tool, disp, fin, now - int(off), tc))
+    # async delegations: (id, state, dispatched_off, completed_off, result, task)
+    deleg = [
+        ("d1", "completed", 3 * H, 2.9 * H,
+         json.dumps({"results": [
+             {"status": "completed", "model": "gpt-4o", "duration_seconds": 30, "cost_usd": 0.02,
+              "exit_reason": "completed", "tokens": {"input": 100, "output": 50}},
+             {"status": "failed", "model": "qwen/qwen3-coder", "duration_seconds": 12, "cost_usd": 0.0,
+              "failure_reason": "timeout", "exit_reason": "max_iterations"}]}),
+         json.dumps({"goal": "Fix the parser"})),
+        ("d2", "completed", 2 * H, 1.9 * H, "not json", None),
+        ("d3", "running", 60, None, None, json.dumps({"goal": "Still going"})),
+    ]
+    for did, state, d_off, c_off, res, task in deleg:
+        con.execute(
+            "insert into async_delegations (delegation_id, origin_session, state, dispatched_at,"
+            " completed_at, updated_at, result_json, task_json) values (?,?,?,?,?,?,?,?)",
+            (did, "s-root", state, now - d_off, None if c_off is None else now - c_off,
+             now - d_off, res, task))
     con.commit()
     con.close()
 
