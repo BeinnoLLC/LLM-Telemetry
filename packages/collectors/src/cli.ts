@@ -24,6 +24,7 @@ import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { collectRouter } from "./collectRouter.js";
 import { collectLogs } from "./collectLogs.js";
+import { collectRankingsAsync, readPrevious } from "./collectRankings.js";
 import { collectTranscripts } from "./collectTranscripts.js";
 import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
@@ -109,7 +110,22 @@ export const COMMANDS: Record<string, Command> = {
   dashboard: stub("dashboard — build dashboard.html (replaced by `next build`)", "T-20..T-25"),
   costs: stub("costs — write costs-data.json", "T-17"),
   pricing: stub("pricing — refresh the OpenRouter price catalogue cache", "T-17"),
-  rankings: stub("rankings — write rankings-data.json", "T-16"),
+  rankings: {
+    summary: "rankings — write rankings-data.json [OUT]",
+    status: "ported",
+    run: async (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const c = cfg();
+      const nodeReports = resolveNodeReportsDir(c);
+      const out = outArg ?? path.join(nodeReports, "rankings-data.json");
+      const payload = await collectRankingsAsync({ previous: readPrevious(out) });
+      const res = writeArtifact(path.basename(out), payload, { cfg: c, outDir: path.dirname(out) });
+      const note = (payload["reason"] ?? (payload["last_error"] as { reason?: string } | undefined)?.reason) as
+        string | undefined;
+      io.out(`rankings: ${String(payload["status"])}${note ? ` (${note})` : ""} -> ${res.path}`);
+      return 0;
+    },
+  },
   live: {
     summary: "live — write live-data.json",
     status: "ported",

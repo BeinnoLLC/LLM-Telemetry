@@ -99,8 +99,8 @@ export function runCase(
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }
 
-  const nopts = c.keepKeys
-    ? { dropKeys: RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)) }
+  const nopts = c.keepKeys || c.extraDropKeys
+    ? { dropKeys: [...RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)), ...(c.extraDropKeys ?? [])] }
     : {};
   const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown, nopts);
   const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown, nopts);

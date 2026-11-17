@@ -22,6 +22,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { expand, get as getConfig, resolveNodeReportsDir, type Config } from "./config.js";
 import { check, type SchemaTag } from "./schemaCheck.js";
 import { stamp } from "./schema.js";
+import { floatRepr, PyFloat } from "./pyJson.js";
 
 export class ArtifactWriteError extends Error {
   constructor(message: string) {
@@ -107,8 +108,11 @@ export function writeArtifact(
   try {
     // Compact separators + Date->string replacer: parity with the Python
     // collectors' json.dump(..., separators=(",", ":"), default=str).
+    // PyFloat (src/pyJson.ts): an integral float echoed from a Python-style
+    // read (rankings rows) keeps its ".0", as json.dump would write it.
+    const rawJSON = (JSON as unknown as { rawJSON(s: string): unknown }).rawJSON;
     const text = JSON.stringify(stamped, (_k, v: unknown) =>
-      v instanceof Date ? String(v) : v,
+      v instanceof Date ? String(v) : v instanceof PyFloat ? rawJSON(floatRepr(v.value)) : v,
     );
     fs.writeFileSync(tmp, text, "utf8");
     fs.renameSync(tmp, target); // atomic on the same filesystem

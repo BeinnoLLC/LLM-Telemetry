@@ -14,6 +14,9 @@
 import { collectAnalytics } from "../src/collectAnalytics.js";
 import { collectLogs } from "../src/collectLogs.js";
 import { collectTranscripts } from "../src/collectTranscripts.js";
+import { readFileSync } from "node:fs";
+import { collectRankings } from "../src/collectRankings.js";
+import { parsePy } from "../src/pyJson.js";
 import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
@@ -46,6 +49,8 @@ export interface ParityCase {
    * and must be compared: logs/transcripts `ts` come from the DB / log lines,
    * not from the clock. */
   keepKeys?: readonly string[];
+  /** Extra clock-derived keys to drop for this case (rankings `fetched_at`). */
+  extraDropKeys?: readonly string[];
 }
 
 /** Config for a generated inputs dir (profiles under <inputs>/agent). */
@@ -111,6 +116,24 @@ export const CASES: readonly ParityCase[] = [
     keepKeys: ["ts"],
     nodeCollector: (inputsDir, nowS) =>
       collectTranscripts({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "rankings",
+    fixture: "rankings-data.json",
+    artifact: "rankings-data.json",
+    tag: null,
+    extraDropKeys: ["fetched_at"],
+    inputs: { generator: "make_rankings_fixture.py", producer: "produce_rankings.py" },
+    nodeCollector: (inputsDir) =>
+      collectRankings({
+        today: "2026-11-17",
+        env: { OPENROUTER_API_KEY: "dummy" },
+        previous: null,
+        fetcher: () => ({
+          resp: parsePy(readFileSync(join(inputsDir, "rankings-response.json"), "utf8")),
+          reason: null,
+        }),
+      }),
   },
 ];
 
