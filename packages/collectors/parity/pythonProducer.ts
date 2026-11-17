@@ -71,3 +71,37 @@ export function runPythonProducer(
   }
   return { path: join(outDir, artifact), stdout: res.stdout.trim() };
 }
+
+/** Generate the deterministic analytics inputs (state DBs, config, catalogue,
+ * orchestration store; every timestamp relative to now) into `inputsDir`. */
+export function makeAnalyticsInputs(python: string, parityRoot: string, inputsDir: string): void {
+  const res = spawnSync(python, [join(parityRoot, "py", "make_analytics_fixture.py"), inputsDir], {
+    cwd: parityRoot,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  if (res.error || res.status !== 0) {
+    throw new Error(`analytics fixture generator failed: ${String(res.error ?? res.stderr.trim())}`);
+  }
+}
+
+/** Run py/produce_analytics.py: the real Python collect_analytics.build() on the
+ * generated inputs, written through the same schema-check + atomic write. */
+export function runPythonAnalytics(
+  python: string,
+  parityRoot: string,
+  inputsDir: string,
+  outDir: string,
+  artifact: string,
+): PythonProduceResult {
+  const res = spawnSync(python, [join(parityRoot, "py", "produce_analytics.py"), inputsDir, outDir, artifact], {
+    cwd: parityRoot,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  if (res.error) throw new Error(`python analytics producer did not run: ${String(res.error)}`);
+  if (res.status !== 0) {
+    throw new Error(`python analytics producer failed (exit ${String(res.status)}): ${res.stderr.trim() || "no output"}`);
+  }
+  return { path: join(outDir, artifact), stdout: res.stdout.trim() };
+}
