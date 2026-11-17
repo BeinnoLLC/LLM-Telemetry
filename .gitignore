@@ -47,3 +47,7 @@ examples/reports/_*.html
 
 # Git worktrees live only here (never outside the project folder)
 .worktrees/
+
+# Local dashboard build artifacts
+out-test.html
+out-*.html
