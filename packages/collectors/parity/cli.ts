@@ -77,11 +77,12 @@ export function runCase(
     );
   }
   const inputsDir = join(outBase, "inputs", c.name);
+  const nowS = Math.floor(Date.now() / 1000); // one clock for both producers
   try {
     if (c.dbInputs) {
       rmSync(inputsDir, { recursive: true, force: true });
       makeAnalyticsInputs(python, root, inputsDir);
-      runPythonAnalytics(python, root, inputsDir, pyDir, c.artifact);
+      runPythonAnalytics(python, root, inputsDir, pyDir, c.artifact, nowS);
     } else {
       runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag);
     }
@@ -90,7 +91,7 @@ export function runCase(
   }
   const collector = c.nodeCollector;
   try {
-    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag, collector ? () => collector(inputsDir) : undefined);
+    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag, collector ? () => collector(inputsDir, nowS) : undefined);
   } catch (err) {
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }

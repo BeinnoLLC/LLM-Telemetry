@@ -93,9 +93,11 @@ export function runPythonAnalytics(
   inputsDir: string,
   outDir: string,
   artifact: string,
+  nowS?: number,
 ): PythonProduceResult {
   const res = spawnSync(python, [join(parityRoot, "py", "produce_analytics.py"), inputsDir, outDir, artifact], {
     cwd: parityRoot,
+    env: { ...process.env, ...(nowS === undefined ? {} : { LLM_TELEMETRY_PARITY_NOW: String(nowS) }) },
     encoding: "utf8",
     timeout: 120_000,
   });

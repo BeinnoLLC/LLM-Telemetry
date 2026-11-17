@@ -26,7 +26,7 @@ export interface ParityCase {
   /** When set, the node side runs this real collector instead of copying the
    * fixture, so a stub/incomplete port FAILS parity instead of passing. For a
    * `dbInputs` case it receives the generated inputs dir. */
-  nodeCollector?: (inputsDir: string) => Record<string, unknown>;
+  nodeCollector?: (inputsDir: string, nowS: number) => Record<string, unknown>;
   /** When set, BOTH producers read generated DB inputs (the analytics fixture
    * generator under py/) instead of the JSON fixture: the Python side runs its
    * real collector (py/produce_analytics.py), the Node side `nodeCollector`. */
@@ -46,7 +46,7 @@ export const CASES: readonly ParityCase[] = [
     artifact: "analytics-data.json",
     tag: "analytics",
     dbInputs: true,
-    nodeCollector: (inputsDir) => collectAnalytics({ inputsDir }),
+    nodeCollector: (inputsDir, nowS) => collectAnalytics({ inputsDir, now: new Date(nowS * 1000) }),
   },
   {
     name: "ollama",

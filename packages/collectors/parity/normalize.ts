@@ -47,6 +47,12 @@ export const RUN_STAMP_KEYS: readonly string[] = [
   "finished_at",
 ];
 
+/** Wall-clock-derived fields of `live[]` rows. SQLite's `strftime('now')`
+ * (not injectable into both stacks) computes them, so a run that crosses a
+ * second boundary would differ for no real reason. Dropped only under a
+ * `live` array; every other timestamp-derived field is compared. */
+export const LIVE_CLOCK_KEYS: readonly string[] = ["idle_s", "uptime_s"];
+
 /** The documented float formatting tolerance (plan §7.3). */
 export const FLOAT_DIGITS = 6;
 
@@ -71,14 +77,16 @@ function walk(
   value: unknown,
   drop: ReadonlySet<string>,
   digits: number,
+  parentKey = "",
 ): unknown {
   if (typeof value === "number") return roundFloat(value, digits);
-  if (Array.isArray(value)) return value.map((v) => walk(v, drop, digits));
+  if (Array.isArray(value)) return value.map((v) => walk(v, drop, digits, parentKey));
   if (isRecord(value)) {
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value).sort()) {
       if (drop.has(key.toLowerCase())) continue;
-      out[key] = walk(value[key], drop, digits);
+      if (parentKey === "live" && LIVE_CLOCK_KEYS.includes(key)) continue;
+      out[key] = walk(value[key], drop, digits, key);
     }
     return out;
   }

@@ -22,6 +22,20 @@ def main(argv):
     os.environ["LLM_TELEMETRY_CONFIG"] = os.path.join(inputs, "config.json")
     os.environ["LLM_TELEMETRY_CATALOG"] = os.path.join(inputs, "catalog.json")
     os.environ["LLM_TELEMETRY_AGENT_HOME"] = os.path.join(inputs, "agent")
+    now = os.environ.get("LLM_TELEMETRY_PARITY_NOW")
+    if now:
+        # One shared clock with the Node producer: time.time() and the module's
+        # datetime.now() read the same instant (SQLite's 'now' is not patchable).
+        import datetime
+        import time
+        fixed = float(now)
+        time.time = lambda: fixed
+
+        class _Dt(datetime.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime.datetime.fromtimestamp(fixed, tz)
+        datetime.datetime = _Dt
     from llm_telemetry import collect_analytics
     from llm_telemetry.schema_check import check
     data = collect_analytics.build()
