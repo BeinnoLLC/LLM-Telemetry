@@ -287,12 +287,14 @@ describe("alerts match Python", () => {
 
 describe("tool reliability matches Python", () => {
   it("_pXX over several lengths and percentiles", () => {
+    const cases: [number[], number][] = [];
     for (const n of [0, 1, 2, 3, 4, 7, 10, 21]) {
       const vals = Array.from({ length: n }, (_, i) => i * 3 + 1);
-      for (const pct of [50, 90, 95, 99]) {
-        expect(pXX(vals, pct)).toBe(pyCall("collect_analytics", "_pXX", [vals, pct]));
-      }
+      for (const pct of [50, 90, 95, 99]) cases.push([vals, pct]);
     }
+    // One Python process for all cases: per-case spawns time out on a loaded box.
+    const want = pyAnalytics(inputs, dbPath, `result=[C._pXX(v,p) for v,p in ${JSON.stringify(cases)}]`) as unknown[];
+    expect(cases.map(([v, p]) => pXX(v, p))).toEqual(want);
   });
 
   it("tool_outcome agrees with Python on structured and odd inputs", () => {

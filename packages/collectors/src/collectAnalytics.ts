@@ -50,6 +50,9 @@ export interface CollectAnalyticsOptions {
   reportsDir?: string;
   /** Local YYYY-MM-DD for the ledger (default: today). */
   today?: string;
+  /** Catalogue already fetched (the CLI awaits `fetchCatalog`); default is the
+   * on-disk cache / pinned file, never the network. */
+  catalog?: { models: Catalog; source: string };
 }
 
 type Row = Record<string, unknown>;
@@ -479,7 +482,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
   }
   // Python expands "~" from $HOME; the parity fixture points HOME at <inputs>/home.
   const home = opts.inputsDir !== undefined ? `${opts.inputsDir}/home` : os.homedir();
-  const catalog = cachedCatalog(cfg, env);
+  const catalog = opts.catalog?.models ?? cachedCatalog(cfg, env);
   const res = { ...cfg.resolution } as Record<string, unknown>;
   res["failed"] = [...(cfg.resolution.failed ?? [])];
   for (const k of ["agent_home", "config_file"]) {
@@ -523,7 +526,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
   const payload: AnalyticsPayload = {
     generated: localIso(now),
     profiles,
-    pricing_source: env["LLM_TELEMETRY_CATALOG"] ? "pinned" : "cache",
+    pricing_source: opts.catalog?.source ?? (env["LLM_TELEMETRY_CATALOG"] ? "pinned" : "cache"),
     pricing_models: catalogSize(catalog),
     resolution: res,
     orchestration: buildOrchestration(orchDb),
