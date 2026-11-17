@@ -230,3 +230,94 @@ select started_at, ended_at, (parent_session_id is not null)
 from sessions
 where started_at > strftime('%s','now') - 7776000
 `;
+
+export const RECENT_SESSIONS = `
+select s.id,
+       coalesce(nullif(s.title,''),'(untitled)') title,
+       s.model,
+       s.message_count,
+       cast(coalesce(s.ended_at, s.last_activity_at, s.started_at) as integer) last_ts,
+       cast(coalesce(s.ended_at, s.last_activity_at) - s.started_at as integer) dur_s,
+       (select u.model from session_model_usage u
+         where u.session_id=s.id and coalesce(nullif(u.task,''),'main')='main'
+         order by u.last_seen desc limit 1) as last_model,
+       (select u.billing_base_url from session_model_usage u
+         where u.session_id=s.id order by u.last_seen desc limit 1) as base_url,
+       (select u.billing_provider from session_model_usage u
+         where u.session_id=s.id order by u.last_seen desc limit 1) as prov,
+       (select sum(u.api_call_count) from session_model_usage u where u.session_id=s.id) as api_calls,
+       (select sum(u.input_tokens+u.output_tokens) from session_model_usage u where u.session_id=s.id) as tokens
+from sessions s
+where s.ended_at is not null
+  and s.ended_at > strftime('%s','now') - 172800
+order by s.ended_at desc limit 40
+`;
+
+export const RESEND = `
+select u.session_id, coalesce(nullif(s.title,''), '') title, u.model,
+       max(u.billing_provider), max(u.billing_base_url),
+       sum(u.api_call_count), sum(u.input_tokens), sum(u.cache_write_tokens),
+       sum(u.cache_read_tokens), max(u.last_seen)
+from session_model_usage u join sessions s on s.id = u.session_id
+where u.last_seen > strftime('%s','now') - 2592000
+group by u.session_id, u.model
+having sum(u.api_call_count) >= ?
+order by sum(u.cache_read_tokens) desc
+limit 60
+`;
+
+export const LIVE = `
+select s.id,
+       coalesce(nullif(s.title,''),'(untitled)'),
+       s.model,
+       coalesce(s.last_activity_description,''),
+       cast(strftime('%s','now') - coalesce(s.last_activity_at, s.started_at) as int),
+       coalesce(s.parent_session_id,''),
+       (select group_concat(tn) from (
+           select distinct m.tool_name tn from messages m
+           where m.session_id = s.id and m.tool_name is not null and m.tool_name != ''
+             and m.timestamp > strftime('%s','now') - 900
+           limit 12)),
+       -- The model ACTUALLY serving this session right now. sessions.model is
+       -- only the initial pick; the router silently falls back (seen up to 6
+       -- models in one session), so reporting sessions.model would be a lie.
+       (select u.model from session_model_usage u
+          where u.session_id = s.id
+            and coalesce(nullif(u.task,''),'main') = 'main'
+          order by u.last_seen desc limit 1),
+       -- how many distinct models this session has burned through
+       (select count(distinct u.model) from session_model_usage u
+          where u.session_id = s.id
+            and coalesce(nullif(u.task,''),'main') = 'main'),
+       -- provider backing the current model, for an accurate badge
+       (select u.billing_base_url from session_model_usage u
+          where u.session_id = s.id
+            and coalesce(nullif(u.task,''),'main') = 'main'
+          order by u.last_seen desc limit 1),
+       -- LST-256: how long this session has been running. The live table has an
+       -- Elapsed column that showed "—" for every Hermes row because only the PI
+       -- collector emitted uptime_s; the data was in sessions.started_at all
+       -- along. Null when started_at is missing rather than 0, so the cell says
+       -- "unknown" instead of claiming the session just started.
+       case when s.started_at is null then null
+            else cast(strftime('%s','now') - s.started_at as int) end
+from sessions s
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+order by coalesce(s.last_activity_at, s.started_at) desc
+`;
+
+export const LIVE_BYTES = `
+select u.session_id,
+       coalesce(u.billing_base_url,''),
+       coalesce(sum(u.input_tokens + u.cache_read_tokens),0),
+       coalesce(sum(u.output_tokens),0)
+from session_model_usage u join sessions s on s.id = u.session_id
+where s.ended_at is null
+  and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
+group by u.session_id, u.billing_base_url
+`;
+
+export const RECENT_SESSIONS_COLS = ["id", "title", "model", "message_count", "last_ts", "dur_s", "last_model", "base_url", "prov", "api_calls", "tokens"];
+export const LIVE_COLS = ["id", "title", "init_model", "phase", "idle_s", "parent", "tools", "model", "nmodels", "base_url", "uptime_s"];
+export const RESEND_MIN_CALLS = 10;

@@ -375,6 +375,8 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     ({ tool_name: t as string, session_id: sid as string, tokens: tok as number }));
   const attribution = buildAttribution(rows as never, identity as SessionsById, toolTokenRows);
   const toolRel = buildToolReliability(con);
+  const toolsRecent = tuples(con, SQL.RECENT_TOOLS).map(([t, n]) => ({ tool: t, calls: n }));
+  const recentSessions = tuples(con, SQL.RECENT_SESSIONS).map((r) => zip(SQL.RECENT_SESSIONS_COLS, r));
   const tree = buildSessionsTree(con);
   const dates = [...new Set(rows.map((r) => r["date"] as string).filter(Boolean))].sort();
   return {
@@ -385,6 +387,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
     concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
+    tools_recent: toolsRecent, recent_sessions: recentSessions,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };

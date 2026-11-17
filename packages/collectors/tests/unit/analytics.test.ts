@@ -241,3 +241,17 @@ describe("compression pressure and concurrency match Python", () => {
     expect(got.some((r) => r.sub > 0)).toBe(true);
   });
 });
+
+describe("recent tools and sessions match Python", () => {
+  it("tools_recent and recent_sessions", () => {
+    const want = pyAnalytics(inputs, dbPath,
+      "result={'t':[{'tool':t,'calls':n} for t,n in con.execute(C.RECENT_TOOLS)],"
+      + "'s':[dict(zip(C.RECENT_SESSIONS_COLS,r)) for r in con.execute(C.RECENT_SESSIONS)]}") as { t: unknown[]; s: unknown[] };
+    const stmt = (sql: string) => { const q = con.prepare(sql); q.setReturnArrays(true); return q.all() as unknown as unknown[][]; };
+    const t = stmt(SQL.RECENT_TOOLS).map(([tool, calls]) => ({ tool, calls }));
+    const s = stmt(SQL.RECENT_SESSIONS).map((r) => Object.fromEntries(SQL.RECENT_SESSIONS_COLS.map((c, i) => [c, r[i]])));
+    expect(s.length).toBeGreaterThan(0);
+    expect(t).toEqual(want.t);
+    expect(s).toEqual(want.s);
+  });
+});
