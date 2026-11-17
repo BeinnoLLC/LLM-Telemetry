@@ -84,8 +84,8 @@ __DASHBOARD_CSS__
       with aria-activedescendant maintained. Full-text over message
       CONTENT is explicitly out of scope -- see the note rendered in the
       empty state. -->
- <div id="sfscrim"></div>
- <div id="sfmodal" role="dialog" aria-modal="true" aria-label="Session finder" aria-hidden="true">
+ <div id="sfscrim" class="scrim scrim-drop"></div>
+ <div id="sfmodal" class="modal modal-sm modal-drop" role="dialog" aria-modal="true" aria-label="Session finder" aria-hidden="true">
   <div class="p-3" style="border-bottom:1px solid var(--border)">
    <input id="sfinput" type="text" autocomplete="off" spellcheck="false"
      placeholder="Search sessions… try model:opus tool:patch cost&gt;1"
@@ -879,8 +879,8 @@ __DASHBOARD_CSS__
      one session's own conversation, opened from that session's own title.
      No inputs anywhere; the whole point is that it cannot be mistaken for
      a live chat interface. -->
-<div id="tscrim"></div>
-<div id="tmodal" role="dialog" aria-modal="true" aria-label="Session transcript" aria-hidden="true">
+<div id="tscrim" class="scrim"></div>
+<div id="tmodal" class="modal modal-md" role="dialog" aria-modal="true" aria-label="Session transcript" aria-hidden="true">
  <div class="thead">
   <b id="ttitle" style="font-size:var(--fs-md)"></b>
   <span class="muted" id="tsub" style="font-size:var(--fs-xs)"></span>
@@ -892,8 +892,8 @@ __DASHBOARD_CSS__
 </div>
 
 <!-- P10-06 (#94): session timeline modal. -->
-<div id="lnscrim"></div>
-<div id="lnmodal" role="dialog" aria-modal="true" aria-label="Session timeline" aria-hidden="true">
+<div id="lnscrim" class="scrim"></div>
+<div id="lnmodal" class="modal modal-lg" role="dialog" aria-modal="true" aria-label="Session timeline" aria-hidden="true">
  <div id="lnhdr">
   <div class="flex items-center gap-2">
    <b id="lntitle" style="font-size:var(--fs-md)"></b>
@@ -907,7 +907,7 @@ __DASHBOARD_CSS__
 <div id="lntip"></div>
 
 <!-- P4-07 (#44): project drill-down panel. -->
-<div id="pdscrim"></div>
+<div id="pdscrim" class="scrim"></div>
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
  <div class="pdhead">
   <b id="pdtitle"></b>
