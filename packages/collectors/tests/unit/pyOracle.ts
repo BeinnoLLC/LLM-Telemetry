@@ -26,7 +26,7 @@ export function pyCall(module: string, fn: string, args: unknown[], kwargs: Reco
  * parity/py/make_analytics_fixture.py) with HOME/config/catalogue pointed into
  * it, and return its JSON `result`. `C` is `llm_telemetry.collect_analytics`
  * and `con` a read-only sqlite3 connection on `dbPath`. */
-export function pyAnalytics(inputsDir: string, dbPath: string, body: string): unknown {
+export function pyAnalytics(inputsDir: string, dbPath: string, body: string, agentHome = `${inputsDir}/agent`): unknown {
   const py = resolvePython(process.cwd());
   if (py === null) throw new Error("no python with llm_telemetry (set LLM_TELEMETRY_PARITY_PYTHON)");
   const code =
@@ -43,7 +43,7 @@ export function pyAnalytics(inputsDir: string, dbPath: string, body: string): un
       HOME: `${inputsDir}/home`,
       LLM_TELEMETRY_CONFIG: `${inputsDir}/config.json`,
       LLM_TELEMETRY_CATALOG: `${inputsDir}/catalog.json`,
-      LLM_TELEMETRY_AGENT_HOME: `${inputsDir}/agent`,
+      LLM_TELEMETRY_AGENT_HOME: agentHome,
     },
   });
   if (res.status !== 0) throw new Error(`python oracle failed: ${res.stderr}`);

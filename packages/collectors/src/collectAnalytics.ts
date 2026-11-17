@@ -1,11 +1,10 @@
 /** Collector port — T-15 (LLMTELEMET-286).
  *
- * Port of src/llm_telemetry/collect_analytics.py into TypeScript. Ported so far:
- * the day/hour SQL rows (priced + bandwidth-enriched), the sessions tree, the
- * outcomes buckets, and the cheap per-profile SQL sections (hours, sessions,
- * active, end_reasons, heatmap, node_sessions, profile kind, repo_branch,
- * attribution). Every other section of `build()` is still absent, so the
- * parity `analytics` case reports them as field diffs until they land.
+ * Port of src/llm_telemetry/collect_analytics.py into TypeScript: every section
+ * of `build()` (day/hour rows, sessions tree, outcomes, tool reliability,
+ * latency, concurrency, attribution, health, delegations, live, resend,
+ * context, session index, alerts, orchestration, bandwidth ledger, resolution).
+ * The parity `analytics` case diffs the whole payload against Python.
  */
 
 import * as fs from "node:fs";
@@ -13,7 +12,7 @@ import * as os from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import * as SQL from "./analyticsSql.js";
 import { buildAttribution, type SessionsById } from "./costAttribution.js";
-import { Config, load as loadConfig } from "./config.js";
+import { Config, load as loadConfig, loadWithAgentHome } from "./config.js";
 import { canonicalEndpoint, splitRow } from "./bandwidth.js";
 import { cachedCatalog, catalogSize, priceRow, type Catalog } from "./pricing.js";
 import { projectOfSession, type SessionInfo } from "./projects.js";
@@ -21,7 +20,7 @@ import { cmpStr } from "./pySort.js";
 import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
 import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
-import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collectLive.js";
+import { LIVE_META, localIsoSeconds, resolveTitle, sourceLabel, classifySession } from "./collectLive.js";
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
@@ -29,8 +28,6 @@ import { buildOrchestration } from "./orchestration.js";
 import { buildSessionIndexForDb } from "./sessionIndex.js";
 import { buildAlerts } from "./alerts.js";
 import { unreadable } from "./unreadable.js";
-
-export { unreadable };
 import { buildContextForDb } from "./contextCompaction.js";
 import { update as updateBandwidth } from "./bandwidthHistory.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
@@ -45,6 +42,8 @@ export interface CollectAnalyticsOptions {
   /** Directory produced by parity/py/make_analytics_fixture.py (config.json,
    * catalog.json, agent/…/state.db). Omitted → the process config/env. */
   inputsDir?: string;
+  /** Agent home for an `inputsDir` run (default `<inputsDir>/agent`). */
+  agentHome?: string;
   now?: Date;
   /** Where the bandwidth ledger is written. Default: cfg.reports_dir. */
   reportsDir?: string;
@@ -414,13 +413,7 @@ function tilde(p: string, home: string = os.homedir()): string {
   return p === home || p.startsWith(home + "/") ? "~" + p.slice(home.length) : p;
 }
 
-/** Local time like Python `datetime.now().isoformat(timespec="seconds")`. */
-function localIso(d: Date): string {
-  const p = (n: number): string => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-
-function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Row {
+function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config, nowTs: number): Row {
   const [failStats, failRecent] = forProfile(cfg, name);
   const rows = fetchRows(con);
   enrichRows(rows, catalog, cfg);
@@ -455,7 +448,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     tool_fail_samples: toolRel.tool_fail_samples,
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
-    concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
+    concurrency: buildConcurrency(con, nowTs), attribution, sessions_tree: tree,
     health: buildHealth(rows, failStats), failures_recent: failRecent,
     delegations: collectDelegations(con),
     live: buildLiveRows(con, name), resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
@@ -470,21 +463,19 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
   let cfg: Config;
   if (opts.inputsDir !== undefined) {
     env["LLM_TELEMETRY_CATALOG"] = `${opts.inputsDir}/catalog.json`;
-    env["LLM_TELEMETRY_AGENT_HOME"] = `${opts.inputsDir}/agent`;
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = env["LLM_TELEMETRY_AGENT_HOME"];
-    try {
-      cfg = loadConfig(`${opts.inputsDir}/config.json`);
-    } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"];
-      else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    const agentHome = opts.agentHome ?? `${opts.inputsDir}/agent`;
+    env["LLM_TELEMETRY_AGENT_HOME"] = agentHome;
+    cfg = loadWithAgentHome(`${opts.inputsDir}/config.json`, agentHome);
   } else {
     cfg = opts.cfg ?? loadConfig();
   }
   // Python expands "~" from $HOME; the parity fixture points HOME at <inputs>/home.
   const home = opts.inputsDir !== undefined ? `${opts.inputsDir}/home` : os.homedir();
   const catalog = opts.catalog?.models ?? cachedCatalog(cfg, env);
+  // Python's fetch_catalog() labels a missing cache `unavailable (<Exc>)`;
+  // with no network in this path the equivalent is a URLError.
+  const pricingSource = opts.catalog?.source
+    ?? (env["LLM_TELEMETRY_CATALOG"] ? "pinned" : catalogSize(catalog) > 0 ? "cache" : "unavailable (URLError)");
   const res = { ...cfg.resolution } as Record<string, unknown>;
   res["failed"] = [...(cfg.resolution.failed ?? [])];
   for (const k of ["agent_home", "config_file"]) {
@@ -502,7 +493,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     }
     const con = new DatabaseSync(p.db, { readOnly: true });
     try {
-      profiles[p.name] = buildProfile(p.name, con, catalog, cfg);
+      profiles[p.name] = buildProfile(p.name, con, catalog, cfg, now.getTime() / 1000);
       profiles[p.name]!["context"] = buildContextForDb(con, now.getTime() / 1000);
       profiles[p.name]!["session_index"] = buildSessionIndexForDb(con, now.getTime() / 1000);
     } finally {
@@ -526,9 +517,9 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     delete p["_now"];
   }
   const payload: AnalyticsPayload = {
-    generated: localIso(now),
+    generated: localIsoSeconds(now),
     profiles,
-    pricing_source: opts.catalog?.source ?? (env["LLM_TELEMETRY_CATALOG"] ? "pinned" : "cache"),
+    pricing_source: pricingSource,
     pricing_models: catalogSize(catalog),
     resolution: res,
     orchestration: buildOrchestration(orchDb),

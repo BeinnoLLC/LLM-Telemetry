@@ -54,7 +54,9 @@ export function buildSessionIndexForDb(con: DatabaseSync, nowTs: number) {
   return buildSessionIndexPayload(con, nowTs - 90 * 86400, nowTs);
 }
 
-/** Port of `build_session_index_by_profile`: unreadable DBs are skipped. */
+/** Port of `build_session_index_by_profile`: unreadable DBs are skipped.
+ * Kept as the 1:1 Python entry point; collectAnalytics inlines the per-DB
+ * call, and the tests diff this against Python for the unreadable-skip rule. */
 export function buildSessionIndexByProfile(cfg: Config, nowTs: number = Date.now() / 1000) {
   const out: Record<string, ReturnType<typeof buildSessionIndexForDb>> = {};
   for (const p of cfg.profiles) {

@@ -154,7 +154,9 @@ export function buildContextForDb(con: DatabaseSync, now: number, maxSessions: n
 }
 
 /** Port of `build_context_payload`: {profile: context} over every live profile.
- * Like Python, a profile whose DB is unreadable is skipped, not fatal. */
+ * Like Python, a profile whose DB is unreadable is skipped, not fatal. Kept
+ * as the 1:1 Python entry point (collectAnalytics calls the per-DB form);
+ * the tests diff it against Python for the unreadable-skip rule. */
 export function buildContextPayload(cfg: Config, now: number = Date.now() / 1000, maxSessions: number = MAX_SESSIONS) {
   const out: Record<string, ReturnType<typeof buildContextForDb>> = {};
   for (const p of cfg.profiles) {

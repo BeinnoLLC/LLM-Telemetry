@@ -7,7 +7,7 @@ import * as SQL from "../../src/analyticsSql.js";
 import {
   buildOutcomes, buildHealth, buildLiveRows, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
-import { load } from "../../src/config.js";
+import { loadWithAgentHome } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
 import { computeGaps, type TurnRow } from "../../src/latency.js";
 import { canonicalEndpoint } from "../../src/bandwidth.js";
@@ -49,11 +49,7 @@ describe("collect_analytics SQL text", () => {
 
 describe("day and hour rows match Python", () => {
   const cfgOf = () => {
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
-    try { return load(join(inputs, "config.json")); } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    return loadWithAgentHome(join(inputs, "config.json"), join(inputs, "agent"));
   };
   const catalog = () => cachedCatalog(cfgOf(), { LLM_TELEMETRY_CATALOG: join(inputs, "catalog.json") });
 
@@ -336,11 +332,7 @@ describe("tool reliability matches Python", () => {
 
 describe("latency matches Python", () => {
   const cfg = () => {
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
-    try { return load(join(inputs, "config.json")); } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    return loadWithAgentHome(join(inputs, "config.json"), join(inputs, "agent"));
   };
 
   it("compute_gaps splits idle gaps and drops negatives, unordered input", () => {
@@ -422,12 +414,7 @@ describe("recent tools and sessions match Python", () => {
 
 describe("resend matches Python", () => {
   it("buildResend", () => {
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
-    let cfg;
-    try { cfg = load(join(inputs, "config.json")); } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    const cfg = loadWithAgentHome(join(inputs, "config.json"), join(inputs, "agent"));
     const catalog = cachedCatalog(cfg, { LLM_TELEMETRY_CATALOG: join(inputs, "catalog.json") });
     const got = buildResend(con, catalog, cfg);
     const want = pyAnalytics(inputs, dbPath, `cat,_=pricing.fetch_catalog()
@@ -474,12 +461,7 @@ result=live`) as Record<string, unknown>[];
 
 describe("failures and health match Python", () => {
   it("for_profile, failures_recent and health", () => {
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
-    let cfg;
-    try { cfg = load(join(inputs, "config.json")); } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    const cfg = loadWithAgentHome(join(inputs, "config.json"), join(inputs, "agent"));
     const [stats, recent] = forProfile(cfg, "alpha");
     const rows = fetchRows(con);
     const got = { stats, recent, health: buildHealth(rows, stats) };
@@ -539,12 +521,7 @@ describe("context and session-index skip an unreadable DB like Python", () => {
     const raw = JSON.parse(fs.readFileSync(cfgPath, "utf8").replaceAll(inputs, dir)) as { profiles: unknown[] };
     raw.profiles.push({ name: "gamma", home: gamma });
     fs.writeFileSync(cfgPath, JSON.stringify(raw));
-    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
-    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(dir, "agent");
-    let cfg;
-    try { cfg = load(cfgPath); } finally {
-      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
-    }
+    const cfg = loadWithAgentHome(cfgPath, join(dir, "agent"));
     expect(cfg.profiles.map((p) => p.name)).toContain("gamma");
     const now = Date.now() / 1000;
     const ctx = buildContextPayload(cfg, now);
@@ -555,5 +532,60 @@ describe("context and session-index skip an unreadable DB like Python", () => {
     expect(Object.keys(ctx)).not.toContain("gamma");
     expect(Object.keys(idx)).not.toContain("gamma");
     expect(Object.keys(ctx)).toContain("alpha");
+  });
+});
+
+describe("home-relative paths and clock injection", () => {
+  it("resolution and failed[] under HOME use ~ exactly like Python", () => {
+    const dir = makeTmpDir("an-tilde-");
+    fs.cpSync(inputs, dir, { recursive: true });
+    const agent = join(dir, "home", "agent");
+    fs.renameSync(join(dir, "agent"), agent);
+    const gamma = join(agent, "profiles", "gamma");
+    fs.mkdirSync(gamma, { recursive: true });
+    fs.writeFileSync(join(gamma, "state.db"), "garbage garbage garbage garbage garbage garbage");
+    const cfgPath = join(dir, "config.json");
+    const raw = JSON.parse(fs.readFileSync(cfgPath, "utf8").replaceAll(`${inputs}/agent`, agent).replaceAll(inputs, dir)) as
+      { profiles: unknown[]; agent_home?: string };
+    raw.agent_home = agent;
+    raw.profiles.push({ name: "gamma", home: gamma });
+    fs.writeFileSync(cfgPath, JSON.stringify(raw));
+
+    const got = collectAnalytics({ inputsDir: dir, agentHome: agent }).resolution as Record<string, unknown>;
+    const want = (pyAnalytics(dir, join(agent, "profiles", "alpha", "state.db"), "result=C.build()", agent) as
+      { resolution: Record<string, unknown> }).resolution;
+    expect(got).toEqual(want);
+    expect(String(got["agent_home"])).toMatch(/^~\//);
+    const failed = got["failed"] as { name: string; path: string; reason: string }[];
+    expect(failed.map((f) => f.name)).toEqual(["gamma"]);
+    expect(failed[0]!.path).toBe("~/agent/profiles/gamma/state.db");
+  });
+
+  it("opts.now drives concurrency for an open session, deterministically", () => {
+    const dir = makeTmpDir("an-now-");
+    const c = new DatabaseSync(join(dir, "open.db"));
+    c.exec("create table sessions(id text, parent_session_id text, started_at real, ended_at real)");
+    const t0 = Math.floor(Date.now() / 1000) - 10 * 3600;
+    c.prepare("insert into sessions values ('o', null, ?, null)").run(t0);
+    const a = buildConcurrency(c, t0 + 2 * 3600);
+    const b = buildConcurrency(c, t0 + 2 * 3600);
+    expect(a).toEqual(b);
+    expect(a.length).toBeGreaterThanOrEqual(3);
+    expect(buildConcurrency(c, t0 + 5 * 3600).length).toBeGreaterThan(a.length);
+    c.close();
+  });
+
+  it("library path without a pinned or cached catalogue reports unavailable", () => {
+    const dir = makeTmpDir("an-nocat-");
+    fs.cpSync(inputs, dir, { recursive: true });
+    const saved = process.env["LLM_TELEMETRY_CATALOG"];
+    delete process.env["LLM_TELEMETRY_CATALOG"];
+    try {
+      const cfg = loadWithAgentHome(join(dir, "config.json"), join(dir, "agent"));
+      const out = collectAnalytics({ cfg, reportsDir: join(dir, "rep") });
+      expect(out["pricing_source"]).toBe("unavailable (URLError)");
+    } finally {
+      if (saved !== undefined) process.env["LLM_TELEMETRY_CATALOG"] = saved;
+    }
   });
 });
