@@ -109,6 +109,12 @@
   --motion-fast:120ms;--motion-normal:200ms;
   --state-hover:rgba(0,0,0,.04);--state-pressed:rgba(0,0,0,.08);--state-focus:rgba(31,98,201,.25);
 
+  /* LST-311 overlay shading primitives: the physical darkening/lightening ink
+     behind shadows, scrims and glass highlights (dashboard.css mixes these with
+     transparent). Theme-invariant: painted shading is black/white in both. */
+  --shade:#000000;
+  --tint:#ffffff;
+
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
      marble is >=3:1 against --jar-glass AND >=4.5:1 against --jar-ink, the
@@ -206,4 +212,9 @@
   --elev-2:0 2px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
   --elev-3:0 6px 16px rgba(0,0,0,.40),0 2px 4px rgba(0,0,0,.30);
   --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(136,170,255,.40);
+
+  /* LST-311 overlay shading primitives (dark values match light: painted
+     shading is black/white in both themes) */
+  --shade:#000000;
+  --tint:#ffffff;
 }

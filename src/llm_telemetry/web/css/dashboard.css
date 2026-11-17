@@ -128,7 +128,7 @@
 .fb-menu{position:relative;flex:none}
 .fb-pop{position:absolute;z-index:40;top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
   display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--card);border:1px solid var(--border);
-  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 45%,transparent)}
 .fb-pop[hidden]{display:none}
 .fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:4px}
 .fb-pop .fb-more{align-self:flex-end}
@@ -138,9 +138,9 @@
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
    the ::backdrop (the mock had none). */
 .fbdlg{padding:0;width:min(680px,92vw);max-height:min(76vh,600px);flex-direction:column;overflow:hidden;
-  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 12px 32px rgba(0,0,0,.35)}
+  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 12px 32px color-mix(in srgb,var(--shade) 35%,transparent)}
 .fbdlg[open]{display:flex}
-.fbdlg::backdrop{background:rgba(0,0,0,.45)}
+.fbdlg::backdrop{background:color-mix(in srgb,var(--shade) 45%,transparent)}
 .pk-top{display:flex;align-items:center;gap:var(--sp-2,8px);padding:12px;border-bottom:1px solid var(--border)}
 .pk-top h2{margin:0;font-size:var(--fs-md);font-weight:600;flex:none}
 .pk-top .pk-q{flex:1;min-width:0;height:32px;border-radius:var(--radius-ctl);border:1px solid var(--border);background:var(--fb-surface);color:var(--fg);padding:0 10px;font:inherit;font-size:var(--fs-sm)}
@@ -603,7 +603,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
  .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
  .resbad{color:var(--z-warn)}
- .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+ .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 30%,transparent)}
  .respop code{font-size:var(--fs-sm)}
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -660,7 +660,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
    cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
  #navpin:hover{color:var(--accent)}
- #navscrim{display:none;position:fixed;inset:0;z-index:63;background:rgba(0,0,0,.55);
+ #navscrim{display:none;position:fixed;inset:0;z-index:63;background:color-mix(in srgb,var(--shade) 55%,transparent);
    backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
  #navscrim.open{opacity:1;pointer-events:auto}
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
@@ -681,7 +681,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #barmore{display:none;position:relative}
  #barmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:45;
    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-   padding:6px;min-width:172px;box-shadow:0 14px 34px rgba(0,0,0,.45);
+   padding:6px;min-width:172px;box-shadow:0 14px 34px color-mix(in srgb,var(--shade) 45%,transparent);
    flex-direction:column;gap:2px;display:none}
  #barmenu.open{display:flex}
  #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
@@ -789,11 +789,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
  #helpwrap{position:fixed;inset:0;z-index:70;display:none}
  #helpwrap.open{display:block}
- #helpscrim{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+ #helpscrim{position:absolute;inset:0;background:color-mix(in srgb,var(--shade) 55%,transparent);backdrop-filter:blur(2px)}
  #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
    width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
    border:1px solid var(--border);border-radius:12px;padding:22px 26px;
-   box-shadow:0 24px 60px rgba(0,0,0,.5)}
+   box-shadow:0 24px 60px color-mix(in srgb,var(--shade) 50%,transparent)}
  .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
  .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px}
  #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
