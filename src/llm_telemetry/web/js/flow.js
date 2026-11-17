@@ -1007,9 +1007,9 @@ export function flowControls(){
     // fitView() is stashed on the <svg> element by renderFlow each time it
     // rebuilds, so this button always calls whatever is current. +/- give
     // an accessible, keyboard-reachable equivalent to wheel/pinch zoom.
-    `<button data-flowzoom="out" title="Zoom out">&minus;</button>` +
-    `<button data-flowzoom="in" title="Zoom in">+</button>` +
-    `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
+    `<button data-flowzoom="out" aria-label="Zoom out" title="Zoom out">&minus;</button>` +
+    `<button data-flowzoom="in" aria-label="Zoom in" title="Zoom in">+</button>` +
+    `<button data-flowfit aria-label="Reset pan/zoom to fit" title="Reset pan/zoom to fit">Fit</button>`;
   box.querySelectorAll('[data-fd]').forEach(b => {
     b.addEventListener('click', () => {
       flowDepth = +b.dataset.fd;
