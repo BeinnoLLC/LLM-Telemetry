@@ -797,8 +797,8 @@ export function lnKeydown(e){
 export function lnColorOf(key){
   if (COLORS[key]) return COLORS[key];
   if (TOOLCOLORS[key]) return TOOLCOLORS[key];
-  if (key === 'compaction') return '#c4a06e';
-  if (key === 'user') return '#64748b';
+  if (key === 'compaction') return 'var(--ln-compaction)';
+  if (key === 'user') return 'var(--ln-user)';
   return `hsl(${hashHue(key||'')} 52% 58%)`;
 }
 

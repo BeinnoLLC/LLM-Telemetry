@@ -341,16 +341,6 @@
   },
   {
     "path": "src/llm_telemetry/web/js/drawer.js",
-    "line": 800,
-    "matched": "#c4a06e"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/drawer.js",
-    "line": 801,
-    "matched": "#64748b"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/drawer.js",
     "line": 802,
     "matched": "hsl("
   },
@@ -391,11 +381,6 @@
   },
   {
     "path": "src/llm_telemetry/web/js/live.js",
-    "line": 293,
-    "matched": "#F09082, #4D9ABF, #F1BE58"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/live.js",
     "line": 308,
     "matched": "hsl("
   },
@@ -403,11 +388,6 @@
     "path": "src/llm_telemetry/web/js/live.js",
     "line": 384,
     "matched": "hsl(, hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/live.js",
-    "line": 426,
-    "matched": "#888"
   },
   {
     "path": "src/llm_telemetry/web/js/live.js",
@@ -535,76 +515,6 @@
     "matched": "hsl(, hsl("
   },
   {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 38,
-    "matched": "#d97757"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 39,
-    "matched": "#10a37f"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 40,
-    "matched": "#10a37f"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 41,
-    "matched": "#4f8df5"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 42,
-    "matched": "#5b9cf6"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 43,
-    "matched": "#38bdf8"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 44,
-    "matched": "#8b5cf6"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 45,
-    "matched": "#a3a3a3"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 46,
-    "matched": "#7c6cf2"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 47,
-    "matched": "#4d6bfe"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 48,
-    "matched": "#eab308"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 49,
-    "matched": "#ff663d"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 50,
-    "matched": "#f472b6"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/routerview.js",
-    "line": 53,
-    "matched": "#8b98ab"
-  },
-  {
     "path": "src/llm_telemetry/web/js/views.js",
     "line": 89,
     "matched": "rgba("
@@ -658,16 +568,6 @@
     "path": "src/llm_telemetry/web/js/views.js",
     "line": 209,
     "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 210,
-    "matched": "#8b98ab"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 239,
-    "matched": "#8b98ab"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
