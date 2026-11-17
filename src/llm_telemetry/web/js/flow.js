@@ -4,7 +4,7 @@
  */
 import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
-import { PROV, provLogoSvg, provOf, render } from './views.js';
+import { PROV, provLogoSvg, provOf, render, tipPlace } from './views.js';
 import { DATA, css } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
@@ -448,27 +448,9 @@ export function paintTrain(queued, running, done){
   }
 }
 
-// Place a fixed card (tooltip or popover) beside a ball: below the jar, else above it, else
-// beside the ball; the first spot that stays inside the viewport without covering the lid.
-export function qtPlace(el, r, jar){
-  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-  const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80, g = 8;
-  const lid = jar && jar.querySelector('.qt-lid');
-  const lr = lid ? lid.getBoundingClientRect() : null;
-  const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
-  const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
-  const jr = jar ? jar.getBoundingClientRect() : r;
-  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-  const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [jr.right + g, cy], [jr.left - w - g, cy], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
-  const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
-    && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
-  const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-  el.dataset.side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
-  el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
-  el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
-}
+// Placement for the ball cards lives in the one shared helper (views.js
+// tipPlace) since LLMTELEMET-312 — same 'fit' behaviour as the old qtPlace:
+// below the jar, else above it, else beside the ball, never covering the lid.
 
 export function qtPopClose(restore){
   const pop = $('qpop');
@@ -488,7 +470,7 @@ export function qtPopOpen(ball){
   ball.classList.add('qt-tip-on');
   pop.innerHTML = carPop(it);
   pop.classList.add('on');
-  qtPlace(pop, ball.getBoundingClientRect(), ball.closest('.qt-jar'));
+  tipPlace(pop, ball.getBoundingClientRect(), { jar: ball.closest('.qt-jar') });
   const go = pop.querySelector('.pp-open');
   if (go && go.focus) go.focus(); else if (pop.focus) pop.focus();
   return true;
@@ -508,7 +490,7 @@ export function qtTipWire(tr){
     cur = c; c.classList.add('qt-tip-on');
     tip.innerHTML = carTip(c._qt);
     tip.classList.add('on');
-    qtPlace(tip, c.getBoundingClientRect(), c.closest('.qt-jar'));
+    tipPlace(tip, c.getBoundingClientRect(), { jar: c.closest('.qt-jar') });
   };
   const carOf = t => (t && t.closest) ? t.closest('.qt-ball') : null;
   tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });

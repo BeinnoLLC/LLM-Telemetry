@@ -365,6 +365,52 @@ export function unpricedModels(rows){
 const NOTICE_MS = {info: 6000, ok: 6000, warn: 10000};
 const NOTICE_MAX = 3;
 const NOTICES = {};   // id -> {n, seen, el, timer}
+// LLMTELEMET-312: ONE positioning helper for every .qtip tooltip instance —
+// the task-queue ball cards, the timeline #lntip and the Hive .hv-tip all
+// place through here, so placement has exactly one code path.
+//   opts.mode 'fit'    (default): search the spots around the anchor rect —
+//              below the jar first, never covering its lid (opts.jar);
+//   opts.mode 'above': bottom-aligned above the anchor's left edge (labels);
+//   opts.mode 'follow': track a point (e.g. the cursor) opts.gap px down-right.
+// The result always stays inside the viewport. Sets data-side + --ax/--ay for
+// the .qtip arrow unless opts.arrow === false — arrow-less instances never get
+// a data-side attribute, which is what keeps the arrow off them in CSS.
+export function tipPlace(el, r, opts){
+  opts = opts || {};
+  const mode = opts.mode || 'fit', gap = opts.gap != null ? opts.gap : 8;
+  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+  const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80;
+  let x, y, side = 'top';
+  if (mode === 'follow'){
+    x = Math.max(6, Math.min(r.left + gap, vw - w - 6));
+    y = Math.max(6, Math.min(r.top + gap, vh - hgt - 6));
+  } else if (mode === 'above'){
+    x = Math.max(6, Math.min(r.left, vw - w - 6));
+    y = Math.max(6, r.top - hgt - gap);
+  } else {
+    const jar = opts.jar;
+    const lid = jar && jar.querySelector('.qt-lid');
+    const lr = lid ? lid.getBoundingClientRect() : null;
+    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+    const jr = jar ? jar.getBoundingClientRect() : r;
+    const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const spots = [[cx, jr.bottom + gap], [cx, jr.top - hgt - gap], [jr.right + gap, cy], [jr.left - w - gap, cy], [cx, r.bottom + gap], [cx, r.top - hgt - gap], [r.right + gap, cy], [r.left - w - gap, cy]];
+    const fits = ([fx, fy]) => fx >= 6 && fy >= 6 && fx + w <= vw - 6 && fy + hgt <= vh - 6
+      && !(lr && hits({ left: fx, top: fy, right: fx + w, bottom: fy + hgt }, lr));
+    const at = Math.max(0, spots.findIndex(fits));
+    const spot = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + gap, vh - hgt - 6))];
+    x = spot[0]; y = spot[1];
+    side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
+  }
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  if (opts.arrow !== false){
+    el.dataset.side = side;
+    el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+    el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
+  }
+}
 function noticeKey(id){ return 'lt.notice.' + id; }
 function noticeGet(id){ try { return localStorage.getItem(noticeKey(id)); } catch (e) { return null; } }
 function noticeSet(id, v){

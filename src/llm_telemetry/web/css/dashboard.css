@@ -974,9 +974,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pp-open:hover,.pp-open:focus-visible{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:0}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+/* LLMTELEMET-312: ONE tooltip component. This is the whole shell — #lntip and
+   the Hive .hv-tip are themed .qtip instances (sizing/level only), and the
+   arrow renders only when the shared placer (views.js tipPlace) sets data-side,
+   so arrow-less instances never grow one. Visibility is the .on class. */
+.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity .1s;box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip.on{opacity:1}
 .qtip .ft-h,.qtip .ft-r{font-size:14px}
-.qtip::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
+.qtip[data-side]::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
   left:var(--ax,50%);top:-6px;margin-left:-5px;border-right:0;border-bottom:0}
 .qtip[data-side=top]::before{top:auto;bottom:-6px;transform:rotate(225deg)}
 .qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
@@ -1322,9 +1327,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .lnspan.lnfail{outline:2px solid var(--z-bad);outline-offset:-1px}
 .lnspan.lntick{width:3px!important;border-radius:1px}
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
-#lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius-ctl);padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+/* LLMTELEMET-312: #lntip is a themed .qtip instance (timeline span labels):
+   theme/sizing only, never its own shell. */
+#lntip{z-index:90;max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
 
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own

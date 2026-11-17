@@ -7,7 +7,7 @@ import {
   trapFocus, trapTab,
 } from './palette.js';
 import { current } from './charts.js';
-import { provLogoSvg, schemaProblem } from './views.js';
+import { provLogoSvg, schemaProblem, tipPlace } from './views.js';
 import { pickView } from './router.js';
 import { DATA } from './main.js';
 
@@ -758,7 +758,7 @@ export function lnCloseModal(){
   lnOpen = false;
   $('lnscrim')?.classList.remove('open');
   $('lnmodal')?.classList.remove('open');
-  $('lntip').style.display = 'none';
+  $('lntip')?.classList.remove('on');
   lnTrap?.release();
   lnTrap = null;
   lnFocusReturn = null;
@@ -811,7 +811,7 @@ export function installTimelineModal(){
     }
     const span = e.target.closest?.('.lnspan');
     if (span){
-      $('lntip').style.display = 'none';
+      $('lntip')?.classList.remove('on');
       return;
     }
   });
@@ -821,13 +821,13 @@ export function installTimelineModal(){
     if (!span || !tip) return;
     const label = span.dataset.lnlabel || '';
     tip.textContent = label.slice(0, 80);
-    const r = span.getBoundingClientRect();
-    tip.style.left = r.left + 'px';
-    tip.style.top = (r.top - 32) + 'px';
-    tip.style.display = 'block';
+    // LLMTELEMET-312: #lntip is a themed .qtip instance placed by the one
+    // shared helper — directly above the span, arrow-less.
+    tipPlace(tip, span.getBoundingClientRect(), { mode: 'above', gap: 4, arrow: false });
+    tip.classList.add('on');
   });
   document.addEventListener('mouseout', e => {
-    if (e.target.closest?.('.lnspan')) $('lntip').style.display = 'none';
+    if (e.target.closest?.('.lnspan')) $('lntip')?.classList.remove('on');
   });
   $('lnclose')?.addEventListener('click', lnCloseModal);
   $('lnscrim')?.addEventListener('click', lnCloseModal);
