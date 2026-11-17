@@ -23,6 +23,8 @@ import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { collectRouter } from "./collectRouter.js";
+import { collectLogs } from "./collectLogs.js";
+import { collectTranscripts } from "./collectTranscripts.js";
 import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
 
@@ -131,9 +133,50 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  transcripts: stub("transcripts — write transcripts.json", "T-16"),
+  transcripts: {
+    summary: "transcripts — write transcripts.json [OUT]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const c = cfg();
+      const payload = collectTranscripts({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "transcripts.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, Record<string, unknown[]>>;
+      const n = Object.values(profiles).reduce(
+        (acc, sess) => acc + Object.values(sess).reduce((a, m) => a + m.length, 0), 0);
+      io.out(`${res.path}  (${Object.keys(profiles).length} profiles, ${n} messages windowed)`);
+      return 0;
+    },
+  },
   "session-timeline": stub("session-timeline — write sessions/<profile>/<id>.json", "T-16"),
-  logs: stub("logs — write logs-data.json", "T-16"),
+  logs: {
+    summary: "logs — write logs-data.json [-o|--out PATH]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      let outArg: string | undefined;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i]!;
+        if ((a === "-o" || a === "--out") && i + 1 < args.length) outArg = args[++i];
+        else if (a.startsWith("--out=")) outArg = a.slice("--out=".length);
+        else {
+          io.err(`usage: logs [-o OUT]\nlogs: error: unrecognized arguments: ${a}`);
+          return 2;
+        }
+      }
+      const c = cfg();
+      const payload = collectLogs({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "logs-data.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { events_shown: number; events_total: number }>;
+      const n = Object.values(profiles).reduce((a, p) => a + p.events_shown, 0);
+      const t = Object.values(profiles).reduce((a, p) => a + p.events_total, 0);
+      io.out(`${res.path}  (${Object.keys(profiles).length} profiles, ${n.toLocaleString("en-US")} of ${t.toLocaleString("en-US")} events, ${(res.bytes / 1048576).toFixed(2)} MB)`);
+      return 0;
+    },
+  },
   probe: stub("probe — write ollama-data.json", "T-16"),
   analytics: {
     summary: "analytics — write analytics-data.json [-o|--out PATH]",

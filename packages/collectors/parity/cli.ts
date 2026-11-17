@@ -19,7 +19,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CASES, findCase, type ParityCase } from "./cases.js";
-import { countLeaves, normalize } from "./normalize.js";
+import { countLeaves, normalize, RUN_STAMP_KEYS } from "./normalize.js";
 import { formatDiffs, structuralDiff, type DiffEntry } from "./diff.js";
 import { produce as nodeProduce } from "./nodeProducer.js";
 import { makeAnalyticsInputs, resolvePython, runPythonAnalytics, runPythonInputsCase, runPythonProducer } from "./pythonProducer.js";
@@ -99,8 +99,11 @@ export function runCase(
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }
 
-  const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown);
-  const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown);
+  const nopts = c.keepKeys
+    ? { dropKeys: RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)) }
+    : {};
+  const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown, nopts);
+  const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown, nopts);
   const leaves = countLeaves(pyNorm);
 
   if (!opts.seed) {

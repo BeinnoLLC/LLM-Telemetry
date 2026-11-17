@@ -12,6 +12,8 @@
  */
 
 import { collectAnalytics } from "../src/collectAnalytics.js";
+import { collectLogs } from "../src/collectLogs.js";
+import { collectTranscripts } from "../src/collectTranscripts.js";
 import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
@@ -40,6 +42,10 @@ export interface ParityCase {
    * `py/` scripts that build the inputs dir and run the real Python collector
    * on it (`<generator> OUT`, `<producer> INPUTS OUT ARTIFACT`). */
   inputs?: { generator: string; producer: string };
+  /** Run-stamp keys (see normalize RUN_STAMP_KEYS) that are DATA for this case
+   * and must be compared: logs/transcripts `ts` come from the DB / log lines,
+   * not from the clock. */
+  keepKeys?: readonly string[];
 }
 
 /** Config for a generated inputs dir (profiles under <inputs>/agent). */
@@ -85,6 +91,26 @@ export const CASES: readonly ParityCase[] = [
     inputs: { generator: "make_quota_fixture.py", producer: "produce_quota.py" },
     nodeCollector: (inputsDir, nowS) =>
       collectQuota({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "logs",
+    fixture: "logs-data.json",
+    artifact: "logs-data.json",
+    tag: null,
+    inputs: { generator: "make_logs_fixture.py", producer: "produce_logs.py" },
+    keepKeys: ["ts"],
+    nodeCollector: (inputsDir, nowS) =>
+      collectLogs({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "transcripts",
+    fixture: "transcripts.json",
+    artifact: "transcripts.json",
+    tag: null,
+    inputs: { generator: "make_logs_fixture.py", producer: "produce_transcripts.py" },
+    keepKeys: ["ts"],
+    nodeCollector: (inputsDir, nowS) =>
+      collectTranscripts({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
   },
 ];
 
