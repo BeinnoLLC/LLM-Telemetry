@@ -1,23 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
+  priceRow,
   builtinRate,
   catalogSize,
   classFromModel,
   isFreeTier,
   isLocal,
   meteredByModel,
-  priceRow,
   rateOrigin,
   resolveCatalogId,
   WEB_RATES,
   type Catalog,
 } from "../../src/pricing.js";
 import { localRates } from "../../src/energy.js";
+import { Config } from "../../src/config.js";
 
 // Ports of the pricing.py / energy.py rules that decide real money numbers
 // (T-15, LLMTELEMET-286). Empty catalogue in these tests: the built-in
 // tables and the local path are what they exercise.
 const EMPTY: Catalog = {};
+const CFG = new Config();
+const LOCAL_HINTS = ["localhost", "127.0.0.1", "10.", "192.168."];
+const pr = (row: Parameters<typeof priceRow>[0], cat: Catalog) => priceRow(row, cat, CFG, LOCAL_HINTS, {});
 
 describe("pricing classification", () => {
   it("isLocal is name-based and rejects vendor-qualified ids", () => {
@@ -44,7 +48,7 @@ describe("pricing classification", () => {
   it("builtinRate strips cloud tags and variant suffixes", () => {
     expect(builtinRate(WEB_RATES, "gpt-oss:20b-cloud")?.[0]).toBe(0.07);
     expect(builtinRate(WEB_RATES, "nemotron-3-super")?.[1]).toBe(2.40);
-    expect(builtinRate(WEB_RATES, "no-such-model")).toBe(undefined);
+    expect(builtinRate(WEB_RATES, "no-such-model")).toBeNull();
   });
 
   it("resolveCatalogId matches exact basename or dashed->dotted, never a variant tag", () => {
@@ -73,13 +77,13 @@ describe("pricing classification", () => {
 
 describe("priceRow cost split", () => {
   it("built-in fallback rate on an unclassed model", () => {
-    const r = priceRow(
+    const r = pr(
       { model: "nemotron-3-super", input_tokens: 1e6, output_tokens: 0 },
       EMPTY,
     );
     // price_row's blunt label: any non-local rates_for() hit reads "catalog"
     // (rateOrigin() is what says "builtin") — matches pricing.py exactly.
-    expect(rateOrigin("nemotron-3-super", EMPTY)[0]).toBe("builtin");
+    expect(rateOrigin("nemotron-3-super", EMPTY, CFG)[0]).toBe("builtin");
     expect(r.rate_source).toBe("catalog");
     expect(r.market_value_usd).toBeCloseTo(0.30, 6);
     expect(r.billed_usd).toBe(0);
@@ -87,8 +91,8 @@ describe("priceRow cost split", () => {
   });
 
   it("RATE_OVERRIDES beats the catalogue and bills nothing for subscription class", () => {
-    const r = priceRow({ model: "glm-5.3", input_tokens: 1e6 }, EMPTY);
-    expect(rateOrigin("glm-5.3", EMPTY)[0]).toBe("override");
+    const r = pr({ model: "glm-5.3", input_tokens: 1e6 }, EMPTY);
+    expect(rateOrigin("glm-5.3", EMPTY, CFG)[0]).toBe("override");
     expect(r.rate_source).toBe("catalog"); // blunt label again (pricing.py)
     expect(r.market_value_usd).toBeCloseTo(1.40, 6);
     expect(r.cost_class).toBe("subscription");
@@ -96,7 +100,7 @@ describe("priceRow cost split", () => {
   });
 
   it("local models are priced in electricity (energy_usd == market value)", () => {
-    const r = priceRow(
+    const r = pr(
       { model: "qwen3-coder:30b", provider: "ollama", output_tokens: 60000 },
       EMPTY,
     );
@@ -104,12 +108,12 @@ describe("priceRow cost split", () => {
     expect(r.rate_source).toBe("local");
     expect(r.energy_usd).toBe(r.market_value_usd);
     expect(r.billed_usd).toBe(0);
-    const [[, out1m]] = localRates("qwen3-coder:30b");
+    const out1m = localRates("qwen3-coder:30b", CFG).rates[1];
     expect(r.market_value_usd).toBeCloseTo((60000 / 1e6) * out1m, 6);
   });
 
   it("LAN base_url forces the local provider", () => {
-    const r = priceRow(
+    const r = pr(
       {
         model: "whatever-unknown",
         base_url: "http://10.0.0.11:11434/v1",
@@ -129,7 +133,7 @@ describe("priceRow cost split", () => {
         input_cache_read: "0.000000007",
       },
     };
-    const r = priceRow(
+    const r = pr(
       {
         provider: "deepseek",
         model: "deepseek/deepseek-v4.1-flash",
@@ -146,7 +150,7 @@ describe("priceRow cost split", () => {
 
 describe("energy.local_rates", () => {
   it("matches the Python power model defaults", () => {
-    const [[ri, ro, rc], tps] = localRates("qwen3-coder:30b");
+    const { rates: [ri, ro, rc], tps } = localRates("qwen3-coder:30b", CFG);
     expect(tps).toBe(30); // "30b" band
     const usdPerSec = (440 / 1000) * 0.047 / 3600;
     const out1m = usdPerSec * (1e6 / 30);
@@ -156,9 +160,9 @@ describe("energy.local_rates", () => {
   });
 
   it("rate_origin labels the four sources", () => {
-    expect(rateOrigin("qwen3-coder", EMPTY)[0]).toBe("local");
-    expect(rateOrigin("glm-5.3", EMPTY)[0]).toBe("override");
-    expect(rateOrigin("minimax-m3", EMPTY)[0]).toBe("builtin");
-    expect(rateOrigin("no-such-model", EMPTY)[0]).toBe(null);
+    expect(rateOrigin("qwen3-coder", EMPTY, CFG)[0]).toBe("local");
+    expect(rateOrigin("glm-5.3", EMPTY, CFG)[0]).toBe("override");
+    expect(rateOrigin("minimax-m3", EMPTY, CFG)[0]).toBe("builtin");
+    expect(rateOrigin("no-such-model", EMPTY, CFG)[0]).toBe(null);
   });
 });
