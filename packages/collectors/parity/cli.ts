@@ -82,7 +82,7 @@ export function runCase(
     return fail(String(err));
   }
   try {
-    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag);
+    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag, c.nodeCollector);
   } catch (err) {
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }

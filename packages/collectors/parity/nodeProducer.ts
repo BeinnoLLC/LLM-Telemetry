@@ -30,8 +30,14 @@ export function produce(
   outDir: string,
   artifact: string,
   tag: SchemaTag | null,
+  collector?: () => Record<string, unknown>,
 ): ProduceResult {
-  const parsed: unknown = JSON.parse(readFileSync(fixturePath, "utf8"));
+  let parsed: unknown;
+  if (collector) {
+    parsed = collector();
+  } else {
+    parsed = JSON.parse(readFileSync(fixturePath, "utf8"));
+  }
   if (!isRecord(parsed)) {
     throw new Error(`fixture root must be a JSON object: ${fixturePath}`);
   }

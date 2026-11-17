@@ -11,6 +11,7 @@
  * producers; run-stamp fields inside them are handled by `normalize()`.
  */
 
+import { collectAnalytics } from "../src/collectAnalytics.js";
 import type { SchemaTag } from "../src/schemaCheck.js";
 
 export interface ParityCase {
@@ -22,6 +23,9 @@ export interface ParityCase {
   artifact: string;
   /** Payload schema tag both stacks validate at write time (T-4 writer). */
   tag: SchemaTag;
+  /** When set, the node side runs this real collector instead of copying the
+   * fixture, so a stub/incomplete port FAILS parity instead of passing. */
+  nodeCollector?: () => Record<string, unknown>;
 }
 
 export const CASES: readonly ParityCase[] = [
@@ -36,6 +40,7 @@ export const CASES: readonly ParityCase[] = [
     fixture: "analytics-data.json",
     artifact: "analytics-data.json",
     tag: "analytics",
+    nodeCollector: () => collectAnalytics(),
   },
   {
     name: "ollama",
