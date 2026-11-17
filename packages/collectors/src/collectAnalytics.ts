@@ -402,8 +402,7 @@ export function classifyProfile(name: string, sess: { source?: string | null; se
   return { kind, sources: counts };
 }
 
-function tilde(p: string): string {
-  const home = os.homedir();
+function tilde(p: string, home: string = os.homedir()): string {
   return p === home || p.startsWith(home + "/") ? "~" + p.slice(home.length) : p;
 }
 
@@ -490,11 +489,13 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
   } else {
     cfg = loadConfig();
   }
+  // Python expands "~" from $HOME; the parity fixture points HOME at <inputs>/home.
+  const home = opts.inputsDir !== undefined ? `${opts.inputsDir}/home` : os.homedir();
   const catalog = cachedCatalog(cfg, env);
   const res = { ...cfg.resolution } as Record<string, unknown>;
   res["failed"] = [...(cfg.resolution.failed ?? [])];
   for (const k of ["agent_home", "config_file"]) {
-    if (res[k]) res[k] = tilde(String(res[k]));
+    if (res[k]) res[k] = tilde(String(res[k]), home);
   }
   const profiles: Record<string, Row> = {};
   for (const p of cfg.profiles) {
@@ -502,7 +503,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     const why = unreadable(p.db);
     if (why) {
       (res["failed"] as unknown[]).push({
-        name: p.name, path: tilde(p.db), reason: why.replaceAll(os.homedir(), "~"),
+        name: p.name, path: tilde(p.db, home), reason: why.replaceAll(home, "~"),
       });
       continue;
     }
