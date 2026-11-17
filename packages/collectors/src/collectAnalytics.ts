@@ -21,6 +21,7 @@ import { cmpStr } from "./pySort.js";
 import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
 import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
+import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collectLive.js";
 import { stamp } from "./schema.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
@@ -226,6 +227,28 @@ export function buildResend(con: Con, catalog: Catalog, cfg: Config) {
     .map(([x]) => x);
 }
 
+/** `live` block: LIVE rows with titles/source resolved like collect_live. */
+export function buildLiveRows(con: Con, name: string) {
+  const live = tuples(con, SQL.LIVE).map((r) => zip(SQL.LIVE_COLS, r));
+  const meta = new Map<string, unknown[]>();
+  for (const r of tuples(con, LIVE_META)) meta.set(r[0] as string, r);
+  for (const L of live) {
+    const m = meta.get(L["id"] as string) ?? [L["id"], "", "", null];
+    L["source"] = sourceLabel(m[1] as string | null);
+    L["title_raw"] = L["title"];
+    L["title"] = resolveTitle(L["title"] === "(untitled)" ? "" : (L["title"] as string), (m[3] ?? null) as string | null);
+  }
+  for (const L of live) {
+    L["profile"] = name;
+    L["category"] = classifySession(L["phase"] as string | null, L["tools"] as string | null);
+    L["tools"] = ((L["tools"] as string | null) ?? "").split(",").filter((t) => t !== "");
+    L["kind"] = L["parent"] ? "subagent" : "top-level";
+    L["model"] = L["model"] || L["init_model"];
+    L["switched"] = Boolean(L["model"] && L["init_model"] && L["model"] !== L["init_model"]);
+  }
+  return live;
+}
+
 /** build_latency: SQL-to-payload glue over latency.ts. */
 export function buildLatency(con: Con, cfg: Config) {
   const rows = tuples(con, SQL.ASSISTANT_TURNS) as TurnRow[];
@@ -409,7 +432,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
     concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
-    resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
+    live: buildLiveRows(con, name), resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };

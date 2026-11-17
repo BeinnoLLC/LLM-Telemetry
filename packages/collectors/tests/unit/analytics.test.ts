@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildLiveRows, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
@@ -276,5 +276,34 @@ resend.sort(key=lambda x:-x["resend_usd"])
 result=resend`);
     expect(got.length).toBeGreaterThan(0);
     expect(got).toEqual(want);
+  });
+});
+
+describe("live rows match Python", () => {
+  it("buildLiveRows", () => {
+    const got = buildLiveRows(con, "alpha");
+    const want = pyAnalytics(inputs, dbPath, `from llm_telemetry import collect_live as _CL
+live=[dict(zip(C.LIVE_COLS,r)) for r in con.execute(C.LIVE)]
+_meta={r[0]:r for r in con.execute(_CL.LIVE_META)}
+for L in live:
+    _m=_meta.get(L["id"],(L["id"],"","",None))
+    L["source"]=_CL.source_label(_m[1])
+    L["title_raw"]=L["title"]
+    L["title"]=_CL.resolve_title("" if L["title"]=="(untitled)" else L["title"],_m[3])
+for L in live:
+    L["profile"]="alpha"
+    L["category"]=C.classify(L["phase"],L["tools"])
+    L["tools"]=[t for t in (L["tools"] or "").split(",") if t]
+    L["kind"]="subagent" if L["parent"] else "top-level"
+    L["model"]=L["model"] or L["init_model"]
+    L["switched"]=bool(L["model"] and L["init_model"] and L["model"]!=L["init_model"])
+result=live`) as Record<string, unknown>[];
+    expect(got.length).toBeGreaterThan(0);
+    // idle_s / uptime_s tick with the clock between the two reads.
+    const norm = (rows: Record<string, unknown>[]) => rows.map((r) => ({ ...r, idle_s: 0, uptime_s: 0 }));
+    for (let i = 0; i < got.length; i++) {
+      expect(Math.abs((got[i]!["idle_s"] as number) - (want[i]!["idle_s"] as number))).toBeLessThanOrEqual(5);
+    }
+    expect(norm(got)).toEqual(norm(want));
   });
 });
