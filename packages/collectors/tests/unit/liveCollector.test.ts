@@ -561,7 +561,7 @@ describe("isoToUnix matches Python _iso_to_unix (fromisoformat, now fallback)", 
     expect(isoToUnix("2026-W42")).toBe(localEpoch(2026, 10, 12));
     expect(isoToUnix("2026W42")).toBe(localEpoch(2026, 10, 12));
     expect(isoToUnix("2020-W53-1")).toBe(localEpoch(2020, 12, 28));
-    expect(isoToUnix("2026-W41-6")).toBe(1791579600);
+    expect(isoToUnix("2026-W41-6")).toBe(localEpoch(2026, 10, 10));
   });
 
   it("Python lenient edge forms (verified against the 3.12.3 venv)", () => {
