@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
@@ -122,6 +123,37 @@ describe("collectAnalytics assembly", () => {
     for (const k of ["rows", "hour_rows", "sessions_tree", "outcomes", "end_reasons", "heatmap", "repo_branch", "attribution"]) {
       expect(alpha).toHaveProperty(k);
     }
+  });
+});
+
+describe("bandwidth_daily matches Python", () => {
+  it("ledger series equal for two runs (second one merges the first)", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const tsDir = makeTmpDir("an-bw-ts-");
+    const pyDir = makeTmpDir("an-bw-py-");
+    const run = () => {
+      const out = collectAnalytics({ inputsDir: inputs, reportsDir: tsDir, today });
+      return Object.fromEntries(Object.entries(out["profiles"] as Record<string, Record<string, unknown>>)
+        .map(([n, p]) => [n, p["bandwidth_daily"]]));
+    };
+    const body = `cat,_=pricing.fetch_catalog()
+from llm_telemetry import bandwidth_history as BH
+import os
+r={}
+for n in ['alpha','beta-bot']:
+    c=sqlite3.connect('file:${inputs}/agent/profiles/'+n+'/state.db?mode=ro',uri=True)
+    rows=C.fetch_rows(c); C._enrich_rows(rows,cat); r[n]=rows
+s=BH.update('${pyDir}',r,'${today}')
+s2=BH.update('${pyDir}',r,'${today}')
+result=[{k:s.get(k,[]) for k in r},{k:s2.get(k,[]) for k in r}]`;
+    const [want1, want2] = pyAnalytics(inputs, dbPath, body) as Record<string, unknown>[];
+    const got1 = run();
+    const got2 = run();
+    expect(got1).toEqual(want1);
+    expect(got2).toEqual(want2);
+    expect((got1["alpha"] as unknown[]).length).toBeGreaterThan(0);
+    expect(fs.readFileSync(join(tsDir, "bandwidth-history.json"), "utf8"))
+      .toBe(fs.readFileSync(join(pyDir, "bandwidth-history.json"), "utf8"));
   });
 });
 

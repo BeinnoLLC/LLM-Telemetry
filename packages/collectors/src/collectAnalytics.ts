@@ -25,6 +25,7 @@ import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collect
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
+import { update as updateBandwidth } from "./bandwidthHistory.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
 export interface AnalyticsPayload {
@@ -38,6 +39,10 @@ export interface CollectAnalyticsOptions {
    * catalog.json, agent/…/state.db). Omitted → the process config/env. */
   inputsDir?: string;
   now?: Date;
+  /** Where the bandwidth ledger is written. Default: cfg.reports_dir. */
+  reportsDir?: string;
+  /** Local YYYY-MM-DD for the ledger (default: today). */
+  today?: string;
 }
 
 type Row = Record<string, unknown>;
@@ -504,6 +509,14 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
       con.close();
     }
   }
+  const reportsDir = opts.reportsDir ?? cfg.reports_dir;
+  fs.mkdirSync(reportsDir, { recursive: true });
+  const series = updateBandwidth(
+    reportsDir,
+    Object.fromEntries(Object.entries(profiles).map(([n, p]) => [n, p["rows"] as Row[]])),
+    opts.today,
+  );
+  for (const [n, p] of Object.entries(profiles)) p["bandwidth_daily"] = series[n] ?? [];
   const payload: AnalyticsPayload = {
     generated: localIso(now),
     profiles,
