@@ -55,7 +55,7 @@ export function isoToUnix(ts: string): number {
     const rest = s.slice(dm[0].length);
     if (rest === "") {
       // Date-only: a naive Python datetime -> local midnight.
-      return Date.UTC(date.y, date.mo - 1, date.d) / 1000;
+      return new Date(date.y, date.mo - 1, date.d).getTime() / 1000;
     }
     if (rest.length < 2) return now; // separator character with no time left
     const time = parseIsoTimePart(rest.slice(1));
@@ -64,7 +64,7 @@ export function isoToUnix(ts: string): number {
     if (time.tzS === null) {
       // No timezone: naive wall time in the local timezone (Python
       // `datetime.timestamp()`); `setFullYear` avoids the 0-99 year remap.
-      return Date.UTC(date.y, date.mo - 1, date.d, h, mi, sc, Math.floor(us / 1000)) / 1000 + (us % 1000) / 1e6;
+      return new Date(date.y, date.mo - 1, date.d, h, mi, sc, Math.floor(us / 1000)).getTime() / 1000 + (us % 1000) / 1e6;
     }
     const tzS = time.tzS;
     // With a timezone Python applies a fixed offset, no DST rules: pure
