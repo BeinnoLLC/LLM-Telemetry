@@ -20,6 +20,7 @@
 //   * the price table's sort order — thin glue over a sort, exercised by
 //     check_wide_tables.js.
 import { isolate } from './lib/isolate.mjs';
+import { rtColor } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -100,7 +101,7 @@ const D = await isolate('views.js', {
   },
   'flow.js': { flowControls: {}, renderFlow() {} },
   'live.js': { renderLive() {} },
-  'routerview.js': { renderRouterView() {}, routerStat() { return 'RS'; } },
+  'routerview.js': { renderRouterView() {}, routerStat() { return 'RS'; }, rtColor },
   'quotaview.js': { renderQuotaView() {}, qvStat() { return 'QS'; } },
   'main.js': { DATA: SHEET, LOCAL_HOSTS: ['local'], RANKINGS_DATA: [], SCHEMA_VERSION: 1, css: () => '' },
 }, { window: { COSTS_DATA: SHEET }, requestAnimationFrame: fn => fn(), setTimeout: fn => fn() });

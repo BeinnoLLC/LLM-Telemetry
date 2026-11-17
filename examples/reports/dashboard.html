@@ -3031,28 +3031,29 @@ const RT_SVG = {
  deepseek: 'M23.748 4.651c-.254-.124-.364.113-.512.233-.051.04-.094.09-.137.137-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.155-.708-.311-.955-.65-.172-.24-.219-.509-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.094.172.187.129.323-.082.28-.18.553-.266.833-.055.179-.137.218-.328.14a5.5 5.5 0 0 1-1.737-1.179c-.857-.828-1.631-1.743-2.597-2.46a12 12 0 0 0-.689-.47c-.985-.957.13-1.743.387-1.836.27-.098.094-.433-.778-.428-.872.003-1.67.295-2.687.685a3 3 0 0 1-.465.136 9.6 9.6 0 0 0-2.883-.101c-1.885.21-3.39 1.1-4.497 2.622C.082 8.776-.231 10.854.152 13.02c.403 2.284 1.568 4.175 3.36 5.653 1.857 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.132-.284 4.994-1.86.47.234.962.328 1.78.398.629.058 1.235-.031 1.705-.129.735-.155.684-.836.418-.961-2.155-1.004-1.682-.595-2.112-.926 1.095-1.295 2.768-3.598 3.284-6.733.05-.346.115-.834.108-1.114-.004-.171.035-.238.23-.257a4.2 4.2 0 0 0 1.545-.475c1.397-.763 1.96-2.016 2.093-3.517.02-.23-.004-.467-.247-.588M11.58 18.168c-2.088-1.642-3.101-2.183-3.52-2.16-.39.024-.32.472-.234.763.09.288.207.487.371.74.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.168-1.361-.801-2.5-1.86-3.301-3.306-.775-1.393-1.225-2.888-1.299-4.482-.02-.385.094-.522.477-.592a4.7 4.7 0 0 1 1.53-.038c2.131.311 3.946 1.264 5.467 2.774.868.86 1.525 1.887 2.202 2.89.72 1.066 1.494 2.082 2.48 2.915.348.291.626.513.892.677-.802.09-2.14.109-3.055-.615zm1.001-6.44a.306.306 0 0 1 .415-.287.3.3 0 0 1 .113.074.3.3 0 0 1 .086.214c0 .17-.136.307-.308.307a.303.303 0 0 1-.306-.307m3.11 1.596c-.2.081-.4.151-.591.16a1.25 1.25 0 0 1-.798-.254c-.274-.23-.47-.358-.551-.758a1.7 1.7 0 0 1 .015-.588c.07-.327-.007-.537-.238-.727-.188-.156-.426-.199-.689-.199a.6.6 0 0 1-.254-.078.253.253 0 0 1-.114-.358 1 1 0 0 1 .192-.21c.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.392.451.462.576.685.915.176.264.336.536.446.848.066.194-.02.353-.25.45',
 };
 const RT_LOGO = {
- 'anthropic':    {svg:'anthropic',     mono:'A',  c:'var(--prov-anthropic)', name:'Anthropic'},
- 'openai-codex': {svg:'openai',        mono:'◉',  c:'var(--prov-openai)', name:'OpenAI (ChatGPT sign-in)'},
- 'openai':       {svg:'openai',        mono:'◉',  c:'var(--prov-openai)', name:'OpenAI'},
- 'gemini':       {svg:'googlegemini',  mono:'G',  c:'var(--prov-gemini)', name:'Google Gemini'},
- 'local':        {svg:'ollama',        mono:'▣',  c:'var(--prov-local)', name:'Self-hosted (Ollama)'},
- 'ollama-cloud': {svg:'ollama',        mono:'☁',  c:'var(--prov-ollama-cloud)', name:'Ollama Cloud'},
- 'openrouter':   {svg:'openrouter',    mono:'OR', c:'var(--prov-openrouter)', name:'OpenRouter'},
- 'copilot':      {svg:'githubcopilot', mono:'GH', c:'var(--prov-copilot)', name:'GitHub Copilot'},
- 'opencode-go':  {svg:'opencode',      mono:'OC', c:'var(--prov-opencode-go)', name:'OpenCode Go'},
- 'deepseek':     {svg:'deepseek',      mono:'DS', c:'var(--prov-deepseek)', name:'DeepSeek'},
- 'nous':         {svg:'',              mono:'N',  c:'var(--prov-nous)', name:'Nous Portal'},
- 'fireworks':    {svg:'',              mono:'FW', c:'var(--prov-fireworks)', name:'Fireworks'},
- 'moa':          {svg:'',              mono:'⬡',  c:'var(--prov-moa)', name:'Mixture of agents'},
+ 'anthropic':    {svg:'anthropic',     mono:'A',  c:'--prov-anthropic', name:'Anthropic'},
+ 'openai-codex': {svg:'openai',        mono:'◉',  c:'--prov-openai', name:'OpenAI (ChatGPT sign-in)'},
+ 'openai':       {svg:'openai',        mono:'◉',  c:'--prov-openai', name:'OpenAI'},
+ 'gemini':       {svg:'googlegemini',  mono:'G',  c:'--prov-gemini', name:'Google Gemini'},
+ 'local':        {svg:'ollama',        mono:'▣',  c:'--prov-local', name:'Self-hosted (Ollama)'},
+ 'ollama-cloud': {svg:'ollama',        mono:'☁',  c:'--prov-ollama-cloud', name:'Ollama Cloud'},
+ 'openrouter':   {svg:'openrouter',    mono:'OR', c:'--prov-openrouter', name:'OpenRouter'},
+ 'copilot':      {svg:'githubcopilot', mono:'GH', c:'--prov-copilot', name:'GitHub Copilot'},
+ 'opencode-go':  {svg:'opencode',      mono:'OC', c:'--prov-opencode-go', name:'OpenCode Go'},
+ 'deepseek':     {svg:'deepseek',      mono:'DS', c:'--prov-deepseek', name:'DeepSeek'},
+ 'nous':         {svg:'',              mono:'N',  c:'--prov-nous', name:'Nous Portal'},
+ 'fireworks':    {svg:'',              mono:'FW', c:'--prov-fireworks', name:'Fireworks'},
+ 'moa':          {svg:'',              mono:'⬡',  c:'--prov-moa', name:'Mixture of agents'},
 };
+const rtColor = c => (c && String(c).startsWith('--') ? css(c) : c);
 function rtLogo(prov, size){
- const s = RT_LOGO[prov] || {svg:'', mono:(prov || '?').slice(0, 2).toUpperCase(), c:'var(--prov-unknown)', name:prov || 'unknown'};
+ const s = RT_LOGO[prov] || {svg:'', mono:(prov || '?').slice(0, 2).toUpperCase(), c:'--prov-unknown', name:prov || 'unknown'};
  const px = size || 18;
  const d = s.svg && RT_SVG[s.svg];
  const mark = d
  ? `<svg class="rt-logo-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`
  : `<span class="rt-mono">${esc(s.mono)}</span>`;
- return `<span class="rt-logo" title="${escA(s.name)}" role="img" aria-label="${escA(s.name)}" style="--c:${s.c};--px:${px}px">${mark}</span>`;
+ return `<span class="rt-logo" title="${escA(s.name)}" role="img" aria-label="${escA(s.name)}" style="--c:${rtColor(s.c)};--px:${px}px">${mark}</span>`;
 }
 
 function rtModel(e, hits){
@@ -4103,9 +4104,9 @@ function provOf(p, model, url){
 function provBadge(p){
  const key=(p||'').toLowerCase().trim();
  const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
- const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || 'var(--prov-unknown)', name:key||'unknown'};
+ const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
  const d = rt.svg && RT_SVG[rt.svg];
- const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
+ const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
  return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
     ${mark}${key}</span>`;
@@ -4125,10 +4126,10 @@ function provIcon(sm){
 function provLogoSvg(sm, px, provKey){
  px = px || 14;
  const key = provKey || MODEL_PROV[sm] || provOf('', sm, '');
- const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'var(--prov-unknown)', name:key||'unknown'};
+ const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'--prov-unknown', name:key||'unknown'};
  const d = s.svg && RT_SVG[s.svg];
- if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
- return `<span style="color:${s.c};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
+ if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${rtColor(s.c)}"><path d="${d}"/></svg>`;
+ return `<span style="color:${rtColor(s.c)};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
 }
 function ic(sm){ return provIcon(sm) + ' ' + sm; }
 
@@ -12262,8 +12263,8 @@ function lnKeydown(e){
 function lnColorOf(key){
  if (COLORS[key]) return COLORS[key];
  if (TOOLCOLORS[key]) return TOOLCOLORS[key];
- if (key === 'compaction') return 'var(--ln-compaction)';
- if (key === 'user') return 'var(--ln-user)';
+ if (key === 'compaction') return css('--ln-compaction');
+ if (key === 'user') return css('--ln-user');
  return `hsl(${hashHue(key||'')} 52% 58%)`;
 }
 

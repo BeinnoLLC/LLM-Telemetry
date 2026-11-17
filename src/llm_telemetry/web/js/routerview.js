@@ -9,7 +9,7 @@
  */
 import { $, esc, escA, trapFocus } from './palette.js';
 import { current } from './charts.js';
-import { DATA } from './main.js';
+import { DATA, css } from './main.js';
 import { renderEmpty } from './state.js';
 
 // One fixed hue per tier, so the same tier is the same colour in the chart,
@@ -35,28 +35,31 @@ export const RT_SVG = {
 };
 // Provider marks: a brand path when Simple Icons has one, else a monogram tile.
 export const RT_LOGO = {
-  'anthropic':    {svg:'anthropic',     mono:'A',  c:'var(--prov-anthropic)', name:'Anthropic'},
-  'openai-codex': {svg:'openai',        mono:'◉',  c:'var(--prov-openai)', name:'OpenAI (ChatGPT sign-in)'},
-  'openai':       {svg:'openai',        mono:'◉',  c:'var(--prov-openai)', name:'OpenAI'},
-  'gemini':       {svg:'googlegemini',  mono:'G',  c:'var(--prov-gemini)', name:'Google Gemini'},
-  'local':        {svg:'ollama',        mono:'▣',  c:'var(--prov-local)', name:'Self-hosted (Ollama)'},
-  'ollama-cloud': {svg:'ollama',        mono:'☁',  c:'var(--prov-ollama-cloud)', name:'Ollama Cloud'},
-  'openrouter':   {svg:'openrouter',    mono:'OR', c:'var(--prov-openrouter)', name:'OpenRouter'},
-  'copilot':      {svg:'githubcopilot', mono:'GH', c:'var(--prov-copilot)', name:'GitHub Copilot'},
-  'opencode-go':  {svg:'opencode',      mono:'OC', c:'var(--prov-opencode-go)', name:'OpenCode Go'},
-  'deepseek':     {svg:'deepseek',      mono:'DS', c:'var(--prov-deepseek)', name:'DeepSeek'},
-  'nous':         {svg:'',              mono:'N',  c:'var(--prov-nous)', name:'Nous Portal'},
-  'fireworks':    {svg:'',              mono:'FW', c:'var(--prov-fireworks)', name:'Fireworks'},
-  'moa':          {svg:'',              mono:'⬡',  c:'var(--prov-moa)', name:'Mixture of agents'},
+  'anthropic':    {svg:'anthropic',     mono:'A',  c:'--prov-anthropic', name:'Anthropic'},
+  'openai-codex': {svg:'openai',        mono:'◉',  c:'--prov-openai', name:'OpenAI (ChatGPT sign-in)'},
+  'openai':       {svg:'openai',        mono:'◉',  c:'--prov-openai', name:'OpenAI'},
+  'gemini':       {svg:'googlegemini',  mono:'G',  c:'--prov-gemini', name:'Google Gemini'},
+  'local':        {svg:'ollama',        mono:'▣',  c:'--prov-local', name:'Self-hosted (Ollama)'},
+  'ollama-cloud': {svg:'ollama',        mono:'☁',  c:'--prov-ollama-cloud', name:'Ollama Cloud'},
+  'openrouter':   {svg:'openrouter',    mono:'OR', c:'--prov-openrouter', name:'OpenRouter'},
+  'copilot':      {svg:'githubcopilot', mono:'GH', c:'--prov-copilot', name:'GitHub Copilot'},
+  'opencode-go':  {svg:'opencode',      mono:'OC', c:'--prov-opencode-go', name:'OpenCode Go'},
+  'deepseek':     {svg:'deepseek',      mono:'DS', c:'--prov-deepseek', name:'DeepSeek'},
+  'nous':         {svg:'',              mono:'N',  c:'--prov-nous', name:'Nous Portal'},
+  'fireworks':    {svg:'',              mono:'FW', c:'--prov-fireworks', name:'Fireworks'},
+  'moa':          {svg:'',              mono:'⬡',  c:'--prov-moa', name:'Mixture of agents'},
 };
+// RT_LOGO.c is a tokens.css custom-property name, never a literal: resolve it
+// at render time so the computed colour is what lands in the markup.
+export const rtColor = c => (c && String(c).startsWith('--') ? css(c) : c);
 export function rtLogo(prov, size){
-  const s = RT_LOGO[prov] || {svg:'', mono:(prov || '?').slice(0, 2).toUpperCase(), c:'var(--prov-unknown)', name:prov || 'unknown'};
+  const s = RT_LOGO[prov] || {svg:'', mono:(prov || '?').slice(0, 2).toUpperCase(), c:'--prov-unknown', name:prov || 'unknown'};
   const px = size || 18;
   const d = s.svg && RT_SVG[s.svg];
   const mark = d
     ? `<svg class="rt-logo-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`
     : `<span class="rt-mono">${esc(s.mono)}</span>`;
-  return `<span class="rt-logo" title="${escA(s.name)}" role="img" aria-label="${escA(s.name)}" style="--c:${s.c};--px:${px}px">${mark}</span>`;
+  return `<span class="rt-logo" title="${escA(s.name)}" role="img" aria-label="${escA(s.name)}" style="--c:${rtColor(s.c)};--px:${px}px">${mark}</span>`;
 }
 
 // "model" + its provider mark + how many router decisions it took this week.

@@ -9,7 +9,7 @@ import {
 import { current } from './charts.js';
 import { provLogoSvg, schemaProblem } from './views.js';
 import { pickView } from './router.js';
-import { DATA } from './main.js';
+import { DATA, css } from './main.js';
 
 export const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
 
@@ -797,8 +797,8 @@ export function lnKeydown(e){
 export function lnColorOf(key){
   if (COLORS[key]) return COLORS[key];
   if (TOOLCOLORS[key]) return TOOLCOLORS[key];
-  if (key === 'compaction') return 'var(--ln-compaction)';
-  if (key === 'user') return 'var(--ln-user)';
+  if (key === 'compaction') return css('--ln-compaction');
+  if (key === 'user') return css('--ln-user');
   return `hsl(${hashHue(key||'')} 52% 58%)`;
 }
 

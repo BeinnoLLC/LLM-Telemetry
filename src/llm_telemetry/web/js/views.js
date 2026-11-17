@@ -14,7 +14,7 @@ import {
 import { flowControls, renderFlow } from './flow.js';
 import { attachZoom } from './zoom.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
-import { renderRouterView, routerStat, RT_SVG, RT_LOGO } from './routerview.js';
+import { renderRouterView, routerStat, RT_SVG, RT_LOGO, rtColor } from './routerview.js';
 import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
@@ -207,9 +207,9 @@ export function provOf(p, model, url){
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
   const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
-  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || 'var(--prov-unknown)', name:key||'unknown'};
+  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
   const d = rt.svg && RT_SVG[rt.svg];
-  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
+  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
     style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
     ${mark}${key}</span>`;
@@ -236,10 +236,10 @@ export function provIcon(sm){
 export function provLogoSvg(sm, px, provKey){
   px = px || 14;
   const key = provKey || MODEL_PROV[sm] || provOf('', sm, '');
-  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'var(--prov-unknown)', name:key||'unknown'};
+  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'--prov-unknown', name:key||'unknown'};
   const d = s.svg && RT_SVG[s.svg];
-  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
-  return `<span style="color:${s.c};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${rtColor(s.c)}"><path d="${d}"/></svg>`;
+  return `<span style="color:${rtColor(s.c)};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
 }
 // Prefix a provider glyph to a model label for chart axes/legends.
 export function resendOf(r){

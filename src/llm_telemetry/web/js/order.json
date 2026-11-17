@@ -167,6 +167,10 @@
     },
     {
       "mod": "routerview",
+      "name": "rtColor"
+    },
+    {
+      "mod": "routerview",
       "name": "rtLogo"
     },
     {
