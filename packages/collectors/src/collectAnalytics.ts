@@ -25,6 +25,7 @@ import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collect
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
+import { buildContextForDb } from "./contextCompaction.js";
 import { update as updateBandwidth } from "./bandwidthHistory.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
@@ -505,6 +506,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     const con = new DatabaseSync(p.db, { readOnly: true });
     try {
       profiles[p.name] = buildProfile(p.name, con, catalog, cfg);
+      profiles[p.name]!["context"] = buildContextForDb(con, now.getTime() / 1000);
     } finally {
       con.close();
     }

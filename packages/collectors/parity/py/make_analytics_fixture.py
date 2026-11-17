@@ -130,6 +130,18 @@ def build_state_db(path, now):
             "insert into messages (session_id, role, content, tool_name, effect_disposition,"
             " finish_reason, timestamp, token_count) values (?,?,?,?,?,?,?,?)",
             (sid, role, content, tool, disp, fin, now - int(off), tc))
+    # context & compaction: a compacted run (then its summary) in s-root, a
+    # second run left open at the end of s-child, and a live cooldown on s-cron.
+    for sid, role, content, comp, off in [
+        ("s-root", "user", "q" * 300, 1, 4.95 * H), ("s-root", "assistant", "a" * 600, 1, 4.94 * H),
+        ("s-root", "user", "summary " + "s" * 40, 0, 4.93 * H),
+        ("s-child", "user", "w" * 900, 0, 4.4 * H), ("s-child", "assistant", "x" * 90, 1, 4.3 * H),
+    ]:
+        con.execute("insert into messages (session_id, role, content, timestamp, compacted) values (?,?,?,?,?)",
+                    (sid, role, content, now - int(off), comp))
+    con.execute("update sessions set compression_failure_cooldown_until=?, compression_failure_error=? where id='s-cron'",
+                (now + 600, "overflow\nsecond line"))
+    con.execute("update sessions set compression_failure_cooldown_until=? where id='s-root'", (now - 600,))
     # async delegations: (id, state, dispatched_off, completed_off, result, task)
     deleg = [
         ("d1", "completed", 3 * H, 2.9 * H,

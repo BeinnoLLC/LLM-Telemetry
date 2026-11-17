@@ -157,6 +157,23 @@ result=[{k:s.get(k,[]) for k in r},{k:s2.get(k,[]) for k in r}]`;
   });
 });
 
+describe("context payload matches Python", () => {
+  it("build_context_payload per profile (growth, compaction runs, reasoning, cooldown)", () => {
+    const now = new Date();
+    const out = collectAnalytics({ inputsDir: inputs, reportsDir: makeTmpDir("an-ctx-"), now });
+    const got = Object.fromEntries(Object.entries(out["profiles"] as Record<string, Record<string, unknown>>)
+      .map(([n, p]) => [n, p["context"]]));
+    const want = pyAnalytics(inputs, dbPath, `
+from llm_telemetry import collect_context_compaction as CX
+result=CX.build_context_payload(now=${now.getTime() / 1000})`);
+    expect(got).toEqual(want);
+    const a = got["alpha"] as { sessions: { compactions: unknown[] }[]; cooldowns: unknown[]; reasoning_by_model: unknown[] };
+    expect(a.sessions.some((s) => s.compactions.length > 0)).toBe(true);
+    expect(a.cooldowns).toHaveLength(1);
+    expect(a.reasoning_by_model.length).toBeGreaterThan(0);
+  });
+});
+
 describe("tool reliability matches Python", () => {
   it("_pXX over several lengths and percentiles", () => {
     for (const n of [0, 1, 2, 3, 4, 7, 10, 21]) {
