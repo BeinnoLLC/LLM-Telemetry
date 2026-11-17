@@ -22,6 +22,7 @@ import { get as getConfig, resolveNodeReportsDir, type Config } from "./config.j
 import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
+import { collectRouter } from "./collectRouter.js";
 import { fetchCatalog } from "./pricingFetch.js";
 
 export interface CliIo {
@@ -171,7 +172,34 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  router: stub("router — write router-data.json", "T-16"),
+  router: {
+    summary: "router — write router-data.json [-o|--out PATH]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      let outArg: string | undefined;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i]!;
+        if ((a === "-o" || a === "--out") && i + 1 < args.length) outArg = args[++i];
+        else if (a.startsWith("--out=")) outArg = a.slice("--out=".length);
+        else {
+          io.err(`usage: router [-o OUT]\nrouter: error: unrecognized arguments: ${a}`);
+          return 2;
+        }
+      }
+      const c = cfg();
+      const payload = collectRouter({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "router-data.json";
+      const res = writeArtifact(filename, payload, {
+        tag: "router", cfg: c, ...(outDir ? { outDir } : {}),
+      });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { tier_router?: { tiers?: unknown[] } | null }>;
+      const names = Object.keys(profiles);
+      const tiers = names.reduce((acc, n) => acc + (profiles[n]?.tier_router?.tiers?.length ?? 0), 0);
+      io.out(`${res.path}  (${names.length} profiles, ${tiers} router tiers)`);
+      return 0;
+    },
+  },
   quota: stub("quota — write quota-data.json + history", "T-16"),
   serve: stub("serve — serve reports/ (replaced by the Next.js app)", "T-19"),
   doctor: stub("doctor — read-only preflight", "T-27"),

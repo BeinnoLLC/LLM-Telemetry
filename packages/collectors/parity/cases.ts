@@ -12,6 +12,9 @@
  */
 
 import { collectAnalytics } from "../src/collectAnalytics.js";
+import { collectRouter } from "../src/collectRouter.js";
+import { Config, loadWithAgentHome } from "../src/config.js";
+import { join } from "node:path";
 import type { SchemaTag } from "../src/schemaCheck.js";
 
 export interface ParityCase {
@@ -31,6 +34,15 @@ export interface ParityCase {
    * generator under py/) instead of the JSON fixture: the Python side runs its
    * real collector (py/produce_analytics.py), the Node side `nodeCollector`. */
   dbInputs?: boolean;
+  /** Generated-inputs case for a collector other than analytics (T-16): the
+   * `py/` scripts that build the inputs dir and run the real Python collector
+   * on it (`<generator> OUT`, `<producer> INPUTS OUT ARTIFACT`). */
+  inputs?: { generator: string; producer: string };
+}
+
+/** Config for a generated inputs dir (profiles under <inputs>/agent). */
+export function inputsConfig(inputsDir: string): Config {
+  return loadWithAgentHome(join(inputsDir, "config.json"), join(inputsDir, "agent"));
 }
 
 export const CASES: readonly ParityCase[] = [
@@ -59,6 +71,9 @@ export const CASES: readonly ParityCase[] = [
     fixture: "router-data.json",
     artifact: "router-data.json",
     tag: "router",
+    inputs: { generator: "make_router_fixture.py", producer: "produce_router.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectRouter({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
   },
 ];
 
