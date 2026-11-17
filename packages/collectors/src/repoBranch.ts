@@ -2,6 +2,7 @@
 
 import { CWD_DENYLIST, normalize, type SessionInfo } from "./projects.js";
 import { pyBasename, pyRound } from "./pySemantics.js";
+import { cmpStr } from "./pySort.js";
 
 export const UNATTR = "Unattributed";
 
@@ -29,18 +30,6 @@ export interface RepoOut {
 
 interface Acc { sessions: Set<string>; calls: number; tok: number; cost: number }
 const newAcc = (): Acc => ({ sessions: new Set(), calls: 0, tok: 0, cost: 0 });
-
-/** Python str ordering is by code point. */
-function cmpStr(a: string, b: string): number {
-  const x = Array.from(a);
-  const y = Array.from(b);
-  const n = Math.min(x.length, y.length);
-  for (let i = 0; i < n; i++) {
-    const d = (x[i] as string).codePointAt(0)! - (y[i] as string).codePointAt(0)!;
-    if (d !== 0) return d;
-  }
-  return x.length - y.length;
-}
 
 /** Python `(name == UNATTR, name)` tuple comparison. */
 function cmpName(a: string, b: string): number {
