@@ -19,6 +19,7 @@ import { makeTmpDir } from "./helpers.js";
 import { buildAlerts } from "../../src/alerts.js";
 import { buildSessionIndexPayload, cwdTail } from "../../src/sessionIndex.js";
 import { buildOrchestration } from "../../src/orchestration.js";
+import { unreadable } from "../../src/unreadable.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
 
 let inputs = "";
@@ -504,5 +505,22 @@ describe("delegations match Python", () => {
     const want = pyAnalytics(inputs, dbPath, "from llm_telemetry import delegations\nresult=delegations.collect(con)");
     expect(got).not.toBeNull();
     expect(got).toEqual(want);
+  });
+});
+
+describe("unreadable() text matches Python", () => {
+  it("garbage, no-table, missing and directory paths", () => {
+    const dir = makeTmpDir("an-unread-");
+    fs.writeFileSync(join(dir, "bad.db"), "garbage garbage garbage garbage garbage garbage");
+    const empty = new DatabaseSync(join(dir, "empty.db"));
+    empty.exec("create table x(a)");
+    empty.close();
+    const paths = [join(dir, "bad.db"), join(dir, "empty.db"), join(dir, "nope.db"), dir, dbPath];
+    for (const p of paths) {
+      const want = pyAnalytics(inputs, dbPath, `result=C.unreadable(${JSON.stringify(p)})`);
+      expect(unreadable(p)).toEqual(want);
+    }
+    expect(unreadable(dbPath)).toBeNull();
+    expect(unreadable(join(dir, "bad.db"))).toBe("DatabaseError: file is not a database");
   });
 });

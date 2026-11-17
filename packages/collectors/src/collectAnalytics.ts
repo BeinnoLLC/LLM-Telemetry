@@ -28,6 +28,9 @@ import { stamp } from "./schema.js";
 import { buildOrchestration } from "./orchestration.js";
 import { buildSessionIndexForDb } from "./sessionIndex.js";
 import { buildAlerts } from "./alerts.js";
+import { unreadable } from "./unreadable.js";
+
+export { unreadable };
 import { buildContextForDb } from "./contextCompaction.js";
 import { update as updateBandwidth } from "./bandwidthHistory.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
@@ -410,21 +413,6 @@ function tilde(p: string, home: string = os.homedir()): string {
 function localIso(d: Date): string {
   const p = (n: number): string => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-
-/** unreadable(): why a state.db cannot be read, or null if it can. */
-export function unreadable(db: string): string | null {
-  try {
-    const con = new DatabaseSync(db, { readOnly: true });
-    try {
-      con.prepare("select 1 from session_model_usage limit 1").all();
-    } finally {
-      con.close();
-    }
-  } catch (e) {
-    return `OperationalError: ${e instanceof Error ? e.message : String(e)}`;
-  }
-  return null;
 }
 
 function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Row {
