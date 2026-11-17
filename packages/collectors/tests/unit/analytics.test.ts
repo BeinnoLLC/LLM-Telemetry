@@ -16,6 +16,7 @@ import { collect as collectDelegations } from "../../src/delegations.js";
 import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
+import { buildAlerts } from "../../src/alerts.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
 
 let inputs = "";
@@ -171,6 +172,59 @@ result=CX.build_context_payload(now=${now.getTime() / 1000})`);
     expect(a.sessions.some((s) => s.compactions.length > 0)).toBe(true);
     expect(a.cooldowns).toHaveLength(1);
     expect(a.reasoning_by_model.length).toBeGreaterThan(0);
+  });
+});
+
+describe("alerts match Python", () => {
+  const now = 1_900_000_000;
+  const py = (payload: unknown) => pyCall("alerts", "build_alerts", [payload]);
+
+  it("every rule tripped on a synthetic payload, plus each rule's boundary", () => {
+    const payload = {
+      _now: now,
+      rows: [{ model: "m-b", cost_class: "metered", priced: false }, { model: null, cost_class: "metered", priced: 0 },
+        { model: "ok", cost_class: "metered", priced: true }, { model: "loc", cost_class: "local", priced: false },
+        ...["a", "c", "d", "e", "f"].map((m) => ({ model: m, cost_class: "metered", priced: false }))],
+      delegations: { children: 8, failed: 3, tools: [
+        { tool: "t1", calls: 5, rate: 50 }, { tool: "t2", calls: 9, rate: 60.5 }, { tool: "few", calls: 4, rate: 0 }] },
+      recent_ended: [{ end_reason: "ws_orphan_reap", ended_at: now - 3600 },
+        { end_reason: "startup_orphan_reap", ended_at: now - 90000 }, { end_reason: "completed", ended_at: now }],
+      agents: [{ state: "stale", age_s: 700, backend: "b1" }, { state: "dead", age_s: 1300, backend: "b2" },
+        { state: "ok", age_s: 9999, backend: "b3" }],
+      live: [{ id: "l1", title: "", started_at: now - 4 * 3600 }, { id: "l2", title: "T", started_at: now - 5 * 3600 },
+        { id: "l3", started_at: now - 60 }],
+      bandwidth_daily: [{ date: "2026-01-01", up_bytes: 10, down_bytes: 10 }, { date: "2026-01-02", up_bytes: 10, down_bytes: 10 },
+        { date: "2026-01-03", up_bytes: 500, down_bytes: 100 }],
+      context: { cooldowns: [{ id: "c1", title: "", cooldown_until: now + 5 }] },
+    };
+    const want = py(payload) as { rule: string }[];
+    expect(buildAlerts(payload)).toEqual(want);
+    expect(want).toHaveLength(8);
+    for (const mutate of [
+      { delegations: { children: 4, failed: 1 } }, { delegations: { children: 0 } }, { delegations: {} },
+      { rows: [] }, { agents: [{ state: "stale", age_s: 600 }] }, { live: [{ id: "x", started_at: now - 3 * 3600 }] },
+      { bandwidth_daily: [{ date: "d1", up_bytes: 1 }, { date: "d2", up_bytes: 3 }] },
+      { bandwidth_daily: [{ date: "d1", up_bytes: 0 }, { date: "d2", up_bytes: 3 }] },
+      { bandwidth_daily: [{ date: "d1", up_bytes: 1 }] }, { context: {} }, { context: { cooldowns: [{ id: "only" }] } },
+      { recent_ended: [{ end_reason: "ws_orphan_reap", ended_at: now - 86400 }] },
+      { delegations: { children: 3, failed: 1, tools: [{ tool: "z", calls: 5, rate: 80 }, { tool: "y", calls: 5 }] } },
+    ]) {
+      const pl = { _now: now, ...mutate };
+      expect(buildAlerts(pl), JSON.stringify(mutate)).toEqual(py(pl));
+    }
+  });
+
+  it("the fixture profiles' real payloads", () => {
+    const nowDate = new Date();
+    const out = collectAnalytics({ inputsDir: inputs, reportsDir: makeTmpDir("an-al-"), now: nowDate });
+    const profiles = out["profiles"] as Record<string, Record<string, unknown>>;
+    for (const [n, p] of Object.entries(profiles)) {
+      const { alerts, ...rest } = p;
+      expect(alerts, n).toEqual(py({ ...rest, _now: nowDate.getTime() / 1000 }));
+    }
+    const rules = (profiles["alpha"]?.["alerts"] as { rule: string }[]).map((a) => a.rule);
+    expect(rules).toContain("delegation_failure_rate");
+    expect(rules).toContain("compression_failure");
   });
 });
 

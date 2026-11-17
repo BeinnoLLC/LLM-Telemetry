@@ -25,6 +25,7 @@ import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collect
 import { forProfile } from "./failures.js";
 import { collect as collectDelegations } from "./delegations.js";
 import { stamp } from "./schema.js";
+import { buildAlerts } from "./alerts.js";
 import { buildContextForDb } from "./contextCompaction.js";
 import { update as updateBandwidth } from "./bandwidthHistory.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
@@ -519,6 +520,12 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
     opts.today,
   );
   for (const [n, p] of Object.entries(profiles)) p["bandwidth_daily"] = series[n] ?? [];
+  const nowTs = now.getTime() / 1000;
+  for (const p of Object.values(profiles)) {
+    p["_now"] = nowTs;
+    p["alerts"] = buildAlerts(p);
+    delete p["_now"];
+  }
   const payload: AnalyticsPayload = {
     generated: localIso(now),
     profiles,
