@@ -130,3 +130,57 @@ export function tailErrors(cfg: Config, now: number, limit = 60, windowS = 7200)
   out.sort((a, b) => b.ts - a.ts);
   return out.slice(0, limit);
 }
+
+export interface FailStat { total: number; last: string; last_msg: string; last_kind: string; [kind: string]: number | string }
+export interface FailEvent { model: string; when: string; kind: string; msg: string }
+
+/** failures.parse: per-model failure stats + newest 60 events from one errors.log. */
+export function parseErrors(path: string, sinceDays = 7, nowS = Date.now() / 1000): [Record<string, FailStat>, FailEvent[]] {
+  const stats: Record<string, FailStat> = {};
+  const events: FailEvent[] = [];
+  if (!path || !fs.existsSync(path)) return [stats, events];
+  const cutoff = nowS - sinceDays * 86400;
+  let lines: string[];
+  try {
+    const raw = fs.readFileSync(path, "utf8").split("\n");
+    if (raw.at(-1) === "") raw.pop();
+    lines = raw.slice(-60000);
+  } catch {
+    return [stats, events];
+  }
+  for (const line of lines) {
+    const kind = classify(line);
+    if (!kind) continue;
+    const low = line.toLowerCase();
+    if (!line.includes("API call failed") && !low.includes("auxiliary") && !low.includes("unhealthy")) continue;
+    const kv = /provider=([\w.:-]+)\s+model=([^\s|]+)/.exec(line);
+    const model = kv ? kv[2] : (MODEL_ONLY.exec(line)?.[1] ?? null);
+    if (!model) continue;
+    const ts = TS_RE.exec(line)?.[1] ?? "";
+    if (ts) {
+      const t = parseLocalTs(ts);
+      if (t !== null && t < cutoff) continue;
+    }
+    const s = (stats[model] ??= { total: 0, last: "", last_msg: "", last_kind: "" });
+    s[kind] = ((s[kind] as number | undefined) ?? 0) + 1;
+    s.total += 1;
+    let msg = line.trim();
+    for (const marker of ["HTTP ", "Error code: ", "error_type="]) {
+      const i = msg.indexOf(marker);
+      if (i !== -1) { msg = msg.slice(i); break; }
+    }
+    msg = msg.slice(0, 150);
+    events.push({ model, when: ts, kind, msg });
+    if (ts >= s.last) { s.last = ts; s.last_kind = kind; s.last_msg = msg; }
+  }
+  // Python sort(reverse=True) is stable for equal keys (keeps original order).
+  const idx = events.map((e, i) => [e, i] as const);
+  idx.sort((a, b) => (a[0].when < b[0].when ? 1 : a[0].when > b[0].when ? -1 : a[1] - b[1]));
+  return [stats, idx.map(([e]) => e).slice(0, 60)];
+}
+
+/** failures.for_profile */
+export function forProfile(cfg: Config, name: string, sinceDays = 7): [Record<string, FailStat>, FailEvent[]] {
+  const p = cfg.liveProfiles().find((x) => x.name === name);
+  return parseErrors(p ? p.errorsLog : "", sinceDays);
+}

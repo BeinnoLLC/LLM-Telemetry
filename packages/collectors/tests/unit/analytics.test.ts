@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildLiveRows, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildHealth, buildLiveRows, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
 import { computeGaps, type TurnRow } from "../../src/latency.js";
 import { canonicalEndpoint } from "../../src/bandwidth.js";
+import { forProfile } from "../../src/failures.js";
 import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
@@ -305,5 +306,35 @@ result=live`) as Record<string, unknown>[];
       expect(Math.abs((got[i]!["idle_s"] as number) - (want[i]!["idle_s"] as number))).toBeLessThanOrEqual(5);
     }
     expect(norm(got)).toEqual(norm(want));
+  });
+});
+
+describe("failures and health match Python", () => {
+  it("for_profile, failures_recent and health", () => {
+    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
+    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
+    let cfg;
+    try { cfg = load(join(inputs, "config.json")); } finally {
+      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
+    }
+    const [stats, recent] = forProfile(cfg, "alpha");
+    const rows = fetchRows(con);
+    const got = { stats, recent, health: buildHealth(rows, stats) };
+    const want = pyAnalytics(inputs, dbPath, `from llm_telemetry import failures
+fs_,fr=failures.for_profile("alpha")
+rows=C.fetch_rows(con)
+ok={}
+for r in rows: ok[r["model"]]=ok.get(r["model"],0)+(r["calls"] or 0)
+health=[]
+for model in set(list(ok)+list(fs_)):
+    o=ok.get(model,0); f=fs_.get(model,{}); bad=f.get("total",0); tot=o+bad
+    health.append({"model":model,"ok":o,"fail":bad,"total":tot,"rate":round(100.0*o/tot,1) if tot else None,
+      "kinds":{k:v for k,v in f.items() if k not in ("total","last","last_msg","last_kind")},
+      "last":f.get("last",""),"last_kind":f.get("last_kind",""),"last_msg":f.get("last_msg","")})
+health.sort(key=lambda h:(-h["fail"],-h["total"]))
+result={"stats":fs_,"recent":fr,"health":health}`) as typeof got;
+    expect(Object.keys(stats).length).toBeGreaterThan(1);
+    expect(recent.length).toBeGreaterThan(2);
+    expect(got).toEqual(want);
   });
 });

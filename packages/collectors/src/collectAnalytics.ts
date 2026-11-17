@@ -22,6 +22,7 @@ import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
 import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
 import { LIVE_META, resolveTitle, sourceLabel, classifySession } from "./collectLive.js";
+import { forProfile } from "./failures.js";
 import { stamp } from "./schema.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
@@ -249,6 +250,26 @@ export function buildLiveRows(con: Con, name: string) {
   return live;
 }
 
+/** `health` block: ok calls (usage rows) vs log failures per model. */
+export function buildHealth(rows: Row[], failStats: Record<string, Record<string, number | string>>) {
+  const okBy: Record<string, number> = {};
+  for (const r of rows) okBy[r["model"] as string] = (okBy[r["model"] as string] ?? 0) + ((r["calls"] as number) || 0);
+  const models = [...new Set([...Object.keys(okBy), ...Object.keys(failStats)])];
+  const health = models.map((model) => {
+    const ok = okBy[model] ?? 0;
+    const fs_ = failStats[model] ?? {};
+    const bad = (fs_["total"] as number | undefined) ?? 0;
+    const tot = ok + bad;
+    const kinds: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(fs_)) if (!["total", "last", "last_msg", "last_kind"].includes(k)) kinds[k] = v;
+    return {
+      model, ok, fail: bad, total: tot, rate: tot ? pyRound(100.0 * ok / tot, 1) : null,
+      kinds, last: fs_["last"] ?? "", last_kind: fs_["last_kind"] ?? "", last_msg: fs_["last_msg"] ?? "",
+    };
+  });
+  return health.sort((a, b) => (b.fail - a.fail) || (b.total - a.total));
+}
+
 /** build_latency: SQL-to-payload glue over latency.ts. */
 export function buildLatency(con: Con, cfg: Config) {
   const rows = tuples(con, SQL.ASSISTANT_TURNS) as TurnRow[];
@@ -398,6 +419,7 @@ export function unreadable(db: string): string | null {
 }
 
 function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Row {
+  const [failStats, failRecent] = forProfile(cfg, name);
   const rows = fetchRows(con);
   enrichRows(rows, catalog, cfg);
   const hourRows = fetchHourRows(con);
@@ -432,6 +454,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
     concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
+    health: buildHealth(rows, failStats), failures_recent: failRecent,
     live: buildLiveRows(con, name), resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,

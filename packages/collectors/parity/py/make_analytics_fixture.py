@@ -134,6 +134,24 @@ def build_state_db(path, now):
     con.close()
 
 
+def build_errors_log(home, now):
+    """errors.log lines timed relative to now (local time, like the agent writes)."""
+    def ts(off):
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - int(off)))
+    lines = [
+        ts(2 * H) + " WARNING API call failed provider=openai model=gpt-4o HTTP 429 rate limit exceeded",
+        ts(1.5 * H) + " ERROR API call failed provider=openai model=gpt-4o HTTP 503 overloaded",
+        ts(1 * H) + " WARNING auxiliary compression model=llama3 request timed out",
+        ts(40 * 60) + " ERROR API call failed provider=openrouter model=qwen/qwen3-coder Error code: 401 unauthorized",
+        ts(30 * 60) + " INFO unrelated line model=gpt-4o 429",
+        ts(10 * D) + " ERROR API call failed provider=openai model=gpt-4o HTTP 500 internal server",
+        "not-a-timestamp ERROR API call failed model=odd HTTP 502 bad gateway",
+    ]
+    os.makedirs(os.path.join(home, "logs"), exist_ok=True)
+    with open(os.path.join(home, "logs", "errors.log"), "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
 def build_analytics_db(home, now):
     import sys as _sys
     _sys.path.insert(0, os.path.join(REPO, "src"))
@@ -157,6 +175,7 @@ def main(argv):
     for name in ("alpha", "beta-bot"):
         home = os.path.join(agent, "profiles", name)
         build_state_db(os.path.join(home, "state.db"), now)
+        build_errors_log(home, now)
         profiles.append({"name": name, "home": home})
     home_dir = os.path.join(out, "home")
     build_analytics_db(home_dir, now)
