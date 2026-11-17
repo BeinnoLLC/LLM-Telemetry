@@ -11,6 +11,8 @@ import type { Config } from "./config.js";
 import type { Catalog } from "./pricing.js";
 import { NOUS_PREFIX } from "./pricing.js";
 import { stamp } from "./schema.js";
+import { assertSafeOutDir, assertSafeTarget } from "./artifactWriter.js";
+import { resolveNodeReportsDir } from "./config.js";
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/models";
 export const NOUS_URL = "https://inference-api.nousresearch.com/v1/models";
@@ -27,6 +29,11 @@ export interface FetchOpts {
   /** Seconds since epoch; default Date.now()/1000. */
   now?: number;
   env?: NodeJS.ProcessEnv;
+  /** Dir holding `pricing-cache.json` / `nous-pricing-cache.json`. The Node
+   * stack passes its own reports dir (never the Python one: single-writer
+   * rule). Default: the Node reports dir. A Python reports dir is refused
+   * up front (ArtifactWriteError) unless LLM_TELEMETRY_SHARED_REPORTS=1. */
+  cacheDir?: string;
 }
 
 type Json = Record<string, unknown>;
@@ -56,9 +63,19 @@ function readJson(file: string): Json {
   return JSON.parse(fs.readFileSync(file, "utf8")) as Json;
 }
 
-function writeCache(file: string, payload: Json): void {
+/** Single-writer guard + temp file and rename, like artifactWriter. */
+function writeCache(file: string, payload: Json, cfg: Config): void {
+  assertSafeOutDir(path.dirname(file), cfg);
+  assertSafeTarget(file, cfg);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(stamp(payload)));
+  const tmp = `${file}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(stamp(payload)));
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch { /* tmp never existed */ }
+    throw err;
+  }
 }
 
 async function getJson(url: string, fetchFn: FetchFn): Promise<unknown> {
@@ -77,16 +94,21 @@ function isoNow(nowS: number): string {
 /** Shared by both catalogues. `fetchedFresh` decides if a cache is still fresh
  * (OpenRouter honours the `fetched` field, Nous only the file mtime). */
 async function fetchCached(
-  url: string, cache: string, shape: (raw: Json) => Catalog, o: FetchOpts,
+  cfg: Config, url: string, cache: string, shape: (raw: Json) => Catalog, o: FetchOpts,
   freshAge: (cached: Json, mtimeS: number) => number, patchStale: (m: Json, nowS: number) => void,
 ): Promise<[Catalog, string]> {
   const nowS = o.now ?? Date.now() / 1000;
+  assertSafeTarget(cache, cfg); // before any read or network: never a Python dir
   const exists = fs.existsSync(cache);
   if (!o.force && exists) {
     try {
       const cached = readJson(cache);
       const mtimeS = fs.statSync(cache).mtimeMs / 1000;
-      if (nowS - freshAge(cached, mtimeS) < TTL_S) return [cached["models"] as Catalog, "cache"];
+      // Python: `cached["models"]` raises KeyError inside the try, so a fresh
+      // cache without `models` falls through to the network.
+      if (nowS - freshAge(cached, mtimeS) < TTL_S && "models" in cached) {
+        return [cached["models"] as Catalog, "cache"];
+      }
     } catch { /* unreadable cache: fall through to the network */ }
   }
   try {
@@ -95,7 +117,7 @@ async function fetchCached(
     writeCache(cache, {
       fetched: nowS, fetched_at: isoNow(nowS), source: url, ttl_s: TTL_S,
       status: "ok", last_error: null, models,
-    });
+    }, cfg);
     return [models, "live"];
   } catch (e) {
     const label = pyName(e);
@@ -110,7 +132,7 @@ async function fetchCached(
         merged["last_error"] = `${label}: ${pyMsg(e)}`;
         merged["source"] = url;
         patchStale(merged, nowS);
-        writeCache(cache, merged);
+        writeCache(cache, merged, cfg);
         return [models as Catalog, `stale (${label})`];
       } catch { /* corrupt cache while offline: built-in rates take over */ }
     }
@@ -140,7 +162,7 @@ export function shapeNous(raw: Json): Catalog {
 
 export function fetchOpenRouter(cfg: Config, o: FetchOpts = {}): Promise<[Catalog, string]> {
   return fetchCached(
-    OPENROUTER_URL, path.join(cfg.reports_dir, "pricing-cache.json"), shapeOpenRouter, o,
+    cfg, OPENROUTER_URL, path.join(o.cacheDir ?? resolveNodeReportsDir(cfg), "pricing-cache.json"), shapeOpenRouter, o,
     (c, mtimeS) => Number(c["fetched"] || mtimeS),
     (m, nowS) => { m["fetched_at"] = m["fetched_at"] || isoNow(nowS); },
   );
@@ -148,7 +170,7 @@ export function fetchOpenRouter(cfg: Config, o: FetchOpts = {}): Promise<[Catalo
 
 export function fetchNous(cfg: Config, o: FetchOpts = {}): Promise<[Catalog, string]> {
   return fetchCached(
-    NOUS_URL, path.join(cfg.reports_dir, "nous-pricing-cache.json"), shapeNous, o,
+    cfg, NOUS_URL, path.join(o.cacheDir ?? resolveNodeReportsDir(cfg), "nous-pricing-cache.json"), shapeNous, o,
     (_c, mtimeS) => mtimeS, () => undefined,
   );
 }

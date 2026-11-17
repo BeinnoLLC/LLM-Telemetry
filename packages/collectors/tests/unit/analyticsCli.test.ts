@@ -68,7 +68,20 @@ describe("analytics CLI", () => {
     const nodeReports = join(dir, "node-reports");
     const cfg = hermeticEnv(nodeReports);
     expect(await runCli(["analytics"], capture().io, cfg)).toBe(0);
-    expect(listDir(nodeReports)).toEqual(["analytics-data.json"]);
+    expect(listDir(nodeReports)).toEqual(["analytics-data.json", "bandwidth-history.json"]);
+  });
+
+  it("never creates or writes cfg.reports_dir (single-writer rule), even with -o", async () => {
+    const dir = makeTmpDir("acli-sw-");
+    const nodeReports = join(dir, "node-reports");
+    const cfg = hermeticEnv(nodeReports);
+    const pyReports = cfg().reports_dir;
+    expect(pyReports).toBeTruthy();
+    expect(fs.existsSync(pyReports)).toBe(false);
+    expect(await runCli(["analytics"], capture().io, cfg)).toBe(0);
+    expect(await runCli(["analytics", "-o", join(dir, "x.json")], capture().io, cfg)).toBe(0);
+    expect(fs.existsSync(pyReports)).toBe(false);
+    expect(listDir(nodeReports)).toEqual(["analytics-data.json", "bandwidth-history.json"]); // no .tmp
   });
 
   it("an unknown argument is a usage error (exit 2) and writes nothing", async () => {

@@ -18,8 +18,8 @@
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
-import { get as getConfig, type Config } from "./config.js";
-import { writeArtifact } from "./artifactWriter.js";
+import { get as getConfig, resolveNodeReportsDir, type Config } from "./config.js";
+import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { fetchCatalog } from "./pricingFetch.js";
@@ -151,11 +151,14 @@ export const COMMANDS: Record<string, Command> = {
         }
       }
       const c = cfg();
-      const [models, source] = await fetchCatalog(c);
-      const payload = collectAnalytics({ cfg: c, catalog: { models, source } }) as unknown as Record<string, unknown>;
-      // Python defaults to <reports>/analytics-data.json; the Node writer's
-      // own default (the non-production Node reports dir) keeps Python
-      // artifacts untouched until cutover.
+      // Every side file (price caches, bandwidth ledger) and the artifact go
+      // to the Node reports dir, never cfg.reports_dir (single-writer rule).
+      const nodeReports = resolveNodeReportsDir(c);
+      assertSafeOutDir(nodeReports, c);
+      const [models, source] = await fetchCatalog(c, { cacheDir: nodeReports });
+      const payload = collectAnalytics({
+        cfg: c, catalog: { models, source }, reportsDir: nodeReports,
+      }) as unknown as Record<string, unknown>;
       const outDir = outArg ? path.dirname(outArg) : undefined;
       const filename = outArg ? path.basename(outArg) : "analytics-data.json";
       const res = writeArtifact(filename, payload, {
