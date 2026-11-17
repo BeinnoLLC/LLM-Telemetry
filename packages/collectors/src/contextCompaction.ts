@@ -1,7 +1,10 @@
 /** Port of `context_compaction.py` and `collect_context_compaction.py` (P10-09):
  * context growth, compaction yield and reasoning share per profile. */
 
-import type { DatabaseSync } from "node:sqlite";
+import * as fs from "node:fs";
+import { DatabaseSync } from "node:sqlite";
+import type { Config } from "./config.js";
+import { unreadable } from "./unreadable.js";
 import { estimateTokens } from "./bandwidth.js";
 import { cmpStr } from "./pySort.js";
 import { pyRound, pyRound0 } from "./pySemantics.js";
@@ -148,4 +151,20 @@ export function buildContextForDb(con: DatabaseSync, now: number, maxSessions: n
     .map((r) => { const v = Object.values(r); return { model: v[0], reasoning_tokens: v[1], output_tokens: v[2] } as UsageRow; });
   const cool = con.prepare(COOLDOWN_SESSIONS).all() as unknown as CooldownRow[];
   return buildContext(sc, sk, usage, cool, now);
+}
+
+/** Port of `build_context_payload`: {profile: context} over every live profile.
+ * Like Python, a profile whose DB is unreadable is skipped, not fatal. */
+export function buildContextPayload(cfg: Config, now: number = Date.now() / 1000, maxSessions: number = MAX_SESSIONS) {
+  const out: Record<string, ReturnType<typeof buildContextForDb>> = {};
+  for (const p of cfg.profiles) {
+    if (!fs.existsSync(p.db) || unreadable(p.db)) continue;
+    const con = new DatabaseSync(p.db, { readOnly: true });
+    try {
+      out[p.name] = buildContextForDb(con, now, maxSessions);
+    } finally {
+      con.close();
+    }
+  }
+  return out;
 }

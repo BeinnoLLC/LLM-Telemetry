@@ -17,9 +17,10 @@ import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
 import { buildAlerts } from "../../src/alerts.js";
-import { buildSessionIndexPayload, cwdTail } from "../../src/sessionIndex.js";
+import { buildSessionIndexByProfile, buildSessionIndexPayload, cwdTail } from "../../src/sessionIndex.js";
 import { buildOrchestration } from "../../src/orchestration.js";
 import { unreadable } from "../../src/unreadable.js";
+import { buildContextPayload } from "../../src/contextCompaction.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
 
 let inputs = "";
@@ -522,5 +523,35 @@ describe("unreadable() text matches Python", () => {
     }
     expect(unreadable(dbPath)).toBeNull();
     expect(unreadable(join(dir, "bad.db"))).toBe("DatabaseError: file is not a database");
+  });
+});
+
+describe("context and session-index skip an unreadable DB like Python", () => {
+  it("a garbage state.db profile is absent from both payloads", () => {
+    const dir = makeTmpDir("an-unread2-");
+    fs.cpSync(inputs, dir, { recursive: true });
+    const gamma = join(dir, "agent", "profiles", "gamma");
+    fs.mkdirSync(gamma, { recursive: true });
+    fs.writeFileSync(join(gamma, "state.db"), "garbage garbage garbage garbage garbage garbage");
+    const cfgPath = join(dir, "config.json");
+    const raw = JSON.parse(fs.readFileSync(cfgPath, "utf8").replaceAll(inputs, dir)) as { profiles: unknown[] };
+    raw.profiles.push({ name: "gamma", home: gamma });
+    fs.writeFileSync(cfgPath, JSON.stringify(raw));
+    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
+    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(dir, "agent");
+    let cfg;
+    try { cfg = load(cfgPath); } finally {
+      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
+    }
+    expect(cfg.profiles.map((p) => p.name)).toContain("gamma");
+    const now = Date.now() / 1000;
+    const ctx = buildContextPayload(cfg, now);
+    const idx = buildSessionIndexByProfile(cfg, now);
+    const py = (body: string) => pyAnalytics(dir, join(dir, "agent", "profiles", "alpha", "state.db"), body);
+    expect(ctx).toEqual(py(`from llm_telemetry import collect_context_compaction as CX\nresult=CX.build_context_payload(now=${now})`));
+    expect(idx).toEqual(py("from llm_telemetry import collect_session_index as SI\nresult=SI.build_session_index_by_profile()"));
+    expect(Object.keys(ctx)).not.toContain("gamma");
+    expect(Object.keys(idx)).not.toContain("gamma");
+    expect(Object.keys(ctx)).toContain("alpha");
   });
 });

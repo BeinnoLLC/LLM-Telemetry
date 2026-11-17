@@ -1,7 +1,10 @@
 /** Port of `collect_session_index.py` (P10-12): one small row per session for
  * the Session Finder palette. Never reads message content. */
 
-import type { DatabaseSync } from "node:sqlite";
+import * as fs from "node:fs";
+import { DatabaseSync } from "node:sqlite";
+import type { Config } from "./config.js";
+import { unreadable } from "./unreadable.js";
 import { cmpStr } from "./pySort.js";
 import { pyRound } from "./pySemantics.js";
 
@@ -49,4 +52,19 @@ export function buildSessionIndexPayload(con: DatabaseSync, fromTs: number, toTs
 /** Python looks back 90 days from now. */
 export function buildSessionIndexForDb(con: DatabaseSync, nowTs: number) {
   return buildSessionIndexPayload(con, nowTs - 90 * 86400, nowTs);
+}
+
+/** Port of `build_session_index_by_profile`: unreadable DBs are skipped. */
+export function buildSessionIndexByProfile(cfg: Config, nowTs: number = Date.now() / 1000) {
+  const out: Record<string, ReturnType<typeof buildSessionIndexForDb>> = {};
+  for (const p of cfg.profiles) {
+    if (!fs.existsSync(p.db) || unreadable(p.db)) continue;
+    const con = new DatabaseSync(p.db, { readOnly: true });
+    try {
+      out[p.name] = buildSessionIndexForDb(con, nowTs);
+    } finally {
+      con.close();
+    }
+  }
+  return out;
 }
