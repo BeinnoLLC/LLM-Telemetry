@@ -12,6 +12,7 @@
  */
 
 import { collectAnalytics } from "../src/collectAnalytics.js";
+import { collectProbe, ProbeError } from "../src/collectProbe.js";
 import { collectLogs } from "../src/collectLogs.js";
 import { collectTranscripts } from "../src/collectTranscripts.js";
 import { readFileSync } from "node:fs";
@@ -79,6 +80,28 @@ export const CASES: readonly ParityCase[] = [
     fixture: "ollama-data.json",
     artifact: "ollama-data.json",
     tag: "ollama",
+    inputs: { generator: "make_probe_fixture.py", producer: "produce_probe.py" },
+    nodeCollector: (inputsDir, nowS) => {
+      const canned = JSON.parse(readFileSync(join(inputsDir, "probe-canned.json"), "utf8")) as {
+        local_ips: string[]; primary_ips: string[]; load: Record<string, unknown>;
+        responses: Record<string, { body: string; ms: number } | { error: { reason: string; url_error: boolean } }>;
+        caps: Record<string, string[]>;
+      };
+      return collectProbe({
+        cfg: inputsConfig(inputsDir),
+        now: new Date(nowS * 1000),
+        env: { localIps: () => canned.local_ips, primaryIps: () => canned.primary_ips, machineLoad: () => canned.load },
+        transport: {
+          get: (url) => {
+            const r = canned.responses[url];
+            if (!r) throw new ProbeError("no canned response");
+            if ("error" in r) throw new ProbeError(r.error.reason, r.error.url_error);
+            return r;
+          },
+          caps: (_base, model) => canned.caps[model] ?? [],
+        },
+      });
+    },
   },
   {
     name: "router",

@@ -15,6 +15,7 @@
  *   config  — print the resolved configuration (the config port's CLI face).
  */
 
+import * as fs from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
@@ -24,6 +25,7 @@ import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { collectRouter } from "./collectRouter.js";
 import { collectLogs } from "./collectLogs.js";
+import { collectProbeAsync, type CapsCache } from "./collectProbe.js";
 import { writeSessionFiles } from "./collectSessionTimeline.js";
 import { collectRankingsAsync, readPrevious } from "./collectRankings.js";
 import { collectTranscripts } from "./collectTranscripts.js";
@@ -204,7 +206,29 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  probe: stub("probe — write ollama-data.json", "T-16"),
+  probe: {
+    summary: "probe — write ollama-data.json",
+    status: "ported",
+    run: async (_name, io, _args, cfg) => {
+      const c = cfg();
+      const nodeReports = resolveNodeReportsDir(c);
+      assertSafeOutDir(nodeReports, c);
+      // Capability lookups are static per model and cached for 24 h, like Python.
+      const capsPath = path.join(nodeReports, ".ollama-caps.json");
+      let cache: CapsCache = {};
+      try {
+        cache = JSON.parse(fs.readFileSync(capsPath, "utf8")) as CapsCache;
+      } catch { /* no cache yet */ }
+      const payload = await collectProbeAsync({ cfg: c, cache });
+      const res = writeArtifact("ollama-data.json", payload, { tag: "ollama", cfg: c });
+      try {
+        fs.writeFileSync(capsPath, JSON.stringify(cache), "utf8");
+      } catch { /* best effort, like the Python collector */ }
+      const hosts = payload["hosts"] as Array<{ up: boolean }>;
+      io.out(`${res.path}  (${String(payload["endpoints"])} endpoints -> ${hosts.length} hosts, ${hosts.filter((h) => h.up).length} up)`);
+      return 0;
+    },
+  },
   analytics: {
     summary: "analytics — write analytics-data.json [-o|--out PATH]",
     status: "ported",
