@@ -17,6 +17,7 @@ import { collectTranscripts } from "../src/collectTranscripts.js";
 import { readFileSync } from "node:fs";
 import { collectRankings } from "../src/collectRankings.js";
 import { parsePy } from "../src/pyJson.js";
+import { collectSessionTimelines } from "../src/collectSessionTimeline.js";
 import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
@@ -134,6 +135,18 @@ export const CASES: readonly ParityCase[] = [
           reason: null,
         }),
       }),
+  },
+  {
+    // The real collector writes sessions/<profile>/<id>.json; the harness diffs
+    // the merged build_all() view (fixture is a placeholder, see produce_timeline.py).
+    name: "timeline",
+    fixture: "session-timelines.json",
+    artifact: "session-timelines.json",
+    tag: null,
+    keepKeys: ["ts"],
+    inputs: { generator: "make_timeline_fixture.py", producer: "produce_timeline.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectSessionTimelines({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
   },
 ];
 

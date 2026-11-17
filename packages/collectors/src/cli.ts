@@ -24,6 +24,7 @@ import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
 import { collectRouter } from "./collectRouter.js";
 import { collectLogs } from "./collectLogs.js";
+import { writeSessionFiles } from "./collectSessionTimeline.js";
 import { collectRankingsAsync, readPrevious } from "./collectRankings.js";
 import { collectTranscripts } from "./collectTranscripts.js";
 import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
@@ -166,7 +167,17 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  "session-timeline": stub("session-timeline — write sessions/<profile>/<id>.json", "T-16"),
+  "session-timeline": {
+    summary: "session-timeline — write sessions/<profile>/<id>.json [OUT_DIR]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      const c = cfg();
+      const outDir = args[0] ?? path.join(resolveNodeReportsDir(c), "sessions");
+      const n = writeSessionFiles(outDir, { cfg: c });
+      io.out(`${outDir}  (${n} session timeline files written)`);
+      return 0;
+    },
+  },
   logs: {
     summary: "logs — write logs-data.json [-o|--out PATH]",
     status: "ported",
