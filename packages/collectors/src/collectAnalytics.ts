@@ -14,11 +14,12 @@ import { DatabaseSync } from "node:sqlite";
 import * as SQL from "./analyticsSql.js";
 import { buildAttribution, type SessionsById } from "./costAttribution.js";
 import { Config, load as loadConfig } from "./config.js";
-import { splitRow } from "./bandwidth.js";
+import { canonicalEndpoint, splitRow } from "./bandwidth.js";
 import { cachedCatalog, catalogSize, priceRow, type Catalog } from "./pricing.js";
 import { projectOfSession, type SessionInfo } from "./projects.js";
 import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
+import { buildLatency as latencyOf, computeGaps, DEFAULT_IDLE_THRESHOLD_S, type TurnRow } from "./latency.js";
 import { stamp } from "./schema.js";
 import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
@@ -202,6 +203,14 @@ export function buildToolReliability(con: Con) {
   };
 }
 
+/** build_latency: SQL-to-payload glue over latency.ts. */
+export function buildLatency(con: Con, cfg: Config) {
+  const rows = tuples(con, SQL.ASSISTANT_TURNS) as TurnRow[];
+  const { gaps, idle } = computeGaps(rows);
+  const result = latencyOf(gaps, (u) => canonicalEndpoint(u, cfg.endpoint_aliases));
+  return { ...result, idle_threshold_s: DEFAULT_IDLE_THRESHOLD_S, idle_n: idle.length };
+}
+
 export interface TreeNode {
   id: string; parent: string | null; source: string; title: string; model: unknown;
   started: unknown; ended: unknown; end_reason: string; msgs: number; tools: number; tok: number;
@@ -334,7 +343,8 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     ...classifyProfile(name, sess),
     end_reasons: endReasons, outcomes, tools: toolRel.tools,
     tool_fail_samples: toolRel.tool_fail_samples,
-    terminal_top_fail_commands: toolRel.terminal_top_fail_commands, attribution, sessions_tree: tree,
+    terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
+    latency: buildLatency(con, cfg), attribution, sessions_tree: tree,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };

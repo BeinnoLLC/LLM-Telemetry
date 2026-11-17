@@ -193,3 +193,21 @@ where tool_name is not null and tool_name != ''
   and timestamp > strftime('%s','now') - 3600
 group by tool_name order by 2 desc limit 14
 `;
+
+export const ASSISTANT_TURNS = `
+select m.session_id, m.timestamp,
+       coalesce(
+         (select u.model from session_model_usage u
+           where u.session_id=m.session_id and u.last_seen <= m.timestamp
+           order by u.last_seen desc limit 1),
+         s.model) as model,
+       (select u.billing_base_url from session_model_usage u
+         where u.session_id=m.session_id and u.last_seen <= m.timestamp
+         order by u.last_seen desc limit 1) as base_url,
+       m.token_count
+from messages m
+join sessions s on s.id = m.session_id
+where m.role = 'assistant'
+  and m.timestamp > strftime('%s','now') - 604800
+order by m.session_id, m.timestamp
+`;

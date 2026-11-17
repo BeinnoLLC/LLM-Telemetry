@@ -4,10 +4,12 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildSessionsTree, buildToolReliability, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildSessionsTree, buildLatency, buildToolReliability, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
+import { computeGaps, type TurnRow } from "../../src/latency.js";
+import { canonicalEndpoint } from "../../src/bandwidth.js";
 import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
@@ -165,5 +167,43 @@ describe("tool reliability matches Python", () => {
     expect(got.tools.find((t) => t["name"] === "terminal")?.["prev_fail_rate"]).not.toBeNull();
     // 400-char content is truncated to 300 in the sample head
     expect(Object.values(got.tool_fail_samples).flat().some((x) => (x["head"] as string).length === 300)).toBe(true);
+  });
+});
+
+describe("latency matches Python", () => {
+  const cfg = () => {
+    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
+    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
+    try { return load(join(inputs, "config.json")); } finally {
+      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
+    }
+  };
+
+  it("compute_gaps splits idle gaps and drops negatives, unordered input", () => {
+    const rows: TurnRow[] = [
+      ["a", 100, "m1", "http://x/v1", 50], ["a", 90, "m1", "http://x/v1", null], ["a", 900, "m2", null, 10],
+      ["a", 800, "m2", null, 10], ["b", 5, null, null, 0], ["b", 9.5, null, null, 4], ["c", 1, "m", "u", 1],
+    ];
+    const want = pyAnalytics(inputs, dbPath,
+      `from llm_telemetry import latency as L\nr=json.loads(${JSON.stringify(JSON.stringify(rows))})\ng,i=L.compute_gaps([tuple(x) for x in r])\nresult=[g,i]`);
+    const { gaps, idle } = computeGaps(rows);
+    expect([gaps, idle]).toEqual(want);
+    expect(idle.length).toBe(1);
+  });
+
+  it("canonical_endpoint with an alias", () => {
+    const urls = ["http://192.168.1.11:11434/v1", "https://api.openai.com/v1", "", null, "no-authority"];
+    const aliases = { "api.openai.com": "http://lan-box:1/v1" };
+    const want = pyAnalytics(inputs, dbPath,
+      `from llm_telemetry import bandwidth as B\nB._get_config().endpoint_aliases.update(json.loads(${JSON.stringify(JSON.stringify(aliases))}))\nresult=[B.canonical_endpoint(u) for u in json.loads(${JSON.stringify(JSON.stringify(urls))})]`);
+    expect(urls.map((u) => canonicalEndpoint(u, aliases))).toEqual(want);
+  });
+
+  it("build_latency on the fixture DB", () => {
+    const got = buildLatency(con, cfg());
+    expect(got).toEqual(pyAnalytics(inputs, dbPath, "result=C.build_latency(con)"));
+    expect(got.idle_n).toBeGreaterThan(0);
+    expect(Object.keys(got.by_model).length).toBeGreaterThan(0);
+    expect(got.by_model[Object.keys(got.by_model)[0] as string]?.n).toBeGreaterThan(0);
   });
 });
