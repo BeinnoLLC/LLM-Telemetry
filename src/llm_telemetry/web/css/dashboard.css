@@ -1593,7 +1593,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-mute{color:var(--muted)}
 .rt-default{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
 .rt-tier{display:inline-block;font-size:var(--fs-xs);font-weight:600;padding:.05rem .5rem;border-radius:999px;
-  color:hsl(var(--h) 75% 62%);background:hsl(var(--h) 75% 55% / .14);border:1px solid hsl(var(--h) 75% 55% / .35)}
+  color:var(--rt-tier-fg);background:color-mix(in srgb,var(--rt-tier-ink) 14%,transparent);border:1px solid color-mix(in srgb,var(--rt-tier-ink) 35%,transparent)}
 .rt-strip{display:flex;align-items:stretch;gap:.4rem;overflow-x:auto;padding-bottom:.25rem}
 .rt-step{flex:1 1 0;min-width:130px;display:flex;flex-direction:column;gap:.15rem;padding:.6rem;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);font-size:var(--fs-sm)}
 .rt-step .muted{font-size:var(--fs-xs)}
@@ -1607,11 +1607,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-meta{font-size:var(--fs-xs);display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}
 .rt-vline{width:2px;height:18px;background:var(--border)}
 .rt-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem;padding-top:.6rem;border-top:2px solid var(--border)}
-.rt-tcard{border:1px solid hsl(var(--h) 60% 50% / .35);border-top:3px solid hsl(var(--h) 70% 55%);border-radius:var(--radius-ctl);padding:.6rem;background:var(--bg);display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.rt-tcard{border:1px solid color-mix(in srgb,var(--rt-card-ink) 35%,transparent);border-top:3px solid var(--rt-share-ink);border-radius:var(--radius-ctl);padding:.6rem;background:var(--bg);display:flex;flex-direction:column;gap:.35rem;min-width:0}
 .rt-thead{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
 .rt-share{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
 .rt-bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden}
-.rt-bar i{display:block;height:100%;background:hsl(var(--h) 70% 55%)}
+.rt-bar i{display:block;height:100%;background:var(--rt-share-ink)}
 .rt-doc{font-size:var(--fs-xs);color:var(--muted)}
 .rt-sub{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:.15rem}
 .rt-whys{display:flex;flex-wrap:wrap;gap:.25rem}

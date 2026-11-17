@@ -224,3 +224,15 @@
   --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (theme-invariant) */
   --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
 }
+
+/* LST-311: tier-hue semantic tokens (routerview tier chips, tier cards, share
+   bars). A custom property's var() references are substituted at its own
+   computed-value time — verified in Chrome — so these MUST be declared on the
+   elements that carry --h (routerview.js sets it inline on .rt-tier and
+   .rt-tcard; .rt-bar i inherits it from its card). A :root declaration would
+   freeze --h before it exists. Light and dark values are identical: the
+   tier-hue family is theme-invariant, like the rules that consume it. */
+:root:not([data-theme="dark"]) .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
+:root:not([data-theme="dark"]) .rt-tcard,:root:not([data-theme="dark"]) .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
+[data-theme="dark"] .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
+[data-theme="dark"] .rt-tcard,[data-theme="dark"] .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
