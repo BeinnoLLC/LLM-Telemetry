@@ -4,10 +4,11 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildSessionsTree, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildSessionsTree, buildToolReliability, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
+import { toolOutcome } from "../../src/toolOutcomes.js";
 import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
 import { pyAnalytics, pyCall } from "./pyOracle.js";
@@ -117,5 +118,52 @@ describe("collectAnalytics assembly", () => {
     for (const k of ["rows", "hour_rows", "sessions_tree", "outcomes", "end_reasons", "heatmap", "repo_branch", "attribution"]) {
       expect(alpha).toHaveProperty(k);
     }
+  });
+});
+
+describe("tool reliability matches Python", () => {
+  it("_pXX over several lengths and percentiles", () => {
+    for (const n of [0, 1, 2, 3, 4, 7, 10, 21]) {
+      const vals = Array.from({ length: n }, (_, i) => i * 3 + 1);
+      for (const pct of [50, 90, 95, 99]) {
+        expect(pXX(vals, pct)).toBe(pyCall("collect_analytics", "_pXX", [vals, pct]));
+      }
+    }
+  });
+
+  it("tool_outcome agrees with Python on structured and odd inputs", () => {
+    const cases: Record<string, unknown>[] = [
+      { content: '{"exit_code":0}' }, { content: '{"exit_code":"2"}' }, { content: '{"exit_code":" 0 "}' },
+      { content: '{"exit_code":true}' }, { content: '{"exit_code":null,"success":false}' },
+      { content: '{"exit_code":1.9}' }, { content: '{"exit_code":"abc","error":"e"}' },
+      { content: '{"exit_code":[1]}' }, { content: '{"success":1}' }, { content: '{"success":true}' },
+      { content: '{"not_found":false}' }, { content: '{"not_found":1}' }, { content: '{"error":0}' },
+      { content: '{"error":0.0}' }, { content: '{"error":[]}' }, { content: '{"error":"x"}' },
+      { content: '{"error":null}' }, { content: "[1,2]" }, { content: "   " }, { content: null }, {},
+      { content: "plain", finish_reason: " TOOL_ERROR " }, { content: "{}", effect_disposition: "OK " },
+      { content: '{"exit_code":0}', effect_disposition: "Denied" }, { effect_disposition: "weird" },
+    ];
+    const want = pyAnalytics(inputs, dbPath,
+      `from llm_telemetry.tool_outcomes import tool_outcome\nresult=[tool_outcome(m) for m in json.loads(${JSON.stringify(JSON.stringify(cases))})]`);
+    expect(cases.map((c) => toolOutcome(c))).toEqual(want);
+    expect(new Set(want as string[])).toEqual(new Set(["ok", "fail", "unknown"]));
+  });
+
+  it("_terminal_command_hint", () => {
+    const inputs2 = ['{"command":"  git   status"}', '{"command":"   "}', '{"command":5}', "not json", "[]", null, ""];
+    const want = pyAnalytics(inputs, dbPath, `result=[C._terminal_command_hint(x) for x in json.loads(${JSON.stringify(JSON.stringify(inputs2))})]`);
+    expect(inputs2.map((c) => terminalCommandHint(c))).toEqual(want);
+  });
+
+  it("build_tool_reliability on the fixture DB", () => {
+    const got = buildToolReliability(con);
+    expect(got).toEqual(pyAnalytics(inputs, dbPath, "result=C.build_tool_reliability(con)"));
+    const names = got.tools.map((t) => t["name"]);
+    expect(names).toEqual(expect.arrayContaining(["terminal", "patch", "read_file"]));
+    expect(got.terminal_top_fail_commands.length).toBeGreaterThan(1);
+    // previous-window rows feed prev_fail_rate
+    expect(got.tools.find((t) => t["name"] === "terminal")?.["prev_fail_rate"]).not.toBeNull();
+    // 400-char content is truncated to 300 in the sample head
+    expect(Object.values(got.tool_fail_samples).flat().some((x) => (x["head"] as string).length === 300)).toBe(true);
   });
 });

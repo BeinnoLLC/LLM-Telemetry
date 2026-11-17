@@ -164,3 +164,32 @@ where ended_at is null
 export const SESSIONS_TREE_COLS = ["id", "parent", "source", "title", "model", "started", "ended", "end_reason", "msgs", "tools", "tok", "cost", "cost_is_actual"];
 export const COLS = ["date", "model", "provider", "task", "calls", "inp", "outp", "cread", "cwrite", "rtok", "est", "act", "sessions", "base_url", "session_id"];
 export const HOUR_COLS = ["date", "hour", "model", "provider", "task", "calls", "inp", "outp", "cread", "cwrite", "rtok", "est", "act", "sessions", "base_url", "session_id"];
+
+export const TOOL_TOKEN_ROWS = `
+select tool_name, session_id, coalesce(token_count, 0)
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 2592000
+`;
+
+export const TOOL_RESULTS_CURRENT = `
+select tool_name, session_id, timestamp, content, effect_disposition, finish_reason, token_count
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 2592000
+`;
+
+export const TOOL_RESULTS_PREVIOUS = `
+select tool_name, effect_disposition, finish_reason, content
+from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 5184000
+  and timestamp <= strftime('%s','now') - 2592000
+`;
+
+export const RECENT_TOOLS = `
+select tool_name, count(*) from messages
+where tool_name is not null and tool_name != ''
+  and timestamp > strftime('%s','now') - 3600
+group by tool_name order by 2 desc limit 14
+`;

@@ -17,9 +17,10 @@ import { Config, load as loadConfig } from "./config.js";
 import { splitRow } from "./bandwidth.js";
 import { cachedCatalog, catalogSize, priceRow, type Catalog } from "./pricing.js";
 import { projectOfSession, type SessionInfo } from "./projects.js";
-import { pyRound } from "./pySemantics.js";
+import { pyInt, pyLen, pyRound, pyRound0, pySlice } from "./pySemantics.js";
 import { buildRepoBranch } from "./repoBranch.js";
 import { stamp } from "./schema.js";
+import { parsedJson, toolOutcome } from "./toolOutcomes.js";
 
 export interface AnalyticsPayload {
   generated: string;
@@ -121,6 +122,84 @@ export function buildOutcomes(con: Con) {
     ({ id, source: src, model, when }));
   const reapTrend = tuples(con, SQL.OUTCOMES_REAP_TREND).map(([d, n]) => ({ date: d, n }));
   return { by_reason: byReason, by_source_reason: bySourceReason, silent, reaped, reap_trend: reapTrend };
+}
+
+/** Python `_pXX`: nearest-rank percentile over a sorted list, 0 when empty. */
+export function pXX(sorted: number[], pct: number): number {
+  if (sorted.length === 0) return 0;
+  const idx = Math.min(sorted.length - 1, pyRound0((pct / 100.0) * (sorted.length - 1)));
+  return sorted[idx] as number;
+}
+
+/** Python `_terminal_command_hint`: first token of the result's own echoed
+ * `command` field, else "(unknown)". */
+export function terminalCommandHint(content: unknown): string {
+  const doc = parsedJson(content);
+  if (doc !== null) {
+    const cmd = doc["command"];
+    if (typeof cmd === "string" && cmd.trim() !== "") return cmd.trim().split(/\s+/)[0] as string;
+  }
+  return "(unknown)";
+}
+
+/** build_tool_reliability: per-tool calls/fail-rate/trend/wasted tokens, top
+ * failing terminal commands and recent failing result heads. */
+export function buildToolReliability(con: Con) {
+  interface B { calls: number; fails: number; confident: number; tok_wasted: number; sizes: number[] }
+  const byTool = new Map<string, B>();
+  const cmdFails = new Map<string, number>();
+  const failSamples = new Map<string, Row[]>();
+  for (const [tool, sid, ts, content, disp, reason, tok] of tuples(con, SQL.TOOL_RESULTS_CURRENT)) {
+    const name = tool as string;
+    let b = byTool.get(name);
+    if (!b) byTool.set(name, (b = { calls: 0, fails: 0, confident: 0, tok_wasted: 0, sizes: [] }));
+    b.calls += 1;
+    b.sizes.push(pyLen((content as string | null) ?? ""));
+    const outcome = toolOutcome({ content, effect_disposition: disp, finish_reason: reason });
+    if (outcome === "unknown") continue;
+    b.confident += 1;
+    if (outcome !== "fail") continue;
+    b.fails += 1;
+    b.tok_wasted += pyInt(Number(tok || 0));
+    let samples = failSamples.get(name);
+    if (!samples) failSamples.set(name, (samples = []));
+    if (samples.length < 20) {
+      samples.push({ session: sid, ts: ts ? pyInt(Number(ts)) : null, head: pySlice((content as string | null) ?? "", 0, 300) });
+    }
+    if (name === "terminal") {
+      const cmd = terminalCommandHint(content);
+      cmdFails.set(cmd, (cmdFails.get(cmd) ?? 0) + 1);
+    }
+  }
+  const prevByTool = new Map<string, { confident: number; fails: number }>();
+  for (const [tool, disp, reason, content] of tuples(con, SQL.TOOL_RESULTS_PREVIOUS)) {
+    let b = prevByTool.get(tool as string);
+    if (!b) prevByTool.set(tool as string, (b = { confident: 0, fails: 0 }));
+    const outcome = toolOutcome({ content, effect_disposition: disp, finish_reason: reason });
+    if (outcome === "unknown") continue;
+    b.confident += 1;
+    if (outcome === "fail") b.fails += 1;
+  }
+  const tools: Row[] = [];
+  for (const [name, b] of byTool) {
+    const sizes = [...b.sizes].sort((x, y) => x - y);
+    const failRate = b.confident ? b.fails / b.confident : null;
+    const prev = prevByTool.get(name);
+    const prevRate = prev && prev.confident ? prev.fails / prev.confident : null;
+    tools.push({
+      name, calls: b.calls, fails: b.fails,
+      fail_rate: failRate !== null ? pyRound(failRate, 4) : null,
+      prev_fail_rate: prevRate !== null ? pyRound(prevRate, 4) : null,
+      tok_wasted: b.tok_wasted, p50_bytes: pXX(sizes, 50), p95_bytes: pXX(sizes, 95),
+    });
+  }
+  tools.sort((a, b) => (b["tok_wasted"] as number) - (a["tok_wasted"] as number));
+  const top = [...cmdFails.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  return {
+    tools,
+    tool_fail_samples: Object.fromEntries(failSamples),
+    terminal_top_fail_commands: top.map(([cmd, n]) => ({ cmd, n })),
+  };
 }
 
 export interface TreeNode {
@@ -244,13 +323,18 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
   const active = (tuples(con, SQL.ACTIVE)[0] as unknown[])[0];
   const endReasons = tuples(con, SQL.END_REASONS).map(([r, n]) => ({ reason: r, n }));
   const outcomes = buildOutcomes(con);
-  const attribution = buildAttribution(rows as never, identity as SessionsById, []);
+  const toolTokenRows = tuples(con, SQL.TOOL_TOKEN_ROWS).map(([t, sid, tok]) =>
+    ({ tool_name: t as string, session_id: sid as string, tokens: tok as number }));
+  const attribution = buildAttribution(rows as never, identity as SessionsById, toolTokenRows);
+  const toolRel = buildToolReliability(con);
   const tree = buildSessionsTree(con);
   const dates = [...new Set(rows.map((r) => r["date"] as string).filter(Boolean))].sort();
   return {
     rows, hours, sessions: sess, hour_rows: hourRows, active,
     ...classifyProfile(name, sess),
-    end_reasons: endReasons, outcomes, attribution, sessions_tree: tree,
+    end_reasons: endReasons, outcomes, tools: toolRel.tools,
+    tool_fail_samples: toolRel.tool_fail_samples,
+    terminal_top_fail_commands: toolRel.terminal_top_fail_commands, attribution, sessions_tree: tree,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };
