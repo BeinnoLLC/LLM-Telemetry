@@ -53,6 +53,8 @@ export interface CollectAnalyticsOptions {
   /** Catalogue already fetched (the CLI awaits `fetchCatalog`); default is the
    * on-disk cache / pinned file, never the network. */
   catalog?: { models: Catalog; source: string };
+  /** Resolved config to use instead of loading one (CLI path). */
+  cfg?: Config;
 }
 
 type Row = Record<string, unknown>;
@@ -478,7 +480,7 @@ export function collectAnalytics(opts: CollectAnalyticsOptions = {}): AnalyticsP
       else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
     }
   } else {
-    cfg = loadConfig();
+    cfg = opts.cfg ?? loadConfig();
   }
   // Python expands "~" from $HOME; the parity fixture points HOME at <inputs>/home.
   const home = opts.inputsDir !== undefined ? `${opts.inputsDir}/home` : os.homedir();
