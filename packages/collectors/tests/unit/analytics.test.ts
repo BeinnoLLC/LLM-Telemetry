@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as SQL from "../../src/analyticsSql.js";
 import {
-  buildOutcomes, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
+  buildOutcomes, buildResend, buildSessionsTree, buildCompressionPressure, buildConcurrency, buildLatency, buildToolReliability, concurrencyByHour, pXX, terminalCommandHint, classifyProfile, collectAnalytics, enrichRows, fetchHourRows, fetchRows,
 } from "../../src/collectAnalytics.js";
 import { load } from "../../src/config.js";
 import { cachedCatalog } from "../../src/pricing.js";
@@ -253,5 +253,28 @@ describe("recent tools and sessions match Python", () => {
     expect(s.length).toBeGreaterThan(0);
     expect(t).toEqual(want.t);
     expect(s).toEqual(want.s);
+  });
+});
+
+describe("resend matches Python", () => {
+  it("buildResend", () => {
+    const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
+    process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputs, "agent");
+    let cfg;
+    try { cfg = load(join(inputs, "config.json")); } finally {
+      if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"]; else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
+    }
+    const catalog = cachedCatalog(cfg, { LLM_TELEMETRY_CATALOG: join(inputs, "catalog.json") });
+    const got = buildResend(con, catalog, cfg);
+    const want = pyAnalytics(inputs, dbPath, `cat,_=pricing.fetch_catalog()
+resend=[]
+for (sid,title,mdl,prov,url,calls,inp,cw,cr,last) in con.execute(C.RESEND,(C.RESEND_MIN_CALLS,)):
+    prompt=(inp or 0)+(cw or 0)+(cr or 0)
+    pr=pricing.price_row({"provider":prov,"model":mdl,"base_url":url,"input_tokens":0,"output_tokens":0,"cache_read":cr or 0},cat)
+    resend.append({"id":sid,"title":title,"model":mdl,"calls":calls,"ctx_per_call":round(prompt/calls) if calls else 0,"cread_pct":round(100.0*(cr or 0)/prompt,1) if prompt else 0.0,"resend_usd":pr["market_value_usd"],"cost_class":pr["cost_class"],"last":last})
+resend.sort(key=lambda x:-x["resend_usd"])
+result=resend`);
+    expect(got.length).toBeGreaterThan(0);
+    expect(got).toEqual(want);
   });
 });

@@ -204,6 +204,28 @@ export function buildToolReliability(con: Con) {
   };
 }
 
+/** RESEND block: sessions re-sending large cached context, sorted by market value. */
+export function buildResend(con: Con, catalog: Catalog, cfg: Config) {
+  const out: Row[] = [];
+  for (const r of tuples(con, SQL.RESEND, SQL.RESEND_MIN_CALLS)) {
+    const [sid, title, mdl, prov, url, calls, inp, cw, cr, last] = r as [string, string, string, string | null, string | null, number, number | null, number | null, number | null, number];
+    const prompt = (inp ?? 0) + (cw ?? 0) + (cr ?? 0);
+    const pr = priceRow(
+      { provider: prov, model: mdl, base_url: url, input_tokens: 0, output_tokens: 0, cache_read: cr ?? 0 },
+      catalog, cfg, cfg.local_host_patterns, cfg.endpoint_aliases);
+    out.push({
+      id: sid, title, model: mdl, calls,
+      ctx_per_call: calls ? pyRound0(prompt / calls) : 0,
+      cread_pct: prompt ? pyRound(100.0 * (cr ?? 0) / prompt, 1) : 0.0,
+      resend_usd: pr.market_value_usd, cost_class: pr.cost_class, last,
+    });
+  }
+  // Python sort is stable on -resend_usd.
+  return out.map((x, i) => [x, i] as const)
+    .sort((a, b) => (-(a[0]["resend_usd"] as number) - -(b[0]["resend_usd"] as number)) || a[1] - b[1])
+    .map(([x]) => x);
+}
+
 /** build_latency: SQL-to-payload glue over latency.ts. */
 export function buildLatency(con: Con, cfg: Config) {
   const rows = tuples(con, SQL.ASSISTANT_TURNS) as TurnRow[];
@@ -387,7 +409,7 @@ function buildProfile(name: string, con: Con, catalog: Catalog, cfg: Config): Ro
     terminal_top_fail_commands: toolRel.terminal_top_fail_commands,
     latency: buildLatency(con, cfg), compression_pressure: buildCompressionPressure(con),
     concurrency: buildConcurrency(con), attribution, sessions_tree: tree,
-    tools_recent: toolsRecent, recent_sessions: recentSessions,
+    resend: buildResend(con, catalog, cfg), tools_recent: toolsRecent, recent_sessions: recentSessions,
     heatmap, node_sessions: nodeSessions, repo_branch: repo,
     min_date: dates[0] ?? null, max_date: dates.at(-1) ?? null,
   };
