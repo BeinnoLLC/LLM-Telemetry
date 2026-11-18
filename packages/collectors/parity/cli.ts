@@ -19,10 +19,10 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CASES, findCase, type ParityCase } from "./cases.js";
-import { countLeaves, normalize } from "./normalize.js";
+import { countLeaves, normalize, RUN_STAMP_KEYS } from "./normalize.js";
 import { formatDiffs, structuralDiff, type DiffEntry } from "./diff.js";
 import { produce as nodeProduce } from "./nodeProducer.js";
-import { makeAnalyticsInputs, resolvePython, runPythonAnalytics, runPythonProducer } from "./pythonProducer.js";
+import { makeAnalyticsInputs, resolvePython, runPythonAnalytics, runPythonInputsCase, runPythonProducer } from "./pythonProducer.js";
 import { seedAndDiff } from "./selfTest.js";
 
 /** The parity root (…/packages/collectors/parity): the dir holding py/ and
@@ -79,12 +79,15 @@ export function runCase(
   const inputsDir = join(outBase, "inputs", c.name);
   const nowS = Math.floor(Date.now() / 1000); // one clock for both producers
   try {
-    if (c.dbInputs) {
+    if (c.inputs) {
+      rmSync(inputsDir, { recursive: true, force: true });
+      runPythonInputsCase(python, root, c.inputs, inputsDir, pyDir, c.artifact, nowS);
+    } else if (c.dbInputs) {
       rmSync(inputsDir, { recursive: true, force: true });
       makeAnalyticsInputs(python, root, inputsDir);
       runPythonAnalytics(python, root, inputsDir, pyDir, c.artifact, nowS);
     } else {
-      runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag);
+      runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag ?? "-");
     }
   } catch (err) {
     return fail(String(err));
@@ -96,8 +99,11 @@ export function runCase(
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }
 
-  const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown);
-  const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown);
+  const nopts = c.keepKeys || c.extraDropKeys
+    ? { dropKeys: [...RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)), ...(c.extraDropKeys ?? [])] }
+    : {};
+  const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown, nopts);
+  const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown, nopts);
   const leaves = countLeaves(pyNorm);
 
   if (!opts.seed) {

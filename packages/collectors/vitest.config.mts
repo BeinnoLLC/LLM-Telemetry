@@ -8,6 +8,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    testTimeout: 30000,
     include: ["tests/unit/**/*.test.ts", "parity/tests/**/*.test.ts"],
   },
 });

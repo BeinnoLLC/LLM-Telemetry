@@ -12,6 +12,17 @@
  */
 
 import { collectAnalytics } from "../src/collectAnalytics.js";
+import { collectProbe, ProbeError } from "../src/collectProbe.js";
+import { collectLogs } from "../src/collectLogs.js";
+import { collectTranscripts } from "../src/collectTranscripts.js";
+import { readFileSync } from "node:fs";
+import { collectRankings } from "../src/collectRankings.js";
+import { parsePy } from "../src/pyJson.js";
+import { collectSessionTimelines } from "../src/collectSessionTimeline.js";
+import { collectQuota } from "../src/collectQuota.js";
+import { collectRouter } from "../src/collectRouter.js";
+import { Config, loadWithAgentHome } from "../src/config.js";
+import { join } from "node:path";
 import type { SchemaTag } from "../src/schemaCheck.js";
 
 export interface ParityCase {
@@ -22,7 +33,8 @@ export interface ParityCase {
   /** Artifact filename both producers write. */
   artifact: string;
   /** Payload schema tag both stacks validate at write time (T-4 writer). */
-  tag: SchemaTag;
+  /** null = the artifact has no payload schema (quota). */
+  tag: SchemaTag | null;
   /** When set, the node side runs this real collector instead of copying the
    * fixture, so a stub/incomplete port FAILS parity instead of passing. For a
    * `dbInputs` case it receives the generated inputs dir. */
@@ -31,6 +43,21 @@ export interface ParityCase {
    * generator under py/) instead of the JSON fixture: the Python side runs its
    * real collector (py/produce_analytics.py), the Node side `nodeCollector`. */
   dbInputs?: boolean;
+  /** Generated-inputs case for a collector other than analytics (T-16): the
+   * `py/` scripts that build the inputs dir and run the real Python collector
+   * on it (`<generator> OUT`, `<producer> INPUTS OUT ARTIFACT`). */
+  inputs?: { generator: string; producer: string };
+  /** Run-stamp keys (see normalize RUN_STAMP_KEYS) that are DATA for this case
+   * and must be compared: logs/transcripts `ts` come from the DB / log lines,
+   * not from the clock. */
+  keepKeys?: readonly string[];
+  /** Extra clock-derived keys to drop for this case (rankings `fetched_at`). */
+  extraDropKeys?: readonly string[];
+}
+
+/** Config for a generated inputs dir (profiles under <inputs>/agent). */
+export function inputsConfig(inputsDir: string): Config {
+  return loadWithAgentHome(join(inputsDir, "config.json"), join(inputsDir, "agent"));
 }
 
 export const CASES: readonly ParityCase[] = [
@@ -53,12 +80,96 @@ export const CASES: readonly ParityCase[] = [
     fixture: "ollama-data.json",
     artifact: "ollama-data.json",
     tag: "ollama",
+    inputs: { generator: "make_probe_fixture.py", producer: "produce_probe.py" },
+    nodeCollector: (inputsDir, nowS) => {
+      const canned = JSON.parse(readFileSync(join(inputsDir, "probe-canned.json"), "utf8")) as {
+        local_ips: string[]; primary_ips: string[]; load: Record<string, unknown>;
+        responses: Record<string, { body: string; ms: number } | { error: { reason: string; url_error: boolean } }>;
+        caps: Record<string, string[]>;
+      };
+      return collectProbe({
+        cfg: inputsConfig(inputsDir),
+        now: new Date(nowS * 1000),
+        env: { localIps: () => canned.local_ips, primaryIps: () => canned.primary_ips, machineLoad: () => canned.load },
+        transport: {
+          get: (url) => {
+            const r = canned.responses[url];
+            if (!r) throw new ProbeError("no canned response");
+            if ("error" in r) throw new ProbeError(r.error.reason, r.error.url_error);
+            return r;
+          },
+          caps: (_base, model) => canned.caps[model] ?? [],
+        },
+      });
+    },
   },
   {
     name: "router",
     fixture: "router-data.json",
     artifact: "router-data.json",
     tag: "router",
+    inputs: { generator: "make_router_fixture.py", producer: "produce_router.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectRouter({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "quota",
+    fixture: "quota-data.json",
+    artifact: "quota-data.json",
+    tag: null,
+    inputs: { generator: "make_quota_fixture.py", producer: "produce_quota.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectQuota({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "logs",
+    fixture: "logs-data.json",
+    artifact: "logs-data.json",
+    tag: null,
+    inputs: { generator: "make_logs_fixture.py", producer: "produce_logs.py" },
+    keepKeys: ["ts"],
+    nodeCollector: (inputsDir, nowS) =>
+      collectLogs({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "transcripts",
+    fixture: "transcripts.json",
+    artifact: "transcripts.json",
+    tag: null,
+    inputs: { generator: "make_logs_fixture.py", producer: "produce_transcripts.py" },
+    keepKeys: ["ts"],
+    nodeCollector: (inputsDir, nowS) =>
+      collectTranscripts({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    name: "rankings",
+    fixture: "rankings-data.json",
+    artifact: "rankings-data.json",
+    tag: null,
+    extraDropKeys: ["fetched_at"],
+    inputs: { generator: "make_rankings_fixture.py", producer: "produce_rankings.py" },
+    nodeCollector: (inputsDir) =>
+      collectRankings({
+        today: "2026-11-17",
+        env: { OPENROUTER_API_KEY: "dummy" },
+        previous: null,
+        fetcher: () => ({
+          resp: parsePy(readFileSync(join(inputsDir, "rankings-response.json"), "utf8")),
+          reason: null,
+        }),
+      }),
+  },
+  {
+    // The real collector writes sessions/<profile>/<id>.json; the harness diffs
+    // the merged build_all() view (fixture is a placeholder, see produce_timeline.py).
+    name: "timeline",
+    fixture: "session-timelines.json",
+    artifact: "session-timelines.json",
+    tag: null,
+    keepKeys: ["ts"],
+    inputs: { generator: "make_timeline_fixture.py", producer: "produce_timeline.py" },
+    nodeCollector: (inputsDir, nowS) =>
+      collectSessionTimelines({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
   },
 ];
 
