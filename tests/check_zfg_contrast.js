@@ -32,8 +32,8 @@ for (const [name, b] of [['dark', dark], ['light', light]]) {
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--bg', bg]);
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--card', card]);
   }
-  // filled pill: --card text on the solid --z-bad fill (light override only)
-  if (name === 'light') pairs.push(['--card (pill)', card, '--z-bad fill', tok(b, 'z-bad')]);
+  // filled pill: --card text on the solid --z-bad fill for .qv-astat.qv-bad
+  pairs.push(['--card on --z-bad fill for .qv-astat.qv-bad', card, '--z-bad fill', tok(b, 'z-bad')]);
   for (const [fn, f, bn, bgc] of pairs) {
     const r = f && bgc ? ratio(f, bgc) : 0;
     console.log(`  ${name.padEnd(6)} ${(fn + ' ' + f).padEnd(19)}${(bn + ' ' + bgc).padEnd(19)}${r.toFixed(2).padStart(5)}  4.5`);
