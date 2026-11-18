@@ -10,6 +10,11 @@
 
 export const BYTES_PER_TOKEN = 4.68;
 
+/** Stored body bytes to an estimated token count (Python `int(b / BYTES_PER_TOKEN)`). */
+export function estimateTokens(byteCount: number | null | undefined): number {
+  return Math.trunc((byteCount ?? 0) / BYTES_PER_TOKEN);
+}
+
 export function estimateBytes(tokens: number | null | undefined): number {
   return Math.trunc((tokens ?? 0) * BYTES_PER_TOKEN);
 }

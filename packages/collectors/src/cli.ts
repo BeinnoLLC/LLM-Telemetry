@@ -18,9 +18,11 @@
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
-import { get as getConfig, type Config } from "./config.js";
-import { writeArtifact } from "./artifactWriter.js";
+import { get as getConfig, resolveNodeReportsDir, type Config } from "./config.js";
+import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
+import { collectAnalytics } from "./collectAnalytics.js";
+import { fetchCatalog } from "./pricingFetch.js";
 
 export interface CliIo {
   out: (line: string) => void;
@@ -37,7 +39,7 @@ export type RunFn = (
   io: CliIo,
   args: string[],
   cfg: () => Config,
-) => number;
+) => number | Promise<number>;
 
 interface Command {
   summary: string;
@@ -131,7 +133,44 @@ export const COMMANDS: Record<string, Command> = {
   "session-timeline": stub("session-timeline — write sessions/<profile>/<id>.json", "T-16"),
   logs: stub("logs — write logs-data.json", "T-16"),
   probe: stub("probe — write ollama-data.json", "T-16"),
-  analytics: stub("analytics — write analytics-data.json", "T-15"),
+  analytics: {
+    summary: "analytics — write analytics-data.json [-o|--out PATH]",
+    status: "ported",
+    run: async (_name, io, args, cfg) => {
+      // argparse parity for `python -m llm_telemetry.collect_analytics`:
+      // -o/--out PATH (also --out=PATH); anything else is a usage error (2).
+      let outArg: string | undefined;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i]!;
+        if ((a === "-o" || a === "--out") && i + 1 < args.length) outArg = args[++i];
+        else if (a.startsWith("--out=")) outArg = a.slice("--out=".length);
+        else if (a.startsWith("-o") && a.length > 2 && !a.startsWith("--")) outArg = a.slice(2);
+        else {
+          io.err(`usage: analytics [-o OUT]\nanalytics: error: unrecognized arguments: ${a}`);
+          return 2;
+        }
+      }
+      const c = cfg();
+      // Every side file (price caches, bandwidth ledger) and the artifact go
+      // to the Node reports dir, never cfg.reports_dir (single-writer rule).
+      const nodeReports = resolveNodeReportsDir(c);
+      assertSafeOutDir(nodeReports, c);
+      const [models, source] = await fetchCatalog(c, { cacheDir: nodeReports });
+      const payload = collectAnalytics({
+        cfg: c, catalog: { models, source }, reportsDir: nodeReports,
+      }) as unknown as Record<string, unknown>;
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "analytics-data.json";
+      const res = writeArtifact(filename, payload, {
+        tag: "analytics", cfg: c, ...(outDir ? { outDir } : {}),
+      });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { rows?: unknown[] }>;
+      const names = Object.keys(profiles);
+      const tot = names.reduce((acc, n) => acc + (profiles[n]?.rows?.length ?? 0), 0);
+      io.out(`${res.path}  (${names.length} profiles, ${tot} day-rows)`);
+      return 0;
+    },
+  },
   router: stub("router — write router-data.json", "T-16"),
   quota: stub("quota — write quota-data.json + history", "T-16"),
   serve: stub("serve — serve reports/ (replaced by the Next.js app)", "T-19"),
@@ -156,7 +195,7 @@ export function runCli(
   argv: string[],
   io: CliIo = stdIo,
   cfg: () => Config = getConfig,
-): number {
+): number | Promise<number> {
   const [name, ...rest] = argv;
   if (!name || name === "-h" || name === "--help") {
     if (name) io.out(USAGE);
@@ -175,5 +214,5 @@ const self = fileURLToPath(import.meta.url);
 const invoked = process.argv[1] ? resolvePath(process.argv[1]) : null;
 
 if (invoked && invoked === self) {
-  process.exit(runCli(process.argv.slice(2)));
+  void Promise.resolve(runCli(process.argv.slice(2))).then((code) => process.exit(code));
 }

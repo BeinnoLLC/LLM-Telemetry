@@ -98,7 +98,7 @@ where s.ended_at is null
   and coalesce(s.last_activity_at, s.started_at) > strftime('%s','now') - 600
 group by u.session_id, u.model, 3`;
 
-const LIVE_META = `select s.id, coalesce(s.source,''), coalesce(s.chat_type,''),
+export const LIVE_META = `select s.id, coalesce(s.source,''), coalesce(s.chat_type,''),
        (select substr(m.content,1,600) from messages m
          where m.session_id = s.id and m.role = 'user'
            and coalesce(m.content,'') != ''

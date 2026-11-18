@@ -337,7 +337,10 @@ describe("agent worker session identity is the file stem", () => {
       catalog: {},
       now,
       claudeHome,
-      env: {},
+      // hermetic: without this the real ~/.codex and agent-logins are scanned,
+      // so a live codex session on the host adds rows and breaks the count
+      codexHome: join(dir, "codex"),
+      env: { LLM_TELEMETRY_AGENT_LOGINS: join(dir, "no-logins") },
     });
     expect(rows).toHaveLength(1);
     const row = rows[0] as AgentLiveRow;

@@ -196,7 +196,7 @@ export function cachedCatalog(cfg?: Config, env: NodeJS.ProcessEnv = process.env
   }
 }
 
-function resolveCatalogId(model: string | null, catalog: Catalog): string | null {
+export function resolveCatalogId(model: string | null, catalog: Catalog): string | null {
   let base = (model ?? "").split("/").slice(-1)[0]?.toLowerCase() ?? "";
   if (!base) return null;
   base = base.replace(/(:|-)cloud$/, "");
@@ -214,7 +214,7 @@ function resolveCatalogId(model: string | null, catalog: Catalog): string | null
   return null;
 }
 
-function builtinRate(
+export function builtinRate(
   table: Record<string, [number, number, number]>,
   model: string | null,
 ): [number, number, number] | null {
@@ -409,4 +409,9 @@ export function pyRound(x: number, digits: number): number {
     n = rem > half || (rem === half && q % 2n === 1n) ? q + 1n : q;
   }
   return (neg ? -1 : 1) * Number(n) / 10 ** digits;
+}
+
+/** Catalogue entries excluding the Nous table (pricing.py catalog_size). */
+export function catalogSize(catalog: Catalog): number {
+  return Object.keys(catalog).filter((k) => !k.startsWith(NOUS_PREFIX)).length;
 }
