@@ -5,7 +5,7 @@
 import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, provLogoSvg, provOf, render } from './views.js';
-import { DATA, css } from './main.js';
+import { DATA, css, hueCss } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
@@ -394,10 +394,10 @@ export function paintTrain(queued, running, done){
     c.dataset.state = it.state;
     // Per-profile colour for Hermes balls; engine colour for fleet-wide agents.
     const hue = (it.eng === 'hermes' || !it.eng) ? profileHue(it.profile || '') : null;
-    c.style.setProperty('--k', hue != null ? `hsl(${hue} 65% 52%)` : kindMeta(it.eng).color);
+    c.style.setProperty('--k', hue != null ? hueCss(hue, 'ball') : kindMeta(it.eng).color);
   }, elsewhere);
   const freshD = paintBalls(db, done, (c, it) => {
-    c.style.setProperty('--k', `hsl(${profileHue((it && it.profile) || current || '')} 65% 52%)`);
+    c.style.setProperty('--k', hueCss(profileHue((it && it.profile) || current || ''), 'ball'));
   }, elsewhere);
 
   // line -> yard is an exact identity (same session id in both feeds).

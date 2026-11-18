@@ -18,7 +18,7 @@ import {
 } from './router.js';
 import { installHelp } from './routerview.js';
 import { applyDiff, motionReduced, invalidate } from './diffdom.js';
-import { DATA, SCHEMA_VERSION, css } from './main.js';
+import { DATA, SCHEMA_VERSION, css, hueCss } from './main.js';
 
 // A live session renders as a ROW DIV + (optionally) the lmpanel DIV, so a
 // "key" owns 1–2 consecutive nodes. Row carries data-tsession; panel carries
@@ -381,7 +381,10 @@ export function ownerBadge(name, what, kindColor){
   if (!n) return '';
   let style;
   if (kindColor) style = `color:color-mix(in srgb,${kindColor} 60%,var(--fg));background:color-mix(in srgb,${kindColor} 18%,var(--card));border:1px solid color-mix(in srgb,${kindColor} 45%,transparent)`;
-  else { const h = profileHue(n); style = `background:hsl(${h} 62% 30%);color:hsl(${h} 80% 78%);border:1px solid hsl(${h} 55% 42%)`; }
+  else {
+    const h = profileHue(n);
+    style = `background:${hueCss(h, 'tag-bg')};color:${hueCss(h, 'tag-fg')};border:1px solid ${hueCss(h, 'tag-bd')}`;
+  }
   return `<span class="lvtag lvowner" data-owner="${escA(n)}" style="${style}" title="${escA(what || 'Profile')}: ${escA(n)}">${esc(n)}</span>`;
 }
 // Short session id (last 6 chars; the full id is in title=). With `open` it is a

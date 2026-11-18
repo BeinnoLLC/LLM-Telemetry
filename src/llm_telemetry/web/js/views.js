@@ -146,7 +146,8 @@ export function renderResolution(){
   btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
   document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
-const MUBG = 'color-mix(in srgb,var(--muted) 14%,transparent)'; export const PROV = {
+const MUBG = 'color-mix(in srgb,var(--muted) 14%,transparent)';
+export const PROV = {
   'anthropic': {icon:'✳', bg:'--prov-anthropic-bg', fg:'--prov-anthropic-fg'},
   'opencode-go': {icon:'◈', bg:'--prov-opencode-go-bg', fg:'--prov-opencode-go-fg'},
   'fireworks': {icon:'✦', bg:'--prov-fireworks-bg', fg:'--prov-fireworks-fg'},
@@ -206,7 +207,9 @@ export function provOf(p, model, url){
 }
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
-  const s=PROV[key]||{icon:'○',bg:MUBG,fg:'--muted'}; const fg=rtColor(s.fg), bg=rtColor(s.bg);
+  const s=PROV[key]||{icon:'○',bg:MUBG,fg:'--muted'};
+  const fg=rtColor(s.fg);
+  const bg=rtColor(s.bg);
   const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
   const d = rt.svg && RT_SVG[rt.svg];
   const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
@@ -1262,15 +1265,18 @@ export function unattrPattern(){
   // check_projects_card.js still asserts the Unattributed bar uses a
   // DIFFERENT fill style than any real project's PAL color.
   if (!ctx) return 'color-mix(in srgb,var(--muted) 50%,transparent)';
-  ctx.globalAlpha = 0.35; ctx.fillStyle = css('--muted');
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = css('--muted');
   ctx.fillRect(0, 0, 8, 8);
-  ctx.globalAlpha = 0.9; ctx.strokeStyle = css('--muted');
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = css('--muted');
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, 8); ctx.lineTo(8, 0);
   ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
   ctx.moveTo(6, 10); ctx.lineTo(10, 6);
-  ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
   _unattrPattern = ctx.createPattern(c, 'repeat');
   return _unattrPattern;
 }
@@ -3419,7 +3425,8 @@ function priceRow(m){
   const provHtml = provs.length || inf.length
     ? (provs.length ? provs : inf).map((pv) => {
         const meta = PROV_META[pv] || {sig: '\u25CF', color: '--muted'};
-        const inferred = !provs.length, mc = rtColor(meta.color);
+        const inferred = !provs.length;
+        const mc = rtColor(meta.color);
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
           + ` style="color:${mc};border-color:color-mix(in srgb,${mc} 45%,transparent);background:color-mix(in srgb,${mc} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')

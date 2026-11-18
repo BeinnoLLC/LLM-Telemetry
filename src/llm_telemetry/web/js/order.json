@@ -39,6 +39,10 @@
     },
     {
       "mod": "main",
+      "name": "hueCss"
+    },
+    {
+      "mod": "main",
       "name": "css"
     },
     {

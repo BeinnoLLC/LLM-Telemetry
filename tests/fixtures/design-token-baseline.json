@@ -331,33 +331,13 @@
   },
   {
     "path": "src/llm_telemetry/web/js/charts.js",
-    "line": 338,
-    "matched": "hsl(, hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/charts.js",
     "line": 355,
     "matched": "#c66a6a, #5f9e6e"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/drawer.js",
-    "line": 802,
-    "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/flow.js",
     "line": 125,
     "matched": "#5b6472"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/flow.js",
-    "line": 397,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/flow.js",
-    "line": 400,
-    "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/flow.js",
@@ -381,22 +361,12 @@
   },
   {
     "path": "src/llm_telemetry/web/js/live.js",
-    "line": 308,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/live.js",
-    "line": 384,
-    "matched": "hsl(, hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/live.js",
-    "line": 1005,
+    "line": 1008,
     "matched": "#128266, #128263"
   },
   {
     "path": "src/llm_telemetry/web/js/main.js",
-    "line": 30,
+    "line": 32,
     "matched": "#888"
   },
   {
@@ -500,248 +470,108 @@
     "matched": "hsl("
   },
   {
-    "path": "src/llm_telemetry/web/js/router.js",
-    "line": 423,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/router.js",
-    "line": 453,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/router.js",
-    "line": 1101,
-    "matched": "hsl(, hsl("
-  },
-  {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 89,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 150,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 151,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 152,
-    "matched": "#b07a5e, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 153,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 154,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 155,
-    "matched": "#b87383, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 156,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 157,
-    "matched": "hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 158,
-    "matched": "#baa984, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 209,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 290,
+    "line": 293,
     "matched": "#c4a06e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 293,
+    "line": 296,
     "matched": "#38bdf8, #38bdf8"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 300,
+    "line": 303,
     "matched": "#c4a06e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 302,
+    "line": 305,
     "matched": "#38bdf8"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 530,
+    "line": 533,
     "matched": "#c66a6a, #c2a15c"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 1241,
+    "line": 1244,
     "matched": "#c66a6a"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 1264,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 1265,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 1267,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2061,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2257,
+    "line": 2263,
     "matched": "#c4a06e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2258,
+    "line": 2264,
     "matched": "#fb923c"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2259,
+    "line": 2265,
     "matched": "#7c909c"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2260,
+    "line": 2266,
     "matched": "#c66a6a"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2261,
+    "line": 2267,
     "matched": "#9a86b8"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2265,
+    "line": 2271,
     "matched": "#64b5c9"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2266,
+    "line": 2272,
     "matched": "#818cf8"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2286,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2288,
+    "line": 2294,
     "matched": "#5f9e6e, #c4a06e, #c66a6a"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2398,
+    "line": 2404,
     "matched": "#5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2465,
+    "line": 2471,
     "matched": "#c66a6a, #5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2466,
+    "line": 2472,
     "matched": "#c4a06e, #5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2530,
+    "line": 2536,
     "matched": "#c66a6a, #5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2535,
+    "line": 2541,
     "matched": "#c66a6a, #c4a06e, #5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 2596,
+    "line": 2602,
     "matched": "#c66a6a, #5f9e6e"
   },
   {
     "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3152,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3153,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3154,
-    "matched": "#b07a5e"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3155,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3156,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3157,
-    "matched": "#b87383"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3158,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3159,
-    "matched": "#baa984"
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3421,
-    "matched": "hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/js/views.js",
-    "line": 3491,
+    "line": 3498,
     "matched": "#5b9cf6, #34c38f"
   }
 ]

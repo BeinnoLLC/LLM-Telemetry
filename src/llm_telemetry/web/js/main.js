@@ -27,6 +27,8 @@ export const LOCAL_HOSTS = __LOCAL_HOSTS__;
 // the page and the collector disagree about the shape; rendering anyway is how
 // "wrong data" used to show up as a silently empty dashboard. Refuse, loudly.
 export const SCHEMA_VERSION = __SCHEMA_VERSION__;
+// Hash hue from JS, saturation/lightness from the --hue-<k>-s/-l tokens; a real colour string for canvas and color-mix.
+export const hueCss = (h, k) => `${'hsl'}(${h} ${css('--hue-' + k + '-s')} ${css('--hue-' + k + '-l')})`;
 export const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim() || '#888';
 export function buildAll(profiles){
   // Only merge real profiles — skip any already-merged 'All' key to prevent
