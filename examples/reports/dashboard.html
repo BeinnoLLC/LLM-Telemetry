@@ -5182,19 +5182,19 @@ function pick(name){
 }
 
 const CAT = {
- 'Running':    {c:'#c4a06e', i:'▶'},
- 'Coding':     {c:'#5f9e6e', i:'✎'},
- 'Generating': {c:'#818cb4', i:'✦'},
- 'Thinking':   {c:'#9a86b8', i:'◐'},
- 'Researching':{c:'#7fa3b5', i:'⌕'},
- 'Reading':    {c:'#7c909c', i:'▤'},
- 'Reviewing':  {c:'#c47c8c', i:'✓'},
- 'Compressing':{c:'#a8a29e', i:'⇲'},
- 'Waiting':    {c:'#baa984', i:'⏸'},
- 'Working':    {c:'#84a893', i:'•'},
- 'Idle':       {c:'#6b7280', i:'○'}
+ 'Running':    {get c(){ return css('--z-warn'); }, i:'▶'},
+ 'Coding':     {get c(){ return css('--z-ok'); }, i:'✎'},
+ 'Generating': {get c(){ return css('--accent'); }, i:'✦'},
+ 'Thinking':   {get c(){ return css('--z-warn'); }, i:'◐'},
+ 'Researching':{get c(){ return css('--accent'); }, i:'⌕'},
+ 'Reading':    {get c(){ return css('--muted'); }, i:'▤'},
+ 'Reviewing':  {get c(){ return css('--z-bad'); }, i:'✓'},
+ 'Compressing':{get c(){ return css('--muted'); }, i:'⇲'},
+ 'Waiting':    {get c(){ return css('--z-warn'); }, i:'⏸'},
+ 'Working':    {get c(){ return css('--z-ok'); }, i:'•'},
+ 'Idle':       {get c(){ return css('--muted'); }, i:'○'}
 };
-const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};
+const catOf = n => CAT[n] || {c:css('--muted'), i:'•'};
 const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : s<172800 ? Math.round(s/3600)+'h' : Math.round(s/86400)+'d';
 
 const CADENCE = {
@@ -7090,10 +7090,14 @@ function renderAgents(agents){
  agents = agents || [];
  if (!agents.length) { card.hidden = true; return; }
  card.hidden = false;
- const stateColor = { alive: '#5f9e6e', stale: '#c4a06e', dead: '#c66a6a' };
+ const stateColor = {
+ alive: Z.ok,
+ stale: Z.warn,
+ dead: Z.bad,
+ };
  $('agentslist').innerHTML = agents.map(a => `
     <div class="flex items-center gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
-      <span class="qdotwrap" style="background:${stateColor[a.state] || '#64748b'};width:7px;height:7px;border-radius:999px;flex:none"></span>
+      <span class="qdotwrap" style="background:${stateColor[a.state] || MU};width:7px;height:7px;border-radius:999px;flex:none"></span>
       <span class="font-semibold" style="min-width:5.5rem">${esc(a.state)}</span>
       <span class="muted flex-1 truncate" title="${escA(a.backend)}">${esc(a.host)} · pid ${a.pid} · ${esc(a.profile)}</span>
       <span class="muted">${ago(a.age_s)} ago</span>
@@ -9819,7 +9823,7 @@ function ctxSpark(series, compactions){
  const pts = series.map(pt => `${xAt(pt[0]).toFixed(1)},${yAt(pt[1]).toFixed(1)}`).join(' ');
  const markers = (compactions || []).map(c => {
  const x = xAt(c.ts).toFixed(1);
- const color = c.ineffective ? '#c66a6a' : '#5f9e6e';
+ const color = c.ineffective ? Z.bad : Z.ok;
  return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2,2"><title>${c.ineffective ? 'ineffective' : 'effective'} compaction: -${(c.yield_tok||0).toLocaleString()} tok</title></line>`;
  }).join('');
  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">` +
@@ -12243,8 +12247,8 @@ function lnKeydown(e){
 function lnColorOf(key){
  if (COLORS[key]) return COLORS[key];
  if (TOOLCOLORS[key]) return TOOLCOLORS[key];
- if (key === 'compaction') return '#c4a06e';
- if (key === 'user') return '#64748b';
+ if (key === 'compaction') return Z.warn;
+ if (key === 'user') return MU;
  return `hsl(${hashHue(key||'')} 52% 58%)`;
 }
 
@@ -12388,6 +12392,12 @@ function renderError(container, opts) {
  }
  return html;
 }
+
+const Z = {
+ get ok(){ return css('--z-ok'); },
+ get warn(){ return css('--z-warn'); },
+ get bad(){ return css('--z-bad'); },
+};
 function hvBeatPaint() { const b = hvBeat(hvC.log, hvC.lastSnap, Date.now() / 1000); $('hive-lastreal').textContent = b.last; $('hive-fresh').textContent = b.fresh; }
 
 function hvApply(fr) {

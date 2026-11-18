@@ -23,6 +23,8 @@ async function charts(weight, { bwPrevAt = NOW - 10_000, DATA = {} } = {}) {
       escA: P.escA, fmtB: P.fmtB, fmtRate: P.fmtRate, labelColor: () => null, readTheme: () => {},
     },
     'main.js': { DATA },
+    // what state.js's lazy Z getters return under a css stub that echoes tokens
+    'state.js': { Z: { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' } },
   }, {
     Chart: { defaults: { font: {} } },
     localStorage: { getItem: k => (k === 'hermes-dash-projweight' ? weight : null) },
@@ -83,7 +85,7 @@ eq(C.ctxSpark([]).includes('no data'), true, 'ctxSpark empty -> no data');
 {
   const s = C.ctxSpark([[0, 0], [10, 20]], [{ ts: 5, ineffective: true, yield_tok: 1200 }]);   // W260 H40 pad2
   eq(s.includes('points="2.0,38.0 258.0,2.0"'), true, 'ctxSpark scales x across the width and y to the max', s);
-  eq(s.includes('x1="130.0"') && s.includes('#c66a6a'), true, 'ctxSpark places an ineffective compaction mid-way in red');
+  eq(s.includes('x1="130.0"') && s.includes('var(--z-bad)'), true, 'ctxSpark places an ineffective compaction mid-way, stroked from --z-bad');
 }
 
 // ---- electricity maths ---------------------------------------------------

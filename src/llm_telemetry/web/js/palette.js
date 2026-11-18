@@ -227,19 +227,19 @@ export function pick(name){
 // Live view: what is running right now, not what the date filter says. The
 // category colours are fixed so a glance tells you the shape of the work.
 export const CAT = {
-  'Running':    {c:'#c4a06e', i:'▶'},
-  'Coding':     {c:'#5f9e6e', i:'✎'},
-  'Generating': {c:'#818cb4', i:'✦'},
-  'Thinking':   {c:'#9a86b8', i:'◐'},
-  'Researching':{c:'#7fa3b5', i:'⌕'},
-  'Reading':    {c:'#7c909c', i:'▤'},
-  'Reviewing':  {c:'#c47c8c', i:'✓'},
-  'Compressing':{c:'#a8a29e', i:'⇲'},
-  'Waiting':    {c:'#baa984', i:'⏸'},
-  'Working':    {c:'#84a893', i:'•'},
-  'Idle':       {c:'#6b7280', i:'○'}
+  'Running':    {get c(){ return css('--z-warn'); }, i:'▶'},
+  'Coding':     {get c(){ return css('--z-ok'); }, i:'✎'},
+  'Generating': {get c(){ return css('--accent'); }, i:'✦'},
+  'Thinking':   {get c(){ return css('--z-warn'); }, i:'◐'},
+  'Researching':{get c(){ return css('--accent'); }, i:'⌕'},
+  'Reading':    {get c(){ return css('--muted'); }, i:'▤'},
+  'Reviewing':  {get c(){ return css('--z-bad'); }, i:'✓'},
+  'Compressing':{get c(){ return css('--muted'); }, i:'⇲'},
+  'Waiting':    {get c(){ return css('--z-warn'); }, i:'⏸'},
+  'Working':    {get c(){ return css('--z-ok'); }, i:'•'},
+  'Idle':       {get c(){ return css('--muted'); }, i:'○'}
 };
-export const catOf = n => CAT[n] || {c:'#6b7280', i:'•'};
+export const catOf = n => CAT[n] || {c:css('--muted'), i:'•'};
 export const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : s<172800 ? Math.round(s/3600)+'h' : Math.round(s/86400)+'d';
 
 // ---- per-section freshness (P14, #149) ----------------------------------

@@ -1,3 +1,4 @@
+import { css } from './main.js';
 // State renderers: skeleton / empty / error for every panel.
 export function renderSkeleton(container, opts) {
   opts = opts || {};
@@ -45,3 +46,13 @@ export function renderError(container, opts) {
   }
   return html;
 }
+
+// Z-state token values. Read lazily via getters: `css` comes from main.js,
+// which sits in an import cycle with this module, so an eager read here could
+// hit the temporal dead zone at eval time — and a theme switch would never
+// update colours frozen at import. Getters resolve both.
+export const Z = {
+  get ok(){ return css('--z-ok'); },
+  get warn(){ return css('--z-warn'); },
+  get bad(){ return css('--z-bad'); },
+};

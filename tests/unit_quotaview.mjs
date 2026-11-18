@@ -12,10 +12,12 @@
 // guard against the built HTML — do not weaken either side.
 import { isolate } from './lib/isolate.mjs';
 
-// state.js has no sibling imports, so it loads standalone. quotaview delegates
-// its empty state to renderEmpty (LST-235), and the test asserts the REAL
-// single-card markup it renders — a stubbed no-op would fake the outcome.
-import { renderEmpty } from '../src/llm_telemetry/web/js/state.js';
+// state.js's only sibling import is css from main.js (its lazy Z-state token
+// getters, LST-314), so it loads through isolate with just that name stubbed —
+// the renderEmpty under test is still the real implementation. quotaview
+// delegates its empty state to renderEmpty (LST-235), and the test asserts the
+// REAL single-card markup it renders — a stubbed no-op would fake the outcome.
+const { renderEmpty } = await isolate('state.js', { 'main.js': { css: v => `var(${v})` } });
 
 let pass = 0, fail = 0;
 function ok(cond, msg){ if (cond) { pass++; return; } fail++; console.log(`  FAIL: ${msg}`); }
