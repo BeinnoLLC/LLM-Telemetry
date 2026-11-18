@@ -345,6 +345,91 @@ def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
     assert hive.diff_tasks(first["tasks"], again["tasks"]) == []   # no phantom events from the hiccup
 
 
+# LLMTELEMET-339: roster spec hardening. Malformed specs must never invent
+# events, crash the snapshot, or disappear silently; bad YAML value types must
+# not take collect down either.
+def test_read_fleet_spec_rejects_list_and_scalar_spec():
+    with pytest.raises(ValueError, match="expected a mapping"):
+        hive.read_fleet_spec("- a\n- b\n")           # the spec is a list
+    with pytest.raises(ValueError, match="expected a mapping"):
+        hive.read_fleet_spec("just a scalar\n")      # the spec is a plain value
+
+
+def test_read_fleet_spec_empty_file_is_empty_mapping():
+    assert hive.read_fleet_spec("") == {}
+    assert hive.read_fleet_spec("# only a comment\n") == {}
+
+
+def test_read_fleet_spec_rejects_bad_section_types():
+    with pytest.raises(ValueError, match="orchestrators"):
+        hive.read_fleet_spec("family: x\norchestrators: 5\n")   # orchestrators is not a list
+    with pytest.raises(ValueError, match="bots"):
+        hive.read_fleet_spec("family: x\nbots: [1, 2]\n")      # bots is not a mapping
+
+
+def test_load_families_empty_spec_file_is_skipped(tmp_path):
+    (tmp_path / "fleet").mkdir()
+    (tmp_path / "fleet" / "blank.yaml").write_text("")
+    errors = []
+    assert hive.load_families(tmp_path, errors=errors) == []
+    assert errors == []   # an empty spec is not an error, it just has no family
+
+
+def test_collect_root_home_zero_indent_spec(root_home):
+    now = time.time()
+    snap = hive.collect(root_home, now=now, scan=False, hosts=[])
+    json.dumps(snap)
+    assert snap["errors"] == []
+    (fam,) = snap["families"]
+    assert fam["id"] == "root" and fam["label"] == "Beinno"
+    assert fam["assistant"]["id"] == "beinno-donna" and fam["assistant"]["label"] == "Donna"
+    assert [b["id"] for b in fam["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+    assert [b["id"] for b in fam["bots"]] == ["beinno-git", "beinno-designer"]   # bot without a profile dir is skipped
+
+
+def test_two_spec_styles_in_one_home(root_home):
+    (root_home / "fleet" / "acme.yaml").write_text(FLEET)
+    for p in ("ac-pal", "ac-git", "alpha-brain"):
+        (root_home / "profiles" / p).mkdir(parents=True)
+    fams = hive.load_families(root_home)
+    by = {f["id"]: f for f in fams}
+    assert set(by) == {"root", "acme"}   # zero-indent PyYAML dump + compact hand style coexist
+    assert by["acme"]["label"] == "Acme Co" and by["acme"]["assistant"] == {"id": "ac-pal", "label": "Pal"}
+    assert dict(by["acme"]["bots"]) == {"ac-git": "Git Bot"}
+    assert by["root"]["label"] == "Beinno"
+    assert [b[0] for b in by["root"]["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+
+
+def test_transient_spec_parse_failure_keeps_last_good(home):
+    now = time.time()
+    first = hive.collect(home, now=now, scan=False, hosts=[])
+    assert "acme:t4" in first["tasks"] and first["errors"] == []
+    (home / "fleet" / "acme.yaml").write_text("family: acme\norchestrators:\n- {name: x\n  bad: [\n")   # half-written
+    second = hive.collect(home, now=now + 5, scan=False, hosts=[])
+    assert "acme:t4" in second["tasks"]                          # last good roster, family not dropped
+    assert hive.diff_tasks(first["tasks"], second["tasks"]) == []   # no fake finished/new events
+    (err,) = second["errors"]
+    assert err["file"] == "acme.yaml" and err["error"]           # the failure is shown, not only logged
+
+
+def test_bad_spec_value_types_do_not_crash(tmp_path):
+    (tmp_path / "fleet").mkdir()
+    (tmp_path / "fleet" / "weird.yaml").write_text(
+        "family: 123\nprefix: 456\n"
+        "orchestrators:\n  - project: 7\n    name: 8\n"
+        "  - project: pal\n    name: 9\n    assistant: true\n    display: 10\n    family_title: 11\n"
+        "bots:\n  12:\n    display: 13\n")
+    (tmp_path / "profiles" / "456-12").mkdir(parents=True)
+    (fam,) = hive.load_families(tmp_path)
+    assert fam["id"] == "123" and fam["label"] == "11"
+    assert fam["assistant"] == {"id": "9", "label": "10"}
+    assert fam["brains"] == [("8", "7", "7")]
+    assert fam["bots"] == [("456-12", "13")]
+    snap = hive.collect(tmp_path, now=time.time(), scan=False, hosts=[])
+    json.dumps(snap)
+    assert snap["errors"] == []
+
+
 def _scanner():
     ns = {"__name__": "t"}
     exec(hive._SCANNER_CODE, ns)

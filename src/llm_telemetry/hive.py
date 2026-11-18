@@ -68,6 +68,11 @@ def pretty(name):
     return " ".join(w.capitalize() if len(w) > 2 else w.upper() for w in n.split("-"))
 
 
+def _text(v):
+    """Coerce YAML values to text so a bad type can never crash the snapshot."""
+    return v if isinstance(v, str) else ("" if v is None else str(v))
+
+
 def _scalar(v):
     v = v.split(" #", 1)[0].strip()
     if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
@@ -195,19 +200,32 @@ def parse_fleet_spec(text):
     return spec
 
 
-def load_families(home=None):
-    """[{id, label, assistant:{id,label}, brains:[(profile, board, label)], bots:[(id,label)]}]."""
+_SPEC_LAST: dict[str, dict] = {}   # fleet file -> last good read_fleet_spec result
+
+
+def load_families(home=None, errors=None):
+    """[{id, label, assistant:{id,label}, brains:[(profile, board, label)], bots:[(id,label)]}].
+
+    errors  optional list; every unreadable spec appends {"file": name, "error": str}
+    """
     home = Path(home) if home else default_home()
     fleet, profiles = home / "fleet", home / "profiles"
     files = sorted(fleet.glob("*.yaml"),
                    key=lambda p: (FAMILY_ORDER.index(p.stem) if p.stem in FAMILY_ORDER else 99, p.stem))
     fams = []
     for f in files:
+        key = str(f)
         try:
             spec = read_fleet_spec(f.read_text())
         except Exception as e:
             LOG.warning("fleet parse error %s: %s", f, e)
-            continue
+            if errors is not None:
+                errors.append({"file": f.name, "error": str(e)})
+            spec = _SPEC_LAST.get(key)   # last good roster: a half-written spec must not replay every task
+            if spec is None:
+                continue
+        else:
+            _SPEC_LAST[key] = spec
         orch = [o for o in (spec.get("orchestrators") or []) if isinstance(o, dict)]
         asst = next((o for o in orch if o.get("assistant")), None)
         if not asst or not asst.get("name"):
@@ -216,15 +234,18 @@ def load_families(home=None):
         for o in orch:
             if o.get("assistant") or not o.get("name"):
                 continue
-            board = o.get("board") or o.get("project")
-            brains.append((o["name"], board, o.get("display") or pretty(o.get("project") or o["name"])))
-        pre = spec.get("prefix") or f.stem
-        bots = [(f"{pre}-{k}", (v.get("display") if isinstance(v, dict) else None) or k)
+            board = _text(o.get("board") or o.get("project")) or None
+            brains.append((_text(o["name"]), board,
+                           _text(o.get("display")) or pretty(_text(o.get("project")) or _text(o["name"]))))
+        pre = _text(spec.get("prefix")) or f.stem
+        bots = [(f"{pre}-{k}", (_text(v.get("display")) if isinstance(v, dict) else "") or _text(k))
                 for k, v in (spec.get("bots") or {}).items()
                 if (profiles / f"{pre}-{k}").is_dir()]
-        fid = spec.get("family") or f.stem
-        fams.append({"id": fid, "bots": bots, "label": asst.get("family_title") or fid.capitalize(),
-                     "assistant": {"id": asst["name"], "label": asst.get("display") or pretty(asst["name"])},
+        fid = _text(spec.get("family")) or f.stem
+        fams.append({"id": fid, "bots": bots,
+                     "label": _text(asst.get("family_title")) or fid.capitalize(),
+                     "assistant": {"id": _text(asst["name"]),
+                                   "label": _text(asst.get("display")) or pretty(_text(asst["name"]))},
                      "brains": brains})
     return fams
 
@@ -1093,7 +1114,8 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=Non
     """
     home = Path(home) if home else default_home()
     now = time.time() if now is None else now
-    fams = load_families(home)
+    errors = []
+    fams = load_families(home, errors=errors)
     names = sorted({b for f in fams for _, b, _ in f["brains"] if b})
     cache = {}
     for b in names:
@@ -1160,7 +1182,8 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=Non
         pres[f"w:{w['id']}"] = {"kind": "worker", **pressure({}, [w])}
     feed = comms(fams, home, now)
     snap = {"kind": "hive", "at": now, "families": families, "comms": feed[-120:], "hosts": host_list,
-                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks}
+                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks,
+                  "errors": errors}   # spec files that could not be read this tick
     rdir = default_reports() if reports is None else (reports or None)
     enrich(snap, load_artifacts(rdir, now), home, now)
     return stamp(snap)
