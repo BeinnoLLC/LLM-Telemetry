@@ -1,10 +1,13 @@
 """LST-268: Hive collector (llm_telemetry.hive). All timestamps are relative to now."""
 import json
+import logging
 import os
+import re
 import sqlite3
 import time
 
 import pytest
+import yaml
 
 from llm_telemetry import hive
 from llm_telemetry.schema import SCHEMA_VERSION
@@ -255,6 +258,81 @@ def test_collect_real_scan_smoke(home):
     snap = hive.collect(home, hosts=[])
     json.dumps(snap)
     assert snap["hosts"][0]["name"] == "local"
+
+
+# Roster fix: ~/.hermes/fleet/*.yaml is PyYAML-dumped (zero-indent list items,
+# folded multi-line scalars), which the hand reader cannot follow. load_families
+# must use yaml.safe_load, report malformed specs, and fall back to the hand
+# reader only when PyYAML is unavailable.
+ROOT_STYLE = {
+    "family": "root",
+    "parent_home": "/home/x/.hermes",
+    "prefix": "beinno",
+    "max_running": 4,
+    "tracking_rule": ("Tickets live in Plane (plane.beinno.com) ONLY; assign ticket work to "
+                      "beinno-plane. GitHub is for code only (branches, PRs, CI, releases); "
+                      "never create, edit or mirror GitHub issues or Projects items."),
+    "orchestrators": [
+        {"project": "hazem-resume", "name": "beinno-resume-brain", "folder": "/x/hazem-resume-latex",
+         "about": ("Hazem resume maintenance; use beinno-resume-updates specialist. "
+                   "Evidence-backed updates only; compile and inspect PDF.")},
+        {"project": "llm-telemetry", "name": "llm-telemetry-brain", "folder": "/x/LLM-Telemtry"},
+        {"project": "horus", "name": "horus-brain", "folder": "/x/horus"},
+        {"project": "donna", "name": "beinno-donna", "assistant": True, "display": "Donna",
+         "family_title": "Beinno", "folder": "/x/beinno-donna/workspace",
+         "group": ["llm-telemetry-brain", "horus-brain"]},
+    ],
+    "bots": {
+        "git": {"tier": "complex", "display": "Git",
+                "job": ("Git and pull-request specialist for every Beinno project: "
+                        "branches, merges, pull requests."),
+                "pool": [{"provider": "anthropic", "model": "claude-opus-5-5"}]},
+        "designer": {"tier": "complex", "display": "Designer",
+                     "job": ("Expert product and visual designer: turn product goals "
+                             "into high-quality UX flows.")},
+        "missing": {"display": "Nope"},
+    },
+}
+# Exactly how root.yaml lands on disk: PyYAML-dumped, zero-indent list items.
+ROOT_YAML = yaml.dump(ROOT_STYLE, sort_keys=False, default_flow_style=False, width=60)
+
+
+@pytest.fixture
+def root_home(tmp_path):
+    h = tmp_path / "hermes"
+    (h / "fleet").mkdir(parents=True)
+    (h / "fleet" / "root.yaml").write_text(ROOT_YAML)
+    for p in ("beinno-donna", "beinno-git", "beinno-designer"):
+        (h / "profiles" / p).mkdir(parents=True)
+    return h
+
+
+def test_load_families_pyyaml_root_roster(root_home):
+    # the fixture really is root-style: zero-indent list items + a folded about field
+    assert "\n- project: " in ROOT_YAML
+    assert re.search(r"about: .*\n\s+\S", ROOT_YAML)
+    (fam,) = hive.load_families(root_home)
+    assert fam["id"] == "root" and fam["label"] == "Beinno"
+    assert fam["assistant"] == {"id": "beinno-donna", "label": "Donna"}
+    assert [b[0] for b in fam["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+    assert fam["brains"][1][2] == "LLM Telemetry"
+    assert dict(fam["bots"]) == {"beinno-git": "Git", "beinno-designer": "Designer"}
+
+
+def test_load_families_reports_malformed_spec(root_home, caplog):
+    (root_home / "fleet" / "broken.yaml").write_text("family: broken\norchestrators:\n- {name: x\n  bad: [\n")
+    with caplog.at_level(logging.WARNING, logger="llm_telemetry.hive"):
+        fams = hive.load_families(root_home)
+    assert [f["id"] for f in fams] == ["root"]   # the good family still loads
+    assert any("fleet parse error" in r.getMessage() and "broken.yaml" in r.getMessage()
+               for r in caplog.records)
+
+
+def test_read_fleet_spec_falls_back_without_pyyaml(monkeypatch):
+    monkeypatch.setattr(hive, "yaml", None)
+    s = hive.read_fleet_spec(FLEET)
+    assert s["family"] == "acme" and [o["name"] for o in s["orchestrators"]] == [
+        "alpha-brain", "nowinv-brain", "ac-pal"]
 
 
 def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
