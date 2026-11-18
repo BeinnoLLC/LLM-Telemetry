@@ -29,6 +29,7 @@
 //   * MODEL_PROV's cross-file cache (see renderResolution) and the model
 //     colours on Charts — exercised only through their public effect here.
 import { isolate } from './lib/isolate.mjs';
+import { css, rtColor } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) { pass++; return; } fail++; console.log(`  FAIL ${name}`); };
@@ -130,9 +131,9 @@ const load = () => isolate('views.js', {
   },
   'flow.js': { flowControls: {}, renderFlow(){} },
   'live.js': { renderLive(){ liveCalls++; } },
-  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; }, RT_SVG: {}, RT_LOGO: {} },
+  'routerview.js': { renderRouterView(){ routerCalls++; }, routerStat(){ return 'RS'; }, RT_SVG: {}, RT_LOGO: {}, rtColor },
   'quotaview.js': { renderQuotaView(){ quotaCalls++; }, qvStat(){ return 'QS'; } },
-  'main.js': { DATA, LOCAL_HOSTS: ['localhost', '192.168.'], SCHEMA_VERSION: 1, css: () => '' },
+  'main.js': { DATA, LOCAL_HOSTS: ['localhost', '192.168.'], SCHEMA_VERSION: 1, css },
 }, { document: fakeDocument });
 
 const D = await load();

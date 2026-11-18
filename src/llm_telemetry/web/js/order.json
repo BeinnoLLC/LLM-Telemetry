@@ -39,6 +39,18 @@
     },
     {
       "mod": "main",
+      "name": "HUE_SL"
+    },
+    {
+      "mod": "main",
+      "name": "hueCss"
+    },
+    {
+      "mod": "main",
+      "name": "rawCss"
+    },
+    {
+      "mod": "main",
       "name": "css"
     },
     {
@@ -164,6 +176,10 @@
     {
       "mod": "routerview",
       "name": "RT_LOGO"
+    },
+    {
+      "mod": "routerview",
+      "name": "rtColor"
     },
     {
       "mod": "routerview",
@@ -900,6 +916,10 @@
     {
       "mod": "views",
       "name": "_unattrPattern"
+    },
+    {
+      "mod": "views",
+      "name": "resetUnattrPattern"
     },
     {
       "mod": "views",

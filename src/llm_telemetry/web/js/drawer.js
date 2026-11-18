@@ -9,7 +9,7 @@ import {
 import { current } from './charts.js';
 import { provLogoSvg, schemaProblem } from './views.js';
 import { pickView } from './router.js';
-import { DATA } from './main.js';
+import { DATA, css, hueCss } from './main.js';
 
 export const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
 
@@ -797,9 +797,9 @@ export function lnKeydown(e){
 export function lnColorOf(key){
   if (COLORS[key]) return COLORS[key];
   if (TOOLCOLORS[key]) return TOOLCOLORS[key];
-  if (key === 'compaction') return '#c4a06e';
-  if (key === 'user') return '#64748b';
-  return `hsl(${hashHue(key||'')} 52% 58%)`;
+  if (key === 'compaction') return css('--ln-compaction');
+  if (key === 'user') return css('--ln-user');
+  return hueCss(hashHue(key||''), 'chip');
 }
 
 export function installTimelineModal(){

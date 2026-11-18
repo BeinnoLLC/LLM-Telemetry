@@ -25,6 +25,7 @@ import { isolate, JS_DIR } from './lib/isolate.mjs';
 // (LLMTELEMET-279): flow.js calls the shared helper, so the suite pins the
 // REAL helper here instead of a fake — zoom.js is dependency-free by design.
 import { attachZoom } from '../src/llm_telemetry/web/js/zoom.js';
+import { hueCss } from './lib/tokens.mjs';
 
 const TARGET = process.env.FLOW_UNIT_FILE
   ? (path.isAbsolute(process.env.FLOW_UNIT_FILE)
@@ -141,7 +142,7 @@ function harness(els = {}){
       provLogoSvg: () => '<svg></svg>',
       render: () => { rec.render++; },
     },
-    'main.js': { DATA, css: v => `var(${v})` },
+    'main.js': { DATA, css: v => `var(${v})`, hueCss },
     // Hermes-only copy of live.js's inFlight (Pi/agent cars: check_agent_queue.js).
     'live.js': {
       inFlight: p => { const seen = new Set(); return ((p && p.live) || []).filter(L => L && !seen.has(L.id) && seen.add(L.id)).map(S => ({ kind: 'hermes', S })); },
