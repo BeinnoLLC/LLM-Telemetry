@@ -114,12 +114,12 @@ POWER = {"tariff": {"electricity_rate_kwh": _kwh, "gpu_draw_watts": _gw, "host_o
 _DASHBOARD_CSS = read_utilities() + read_tokens() + read_css()
 SHELL = read_shell()
 try:
-    _costs_payload = json.dumps(json.load(open(COSTS_DATA)), default=str)
+    _costs_payload = json.dumps(json.load(open(COSTS_DATA)), default=str, separators=(",", ":"))
 except (OSError, ValueError):
     _costs_payload = "{}"
 RANKINGS_DATA = str(CFG.reports_dir / "rankings-data.json")
 try:
-    _rankings_payload = json.dumps(json.load(open(RANKINGS_DATA)), default=str)
+    _rankings_payload = json.dumps(json.load(open(RANKINGS_DATA)), default=str, separators=(",", ":"))
 except (OSError, ValueError):
     _rankings_payload = "{}"
 _JS_INLINE = inline_js()
@@ -130,7 +130,7 @@ html = (SHELL.replace("__PRICE_TTL__", _ttl_label())
              .replace("__DATA__", json.dumps(data, default=str, separators=(",", ":")))
              .replace("__COSTS_DATA__", _costs_payload)
              .replace("__RANKINGS_DATA__", _rankings_payload)
-             .replace("__POWER__", json.dumps(POWER))
+             .replace("__POWER__", json.dumps(POWER, separators=(",", ":")))
              .replace("__LOCAL_HOSTS__", json.dumps(CFG.local_host_patterns))
              .replace("__SCHEMA_VERSION__", str(SCHEMA_VERSION)))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
