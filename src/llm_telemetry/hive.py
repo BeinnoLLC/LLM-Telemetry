@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Hive collector (LST-268, H-1): the data half of the standalone Hive app.
 
-Ported from the read-only source of truth ``hive/server.py`` as pure, stdlib-only
-functions. ``collect()`` returns one JSON-serialisable snapshot of every family
+Ported from the read-only source of truth ``hive/server.py`` as read-only
+functions (PyYAML only for fleet specs, with a stdlib fallback reader).
+``collect()`` returns one JSON-serialisable snapshot of every family
 (assistant -> brains -> agents), the live sub-agent processes on this host (and
 optional ssh hosts), derived pressure scores, recent assistant/brain
 communication, and the Hazem<->assistant conversation state.
@@ -16,6 +17,7 @@ from __future__ import annotations
 import collections
 import glob
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -25,7 +27,14 @@ import threading
 import time
 from pathlib import Path
 
+try:
+    import yaml
+except Exception:  # PyYAML is a hard dependency; the hand reader below is the fallback
+    yaml = None
+
 from .schema import stamp
+
+LOG = logging.getLogger(__name__)
 
 ACTIVE = {"running", "ready", "todo", "blocked", "review", "scheduled", "triage"}
 FAMILY_ORDER = ["root", "pixelvent", "acasia", "somethingpressing"]
@@ -121,9 +130,33 @@ def _typed(val):
     return (val.lower() == "true") if val.lower() in ("true", "false") else val
 
 
+def read_fleet_spec(text):
+    """Parse one fleet spec into the shape :func:`load_families` needs.
+
+    PyYAML first: ``~/.hermes/fleet/*.yaml`` is machine-dumped (zero-indent list
+    items, folded multi-line scalars) and the hand reader cannot follow that.
+    The hand reader is used only when PyYAML cannot be imported. Malformed input
+    raises ValueError so the caller can report it instead of silently dropping
+    the family.
+    """
+    if yaml is not None:
+        spec = yaml.safe_load(text)
+        if spec is None:
+            return {}
+        if not isinstance(spec, dict):
+            raise ValueError(f"fleet spec is a {type(spec).__name__}, expected a mapping")
+        if spec.get("orchestrators") is not None and not isinstance(spec["orchestrators"], list):
+            raise ValueError("'orchestrators' must be a list")
+        if spec.get("bots") is not None and not isinstance(spec["bots"], dict):
+            raise ValueError("'bots' must be a mapping")
+        return spec
+    return parse_fleet_spec(text)
+
+
 def parse_fleet_spec(text):
-    """Minimal reader for the fleet YAML subset Hive needs (no PyYAML): top-level scalars,
-    the ``orchestrators:`` list of flat mappings, and ``bots:`` -> name -> display."""
+    """Fallback reader for the fleet YAML subset Hive needs (used when PyYAML is
+    unavailable): top-level scalars, the ``orchestrators:`` list of flat mappings,
+    and ``bots:`` -> name -> display."""
     spec, orch, bots = {}, [], {}
     section, cur_bot = None, None
     for raw in text.splitlines():
@@ -171,10 +204,11 @@ def load_families(home=None):
     fams = []
     for f in files:
         try:
-            spec = parse_fleet_spec(f.read_text())
-        except Exception:
+            spec = read_fleet_spec(f.read_text())
+        except Exception as e:
+            LOG.warning("fleet parse error %s: %s", f, e)
             continue
-        orch = spec.get("orchestrators") or []
+        orch = [o for o in (spec.get("orchestrators") or []) if isinstance(o, dict)]
         asst = next((o for o in orch if o.get("assistant")), None)
         if not asst or not asst.get("name"):
             continue
@@ -185,7 +219,8 @@ def load_families(home=None):
             board = o.get("board") or o.get("project")
             brains.append((o["name"], board, o.get("display") or pretty(o.get("project") or o["name"])))
         pre = spec.get("prefix") or f.stem
-        bots = [(f"{pre}-{k}", v.get("display") or k) for k, v in (spec.get("bots") or {}).items()
+        bots = [(f"{pre}-{k}", (v.get("display") if isinstance(v, dict) else None) or k)
+                for k, v in (spec.get("bots") or {}).items()
                 if (profiles / f"{pre}-{k}").is_dir()]
         fid = spec.get("family") or f.stem
         fams.append({"id": fid, "bots": bots, "label": asst.get("family_title") or fid.capitalize(),
