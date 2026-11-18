@@ -49,11 +49,14 @@
  *          rose 3.61, slate 3.81, mint 3.16 (all >=3).
  *   DARK   fg 10.9 / muted 5.82 (6.25 on page bg #05060a) / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
  *          z-warn 7.03, z-bad 4.67 as text; --pal-* on card 4.84-8.54: all pass, unchanged.
- *   KNOWN, not fixable in tokens alone: --z-*-fg is used both as text on the card
- *          (dark: fine, 10+) and as text on a solid --z-* fill (.navbadge.alert).
- *          In dark the fill pairs are ok 2.68 / warn 2.09 / bad 3.01 and
- *          in light the --z-*-fg tints as text on the card are ~1.2; both need
- *          dashboard.css usages split into dedicated tokens (follow-up).
+ *   LST-309 (design-audit mismatch 4): the light --z-*-fg were pale badge tints
+ *          that worked only on a solid --z-* fill and failed AA as text on the
+ *          light surfaces (1.13-1.22 on --bg/--card). They are now deep inks
+ *          (ok #2d5c3f / warn #6b5216 / bad #8c3a33, >=7:1 on both light
+ *          surfaces; tests/check_zfg_contrast.js recomputes this table). Text
+ *          on a solid --z-* fill pairs the fill with --card instead
+ *          (.navbadge.alert via its light override, .qv-astat.qv-bad), so
+ *          --z-*-fg is text on the surfaces only. DARK unchanged.
  *   --border is a decorative hairline (1.27:1 both themes), exempt as non-essential. */
 
 :root,
@@ -89,9 +92,11 @@
   --z-ok:#39764f;
   --z-warn:#7c6328;
   --z-bad:#a14d47;
-  --z-ok-fg:#e4f0e9;
-  --z-warn-fg:#f4ecd7;
-  --z-bad-fg:#f7e4e4;
+  /* LST-309: deep inks — text on the light surfaces (bg/card), never on a
+     --z-* fill (the filled pill pairs its fill with --card text). */
+  --z-ok-fg:#2d5c3f;
+  --z-warn-fg:#6b5216;
+  --z-bad-fg:#8c3a33;
 
   /* solid chart pastels, slightly deeper for white cards */
   --pal-indigo:#7c86b0;
