@@ -25,12 +25,10 @@
 // fails, re-read the module rather than copying what it printed.
 import { isolate } from './lib/isolate.mjs';
 
-// state.js's only sibling import is css from main.js (its lazy Z-state token
-// getters, LST-314), so it loads through isolate with just that name stubbed —
-// the renderEmpty under test is still the real implementation. views.js
-// delegates its empty states to renderEmpty (LST-235) and the tests assert the
-// REAL single-card markup it renders — a no-op stub would fake the outcome.
-const { renderEmpty } = await isolate('state.js', { 'main.js': { css: v => `var(${v})` } });
+// state.js has no sibling imports, so it loads standalone. views.js delegates
+// its empty states to renderEmpty (LST-235) and the tests assert the REAL
+// single-card markup it renders — a no-op stub would fake the outcome.
+import { renderEmpty } from '../src/llm_telemetry/web/js/state.js';
 
 let pass = 0, fail = 0;
 function ok(cond, msg){ if (cond) { pass++; return; } fail++; console.log(`  FAIL: ${msg}`); }
