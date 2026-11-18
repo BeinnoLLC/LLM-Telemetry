@@ -2,7 +2,7 @@
  * Flow: the provider→model→task force graph (layout, drag, focus/dim,
  * tooltip), the task-queue visualisation and the agent cards.
  */
-import { $, MU, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
+import { $, MU, Z, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, provLogoSvg, provOf, render } from './views.js';
 import { DATA, css } from './main.js';
@@ -10,7 +10,6 @@ import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
 import { attachZoom } from './zoom.js';
-import { Z } from './state.js';
 
 // LST-261: the queue is three glass jars of small balls. Depot = requests waiting at an Ollama
 // host, on the line = live sessions (Hermes, Pi, Claude, Codex), yard = finished sessions. One

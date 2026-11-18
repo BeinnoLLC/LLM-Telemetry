@@ -3,10 +3,8 @@
  * including the KPI ring/sparkline primitives.
  */
 import {
-  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmt, fmtB, fmtRate, labelColor, readTheme,
-} from './palette.js';
+  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmt, fmtB, fmtRate, labelColor, readTheme, Z } from './palette.js';
 import { DATA } from './main.js';
-import { Z } from './state.js';
 
 export let charts = [], current = null;
 export let CHART_ANIM_DONE = false;

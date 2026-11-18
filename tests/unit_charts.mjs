@@ -19,12 +19,11 @@ const bwPrev = { s1: { up: 1000, down: 0 } };
 async function charts(weight, { bwPrevAt = NOW - 10_000, DATA = {} } = {}) {
   return isolate('charts.js', {
     'palette.js': {
+      Z: { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' },
       $: () => null, MU: '#888', LABEL_FONT: P.LABEL_FONT, bwPrev, bwPrevAt,
       escA: P.escA, fmtB: P.fmtB, fmtRate: P.fmtRate, labelColor: () => null, readTheme: () => {},
     },
     'main.js': { DATA },
-    // what state.js's lazy Z getters return under a css stub that echoes tokens
-    'state.js': { Z: { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' } },
   }, {
     Chart: { defaults: { font: {} } },
     localStorage: { getItem: k => (k === 'hermes-dash-projweight' ? weight : null) },

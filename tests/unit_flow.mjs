@@ -129,6 +129,7 @@ function harness(els = {}){
   const DATA = { profiles: {}, ollama: { hosts: [] } };
   const stubs = {
     'palette.js': {
+      Z: { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' },
       $: id => ids.get(id) || null,
       ago, esc, escA, short,
       colorOf: m => 'col:' + m,
@@ -136,8 +137,6 @@ function harness(els = {}){
       MU: 'var(--muted)',
     },
     'charts.js': { current: 'p1' },
-    // what state.js's lazy Z getters return under a css stub that echoes tokens
-    'state.js': { Z: { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' } },
     'views.js': {
       PROV: { fireworks: { fg: '#ff8a3d' }, nous: { fg: '#7c9cff' } },
       provOf: (p, _m, u) => String(u || '').includes('fireworks') ? 'fireworks' : (p || 'local'),

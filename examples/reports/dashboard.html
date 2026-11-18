@@ -5182,17 +5182,22 @@ function pick(name){
 }
 
 const CAT = {
- 'Running':    {get c(){ return css('--z-warn'); }, i:'▶'},
+ 'Running':    {get c(){ return css('--pal-amber'); }, i:'▶'},
  'Coding':     {get c(){ return css('--z-ok'); }, i:'✎'},
- 'Generating': {get c(){ return css('--accent'); }, i:'✦'},
- 'Thinking':   {get c(){ return css('--z-warn'); }, i:'◐'},
- 'Researching':{get c(){ return css('--accent'); }, i:'⌕'},
+ 'Generating': {get c(){ return css('--pal-indigo'); }, i:'✦'},
+ 'Thinking':   {get c(){ return css('--accent2'); }, i:'◐'},
+ 'Researching':{get c(){ return css('--pal-slate'); }, i:'⌕'},
  'Reading':    {get c(){ return css('--muted'); }, i:'▤'},
- 'Reviewing':  {get c(){ return css('--z-bad'); }, i:'✓'},
+ 'Reviewing':  {get c(){ return css('--pal-rose'); }, i:'✓'},
  'Compressing':{get c(){ return css('--muted'); }, i:'⇲'},
  'Waiting':    {get c(){ return css('--z-warn'); }, i:'⏸'},
- 'Working':    {get c(){ return css('--z-ok'); }, i:'•'},
+ 'Working':    {get c(){ return css('--pal-mint'); }, i:'•'},
  'Idle':       {get c(){ return css('--muted'); }, i:'○'}
+};
+const Z = {
+ get ok(){ return css('--z-ok'); },
+ get warn(){ return css('--z-warn'); },
+ get bad(){ return css('--z-bad'); },
 };
 const catOf = n => CAT[n] || {c:css('--muted'), i:'•'};
 const ago = s => s<60 ? s+'s' : s<3600 ? Math.round(s/60)+'m' : s<172800 ? Math.round(s/3600)+'h' : Math.round(s/86400)+'d';
@@ -12392,12 +12397,6 @@ function renderError(container, opts) {
  }
  return html;
 }
-
-const Z = {
- get ok(){ return css('--z-ok'); },
- get warn(){ return css('--z-warn'); },
- get bad(){ return css('--z-bad'); },
-};
 function hvBeatPaint() { const b = hvBeat(hvC.log, hvC.lastSnap, Date.now() / 1000); $('hive-lastreal').textContent = b.last; $('hive-fresh').textContent = b.fresh; }
 
 function hvApply(fr) {

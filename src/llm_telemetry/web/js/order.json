@@ -807,6 +807,10 @@
     },
     {
       "mod": "palette",
+      "name": "Z"
+    },
+    {
+      "mod": "palette",
       "name": "catOf"
     },
     {
@@ -3132,10 +3136,6 @@
     {
       "mod": "state",
       "name": "renderError"
-    },
-    {
-      "mod": "state",
-      "name": "Z"
     },
     {
       "mod": "hive",

@@ -81,14 +81,14 @@ const PALSTUB = Object.fromEntries(PAL_NAMES.map(k => [k, PAL[k]]));
 // MU is a live theme binding readTheme() fills in (which also needs a DOM);
 // pin it to the css stub's --muted so lnColorOf's user colour is checkable.
 PALSTUB.MU = 'var(--muted)';
-// what state.js's lazy Z getters return under a css stub that echoes tokens
-const Z_TOKENS = { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' };
+// palette.js's lazy Z getters, as they read under a css stub that echoes tokens
+PALSTUB.Z = { ok: 'var(--z-ok)', warn: 'var(--z-warn)', bad: 'var(--z-bad)' };
 const D = await isolate('drawer.js', {
   'palette.js': PALSTUB,
   'charts.js': { current: 'p1' },
   'views.js': { schemaProblem: (p) => (p && p.schema_version === 1 ? null : 'schema 1 expected') },
   'router.js': { pickView() {} },
-  'state.js': { Z: Z_TOKENS },
+ 
   'main.js': { DATA: { profiles: {} } },
 });
 
@@ -199,7 +199,7 @@ globalThis.document.getElementById = id => (registry2[id] ||= mkEl());
 fetchReply = { ok: false, status: 404, json: async () => ({}) };
 const D2 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'p1' }, 'views.js': { schemaProblem: () => null },
-  'router.js': { pickView() {} }, 'state.js': { Z: Z_TOKENS }, 'main.js': { DATA: { profiles: {} } },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} } },
 });
 await D2.loadLogs();
 has(registry2['lglist'].innerHTML, 'Could not load logs-data.json (HTTP 404)', 'a failed fetch is named with its status');
@@ -213,7 +213,7 @@ globalThis.document.getElementById = id => (registry3[id] ||= mkEl());
 const D3 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'p1' },
   'views.js': { schemaProblem: () => 'logs-data.json has schema 1, this page expects 2' },
-  'router.js': { pickView() {} }, 'state.js': { Z: Z_TOKENS }, 'main.js': { DATA: { profiles: {} } },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} } },
 });
 await D3.loadLogs();
 has(registry3['lglist'].innerHTML, 'expects 2', 'a schema mismatch is reported instead of rendering');
@@ -223,7 +223,7 @@ globalThis.document.getElementById = id => (registry4[id] ||= mkEl());
 fetchReply = { ok: true, status: 200, json: async () => ({ generated: 1, profiles: { other: { events: [], facets: {}, window_h: 24, events_total: 0 } } }) };
 const D4 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'px' }, 'views.js': { schemaProblem: () => null },
-  'router.js': { pickView() {} }, 'state.js': { Z: Z_TOKENS }, 'main.js': { DATA: { profiles: {} } },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} } },
 });
 await D4.loadLogs();
 eq(D4.lgProfile() === null, false, 'an unknown current tab falls back to the first profile');

@@ -331,27 +331,27 @@
   },
   {
     "path": "src/llm_telemetry/web/js/charts.js",
-    "line": 339,
+    "line": 337,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/drawer.js",
-    "line": 803,
+    "line": 801,
     "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/flow.js",
-    "line": 126,
+    "line": 125,
     "matched": "#5b6472"
   },
   {
     "path": "src/llm_telemetry/web/js/flow.js",
-    "line": 398,
+    "line": 397,
     "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/flow.js",
-    "line": 401,
+    "line": 400,
     "matched": "hsl("
   },
   {
@@ -421,17 +421,17 @@
   },
   {
     "path": "src/llm_telemetry/web/js/palette.js",
-    "line": 471,
+    "line": 481,
     "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/palette.js",
-    "line": 480,
+    "line": 490,
     "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/js/palette.js",
-    "line": 485,
+    "line": 495,
     "matched": "hsl("
   },
   {

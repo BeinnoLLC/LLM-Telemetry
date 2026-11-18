@@ -4,13 +4,11 @@
  */
 import {
   $, COLORS, MU, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, stampFreshness, toolColor,
-  trapFocus, trapTab,
-} from './palette.js';
+  trapFocus, trapTab, Z } from './palette.js';
 import { current } from './charts.js';
 import { provLogoSvg, schemaProblem } from './views.js';
 import { pickView } from './router.js';
 import { DATA } from './main.js';
-import { Z } from './state.js';
 
 export const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
 
