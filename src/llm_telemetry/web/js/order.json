@@ -823,6 +823,10 @@
     },
     {
       "mod": "palette",
+      "name": "Z"
+    },
+    {
+      "mod": "palette",
       "name": "catOf"
     },
     {

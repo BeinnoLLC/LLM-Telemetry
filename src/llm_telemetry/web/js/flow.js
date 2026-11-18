@@ -2,7 +2,7 @@
  * Flow: the provider→model→task force graph (layout, drag, focus/dim,
  * tooltip), the task-queue visualisation and the agent cards.
  */
-import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
+import { $, MU, Z, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, provLogoSvg, provOf, render } from './views.js';
 import { DATA, css, hueCss } from './main.js';
@@ -554,10 +554,14 @@ export function renderAgents(agents){
   agents = agents || [];
   if (!agents.length) { card.hidden = true; return; }
   card.hidden = false;
-  const stateColor = { alive: '#5f9e6e', stale: '#c4a06e', dead: '#c66a6a' };
+  const stateColor = {
+    alive: Z.ok,
+    stale: Z.warn,
+    dead: Z.bad,
+  };
   $('agentslist').innerHTML = agents.map(a => `
     <div class="flex items-center gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
-      <span class="qdotwrap" style="background:${stateColor[a.state] || '#64748b'};width:7px;height:7px;border-radius:999px;flex:none"></span>
+      <span class="qdotwrap" style="background:${stateColor[a.state] || MU};width:7px;height:7px;border-radius:999px;flex:none"></span>
       <span class="font-semibold" style="min-width:5.5rem">${esc(a.state)}</span>
       <span class="muted flex-1 truncate" title="${escA(a.backend)}">${esc(a.host)} · pid ${a.pid} · ${esc(a.profile)}</span>
       <span class="muted">${ago(a.age_s)} ago</span>
