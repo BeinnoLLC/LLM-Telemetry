@@ -3,8 +3,9 @@
  * including the KPI ring/sparkline primitives.
  */
 import {
-  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmt, fmtB, fmtRate, labelColor, readTheme, Z } from './palette.js';
-import { DATA } from './main.js';
+  $, LABEL_FONT, MU, bwPrev, bwPrevAt, escA, fmt, fmtB, fmtRate, labelColor, readTheme, Z,
+} from './palette.js';
+import { DATA, css } from './main.js';
 
 export let charts = [], current = null;
 export let CHART_ANIM_DONE = false;
@@ -334,7 +335,7 @@ export function olBar(pct, lbl, val, invert, spark){
   // the thing slowing you down, so it must read amber, not green.
   const sev = invert ? (p >= 90 ? 'good' : p >= 60 ? 'warn' : 'bad')
                      : (p >= 85 ? 'bad'  : p >= 60 ? 'warn' : 'good');
-  const sevColor = sev === 'bad' ? 'hsl(0 72% 55%)' : sev === 'warn' ? 'hsl(38 92% 52%)' : 'hsl(142 65% 45%)';
+  const sevColor = sev === 'bad' ? css('--lt-bad') : sev === 'warn' ? css('--lt-warn') : css('--lt-ok');
   const sp = spark ? sparkSvg(spark, sevColor, {w:44,h:14,pad:1.5}) : '';
   return `<div class="olrow"><span class="ollbl">${lbl}</span>` +
          `<span class="olbar"><i class="olfill ${sev}${invert?' inv':''}" style="width:${p}%"></i></span>` +

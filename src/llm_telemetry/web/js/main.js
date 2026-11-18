@@ -4,7 +4,7 @@
  */
 import { $, pick, readTheme } from './palette.js';
 import { CHART_ANIM_DONE, current } from './charts.js';
-import { render } from './views.js';
+import { render, resetUnattrPattern } from './views.js';
 import { mergeDelegations } from './live.js';
 import { pickView, setFiltersFromHash, view, viewFromHash } from './router.js';
 
@@ -27,7 +27,16 @@ export const LOCAL_HOSTS = __LOCAL_HOSTS__;
 // the page and the collector disagree about the shape; rendering anyway is how
 // "wrong data" used to show up as a silently empty dashboard. Refuse, loudly.
 export const SCHEMA_VERSION = __SCHEMA_VERSION__;
-export const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim() || '#888';
+// Hash hue from JS, saturation/lightness from the --hue-<k>-s/-l tokens; a real colour string for canvas and color-mix.
+const HUE_SL = {};
+export const hueCss = (h, k) => {
+  HUE_SL[k] ||= [rawCss(`--hue-${k}-s`), rawCss(`--hue-${k}-l`)];
+  const [sat, lig] = HUE_SL[k];
+  if (!sat || !lig) return css('--muted');
+  return `hsl(${h} ${sat} ${lig})`;
+};
+export const rawCss = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+export const css = k => rawCss(k) || '#888';
 export function buildAll(profiles){
   // Only merge real profiles — skip any already-merged 'All' key to prevent
   // the cost/call totals from doubling every time installAll is re-called.
@@ -158,6 +167,7 @@ $('theme').onclick = () => {
   if(dark) document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme','dark');
   localStorage.setItem('hermes-dash-theme', dark?'light':'dark');
+  resetUnattrPattern();
   readTheme(); render();
 };
 // All three cross-filters out of one hash, through the owning module's setter

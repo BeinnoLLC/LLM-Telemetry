@@ -3,12 +3,13 @@
  * transcript modal, the session finder and the timeline modal.
  */
 import {
-  $, COLORS, MU, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, stampFreshness, toolColor,
-  trapFocus, trapTab, Z } from './palette.js';
+  $, COLORS, TOOLCOLORS, colorOf, emptyHTML, esc, fmt, hashHue, short, stampFreshness, toolColor,
+  trapFocus, trapTab,
+} from './palette.js';
 import { current } from './charts.js';
 import { provLogoSvg, schemaProblem } from './views.js';
 import { pickView } from './router.js';
-import { DATA } from './main.js';
+import { DATA, css, hueCss } from './main.js';
 
 export const SF_FILTER_KEYS = { model: 'model', source: 'source', tool: 'tools', end: 'end' };
 
@@ -796,9 +797,9 @@ export function lnKeydown(e){
 export function lnColorOf(key){
   if (COLORS[key]) return COLORS[key];
   if (TOOLCOLORS[key]) return TOOLCOLORS[key];
-  if (key === 'compaction') return Z.warn;
-  if (key === 'user') return MU;
-  return `hsl(${hashHue(key||'')} 52% 58%)`;
+  if (key === 'compaction') return css('--ln-compaction');
+  if (key === 'user') return css('--ln-user');
+  return hueCss(hashHue(key||''), 'chip');
 }
 
 export function installTimelineModal(){

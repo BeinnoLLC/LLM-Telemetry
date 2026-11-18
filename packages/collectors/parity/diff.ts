@@ -3,10 +3,21 @@
  * harness prints a field-level diff and exits non-zero on any value mismatch").
  *
  * Both inputs are `normalize()`-ed values. The comparison is exact (numbers
- * already carry the one documented float tolerance from normalize); there are
- * no thresholds here. Paths are RFC 6901 JSON Pointers so a reported field is
+ * already carry the one documented float tolerance from normalize) except the
+ * live clock fields below. Paths are RFC 6901 JSON Pointers so a reported field is
  * unambiguous even inside arrays.
  */
+
+/** Wall-clock-derived fields of `live[]` rows. SQLite's `strftime('now')`
+ * (not injectable into both stacks) computes them, so two runs drift by a
+ * second or so. This is the SINGLE exception to exact comparison besides the
+ * float rule in normalize.ts: under a `live` array both sides must carry the
+ * key, both values must be numbers, and |py - node| <= LIVE_CLOCK_TOLERANCE_S;
+ * anything else is reported as a difference. Every other field stays strict. */
+export const LIVE_CLOCK_KEYS: readonly string[] = ["idle_s", "uptime_s"];
+export const LIVE_CLOCK_TOLERANCE_S = 5;
+
+const LIVE_CLOCK_PATH = /(?:^|\/)live\/\d+\/(?:idle_s|uptime_s)$/;
 
 export type DiffKind = "value" | "type" | "missing" | "extra";
 
@@ -57,6 +68,16 @@ function walk(expected: unknown, actual: unknown, path: string, out: DiffEntry[]
   const tA = typeName(actual);
   const bothObjects = isRecord(expected) && isRecord(actual);
   const bothArrays = Array.isArray(expected) && Array.isArray(actual);
+  if (LIVE_CLOCK_PATH.test(path)) {
+    const ok =
+      typeof expected === "number" &&
+      typeof actual === "number" &&
+      Math.abs(expected - actual) <= LIVE_CLOCK_TOLERANCE_S;
+    if (!ok) {
+      out.push({ path, kind: tE !== tA ? "type" : "value", expected, actual });
+    }
+    return;
+  }
   if (tE !== tA) {
     out.push({ path, kind: "type", expected, actual });
     return;

@@ -15,14 +15,14 @@
  */
 
 import "./schemaDir.js"; // must load before the T-4 platform (see schemaDir.ts)
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CASES, findCase, type ParityCase } from "./cases.js";
 import { countLeaves, normalize } from "./normalize.js";
 import { formatDiffs, structuralDiff, type DiffEntry } from "./diff.js";
 import { produce as nodeProduce } from "./nodeProducer.js";
-import { resolvePython, runPythonProducer } from "./pythonProducer.js";
+import { makeAnalyticsInputs, resolvePython, runPythonAnalytics, runPythonProducer } from "./pythonProducer.js";
 import { seedAndDiff } from "./selfTest.js";
 
 /** The parity root (…/packages/collectors/parity): the dir holding py/ and
@@ -76,13 +76,22 @@ export function runCase(
         "(set LLM_TELEMETRY_PARITY_PYTHON or LLM_TELEMETRY_MAIN_REPO)",
     );
   }
+  const inputsDir = join(outBase, "inputs", c.name);
+  const nowS = Math.floor(Date.now() / 1000); // one clock for both producers
   try {
-    runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag);
+    if (c.dbInputs) {
+      rmSync(inputsDir, { recursive: true, force: true });
+      makeAnalyticsInputs(python, root, inputsDir);
+      runPythonAnalytics(python, root, inputsDir, pyDir, c.artifact, nowS);
+    } else {
+      runPythonProducer(python, root, fixturePath, pyDir, c.artifact, c.tag);
+    }
   } catch (err) {
     return fail(String(err));
   }
+  const collector = c.nodeCollector;
   try {
-    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag);
+    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag, collector ? () => collector(inputsDir, nowS) : undefined);
   } catch (err) {
     return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
   }

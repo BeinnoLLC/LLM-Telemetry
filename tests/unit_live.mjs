@@ -3,6 +3,7 @@
 // Expected values derived by hand from the source, not captured from output.
 import { isolate } from './lib/isolate.mjs';
 import assert from 'node:assert/strict';
+import { css, hueCss } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const eq = (actual, expected, msg) => {
@@ -196,7 +197,7 @@ async function boot(opt = {}){
     'routerview.js': {
       installHelp(){ logs.installs.push('installHelp'); },
     },
-    'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3 },
+    'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3, css, hueCss },
     // diffdom is NOT stubbed as a no-op: unit_live asserts the rendered row
     // HTML, so this emulates the applier contract — write-on-change only
     // (idle polls leave innerHTML untouched, exactly like the real module).

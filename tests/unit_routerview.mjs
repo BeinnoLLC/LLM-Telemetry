@@ -2,6 +2,7 @@
 // page/fold persistence, called directly. Expected values are hand-derived
 // from the module's documented rules (tier hues, auth table, rtAgo bands).
 import { isolate } from './lib/isolate.mjs';
+import { css } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -24,7 +25,7 @@ async function rv(ls = fakeLS()) {
   return isolate('routerview.js', {
     'palette.js': { $: () => null, esc: P.esc, escA: P.escA },
     'charts.js': { current: null },
-    'main.js': { DATA: {} },
+    'main.js': { DATA: {}, css },
   }, { localStorage: ls });
 }
 const R = await rv();
