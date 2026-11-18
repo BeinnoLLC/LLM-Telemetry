@@ -142,6 +142,7 @@
   --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
   --fb-h:32px;
   --fb-r:var(--radius-ctl);
+  --lt-bad:hsl(0 72% 55%);--lt-warn:hsl(38 92% 52%);--lt-ok:hsl(142 65% 45%);--lt-slate:hsl(215 16% 55%);--lt-s14:rgba(148,163,184,.14);--lt-s35:rgba(148,163,184,0.35);--lt-s50:rgba(148,163,184,0.5);--lt-s90:rgba(148,163,184,0.9);--lt-pop:0 4px 14px rgba(0,0,0,.25);
   --kind-hermes:hsl(199 60% 56%);
   --kind-pi:hsl(265 55% 64%);
   --kind-claude:hsl(18 70% 60%);

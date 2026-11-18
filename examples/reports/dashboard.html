@@ -149,6 +149,7 @@
 --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
 --fb-h:32px;
 --fb-r:var(--radius-ctl);
+--lt-bad:hsl(0 72% 55%);--lt-warn:hsl(38 92% 52%);--lt-ok:hsl(142 65% 45%);--lt-slate:hsl(215 16% 55%);--lt-s14:rgba(148,163,184,.14);--lt-s35:rgba(148,163,184,0.35);--lt-s50:rgba(148,163,184,0.5);--lt-s90:rgba(148,163,184,0.9);--lt-pop:0 4px 14px rgba(0,0,0,.25);
 --kind-hermes:hsl(199 60% 56%);
 --kind-pi:hsl(265 55% 64%);
 --kind-claude:hsl(18 70% 60%);
@@ -2857,7 +2858,7 @@ function flash(msg){
  f.setAttribute('role', 'status');
  f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
  + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
- + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--elev-2);'
+ + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--lt-pop);'
  + 'opacity:0;transition:opacity .2s';
  document.body.appendChild(f);
  }
@@ -2916,9 +2917,10 @@ function renderResolution(){
  btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
  document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
+const HUE_SL = {};
 const hueCss = (h, k) => {
- const sat = rawCss('--hue-' + k + '-s');
- const lig = rawCss('--hue-' + k + '-l');
+ HUE_SL[k] ||= [rawCss(`--hue-${k}-s`), rawCss(`--hue-${k}-l`)];
+ const [sat, lig] = HUE_SL[k];
  if (!sat || !lig) return css('--muted');
  return `hsl(${h} ${sat} ${lig})`;
 };
@@ -4094,16 +4096,22 @@ function agg(rows, keyFn, valFn){
 }
 
 const PROV = {
- 'anthropic': {icon:'✳', bg:'--prov-anthropic-bg', fg:'--prov-anthropic-fg'},
- 'opencode-go': {icon:'◈', bg:'--prov-opencode-go-bg', fg:'--prov-opencode-go-fg'},
- 'fireworks': {icon:'✦', bg:'--prov-fireworks-bg', fg:'--prov-fireworks-fg'},
- 'openai-codex':{icon:'◉', bg:'--prov-openai-codex-bg', fg:'--prov-openai-codex-fg'},
- 'local': {icon:'▣', bg:'--prov-local-bg', fg:'--prov-local-fg'},
- 'moa': {icon:'⬡', bg:'--prov-moa-bg', fg:'--prov-moa-fg'},
- 'cloud': {icon:'☁', bg:'--prov-cloud-bg', fg:'--prov-cloud-fg'},
- 'ollama-cloud':{icon:'☁', bg:'--prov-ollama-cloud-bg', fg:'--prov-ollama-cloud-fg'},
- 'nous': {icon:'◆', bg:'--prov-nous-bg', fg:'--prov-nous-fg'}
+ 'anthropic':{icon:'✳'},
+ 'opencode-go':{icon:'◈'},
+ 'fireworks':{icon:'✦'},
+ 'openai-codex':{icon:'◉'},
+ 'local':{icon:'▣'},
+ 'moa':{icon:'⬡'},
+ 'cloud':{icon:'☁'},
+ 'ollama-cloud':{icon:'☁'},
+ 'nous':{icon:'◆'}
 };
+for (const k in PROV){
+ Object.defineProperties(PROV[k], {
+ bg: {get(){return css(`--prov-${k}-bg`)}},
+ fg: {get(){return css(`--prov-${k}-fg`)}},
+ });
+}
 const LOCAL_RE = /^(qwen|gpt-oss|deepseek-r1|nemotron|llama|mistral|phi|gemma)/i;
 const CLOUD_SUFFIX = /(:|-|\.)cloud$/i;
 function provOf(p, model, url){
@@ -4134,14 +4142,14 @@ function provOf(p, model, url){
 }
 function provBadge(p){
  const key=(p||'').toLowerCase().trim();
- const s=PROV[key]||{icon:'○',bg:MUBG,fg:'--muted'};
+ const s=PROV[key]||{icon:'○',bg:css('--lt-s14'),fg:MU};
  const fg=rtColor(s.fg);
  const bg=rtColor(s.bg);
  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
  const d = rt.svg && RT_SVG[rt.svg];
  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
  return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
-    style="background:${bg};color:${fg};border:1px solid color-mix(in srgb,${fg} 20%,transparent)">
+    style="background:${bg};color:${fg};border:1px solid ${fg}33">
     ${mark}${key}</span>`;
 }
 let MODEL_PROV = {};
@@ -5174,7 +5182,7 @@ function priceRow(m){
  const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
  const provHtml = provs.length || inf.length
  ? (provs.length ? provs : inf).map((pv) => {
- const meta = PROV_META[pv] || {sig: '\u25CF', color: '--muted'};
+ const meta = PROV_META[pv] || {sig: '\u25CF', color: '--lt-slate'};
  const inferred = !provs.length;
  const mc = rtColor(meta.color);
  return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
@@ -5622,24 +5630,24 @@ function renderConcurrency(concurrency, fromDate, toDate){
 }
 
 let _unattrPattern = null;
+function resetUnattrPattern(){
+ _unattrPattern = null;
+}
 function unattrPattern(){
  if (_unattrPattern) return _unattrPattern;
  const c = document.createElement('canvas');
  c.width = 8; c.height = 8;
  const ctx = c.getContext('2d');
- if (!ctx) return 'color-mix(in srgb,var(--muted) 50%,transparent)';
- ctx.globalAlpha = 0.35;
- ctx.fillStyle = css('--muted');
+ if (!ctx) return css('--lt-s50');
+ ctx.fillStyle = css('--lt-s35');
  ctx.fillRect(0, 0, 8, 8);
- ctx.globalAlpha = 0.9;
- ctx.strokeStyle = css('--muted');
+ ctx.strokeStyle = css('--lt-s90');
  ctx.lineWidth = 1.5;
  ctx.beginPath();
  ctx.moveTo(0, 8); ctx.lineTo(8, 0);
  ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
  ctx.moveTo(6, 10); ctx.lineTo(10, 6);
  ctx.stroke();
- ctx.globalAlpha = 1;
  _unattrPattern = ctx.createPattern(c, 'repeat');
  return _unattrPattern;
 }
@@ -6330,7 +6338,7 @@ function renderProjectDistribution(rows){
  const providers = [...providersSeen].sort((a, b) => provTotal(b) - provTotal(a));
 
  const datasets = providers.map(p => {
- const s = PROV[p] || {icon: '\u25CB', bg: MUBG, fg: '--muted'};
+ const s = PROV[p] || {icon: '\u25CB', bg: css('--lt-s14'), fg: MU};
  return {
  label: `${s.icon} ${p}`,
  data: projects.map(proj => {
@@ -7534,7 +7542,7 @@ const KIND_ORDER = ['hermes', 'pi', 'claude', 'codex'];
 function kindMeta(kind){
  const m = KIND_META[kind];
  return m ? { ...m, color: `var(--kind-${kind})` }
- : { sig: '\u25CF', color: css('--muted'), label: kind || '?', title: '' };
+ : { sig: '\u25CF', color: css('--lt-slate'), label: kind || '?', title: '' };
 }
 function fleetTiles(profiles, piLive, agentLive){
  const out = [];
@@ -8079,7 +8087,7 @@ function installKindCSS(){
 }
 installKindCSS();
 const fk = k => FKIND[k] || {c:MU, t:k||'—'};
-const FAILTRACK = 'color-mix(in srgb,var(--z-bad) 22%,transparent)';
+const FAILTRACK = 'rgba(239,68,68,.22)';
 const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a';
 
 function renderDeleg(){
@@ -8456,7 +8464,7 @@ function olBar(pct, lbl, val, invert, spark){
  const p = Math.max(0, Math.min(100, pct||0));
  const sev = invert ? (p >= 90 ? 'good' : p >= 60 ? 'warn' : 'bad')
  : (p >= 85 ? 'bad'  : p >= 60 ? 'warn' : 'good');
- const sevColor = sev === 'bad' ? css('--z-bad') : sev === 'warn' ? css('--z-warn') : css('--z-ok');
+ const sevColor = sev === 'bad' ? css('--lt-bad') : sev === 'warn' ? css('--lt-warn') : css('--lt-ok');
  const sp = spark ? sparkSvg(spark, sevColor, {w:44,h:14,pad:1.5}) : '';
  return `<div class="olrow"><span class="ollbl">${lbl}</span>` +
  `<span class="olbar"><i class="olfill ${sev}${invert?' inv':''}" style="width:${p}%"></i></span>` +
@@ -11585,6 +11593,7 @@ $('theme').onclick = () => {
  if(dark) document.documentElement.removeAttribute('data-theme');
  else document.documentElement.setAttribute('data-theme','dark');
  localStorage.setItem('hermes-dash-theme', dark?'light':'dark');
+ resetUnattrPattern();
  readTheme(); render();
 };
 setFiltersFromHash();

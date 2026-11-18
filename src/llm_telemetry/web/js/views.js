@@ -86,7 +86,7 @@ export function flash(msg){
     f.setAttribute('role', 'status');
     f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
       + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
-      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--elev-2);'
+      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--lt-pop);'
       + 'opacity:0;transition:opacity .2s';
     document.body.appendChild(f);
   }
@@ -146,18 +146,24 @@ export function renderResolution(){
   btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
   document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
-const MUBG = 'color-mix(in srgb,var(--muted) 14%,transparent)';
 export const PROV = {
-  'anthropic': {icon:'✳', bg:'--prov-anthropic-bg', fg:'--prov-anthropic-fg'},
-  'opencode-go': {icon:'◈', bg:'--prov-opencode-go-bg', fg:'--prov-opencode-go-fg'},
-  'fireworks': {icon:'✦', bg:'--prov-fireworks-bg', fg:'--prov-fireworks-fg'},
-  'openai-codex':{icon:'◉', bg:'--prov-openai-codex-bg', fg:'--prov-openai-codex-fg'},
-  'local': {icon:'▣', bg:'--prov-local-bg', fg:'--prov-local-fg'},
-  'moa': {icon:'⬡', bg:'--prov-moa-bg', fg:'--prov-moa-fg'},
-  'cloud': {icon:'☁', bg:'--prov-cloud-bg', fg:'--prov-cloud-fg'},
-  'ollama-cloud':{icon:'☁', bg:'--prov-ollama-cloud-bg', fg:'--prov-ollama-cloud-fg'},
-  'nous': {icon:'◆', bg:'--prov-nous-bg', fg:'--prov-nous-fg'}
+  'anthropic':{icon:'✳'},
+  'opencode-go':{icon:'◈'},
+  'fireworks':{icon:'✦'},
+  'openai-codex':{icon:'◉'},
+  'local':{icon:'▣'},
+  'moa':{icon:'⬡'},
+  'cloud':{icon:'☁'},
+  'ollama-cloud':{icon:'☁'},
+  'nous':{icon:'◆'}
 };
+// bg/fg resolve through the tokens at read time, so a theme switch is picked up.
+for (const k in PROV){
+  Object.defineProperties(PROV[k], {
+    bg: {get(){return css(`--prov-${k}-bg`)}},
+    fg: {get(){return css(`--prov-${k}-fg`)}},
+  });
+}
 // Provider resolution order, strongest evidence first:
 //   1. billing_base_url — the endpoint the call actually hit. Authoritative.
 //   2. billing_provider — the config slot name ("custom" just means
@@ -207,14 +213,14 @@ export function provOf(p, model, url){
 }
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
-  const s=PROV[key]||{icon:'○',bg:MUBG,fg:'--muted'};
+  const s=PROV[key]||{icon:'○',bg:css('--lt-s14'),fg:MU};
   const fg=rtColor(s.fg);
   const bg=rtColor(s.bg);
   const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
   const d = rt.svg && RT_SVG[rt.svg];
   const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
-    style="background:${bg};color:${fg};border:1px solid color-mix(in srgb,${fg} 20%,transparent)">
+    style="background:${bg};color:${fg};border:1px solid ${fg}33">
     ${mark}${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
@@ -1254,6 +1260,9 @@ export function renderConcurrency(concurrency, fromDate, toDate){
 // sees the hatch texture even if the color itself is indistinguishable
 // from a real project's bar.
 export let _unattrPattern = null;
+export function resetUnattrPattern(){
+  _unattrPattern = null;
+}
 export function unattrPattern(){
   if (_unattrPattern) return _unattrPattern;
   const c = document.createElement('canvas');
@@ -1264,19 +1273,16 @@ export function unattrPattern(){
   // the rest of renderProjects() instead of crashing on a null context;
   // check_projects_card.js still asserts the Unattributed bar uses a
   // DIFFERENT fill style than any real project's PAL color.
-  if (!ctx) return 'color-mix(in srgb,var(--muted) 50%,transparent)';
-  ctx.globalAlpha = 0.35;
-  ctx.fillStyle = css('--muted');
+  if (!ctx) return css('--lt-s50');
+  ctx.fillStyle = css('--lt-s35');
   ctx.fillRect(0, 0, 8, 8);
-  ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = css('--muted');
+  ctx.strokeStyle = css('--lt-s90');
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, 8); ctx.lineTo(8, 0);
   ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
   ctx.moveTo(6, 10); ctx.lineTo(10, 6);
   ctx.stroke();
-  ctx.globalAlpha = 1;
   _unattrPattern = ctx.createPattern(c, 'repeat');
   return _unattrPattern;
 }
@@ -2064,7 +2070,7 @@ export function renderProjectDistribution(rows){
   const providers = [...providersSeen].sort((a, b) => provTotal(b) - provTotal(a));
 
   const datasets = providers.map(p => {
-    const s = PROV[p] || {icon: '\u25CB', bg: MUBG, fg: '--muted'};
+    const s = PROV[p] || {icon: '\u25CB', bg: css('--lt-s14'), fg: MU};
     return {
       label: `${s.icon} ${p}`,
       data: projects.map(proj => {
@@ -2289,7 +2295,7 @@ export const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 // the bar, but 'unavailable' grey sat so close to the empty-track grey that a
 // 100%-failure row was indistinguishable from a row with no data. A red wash
 // behind it makes total failure read as failure at a glance.
-export const FAILTRACK = 'color-mix(in srgb,var(--z-bad) 22%,transparent)';
+export const FAILTRACK = 'rgba(239,68,68,.22)';
 // Green above 95%, amber 80-95, red below: matches how you would triage it.
 export const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a';
 
@@ -3424,7 +3430,7 @@ function priceRow(m){
   const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
   const provHtml = provs.length || inf.length
     ? (provs.length ? provs : inf).map((pv) => {
-        const meta = PROV_META[pv] || {sig: '\u25CF', color: '--muted'};
+        const meta = PROV_META[pv] || {sig: '\u25CF', color: '--lt-slate'};
         const inferred = !provs.length;
         const mc = rtColor(meta.color);
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`

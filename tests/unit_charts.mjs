@@ -2,6 +2,7 @@
 // called directly with Chart.js and localStorage faked for the module's load
 // only. Expected geometry is hand-derived from the layout constants.
 import { isolate } from './lib/isolate.mjs';
+import { css } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -22,7 +23,7 @@ async function charts(weight, { bwPrevAt = NOW - 10_000, DATA = {} } = {}) {
       $: () => null, MU: '#888', LABEL_FONT: P.LABEL_FONT, bwPrev, bwPrevAt,
       escA: P.escA, fmtB: P.fmtB, fmtRate: P.fmtRate, labelColor: () => null, readTheme: () => {},
     },
-    'main.js': { DATA },
+    'main.js': { DATA, css },
   }, {
     Chart: { defaults: { font: {} } },
     localStorage: { getItem: k => (k === 'hermes-dash-projweight' ? weight : null) },

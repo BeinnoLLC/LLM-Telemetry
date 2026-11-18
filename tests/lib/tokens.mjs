@@ -20,3 +20,15 @@ export const css = k => TOKENS[k] || '#888';
 // Same contract as routerview.js rtColor(): a --token name resolves to its
 // colour, anything else (an already-resolved literal) passes through.
 export const rtColor = c => (c && String(c).startsWith('--') ? css(c) : c);
+
+// Same contract as main.js rawCss(): the token's declared value, '' when unset.
+export const rawCss = k => TOKENS[k] || '';
+
+// Same contract as main.js hueCss(): hash hue from the caller, saturation and
+// lightness from the --hue-<k>-s/-l tokens, muted when either is missing.
+export const hueCss = (h, k) => {
+  const sat = rawCss('--hue-' + k + '-s');
+  const lig = rawCss('--hue-' + k + '-l');
+  if (!sat || !lig) return css('--muted');
+  return `hsl(${h} ${sat} ${lig})`;
+};

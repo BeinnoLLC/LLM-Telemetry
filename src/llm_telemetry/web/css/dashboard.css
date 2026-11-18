@@ -1450,9 +1450,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #navtoggle{padding:0;width:44px}
    #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
 
-   /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
-      page itself never does. */
-
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */
    .olgrid{grid-template-columns:1fr}

@@ -39,6 +39,10 @@
     },
     {
       "mod": "main",
+      "name": "HUE_SL"
+    },
+    {
+      "mod": "main",
       "name": "hueCss"
     },
     {
@@ -912,6 +916,10 @@
     {
       "mod": "views",
       "name": "_unattrPattern"
+    },
+    {
+      "mod": "views",
+      "name": "resetUnattrPattern"
     },
     {
       "mod": "views",

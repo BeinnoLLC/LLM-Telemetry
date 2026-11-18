@@ -305,7 +305,7 @@ const KIND_META = {
 export function kindMeta(kind){
   const m = KIND_META[kind];
   return m ? { ...m, color: `var(--kind-${kind})` }
-           : { sig: '\u25CF', color: css('--muted'), label: kind || '?', title: '' };
+           : { sig: '\u25CF', color: css('--lt-slate'), label: kind || '?', title: '' };
 }
 // The one list the count badges AND the tiles are built from: Hermes live rows
 // of the ON profiles ('All' is skipped), DATA.pi_live, de-duplicated agent_live.

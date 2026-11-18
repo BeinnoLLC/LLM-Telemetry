@@ -10,7 +10,7 @@
 // the window cutoff `(p.generated || now/1000) - lgWindow*3600`, the haystack,
 // `rows.slice(0, 1200)`, the tag/meta rules, LN_LANES), NOT captured from output.
 import { isolate } from './lib/isolate.mjs';
-import { css } from './lib/tokens.mjs';
+import { css, hueCss } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -84,7 +84,7 @@ const D = await isolate('drawer.js', {
   'charts.js': { current: 'p1' },
   'views.js': { schemaProblem: (p) => (p && p.schema_version === 1 ? null : 'schema 1 expected') },
   'router.js': { pickView() {} },
-  'main.js': { DATA: { profiles: {} }, css },
+  'main.js': { DATA: { profiles: {} }, css, hueCss },
 });
 
 // Before a load there is nothing to profile.
@@ -194,7 +194,7 @@ globalThis.document.getElementById = id => (registry2[id] ||= mkEl());
 fetchReply = { ok: false, status: 404, json: async () => ({}) };
 const D2 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'p1' }, 'views.js': { schemaProblem: () => null },
-  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css, hueCss },
 });
 await D2.loadLogs();
 has(registry2['lglist'].innerHTML, 'Could not load logs-data.json (HTTP 404)', 'a failed fetch is named with its status');
@@ -208,7 +208,7 @@ globalThis.document.getElementById = id => (registry3[id] ||= mkEl());
 const D3 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'p1' },
   'views.js': { schemaProblem: () => 'logs-data.json has schema 1, this page expects 2' },
-  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css, hueCss },
 });
 await D3.loadLogs();
 has(registry3['lglist'].innerHTML, 'expects 2', 'a schema mismatch is reported instead of rendering');
@@ -218,7 +218,7 @@ globalThis.document.getElementById = id => (registry4[id] ||= mkEl());
 fetchReply = { ok: true, status: 200, json: async () => ({ generated: 1, profiles: { other: { events: [], facets: {}, window_h: 24, events_total: 0 } } }) };
 const D4 = await isolate('drawer.js', {
   'palette.js': PALSTUB, 'charts.js': { current: 'px' }, 'views.js': { schemaProblem: () => null },
-  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css },
+  'router.js': { pickView() {} }, 'main.js': { DATA: { profiles: {} }, css, hueCss },
 });
 await D4.loadLogs();
 eq(D4.lgProfile() === null, false, 'an unknown current tab falls back to the first profile');
