@@ -266,7 +266,7 @@ def test_collect_real_scan_smoke(home):
 # reader only when PyYAML is unavailable.
 ROOT_STYLE = {
     "family": "root",
-    "parent_home": "/home/x/.hermes",
+    "parent_home": "~/.hermes",
     "prefix": "beinno",
     "max_running": 4,
     "tracking_rule": ("Tickets live in Plane (plane.beinno.com) ONLY; assign ticket work to "
