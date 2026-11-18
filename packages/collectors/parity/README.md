@@ -56,11 +56,15 @@ fixture producers for the real `python -m llm_telemetry.collect_*` /
 3. **Float rounding** (the one documented formatting tolerance of §7.3):
    non-integer numbers round to `FLOAT_DIGITS = 6` decimals; **integers (tokens,
    counts, USD) are compared exactly**; `-0` folds to `0`.
+   The single other exception is in the diff step (live clock fields, below).
 4. Everything else is copied verbatim; the input is never mutated.
 
 ## Diff (`diff.ts`)
 
-Structural, exact, RFC 6901 JSON Pointer paths. One entry per differing scalar
+Structural, exact (one exception: `live[].idle_s` / `live[].uptime_s`, which
+SQLite computes from `strftime('now')`, pass when both sides have the key, both
+are numbers and `|py - node| <= 5` s; a missing, null or string value on either
+side, or a larger gap, is a difference. Every other field stays strict), RFC 6901 JSON Pointer paths. One entry per differing scalar
 (`value`), key only in py (`missing`), key only in node (`extra`) or type
 change (`type`). `formatDiffs()` renders the field-level report:
 

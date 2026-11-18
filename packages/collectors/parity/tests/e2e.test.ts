@@ -109,7 +109,10 @@ describe.runIf(python !== null)("parity end to end (py producer vs T-4 platform)
 describe("python interpreter resolution", () => {
   it("resolves the main checkout's .venv interpreter when available", () => {
     if (python === null) return; // CI without the venv: the CLI gate covers it
-    expect(python).toContain(".venv/bin/python");
+    const explicit = process.env["LLM_TELEMETRY_PARITY_PYTHON"];
+    // Resolve order: $LLM_TELEMETRY_PARITY_PYTHON wins (CI), else the .venv.
+    if (explicit) expect(python).toBe(explicit);
+    else expect(python).toContain(".venv/bin/python");
     expect(existsSync(python)).toBe(true);
   });
 });

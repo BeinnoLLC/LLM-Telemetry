@@ -622,6 +622,35 @@ def strip_ctx(args):
     return out
 
 
+def strip_model(args):
+    out, skip = [], False
+    for x in args:
+        if skip:
+            skip = False
+            continue
+        if x == "--model":
+            skip = True
+            continue
+        if x.startswith("--model="):
+            continue
+        out.append(x)
+    return out
+
+
+def codex_model():
+    """`model = "..."` from ~/.codex/config.toml (top level only), else empty."""
+    try:
+        for line in open(os.path.join(os.path.expanduser("~"), ".codex", "config.toml"), errors="replace"):
+            if line.lstrip().startswith("["):
+                break
+            m = re.match(r'\s*model\s*=\s*["\']([^"\']+)["\']', line)
+            if m:
+                return m.group(1)
+    except Exception:
+        pass
+    return ""
+
+
 def classify(argv, cwd):
     """(kind, engine, role, project, task, model) for a real sub-agent process, else None."""
     b0 = os.path.basename(argv[0])
@@ -629,10 +658,11 @@ def classify(argv, cwd):
     if "python" in b0:
         if args and os.path.basename(args[0]) in ("pi-worker", "agent-worker"):
             pi = os.path.basename(args[0]) == "pi-worker"
-            r = strip_ctx(args[1:])   # <family> <role> <project> [--context-file x] "<task>"
+            wm = flag_value(args, ("--model",))   # explicit model flag only; never guessed
+            r = strip_ctx(strip_model(args[1:]))   # <family> <role> <project> [--context-file x] "<task>"
             return {"kind": "worker", "engine": "pi" if pi else (r[0] if r else "agent"),
                     "role": r[1] if len(r) > 1 else "?", "project": r[2] if len(r) > 2 else "",
-                    "task": " ".join(r[3:]) if len(r) > 3 else "", "model": ""}
+                    "task": " ".join(r[3:]) if len(r) > 3 else "", "model": wm}
         if args and args[0] == "-m" and len(args) > 1:   # hermes delegate children + kanban workers
             for pref, role in HERMES_MODS:
                 if args[1].startswith(pref) and (".hermes" in argv[0] or ".hermes" in (cwd or "")):
@@ -795,6 +825,8 @@ def scan():
         if lp:
             busy_loops.add(lp)
         model = c.get("model") or run_model((procs.get(pid) or {}).get("home"), c.get("task", ""))
+        if not model and c.get("engine") == "codex":
+            model = codex_model()
         add(pid, parent_of(pid), c["engine"], c.get("role"), c.get("project"), c.get("task"), model, "running", c["age"])
     for pid, p in procs.items():
         cmd = " ".join(p["argv"])
