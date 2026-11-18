@@ -343,3 +343,57 @@ def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
     again = hive.collect(home, now=now + 5, scan=False, hosts=[])
     assert "acme:t4" in again["tasks"] and again["families"][0]["brains"][0]["counts"]["done"] == 1
     assert hive.diff_tasks(first["tasks"], again["tasks"]) == []   # no phantom events from the hiccup
+
+
+def _scanner():
+    ns = {"__name__": "t"}
+    exec(hive._SCANNER_CODE, ns)
+    return ns
+
+
+def test_classify_worker_model_flag():
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/pi-worker", "root", "coder", "proj", "--model", "glm-5", "fix LST-12 now"], "/")
+    assert c["model"] == "glm-5" and c["project"] == "proj" and c["task"] == "fix LST-12 now"
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/agent-worker", "claude", "coder", "proj", "--model=sonnet", "do it"], "/")
+    assert c["model"] == "sonnet" and c["engine"] == "claude"
+
+
+def test_classify_worker_model_unknown_is_empty():
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/pi-worker", "root", "coder", "proj", "fix LST-12 now"], "/")
+    assert c["model"] == ""
+
+
+def test_run_model_from_run_folder(tmp_path):
+    run = tmp_path / "state" / "worker-runs" / "r1"
+    run.mkdir(parents=True)
+    task = "implement the host label feature properly"
+    (run / "request.json").write_text(json.dumps({"task": task}))
+    (run / "result.json").write_text(json.dumps({"ok": True, "model": "opus-x"}))
+    rm = _scanner()["run_model"]
+    assert rm(str(tmp_path), task) == "opus-x"
+    assert rm(str(tmp_path), "a different task entirely here") == ""
+    (run / "result.json").write_text(json.dumps({"ok": True}))
+    assert rm(str(tmp_path), task) == ""   # unknown stays empty, never invented
+
+
+def test_codex_model_from_config(tmp_path, monkeypatch):
+    ns = _scanner()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert ns["codex_model"]() == ""
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text('model = "gpt-x"\n[profiles.a]\nmodel = "other"\n')
+    assert ns["codex_model"]() == "gpt-x"
+
+
+def test_agents_appear_and_disappear_between_collects(home):
+    now = time.time()
+    remote = lambda *a: {"name": "box2", "addr": "box2", "hostname": "box2", "online": True, "checked_at": now, "agents": list(a)}
+    w = worker(id="w9-box2", pid=9, host="box2", parent="unattributed", secs=60, age=60)
+    first = hive.collect(home, now=now, scan=False, hosts=[remote(w)])
+    ids1 = [a["id"] for h in first["hosts"] for a in h["agents"]]
+    assert "w9-box2" in ids1
+    assert [a["host"] for h in first["hosts"] for a in h["agents"] if a["id"] == "w9-box2"] == ["box2"]
+    second = hive.collect(home, now=now + 5, scan=False, hosts=[remote()])
+    assert "w9-box2" not in [a["id"] for h in second["hosts"] for a in h["agents"]]
+    third = hive.collect(home, now=now + 10, scan=False, hosts=[remote(w)])
+    assert "w9-box2" in [a["id"] for h in third["hosts"] for a in h["agents"]]
