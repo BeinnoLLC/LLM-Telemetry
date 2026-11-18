@@ -17,61 +17,55 @@ const chk = (ok, name, got) => {
   else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); }
 };
 
-// Blank out comments so prose colour mentions don't count, keeping line numbers.
+// Blank out comments so prose colour mentions don't count. Newlines are kept
+// ([^\n], not every char) so reported line numbers still match the real file.
 const src = fs.readFileSync(CSS, 'utf8')
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\\n]/g, ' '));
+  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
 
-// Walk braces; a declaration block is exempt only when every selector on its
-// head is a tooltip selector. At-rule wrappers (@media, @supports...) carry no
-// declarations themselves, so their heads never exempt anything.
+// Collect every raw colour literal with its exact character offset. A hit is
+// exempt only when its own position sits inside a declaration block whose every
+// selector is a tooltip selector. At-rule wrappers (@media, @supports...) carry
+// no declarations themselves, so their heads never exempt anything.
+const hits = [...src.matchAll(RAW)].map(m => ({ idx: m.index, hit: m[0].replace(/\s*\(/, '(') }));
+const lineOf = idx => {
+  let line = 1;
+  for (let i = 0; i < idx; i++) if (src[i] === '\n') line++;
+  return line;
+};
 const lines = src.split('\n');
+
+// Walk braces. The exemption is armed at a tooltip block's '{' and cleared at
+// that same block's '}' (depth == skipDepth), so following sibling rules are
+// never swept into it; nested blocks inside the tooltip rule stay exempt.
 const violations = [];
 const exemptHits = [];
 let head = '';
 let depth = 0;
-let skipDepth = -1; // depth at which an exempt tooltip block started
-let inExemptBlock = false;
-const heads = [];
+let skipDepth = -1; // depth at which the innermost exempt tooltip block started
+let hi = 0;
 
-for (let i = 0; i < lines.length; i++) {
-  for (const ch of lines[i]) {
-    if (ch === '{') {
-      depth++;
-      if (skipDepth < 0) {
-        const sels = head.split(',').map(s => s.trim()).filter(Boolean);
-        const isTooltip = sels.length > 0 && sels.every(s => TOOLTIP.test(s));
-        if (isTooltip) {
-          skipDepth = depth;
-          inExemptBlock = true;
-        }
-        heads.push(isTooltip);
-      } else {
-        heads.push(true);
-      }
-      head = '';
-    } else if (ch === '}') {
-      heads.pop();
-      // Only clear exemption when we've actually exited the exempt block (depth < skipDepth)
-      if (skipDepth >= 0 && depth < skipDepth) {
-        skipDepth = -1;
-        inExemptBlock = false;
-      }
-      depth = Math.max(0, depth - 1);
-      head = '';
-    } else {
-      head += ch;
-    }
+for (let i = 0; i < src.length; i++) {
+  // Attribute any literal starting exactly here the block state at its position.
+  while (hi < hits.length && hits[hi].idx === i) {
+    const rec = { line: lineOf(i), hits: [hits[hi].hit], text: (lines[lineOf(i) - 1] || '').trim().slice(0, 100) };
+    if (skipDepth >= 0) exemptHits.push({ line: rec.line, hits: rec.hits });
+    else violations.push(rec);
+    hi++;
   }
-  head += '\n';
-  RAW.lastIndex = 0;
-  const hits = [];
-  let m;
-  while ((m = RAW.exec(lines[i]))) hits.push(m[0].replace(/\s*\(/, '('));
-  if (!hits.length) continue;
-  if (!inExemptBlock) {
-    violations.push({ line: i + 1, hits, text: lines[i].trim().slice(0, 100) });
+  const ch = src[i];
+  if (ch === '{') {
+    depth++;
+    if (skipDepth < 0) {
+      const sels = head.split(',').map(s => s.trim()).filter(Boolean);
+      if (sels.length > 0 && sels.every(s => TOOLTIP.test(s))) skipDepth = depth;
+    }
+    head = '';
+  } else if (ch === '}') {
+    if (skipDepth >= 0 && depth <= skipDepth) skipDepth = -1;
+    depth = Math.max(0, depth - 1);
+    head = '';
   } else {
-    exemptHits.push({ line: i + 1, hits });
+    head += ch;
   }
 }
 
@@ -82,4 +76,5 @@ for (const v of violations) console.log(`      ${v.line}: ${v.hits.join(', ')}  
 // proves the exemption is scoped to .qtip/.flowtip blocks, not a blanket pass.
 chk(exemptHits.length > 0, `tooltip rules keep their LLMTELEMET-312 literals, exempt (${exemptHits.map(e => e.line).join(', ')})`);
 
+console.log(`${pass} passed, ${fail} failed`);
 if (require.main === module) process.exit(fail ? 1 : 0);
