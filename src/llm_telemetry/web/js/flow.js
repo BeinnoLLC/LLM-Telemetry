@@ -91,7 +91,7 @@ function qtDemoWire(q, r, d){
 export function trainBall(it){
   const c = document.createElement('button');
   c.className = 'qt-ball qt-' + it.kind;
-  c.setAttribute('type', 'button');
+  c.setAttribute('type', 'button'); c.setAttribute('aria-label', 'Task (queue item)');   // refined per render
   c.dataset.key = it.key;
   c.tabIndex = 0;
   const g = document.createElement('span'); g.className = 'qt-ball-g'; c.appendChild(g);
@@ -1007,9 +1007,13 @@ export function flowControls(){
     // fitView() is stashed on the <svg> element by renderFlow each time it
     // rebuilds, so this button always calls whatever is current. +/- give
     // an accessible, keyboard-reachable equivalent to wheel/pinch zoom.
-    `<button data-flowzoom="out" title="Zoom out">&minus;</button>` +
-    `<button data-flowzoom="in" title="Zoom in">+</button>` +
-    `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
+    // aria-label comes FIRST: tests/check_flow_touch.js pins the contiguous
+    // substrings `data-flowzoom="…" title="…"` and
+    // `data-flowfit title="…">Fit<`, so no attribute may sit between the
+    // data-* hook and its title (LLMTELEMET-327).
+    `<button aria-label="Zoom out" data-flowzoom="out" title="Zoom out">&minus;</button>` +
+    `<button aria-label="Zoom in" data-flowzoom="in" title="Zoom in">+</button>` +
+    `<button aria-label="Reset pan/zoom to fit" data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
   box.querySelectorAll('[data-fd]').forEach(b => {
     b.addEventListener('click', () => {
       flowDepth = +b.dataset.fd;

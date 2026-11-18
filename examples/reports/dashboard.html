@@ -2122,11 +2122,11 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
   <div class="flex gap-2 items-center flex-wrap fbwrap">
    <div class="fleetbar" id="tabs" data-kind="all"></div>
    <span id="noticechips" class="noticechips"></span>
-   <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
-   <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
+   <button id="refresh" class="chip" type="button" aria-label="Refresh data" title="Refresh data">&#8635;</button>
+   <button id="theme" class="chip" type="button" aria-label="Toggle theme" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
      aria-label="Sound on — click to mute" title="Sound on — click to mute">&#128266;</button>
-   <button id="helpbtn" title="How your work gets routed (?)">?</button>
+   <button id="helpbtn" type="button" aria-label="How your work gets routed" title="How your work gets routed (?)">?</button>
   </div>
  </header>
 
@@ -2746,7 +2746,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
   <b style="font-size:var(--fs-md)">Live tail</b>
   <span class="muted stamp" id="dstamp" style="font-size:var(--fs-xs)">live</span>
   <a href="#/logs" id="dfull" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">All logs &rarr;</a>
-  <button id="dclose" class="chip" style="margin-left:auto" title="Close">&times;</button>
+  <button id="dclose" class="chip" type="button" style="margin-left:auto" aria-label="Close" title="Close">&times;</button>
  </div>
  <div class="dtabs">
   <button class="dtab on" data-f="all">All</button>
@@ -2771,7 +2771,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
   <span class="muted" id="tsub" style="font-size:var(--fs-xs)"></span>
   <button id="ttimelinebtn" class="chip lntimelinebtn" style="margin-left:auto" title="View this session's timeline"
     data-tsession="" data-tprofile="" data-title="">Timeline</button>
-  <button id="tclose" class="chip" title="Close (Esc)">&times;</button>
+  <button id="tclose" class="chip" type="button" aria-label="Close transcript" title="Close (Esc)">&times;</button>
  </div>
  <div id="tbody" tabindex="-1"></div>
 </div>
@@ -2782,7 +2782,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
   <div class="flex items-center gap-2">
    <b id="lntitle" style="font-size:var(--fs-md)"></b>
    <span class="muted" id="lnsub"></span>
-   <button id="lnclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+   <button id="lnclose" class="chip" type="button" style="margin-left:auto" aria-label="Close timeline" title="Close (Esc)">&times;</button>
   </div>
   <div id="lnmeta" class="muted mt-1"></div>
  </div>
@@ -2794,7 +2794,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
  <div class="pdhead">
   <b id="pdtitle"></b>
-  <button id="pdclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+  <button id="pdclose" class="chip" type="button" style="margin-left:auto" aria-label="Close details" title="Close (Esc)">&times;</button>
  </div>
  <div id="pdbody" tabindex="-1"></div>
 </div>
@@ -6696,7 +6696,7 @@ function qtDemoWire(q, r, d){
 function trainBall(it){
  const c = document.createElement('button');
  c.className = 'qt-ball qt-' + it.kind;
- c.setAttribute('type', 'button');
+ c.setAttribute('type', 'button'); c.setAttribute('aria-label', 'Task (queue item)');
  c.dataset.key = it.key;
  c.tabIndex = 0;
  const g = document.createElement('span'); g.className = 'qt-ball-g'; c.appendChild(g);
@@ -8996,9 +8996,9 @@ function flowControls(){
  box.dataset.wired = '1';
  box.innerHTML = [[2,'provider → model'],[3,'+ task']]
  .map(([d,l])=>`<button data-fd="${d}">${l}</button>`).join('') +
- `<button data-flowzoom="out" title="Zoom out">&minus;</button>` +
- `<button data-flowzoom="in" title="Zoom in">+</button>` +
- `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
+ `<button aria-label="Zoom out" data-flowzoom="out" title="Zoom out">&minus;</button>` +
+ `<button aria-label="Zoom in" data-flowzoom="in" title="Zoom in">+</button>` +
+ `<button aria-label="Reset pan/zoom to fit" data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
  box.querySelectorAll('[data-fd]').forEach(b => {
  b.addEventListener('click', () => {
  flowDepth = +b.dataset.fd;
