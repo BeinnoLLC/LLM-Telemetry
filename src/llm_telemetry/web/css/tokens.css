@@ -152,10 +152,11 @@
      the neutral sparkline — theme-independent (a brand logo is the same
      colour in both themes), consumed from JS via var(--prov-*) / css(). */
   --prov-anthropic:#d97757;
-  --prov-anthropic-fg:#d97757;
+  --prov-anthropic-fg:hsl(17 40% 58%);
+  --prov-anthropic-chip:hsl(17 38% 52%);
   --prov-anthropic-bg:hsl(17 40% 55% / .16);
   --prov-openai:#10a37f;        /* openai-codex reuses this mark */
-  --prov-openai-codex-fg:#10a37f;
+  --prov-openai-codex-fg:hsl(162 30% 42%);
   --prov-openai-codex-bg:hsl(162 30% 42% / .16);
   --prov-cloud-fg:hsl(205 24% 58%);
   --prov-cloud-bg:hsl(205 24% 58% / .16);
@@ -163,17 +164,17 @@
   --prov-ollama-cloud-bg:hsl(199 30% 55% / .16);
   --prov-gemini:#4f8df5;
   --prov-local:#5b9cf6;
-  --prov-local-fg:#5b9cf6;
+  --prov-local-fg:hsl(213 28% 62%);
   --prov-local-bg:hsl(213 28% 62% / .14);
   --prov-ollama-cloud:#38bdf8;
   --prov-openrouter:#8b5cf6;
   --prov-copilot:#a3a3a3;
   --prov-opencode-go:#7c6cf2;
-  --prov-opencode-go-fg:#7c6cf2;
+  --prov-opencode-go-fg:hsl(250 30% 68%);
   --prov-opencode-go-bg:hsl(250 30% 68% / .16);
   --prov-deepseek:#4d6bfe;
   --prov-nous:#eab308;
-  --prov-nous-fg:#eab308;
+  --prov-nous-fg:#baa984;
   --prov-nous-bg:hsl(37 30% 55% / .16);
   --prov-fireworks:#ff663d;
   --prov-fireworks-fg:#b07a5e;

@@ -149,7 +149,7 @@ export function renderResolution(){
 // LLMTELEMET-307: provider colours are --prov-<id>-fg/-bg token NAMES,
 // resolved at render time via rtColor (see batch 2 of 306 for the pattern).
 export const PROV = {
-  'anthropic':   {icon:'✳', bg:'--prov-anthropic-bg',    fg:'--prov-anthropic-fg'},
+  'anthropic':   {icon:'✳', bg:'--prov-anthropic-bg',    fg:'--prov-anthropic-chip'},
   'opencode-go': {icon:'◈', bg:'--prov-opencode-go-bg',  fg:'--prov-opencode-go-fg'},
   'fireworks':   {icon:'✦', bg:'--prov-fireworks-bg',    fg:'--prov-fireworks-fg'},
   'openai-codex':{icon:'◉', bg:'--prov-openai-codex-bg', fg:'--prov-openai-codex-fg'},
@@ -1264,18 +1264,19 @@ export function unattrPattern(){
   // the rest of renderProjects() instead of crashing on a null context;
   // check_projects_card.js still asserts the Unattributed bar uses a
   // DIFFERENT fill style than any real project's PAL color.
-  if (!ctx) return 'rgba(148,163,184,0.5)';
+  if (!ctx) return 'color-mix(in srgb,var(--muted) 50%,transparent)';
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = css('--muted');
-  ctx.globalAlpha = 1;
   ctx.fillRect(0, 0, 8, 8);
-  ctx.strokeStyle = 'rgba(148,163,184,0.9)';
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = css('--muted');
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, 8); ctx.lineTo(8, 0);
   ctx.moveTo(-2, 2); ctx.lineTo(2, -2);
   ctx.moveTo(6, 10); ctx.lineTo(10, 6);
   ctx.stroke();
+  ctx.globalAlpha = 1;
   _unattrPattern = ctx.createPattern(c, 'repeat');
   return _unattrPattern;
 }
