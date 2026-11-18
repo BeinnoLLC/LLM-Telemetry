@@ -128,7 +128,7 @@
 .fb-menu{position:relative;flex:none}
 .fb-pop{position:absolute;z-index:40;top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
   display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--card);border:1px solid var(--border);
-  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 45%,transparent)}
+  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px var(--s45)}
 .fb-pop[hidden]{display:none}
 .fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:4px}
 .fb-pop .fb-more{align-self:flex-end}
@@ -138,9 +138,9 @@
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
    the ::backdrop (the mock had none). */
 .fbdlg{padding:0;width:min(680px,92vw);max-height:min(76vh,600px);flex-direction:column;overflow:hidden;
-  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 12px 32px color-mix(in srgb,var(--shade) 35%,transparent)}
+  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 12px 32px var(--s35)}
 .fbdlg[open]{display:flex}
-.fbdlg::backdrop{background:color-mix(in srgb,var(--shade) 45%,transparent)}
+.fbdlg::backdrop{background:var(--s45)}
 .pk-top{display:flex;align-items:center;gap:var(--sp-2,8px);padding:12px;border-bottom:1px solid var(--border)}
 .pk-top h2{margin:0;font-size:var(--fs-md);font-weight:600;flex:none}
 .pk-top .pk-q{flex:1;min-width:0;height:32px;border-radius:var(--radius-ctl);border:1px solid var(--border);background:var(--fb-surface);color:var(--fg);padding:0 10px;font:inherit;font-size:var(--fs-sm)}
@@ -435,7 +435,7 @@ body.hasnav #views{ display:none; }
 .lgev{display:grid;grid-template-columns:70px max-content 1fr;gap:9px;align-items:baseline;
   padding:4px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
 .lgev:last-child{border-bottom:0}
-.lgts{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-xs)}
+.lgts{color:var(--muted);font-family:var(--fm);font-size:var(--fs-xs)}
 .lgtag{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow:visible;text-overflow:clip;min-width:66px}
 .lgtag.error{color:var(--z-bad-fg);font-weight:700}
@@ -603,7 +603,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
  .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
  .resbad{color:var(--z-warn)}
- .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 30%,transparent)}
+ .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px var(--s30)}
  .respop code{font-size:var(--fs-sm)}
  #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -637,7 +637,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
    transition:transform .2s ease,width .2s ease}
  #nav::-webkit-scrollbar{width:6px}
- #nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ #nav::-webkit-scrollbar-thumb,#faillist::-webkit-scrollbar-thumb,#livelist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
  .navbrand{display:flex;align-items:center;gap:8px;padding:14px 14px 12px;
    font-weight:700;font-size:var(--fs-sm);letter-spacing:-.01em;flex:none;
    border-bottom:1px solid var(--border)}
@@ -660,7 +660,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
    cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
  #navpin:hover{color:var(--accent)}
- #navscrim{display:none;position:fixed;inset:0;z-index:63;background:color-mix(in srgb,var(--shade) 55%,transparent);
+ #navscrim{display:none;position:fixed;inset:0;z-index:63;background:var(--s55);
    backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
  #navscrim.open{opacity:1;pointer-events:auto}
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
@@ -681,7 +681,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #barmore{display:none;position:relative}
  #barmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:45;
    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-   padding:6px;min-width:172px;box-shadow:0 14px 34px color-mix(in srgb,var(--shade) 45%,transparent);
+   padding:6px;min-width:172px;box-shadow:0 14px 34px var(--s45);
    flex-direction:column;gap:2px;display:none}
  #barmenu.open{display:flex}
  #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
@@ -789,11 +789,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
  #helpwrap{position:fixed;inset:0;z-index:70;display:none}
  #helpwrap.open{display:block}
- #helpscrim{position:absolute;inset:0;background:color-mix(in srgb,var(--shade) 55%,transparent);backdrop-filter:blur(2px)}
+ #helpscrim{position:absolute;inset:0;background:var(--s55);backdrop-filter:blur(2px)}
  #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
    width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
    border:1px solid var(--border);border-radius:12px;padding:22px 26px;
-   box-shadow:0 24px 60px color-mix(in srgb,var(--shade) 50%,transparent)}
+   box-shadow:0 24px 60px var(--s50)}
  .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
  .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px}
  #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
@@ -854,35 +854,35 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-line{--jc:var(--z-ok)}
 .qt-yard{--jc:var(--accent)}
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
-  filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px color-mix(in srgb,var(--tint) 30%,transparent))}
+  filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px var(--w30))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--shade) 60%,transparent),color-mix(in srgb,var(--shade) 25%,transparent) 55%,transparent 75%)}
+  background:radial-gradient(ellipse at 50% 50%,var(--s60),var(--s25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
-  background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 22%,transparent) 0 2px,transparent 2px),
-    linear-gradient(90deg,color-mix(in srgb,var(--shade) 35%,transparent),transparent 20%,color-mix(in srgb,var(--tint) 8%,transparent) 40%,transparent 60%,color-mix(in srgb,var(--shade) 40%,transparent)),
+  background:linear-gradient(180deg,var(--w22) 0 2px,transparent 2px),
+    linear-gradient(90deg,var(--s35),transparent 20%,var(--w8) 40%,transparent 60%,var(--s40)),
     linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,white 22%),color-mix(in srgb,var(--bg) 70%,black));
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--tint) 18%,transparent),0 3px 5px color-mix(in srgb,var(--shade) 55%,transparent),inset 0 -5px 0 -3px color-mix(in srgb,var(--shade) 40%,transparent)}
+  box-shadow:0 0 0 1px var(--w18),0 3px 5px var(--s55),inset 0 -5px 0 -3px var(--s40)}
 .qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:3px;pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 25%,transparent),color-mix(in srgb,var(--shade) 45%,transparent));box-shadow:0 2px 3px color-mix(in srgb,var(--shade) 50%,transparent)}
+  background:linear-gradient(180deg,var(--w25),var(--s45));box-shadow:0 2px 3px var(--s50)}
 .qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--fg))}
-.qt-n{position:relative;z-index:1;font-weight:700;font-size:14px;line-height:1;color:white;text-shadow:0 1px 1px color-mix(in srgb,var(--shade) 60%,transparent)}
+.qt-n{position:relative;z-index:1;font-weight:700;font-size:14px;line-height:1;color:white;text-shadow:0 1px 1px var(--s60)}
 /* Silhouette: a short neck, then curved shoulders flaring into straight walls (the polygon is
    a quarter-ellipse each side); the bottom corners are an ordinary radius. */
 .qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-6px;min-height:300px;padding:84px 8px 14px;
   border-radius:0 0 30px 30px;overflow:hidden;
   clip-path:polygon(26.0% 0px,26.0% 16px,21.5% 17px,17.1% 21px,13.0% 27px,9.3% 35px,6.1% 45px,3.5% 56px,1.6% 69px,0.4% 82px,0.0% 96px,0 100%,100% 100%,100.0% 96px,99.6% 82px,98.4% 69px,96.5% 56px,93.9% 45px,90.7% 35px,87.0% 27px,82.9% 21px,78.5% 17px,74.0% 16px,74.0% 0px);
-  background:linear-gradient(90deg,transparent calc(100% - 16px),color-mix(in srgb,var(--tint) 10%,transparent) calc(100% - 11px),transparent calc(100% - 5px)) no-repeat,
-    linear-gradient(180deg,transparent calc(100% - 12px),color-mix(in srgb,var(--tint) 13%,transparent)) no-repeat,
-    linear-gradient(90deg,color-mix(in srgb,var(--tint) 10%,transparent),color-mix(in srgb,var(--tint) 2%,transparent) 14%,color-mix(in srgb,var(--tint) 1.5%,transparent) 86%,color-mix(in srgb,var(--tint) 7%,transparent)),
+  background:linear-gradient(90deg,transparent calc(100% - 16px),var(--w10) calc(100% - 11px),transparent calc(100% - 5px)) no-repeat,
+    linear-gradient(180deg,transparent calc(100% - 12px),var(--w13)) no-repeat,
+    linear-gradient(90deg,var(--w10),var(--w2) 14%,var(--w1p5) 86%,var(--w7)),
     linear-gradient(180deg,color-mix(in srgb,var(--tint) 7%,transparent),color-mix(in srgb,var(--tint) 2%,transparent));
   -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
-  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tint) 35%,transparent),inset -2px 0 0 color-mix(in srgb,var(--tint) 18%,transparent),inset 0 -3px 0 color-mix(in srgb,var(--tint) 14%,transparent),
-    inset 5px 0 8px -4px color-mix(in srgb,var(--tint) 14%,transparent),inset 0 -22px 24px -14px color-mix(in srgb,var(--shade) 55%,transparent)}
+  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tint) 35%,transparent),inset -2px 0 0 var(--w18),inset 0 -3px 0 var(--w14),
+    inset 5px 0 8px -4px var(--w14),inset 0 -22px 24px -14px var(--s55)}
 .qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:6px;pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 55%,transparent),color-mix(in srgb,var(--tint) 22%,transparent) 60%,color-mix(in srgb,var(--tint) 5%,transparent));filter:blur(2px)}
+  background:linear-gradient(180deg,var(--w55),var(--w22) 60%,var(--w5));filter:blur(2px)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
-  background:linear-gradient(90deg,color-mix(in srgb,var(--shade) 22%,transparent),transparent 16%,transparent 84%,color-mix(in srgb,var(--shade) 18%,transparent)),
+  background:linear-gradient(90deg,var(--s22),transparent 16%,transparent 84%,var(--s18)),
     linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,black 10%));
   transition:height .8s cubic-bezier(.22,1,.36,1)}
 .qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:12px;margin-bottom:-2px;pointer-events:none;transform-origin:50% 100%;
@@ -905,26 +905,26 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* --qk-wait (waiting-ball fill) is a token in tokens.css */
 .qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));min-width:0;min-height:0;width:var(--sz,28px);height:var(--sz,28px);margin:calc(var(--sz,28px) / -2) 0 0 calc(var(--sz,28px) / -2);
   padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
-  background:radial-gradient(circle at 32% 26%,white 0,color-mix(in srgb,var(--tint) 92%,transparent) 8%,color-mix(in srgb,var(--tint) 0%,transparent) 21%),
-    radial-gradient(circle at 36% 30%,color-mix(in srgb,var(--tint) 30%,transparent),transparent 50%),
-    radial-gradient(circle at 70% 80%,color-mix(in srgb,var(--shade) 38%,transparent),transparent 60%),
+  background:radial-gradient(circle at 32% 26%,white 0,var(--w92) 8%,transparent 21%),
+    radial-gradient(circle at 36% 30%,var(--w30),transparent 50%),
+    radial-gradient(circle at 70% 80%,var(--s38),transparent 60%),
     radial-gradient(circle at 45% 42%,var(--k,var(--qk-wait)) 25%,color-mix(in srgb,var(--k,var(--qk-wait)) 72%,black) 100%);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65);
   transition:transform .14s cubic-bezier(.2,.8,.2,1),box-shadow .14s}
 .qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:900;transform:scale(1.22);outline:0;
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 45%,transparent),0 5px 8px -2px color-mix(in srgb,var(--shade) 70%,transparent)}
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w45),0 5px 8px -2px var(--s70)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 /* Running = a clip: an upright capsule with a bright inner loop, glowing in its own colour. */
 .qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--tint) 40%,transparent);pointer-events:none}
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65)}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid var(--w40);pointer-events:none}
 /* User rule: balls show provider icons. Do not replace with letters. The white contrast disc
    keeps the mark legible on every ball colour at QT_MIN 18px; the icon scales with the ball. */
 .qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
   rotate:calc(var(--rz,0deg) * -1)}
-.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:color-mix(in srgb,var(--tint) 88%,transparent);
-  box-shadow:0 1px 2px color-mix(in srgb,var(--shade) 35%,transparent)}
+.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:var(--w88);
+  box-shadow:0 1px 2px var(--s35)}
 .qt-gl svg{width:60%;height:60%;position:relative}
 .qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
 .qt-run .qt-gl svg{width:50%;height:50%}
@@ -932,7 +932,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
-.qt-ball.qt-warn{box-shadow:inset 0 -2px 3px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 3px 3px -1px color-mix(in srgb,var(--shade) 65%,transparent),0 0 0 2px var(--z-warn)}
+.qt-ball.qt-warn{box-shadow:inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
 .qt-overflow{position:absolute;z-index:1000;top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
   font-size:14px;font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
@@ -954,7 +954,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
-.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px color-mix(in srgb,var(--shade) 35%,transparent),inset 0 1px 1px color-mix(in srgb,var(--tint) 35%,transparent)}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px var(--s35),inset 0 1px 1px var(--w35)}
 .qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
@@ -1106,14 +1106,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .fmsg{color:var(--fg);flex:1;min-width:0}
  #faillist::-webkit-scrollbar{width:7px}
  #faillist::-webkit-scrollbar-track{background:transparent}
- #faillist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
  #faillist{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 
  /* Live session list scrolls inside its card; keep the scrollbar unobtrusive
     so a long list never looks like a broken layout. */
  #livelist::-webkit-scrollbar{width:7px}
  #livelist::-webkit-scrollbar-track{background:transparent}
- #livelist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
  #livelist::-webkit-scrollbar-thumb:hover{background:var(--muted)}
  #livelist{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 
@@ -1220,10 +1218,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
-   box-shadow:-12px 0 40px color-mix(in srgb,var(--shade) 40%,transparent)}
+   box-shadow:-12px 0 40px var(--s40)}
  #drawer.open{transform:translateX(0)}
  #drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
- #scrim{position:fixed;inset:0;z-index:65;background:color-mix(in srgb,var(--shade) 45%,transparent);opacity:0;
+ #scrim{position:fixed;inset:0;z-index:65;background:var(--s45);opacity:0;
    pointer-events:none;transition:opacity .22s ease}
  #scrim.open{opacity:1;pointer-events:auto}
  .dhead{display:flex;align-items:center;gap:8px;padding:13px 15px;
@@ -1237,18 +1235,18 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
 /* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
    (this is one session's whole conversation, not a cross-session tail). */
-#tscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
+#tscrim,#lnscrim,#pdscrim{position:fixed;inset:0;z-index:75;background:var(--s55);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
-#tscrim.open{opacity:1;pointer-events:auto}
+#tscrim.open,#lnscrim.open,#pdscrim.open{opacity:1;pointer-events:auto}
 #tmodal{position:fixed;top:50%;left:50%;z-index:80;
   width:min(760px,94vw);max-height:min(82vh,720px);
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
   display:flex;flex-direction:column;overflow:hidden;
   transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
   transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
+  box-shadow:0 24px 70px var(--s50)}
 #tmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
-.thead{display:flex;align-items:center;gap:8px;padding:12px 15px;
+.thead,.pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .thead #ttitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 #tbody{overflow-y:auto;flex:1;padding:12px 15px;display:flex;flex-direction:column;gap:9px}
@@ -1265,12 +1263,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .tmsg.role-tool{align-self:flex-start;max-width:96%;background:transparent;
   border:1px dashed var(--border);color:var(--muted)}
 .tmsg pre{margin:4px 0 0;padding:8px 10px;background:color-mix(in srgb,var(--fg) 6%,transparent);
-  border-radius:var(--radius-ctl);overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  border-radius:var(--radius-ctl);overflow-x:auto;font-family:var(--fm);
   font-size:var(--fs-xs);white-space:pre}
 .tmsg img.timg{max-width:100%;max-height:280px;border-radius:4px;margin-top:4px;display:block}
 .tmsg img.timg.tbroken{display:none}
 .tmsg a{color:var(--accent);text-decoration:underline}
-.tmsg .ttoolcall{font-size:var(--fs-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+.tmsg .ttoolcall{font-size:var(--fs-xs);font-family:var(--fm);
   opacity:.85;margin-top:2px}
 #tempty{padding:var(--sp-6) var(--sp-4)}
 .ttitlebtn{background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;
@@ -1287,18 +1285,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    transcript modal — the two answer different questions ("what happened"
    vs "what was said") and must stay independently reachable. */
 }
-#lnscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
-  pointer-events:none;transition:opacity .18s ease}
-#lnscrim.open{opacity:1;pointer-events:auto}
 #lnmodal{position:fixed;top:50%;left:50%;z-index:80;
   width:min(920px,96vw);max-height:min(82vh,720px);
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
   display:flex;flex-direction:column;overflow:hidden;
   transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
   transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
+  box-shadow:0 24px 70px var(--s50)}
 #lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
-#sfscrim{position:fixed;inset:0;z-index:85;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
+#sfscrim{position:fixed;inset:0;z-index:85;background:var(--s55);opacity:0;
   pointer-events:none;transition:opacity .14s ease}
 #sfscrim.open{opacity:1;pointer-events:auto}
 #sfmodal{position:fixed;top:12vh;left:50%;z-index:90;
@@ -1307,7 +1302,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   display:flex;flex-direction:column;overflow:hidden;
   transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;
   transition:transform .12s ease,opacity .12s ease;
-  box-shadow:0 24px 70px color-mix(in srgb,var(--shade) 50%,transparent)}
+  box-shadow:0 24px 70px var(--s50)}
 #sfmodal.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 .sfrow{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:var(--fs-sm);border-left:2px solid transparent}
 .sfrow:hover,.sfrow.sfactive{background:var(--bg)}
@@ -1324,7 +1319,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 #lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
   border-radius:var(--radius-ctl);padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
-  box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 40%,transparent);display:none}
+  box-shadow:0 8px 24px var(--s40);display:none}
 
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own
@@ -1332,17 +1327,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the transcript modal above, same scrim/open-class/focus-trap pattern,
    just a different anchor edge so it reads as "detail alongside the
    matrix" rather than "a whole-screen takeover" on desktop. */
-#pdscrim{position:fixed;inset:0;z-index:75;background:color-mix(in srgb,var(--shade) 55%,transparent);opacity:0;
-  pointer-events:none;transition:opacity .18s ease}
-#pdscrim.open{opacity:1;pointer-events:auto}
 #pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
   width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;
   transform:translateX(100%);transition:transform .18s ease;
-  box-shadow:-16px 0 40px color-mix(in srgb,var(--shade) 35%,transparent)}
+  box-shadow:-16px 0 40px var(--s35)}
 #pdrawer.open{transform:translateX(0)}
-.pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
-  border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
 #pdbody{overflow-y:auto;flex:1;padding:12px 15px}
 .pdsection{margin-bottom:var(--sp-4)}
@@ -1377,7 +1367,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
      border-left:none;border-top:1px solid var(--border);
      border-radius:14px 14px 0 0;
-     transform:translateY(100%);box-shadow:0 -12px 40px color-mix(in srgb,var(--shade) 40%,transparent)}
+     transform:translateY(100%);box-shadow:0 -12px 40px var(--s40)}
    #drawer.open{transform:translateY(0)}
    #drawer .dhead{padding-top:6px}
    #draghandle{display:block;width:36px;height:4px;border-radius:2px;
@@ -1627,7 +1617,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-workers{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.5rem}
 .rt-worker{border:1px solid var(--border);border-radius:var(--radius-ctl);padding:.55rem;background:var(--bg);display:flex;flex-direction:column;gap:.3rem;min-width:0}
 .rt-cred{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;font-size:var(--fs-xs);margin-bottom:.15rem}
-.rt-credlbl{font-family:ui-monospace,monospace}
+.rt-credlbl{font-family:var(--fm2)}
 .rt-note{font-size:var(--fs-xs);margin-top:.5rem}
 .rt-kpis{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem}
 .rt-kpi{display:flex;flex-direction:column;padding:.45rem .7rem;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);min-width:110px}
@@ -1659,13 +1649,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* Life-quota row: provider name | status badge | bar. Flexbox so the badge
    never overlaps the bar regardless of badge text length. */
 .qv-liferow{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;flex-wrap:wrap}
-.qv-liferow+.qv-liferow{border-top:1px solid var(--border)}
+.qv-liferow+.qv-liferow,.qv-win+.qv-win,.qv-balrow+.qv-balrow,.qv-note+.qv-note{border-top:1px solid var(--border)}
 .qv-liferow .qv-wname{flex:0 0 auto;min-width:60px;font-weight:600}
 .qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
 .qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
-.qv-win+.qv-win{border-top:1px solid var(--border)}
 .qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
-.qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
+.qv-pct{font-family:var(--fm2);font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
 .qv-pct.qv-ok{color:var(--z-ok)}
 .qv-pct.qv-warn{color:var(--z-warn)}
 .qv-pct.qv-bad{color:var(--z-bad)}
@@ -1689,10 +1678,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-free{font-size:var(--fs-xs);color:var(--z-ok);border:1px solid color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card));border-radius:999px;padding:0 .4rem}
 .qv-wins-none{font-size:var(--fs-xs)}
 .qv-balrow{padding:.35rem 0;font-size:var(--fs-xs)}
-.qv-balrow+.qv-balrow{border-top:1px solid var(--border)}
 .qv-bal{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.2rem}
-.qv-amt{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.qv-cur{color:var(--muted);font-family:ui-monospace,monospace}
+.qv-amt{font-family:var(--fm2);font-variant-numeric:tabular-nums}
+.qv-cur{color:var(--muted);font-family:var(--fm2)}
 
 /* Keys ---------------------------------------------------------------
    A provider is a container; the key is what runs out. These rows give
@@ -1739,7 +1727,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    share a label, so when that happens the ordinal is the only handle that tells
    them apart. It is not shown otherwise -- see the comment on qvAccount.
    Monospace + tabular so #1 and #10 align. */
-.qv-aidx{font-family:ui-monospace,monospace;color:var(--muted);
+.qv-aidx{font-family:var(--fm2);color:var(--muted);
   font-variant-numeric:tabular-nums;flex:0 0 auto}
 .qv-aname{font-size:var(--fs-sm);font-weight:600;color:var(--fg);
   overflow-wrap:anywhere;min-width:0}
@@ -1775,7 +1763,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-abits{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums}
 /* The provider's own words for why a key stopped. Monospace marks it as copied
    text, not written by us — the reader can tell reportage from the UI. */
-.qv-why{font-family:ui-monospace,monospace;font-size:var(--fs-xs);color:var(--z-bad-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22rem;
+.qv-why{font-family:var(--fm2);font-size:var(--fs-xs);color:var(--z-bad-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22rem;
   margin:.2rem 0 0 1.35rem;overflow-wrap:anywhere}
 .qv-amodels{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;max-width:24rem;margin-top:.15rem}
@@ -1793,8 +1781,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-achip.qv-bad{color:var(--z-bad-fg);border-color:color-mix(in srgb,var(--z-bad) 40%,transparent)}
 .qv-achip.qv-mute{color:var(--muted)}
 .qv-note{padding:.45rem 0;font-size:var(--fs-xs)}
-.qv-note+.qv-note{border-top:1px solid var(--border)}
-.qv-detail{font-family:ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.qv-detail{font-family:var(--fm2);color:var(--muted);white-space:pre-wrap;word-break:break-word}
 /* Quota KPI strip: four counts above the sub-page, derived from the same
    provider rows the cards render. Numbers carry the colour, labels stay muted. */
 .qv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;margin:.2rem 0 .8rem}
@@ -1857,7 +1844,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-freshpill{text-transform:none;letter-spacing:0;font-size:var(--fs-2xs);margin-left:.4rem;
   padding:.05rem .4rem;border:1px solid var(--border);border-radius:99px;color:var(--muted);white-space:nowrap}
 .pv-freshpill[data-fresh-state="fresh"]{color:var(--z-ok);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}
-.pv-freshpill[data-fresh-state="old"]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
+.pv-freshpill[data-fresh-state="old"],.notice-chip[data-sev=warn]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
 .pv-freshpill[data-fresh-state="stale"]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 50%,transparent);
   background:color-mix(in srgb,var(--z-bad) 9%,transparent)}
 .kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:13px;font-weight:600;vertical-align:middle;max-width:100%}
@@ -2061,7 +2048,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .toast{pointer-events:auto;display:grid;grid-template-columns:20px minmax(0,1fr) 32px;gap:10px;
   padding:12px 12px 12px 14px;border-radius:var(--radius-ctl);background:var(--card);
   border:1px solid color-mix(in srgb,var(--sev) 45%,var(--border));border-left:4px solid var(--sev);
-  box-shadow:0 0 0 1px var(--border),0 14px 32px -8px color-mix(in srgb,var(--shade) 85%,transparent);animation:toast-in .18s ease-out}
+  box-shadow:0 0 0 1px var(--border),0 14px 32px -8px var(--s85);animation:toast-in .18s ease-out}
 .toast[data-sev=info]{--sev:var(--accent)}
 .toast[data-sev=ok]{--sev:var(--z-ok)}
 .toast[data-sev=warn]{--sev:var(--z-warn)}
@@ -2077,7 +2064,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   background:none;border:0;box-shadow:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;border-radius:var(--radius-ctl);align-self:start}
 .toast-x:hover{background:var(--state-hover);color:var(--fg)}
 .noticechips{display:contents}
-.notice-chip[data-sev=warn]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
 .notice-chip[data-sev=error]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 40%,transparent)}
 @keyframes toast-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media (max-width:599px){ .notices{top:auto;bottom:calc(12px + env(safe-area-inset-bottom));left:16px;right:16px;width:auto} }
@@ -2113,7 +2099,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-v{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .combo-chev{flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
 .combo-pop{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px color-mix(in srgb,var(--shade) 45%,transparent)}
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px var(--s45)}
 .combo-q{margin:8px;height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);padding:0 8px;font:inherit;font-size:14px}
 .combo-list{max-height:min(320px,50vh);overflow:auto;border-top:1px solid var(--border)}
 .combo-opt{display:flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px;font-size:14px;cursor:pointer}
@@ -2139,7 +2125,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .filterbar .fb-meta{order:3;flex-basis:100%;margin-left:0;line-height:20px}
   .filterbar .fb-active{order:2}
   .fb-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:75vh;overflow:auto;flex-direction:column;gap:8px;
-    padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px color-mix(in srgb,var(--shade) 50%,transparent)}
+    padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px var(--s50)}
   .filterbar.sheet-open .fb-sheet{display:flex}
   .fb-sheet .fb-combos{flex-direction:column;flex-wrap:nowrap}
   .fb-sheet .combo-btn{width:100%;max-width:none;justify-content:space-between}
@@ -2261,7 +2247,7 @@ canvas, img {
 :root:not([data-theme="dark"]) #qcard .qt-body{-webkit-backdrop-filter:none;backdrop-filter:none;
   background:linear-gradient(180deg,color-mix(in srgb,white 55%,var(--jar-glass)),var(--jar-glass));
   box-shadow:inset 7px 0 9px -6px color-mix(in srgb,var(--jar-glass-shadow) 22%,transparent),inset -7px 0 9px -6px color-mix(in srgb,var(--jar-glass-shadow) 16%,transparent),inset 0 -16px 18px -12px color-mix(in srgb,var(--jar-glass-shadow) 22%,transparent)}
-:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,color-mix(in srgb,var(--tint) 95%,transparent),color-mix(in srgb,var(--tint) 55%,transparent) 60%,color-mix(in srgb,var(--tint) 0%,transparent));filter:blur(1.5px)}
+:root:not([data-theme="dark"]) #qcard .qt-jar::after{background:linear-gradient(180deg,var(--w95),var(--w55) 60%,transparent);filter:blur(1.5px)}
 :root:not([data-theme="dark"]) #qcard .qt-body::before{
   background:linear-gradient(180deg,color-mix(in srgb,var(--jc) 14%,transparent),color-mix(in srgb,var(--jc) 30%,transparent))}
 :root:not([data-theme="dark"]) #qcard .qt-body::after{
@@ -2276,16 +2262,16 @@ canvas, img {
 :root:not([data-theme="dark"]) #qcard .qt-cars:not(:has(.qt-ball))::after{color:var(--jar-label-soft)}
 :root:not([data-theme="dark"]) #qcard .qt-legend{color:var(--jar-label-soft)}
 :root:not([data-theme="dark"]) #qcard .qt-ball{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 2px 3px -1px color-mix(in srgb,var(--jar-lid-shadow-strong) 40%,transparent)}
+  --qbs:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px var(--s28),inset 0 1px 1.5px var(--w40),0 2px 3px -1px color-mix(in srgb,var(--jar-lid-shadow-strong) 40%,transparent);box-shadow:var(--qbs)}
 :root:not([data-theme="dark"]) #qcard .qt-ball:hover,:root:not([data-theme="dark"]) #qcard .qt-ball:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-tip-on{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 45%,transparent),0 4px 7px -2px color-mix(in srgb,var(--jar-lid-shadow-strong) 45%,transparent)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px var(--s28),inset 0 1px 1.5px var(--w45),0 4px 7px -2px color-mix(in srgb,var(--jar-lid-shadow-strong) 45%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-run{
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent)}
+  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k) 55%,black),0 0 0 3.5px var(--jar-glass),0 0 0 5px color-mix(in srgb,var(--k) 85%,transparent),0 0 10px 4px color-mix(in srgb,var(--k) 45%,transparent),inset 0 -2px 3px var(--s28),inset 0 1px 1.5px var(--w40)}
 :root:not([data-theme="dark"]) #qcard .qt-run .qt-ball-g{box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 70%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn{outline:2px dashed var(--jar-ring);outline-offset:3px;
-  box-shadow:0 0 0 1.25px color-mix(in srgb,var(--k,var(--qk-wait)) 55%,black),inset 0 -2px 3px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1.5px color-mix(in srgb,var(--tint) 40%,transparent),0 2px 3px -1px color-mix(in srgb,var(--jar-lid-shadow-strong) 40%,transparent)}
+  box-shadow:var(--qbs)}
 :root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn:focus-visible,:root:not([data-theme="dark"]) #qcard .qt-ball.qt-warn.qt-tip-on{outline:2px solid var(--accent)}
-:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px color-mix(in srgb,var(--shade) 28%,transparent),inset 0 1px 1px color-mix(in srgb,var(--tint) 40%,transparent)}
+:root:not([data-theme="dark"]) #qcard .qt-sw{box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 55%,black),inset 0 -1px 1px var(--s28),inset 0 1px 1px var(--w40)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-glow{--k:var(--jar-glow);background:var(--jar-glass);
   box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
