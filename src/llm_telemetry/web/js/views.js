@@ -86,7 +86,7 @@ export function flash(msg){
     f.setAttribute('role', 'status');
     f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
       + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
-      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:0 4px 14px rgba(0,0,0,.25);'
+      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--elev-2);'
       + 'opacity:0;transition:opacity .2s';
     document.body.appendChild(f);
   }
@@ -146,16 +146,18 @@ export function renderResolution(){
   btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); };
   document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
+// LLMTELEMET-307: provider colours are --prov-<id>-fg/-bg token NAMES,
+// resolved at render time via rtColor (see batch 2 of 306 for the pattern).
 export const PROV = {
-  'anthropic':   {icon:'✳', bg:'hsl(17 40% 55% / .16)',  fg:'hsl(17 40% 58%)'},
-  'opencode-go': {icon:'◈', bg:'hsl(250 30% 68% / .16)', fg:'hsl(250 30% 68%)'},
-  'fireworks':   {icon:'✦', bg:'hsl(20 45% 58% / .16)',   fg:'#b07a5e'},
-  'openai-codex':{icon:'◉', bg:'hsl(162 30% 42% / .16)', fg:'hsl(162 30% 42%)'},
-  'local':       {icon:'▣', bg:'hsl(213 28% 62% / .14)', fg:'hsl(213 28% 62%)'},
-  'moa':         {icon:'⬡', bg:'hsl(320 30% 66% / .16)',  fg:'#b87383'},
-  'cloud':       {icon:'☁', bg:'hsl(205 24% 58% / .16)', fg:'hsl(205 24% 58%)'},
-  'ollama-cloud':{icon:'☁', bg:'hsl(199 30% 55% / .16)', fg:'hsl(199 30% 55%)'},
-  'nous':        {icon:'◆', bg:'hsl(37 30% 55% / .16)',    fg:'#baa984'}
+  'anthropic':   {icon:'✳', bg:'--prov-anthropic-bg',    fg:'--prov-anthropic-fg'},
+  'opencode-go': {icon:'◈', bg:'--prov-opencode-go-bg',  fg:'--prov-opencode-go-fg'},
+  'fireworks':   {icon:'✦', bg:'--prov-fireworks-bg',    fg:'--prov-fireworks-fg'},
+  'openai-codex':{icon:'◉', bg:'--prov-openai-codex-bg', fg:'--prov-openai-codex-fg'},
+  'local':       {icon:'▣', bg:'--prov-local-bg',        fg:'--prov-local-fg'},
+  'moa':         {icon:'⬡', bg:'--prov-moa-bg',          fg:'--prov-moa-fg'},
+  'cloud':       {icon:'☁', bg:'--prov-cloud-bg',        fg:'--prov-cloud-fg'},
+  'ollama-cloud':{icon:'☁', bg:'--prov-ollama-cloud-bg', fg:'--prov-ollama-cloud-fg'},
+  'nous':        {icon:'◆', bg:'--prov-nous-bg',         fg:'--prov-nous-fg'}
 };
 // Provider resolution order, strongest evidence first:
 //   1. billing_base_url — the endpoint the call actually hit. Authoritative.
@@ -206,12 +208,13 @@ export function provOf(p, model, url){
 }
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
-  const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
+  const s=PROV[key]||{icon:'○',bg:'color-mix(in srgb,var(--muted) 14%,transparent)',fg:'--muted'};
+  const fg=rtColor(s.fg), bg=rtColor(s.bg);
   const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
   const d = rt.svg && RT_SVG[rt.svg];
   const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
-    style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
+    style="background:${bg};color:${fg};border:1px solid color-mix(in srgb,${fg} 20%,transparent)">
     ${mark}${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
@@ -1262,7 +1265,9 @@ export function unattrPattern(){
   // check_projects_card.js still asserts the Unattributed bar uses a
   // DIFFERENT fill style than any real project's PAL color.
   if (!ctx) return 'rgba(148,163,184,0.5)';
-  ctx.fillStyle = 'rgba(148,163,184,0.35)';
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = css('--muted');
+  ctx.globalAlpha = 1;
   ctx.fillRect(0, 0, 8, 8);
   ctx.strokeStyle = 'rgba(148,163,184,0.9)';
   ctx.lineWidth = 1.5;
@@ -2058,7 +2063,7 @@ export function renderProjectDistribution(rows){
   const providers = [...providersSeen].sort((a, b) => provTotal(b) - provTotal(a));
 
   const datasets = providers.map(p => {
-    const s = PROV[p] || {icon: '\u25CB', bg: 'rgba(148,163,184,.14)', fg: MU};
+    const s = PROV[p] || {icon: '\u25CB', bg: 'color-mix(in srgb,var(--muted) 14%,transparent)', fg: '--muted'};
     return {
       label: `${s.icon} ${p}`,
       data: projects.map(proj => {
@@ -2070,7 +2075,7 @@ export function renderProjectDistribution(rows){
         // "every bar sums to 100 (within floating-point tolerance)".
         return total > 0 ? (100 * raw / total) : 0;
       }),
-      backgroundColor: s.fg,
+      backgroundColor: rtColor(s.fg),
       stack: 'proj',
     };
   });
@@ -2283,7 +2288,7 @@ export const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 // the bar, but 'unavailable' grey sat so close to the empty-track grey that a
 // 100%-failure row was indistinguishable from a row with no data. A red wash
 // behind it makes total failure read as failure at a glance.
-export const FAILTRACK = 'rgba(239,68,68,.22)';
+export const FAILTRACK = 'color-mix(in srgb,var(--z-bad) 22%,transparent)';
 // Green above 95%, amber 80-95, red below: matches how you would triage it.
 export const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a';
 
@@ -3148,15 +3153,17 @@ const PRICE_SRC = {
   pinned:    {label: 'Pinned catalogue', cls: 'pv-src-pinned'},
 };
 // Same muted provider set as build_costs.PROV — one calm palette, both places.
+// LLMTELEMET-307: colour holds the --prov-<id>-fg token name; resolve with
+// rtColor() at render time (color-mix() needs a real colour, not var()).
 const PROV_META = {
-  anthropic:    {logo: 'claude', color: 'hsl(17 38% 52%)'},
-  'opencode-go':{sig: '\u25C8', color: 'hsl(250 30% 68%)'},
-  fireworks:    {sig: '\u2726', color: '#b07a5e'},
-  'openai-codex':{logo: 'codex', color: 'hsl(162 30% 42%)'},
-  local:        {sig: '\u25A3', color: 'hsl(213 28% 62%)'},
-  moa:          {sig: '\u2B21', color: '#b87383'},
-  cloud:        {sig: '\u2601', color: 'hsl(205 24% 58%)'},
-  nous:         {sig: '\u25C6', color: '#baa984'},
+  anthropic:    {logo: 'claude', color: '--prov-anthropic-fg'},
+  'opencode-go':{sig: '\u25C8', color: '--prov-opencode-go-fg'},
+  fireworks:    {sig: '\u2726', color: '--prov-fireworks-fg'},
+  'openai-codex':{logo: 'codex', color: '--prov-openai-codex-fg'},
+  local:        {sig: '\u25A3', color: '--prov-local-fg'},
+  moa:          {sig: '\u2B21', color: '--prov-moa-fg'},
+  cloud:        {sig: '\u2601', color: '--prov-cloud-fg'},
+  nous:         {sig: '\u25C6', color: '--prov-nous-fg'},
 };
 let priceState = {q: '', tab: 'all'};
 let priceTouched = false; // search keeps its text when re-rendering
@@ -3418,10 +3425,11 @@ function priceRow(m){
   const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
   const provHtml = provs.length || inf.length
     ? (provs.length ? provs : inf).map((pv) => {
-        const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
+        const meta = PROV_META[pv] || {sig: '\u25CF', color: '--muted'};
         const inferred = !provs.length;
+        const mc = rtColor(meta.color);
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
-          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
+          + ` style="color:${mc};border-color:color-mix(in srgb,${mc} 45%,transparent);background:color-mix(in srgb,${mc} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
   // LST-193: the chip now carries the provenance the reviewer asked for — a
