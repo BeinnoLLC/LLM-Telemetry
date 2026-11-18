@@ -57,6 +57,8 @@
  *          on a solid --z-* fill pairs the fill with --card instead
  *          (.navbadge.alert via its light override, .qv-astat.qv-bad), so
  *          --z-*-fg is text on the surfaces only. DARK unchanged.
+ *   KNOWN: dark .navbadge.alert renders --z-bad-fg on --z-bad at ~3.0:1
+ *          and still fails AA; tracked as a follow-up (not fixed here).
  *   --border is a decorative hairline (1.27:1 both themes), exempt as non-essential. */
 
 :root,

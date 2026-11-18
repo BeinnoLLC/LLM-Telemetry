@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const WEB = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css');
 const tokens = fs.readFileSync(path.join(WEB, 'tokens.css'), 'utf8');
+const dashboard = fs.readFileSync(path.join(WEB, 'dashboard.css'), 'utf8');
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -31,14 +32,17 @@ for (const [name, b] of [['dark', dark], ['light', light]]) {
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--bg', bg]);
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--card', card]);
   }
-  // filled pill: --card text on the solid --z-bad fill
-  pairs.push(['--card (pill)', card, '--z-bad fill', tok(b, 'z-bad')]);
+  // filled pill: --card text on the solid --z-bad fill for .qv-astat.qv-bad
+  pairs.push(['--card on --z-bad fill for .qv-astat.qv-bad', card, '--z-bad fill', tok(b, 'z-bad')]);
   for (const [fn, f, bn, bgc] of pairs) {
     const r = f && bgc ? ratio(f, bgc) : 0;
     console.log(`  ${name.padEnd(6)} ${(fn + ' ' + f).padEnd(19)}${(bn + ' ' + bgc).padEnd(19)}${r.toFixed(2).padStart(5)}  4.5`);
     chk(r >= 4.5, `${name} ${fn} on ${bn} >= 4.5`, r.toFixed(2));
   }
 }
+// LST-309: light navbadge alert override must exist in dashboard.css
+const navbadgeRule = /:root:not\(\[data-theme="dark"\]\) \.navbadge\.alert\s*\{[^}]*color:\s*var\(--card\)/.test(dashboard);
+chk(navbadgeRule, 'light .navbadge.alert sets color:var(--card) in dashboard.css', navbadgeRule);
 // dark theme stays unchanged (LLMTELEMET-309 fixes the light values only)
 const D = { 'z-ok-fg': '#dff0e4', 'z-warn-fg': '#f4ecda', 'z-bad-fg': '#f7e3e3' };
 for (const [k, v] of Object.entries(D)) {
