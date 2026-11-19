@@ -167,8 +167,9 @@
   --w22:rgba(255,255,255,.22);--w30:rgba(255,255,255,.3);
   --w40:rgba(255,255,255,.4);--w45:rgba(255,255,255,.45);--w55:rgba(255,255,255,.55);
 
-  /* Task-queue jar material for the light theme only (dashboard.css reads these
-     through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
+  /* Task-queue jar material, light values (LLMTELEMET-317: the dark block below
+     declares the same 15 tokens; the shared jar rules read them in both themes
+     and the :root:not([data-theme="dark"]) rules refine the light material). Each
      marble is >=3:1 against --jar-glass AND >=4.5:1 against --jar-ink, the
      glyph colour; tests/check_jars_light.js recomputes both from this file. */
   --jar-glass:hsl(220 20% 97%);
@@ -359,6 +360,30 @@
   /* LST-311 shading primitives + ramps, qk-wait, ev-hover, combo-mark-bg and
      the light-jar glass/lid inks are theme-invariant: declared once in the
      :root, [data-theme="light"] block above, valid for both themes. */
+
+  /* LLMTELEMET-317: task-queue jar material, dark values. The same 15 --jar-*
+     tokens as the light block; dashboard.css's shared jar rules read them in
+     both themes. Each value is the exact expression the dark jar painted
+     before it was tokenised (white = --tint, black = --shade), so dark renders
+     unchanged: the glass rim, grounding shadow, lid face, count, label tint,
+     legend and the four kind marbles + waiting ball (--kind-* / --qk-wait).
+     --jar-glass is the top glass layer (--tint 7%) composited on the card.
+     tests/check_jars_light.js resolves this block for the dark marble checks. */
+  --jar-glass:color-mix(in srgb,var(--tint) 7%,var(--card));
+  --jar-edge:var(--w30);
+  --jar-ink:var(--tint);
+  --jar-label:var(--fg);
+  --jar-label-soft:var(--muted);
+  --jar-lid-top:color-mix(in srgb,var(--bg) 40%,var(--tint) 22%);
+  --jar-lid-bot:color-mix(in srgb,var(--bg) 70%,var(--shade));
+  --jar-shadow:var(--s60);
+  --jar-glow:var(--muted);
+  --jar-ring:var(--z-warn);
+  --jar-hermes:var(--kind-hermes);
+  --jar-pi:var(--kind-pi);
+  --jar-claude:var(--kind-claude);
+  --jar-codex:var(--kind-codex);
+  --jar-wait:var(--qk-wait);
 }
 
 /* LST-311: tier-hue semantic tokens (routerview tier chips, tier cards, share

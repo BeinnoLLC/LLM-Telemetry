@@ -46,6 +46,11 @@ chk(/\.qt-sec::before\{[^}]*bottom:\d+px[^}]*var\(--jar-shadow\)/.test(rules), '
 // --tint primitive with transparent); with --tint:#ffffff it renders exactly
 // hsl(0 0% 100% / .95), so pin the tokenised declaration and the primitive.
 chk(/\.qt-lid\{[^}]*border:1\.5px solid var\(--jar-edge\)[^}]*inset 0 1px 0 color-mix\(in srgb,var\(--tint\) 95%,transparent\)/.test(rules) && /--tint:#ffffff\b/.test(tokens), 'count cap has a 1px+ border and an inset highlight');
+// LLMTELEMET-317: the dark block declares every --jar-* token the light block does (both themes read them).
+const darkBlock = tokens.match(/\[data-theme="dark"\]\{([\s\S]*?)\n\}/)[1];
+const jarNames = [...lightBlock.matchAll(/--(jar-(?:glass|edge|ink|label|label-soft|lid-top|lid-bot|shadow|glow|ring|hermes|pi|claude|codex|wait)):/g)].map(m => m[1]);
+chk(jarNames.length === 15 && jarNames.every(k => new RegExp('--' + k + ':').test(darkBlock)), 'dark block declares all 15 --jar-* tokens', jarNames.length);
+chk(['hermes', 'pi', 'claude', 'codex'].every(k => new RegExp('--jar-' + k + ':var\\(--kind-' + k + '\\)').test(darkBlock)) && /--jar-wait:var\(--qk-wait\)/.test(darkBlock), 'dark marbles resolve to the unchanged --kind-* / --qk-wait');
 const log = (a, b) => console.log(`  contrast ${a} vs ${b}: ${r(a, b)}:1`);
 log('jar-edge', 'card'); log('jar-ink', 'jar-glass');
 for (const k of ['jar-hermes', 'jar-pi', 'jar-claude', 'jar-codex', 'jar-wait']) { log(k, 'jar-glass'); log('jar-ink', k); }

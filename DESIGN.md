@@ -43,7 +43,7 @@ colors:
   state-focus: "rgba(31,98,201,.25)"     # --state-focus
   # ---- task-queue jar material (tokens.css:112-130). Declared under `:root`, consumed only by
   # ---- the LIGHT jar restyle (`:root:not([data-theme="dark"])`, dashboard.css:2251-2292): the
-  # ---- values are theme-independent but dark jars intentionally stay plain (mismatch 12).
+  # ---- values are theme-independent and, since LLMTELEMET-317, the dark block declares the same 15 tokens (dark values reproduce the old dark jar).
   jar-glass: "hsl(220 20% 97%)"          # --jar-glass
   jar-edge: "hsl(220 18% 46%)"           # --jar-edge
   jar-ink: "hsl(225 25% 6%)"             # --jar-ink  jar count/label ink (>=4.5:1 on every marble, tests/check_jars_light.js)
@@ -877,6 +877,15 @@ Anatomy (`dashboard.html:185-190`, dashboard.css:849-993): `.qtrain` = three gla
 in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-name` +
 `.qt-n` count + `.qt-body` (glass silhouette, liquid `--fill` with wave) + `.qt-cars`
 (ball pit) + legend.
+
+- **Material tokens (LLMTELEMET-317):** BOTH themes read the 15 `--jar-*` tokens
+  (`--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` and the
+  kind marbles `--jar-hermes/-pi/-claude/-codex/-wait`). The light values live in the
+  `:root,[data-theme="light"]` block of `tokens.css`; the `[data-theme="dark"]` block declares
+  the same 15 tokens, each equal to the literal the dark jar painted before tokenising
+  (`--tint` = white, `--shade` = black, `--kind-*`/`--qk-wait` for the marbles), so dark renders
+  unchanged. The shared jar rules and the `#qcard` kind mapping are no longer gated to light;
+  `dashboard.css` holds no raw hex for the jar.
 
 - The three jars are **Depot** (requests queued at an Ollama host), **On the line**
   (running sessions) and **Yard** (finished sessions). There is **no "oven" element** in

@@ -836,19 +836,19 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-line{--jc:var(--z-ok)}
 .qt-yard{--jc:var(--accent)}
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
-  filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px var(--w30))}
+  filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px var(--jar-edge))}
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 50%,var(--s60),var(--s25) 55%,transparent 75%)}
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),var(--s25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
   border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,var(--w22) 0 2px,transparent 2px),
     linear-gradient(90deg,var(--s35),transparent 20%,var(--w8) 40%,transparent 60%,var(--s40)),
-    linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,white 22%),color-mix(in srgb,var(--bg) 70%,black));
+    linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
   box-shadow:0 0 0 1px var(--w18),0 3px 5px var(--s55),inset 0 -5px 0 -3px var(--s40)}
 .qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:3px;pointer-events:none;
   background:linear-gradient(180deg,var(--w25),var(--s45));box-shadow:0 2px 3px var(--s50)}
-.qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--fg))}
-.qt-n{position:relative;z-index:1;font-weight:700;font-size:14px;line-height:1;color:white;text-shadow:0 1px 1px var(--s60)}
+.qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--jar-label))}
+.qt-n{position:relative;z-index:1;font-weight:700;font-size:14px;line-height:1;color:var(--jar-ink);text-shadow:0 1px 1px var(--s60)}
 /* Silhouette: a short neck, then curved shoulders flaring into straight walls (the polygon is
    a quarter-ellipse each side); the bottom corners are an ordinary radius. */
 .qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-6px;min-height:300px;padding:84px 8px 14px;
@@ -881,7 +881,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-slosh{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-4px) rotate(-2deg)}30%{transform:translateX(5px) rotate(2.5deg)}45%{transform:translateX(-4px) rotate(-1.5deg)}60%{transform:translateX(3px) rotate(1.5deg)}75%{transform:translateX(-2px) rotate(-.8deg)}90%{transform:translateX(1px) rotate(.4deg)}100%{transform:translateX(0) rotate(0deg)}}
 @keyframes qt-glow{35%{filter:brightness(1.8)}}
 .qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
-.qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
+.qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--jar-label-soft);font-size:var(--fs-sm)}
 /* One task = one bead, piled from the floor of the jar by JS (left/top are its centre).
    Resin look: a flat family colour, a soft highlight, a core shadow and a contact shadow. */
 /* --qk-wait (waiting-ball fill) is a token in tokens.css */
@@ -934,7 +934,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 @keyframes qt-ball-out{to{opacity:0;transform:scale(.4)}}
 @keyframes qt-sway{from{transform:rotate(-.5deg)}to{transform:rotate(.5deg)}}
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
-.qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--muted);font-size:13px}
+.qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--jar-label-soft);font-size:13px}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
 .qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px var(--s35),inset 0 1px 1px var(--w35)}
 .qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
@@ -943,8 +943,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-sw-claude{--k:var(--kind-claude)}
 .qt-sw-codex{--k:var(--kind-codex)}
 .qt-sw-wait{--k:var(--qk-wait)}
-.qt-sw-glow{--k:var(--muted);box-shadow:0 0 0 3px color-mix(in srgb,var(--muted) 30%,transparent)}
-.qt-sw-ring{--k:var(--muted);box-shadow:0 0 0 2px var(--z-warn)}
+.qt-sw-glow{--k:var(--jar-glow);box-shadow:0 0 0 3px color-mix(in srgb,var(--jar-glow) 30%,transparent)}
+.qt-sw-ring{--k:var(--muted);box-shadow:0 0 0 2px var(--jar-ring)}
 @keyframes qt-ball-fade{from{opacity:0}to{opacity:1}}
 @keyframes qt-bump{40%{transform:scale(1.35)}}
 .qt-n.qt-bump{animation:qt-bump .45s ease-out}
@@ -2225,10 +2225,15 @@ canvas, img {
 /* forced-colors: gradient text would vanish, fall back to system text */
 @media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}}
 
-/* ---- task queue, LIGHT theme material. The base rules above are tuned for the dark card (white
-   rim, translucent glass, chrome lid); on the light card they read as faded smudges, so the
-   light theme restyles the jar from the --jar-* tokens. [data-theme="dark"] never matches. */
-:root:not([data-theme="dark"]) #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
+/* ---- task queue, marble identity in BOTH themes (LLMTELEMET-317): balls and legend swatches read
+   the --jar-* kind tokens. Dark --jar-hermes/pi/claude/codex/wait resolve to --kind-* / --qk-wait
+   (tokens.css dark block), so dark marbles are unchanged; light gets its deeper AA marbles. */
+#qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
+
+/* ---- task queue, LIGHT theme material. The shared jar rules above read the --jar-* tokens in
+   both themes (dark values in the tokens.css dark block reproduce the white rim, translucent
+   glass and chrome lid). On the light card that glass anatomy reads as faded smudges, so the
+   light theme refines the material from the same --jar-* tokens. [data-theme="dark"] never matches. */
 :root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
 :root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
 :root:not([data-theme="dark"]) #qcard .qt-yard{--jc:var(--accent)}
