@@ -75,7 +75,12 @@
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
-  --accent2:#7793a2;
+  /* LST-310: --accent2 darkened from #7793a2 (3.13/3.24 — failed body-text AA)
+     to #566e7e, same muted blue-grey family (hue ~204, sat ~19%), so its text
+     uses (.olbadge, .costpulse, .rt-hits) clear AA: 5.16 on --bg, 5.35 on
+     --card, 4.63 on the accent-wash badge surface; chart/bar strokes stay
+     well over the 3:1 graphic floor. Dark is unchanged (6.44/6.00). */
+  --accent2:#566e7e;
   --border-strong:rgba(26,32,28,.22);
   --active-a:#1f62c9;            /* active glow pair, light: blue / green (AA on card) */
   --active-b:#1a7f3c;
