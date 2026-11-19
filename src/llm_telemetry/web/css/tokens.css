@@ -367,8 +367,10 @@
      before it was tokenised (white = --tint, black = --shade), so dark renders
      unchanged: the glass rim, grounding shadow, lid face, count, label tint,
      legend and the four kind marbles + waiting ball (--kind-* / --qk-wait).
-     --jar-glass is the top glass layer (--tint 7%) composited on the card.
-     tests/check_jars_light.js resolves this block for the dark marble checks. */
+     --jar-glass is the top glass layer (--tint 7%) composited on the card; in
+     dark it is parity only and not consumed (the dark .qt-body keeps its own mix).
+     tests/check_jars_light.js checks token presence and the marble mapping
+     here, not dark contrast. */
   --jar-glass:color-mix(in srgb,var(--tint) 7%,var(--card));
   --jar-edge:var(--w30);
   --jar-ink:var(--tint);
