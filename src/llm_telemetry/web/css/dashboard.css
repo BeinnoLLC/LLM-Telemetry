@@ -1202,12 +1202,16 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* ---- Logs drawer -------------------------------------------------------
     Fixed to the right edge, above everything, and translated off-screen when
     closed so it costs nothing until opened. */
- #drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
+ /* Shared right-edge panel: .drawer is the one component, #drawer (logs) and
+    #pdrawer (project detail, .drawer-wide) only differ by z-index/transition. */
+ .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
-   box-shadow:-12px 0 40px var(--s40)}
- #drawer.open{transform:translateX(0)}
- #drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+   box-shadow:var(--elev-3)}
+ .drawer.open{transform:translateX(0)}
+ .drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+ .drawer-wide{width:min(420px,92vw);overflow:hidden}
+ #drawer{z-index:70}
  #scrim{position:fixed;inset:0;z-index:65;background:var(--s45);opacity:0;
    pointer-events:none;transition:opacity .22s ease}
  #scrim.open{opacity:1;pointer-events:auto}
@@ -1326,12 +1330,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    (#pdscrim = .scrim, above), just a different anchor edge so it reads as
    "detail alongside the matrix" rather than "a whole-screen takeover" on
    desktop. */
-#pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
-  width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-  transform:translateX(100%);transition:transform .18s ease;
-  box-shadow:-16px 0 40px var(--s35)}
-#pdrawer.open{transform:translateX(0)}
+#pdrawer{z-index:80}
 .pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
@@ -1349,27 +1348,23 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pdsessrow{padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
 .pdsessrow:last-child{border-bottom:none}
 @media(max-width:640px){
-  #pdrawer{top:auto;left:0;right:0;bottom:0;width:100vw;max-height:85vh;
-    border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0;
-    transform:translateY(100%)}
-  #pdrawer.open{transform:translateY(0)}
   .tmsg{max-width:96%}
 }
  /* #17: 641-1024px keeps a side panel (like desktop) but widened — 460px is
     comfortable on a 1440px screen but eats half a portrait tablet. */
  @media(min-width:641px) and (max-width:1024px){
-   #drawer{width:60vw}
+   .drawer:not(.drawer-wide){width:60vw}
  }
  /* #17: below 641px the side panel becomes an actual bottom sheet — a side
     panel this narrow either covers everything or leaves a useless sliver.
     The drag handle + ~92dvh height + tab strip that scrolls instead of
     wrapping are the same fixes a native app would ship for this. */
  @media(max-width:640px){
-   #drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
+   .drawer{top:auto;right:0;left:0;width:100vw;max-height:92dvh;
      border-left:none;border-top:1px solid var(--border);
-     border-radius:14px 14px 0 0;
-     transform:translateY(100%);box-shadow:0 -12px 40px var(--s40)}
-   #drawer.open{transform:translateY(0)}
+     border-radius:14px 14px 0 0;transform:translateY(100%)}
+   .drawer.open{transform:translateY(0)}
+   #drawer{height:92dvh}
    #drawer .dhead{padding-top:6px}
    #draghandle{display:block;width:36px;height:4px;border-radius:2px;
      background:var(--muted);opacity:.5;margin:0 auto 8px;flex-shrink:0}
