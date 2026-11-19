@@ -32,8 +32,13 @@ chk([head, rng, lk, kp, qc, lg].every(x => x !== null) && head < rng && rng < lk
 
 // ---- CSS: glass + fill motion + reduced motion
 chk(/\.qt-body\{[^}]*backdrop-filter:blur/.test(html), 'jar body has backdrop-filter blur');
-chk(/\.qt-body\{[^}]*border-radius:0 0 30px 30px[^}]*clip-path:polygon\(/.test(html) && /\.qt-jar\{[^}]*drop-shadow\(0 0 \.7px rgba\(255,255,255,\.75\)\)/.test(html), 'curved shoulders into a neck (clip-path) with a bright outer rim');
-chk(/\.qt-body\{[^}]*linear-gradient\(180deg,rgba\(255,255,255,\.07\),rgba\(255,255,255,\.02\)\)/.test(html) && /\.qt-body\{[^}]*inset 2px 0 0 rgba\(255,255,255,\.35\)/.test(html), 'jar body is a translucent glass gradient with bright wall edges');
+// LLMTELEMET-311: the rim/glass highlights are tokenised as color-mix() of the
+// white --tint primitive with transparent. --tint:#ffffff makes every mix render
+// exactly the pre-token rgba(255,255,255,x) value (premultiplied alpha), so pin
+// the tokenised declaration and the primitive together.
+const TINT_WHITE = /--tint:#ffffff\b/.test(html);
+chk(/\.qt-body\{[^}]*border-radius:0 0 30px 30px[^}]*clip-path:polygon\(/.test(html) && /\.qt-jar\{[^}]*drop-shadow\(0 0 \.7px color-mix\(in srgb,var\(--tint\) 75%,transparent\)\)/.test(html) && TINT_WHITE, 'curved shoulders into a neck (clip-path) with a bright outer rim');
+chk(/\.qt-body\{[^}]*linear-gradient\(180deg,color-mix\(in srgb,var\(--tint\) 7%,transparent\),color-mix\(in srgb,var\(--tint\) 2%,transparent\)\)/.test(html) && /\.qt-body\{[^}]*inset 2px 0 0 color-mix\(in srgb,var\(--tint\) 35%,transparent\)/.test(html) && TINT_WHITE, 'jar body is a translucent glass gradient with bright wall edges');
 chk(/\.qt-jar::after\{[^}]*filter:blur/.test(html), 'blurred specular streak on the jar');
 chk(/\.qt-lid::after\{/.test(html) && !/\.qt-lid\{[^}]*justify-content:space-between/.test(html), 'lid + neck silhouette, no kanban header bar');
 chk(/\.qt-body::before\{[^}]*transition:height \.8s cubic-bezier/.test(html), 'fill level eases on height');

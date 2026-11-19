@@ -119,6 +119,30 @@
   --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;
   --state-hover:rgba(0,0,0,.04);--state-pressed:rgba(0,0,0,.08);--state-focus:rgba(31,98,201,.25);
 
+  /* LST-311 overlay shading primitives: the physical darkening/lightening ink
+     behind shadows, scrims and glass highlights (dashboard.css mixes these with
+     transparent). Theme-invariant: painted shading is black/white in both, so
+     these live here once — valid for the dark block below too. */
+  --shade:#000000;
+  --tint:#ffffff;
+  --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (was #qcard-local in dashboard.css) */
+  --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (neutral, theme-invariant) */
+  --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
+
+  /* LST-311 shading ramps: the premultiplied-alpha forms of the primitives
+     above. color-mix(in srgb,var(--shade) N%,transparent) renders exactly
+     rgba(0,0,0,.N) (same for --tint/white), so dashboard.css reads var(--sN) /
+     var(--wN) instead of re-mixing at every use. sN = shade at N% alpha,
+     wN = tint at N% alpha (w1p5 = 1.5%). Theme-invariant like the primitives. */
+  --s18:rgba(0,0,0,.18);--s22:rgba(0,0,0,.22);--s25:rgba(0,0,0,.25);--s30:rgba(0,0,0,.3);--s38:rgba(0,0,0,.38);--s70:rgba(0,0,0,.7);--s85:rgba(0,0,0,.85);--w2:rgba(255,255,255,.02);--w5:rgba(255,255,255,.05);--w7:rgba(255,255,255,.07);--w8:rgba(255,255,255,.08);--w13:rgba(255,255,255,.13);--w25:rgba(255,255,255,.25);--w35:rgba(255,255,255,.35);--w88:rgba(255,255,255,.88);--w92:rgba(255,255,255,.92);--w95:rgba(255,255,255,.95);--w1p5:rgba(255,255,255,.015);
+  --fm:ui-monospace,SFMono-Regular,Menlo,monospace;--fm2:ui-monospace,monospace;
+  --s28:rgba(0,0,0,.28);
+  --s35:rgba(0,0,0,.35);--s40:rgba(0,0,0,.4);--s45:rgba(0,0,0,.45);--s50:rgba(0,0,0,.5);
+  --s55:rgba(0,0,0,.55);--s60:rgba(0,0,0,.6);--s65:rgba(0,0,0,.65);
+  --w10:rgba(255,255,255,.1);--w14:rgba(255,255,255,.14);--w18:rgba(255,255,255,.18);
+  --w22:rgba(255,255,255,.22);--w30:rgba(255,255,255,.3);
+  --w40:rgba(255,255,255,.4);--w45:rgba(255,255,255,.45);--w55:rgba(255,255,255,.55);
+
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
      marble is >=3:1 against --jar-glass AND >=4.5:1 against --jar-ink, the
@@ -138,6 +162,12 @@
   --jar-claude:hsl(18 88% 48%);
   --jar-codex:hsl(152 75% 33%);
   --jar-wait:hsl(215 30% 54%);
+  /* glass/lid shading inks for the light jar (dashboard.css mixes them with
+     transparent at use). Theme-invariant pair values; only the
+     :root:not([data-theme="dark"]) jar rules consume them. */
+  --jar-glass-shadow:hsl(220 25% 45%);
+  --jar-lid-shadow:hsl(220 30% 20%);
+  --jar-lid-shadow-strong:hsl(220 30% 15%);
 }
 
 /* Fleet bar (replaced the old segmented tab strip). Surfaces are derived
@@ -277,4 +307,19 @@
   --elev-2:0 2px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
   --elev-3:0 6px 16px rgba(0,0,0,.40),0 2px 4px rgba(0,0,0,.30);
   --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(136,170,255,.40);
+
+  /* LST-311 shading primitives + ramps, qk-wait, ev-hover, combo-mark-bg and
+     the light-jar glass/lid inks are theme-invariant: declared once in the
+     :root, [data-theme="light"] block above, valid for both themes. */
 }
+
+/* LST-311: tier-hue semantic tokens (routerview tier chips, tier cards, share
+   bars). A custom property's var() references are substituted at its own
+   computed-value time — verified in Chrome — so these MUST be declared on the
+   elements that carry --h (routerview.js sets it inline on .rt-tier and
+   .rt-tcard; .rt-bar i inherits it from its card). A :root declaration would
+   freeze --h before it exists. Light and dark values are identical (the
+   tier-hue family is theme-invariant), so the two former per-theme copies are
+   merged here into one declaration per family; selector strength is unchanged. */
+:root:not([data-theme="dark"]) .rt-tier,:root[data-theme="dark"] .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
+:root:not([data-theme="dark"]) .rt-tcard,:root:not([data-theme="dark"]) .rt-bar i,:root[data-theme="dark"] .rt-tcard,:root[data-theme="dark"] .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}
