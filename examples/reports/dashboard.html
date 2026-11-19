@@ -12326,6 +12326,13 @@ function lnRenderTimeline(tl){
  }).join('');
 }
 
+function lnTipHide(){
+ const t = $('lntip');
+ if (!t) return;
+ t.classList.remove('on');
+ t.textContent = '';
+}
+
 function lnCloseModal(){
  if (!lnOpen) return;
  lnOpen = false;

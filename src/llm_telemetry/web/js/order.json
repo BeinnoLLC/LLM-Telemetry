@@ -3091,6 +3091,10 @@
     },
     {
       "mod": "drawer",
+      "name": "lnTipHide"
+    },
+    {
+      "mod": "drawer",
       "name": "lnCloseModal"
     },
     {
