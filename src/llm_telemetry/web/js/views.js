@@ -582,7 +582,7 @@ export function renderResend(p, inR){
 }
 
 export const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
-export const ALERT_COLOR = { critical: '#c66a6a', warning: '#c2a15c', info: 'var(--accent)' }; // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+export const ALERT_COLOR = { get critical(){return css('--c-red')}, get warning(){return css('--c-gold')}, info: 'var(--accent)' };
 
 // P10-10 (#98): renders exactly what the collector's alerts.build_alerts()
 // already evaluated -- never recomputes a threshold client-side, so the
@@ -2312,16 +2312,16 @@ export function renderProjTrendLegend(datasets){
 }
 
 export const FKIND = {
-  rate_limit:  {c:'#c4a06e', t:'throttled'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-  overloaded:  {c:'#fb923c', t:'overloaded'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-  timeout:     {c:'#7c909c', t:'timeout'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-  auth:        {c:'#c66a6a', t:'auth'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-  server_error:{c:'#9a86b8', t:'5xx'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+  rate_limit:  {get c(){return css('--c-amber')}, t:'throttled'},
+  overloaded:  {get c(){return css('--c-orange')}, t:'overloaded'},
+  timeout:     {get c(){return css('--c-slate')}, t:'timeout'},
+  auth:        {get c(){return css('--c-red')}, t:'auth'},
+  server_error:{get c(){return css('--c-violet')}, t:'5xx'},
   // Slate-blue, NOT grey: grey sat on top of the empty-track colour and made a
   // fully-unavailable model look like a model with no data at all. Also kept
   // clear of server_error's purple.
-  unavailable: {c:'#64b5c9', t:'unavailable'}, // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-  tool:        {c:'#818cf8', t:'tool'} // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+  unavailable: {get c(){return css('--c-teal')}, t:'unavailable'},
+  tool:        {get c(){return css('--c-indigo')}, t:'tool'}
 };
 
 // Emit the .k-* chip rules from FKIND so the drawer cannot drift from the
@@ -2343,7 +2343,7 @@ export const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 // behind it makes total failure read as failure at a glance.
 export const FAILTRACK = 'rgba(239,68,68,.22)';
 // Green above 95%, amber 80-95, red below: matches how you would triage it.
-export const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a'; // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+export const rateColor = r => r===null ? MU : r>=95 ? css('--c-green') : r>=80 ? css('--c-amber') : css('--c-red');
 
 // Delegation outcomes (#90). Two sources of truth live side by side here and
 // must never merge: the per-child rates are MEASURED by the runtime, while the
@@ -2453,7 +2453,7 @@ export function renderHealth(rows){
       return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
         <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${provLogoSvg(short(h.model))} ${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
-          <div style="width:${okPct}%;background:${'#5f9e6e' /* eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex */}"></div>${segs}
+          <div style="width:${okPct}%;background:${css('--c-green')}"></div>${segs}
         </div>
         <div class="hrate text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
         <div class="hcount text-[length:var(--fs-xs)] muted text-right" style="width:150px">${count}</div>
@@ -2520,8 +2520,8 @@ export function renderOutcomes(outcomes){
   const kpi = (v, l, col) => `<div class="dkpi"><div class="dkv" style="${col?`color:${col}`:''}">${v}</div><div class="dkl">${l}</div></div>`;
   $('outkpis').innerHTML =
     kpi(total.toLocaleString(), 'Sessions ended · 30d', '') +
-    kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? '#c66a6a' : '#5f9e6e') + // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
-    kpi(silentN.toLocaleString(), 'Ended silently', silentN ? '#c4a06e' : '#5f9e6e') + // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+    kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? css('--c-red') : css('--c-green')) +
+    kpi(silentN.toLocaleString(), 'Ended silently', silentN ? css('--c-amber') : css('--c-green')) +
     kpi(total ? (100*(total-reapedN-silentN)/total).toFixed(1)+'%' : '\u2014', 'Ended cleanly', '');
 
   // Source-split: a cron session ending as anything other than
@@ -2585,12 +2585,12 @@ export function renderToolReliability(tools, cmds){
     const delta = t.fail_rate - t.prev_fail_rate;
     if (Math.abs(delta) < 0.01) return '<span class="muted">\u2192</span>';
     const up = delta > 0;
-    return `<span style="color:${up ? '#c66a6a' : '#5f9e6e'}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`; // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+    return `<span style="color:${up ? css('--c-red') : css('--c-green')}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
   };
 
   $('toolrows').innerHTML = list.map(t => {
     const rateText = t.fail_rate == null ? '<span class="muted">no confident calls</span>' : `${(t.fail_rate*100).toFixed(1)}%`;
-    const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? '#c66a6a' : t.fail_rate > 0 ? '#c4a06e' : '#5f9e6e'); // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+    const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? css('--c-red') : t.fail_rate > 0 ? css('--c-amber') : css('--c-green'));
     return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
       <span class="font-semibold flex-1">${esc(t.name)}</span>
       <span class="muted">${t.calls.toLocaleString()} calls</span>
@@ -2651,7 +2651,7 @@ export function renderHealthSummary(H, F){
     <div class="hsuml">${l}</div>${sub?`<div class="muted hsums">${sub}</div>`:''}</div>`;
   el.innerHTML =
     card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`, icon('check')) +
-    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#c66a6a':'#5f9e6e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) + // eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex
+    card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?css('--c-red'):css('--c-green'), F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
     card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', PAL[3], '', icon('layers')) +
     card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : MU,
       worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%', icon('target'));

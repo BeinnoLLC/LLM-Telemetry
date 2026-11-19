@@ -75,6 +75,7 @@
   --c-indigo:#818cf8;
   --c-green:#5f9e6e;
   --c-neutral:#5b6472;
+  --c-fallback:#888;
   --chart-0:#5794f2;
   --chart-1:#73bf69;
   --chart-2:#ff9830;
@@ -294,6 +295,7 @@
   --c-indigo:#818cf8;
   --c-green:#5f9e6e;
   --c-neutral:#5b6472;
+  --c-fallback:#888;
   --chart-0:#5794f2;
   --chart-1:#73bf69;
   --chart-2:#ff9830;

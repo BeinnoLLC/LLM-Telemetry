@@ -98,6 +98,7 @@
 --c-indigo:#818cf8;
 --c-green:#5f9e6e;
 --c-neutral:#5b6472;
+--c-fallback:#888;
 --chart-0:#5794f2;
 --chart-1:#73bf69;
 --chart-2:#ff9830;
@@ -267,6 +268,7 @@
 --c-indigo:#818cf8;
 --c-green:#5f9e6e;
 --c-neutral:#5b6472;
+--c-fallback:#888;
 --chart-0:#5794f2;
 --chart-1:#73bf69;
 --chart-2:#ff9830;
@@ -2946,7 +2948,7 @@ const hueCss = (h, k) => {
  return `hsl(${h} ${sat} ${lig})`;
 };
 const rawCss = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-const css = k => rawCss(k) || '#888';
+const css = k => rawCss(k) || rawCss('--c-fallback');
 let AC, MU, BD, FG;
 function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
  Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
@@ -4460,7 +4462,7 @@ function renderResend(p, inR){
 }
 
 const ALERT_ICON = { critical: '&#9888;', warning: '&#9679;', info: '&#8505;' };
-const ALERT_COLOR = { critical: '#c66a6a', warning: '#c2a15c', info: 'var(--accent)' };
+const ALERT_COLOR = { get critical(){return css('--c-red')}, get warning(){return css('--c-gold')}, info: 'var(--accent)' };
 
 function renderAlerts(alerts){
  const card = $('alertscard');
@@ -8117,13 +8119,13 @@ function buildAll(profiles){
 }
 
 const FKIND = {
- rate_limit:  {c:'#c4a06e', t:'throttled'},
- overloaded:  {c:'#fb923c', t:'overloaded'},
- timeout:     {c:'#7c909c', t:'timeout'},
- auth:        {c:'#c66a6a', t:'auth'},
- server_error:{c:'#9a86b8', t:'5xx'},
- unavailable: {c:'#64b5c9', t:'unavailable'},
- tool:        {c:'#818cf8', t:'tool'}
+ rate_limit:  {get c(){return css('--c-amber')}, t:'throttled'},
+ overloaded:  {get c(){return css('--c-orange')}, t:'overloaded'},
+ timeout:     {get c(){return css('--c-slate')}, t:'timeout'},
+ auth:        {get c(){return css('--c-red')}, t:'auth'},
+ server_error:{get c(){return css('--c-violet')}, t:'5xx'},
+ unavailable: {get c(){return css('--c-teal')}, t:'unavailable'},
+ tool:        {get c(){return css('--c-indigo')}, t:'tool'}
 };
 
 function installKindCSS(){
@@ -8135,7 +8137,7 @@ function installKindCSS(){
 installKindCSS();
 const fk = k => FKIND[k] || {c:MU, t:k||'—'};
 const FAILTRACK = 'rgba(239,68,68,.22)';
-const rateColor = r => r===null ? MU : r>=95 ? '#5f9e6e' : r>=80 ? '#c4a06e' : '#c66a6a';
+const rateColor = r => r===null ? MU : r>=95 ? css('--c-green') : r>=80 ? css('--c-amber') : css('--c-red');
 
 function renderDeleg(){
  const card = $('delegcard');
@@ -8221,7 +8223,7 @@ function renderHealth(rows){
  return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
         <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${provLogoSvg(short(h.model))} ${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
-          <div style="width:${okPct}%;background:${'#5f9e6e' /* eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex */}"></div>${segs}
+          <div style="width:${okPct}%;background:${css('--c-green')}"></div>${segs}
         </div>
         <div class="hrate text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
         <div class="hcount text-[length:var(--fs-xs)] muted text-right" style="width:150px">${count}</div>
@@ -8302,8 +8304,8 @@ function renderOutcomes(outcomes){
  const kpi = (v, l, col) => `<div class="dkpi"><div class="dkv" style="${col?`color:${col}`:''}">${v}</div><div class="dkl">${l}</div></div>`;
  $('outkpis').innerHTML =
  kpi(total.toLocaleString(), 'Sessions ended · 30d', '') +
- kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? '#c66a6a' : '#5f9e6e') +
- kpi(silentN.toLocaleString(), 'Ended silently', silentN ? '#c4a06e' : '#5f9e6e') +
+ kpi(reapedN.toLocaleString(), 'Orphan reaps', reapedN ? css('--c-red') : css('--c-green')) +
+ kpi(silentN.toLocaleString(), 'Ended silently', silentN ? css('--c-amber') : css('--c-green')) +
  kpi(total ? (100*(total-reapedN-silentN)/total).toFixed(1)+'%' : '\u2014', 'Ended cleanly', '');
 
  const bySource = o.by_source_reason || {};
@@ -8354,12 +8356,12 @@ function renderToolReliability(tools, cmds){
  const delta = t.fail_rate - t.prev_fail_rate;
  if (Math.abs(delta) < 0.01) return '<span class="muted">\u2192</span>';
  const up = delta > 0;
- return `<span style="color:${up ? '#c66a6a' : '#5f9e6e'}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
+ return `<span style="color:${up ? css('--c-red') : css('--c-green')}" title="was ${(t.prev_fail_rate*100).toFixed(1)}% in the prior 30 days">${up ? '\u2191' : '\u2193'}</span>`;
  };
 
  $('toolrows').innerHTML = list.map(t => {
  const rateText = t.fail_rate == null ? '<span class="muted">no confident calls</span>' : `${(t.fail_rate*100).toFixed(1)}%`;
- const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? '#c66a6a' : t.fail_rate > 0 ? '#c4a06e' : '#5f9e6e');
+ const rateColor = t.fail_rate == null ? '' : (t.fail_rate >= 0.2 ? css('--c-red') : t.fail_rate > 0 ? css('--c-amber') : css('--c-green'));
  return `<div class="flex items-center gap-2 text-[length:var(--fs-xs)] py-1" style="border-bottom:1px solid var(--border)">
       <span class="font-semibold flex-1">${esc(t.name)}</span>
       <span class="muted">${t.calls.toLocaleString()} calls</span>
@@ -8391,7 +8393,7 @@ function renderHealthSummary(H, F){
     <div class="hsuml">${l}</div>${sub?`<div class="muted hsums">${sub}</div>`:''}</div>`;
  el.innerHTML =
  card(rate===null?'—':rate+'%', 'Overall success', rate===null?'':rateColor(rate), `${ok.toLocaleString()} of ${tot.toLocaleString()} calls`, icon('check')) +
- card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?'#c66a6a':'#5f9e6e', F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
+ card(F.length.toLocaleString(), 'Failures · last 7 days', F.length?css('--c-red'):css('--c-green'), F.length?`${groupFailures(F).length} distinct errors`:'none recorded', icon('alert')) +
  card(`${failing.length} <span class="muted" style="font-size:var(--fs-md)">of ${H.length}</span>`, 'Models with failures', PAL[3], '', icon('layers')) +
  card(worst ? short(worst.model) : '—', 'Least reliable (≥5 calls)', worst ? colorOf(short(worst.model)) : MU,
  worst ? `${worst.rate}% · ${worst.fail.toLocaleString()} failed` : 'nothing below 100%', icon('target'));
