@@ -30,8 +30,34 @@ export const VIEWS: Record<string, number> = { day: 1, week: 7, month: 30 };
 export const ATTRIBUTION = "Rankings data by OpenRouter, CC BY 4.0";
 export const ATTRIBUTION_URL = "https://openrouter.ai/docs";
 
-export const minRefetchS = (env: NodeJS.ProcessEnv = process.env): number =>
-  Math.trunc(Number(env["LLM_TELEMETRY_RANKINGS_TTL"] ?? "3600"));
+// Python whitespace as seen by int(): str.isspace minus the \x1c-\x1f separators.
+const PY_INT_WS = "[ \\t\\n\\v\\f\\r\\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]";
+const PY_STRIP_WS = "[ \\t\\n\\v\\f\\r\\x1c-\\x1f\\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]";
+const INT_RE = new RegExp(`^${PY_INT_WS}*([+-]?)(\\p{Nd}+(?:_\\p{Nd}+)*)${PY_INT_WS}*$`, "u");
+
+/** Value of a run of Unicode Nd digits (Nd digits come in contiguous 0-9 blocks). */
+const ndToAscii = (s: string): string =>
+  Array.from(s.replaceAll("_", ""), (c) => {
+    if (/[0-9]/.test(c)) return c;
+    const cp = c.codePointAt(0)!;
+    let z = cp;
+    while (z > 0 && /^\p{Nd}$/u.test(String.fromCodePoint(z - 1))) z--;
+    return String((cp - z) % 10);
+  }).join("");
+
+const pyIntStr = (s: string): number | null => {
+  const m = INT_RE.exec(s);
+  if (m === null) return null;
+  const n = Number(ndToAscii(m[2]!));
+  return m[1] === "-" && n !== 0 ? -n : n;
+};
+
+export const minRefetchS = (env: NodeJS.ProcessEnv = process.env): number => {
+  const raw = env["LLM_TELEMETRY_RANKINGS_TTL"] ?? "3600";
+  const n = pyIntStr(raw);
+  if (n === null) throw new Error(`ValueError: invalid literal for int() with base 10: ${JSON.stringify(raw)}`);
+  return n;
+};
 
 const isRecord = (v: unknown): v is Obj =>
   typeof v === "object" && v !== null && !Array.isArray(v) && v.constructor === Object;
@@ -41,8 +67,11 @@ const orEmpty = <T>(v: unknown, empty: T): unknown =>
 
 /** `int(str(v).strip())`, 0 when Python would raise. */
 export function parseTokens(v: unknown): number {
-  const s = pyStrOf(v).trim();
-  return /^[+-]?\d+(?:_\d+)*$/.test(s) ? Number(s.replaceAll("_", "")) : 0;
+  const s = pyStrOf(v).replace(new RegExp(`^${PY_STRIP_WS}+|${PY_STRIP_WS}+$`, "gu"), "");
+  const m = /^([+-]?)(\p{Nd}+(?:_\p{Nd}+)*)$/u.exec(s);
+  if (m === null) return 0;
+  const n = Number(ndToAscii(m[2]!));
+  return m[1] === "-" && n !== 0 ? -n : n;
 }
 
 const iso = (d: Date): string => d.toISOString().slice(0, 10);
@@ -158,9 +187,8 @@ export const fetchRankings: AsyncFetcher = async (start, end, key) => {
       headers: { Authorization: "Bearer " + key, Accept: "application/json", "User-Agent": "llm-telemetry" },
       signal: AbortSignal.timeout(30_000),
     });
-  } catch (e) {
-    const timedOut = (e as Error).name === "TimeoutError" || (e as Error).name === "AbortError";
-    return { resp: null, reason: `network error (${timedOut ? "TimeoutError" : "URLError"})` };
+  } catch {
+    return { resp: null, reason: `network error (URLError)` };
   }
   if (!res.ok) return { resp: null, reason: `HTTP ${res.status} from OpenRouter rankings API` };
   try {
@@ -177,12 +205,81 @@ export interface CollectRankingsOptions {
   now?: Date;
 }
 
+const DATE_RE = /^(\d{4})(?:-(\d{2})-(\d{2})|(\d{2})(\d{2}))/;
+const WEEK_RE = /^(\d{4})-?W(\d{2})(?:-?(\d))?/;
+const TIME_RE = /^(\d{2})(?:(:?)(\d{2})(?:\2(\d{2}))?)?(?:[.,](\d+))?/;
+const OFFSET_RE = /^ ?(?:(Z)|([+-])(\d{2})(?:(:?)(\d{2})(?:\4(\d{2})(?:[.,](\d+))?)?)?)$/;
+
+const isoWeekDate = (y: number, w: number, d: number): [number, number, number] | null => {
+  if (w < 1 || w > 53 || d < 1 || d > 7) return null;
+  const jan4 = Date.UTC(y, 0, 4);
+  const dow = (new Date(jan4).getUTCDay() + 6) % 7;
+  const t = new Date(jan4 - dow * 86400000 + ((w - 1) * 7 + (d - 1)) * 86400000);
+  // week 53 must exist in that year
+  if (w === 53) {
+    const dec28 = new Date(Date.UTC(y, 11, 28));
+    const wk = Math.floor((Date.UTC(y, 11, 28) - (jan4 - dow * 86400000)) / 604800000) + 1;
+    if (wk < 53 || dec28.getUTCFullYear() !== y) return null;
+  }
+  return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()];
+};
+
+/** `datetime.fromisoformat(s).timestamp()` (CPython 3.12), 0 where Python raises. */
+export function isoToTs(s: string): number {
+  let y: number, mo: number, d: number;
+  let rest: string;
+  let m = DATE_RE.exec(s);
+  if (m !== null) {
+    y = +m[1]!; mo = +(m[2] ?? m[4]!); d = +(m[3] ?? m[5]!);
+    rest = s.slice(m[0].length);
+  } else {
+    const w = WEEK_RE.exec(s);
+    if (w === null) return 0;
+    const r = isoWeekDate(+w[1]!, +w[2]!, w[3] === undefined ? 1 : +w[3]);
+    if (r === null) return 0;
+    [y, mo, d] = r;
+    rest = s.slice(w[0].length);
+  }
+  if (y < 1 || mo < 1 || mo > 12 || d < 1) return 0;
+  if (d > new Date(Date.UTC(2000, mo, 0)).getUTCDate() - (mo === 2 && !(y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 1 : 0)) return 0;
+  let h = 0, mi = 0, sec = 0, us = 0;
+  let off: number | null = null;
+  if (rest !== "") {
+    rest = rest.slice(1); // any single separator character
+    m = TIME_RE.exec(rest);
+    if (m === null) return 0;
+    h = +m[1]!; mi = +(m[3] ?? 0); sec = +(m[4] ?? 0);
+    if (m[5] !== undefined) us = +m[5].slice(0, 6).padEnd(6, "0");
+    if (h > 23 || mi > 59 || sec > 59) return 0;
+    const tz = rest.slice(m[0].length);
+    if (tz !== "") {
+      const o = OFFSET_RE.exec(tz);
+      if (o === null) return 0;
+      if (o[1] !== undefined) off = 0;
+      else {
+        const oh = +o[3]!, om = +(o[5] ?? 0), os = +(o[6] ?? 0);
+        const ous = o[7] === undefined ? 0 : +o[7].slice(0, 6).padEnd(6, "0");
+        const tot = oh * 3600 + om * 60 + os + ous / 1e6;
+        if (tot >= 86400) return 0;
+        off = o[2] === "-" ? -tot : tot;
+      }
+    }
+  }
+  const wall = new Date(0);
+  wall.setUTCFullYear(y, mo - 1, d);
+  wall.setUTCHours(h, mi, sec, 0);
+  const wallS = wall.getTime() / 1000;
+  if (off !== null) return (Math.round((wallS - off) * 1e6) + us) / 1e6;
+  const loc = new Date(0);
+  loc.setFullYear(y, mo - 1, d);
+  loc.setHours(h, mi, sec, 0);
+  if (y === 1 || (y === 9999 && mo === 12 && d === 31)) return 0;
+  return loc.getTime() / 1000 + us / 1e6;
+}
+
 const asTs = (v: unknown): number => {
   if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    const t = Date.parse(v);
-    return Number.isNaN(t) ? 0 : t / 1000;
-  }
+  if (typeof v === "string") return isoToTs(v);
   return 0;
 };
 
