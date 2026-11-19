@@ -87,6 +87,27 @@
 .h-\[9px\]{height:9px}
 :root,
 [data-theme="light"]{
+--c-amber:#c4a06e;
+--c-sky:#38bdf8;
+--c-red:#c66a6a;
+--c-gold:#c2a15c;
+--c-orange:#fb923c;
+--c-slate:#7c909c;
+--c-violet:#9a86b8;
+--c-teal:#64b5c9;
+--c-indigo:#818cf8;
+--c-green:#5f9e6e;
+--c-neutral:#5b6472;
+--chart-0:#5794f2;
+--chart-1:#73bf69;
+--chart-2:#ff9830;
+--chart-3:#b877d9;
+--chart-4:#f2cc0c;
+--chart-5:#8ab8ff;
+--chart-6:#f2495c;
+--chart-7:#705da0;
+--chart-8:#37872d;
+--chart-9:#fade2a;
 --bg:#fbfbf9;
 --card:#ffffff;
 --fg:#1a201c;
@@ -235,6 +256,27 @@
 --hv-gauge-lo:var(--z-ok);--hv-gauge-mid:var(--z-warn);--hv-gauge-hi:var(--z-bad);
 }
 [data-theme="dark"]{
+--c-amber:#c4a06e;
+--c-sky:#38bdf8;
+--c-red:#c66a6a;
+--c-gold:#c2a15c;
+--c-orange:#fb923c;
+--c-slate:#7c909c;
+--c-violet:#9a86b8;
+--c-teal:#64b5c9;
+--c-indigo:#818cf8;
+--c-green:#5f9e6e;
+--c-neutral:#5b6472;
+--chart-0:#5794f2;
+--chart-1:#73bf69;
+--chart-2:#ff9830;
+--chart-3:#b877d9;
+--chart-4:#f2cc0c;
+--chart-5:#8ab8ff;
+--chart-6:#f2495c;
+--chart-7:#705da0;
+--chart-8:#37872d;
+--chart-9:#fade2a;
 --bg:#05060a;
 --card:#0f1118;
 --fg:#f5f5f5;
@@ -2908,7 +2950,7 @@ const css = k => rawCss(k) || '#888';
 let AC, MU, BD, FG;
 function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
  Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
-const PAL = ['#5794f2','#73bf69','#ff9830','#b877d9','#f2cc0c','#8ab8ff','#f2495c','#705da0','#37872d','#fade2a'];
+const PAL = new Proxy(Array.from({length: 10}), { get: (a, k) => /^[0-9]+$/.test(k) ? (typeof getComputedStyle === 'undefined' ? 'gray' : getComputedStyle(document.documentElement).getPropertyValue(`--chart-${k}`).trim() || 'gray') : a[k] });
 
 const ICON_SVG = {
  swap:   '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
@@ -4193,19 +4235,19 @@ function renderBandwidthPanel(p, inR){
 
  const by = d => S.filter(r => r.date === d);
  mk('cBwTrend', 'bar', days.map(d => d.slice(5)), [
- {label:'upload', data:days.map(d => sum('up_bytes', by(d))), backgroundColor:'#c4a06e',
+ {label:'upload', data:days.map(d => sum('up_bytes', by(d))), backgroundColor:css('--c-amber'),
  borderRadius:2, yAxisID:'y', order:2},
  {label:'download', type:'line', data:days.map(d => sum('down_bytes', by(d))),
- borderColor:'#38bdf8', backgroundColor:'#38bdf8', pointRadius:3, tension:.3, yAxisID:'y1', order:1},
+ borderColor:css('--c-sky'), backgroundColor:css('--c-sky'), pointRadius:3, tension:.3, yAxisID:'y1', order:1},
  {label:'LAN', type:'line', data:days.map(d => sum('lan_up_bytes', by(d)) + sum('lan_down_bytes', by(d))),
  borderColor:MU, backgroundColor:MU, borderDash:[4,3], pointRadius:2, tension:.3, yAxisID:'y1', order:1},
  ], {lgt:fmtB, plugins:{legend:{labels:{boxWidth:8}},
  tooltip:{callbacks:{title:c => days[c[0].dataIndex],
  label:c => `${c.dataset.label}: ${fmtB(c.parsed.y)}`}}},
  scales:{x:{grid:{display:false}},
- y:{position:'left', grid:{color:BD}, title:{display:true, text:'upload', color:'#c4a06e', font:{size:10}},
+ y:{position:'left', grid:{color:BD}, title:{display:true, text:'upload', color:css('--c-amber'), font:{size:10}},
  ticks:{maxTicksLimit:5, callback:v => fmtB(v)}},
- y1:{position:'right', grid:{display:false}, title:{display:true, text:'download · LAN', color:'#38bdf8', font:{size:10}},
+ y1:{position:'right', grid:{display:false}, title:{display:true, text:'download · LAN', color:css('--c-sky'), font:{size:10}},
  ticks:{maxTicksLimit:5, callback:v => fmtB(v)}}}});
 
  const M = {};
@@ -5607,7 +5649,7 @@ function renderConcurrency(concurrency, fromDate, toDate){
  {label: 'top-level', data: rows.map(r => r.top), backgroundColor: AC, stack: 's'},
  {label: 'subagent', data: rows.map(r => r.sub), backgroundColor: PAL[2], stack: 's'},
  {label: 'queue depth (now)', data: rows.map(() => queueNow), type: 'line',
- borderColor: '#c66a6a', borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
+ borderColor: css('--c-red'), borderDash: [4, 3], pointRadius: 0, fill: false, yAxisID: 'y'},
  ],
  {lgt: v => Math.round(v).toLocaleString(), plugins: {legend: {labels: {boxWidth: 8}}},
  scales: {x: {grid: {color: BD}}, y: {grid: {color: BD}, beginAtZero: true}}});
@@ -6700,7 +6742,7 @@ function qtBallIcon(it){
  const html = provLogoSvg(model, 14, it.kind === 'q' && !model ? 'local' : '');
  const svg = /<svg[\s>]/.test(html) ? html.replace(/width:\d+px;height:\d+px;?/, '') : '';
  if (svg) return svg;
- return '<svg class="qt-generic" viewBox="0 0 24 24" aria-hidden="true" style="fill:#5b6472"><path d="M12 2.6 20.2 7.1v9.8L12 21.4 3.8 16.9V7.1z"/></svg>';
+ return '<svg class="qt-generic" viewBox="0 0 24 24" aria-hidden="true" style="fill:var(--c-neutral)"><path d="M12 2.6 20.2 7.1v9.8L12 21.4 3.8 16.9V7.1z"/></svg>';
 }
 function qtLegend(){
  const gl = $('qt-leg-ico');
@@ -8179,7 +8221,7 @@ function renderHealth(rows){
  return `<div class="flex items-center gap-2.5 hrow${thin?' hthin':''}" title="${thin?'Fewer than 5 calls — too few to judge':''}">
         <div class="hname text-[length:var(--fs-md)] font-semibold truncate" style="width:172px;color:${colorOf(short(h.model))}" title="${short(h.model)}">${provLogoSvg(short(h.model))} ${short(h.model)}</div>
         <div class="hbar flex-1 flex h-[9px] rounded overflow-hidden" style="background:${h.fail===h.total ? FAILTRACK : BD}">
-          <div style="width:${okPct}%;background:#5f9e6e"></div>${segs}
+          <div style="width:${okPct}%;background:${'#5f9e6e' /* eslint-disable-line no-restricted-syntax -- LLMTELEMET-306: test-pinned hex */}"></div>${segs}
         </div>
         <div class="hrate text-[length:var(--fs-xs)] font-semibold text-right" style="width:52px;color:${col}">${r===null?'—':r+'%'}</div>
         <div class="hcount text-[length:var(--fs-xs)] muted text-right" style="width:150px">${count}</div>
@@ -10140,7 +10182,7 @@ function priceFreshness(fresh){
  hint: `catalogue fetched ${ago(ageS)} ago · amber past 24h, red past 72h · fed by llm-telemetry-build.timer`};
 }
 
-const ORCH_KIND = {hermes: ['Hermes', 'var(--accent, #5b9cf6)'], pi: ['PI', 'var(--ok, #34c38f)']};
+const ORCH_KIND = {hermes: ['Hermes', 'var(--accent)'], pi: ['PI', 'var(--ok)']};
 function slugOf(v){ return String(v).toLowerCase(); }
 
 const AGE_CUTS = { liveboard: {warn: 30, bad: 90}, dashboard: {warn: 600, bad: 900} };

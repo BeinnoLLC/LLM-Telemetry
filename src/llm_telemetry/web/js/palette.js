@@ -11,10 +11,10 @@ import { DATA, css } from './main.js';
 export let AC, MU, BD, FG;
 export function readTheme(){ AC=css('--accent'); MU=css('--muted'); BD=css('--border'); FG=css('--fg');
   Chart.defaults.color=MU; Chart.defaults.borderColor=BD; }
-// Chart category palette — the Grafana classic set, saturated enough to read
-// on the dark panel (#181b1f) and on white. Order spreads hues so adjacent
-// series stay distinguishable.
-export const PAL = ['#5794f2','#73bf69','#ff9830','#b877d9','#f2cc0c','#8ab8ff','#f2495c','#705da0','#37872d','#fade2a'];
+// Chart category palette: the Grafana classic set, saturated enough to read on dark and
+// light panels. Read from --chart-N at access time so a
+// theme switch applies (dark and light values live in tokens.css); hex tokens keep `PAL[i] + '1a'` alpha suffixes valid.
+export const PAL = new Proxy(Array.from({length: 10}), { get: (a, k) => /^[0-9]+$/.test(k) ? (typeof getComputedStyle === 'undefined' ? 'gray' : getComputedStyle(document.documentElement).getPropertyValue(`--chart-${k}`).trim() || 'gray') : a[k] });
 
 // Small line-icon set (Feather-style paths, stroke=currentColor) for KPI/nav
 // badges — real vector glyphs read as considerably more "designed" than a
