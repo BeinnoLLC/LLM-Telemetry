@@ -7,6 +7,7 @@
 // Two globals can only be the real things: `getComputedStyle` and the DOM are
 // installed on globalThis before the module is evaluated, because main.js reads
 // them at load time and `isolate()` restores its injected globals afterwards.
+import { rawCss } from './lib/tokens.mjs';
 import { isolate } from './lib/isolate.mjs';
 
 let pass = 0, fail = 0;
@@ -46,7 +47,7 @@ globalThis.localStorage = {
   getItem(k) { return k in this._d ? this._d[k] : null; },
   setItem(k, v) { this._d[k] = String(v); },
 };
-globalThis.getComputedStyle = () => ({ getPropertyValue: k => (k === '--known' ? '  #fff  ' : '') });
+globalThis.getComputedStyle = () => ({ getPropertyValue: k => (k === '--known' ? '  #fff  ' : rawCss(k)) });
 const timers = [];
 globalThis.setTimeout = (fn, ms) => { timers.push([fn, ms]); return timers.length; };
 globalThis.requestAnimationFrame = () => 0;

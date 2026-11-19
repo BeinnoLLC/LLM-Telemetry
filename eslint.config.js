@@ -39,6 +39,15 @@ const CROSS_MODULE_WRITES = new Set([
   'views.js:charts', 'views.js:PROJ_WEIGHT', 'views.js:PROJECT_FILTER',
 ]);
 
+// LLMTELEMET-306: colours live in css/tokens.css and are read via css()/PAL.
+// A hex literal in a string or template is a hard error (comments are exempt;
+// `&#128266;`-style HTML entities are not colours).
+const HEX_RE = '(?<!&)#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![0-9a-zA-Z])';
+const NO_HEX = ['error',
+  { selector: `Literal[value=/${HEX_RE}/]`, message: 'Raw hex colour: add a token in css/tokens.css and read it with css().' },
+  { selector: `TemplateElement[value.raw=/${HEX_RE}/]`, message: 'Raw hex colour: add a token in css/tokens.css and read it with css().' },
+];
+
 export default [
   {
     files: ['src/llm_telemetry/web/js/**/*.js'],
@@ -82,6 +91,7 @@ export default [
       'no-cond-assign': ['error', 'except-parens'],
       'no-empty': ['error', { allowEmptyCatch: true }],
       eqeqeq: ['error', 'smart'],
+      'no-restricted-syntax': NO_HEX,
     },
   },
   // Exempt the ratcheted cross-module writes, and ONLY those. ESLint has no rule

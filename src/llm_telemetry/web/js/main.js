@@ -36,7 +36,7 @@ export const hueCss = (h, k) => {
   return `hsl(${h} ${sat} ${lig})`;
 };
 export const rawCss = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-export const css = k => rawCss(k) || '#888';
+export const css = k => rawCss(k) || rawCss('--c-fallback');
 export function buildAll(profiles){
   // Only merge real profiles — skip any already-merged 'All' key to prevent
   // the cost/call totals from doubling every time installAll is re-called.
