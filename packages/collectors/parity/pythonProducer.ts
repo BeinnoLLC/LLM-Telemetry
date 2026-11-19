@@ -107,3 +107,35 @@ export function runPythonAnalytics(
   }
   return { path: join(outDir, artifact), stdout: res.stdout.trim() };
 }
+
+/** Generic generated-inputs runner (T-16): build `inputsDir` with
+ * py/<generator>, then run py/<producer> (the real Python collector). */
+export function runPythonInputsCase(
+  python: string,
+  parityRoot: string,
+  spec: { generator: string; producer: string },
+  inputsDir: string,
+  outDir: string,
+  artifact: string,
+  nowS?: number,
+): PythonProduceResult {
+  const gen = spawnSync(python, [join(parityRoot, "py", spec.generator), inputsDir], {
+    cwd: parityRoot,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  if (gen.error || gen.status !== 0) {
+    throw new Error(`${spec.generator} failed: ${String(gen.error ?? gen.stderr.trim())}`);
+  }
+  const res = spawnSync(python, [join(parityRoot, "py", spec.producer), inputsDir, outDir, artifact], {
+    cwd: parityRoot,
+    env: { ...process.env, ...(nowS === undefined ? {} : { LLM_TELEMETRY_PARITY_NOW: String(nowS) }) },
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  if (res.error) throw new Error(`${spec.producer} did not run: ${String(res.error)}`);
+  if (res.status !== 0) {
+    throw new Error(`${spec.producer} failed (exit ${String(res.status)}): ${res.stderr.trim() || "no output"}`);
+  }
+  return { path: join(outDir, artifact), stdout: res.stdout.trim() };
+}

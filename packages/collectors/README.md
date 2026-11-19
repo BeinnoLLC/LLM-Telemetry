@@ -5,7 +5,7 @@ Node port of the LLM-Telemetry collectors — **T-4 (LST-283)** of
 This ticket lands the *platform*: CLI skeleton, atomic artifact writer with
 `schema_version` + schema-check parity, the config port, and scheduler unit
 templates. The collectors themselves stay stubs and land one ticket at a time
-(T-6 live, T-15 analytics, T-16 router/quota/probe/logs/…, T-17 pricing/costs,
+(T-6 live, T-15 analytics, T-16 router/quota/probe/logs/transcripts/session-timeline/rankings (ported, LLMTELEMET-287), T-17 pricing/costs,
 T-18 ingest).
 
 ## CLI

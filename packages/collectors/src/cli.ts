@@ -15,6 +15,7 @@
  *   config  — print the resolved configuration (the config port's CLI face).
  */
 
+import * as fs from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
@@ -22,6 +23,13 @@ import { get as getConfig, resolveNodeReportsDir, type Config } from "./config.j
 import { assertSafeOutDir, writeArtifact } from "./artifactWriter.js";
 import { buildLive } from "./collectLive.js";
 import { collectAnalytics } from "./collectAnalytics.js";
+import { collectRouter } from "./collectRouter.js";
+import { collectLogs } from "./collectLogs.js";
+import { collectProbeAsync, type CapsCache } from "./collectProbe.js";
+import { writeSessionFiles } from "./collectSessionTimeline.js";
+import { collectRankingsAsync, readPrevious } from "./collectRankings.js";
+import { collectTranscripts } from "./collectTranscripts.js";
+import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
 
 export interface CliIo {
@@ -105,7 +113,22 @@ export const COMMANDS: Record<string, Command> = {
   dashboard: stub("dashboard — build dashboard.html (replaced by `next build`)", "T-20..T-25"),
   costs: stub("costs — write costs-data.json", "T-17"),
   pricing: stub("pricing — refresh the OpenRouter price catalogue cache", "T-17"),
-  rankings: stub("rankings — write rankings-data.json", "T-16"),
+  rankings: {
+    summary: "rankings — write rankings-data.json [OUT]",
+    status: "ported",
+    run: async (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const c = cfg();
+      const nodeReports = resolveNodeReportsDir(c);
+      const out = outArg ?? path.join(nodeReports, "rankings-data.json");
+      const payload = await collectRankingsAsync({ previous: readPrevious(out) });
+      const res = writeArtifact(path.basename(out), payload, { cfg: c, outDir: path.dirname(out) });
+      const note = (payload["reason"] ?? (payload["last_error"] as { reason?: string } | undefined)?.reason) as
+        string | undefined;
+      io.out(`rankings: ${String(payload["status"])}${note ? ` (${note})` : ""} -> ${res.path}`);
+      return 0;
+    },
+  },
   live: {
     summary: "live — write live-data.json",
     status: "ported",
@@ -129,10 +152,83 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  transcripts: stub("transcripts — write transcripts.json", "T-16"),
-  "session-timeline": stub("session-timeline — write sessions/<profile>/<id>.json", "T-16"),
-  logs: stub("logs — write logs-data.json", "T-16"),
-  probe: stub("probe — write ollama-data.json", "T-16"),
+  transcripts: {
+    summary: "transcripts — write transcripts.json [OUT]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const c = cfg();
+      const payload = collectTranscripts({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "transcripts.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, Record<string, unknown[]>>;
+      const n = Object.values(profiles).reduce(
+        (acc, sess) => acc + Object.values(sess).reduce((a, m) => a + m.length, 0), 0);
+      io.out(`${res.path}  (${Object.keys(profiles).length} profiles, ${n} messages windowed)`);
+      return 0;
+    },
+  },
+  "session-timeline": {
+    summary: "session-timeline — write sessions/<profile>/<id>.json [OUT_DIR]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      const c = cfg();
+      const outDir = args[0] ?? path.join(resolveNodeReportsDir(c), "sessions");
+      const n = writeSessionFiles(outDir, { cfg: c });
+      io.out(`${outDir}  (${n} session timeline files written)`);
+      return 0;
+    },
+  },
+  logs: {
+    summary: "logs — write logs-data.json [-o|--out PATH]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      let outArg: string | undefined;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i]!;
+        if ((a === "-o" || a === "--out") && i + 1 < args.length) outArg = args[++i];
+        else if (a.startsWith("--out=")) outArg = a.slice("--out=".length);
+        else {
+          io.err(`usage: logs [-o OUT]\nlogs: error: unrecognized arguments: ${a}`);
+          return 2;
+        }
+      }
+      const c = cfg();
+      const payload = collectLogs({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "logs-data.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { events_shown: number; events_total: number }>;
+      const n = Object.values(profiles).reduce((a, p) => a + p.events_shown, 0);
+      const t = Object.values(profiles).reduce((a, p) => a + p.events_total, 0);
+      io.out(`${res.path}  (${Object.keys(profiles).length} profiles, ${n.toLocaleString("en-US")} of ${t.toLocaleString("en-US")} events, ${(res.bytes / 1048576).toFixed(2)} MB)`);
+      return 0;
+    },
+  },
+  probe: {
+    summary: "probe — write ollama-data.json",
+    status: "ported",
+    run: async (_name, io, _args, cfg) => {
+      const c = cfg();
+      const nodeReports = resolveNodeReportsDir(c);
+      assertSafeOutDir(nodeReports, c);
+      // Capability lookups are static per model and cached for 24 h, like Python.
+      const capsPath = path.join(nodeReports, ".ollama-caps.json");
+      let cache: CapsCache = {};
+      try {
+        cache = JSON.parse(fs.readFileSync(capsPath, "utf8")) as CapsCache;
+      } catch { /* no cache yet */ }
+      const payload = await collectProbeAsync({ cfg: c, cache });
+      const res = writeArtifact("ollama-data.json", payload, { tag: "ollama", cfg: c });
+      try {
+        fs.writeFileSync(capsPath, JSON.stringify(cache), "utf8");
+      } catch { /* best effort, like the Python collector */ }
+      const hosts = payload["hosts"] as Array<{ up: boolean }>;
+      io.out(`${res.path}  (${String(payload["endpoints"])} endpoints -> ${hosts.length} hosts, ${hosts.filter((h) => h.up).length} up)`);
+      return 0;
+    },
+  },
   analytics: {
     summary: "analytics — write analytics-data.json [-o|--out PATH]",
     status: "ported",
@@ -171,8 +267,56 @@ export const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
-  router: stub("router — write router-data.json", "T-16"),
-  quota: stub("quota — write quota-data.json + history", "T-16"),
+  router: {
+    summary: "router — write router-data.json [-o|--out PATH]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      let outArg: string | undefined;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i]!;
+        if ((a === "-o" || a === "--out") && i + 1 < args.length) outArg = args[++i];
+        else if (a.startsWith("--out=")) outArg = a.slice("--out=".length);
+        else {
+          io.err(`usage: router [-o OUT]\nrouter: error: unrecognized arguments: ${a}`);
+          return 2;
+        }
+      }
+      const c = cfg();
+      const payload = collectRouter({ cfg: c });
+      const outDir = outArg ? path.dirname(outArg) : undefined;
+      const filename = outArg ? path.basename(outArg) : "router-data.json";
+      const res = writeArtifact(filename, payload, {
+        tag: "router", cfg: c, ...(outDir ? { outDir } : {}),
+      });
+      const profiles = (payload["profiles"] ?? {}) as Record<string, { tier_router?: { tiers?: unknown[] } | null }>;
+      const names = Object.keys(profiles);
+      const tiers = names.reduce((acc, n) => acc + (profiles[n]?.tier_router?.tiers?.length ?? 0), 0);
+      io.out(`${res.path}  (${names.length} profiles, ${tiers} router tiers)`);
+      return 0;
+    },
+  },
+  quota: {
+    summary: "quota — write quota-data.json + quota-history.json [OUT [HISTORY]]",
+    status: "ported",
+    run: (_name, io, args, cfg) => {
+      // Positional like the Python CLI: non-dash args are OUT then HISTORY.
+      const pos = args.filter((a) => !a.startsWith("-"));
+      const c = cfg();
+      const payload = collectQuota({ cfg: c });
+      const outDir = pos[0] ? path.dirname(pos[0]) : undefined;
+      const filename = pos[0] ? path.basename(pos[0]) : "quota-data.json";
+      const res = writeArtifact(filename, payload, { cfg: c, ...(outDir ? { outDir } : {}) });
+      const histPath = pos[1] ?? path.join(outDir ?? path.dirname(res.path), HISTORY_NAME);
+      assertSafeOutDir(path.dirname(histPath), c);
+      const now = Math.trunc(Date.now() / 1000);
+      const kept = appendHistory(histPath, historySample(now, payload), now);
+      const s = payload["summary"] as Record<string, number>;
+      const n = Object.keys(payload["profiles"] as object).length;
+      io.out(`${res.path}  (${n} profiles, ${s["providers"]} providers, ` +
+        `${s["available"]} available, ${s["attention"]} near limit; history: ${kept} samples)`);
+      return 0;
+    },
+  },
   serve: stub("serve — serve reports/ (replaced by the Next.js app)", "T-19"),
   doctor: stub("doctor — read-only preflight", "T-27"),
   ingest: stub("ingest — ingest PI and Hermes telemetry into the analytics store", "T-18"),

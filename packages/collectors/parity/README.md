@@ -23,6 +23,21 @@ Build first (`npm run build -w @llm-telemetry/collectors`); the CLI runs from
 | analytics | `analytics-data.json` | `analytics` |
 | ollama | `ollama-data.json` | `ollama` |
 | router | `router-data.json` | `router` |
+| quota | `quota-data.json` | none |
+| logs | `logs-data.json` | none |
+| transcripts | `transcripts.json` | none |
+| rankings | `rankings-data.json` | none |
+| timeline | `session-timelines.json` (merged `build_all()` view; placeholder fixture) | none |
+
+T-16 (LLMTELEMET-287) cases `router`, `quota`, `logs`, `transcripts`, `rankings`,
+`timeline` and `ollama` run the REAL Python collector (`py/produce_<name>.py`)
+against generated inputs (`py/make_<name>_fixture.py`) and the real Node port
+(`nodeCollector`) against the same inputs. Network is never touched: rankings
+and the Ollama probe answer from canned responses through an injected fetcher /
+transport (Python: monkeypatched seams in the producer; Node: the `fetcher` /
+`transport` options). A case may set `keepKeys` (compare a key normally dropped
+as a run stamp, e.g. logs/transcripts `ts`) or `extraDropKeys` (rankings
+`fetched_at`).
 
 ## Producers
 
