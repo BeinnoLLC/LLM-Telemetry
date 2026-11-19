@@ -65,6 +65,7 @@
 [data-theme="light"]{
   /* LLMTELEMET-306: chart/status colours read from JS via css() */
   --c-amber:#c4a06e;
+  --c-ok:#34c38f;
   --c-sky:#38bdf8;
   --c-red:#c66a6a;
   --c-gold:#c2a15c;
@@ -285,6 +286,7 @@
 [data-theme="dark"]{
   /* LLMTELEMET-306: chart/status colours read from JS via css() */
   --c-amber:#c4a06e;
+  --c-ok:#34c38f;
   --c-sky:#38bdf8;
   --c-red:#c66a6a;
   --c-gold:#c2a15c;
