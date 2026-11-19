@@ -17,6 +17,9 @@
  *     formatting tolerance of plan §7.3 ("no tolerances except documented
  *     formatting"). Integers (tokens, USD scaled, counts) are compared EXACTLY
  *     and never rounded. -0 normalizes to 0.
+ *     The single other tolerance (live `idle_s`/`uptime_s`, ±5 s) is NOT
+ *     applied here: normalize keeps those keys and diff.ts compares them with
+ *     LIVE_CLOCK_TOLERANCE_S (see structuralDiff).
  *  4. Array order is preserved: ordering is data (rows, series, chains). A
  *     producer that reorders an array is a parity failure, not noise.
  *

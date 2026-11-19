@@ -24,6 +24,7 @@
 // in sesstreeNode. Nothing here is captured from program output; if a case
 // fails, re-read the module rather than copying what it printed.
 import { isolate } from './lib/isolate.mjs';
+import { css, rtColor } from './lib/tokens.mjs';
 
 // state.js has no sibling imports, so it loads standalone. views.js delegates
 // its empty states to renderEmpty (LST-235) and the tests assert the REAL
@@ -111,9 +112,9 @@ const load = (o = {}) => (Object.keys(DATA.profiles).length || (DATA.profiles = 
     ctxSpark: (series, comps) => `[spark ${series.length} ${(comps || []).length}]`,
   },
   'router.js': { PROJECT_FILTER: o.PROJECT_FILTER || '' },
-  'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {} },
+  'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {}, rtColor },
   'state.js': { renderSkeleton: () => {}, renderEmpty, renderError: () => {} },
-  'main.js': { DATA, SCHEMA_VERSION: 1, LOCAL_HOSTS: [] },
+  'main.js': { DATA, SCHEMA_VERSION: 1, LOCAL_HOSTS: [], css },
 }, { document: fakeDocument }));
 
 const D = await load();

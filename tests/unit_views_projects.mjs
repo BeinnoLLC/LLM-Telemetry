@@ -22,6 +22,7 @@
 // named in each check.
 
 import { isolate } from './lib/isolate.mjs';
+import { css, rtColor } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -271,7 +272,7 @@ async function load(over = {}) {
     'charts.js': baseChartsStub(over.charts),
     'flow.js': { flowControls: [], renderFlow() {} },
     'live.js': { renderLive() {} },
-    'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {} },
+    'routerview.js': { renderRouterView() {}, routerStat: () => '', RT_SVG: {}, RT_LOGO: {}, rtColor },
     'quotaview.js': { renderQuotaView() {}, qvStat: () => '' },
     'router.js': {
       HOUR_RANGE: 'all', MODEL_FILTER: '', POWER: '', PROJECT_FILTER: '',
@@ -284,7 +285,7 @@ async function load(over = {}) {
     'main.js': {
       DATA: over.data || { schema_version: 1, profiles: { default: {} } },
       LOCAL_HOSTS: ['localhost', '127.0.0.1'],
-      SCHEMA_VERSION: 1, css: () => '',
+      SCHEMA_VERSION: 1, css,
       // NOTE: no `render` here on purpose — installProjFilter calls views.js's
       // OWN exported render() (line 399), which needs the whole dashboard DOM
       // and is covered by the app-level suites, not this isolated slice.

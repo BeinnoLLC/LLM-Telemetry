@@ -106,3 +106,23 @@ describe("formatDiffs", () => {
     expect((lines[0] ?? "").length).toBeLessThan(120);
   });
 });
+
+describe("live clock tolerance (plan §7.3 single exception)", () => {
+  const doc = (v: unknown) => ({ live: [{ id: "a", idle_s: v, uptime_s: v }] });
+  it("passes a 3 second gap", () => {
+    expect(structuralDiff(doc(100), doc(103))).toEqual([]);
+  });
+  it("fails a 10 second gap", () => {
+    const d = structuralDiff(doc(100), doc(110));
+    expect(d.map((e) => e.path)).toEqual(["/live/0/idle_s", "/live/0/uptime_s"]);
+  });
+  it("fails null, string or missing on one side", () => {
+    expect(structuralDiff(doc(100), doc(null))).toHaveLength(2);
+    expect(structuralDiff(doc(100), doc("100"))).toHaveLength(2);
+    expect(structuralDiff({ live: [{ id: "a" }] }, doc(100)).length).toBeGreaterThan(0);
+    expect(structuralDiff(doc(100), { live: [{ id: "a" }] }).length).toBeGreaterThan(0);
+  });
+  it("stays strict outside live arrays", () => {
+    expect(structuralDiff({ idle_s: 1 }, { idle_s: 2 })).toHaveLength(1);
+  });
+});

@@ -56,14 +56,6 @@ describe("CLI dispatch", () => {
     }
   });
 
-  it("live and analytics dispatch to stubs (exit code 1)", () => {
-    for (const name of ["live", "analytics"]) {
-      const { io, err } = capture();
-      expect(runCli([name], io, () => new Config())).toBe(1);
-      expect(err.join("\n")).toContain(`'${name}' is not yet ported`);
-    }
-  });
-
   it("demo writes a schema-passing artifact through the real writer path", () => {
     const { io, out } = capture();
     expect(runCli(["demo"], io, () => new Config())).toBe(0);
