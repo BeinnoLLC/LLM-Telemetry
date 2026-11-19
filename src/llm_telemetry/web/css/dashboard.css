@@ -235,9 +235,6 @@
       display:inline-block;margin-right:5px;animation:p 2s infinite}
  :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn);box-shadow:none}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
- /* Responsive grid helpers */
- .grid-auto{display:grid;gap:var(--gap);
-   grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  /* One KPI card for Home's two rows (live + totals): fixed grid rows keep label,
     value baseline, sub-line and viz on the same lines in every card, and a card
     with no viz still reserves its slot, so all cards are 138px. Calm palette
@@ -564,7 +561,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     keeps the strip wrapping without fixed columns on desktop; the <=480px
     override below pins the collapse to exactly 2 columns on phones. */
  .grid-home{display:grid;gap:8px var(--gap);align-items:stretch;
-   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));grid-template-columns:repeat(4,minmax(0,1fr))}
+   grid-template-columns:repeat(4,minmax(0,1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
    transform .12s ease,border-color .12s ease}
@@ -577,7 +574,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* The compact card chrome (LST-178) lives further down, after the
     .kpi-badge rules it refines — stylelint's no-descending-specificity
     requires the base selector first. */
- .grid-2 > *,.grid-auto > *{min-width:0}
+ .grid-2 > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
     (a 278:1 ratio is the finding, and two separate cards hide it). Arrows
@@ -959,9 +956,14 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pp-open:hover,.pp-open:focus-visible{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:0}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+/* LLMTELEMET-312: ONE tooltip component. This is the whole shell — #lntip and
+   the Hive .hv-tip are themed .qtip instances (sizing/level only), and the
+   arrow renders only when the shared placer (views.js tipPlace) sets data-side,
+   so arrow-less instances never grow one. Visibility is the .on class. */
+.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity .1s;box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip.on{opacity:1}
 .qtip .ft-h,.qtip .ft-r{font-size:14px}
-.qtip::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
+.qtip[data-side]::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
   left:var(--ax,50%);top:-6px;margin-left:-5px;border-right:0;border-bottom:0}
 .qtip[data-side=top]::before{top:auto;bottom:-6px;transform:rotate(225deg)}
 .qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
@@ -1220,19 +1222,43 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .dtab:hover{color:var(--fg);border-color:var(--accent)}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
-/* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
-   (this is one session's whole conversation, not a cross-session tail). */
-#tscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
+/* ---- Overlay shell: ONE .scrim + .modal pair (LLMTELEMET-313) ----------
+   design-audit §10.8: there were three modal shells (#tmodal/#lnmodal/
+   #sfmodal) and four scrims (#tscrim/#lnscrim/#sfscrim/#pdscrim) — seven
+   near-identical fixed shells. Every dialog now rides this ONE pair; the ids
+   stay as JS/ARIA hooks and never carry shell CSS again. Instances add a size
+   modifier (.modal-sm/md/lg) and, for the session finder, the drop anchor
+   (.modal-drop + .scrim-drop). The hide/show contract (fixed surface, fade
+   entrance, pointer-events gate) is declared exactly once here —
+   tests/check_modal_shell.js fails if any rule re-declares it. Colours come
+   only from tokens.css (--scrim-bg, --elev-modal): identical in light/dark. */
+.scrim{position:fixed;inset:0;z-index:75;background:var(--scrim-bg);opacity:0;
   pointer-events:none;transition:opacity .18s ease}
-#tscrim.open{opacity:1;pointer-events:auto}
-#tmodal{position:fixed;top:50%;left:50%;z-index:80;
-  width:min(760px,94vw);max-height:min(82vh,720px);
+.scrim.open{opacity:1;pointer-events:auto}
+/* the session finder rides one stack layer up and snaps faster (palette,
+   not dialog) */
+.scrim-drop{z-index:85;transition-duration:.14s}
+.modal{position:fixed;top:50%;left:50%;z-index:80;
+  max-height:min(82vh,720px);
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
   display:flex;flex-direction:column;overflow:hidden;
   transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
   transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
-#tmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+  box-shadow:var(--elev-modal)}
+.modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+/* size modifiers — one per dialog family (width + height cap) */
+.modal-sm{width:min(680px,94vw);max-height:70vh}   /* session finder */
+.modal-md{width:min(760px,94vw)}                   /* transcript */
+.modal-lg{width:min(920px,96vw)}                   /* timeline */
+/* drop anchor — the session finder falls in from under the app bar like a
+   command palette instead of scaling in centred */
+.modal-drop{top:12vh;z-index:90;transform:translateX(-50%) translateY(-6px);
+  transition:transform .12s ease,opacity .12s ease}
+.modal-drop.open{transform:translateX(-50%) translateY(0)}
+
+/* #79/P9-02: transcript preview modal — a centred dialog, not a drawer
+   (this is one session's whole conversation, not a cross-session tail).
+   #tmodal = .modal .modal-md; content rules only below. */
 .thead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .thead #ttitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -1261,39 +1287,23 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .ttitlebtn{background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;
   cursor:pointer;text-align:left;text-decoration:none}
 .ttitlebtn:hover{text-decoration:underline;color:var(--accent)}
+/* The transcript is a full-screen sheet on phones — one conversation needs
+   every pixel. Scoped to the .modal-md size so the other dialogs keep their
+   desktop geometry; equal specificity to .modal above, so this block must
+   stay below the shell block (later wins). */
 @media(max-width:640px){
-  #tmodal{width:100vw;max-height:100vh;height:100vh;max-height:100dvh;height:100dvh;top:0;left:0;border-radius:0;
+  .modal-md{width:100vw;max-height:100vh;height:100vh;max-height:100dvh;height:100dvh;top:0;left:0;border-radius:0;
     transform:translate(0,8px) scale(1)}
-  #tmodal.open{transform:translate(0,0) scale(1)}
-
-/* P10-06 (#94): session timeline modal. Same scrim/open-class/focus-trap
-   pattern as #tmodal, wider on desktop (needs a horizontal time axis).
-   Opened from a dedicated button, never the SAME click target as the
-   transcript modal — the two answer different questions ("what happened"
-   vs "what was said") and must stay independently reachable. */
+  .modal-md.open{transform:translate(0,0) scale(1)}
 }
-#lnscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
-  pointer-events:none;transition:opacity .18s ease}
-#lnscrim.open{opacity:1;pointer-events:auto}
-#lnmodal{position:fixed;top:50%;left:50%;z-index:80;
-  width:min(920px,96vw);max-height:min(82vh,720px);
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-  display:flex;flex-direction:column;overflow:hidden;
-  transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
-  transition:transform .16s ease,opacity .16s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
-#lnmodal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
-#sfscrim{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.55);opacity:0;
-  pointer-events:none;transition:opacity .14s ease}
-#sfscrim.open{opacity:1;pointer-events:auto}
-#sfmodal{position:fixed;top:12vh;left:50%;z-index:90;
-  width:min(680px,94vw);max-height:70vh;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-  display:flex;flex-direction:column;overflow:hidden;
-  transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;
-  transition:transform .12s ease,opacity .12s ease;
-  box-shadow:0 24px 70px rgba(0,0,0,.5)}
-#sfmodal.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+
+/* P10-06 (#94): session timeline modal (#lnmodal = .modal .modal-lg — wider
+   on desktop, needs a horizontal time axis). Same scrim/open-class/focus-trap
+   pattern as #tmodal, opened from a dedicated button, never the SAME click
+   target as the transcript modal — the two answer different questions ("what
+   happened" vs "what was said") and must stay independently reachable. */
+/* P10-12 (#100) session finder: #sfmodal = .modal .modal-sm .modal-drop and
+   #sfscrim = .scrim .scrim-drop ride the shared shells above. */
 .sfrow{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:var(--fs-sm);border-left:2px solid transparent}
 .sfrow:hover,.sfrow.sfactive{background:var(--bg)}
 .sfrow.sfactive{border-left-color:var(--accent)}
@@ -1307,19 +1317,17 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .lnspan.lnfail{outline:2px solid var(--z-bad);outline-offset:-1px}
 .lnspan.lntick{width:3px!important;border-radius:1px}
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
-#lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius-ctl);padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+/* LLMTELEMET-312: #lntip is a themed .qtip instance (timeline span labels):
+   theme/sizing only, never its own shell. */
+#lntip{z-index:90;max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
 
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own
    360px-viewport acceptance criterion) — same breakpoint convention as
-   the transcript modal above, same scrim/open-class/focus-trap pattern,
-   just a different anchor edge so it reads as "detail alongside the
-   matrix" rather than "a whole-screen takeover" on desktop. */
-#pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
-  pointer-events:none;transition:opacity .18s ease}
-#pdscrim.open{opacity:1;pointer-events:auto}
+   the transcript modal above, same scrim/open-class/focus-trap pattern
+   (#pdscrim = .scrim, above), just a different anchor edge so it reads as
+   "detail alongside the matrix" rather than "a whole-screen takeover" on
+   desktop. */
 #pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
   width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;
@@ -1438,10 +1446,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
      display:inline-flex;align-items:center;justify-content:center}
    #navtoggle{padding:0;width:44px}
    #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
-
-   /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
-      page itself never does. */
-   .livegrid{grid-template-columns:minmax(0,1fr)}
 
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */
@@ -1649,7 +1653,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
 .qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
-.qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
+.qv-wname{font-size:var(--fs-xs);color:var(--muted);white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
 .qv-pct.qv-ok{color:var(--z-ok)}
 .qv-pct.qv-warn{color:var(--z-warn)}
@@ -1847,7 +1851,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:color-mix(in srgb,var(--z-bad) 9%,transparent)}
 .kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:13px;font-weight:600;vertical-align:middle;max-width:100%}
 .kpi-kind{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--foreground,var(--fg));min-width:0}
-.kpi-dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
 /* Brand marks for the Claude/Codex agent kinds: 16px (the glyph is the marker,
    12px read as a blob), inherit the kind colour, centred on the text line. */
 svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
@@ -2137,7 +2140,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
   .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
   .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
-  .grid-home > *{min-width:0}
   div:has(>canvas){width:100%;max-width:100%;min-height:160px}
   canvas{max-width:100%}
   .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -2275,6 +2277,12 @@ canvas, img {
   box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
   box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
+
+/* LST-309 (light only): light --z-bad-fg is a deep AA ink for text on the light
+   surfaces, so the alert pill pairs its solid --z-bad fill with --card text
+   (the .qv-astat.qv-bad pattern). Dark keeps --z-bad-fg on the fill, unchanged.
+   Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
+:root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
 
 
 

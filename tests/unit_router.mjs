@@ -26,6 +26,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isolate } from './lib/isolate.mjs';
+import { css, hueCss } from './lib/tokens.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const JS_DIR = path.resolve(HERE, '..', 'src', 'llm_telemetry', 'web', 'js');
@@ -196,7 +197,7 @@ const SUPERSET = {
     fleetKindCounts: () => ({ all: 0, hermes: 0, pi: 0, claude: 0, codex: 0 }),
     kindMeta: k => ({ sig: '*', label: k, color: 'var(--kind-' + k + ')' }),
   },
-  'main.js': { DATA, buildAll, installAll: () => {} },
+  'main.js': { DATA, buildAll, installAll: () => {}, css, hueCss },
 };
 
 const stubsFor = (source, keepAll = false) => {
