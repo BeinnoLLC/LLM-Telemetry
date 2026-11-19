@@ -6,7 +6,7 @@ colors:
   # ONE palette, declared in src/llm_telemetry/web/css/tokens.css (the only file allowed to
   # hold hex/rgb/hsl literals). Names match the CSS custom properties exactly (--bg -> colors.bg).
   # Dark theme = sibling tokens with a `-dark` suffix (Beinno convention); `-dark` reads the
-  # `[data-theme="dark"]` value of the same `--<name>` (tokens.css:287-387).
+  # `[data-theme="dark"]` value of the same `--<name>` (tokens.css:287-389).
   # ---------- Light (`:root, [data-theme="light"]`, tokens.css:64-196) ----------
   bg: "#fbfbf9"                          # --bg  page surface
   card: "#ffffff"                        # --card  raised surface
@@ -42,7 +42,7 @@ colors:
   state-pressed: "rgba(0,0,0,.08)"       # --state-pressed
   state-focus: "rgba(31,98,201,.25)"     # --state-focus
   # ---- task-queue jar material (tokens.css:175-189). BOTH themes declare the same 15 tokens
-  # ---- (LLMTELEMET-317): these are the light values; the dark block (tokens.css:364-386) reproduces
+  # ---- (LLMTELEMET-317): these are the light values; the dark block (tokens.css:364-388) reproduces
   # ---- the old dark jar. The light restyle is `:root:not([data-theme="dark"])` (dashboard.css:2228-2274).
   jar-glass: "hsl(220 20% 97%)"          # --jar-glass
   jar-edge: "hsl(220 18% 46%)"           # --jar-edge
@@ -99,7 +99,7 @@ colors:
   hv-gauge-lo: "{colors.z-ok}"           # --hv-gauge-lo:var(--z-ok)  pressure gauge zones
   hv-gauge-mid: "{colors.z-warn}"        # --hv-gauge-mid:var(--z-warn)
   hv-gauge-hi: "{colors.z-bad}"          # --hv-gauge-hi:var(--z-bad)
-  # ---------- Dark (`[data-theme="dark"]`, tokens.css:287-387) ----------
+  # ---------- Dark (`[data-theme="dark"]`, tokens.css:287-389) ----------
   bg-dark: "#05060a"
   card-dark: "#0f1118"
   fg-dark: "#f5f5f5"
@@ -133,7 +133,7 @@ colors:
   state-hover-dark: "rgba(255,255,255,.06)"
   state-pressed-dark: "rgba(255,255,255,.10)"
   state-focus-dark: "rgba(136,170,255,.40)"
-  # jar material, dark (tokens.css:364-386, LLMTELEMET-317): the exact expressions the dark jar
+  # jar material, dark (tokens.css:364-388, LLMTELEMET-317): the exact expressions the dark jar
   # painted before tokenising (--tint = white, --shade = black); marbles map to --kind-* / --qk-wait.
   jar-glass-dark: "color-mix(in srgb,var(--tint) 7%,var(--card))"
   jar-edge-dark: "var(--w30)"
@@ -419,13 +419,13 @@ components:
   status-pill:                           # .lvst (dashboard.css:1960) running/waiting/idle
     textColor: "{colors.fg}"
     rounded: 99px
-  jar:                                   # .qt-jar/.qt-body (dashboard.css:856/872) Life view
+  jar:                                   # .qt-jar/.qt-body (dashboard.css:838/854) Life view
     rounded: 12px
-  jar-ball:                              # .qt-ball (dashboard.css:906); QT_MAX=28 (flow.js:111)
+  jar-ball:                              # .qt-ball (dashboard.css:888); QT_MAX=28 (flow.js:111)
     size: 28px
   jar-ball-min:                          # QT_MIN=18 (flow.js:112) — legibility floor
     size: 18px
-  jar-legend-swatch:                     # .qt-sw (dashboard.css:957)
+  jar-legend-swatch:                     # .qt-sw (dashboard.css:939)
     size: 18px
   hive-stage:                            # .hv-stage (hive.css:11) — the Hive canvas box
     backgroundColor: "{colors.bg}"
@@ -497,7 +497,7 @@ Roles (every value below is the exact `tokens.css` value; dark values are the
 | `--state-hover/-pressed/-focus` | state layers | `rgba(0,0,0,.04)` / `rgba(0,0,0,.08)` / `rgba(31,98,201,.25)` | `rgba(255,255,255,.06)` / `rgba(255,255,255,.10)` / `rgba(136,170,255,.40)` |
 | `--fb-surface` / `--fb-raise` | fleet-bar surfaces (resolve per theme) | `color-mix(in srgb,var(--fg) 4%,var(--card))` / `…9%…` | same expressions at dark values |
 | `--kind-hermes/-pi/-claude/-codex` | agent-kind identity, ONE source | `hsl(199 60% 56%)`, `hsl(265 55% 64%)`, `hsl(18 70% 60%)`, `hsl(152 50% 52%)` | theme-independent (same) |
-| `--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` | light-theme jar material | `hsl(220 20% 97%)`, `hsl(220 18% 46%)`, `hsl(225 25% 6%)`, `hsl(220 20% 20%)`, `hsl(220 12% 34%)`, `hsl(0 0% 100%)`, `hsl(220 18% 90%)`, `hsl(220 30% 20% / .34)`, `hsl(199 95% 38%)`, `hsl(28 95% 36%)` | `color-mix(in srgb,var(--tint) 7%,var(--card))`, `var(--w30)`, `var(--tint)`, `var(--fg)`, `var(--muted)`, `color-mix(in srgb,var(--bg) 40%,var(--tint) 22%)`, `color-mix(in srgb,var(--bg) 70%,var(--shade))`, `var(--s60)`, `var(--muted)`, `var(--z-warn)` |
+| `--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` | jar material (light and dark) | `hsl(220 20% 97%)`, `hsl(220 18% 46%)`, `hsl(225 25% 6%)`, `hsl(220 20% 20%)`, `hsl(220 12% 34%)`, `hsl(0 0% 100%)`, `hsl(220 18% 90%)`, `hsl(220 30% 20% / .34)`, `hsl(199 95% 38%)`, `hsl(28 95% 36%)` | `color-mix(in srgb,var(--tint) 7%,var(--card))`, `var(--w30)`, `var(--tint)`, `var(--fg)`, `var(--muted)`, `color-mix(in srgb,var(--bg) 40%,var(--tint) 22%)`, `color-mix(in srgb,var(--bg) 70%,var(--shade))`, `var(--s60)`, `var(--muted)`, `var(--z-warn)` |
 | `--jar-hermes/-pi/-claude/-codex/-wait` | ball identity | `hsl(199 90% 41%)`, `hsl(265 70% 65%)`, `hsl(18 88% 48%)`, `hsl(152 75% 33%)`, `hsl(215 30% 54%)` | `var(--kind-hermes)`, `var(--kind-pi)`, `var(--kind-claude)`, `var(--kind-codex)`, `var(--qk-wait)` |
 | `--hv-fill/-feat/-teeth/-halo` | Hive head body/feature/teeth/halo | `#0a0a0a`, `#f4f1f2`, `#ece2de`, `#5a0f1c` | theme-independent (same) |
 | `--hv-rim-top-0..4` / `--hv-rim-bot-0..4` | Hive rim gradient per anger level 0→1 | `#ff70b0`,`#ff6a96`,`#ff6854`,`#ff6234`,`#ff6026` / `#ff963c`,`#ff8c34`,`#ff7622`,`#ff521c`,`#ff2e1a` | theme-independent (same) |
@@ -527,9 +527,7 @@ Colour rules:
   (tokens.css:287). Light naming is explicit so it resolves to the default values.
 - Dark-only widget fixes exist and stay minimal (e.g. `input[type=date]{color-scheme:dark}`,
   dashboard.css:197).
-- Known theme gaps: `--elev-0` has no dark sibling (mismatch 17 note); the jar material is
-  tokenised in both themes (LLMTELEMET-317, mismatch 12 resolved),
-  and the light-only `filter:brightness(.5)` shim on `.lvmodel` (dashboard.css:1936).
+- Known theme gaps: `--elev-0` has no dark sibling (mismatch 17 note), and the light-only `filter:brightness(.5)` shim on `.lvmodel` (dashboard.css:1936).
 - Any new component must render in BOTH themes through semantic tokens. Never bake a
   colour that only reads on one surface.
 
@@ -637,11 +635,11 @@ Glow tokens (box-shadow strings, theme-varying — both values listed):
 | `--glow-live` | `0 0 0 2px rgba(26,127,60,.18)` | `0 0 8px 2px rgba(85,255,136,.55)` |
 | `--glow-active` | `0 0 0 1px var(--active-a),0 0 10px rgba(31,98,201,.28)` | `0 0 0 1px var(--active-a),0 0 12px rgba(85,255,136,.35)` |
 
-Title gradient `--grad-title` (background-clip text, dashboard.css:2237-2247):
+Title gradient `--grad-title` (background-clip text, dashboard.css:2216-2219):
 light `linear-gradient(90deg,#0b6fb3,#b0287a,#1a7f3c,#8a5a00,#0b6fb3)`;
 dark `linear-gradient(90deg,#66ccff,#ff66cc,#77ff99,#ffcc66,#66ccff)`. Text stays real
 text (labels preserved); under reduced motion it freezes at `background-size:100%`;
-under `forced-colors` it falls back to `currentColor` (dashboard.css:2248-2249).
+under `forced-colors` it falls back to `currentColor` (dashboard.css:2225-2226).
 
 Depth rules:
 
@@ -876,7 +874,7 @@ series colours (read tokens through `css('--pal-indigo')`, `main.js:30` — mism
 
 ### Life view — task-queue jars (`web/js/flow.js`)
 
-Anatomy (`dashboard.html:185-190`, dashboard.css:849-993): `.qtrain` = three glass jars
+Anatomy (`dashboard.html:185-190`, dashboard.css:833-980): `.qtrain` = three glass jars
 in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-name` +
 `.qt-n` count + `.qt-body` (glass silhouette, liquid `--fill` with wave) + `.qt-cars`
 (ball pit) + legend.
@@ -894,7 +892,7 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
   (running sessions) and **Yard** (finished sessions). There is **no "oven" element** in
   the code — Depot / On the line / Yard are the canonical names (`flow.js:14-17`,
   `aria-label="Depot: waiting"` etc. `dashboard.html:186-188`).
-- Per-jar accent `--jc` (dashboard.css:853-855) drives the lid border, name tint and
+- Per-jar accent `--jc` (dashboard.css:835-837) drives the lid border, name tint and
   liquid: Depot `var(--muted)` (light: `color-mix(in srgb,var(--jar-edge) 70%,var(--muted))`,
   dashboard.css:2237), On the line `var(--z-ok)`, Yard `var(--accent)`. It is the ONLY
   per-jar colour knob — the liquid is tinted from it via `color-mix()`.
@@ -902,10 +900,10 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
   `QT_MAX:28px` → `QT_MIN:18px` (`flow.js:111-112`) until the pile fits `QT_FILL:0.5`;
   overflow goes to a `.qt-overflow` `+N` chip (opens the session finder). Jars never scroll.
 - **HARD RULE (see below): every ball and the jar legend show the PROVIDER BRAND SVG** via
-  `qtBallIcon` → `provLogoSvg(model,14,…)` / `provOf` (`flow.js:117-126`, `views.js:173/236`).
+  `qtBallIcon` → `provLogoSvg(model,14,…)` / `provOf` (`flow.js:117-126`, `views.js:180/245`).
   A depot ball with no model shows the Ollama logo (`'local'`); an unknown provider gets a
   neutral hexagon — **never a letter**. The white contrast disc `.qt-gl::before`
-  (dashboard.css:922-928) keeps the mark legible at `QT_MIN 18px`; if legibility bites,
+  (dashboard.css:908-909) keeps the mark legible at `QT_MIN 18px`; if legibility bites,
   raise `QT_MIN` or thicken the disc — never letters. Legend `#qt-leg-ico` uses the same
   icon path (`flow.js:129-133`).
 - Ball states: `.qt-q` waiting (`--qk-wait` / `--jar-wait`), `.qt-run` capsule with pulse
@@ -916,7 +914,7 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
 - Motion: ghost flights Depot→Line (paired by count) and Line→Yard (exact session id),
   600-900ms arcs, 70ms stagger, max 4 concurrent (`qtFly`, flow.js:319-354); splash on
   landing (`qtSplash`, flow.js:308-313); slosh on count change; whole-train sway while
-  running. All of it dies under `prefers-reduced-motion` (dashboard.css:987-993) and
+  running. All of it dies under `prefers-reduced-motion` (dashboard.css:974-980) and
   `qtFly` no-ops.
 - A11y: balls are `<button>`s with `aria-label` (`waiting|running|finished: … · model · meta`,
   `paintBalls` flow.js:235), focus ring 2px `--accent`, legend decorative (`aria-hidden`),
@@ -1064,7 +1062,7 @@ coarse pointers (`pointer:coarse`) and `<=480px` for `button,a,[role=button],.bt
 
 Motion & forced colors: `prefers-reduced-motion` covered above (15 blocks);
 `forced-colors:active` currently has **one** block (gradient title → `currentColor`,
-dashboard.css:2248-2249). Hive SVG fills and qt balls are not covered — **mismatch 23**
+dashboard.css:2225-2226). Hive SVG fills and qt balls are not covered — **mismatch 23**
 (one `@media (forced-colors:active)` block for `.hv-hex`, `.hv-crown`, qt balls).
 
 ### Contrast (computed WCAG 2.1, sRGB relative luminance, both themes)
@@ -1175,7 +1173,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     `.combo-btn/.combo-pop` (2109-2116), `.chip`/`.fchip`/`.pchip`; one chip spec with
     select/button variants. *ticket: LLMTELEMET-316*
 12. **Jar material tokens** — RESOLVED — both themes declare the 15 `--jar-*` tokens (light
-    tokens.css:175-189, dark tokens.css:364-386); the shared jar rules and the `#qcard` kind
+    tokens.css:175-189, dark tokens.css:364-388); the shared jar rules and the `#qcard` kind
     remap (dashboard.css:2231) apply in both themes, the light refinement stays gated
     `:root:not([data-theme="dark"])` (dashboard.css:2228-2274). *ticket: LLMTELEMET-317*
 13. **Motion tokens defined but unused; 39 raw durations** — med — `--motion-fast/normal`
@@ -1209,7 +1207,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
 22. **Icon-only buttons missing `aria-label`** — med — 5 of 43 `<button>` strings labelled
     (e.g. sound toggle `live.js:1005`); label the glyph-only set + a grep-check like
     `tests/check_inline_sized_elements.js`. *ticket: LLMTELEMET-327*
-23. **Single `forced-colors` block** — low — only dashboard.css:2248-2249; add coverage for
+23. **Single `forced-colors` block** — low — only dashboard.css:2225-2226; add coverage for
     `.hv-hex`, `.hv-crown`, qt balls. *ticket: LLMTELEMET-328*
 24. **Hive tab generates raw colours at runtime** — low — `hive.js:32` `hsl(<hash>,…)` and
     `hive.js:194` `hvRgb`; map the four families to `--hv-fam-<id>`, hash colour only as a
