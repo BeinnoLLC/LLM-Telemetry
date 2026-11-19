@@ -663,24 +663,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
  .shell{padding-left:var(--shell-pad);transition:padding-left .2s ease}
 
- /* Top app bar — slim, sticky, one row at every width. */
- .appbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;
-   gap:var(--sp-3);min-height:var(--bar-h);padding:var(--sp-2) var(--pad);
-   background:color-mix(in srgb,var(--bg) 88%,transparent);
-   backdrop-filter:blur(8px);border-bottom:1px solid transparent;
-   transition:border-color .15s ease}
- #hamburger{display:none;background:none;border:1px solid var(--border);
-   color:var(--fg);border-radius:var(--radius-ctl);width:38px;height:38px;cursor:pointer;
-   font-size:var(--fs-lg);line-height:1;flex:none}
- #hamburger:hover{border-color:var(--accent);color:var(--accent)}
- /* Below ~480px the secondary actions collapse behind a ⋯ menu. */
- #barmore{display:none;position:relative}
- #barmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:45;
-   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-   padding:6px;min-width:172px;box-shadow:0 14px 34px var(--s45);
-   flex-direction:column;gap:2px;display:none}
- #barmenu.open{display:flex}
- #barmenu > *{width:100%;text-align:left;justify-content:flex-start}
+ /* The single top app bar is #appbar (dashboard.css:~2166, markup in
+    dashboard.html). The retired .appbar shell and its #hamburger/#barmore/
+    #barmenu controls were deleted in LLMTELEMET-315; tests/check_single_appbar.js
+    guards against a second app-bar shell rule coming back. */
 
  /* ---- Empty states --------------------------------------------------- */
  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
