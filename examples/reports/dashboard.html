@@ -88,6 +88,7 @@
 :root,
 [data-theme="light"]{
 --c-amber:#c4a06e;
+--c-ok:#34c38f;
 --c-sky:#38bdf8;
 --c-red:#c66a6a;
 --c-gold:#c2a15c;
@@ -258,6 +259,7 @@
 }
 [data-theme="dark"]{
 --c-amber:#c4a06e;
+--c-ok:#34c38f;
 --c-sky:#38bdf8;
 --c-red:#c66a6a;
 --c-gold:#c2a15c;
@@ -10184,7 +10186,7 @@ function priceFreshness(fresh){
  hint: `catalogue fetched ${ago(ageS)} ago · amber past 24h, red past 72h · fed by llm-telemetry-build.timer`};
 }
 
-const ORCH_KIND = {hermes: ['Hermes', 'var(--accent)'], pi: ['PI', 'var(--ok)']};
+const ORCH_KIND = {hermes: ['Hermes', 'var(--accent)'], pi: ['PI', 'var(--c-ok)']};
 function slugOf(v){ return String(v).toLowerCase(); }
 
 const AGE_CUTS = { liveboard: {warn: 30, bad: 90}, dashboard: {warn: 600, bad: 900} };

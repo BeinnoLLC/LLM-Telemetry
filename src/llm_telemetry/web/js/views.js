@@ -2312,26 +2312,26 @@ export function renderProjTrendLegend(datasets){
 }
 
 export const FKIND = {
-  rate_limit:  {get c(){return css('--c-amber')}, t:'throttled', token:'--c-amber'},
-  overloaded:  {get c(){return css('--c-orange')}, t:'overloaded', token:'--c-orange'},
-  timeout:     {get c(){return css('--c-slate')}, t:'timeout', token:'--c-slate'},
-  auth:        {get c(){return css('--c-red')}, t:'auth', token:'--c-red'},
-  server_error:{get c(){return css('--c-violet')}, t:'5xx', token:'--c-violet'},
+  rate_limit:  {get c(){return css('--c-amber')}, t:'throttled'},
+  overloaded:  {get c(){return css('--c-orange')}, t:'overloaded'},
+  timeout:     {get c(){return css('--c-slate')}, t:'timeout'},
+  auth:        {get c(){return css('--c-red')}, t:'auth'},
+  server_error:{get c(){return css('--c-violet')}, t:'5xx'},
   // Slate-blue, NOT grey: grey sat on top of the empty-track colour and made a
   // fully-unavailable model look like a model with no data at all. Also kept
   // clear of server_error's purple.
-  unavailable: {get c(){return css('--c-teal')}, t:'unavailable', token:'--c-teal'},
-  tool:        {get c(){return css('--c-indigo')}, t:'tool', token:'--c-indigo'}
+  unavailable: {get c(){return css('--c-teal')}, t:'unavailable'},
+  tool:        {get c(){return css('--c-indigo')}, t:'tool'}
 };
 
 // Emit the .k-* chip rules from FKIND so the drawer cannot drift from the
-// Health tab again. Runs once at boot, before the first drawer render.
+// Health tab again. Runs once at boot, before the first drawer render. The
+// colour is the token's resolved value (tokens.css owns the literal), with the
+// 2e alpha suffix the chip tests pin.
 export function installKindCSS(){
   const st = document.createElement('style');
-  st.textContent = Object.entries(FKIND).map(([k, v]) => {
-    const ref = v.token ? `var(${v.token})` : v.c;
-    return `.k-${k}{background:color-mix(in srgb, ${ref} 18%, transparent);color:${ref}}`;
-  }).join('\n');
+  st.textContent = Object.entries(FKIND).map(([k, v]) =>
+    `.k-${k}{background:${v.c}2e;color:${v.c}}`).join('\n');
   document.head.appendChild(st);
 }
 // Called HERE, not at the top of the script: FKIND is a const, so calling this
