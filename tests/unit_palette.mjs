@@ -12,7 +12,9 @@ const chk = (ok, name, got) => {
 const eq = (got, want, name) => chk(JSON.stringify(got) === JSON.stringify(want), name, got);
 
 const DATA = {};
-const P = await isolate('palette.js', { 'main.js': { DATA }, 'views.js': { PROV: {} } });
+// css is stubbed to echo the token it is asked for, so CAT/catOf assertions
+// say WHICH token each category reads instead of pinning a theme's hex value.
+const P = await isolate('palette.js', { 'main.js': { DATA, css: v => `var(${v})` }, 'views.js': { PROV: {} } });
 
 // ---- fade --------------------------------------------------------------
 eq(P.fade('#fff', 0.5), 'rgba(255,255,255,0.5)', 'fade expands 3-digit hex');
@@ -113,8 +115,9 @@ eq(P.esc(null), '', 'esc(null) is empty');
 eq(P.escA('"t"<'), '&quot;t&quot;&lt;', 'escA also escapes quotes');
 eq([P.ago(59), P.ago(60), P.ago(90), P.ago(3600), P.ago(7200)], ['59s', '1m', '2m', '1h', '2h'], 'ago picks s/m/h');
 eq([P.ago(47 * 3600), P.ago(48 * 3600), P.ago(453 * 3600)], ['47h', '2d', '19d'], 'ago switches to days from 48h so idle 453h reads 19d');
-eq(P.catOf('Coding').c, '#5f9e6e', 'catOf known category (calmed)');
-eq(P.catOf('Nope'), { c: '#6b7280', i: '•' }, 'catOf unknown -> neutral');
+eq(P.catOf('Coding').c, 'var(--z-ok)', 'catOf known category reads its --z-ok token (calmed)');
+eq(P.catOf('Nope'), { c: 'var(--muted)', i: '•' }, 'catOf unknown -> neutral');
+eq(Object.values(P.CAT).every(v => /^var\(--/.test(v.c)), true, 'every category colour comes from a css() token, never a literal');
 eq(P.slugOf('NowInv'), 'nowinv', 'slugOf lowercases');
 
 // ---- costCell ----------------------------------------------------------

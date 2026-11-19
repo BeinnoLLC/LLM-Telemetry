@@ -7,16 +7,10 @@ file permitted to contain hex colour values (enforced by the `color-no-hex`
 stylelint rule).
 
 ### Elevation
-`--elev-0` … `--elev-3` — layered box-shadows for light and dark themes.
+`--elev-1` … `--elev-3` — layered box-shadows for light and dark themes.
 
 ### Spacing scale (4 px)
-`--sp-1` (4 px) … `--sp-8` (40 px).
-
-### Radius
-`--radius-sm` (4 px), `--radius-md` (8 px), `--radius-lg` (12 px).
-
-### Motion
-`--motion-fast` (120 ms), `--motion-normal` (200 ms).
+`--sp-1` (4 px) … `--sp-6` (24 px).
 
 ### State layers
 `--state-hover`, `--state-pressed`, `--state-focus` overlay colours.

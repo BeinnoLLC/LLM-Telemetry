@@ -13,7 +13,7 @@ import { renderFlow } from './flow.js';
 import { hvShow } from './hive.js';
 import { loadLogs, logsInstall } from './drawer.js';
 import { KIND_ORDER, LIVE_MS, REBUILD_MS, fleetKindCounts, kindMeta, renderLive } from './live.js';
-import { DATA, buildAll, installAll } from './main.js';
+import { DATA, buildAll, hueCss, installAll } from './main.js';
 
 export let view = localStorage.getItem('hermes-dash-view') || 'Home';
 // #129: sub-day range presets (1h/6h/12h). null = the from/to DATE range
@@ -420,7 +420,7 @@ export function setColorSwatch(n){
   return `<div class="setf" data-scname="${escA(n)}">
     <span class="setl">${esc(n)}<span class="setcustom"${overridden ? '' : ' hidden'}>Custom</span></span>
     <span class="setin">
-      <span style="width:16px;height:16px;border-radius:999px;flex:none;background:hsl(${h} 62% 45%);border:1px solid var(--border)"></span>
+      <span style="width:16px;height:16px;border-radius:999px;flex:none;background:${hueCss(h, 'dot')};border:1px solid var(--border)"></span>
       <input type="range" min="0" max="359" step="1" value="${h}" data-schue="${escA(n)}" aria-label="${escA(n)} hue" style="flex:1;min-width:0">
       <span class="muted text-[length:var(--fs-xs)]" style="min-width:4.6em;text-align:right" data-schuen="${escA(n)}">hue ${h}°</span>
     </span>
@@ -450,7 +450,7 @@ export function setColorsInstall(){
     const row = inp.closest('[data-scname]');
     if (row){
       const dot = row.querySelector('.setin > span[style*="border-radius:999px"]');
-      if (dot) dot.style.background = `hsl(${deg} 62% 45%)`;
+      if (dot) dot.style.background = hueCss(deg, 'dot');
       const readout = row.querySelector(`[data-schuen="${CSS.escape(n)}"]`);
       if (readout) readout.textContent = 'hue ' + deg + '°';
       const tag = row.querySelector('.setcustom');
@@ -1098,7 +1098,7 @@ export function profileIconHtml(n, px){
     return provLogoSvg(short(dominant), px);
   }
   const initial = esc((n || '?').trim().charAt(0).toUpperCase() || '?');
-  return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:hsl(${h} 55% 30%);color:hsl(${h} 85% 82%);font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
+  return `<span aria-hidden="true" data-profile-icon-fallback="1" style="display:inline-flex;align-items:center;justify-content:center;width:${px}px;height:${px}px;border-radius:4px;background:${hueCss(h, 'icon-bg')};color:${hueCss(h, 'icon-fg')};font-size:${Math.round(px*0.6)}px;font-weight:700;flex:none;line-height:1">${initial}</span>`;
 }
 // Full, unfiltered profile map — captured once at boot so a toggled-off
 // profile can come back without refetching (DATA.profiles is the filtered set).

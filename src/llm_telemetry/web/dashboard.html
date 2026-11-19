@@ -59,11 +59,11 @@ __DASHBOARD_CSS__
   <div class="flex gap-2 items-center flex-wrap fbwrap">
    <div class="fleetbar" id="tabs" data-kind="all"></div>
    <span id="noticechips" class="noticechips"></span>
-   <button id="refresh" class="chip" title="Refresh data">&#8635;</button>
-   <button id="theme" class="chip" title="Toggle theme">&#9788;</button>
+   <button id="refresh" class="chip" type="button" aria-label="Refresh data" title="Refresh data">&#8635;</button>
+   <button id="theme" class="chip" type="button" aria-label="Toggle theme" title="Toggle theme">&#9788;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
      aria-label="Sound on — click to mute" title="Sound on — click to mute">&#128266;</button>
-   <button id="helpbtn" title="How your work gets routed (?)">?</button>
+   <button id="helpbtn" type="button" aria-label="How your work gets routed" title="How your work gets routed (?)">?</button>
   </div>
  </header>
 
@@ -84,8 +84,8 @@ __DASHBOARD_CSS__
       with aria-activedescendant maintained. Full-text over message
       CONTENT is explicitly out of scope -- see the note rendered in the
       empty state. -->
- <div id="sfscrim"></div>
- <div id="sfmodal" role="dialog" aria-modal="true" aria-label="Session finder" aria-hidden="true">
+ <div id="sfscrim" class="scrim scrim-drop"></div>
+ <div id="sfmodal" class="modal modal-sm modal-drop" role="dialog" aria-modal="true" aria-label="Session finder" aria-hidden="true">
   <div class="p-3" style="border-bottom:1px solid var(--border)">
    <input id="sfinput" type="text" autocomplete="off" spellcheck="false"
      placeholder="Search sessions… try model:opus tool:patch cost&gt;1"
@@ -266,7 +266,7 @@ __DASHBOARD_CSS__
     <span class="hv-act"><button id="hive-fire" type="button" class="seg-btn on" aria-pressed="true">Firing mode</button><button id="hive-replay" type="button" class="seg-btn">Replay</button><span id="hive-fresh" class="muted"></span><span id="hive-lastreal" class="muted"></span></span>
     <span id="hive-views" class="hv-views" role="group" aria-label="Family view"></span></div>
    <div id="hive-tabs" class="hv-tabs"></div>
-   <div id="hive-stage" class="hv-stage"><svg id="hive-svg" role="img" aria-label="Hive: Hazem, assistants, brains and agents"><g id="hive-edges"></g><g id="hive-nodes"></g></svg><div id="hive-tip" class="hv-tip" role="tooltip"></div><div id="hive-gauge" class="hv-gauge" role="status" aria-label="System pressure"><div class="hv-g-top"><span>System pressure</span><b id="hive-g-v">–</b></div><div class="hv-g-bar"><i id="hive-g-fill"></i></div><span id="hive-g-sub"></span></div></div>
+   <div id="hive-stage" class="hv-stage"><svg id="hive-svg" role="img" aria-label="Hive: Hazem, assistants, brains and agents"><g id="hive-edges"></g><g id="hive-nodes"></g></svg><div id="hive-tip" class="qtip hv-tip" role="tooltip"></div><div id="hive-gauge" class="hv-gauge" role="status" aria-label="System pressure"><div class="hv-g-top"><span>System pressure</span><b id="hive-g-v">–</b></div><div class="hv-g-bar"><i id="hive-g-fill"></i></div><span id="hive-g-sub"></span></div></div>
    <div class="hv-panels"><section class="hv-panel"><h2>Conversations <span id="hive-ccount" class="muted"></span></h2><div id="hive-clist"></div></section><section class="hv-panel"><h2>Task events</h2><div id="hive-feed"><p id="hive-feedempty" class="muted">No task changes since this page opened. Real ones will appear here.</p></div></section></div>
   </div>
  </div>
@@ -856,7 +856,7 @@ __DASHBOARD_CSS__
   <b style="font-size:var(--fs-md)">Live tail</b>
   <span class="muted stamp" id="dstamp" style="font-size:var(--fs-xs)">live</span>
   <a href="#/logs" id="dfull" class="chip" style="font-size:var(--fs-xs);text-transform:none;letter-spacing:0">All logs &rarr;</a>
-  <button id="dclose" class="chip" style="margin-left:auto" title="Close">&times;</button>
+  <button id="dclose" class="chip" type="button" style="margin-left:auto" aria-label="Close" title="Close">&times;</button>
  </div>
  <div class="dtabs">
   <button class="dtab on" data-f="all">All</button>
@@ -879,39 +879,39 @@ __DASHBOARD_CSS__
      one session's own conversation, opened from that session's own title.
      No inputs anywhere; the whole point is that it cannot be mistaken for
      a live chat interface. -->
-<div id="tscrim"></div>
-<div id="tmodal" role="dialog" aria-modal="true" aria-label="Session transcript" aria-hidden="true">
+<div id="tscrim" class="scrim"></div>
+<div id="tmodal" class="modal modal-md" role="dialog" aria-modal="true" aria-label="Session transcript" aria-hidden="true">
  <div class="thead">
   <b id="ttitle" style="font-size:var(--fs-md)"></b>
   <span class="muted" id="tsub" style="font-size:var(--fs-xs)"></span>
   <button id="ttimelinebtn" class="chip lntimelinebtn" style="margin-left:auto" title="View this session's timeline"
     data-tsession="" data-tprofile="" data-title="">Timeline</button>
-  <button id="tclose" class="chip" title="Close (Esc)">&times;</button>
+  <button id="tclose" class="chip" type="button" aria-label="Close transcript" title="Close (Esc)">&times;</button>
  </div>
  <div id="tbody" tabindex="-1"></div>
 </div>
 
 <!-- P10-06 (#94): session timeline modal. -->
-<div id="lnscrim"></div>
-<div id="lnmodal" role="dialog" aria-modal="true" aria-label="Session timeline" aria-hidden="true">
+<div id="lnscrim" class="scrim"></div>
+<div id="lnmodal" class="modal modal-lg" role="dialog" aria-modal="true" aria-label="Session timeline" aria-hidden="true">
  <div id="lnhdr">
   <div class="flex items-center gap-2">
    <b id="lntitle" style="font-size:var(--fs-md)"></b>
    <span class="muted" id="lnsub"></span>
-   <button id="lnclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+   <button id="lnclose" class="chip" type="button" style="margin-left:auto" aria-label="Close timeline" title="Close (Esc)">&times;</button>
   </div>
   <div id="lnmeta" class="muted mt-1"></div>
  </div>
  <div id="lnbody" tabindex="-1"></div>
 </main>
-<div id="lntip"></div>
+<div id="lntip" class="qtip" role="tooltip"></div>
 
 <!-- P4-07 (#44): project drill-down panel. -->
-<div id="pdscrim"></div>
+<div id="pdscrim" class="scrim"></div>
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
  <div class="pdhead">
   <b id="pdtitle"></b>
-  <button id="pdclose" class="chip" style="margin-left:auto" title="Close (Esc)">&times;</button>
+  <button id="pdclose" class="chip" type="button" style="margin-left:auto" aria-label="Close details" title="Close (Esc)">&times;</button>
  </div>
  <div id="pdbody" tabindex="-1"></div>
 </div>

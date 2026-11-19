@@ -10,7 +10,9 @@
 .hv-stat span{color:var(--muted);font-size:var(--fs-xs)}
 .hv-stage{position:relative;width:100%;height:70vh;min-height:420px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);overflow:hidden}
 #hive-svg{width:100%;height:100%;display:block;touch-action:none}
-.hv-tip{position:fixed;pointer-events:none;opacity:0;z-index:50;max-width:330px;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-ctl);background:var(--card);color:var(--fg);font-size:var(--fs-xs);transition:opacity .12s}
+/* LLMTELEMET-312: .hv-tip is a themed .qtip instance (Hive node hover) —
+   theme/sizing only, never its own shell. */
+.hv-tip{z-index:50;max-width:330px;padding:8px 10px;font-size:var(--fs-xs);transition:opacity .12s}
 .hv-tip h4{margin:0 0 4px;font-size:var(--fs-sm)}
 .hv-prov{fill:var(--muted);vertical-align:-2px}
 .hv-edge{stroke:var(--c,var(--muted));stroke-opacity:.28;stroke-width:1.4}
