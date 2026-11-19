@@ -26,7 +26,7 @@ chk(has(/\.dt-cap\{caption-side:top;text-align:left;/), 'density toggle sits at 
 const o = id => { const m = html.match(new RegExp('\\.page\\[data-pageview="Home"\\] > #' + id + '\\{order:(-?\\d+)\\}')); return m ? +m[1] : null; };
 chk(o('filterbar') !== null && o('filterbar') < o('kpis'), 'Home: the filter bar sits above the KPI cards, not at the bottom');
 chk(has(/--lvcols:36px minmax\(96px,1\.3fr\) minmax\(88px,1fr\) 156px/) && has(/\.lvst\{[^}]*white-space:nowrap/), 'state pill is nowrap and never clips "Compressing"');
-chk(has(/#drawer:not\(\.open\)\{visibility:hidden/), 'closed Live tail drawer is visibility:hidden (out of tab order)');
+chk(has(/\.drawer:not\(\.open\)\{visibility:hidden/), 'closed Live tail drawer is visibility:hidden (out of tab order)');
 chk(has(/not\(\[data-pageview="Prices"\]\) \.costhow\{display:none\}/) && !has(/unpricedbanner/), 'cost note only on Home/Cost/Prices; the unpriced banner is gone (toast)');
 chk(has(/hermes-dash-router-opened/) && has(/data-rtopen="\$\{escA\(key\)\}"\$\{opened\.has\(key\) \? ' open' : ''\}/), 'Router cards start folded; only reader-opened ones persist');
 console.log(`check_layout_pass2.js  ${pass} passed, ${fail} failed`);

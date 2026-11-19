@@ -70,11 +70,11 @@ setTimeout(() => {
   console.log(`  open: transform=${ds.transform}  class="${drawer.className}"`);
   chk(drawer.classList.contains('open'), 'open class applied');
   // closed should translate off-screen, open should not
-  const closedRule = html.match(/#drawer\{[^}]*\}/s);
-  const openRule = html.match(/#drawer\.open\{[^}]*\}/s);
+  const closedRule = html.match(/\.drawer\{[^}]*\}/s);
+  const openRule = html.match(/\.drawer\.open\{[^}]*\}/s);
   console.log(`  closed rule: ${closedRule ? closedRule[0].replace(/\s+/g, ' ') : 'MISSING'}`);
   console.log(`  open rule  : ${openRule ? openRule[0].replace(/\s+/g, ' ') : 'MISSING'}`);
-  chk(!!openRule, '#drawer.open rule exists');
+  chk(!!openRule, '.drawer.open rule exists');
   chk(!!closedRule && /translate/.test(closedRule[0]), 'closed state translates off-screen');
   chk(!!openRule && /translate(X)?\(0/.test(openRule[0]), 'open state translates back to 0');
 

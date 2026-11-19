@@ -14,17 +14,17 @@ function chk(ok, name, got) {
 }
 
 // ---- source-level CSS assertions -----------------------------------------
-chk(/@media\(min-width:641px\) and \(max-width:1024px\)\{\s*\n\s*#drawer\{width:60vw\}/.test(html),
+chk(/@media\(min-width:641px\) and \(max-width:1024px\)\{\s*\n\s*\.drawer:not\(\.drawer-wide\)\{width:60vw\}/.test(html),
     'tablet (641-1024px) drawer widens to 60vw');
-const drawerBlockIdx = (() => { const m = /@media\(max-width:640px\)\{\s*#drawer\{top:auto/.exec(html); return m ? m.index : -1; })();
+const drawerBlockIdx = (() => { const m = /@media\(max-width:640px\)\{\s*\.drawer\{top:auto/.exec(html); return m ? m.index : -1; })();
 const drawerBlockEnd = (() => { const m = /\s*\}\s*#draghandle\{display:none\}/.exec(html.slice(Math.max(drawerBlockIdx, 0))); return m && drawerBlockIdx !== -1 ? drawerBlockIdx + m.index : -1; })();
 const foundDrawerBlock = drawerBlockIdx !== -1 && drawerBlockEnd !== -1;
 chk(foundDrawerBlock, 'mobile (<=640px) drawer override block found');
 if (foundDrawerBlock) {
   const b = html.slice(drawerBlockIdx, drawerBlockEnd);
   chk(/height:92dvh/.test(b), 'mobile drawer becomes a bottom sheet at ~92dvh');
-  chk(/#drawer\{top:auto;right:0;left:0/.test(b), 'mobile drawer is anchored to the bottom edge, not the side');
-  chk(/transform:translateY\(100%\)/.test(b) && /#drawer\.open\{transform:translateY\(0\)\}/.test(b),
+  chk(/\.drawer\{top:auto;right:0;left:0/.test(b), 'mobile drawer is anchored to the bottom edge, not the side');
+  chk(/transform:translateY\(100%\)/.test(b) && /\.drawer\.open\{transform:translateY\(0\)\}/.test(b),
       'mobile drawer slides up from the bottom (translateY), not in from the side');
   chk(/#draghandle\{display:block/.test(b), 'the drag handle is shown at mobile width');
   chk(/\.dtabs\{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory/.test(b),
