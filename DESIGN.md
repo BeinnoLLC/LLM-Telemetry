@@ -818,6 +818,9 @@ fixed right, `min(460px,92vw)`, `--card`, `border-left`, slide `translateX(100%)
 the detail size. Responsive: 641-1024px → `60vw` (not `.drawer-wide`); `<=640px` → bottom
 sheet for both (`width:auto`, 92dvh, top corners `14px`, drag handle). Transitions are off
 under `prefers-reduced-motion`. Guard: `tests/check_one_drawer.js`.
+Both drawers and their scrims must be direct children of `<body>` (LLMTELEMET-343: an unclosed
+`#lnmodal` once swallowed `#pdrawer`, so `position:fixed` collapsed inside a transformed
+ancestor). Guard: `tests/check_pdrawer_fixed.js`.
 Do: one drawer component with size variants; scrim + focus trap + Esc. Don't: add a third
 drawer shell.
 
