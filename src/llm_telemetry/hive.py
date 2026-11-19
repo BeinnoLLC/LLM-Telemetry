@@ -62,6 +62,7 @@ def default_home():
 # ---------------- roster: fleet specs ----------------
 
 def pretty(name):
+    name = _text(name)
     if name in LABELS:
         return LABELS[name]
     n = name.replace("-brain", "").replace("acasia-", "").replace("pv-", "").replace("beinno-", "")
