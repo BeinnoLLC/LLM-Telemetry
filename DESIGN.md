@@ -1018,27 +1018,33 @@ Don't:
 
 ## Motion
 
-Tokens (tokens.css:109, theme-independent): `--motion-fast:120ms`,
-`--motion-normal:200ms`. **Proposed** with mismatch 13: `--motion-slow:300ms` for the
-drawer/modal family (not in code yet).
+Tokens (tokens.css, theme-independent): `--motion-fast:120ms` (hover/press, tooltips,
+ball settle), `--motion-normal:200ms` (modal, scrim, toast, width/transform tweens),
+`--motion-slow:300ms` (drawer slide, ball repack). Every `transition` in the web css uses
+one of these; raw values map to the nearest token (<=150ms fast, <=260ms normal, else slow).
 
 | Interaction | Duration | Easing | Where |
 |---|---|---|---|
-| hover/press state layers | `.12s` | `ease` | chips, nav, rows (×16) |
-| drawer slide | `.22s` | `ease` | `#drawer` (dashboard.css:1222) |
-| modal open | `.16s` | `ease` | `#tmodal`/`#lnmodal` |
-| command modal | `.12s` | `ease` | `#sfmodal` |
-| toast in | `.18s` | `ease-out` | `toast-in` |
-| ball settle | `.14s` | `cubic-bezier(.2,.8,.2,1)` | `.qt-ball` |
+| hover/press state layers | `--motion-fast` | `ease` | chips, nav, rows (×16) |
+| drawer slide | `--motion-slow` | `ease` | `#drawer` (dashboard.css:1222) |
+| modal open | `--motion-normal` | `ease` | `#tmodal`/`#lnmodal` |
+| command modal | `--motion-fast` | `ease` | `#sfmodal` |
+| toast in | `--motion-normal` | `ease-out` | `toast-in` |
+| ball settle | `--motion-fast` | `cubic-bezier(.2,.8,.2,1)` | `.qt-ball` |
 | ball flight | `600-900ms` (distance-scaled) | `cubic-bezier(.32,0,.67,0)` → `cubic-bezier(.33,1,.68,1)` | `qtFly` (flow.js:337-341) |
 | splash / slosh | `1s` / `.65s` | `ease-out` | `qtSplash`/`qt-slosh` |
 | gauge arc sweep | `.6s` | `cubic-bezier(.22,1,.36,1)` | `.gval` |
 | title gradient | `12s` | `linear` | `hive-title` |
 | pulses (dot, cost, ball ring) | `1.1s-2s` infinite | `ease-in-out`/`ease-out` | `.dot`, `cost-pulse`, `qt-ball-pulse` |
 
-Current debt: 39 distinct raw durations (`.12s` ×16, `.18s` ×7, `.2s` ×6, `.3s` ×5, …) and
-5 easings, while `--motion-fast/normal` have **0** uses (mismatch 13). Route new transitions
-through `var(--motion-*)`.
+Intentional raw-duration exceptions (not transitions, enforced by
+`tests/check_css_motion_tokens.js` which only allows the liquid fills below): looping
+or one-shot keyframe animations keep raw durations — `.dot`/`p` 2s, `bwpulse` 1.1s,
+`bb` 1.05s equaliser bars, `cost-pulse` 1.3s/2.2s, `qt-ball-pulse` 1.8s, `qt-wave`
+3.2s/4s, `qt-sway` 5s, `qt-splash`/`qt-glow` 1s, `qt-slosh` .65s, `qt-bump` .45s,
+`qt-ball-in/land/out`, `arc-sweep` .6s, `hive-title` 12s, the `hv-*` hive animations,
+skeleton shimmer; plus the jar liquid-level transitions (`height`/`bottom` `.8s`).
+Route new transitions through `var(--motion-*)`; the guard fails on raw durations.
 
 Reduced motion (`prefers-reduced-motion: reduce`, 15 blocks): all jar/train animation and
 transitions off (arrivals become a `.12s` fade, ghosts hidden), toast entrance none, drawer
@@ -1178,9 +1184,10 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     tokens.css:175-189, dark tokens.css:364-386); the shared jar rules and the `#qcard` kind
     remap (dashboard.css:2231) apply in both themes, the light refinement stays gated
     `:root:not([data-theme="dark"])` (dashboard.css:2228-2274). *ticket: LLMTELEMET-317*
-13. **Motion tokens defined but unused; 39 raw durations** — med — `--motion-fast/normal`
-    0 uses (tokens.css:109); route transitions through them, add `--motion-slow:300ms`
-    (**proposed**). *ticket: LLMTELEMET-318*
+13. **Motion tokens** — RESOLVED — `--motion-fast/normal/slow` (120/200/300ms) are declared
+    in tokens.css and every dashboard.css/hive.css `transition` uses them; the keyframe
+    animations and the `.8s` jar liquid fills are the listed exceptions (Motion), guarded
+    by `tests/check_css_motion_tokens.js`. *ticket: LLMTELEMET-318*
 14. **No z-index layer scale (27 raw values)** — med — proposed `--z-base…--z-drag` scale
     (Elevation & Depth). *ticket: LLMTELEMET-319*
 15. **Spacing scale bypass + drifting `--sp-2`** — med — 299 raw px spacing declarations
