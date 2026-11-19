@@ -196,132 +196,97 @@
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1241,
+    "line": 1349,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1250,
+    "line": 1387,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1291,
+    "line": 1400,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1300,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1302,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1311,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1336,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1343,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1381,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1394,
-    "matched": "rgba("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1593,
+    "line": 1599,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1607,
+    "line": 1613,
     "matched": "hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 1611,
+    "line": 1617,
     "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2060,
+    "line": 2066,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2112,
+    "line": 2118,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2120,
+    "line": 2126,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2138,
+    "line": 2144,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2258,
+    "line": 2264,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2259,
+    "line": 2265,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2267,
+    "line": 2273,
     "matched": "hsl(, hsl(, hsl("
-  },
-  {
-    "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2268,
-    "matched": "hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
     "line": 2274,
+    "matched": "hsl("
+  },
+  {
+    "path": "src/llm_telemetry/web/css/dashboard.css",
+    "line": 2280,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2276,
+    "line": 2282,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2278,
+    "line": 2284,
     "matched": "hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2281,
+    "line": 2287,
     "matched": "hsl(, hsl(, hsl("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 2283,
+    "line": 2289,
     "matched": "hsl(, hsl("
   },
   {
