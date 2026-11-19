@@ -11,6 +11,7 @@
  * producers; run-stamp fields inside them are handled by `normalize()`.
  */
 
+import { collectAnalytics } from "../src/collectAnalytics.js";
 import type { SchemaTag } from "../src/schemaCheck.js";
 
 export interface ParityCase {
@@ -22,6 +23,14 @@ export interface ParityCase {
   artifact: string;
   /** Payload schema tag both stacks validate at write time (T-4 writer). */
   tag: SchemaTag;
+  /** When set, the node side runs this real collector instead of copying the
+   * fixture, so a stub/incomplete port FAILS parity instead of passing. For a
+   * `dbInputs` case it receives the generated inputs dir. */
+  nodeCollector?: (inputsDir: string, nowS: number) => Record<string, unknown>;
+  /** When set, BOTH producers read generated DB inputs (the analytics fixture
+   * generator under py/) instead of the JSON fixture: the Python side runs its
+   * real collector (py/produce_analytics.py), the Node side `nodeCollector`. */
+  dbInputs?: boolean;
 }
 
 export const CASES: readonly ParityCase[] = [
@@ -36,6 +45,8 @@ export const CASES: readonly ParityCase[] = [
     fixture: "analytics-data.json",
     artifact: "analytics-data.json",
     tag: "analytics",
+    dbInputs: true,
+    nodeCollector: (inputsDir, nowS) => collectAnalytics({ inputsDir, now: new Date(nowS * 1000) }),
   },
   {
     name: "ollama",

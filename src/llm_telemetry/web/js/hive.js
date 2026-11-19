@@ -11,7 +11,7 @@
  * through hvHooks, which this ticket leaves empty.
  */
 import { $, esc, ago } from './palette.js';
-import { provOf, provLogoSvg } from './views.js';
+import { provOf, provLogoSvg, tipPlace } from './views.js';
 import { attachZoom } from './zoom.js';
 import { ensureAudioCtx } from './live.js';
 
@@ -90,7 +90,7 @@ export function hvModel(snap, view = 'all') {
     const run = w.status === 'running', mins = Math.round((w.secs || 0) / 60), id = 'w:' + w.id;
     add(id, {kind: 'worker', fam, r: 11, label: w.ticket || w.role || 'worker', sub: (w.engine || '') + ' · ' + (run ? mins + 'm' : 'queued'),
       mood: run ? 'talk' : 'sleep', hot: run, owner, pool: !owner, model: w.model, press: hvScoreP(hvNodeScore({}, [w])),
-      tip: `<h4>${esc(w.engine || '')} worker · ${esc(w.role || '')}${w.ticket ? ' · ' + esc(w.ticket) : ''}</h4>${run ? 'Running ' + mins + ' min' : 'Waiting for a slot (' + mins + ' min)'}${w.model ? '<br>' + hvProvMark(w.model) + ' ' + esc(w.model) : ''}${w.spend && w.spend.label ? '<br>' + esc(w.spend.label) : ''}`});
+      tip: `<h4>${esc(w.engine || '')} worker · ${esc(w.role || '')}${w.ticket ? ' · ' + esc(w.ticket) : ''}</h4>${run ? 'Running ' + mins + ' min' : 'Waiting for a slot (' + mins + ' min)'}${w.model ? '<br>' + hvProvMark(w.model) + ' ' + esc(w.model) : ''}${w.host && w.host !== 'local' ? '<br>Host ' + esc(w.host) : ''}${w.spend && w.spend.label ? '<br>' + esc(w.spend.label) : ''}`});
     if (owner) link(owner, id, run, fam, true);
     if (run) c.running++; else c.queued++;
   };
@@ -356,8 +356,15 @@ export function hvDrawNode(it, pos, k) {
     const g = hvEl('g', {'data-id': it.id}, root), bob = hvEl('g', {class: 'hv-bob', style: `animation-delay:${-(hvS.n = (hvS.n || 0) + 1) * .7 % 4}s`}, g);
     const body = hvEl('g', {}, bob), fg = hvEl('g', {class: 'hv-face'}, bob), t1 = hvEl('text', {class: 'hv-lbl'}, bob), t2 = hvEl('text', {class: 'hv-sub'}, bob);
     const tt = it.title ? hvEl('text', {class: 'hv-fam'}, g) : null;
-    g.addEventListener('mousemove', e => { const t = $('hive-tip'); t.innerHTML = n.tip; t.style.opacity = 1; t.style.left = Math.min(e.clientX + 14, innerWidth - 340) + 'px'; t.style.top = (e.clientY + 14) + 'px'; });
-    g.addEventListener('mouseleave', () => { $('hive-tip').style.opacity = 0; });
+    // LLMTELEMET-312: .hv-tip is a themed .qtip instance placed by the one
+    // shared helper — tracking the cursor, arrow-less.
+    g.addEventListener('mousemove', e => {
+      const t = $('hive-tip');
+      t.innerHTML = n.tip;
+      tipPlace(t, { left: e.clientX, top: e.clientY, width: 0, height: 0 }, { mode: 'follow', gap: 14, arrow: false });
+      t.classList.add('on');
+    });
+    g.addEventListener('mouseleave', () => { $('hive-tip').classList.remove('on'); });
     g.addEventListener('click', () => { if (hvHooks.onClick) hvHooks.onClick(it.id, n); });
     n = hvS.nodes[it.id] = {id: it.id, label: it.label, g, body, fg, t1, t2, title: tt, mood: null, r: -1, kind: it.kind};
   }

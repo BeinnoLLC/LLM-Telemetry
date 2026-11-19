@@ -12,9 +12,9 @@
 // guard against the built HTML — do not weaken either side.
 import { isolate } from './lib/isolate.mjs';
 
-// state.js has no sibling imports, so it loads standalone. quotaview delegates
-// its empty state to renderEmpty (LST-235), and the test asserts the REAL
-// single-card markup it renders — a stubbed no-op would fake the outcome.
+// state.js has no sibling imports, so it loads standalone. quotaview
+// delegates its empty state to renderEmpty (LST-235), and the test asserts the
+// REAL single-card markup it renders — a stubbed no-op would fake the outcome.
 import { renderEmpty } from '../src/llm_telemetry/web/js/state.js';
 
 let pass = 0, fail = 0;

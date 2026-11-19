@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Hive collector (LST-268, H-1): the data half of the standalone Hive app.
 
-Ported from the read-only source of truth ``hive/server.py`` as pure, stdlib-only
-functions. ``collect()`` returns one JSON-serialisable snapshot of every family
+Ported from the read-only source of truth ``hive/server.py`` as read-only
+functions (PyYAML only for fleet specs, with a stdlib fallback reader).
+``collect()`` returns one JSON-serialisable snapshot of every family
 (assistant -> brains -> agents), the live sub-agent processes on this host (and
 optional ssh hosts), derived pressure scores, recent assistant/brain
 communication, and the Hazem<->assistant conversation state.
@@ -16,6 +17,7 @@ from __future__ import annotations
 import collections
 import glob
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -25,7 +27,14 @@ import threading
 import time
 from pathlib import Path
 
+try:
+    import yaml
+except Exception:  # PyYAML is a hard dependency; the hand reader below is the fallback
+    yaml = None
+
 from .schema import stamp
+
+LOG = logging.getLogger(__name__)
 
 ACTIVE = {"running", "ready", "todo", "blocked", "review", "scheduled", "triage"}
 FAMILY_ORDER = ["root", "pixelvent", "acasia", "somethingpressing"]
@@ -57,6 +66,11 @@ def pretty(name):
         return LABELS[name]
     n = name.replace("-brain", "").replace("acasia-", "").replace("pv-", "").replace("beinno-", "")
     return " ".join(w.capitalize() if len(w) > 2 else w.upper() for w in n.split("-"))
+
+
+def _text(v):
+    """Coerce YAML values to text so a bad type can never crash the snapshot."""
+    return v if isinstance(v, str) else ("" if v is None else str(v))
 
 
 def _scalar(v):
@@ -121,9 +135,33 @@ def _typed(val):
     return (val.lower() == "true") if val.lower() in ("true", "false") else val
 
 
+def read_fleet_spec(text):
+    """Parse one fleet spec into the shape :func:`load_families` needs.
+
+    PyYAML first: ``~/.hermes/fleet/*.yaml`` is machine-dumped (zero-indent list
+    items, folded multi-line scalars) and the hand reader cannot follow that.
+    The hand reader is used only when PyYAML cannot be imported. Malformed input
+    raises ValueError so the caller can report it instead of silently dropping
+    the family.
+    """
+    if yaml is not None:
+        spec = yaml.safe_load(text)
+        if spec is None:
+            return {}
+        if not isinstance(spec, dict):
+            raise ValueError(f"fleet spec is a {type(spec).__name__}, expected a mapping")
+        if spec.get("orchestrators") is not None and not isinstance(spec["orchestrators"], list):
+            raise ValueError("'orchestrators' must be a list")
+        if spec.get("bots") is not None and not isinstance(spec["bots"], dict):
+            raise ValueError("'bots' must be a mapping")
+        return spec
+    return parse_fleet_spec(text)
+
+
 def parse_fleet_spec(text):
-    """Minimal reader for the fleet YAML subset Hive needs (no PyYAML): top-level scalars,
-    the ``orchestrators:`` list of flat mappings, and ``bots:`` -> name -> display."""
+    """Fallback reader for the fleet YAML subset Hive needs (used when PyYAML is
+    unavailable): top-level scalars, the ``orchestrators:`` list of flat mappings,
+    and ``bots:`` -> name -> display."""
     spec, orch, bots = {}, [], {}
     section, cur_bot = None, None
     for raw in text.splitlines():
@@ -162,19 +200,33 @@ def parse_fleet_spec(text):
     return spec
 
 
-def load_families(home=None):
-    """[{id, label, assistant:{id,label}, brains:[(profile, board, label)], bots:[(id,label)]}]."""
+_SPEC_LAST: dict[str, dict] = {}   # fleet file -> last good read_fleet_spec result
+
+
+def load_families(home=None, errors=None):
+    """[{id, label, assistant:{id,label}, brains:[(profile, board, label)], bots:[(id,label)]}].
+
+    errors  optional list; every unreadable spec appends {"file": name, "error": str}
+    """
     home = Path(home) if home else default_home()
     fleet, profiles = home / "fleet", home / "profiles"
     files = sorted(fleet.glob("*.yaml"),
                    key=lambda p: (FAMILY_ORDER.index(p.stem) if p.stem in FAMILY_ORDER else 99, p.stem))
     fams = []
     for f in files:
+        key = str(f)
         try:
-            spec = parse_fleet_spec(f.read_text())
-        except Exception:
-            continue
-        orch = spec.get("orchestrators") or []
+            spec = read_fleet_spec(f.read_text())
+        except Exception as e:
+            LOG.warning("fleet parse error %s: %s", f, e)
+            if errors is not None:
+                errors.append({"file": f.name, "error": str(e)})
+            spec = _SPEC_LAST.get(key)   # last good roster: a half-written spec must not replay every task
+            if spec is None:
+                continue
+        else:
+            _SPEC_LAST[key] = spec
+        orch = [o for o in (spec.get("orchestrators") or []) if isinstance(o, dict)]
         asst = next((o for o in orch if o.get("assistant")), None)
         if not asst or not asst.get("name"):
             continue
@@ -182,14 +234,18 @@ def load_families(home=None):
         for o in orch:
             if o.get("assistant") or not o.get("name"):
                 continue
-            board = o.get("board") or o.get("project")
-            brains.append((o["name"], board, o.get("display") or pretty(o.get("project") or o["name"])))
-        pre = spec.get("prefix") or f.stem
-        bots = [(f"{pre}-{k}", v.get("display") or k) for k, v in (spec.get("bots") or {}).items()
+            board = _text(o.get("board") or o.get("project")) or None
+            brains.append((_text(o["name"]), board,
+                           _text(o.get("display")) or pretty(_text(o.get("project")) or _text(o["name"]))))
+        pre = _text(spec.get("prefix")) or f.stem
+        bots = [(f"{pre}-{k}", (_text(v.get("display")) if isinstance(v, dict) else "") or _text(k))
+                for k, v in (spec.get("bots") or {}).items()
                 if (profiles / f"{pre}-{k}").is_dir()]
-        fid = spec.get("family") or f.stem
-        fams.append({"id": fid, "bots": bots, "label": asst.get("family_title") or fid.capitalize(),
-                     "assistant": {"id": asst["name"], "label": asst.get("display") or pretty(asst["name"])},
+        fid = _text(spec.get("family")) or f.stem
+        fams.append({"id": fid, "bots": bots,
+                     "label": _text(asst.get("family_title")) or fid.capitalize(),
+                     "assistant": {"id": _text(asst["name"]),
+                                   "label": _text(asst.get("display")) or pretty(_text(asst["name"]))},
                      "brains": brains})
     return fams
 
@@ -566,6 +622,35 @@ def strip_ctx(args):
     return out
 
 
+def strip_model(args):
+    out, skip = [], False
+    for x in args:
+        if skip:
+            skip = False
+            continue
+        if x == "--model":
+            skip = True
+            continue
+        if x.startswith("--model="):
+            continue
+        out.append(x)
+    return out
+
+
+def codex_model():
+    """`model = "..."` from ~/.codex/config.toml (top level only), else empty."""
+    try:
+        for line in open(os.path.join(os.path.expanduser("~"), ".codex", "config.toml"), errors="replace"):
+            if line.lstrip().startswith("["):
+                break
+            m = re.match(r'\s*model\s*=\s*["\']([^"\']+)["\']', line)
+            if m:
+                return m.group(1)
+    except Exception:
+        pass
+    return ""
+
+
 def classify(argv, cwd):
     """(kind, engine, role, project, task, model) for a real sub-agent process, else None."""
     b0 = os.path.basename(argv[0])
@@ -573,10 +658,11 @@ def classify(argv, cwd):
     if "python" in b0:
         if args and os.path.basename(args[0]) in ("pi-worker", "agent-worker"):
             pi = os.path.basename(args[0]) == "pi-worker"
-            r = strip_ctx(args[1:])   # <family> <role> <project> [--context-file x] "<task>"
+            wm = flag_value(args, ("--model",))   # explicit model flag only; never guessed
+            r = strip_ctx(strip_model(args[1:]))   # <family> <role> <project> [--context-file x] "<task>"
             return {"kind": "worker", "engine": "pi" if pi else (r[0] if r else "agent"),
                     "role": r[1] if len(r) > 1 else "?", "project": r[2] if len(r) > 2 else "",
-                    "task": " ".join(r[3:]) if len(r) > 3 else "", "model": ""}
+                    "task": " ".join(r[3:]) if len(r) > 3 else "", "model": wm}
         if args and args[0] == "-m" and len(args) > 1:   # hermes delegate children + kanban workers
             for pref, role in HERMES_MODS:
                 if args[1].startswith(pref) and (".hermes" in argv[0] or ".hermes" in (cwd or "")):
@@ -739,6 +825,8 @@ def scan():
         if lp:
             busy_loops.add(lp)
         model = c.get("model") or run_model((procs.get(pid) or {}).get("home"), c.get("task", ""))
+        if not model and c.get("engine") == "codex":
+            model = codex_model()
         add(pid, parent_of(pid), c["engine"], c.get("role"), c.get("project"), c.get("task"), model, "running", c["age"])
     for pid, p in procs.items():
         cmd = " ".join(p["argv"])
@@ -1026,7 +1114,8 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=Non
     """
     home = Path(home) if home else default_home()
     now = time.time() if now is None else now
-    fams = load_families(home)
+    errors = []
+    fams = load_families(home, errors=errors)
     names = sorted({b for f in fams for _, b, _ in f["brains"] if b})
     cache = {}
     for b in names:
@@ -1093,7 +1182,8 @@ def collect(home=None, now=None, hosts=None, scan=True, boards=None, reports=Non
         pres[f"w:{w['id']}"] = {"kind": "worker", **pressure({}, [w])}
     feed = comms(fams, home, now)
     snap = {"kind": "hive", "at": now, "families": families, "comms": feed[-120:], "hosts": host_list,
-                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks}
+                  "unattributed": stray, "user": user_state(fams, home, now), "pressure": pres, "tasks": tasks,
+                  "errors": errors}   # spec files that could not be read this tick
     rdir = default_reports() if reports is None else (reports or None)
     enrich(snap, load_artifacts(rdir, now), home, now)
     return stamp(snap)

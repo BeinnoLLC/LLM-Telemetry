@@ -90,8 +90,11 @@ chk(modalShells.length === 1 && modalShells[0].sel.trim() === '.modal',
 // ---- 2. no shell rule duplicated anywhere else -------------------------
 // Legacy debt owned by audit items 7/9 (drawer family), pre-dating this pair.
 const LEGACY = ['#scrim', '#navscrim'];
+// Single tooltip surface (LLMTELEMET-312, one-tooltip .qtip). It is a tooltip,
+// not a modal or scrim, but its fade gate matches the shell heuristic.
+const TOOLTIPS = ['.qtip'];
 const shells = blocks.filter(isShell);
-const rogue = shells.filter(b => !selOf(b).every(s => s === '.scrim' || s === '.modal' || LEGACY.includes(s)));
+const rogue = shells.filter(b => !selOf(b).every(s => s === '.scrim' || s === '.modal' || LEGACY.includes(s) || TOOLTIPS.includes(s)));
 chk(rogue.length === 0,
     `every modal/scrim shell rides the .scrim/.modal pair (${rogue.length} duplicated shells)`,
     rogue.map(r => r.sel + (r.media ? ` @${r.media}` : '')).join(' | '));
