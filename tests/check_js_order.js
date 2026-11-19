@@ -54,6 +54,25 @@ chk(missing.length === 0,
   'every exported declaration is in order.json (an omission silently drops it from the page)',
   missing.join(', '));
 
+// ---- 1b. nothing a listed declaration calls is left unlisted ---------------
+// webassets replays ONLY the declarations order.json lists, so a non-exported
+// function/const that its module uses but that is unlisted is dropped, and its
+// callers die with a ReferenceError (LLMTELEMET-344: drawer.js lnTipHide). An
+// unlisted declaration whose name occurs elsewhere in its module (not as a
+// property, i.e. not after a `.`) is such a dangling reference: list it.
+const refCount = (src, name) =>
+  (src.match(new RegExp('(?<![\\w$.])' + name.replace(/\$/g, '\\$') + '(?![\\w$])', 'g')) || []).length;
+let dangling = [];
+for (const mod of DASHBOARD_MODULES) {
+  const src = fs.readFileSync(path.join(JS, mod + '.js'), 'utf8');
+  for (const [name] of declarations(mod)) {
+    if (!listedSet.has(mod + ':' + name) && refCount(src, name) > 1) dangling.push(`${mod}.js:${name}`);
+  }
+}
+chk(dangling.length === 0,
+  'every declaration a module references is in order.json (an unlisted private helper is dropped from the page)',
+  dangling.join(', '));
+
 // ---- 2. nothing in the order is stale ---------------------------------------
 let stale = [];
 for (const [mod, name] of listed) {
