@@ -1002,9 +1002,10 @@ background:color-mix(in srgb,var(--fg) 10%,var(--card))}
 .pp-open:hover,.pp-open:focus-visible{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:0}
 .costhow summary{cursor:pointer;color:var(--fg);padding:4px 0 6px;font-weight:600}
 .costhow{max-width:90ch;line-height:1.55}
-.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity .1s;box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip.on{opacity:1}
 .qtip .ft-h,.qtip .ft-r{font-size:14px}
-.qtip::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
+.qtip[data-side]::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
 left:var(--ax,50%);top:-6px;margin-left:-5px;border-right:0;border-bottom:0}
 .qtip[data-side=top]::before{top:auto;bottom:-6px;transform:rotate(225deg)}
 .qtip[data-side=left]::before,.qtip[data-side=right]::before{left:auto;top:var(--ay,50%);margin:-5px 0 0}
@@ -1279,9 +1280,7 @@ box-shadow:0 24px 70px rgba(0,0,0,.5)}
 .lnspan.lnfail{outline:2px solid var(--z-bad);outline-offset:-1px}
 .lnspan.lntick{width:3px!important;border-radius:1px}
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
-#lntip{position:fixed;z-index:90;background:var(--card);border:1px solid var(--border);
-border-radius:var(--radius-ctl);padding:6px 9px;font-size:var(--fs-xs);max-width:320px;pointer-events:none;
-box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+#lntip{z-index:90;max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
 #pdscrim{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);opacity:0;
 pointer-events:none;transition:opacity .18s ease}
 #pdscrim.open{opacity:1;pointer-events:auto}
@@ -2014,7 +2013,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 .hv-stat span{color:var(--muted);font-size:var(--fs-xs)}
 .hv-stage{position:relative;width:100%;height:70vh;min-height:420px;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);overflow:hidden}
 #hive-svg{width:100%;height:100%;display:block;touch-action:none}
-.hv-tip{position:fixed;pointer-events:none;opacity:0;z-index:50;max-width:330px;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-ctl);background:var(--card);color:var(--fg);font-size:var(--fs-xs);transition:opacity .12s}
+.hv-tip{z-index:50;max-width:330px;padding:8px 10px;font-size:var(--fs-xs);transition:opacity .12s}
 .hv-tip h4{margin:0 0 4px;font-size:var(--fs-sm)}
 .hv-prov{fill:var(--muted);vertical-align:-2px}
 .hv-edge{stroke:var(--c,var(--muted));stroke-opacity:.28;stroke-width:1.4}
@@ -2270,7 +2269,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
     <span class="hv-act"><button id="hive-fire" type="button" class="seg-btn on" aria-pressed="true">Firing mode</button><button id="hive-replay" type="button" class="seg-btn">Replay</button><span id="hive-fresh" class="muted"></span><span id="hive-lastreal" class="muted"></span></span>
     <span id="hive-views" class="hv-views" role="group" aria-label="Family view"></span></div>
    <div id="hive-tabs" class="hv-tabs"></div>
-   <div id="hive-stage" class="hv-stage"><svg id="hive-svg" role="img" aria-label="Hive: Hazem, assistants, brains and agents"><g id="hive-edges"></g><g id="hive-nodes"></g></svg><div id="hive-tip" class="hv-tip" role="tooltip"></div><div id="hive-gauge" class="hv-gauge" role="status" aria-label="System pressure"><div class="hv-g-top"><span>System pressure</span><b id="hive-g-v">–</b></div><div class="hv-g-bar"><i id="hive-g-fill"></i></div><span id="hive-g-sub"></span></div></div>
+   <div id="hive-stage" class="hv-stage"><svg id="hive-svg" role="img" aria-label="Hive: Hazem, assistants, brains and agents"><g id="hive-edges"></g><g id="hive-nodes"></g></svg><div id="hive-tip" class="qtip hv-tip" role="tooltip"></div><div id="hive-gauge" class="hv-gauge" role="status" aria-label="System pressure"><div class="hv-g-top"><span>System pressure</span><b id="hive-g-v">–</b></div><div class="hv-g-bar"><i id="hive-g-fill"></i></div><span id="hive-g-sub"></span></div></div>
    <div class="hv-panels"><section class="hv-panel"><h2>Conversations <span id="hive-ccount" class="muted"></span></h2><div id="hive-clist"></div></section><section class="hv-panel"><h2>Task events</h2><div id="hive-feed"><p id="hive-feedempty" class="muted">No task changes since this page opened. Real ones will appear here.</p></div></section></div>
   </div>
  </div>
@@ -2788,7 +2787,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
  </div>
  <div id="lnbody" tabindex="-1"></div>
 </main>
-<div id="lntip"></div>
+<div id="lntip" class="qtip" role="tooltip"></div>
 
 <div id="pdscrim"></div>
 <div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
@@ -7014,26 +7013,43 @@ function paintTrain(queued, running, done){
  }
 }
 
-function qtPlace(el, r, jar){
+
+function tipPlace(el, r, opts){
+ opts = opts || {};
+ const mode = opts.mode || 'fit', gap = opts.gap != null ? opts.gap : 8;
  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
- const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80, g = 8;
+ const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80;
+ let x, y, side = 'top';
+ if (mode === 'follow'){
+ x = Math.max(6, Math.min(r.left + gap, vw - w - 6));
+ y = Math.max(6, Math.min(r.top + gap, vh - hgt - 6));
+ } else if (mode === 'above'){
+ x = Math.max(6, Math.min(r.left, vw - w - 6));
+ y = Math.max(6, r.top - hgt - gap);
+ } else {
+ const jar = opts.jar;
  const lid = jar && jar.querySelector('.qt-lid');
  const lr = lid ? lid.getBoundingClientRect() : null;
  const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
  const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
  const jr = jar ? jar.getBoundingClientRect() : r;
  const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
- const spots = [[cx, jr.bottom + g], [cx, jr.top - hgt - g], [jr.right + g, cy], [jr.left - w - g, cy], [cx, r.bottom + g], [cx, r.top - hgt - g], [r.right + g, cy], [r.left - w - g, cy]];
- const fits = ([x, y]) => x >= 6 && y >= 6 && x + w <= vw - 6 && y + hgt <= vh - 6
- && !(lr && hits({ left: x, top: y, right: x + w, bottom: y + hgt }, lr));
- const at = Math.max(0, spots.findIndex(fits)), [x, y] = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + g, vh - hgt - 6))];
+ const spots = [[cx, jr.bottom + gap], [cx, jr.top - hgt - gap], [jr.right + gap, cy], [jr.left - w - gap, cy], [cx, r.bottom + gap], [cx, r.top - hgt - gap], [r.right + gap, cy], [r.left - w - gap, cy]];
+ const fits = ([fx, fy]) => fx >= 6 && fy >= 6 && fx + w <= vw - 6 && fy + hgt <= vh - 6
+ && !(lr && hits({ left: fx, top: fy, right: fx + w, bottom: fy + hgt }, lr));
+ const at = Math.max(0, spots.findIndex(fits));
+ const spot = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + gap, vh - hgt - 6))];
+ x = spot[0]; y = spot[1];
+ side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
+ }
  el.style.left = x + 'px';
  el.style.top = y + 'px';
- el.dataset.side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
+ if (opts.arrow !== false){
+ el.dataset.side = side;
  el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
  el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
+ }
 }
-
 function qtPopClose(restore){
  const pop = $('qpop');
  if (!pop || !pop._ball) return;
@@ -7052,7 +7068,7 @@ function qtPopOpen(ball){
  ball.classList.add('qt-tip-on');
  pop.innerHTML = carPop(it);
  pop.classList.add('on');
- qtPlace(pop, ball.getBoundingClientRect(), ball.closest('.qt-jar'));
+ tipPlace(pop, ball.getBoundingClientRect(), { jar: ball.closest('.qt-jar') });
  const go = pop.querySelector('.pp-open');
  if (go && go.focus) go.focus(); else if (pop.focus) pop.focus();
  return true;
@@ -7071,7 +7087,7 @@ function qtTipWire(tr){
  cur = c; c.classList.add('qt-tip-on');
  tip.innerHTML = carTip(c._qt);
  tip.classList.add('on');
- qtPlace(tip, c.getBoundingClientRect(), c.closest('.qt-jar'));
+ tipPlace(tip, c.getBoundingClientRect(), { jar: c.closest('.qt-jar') });
  };
  const carOf = t => (t && t.closest) ? t.closest('.qt-ball') : null;
  tr.addEventListener('mouseover', e => { const c = carOf(e.target); if (c) show(c); });
@@ -9352,8 +9368,13 @@ function hvDrawNode(it, pos, k) {
  const g = hvEl('g', {'data-id': it.id}, root), bob = hvEl('g', {class: 'hv-bob', style: `animation-delay:${-(hvS.n = (hvS.n || 0) + 1) * .7 % 4}s`}, g);
  const body = hvEl('g', {}, bob), fg = hvEl('g', {class: 'hv-face'}, bob), t1 = hvEl('text', {class: 'hv-lbl'}, bob), t2 = hvEl('text', {class: 'hv-sub'}, bob);
  const tt = it.title ? hvEl('text', {class: 'hv-fam'}, g) : null;
- g.addEventListener('mousemove', e => { const t = $('hive-tip'); t.innerHTML = n.tip; t.style.opacity = 1; t.style.left = Math.min(e.clientX + 14, innerWidth - 340) + 'px'; t.style.top = (e.clientY + 14) + 'px'; });
- g.addEventListener('mouseleave', () => { $('hive-tip').style.opacity = 0; });
+ g.addEventListener('mousemove', e => {
+ const t = $('hive-tip');
+ t.innerHTML = n.tip;
+ tipPlace(t, { left: e.clientX, top: e.clientY, width: 0, height: 0 }, { mode: 'follow', gap: 14, arrow: false });
+ t.classList.add('on');
+ });
+ g.addEventListener('mouseleave', () => { $('hive-tip').classList.remove('on'); });
  g.addEventListener('click', () => { if (hvHooks.onClick) hvHooks.onClick(it.id, n); });
  n = hvS.nodes[it.id] = {id: it.id, label: it.label, g, body, fg, t1, t2, title: tt, mood: null, r: -1, kind: it.kind};
  }
@@ -12291,7 +12312,7 @@ function lnCloseModal(){
  lnOpen = false;
  $('lnscrim')?.classList.remove('open');
  $('lnmodal')?.classList.remove('open');
- $('lntip').style.display = 'none';
+ lnTipHide();
  lnTrap?.release();
  lnTrap = null;
  lnFocusReturn = null;
@@ -12336,7 +12357,7 @@ function installTimelineModal(){
  }
  const span = e.target.closest?.('.lnspan');
  if (span){
- $('lntip').style.display = 'none';
+ lnTipHide();
  return;
  }
  });
@@ -12346,13 +12367,11 @@ function installTimelineModal(){
  if (!span || !tip) return;
  const label = span.dataset.lnlabel || '';
  tip.textContent = label.slice(0, 80);
- const r = span.getBoundingClientRect();
- tip.style.left = r.left + 'px';
- tip.style.top = (r.top - 32) + 'px';
- tip.style.display = 'block';
+ tipPlace(tip, span.getBoundingClientRect(), { mode: 'above', gap: 4, arrow: false });
+ tip.classList.add('on');
  });
  document.addEventListener('mouseout', e => {
- if (e.target.closest?.('.lnspan')) $('lntip').style.display = 'none';
+ if (e.target.closest?.('.lnspan')) lnTipHide();
  });
  $('lnclose')?.addEventListener('click', lnCloseModal);
  $('lnscrim')?.addEventListener('click', lnCloseModal);

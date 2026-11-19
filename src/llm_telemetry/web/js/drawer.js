@@ -7,7 +7,7 @@ import {
   trapFocus, trapTab,
 } from './palette.js';
 import { current } from './charts.js';
-import { provLogoSvg, schemaProblem } from './views.js';
+import { provLogoSvg, schemaProblem, tipPlace } from './views.js';
 import { pickView } from './router.js';
 import { DATA, css, hueCss } from './main.js';
 
@@ -753,12 +753,21 @@ export function lnRenderTimeline(tl){
   }).join('');
 }
 
+// Hide the #lntip tooltip and clear its text (review nit: a hidden tip must
+// not keep stale label text in the DOM).
+function lnTipHide(){
+  const t = $('lntip');
+  if (!t) return;
+  t.classList.remove('on');
+  t.textContent = '';
+}
+
 export function lnCloseModal(){
   if (!lnOpen) return;
   lnOpen = false;
   $('lnscrim')?.classList.remove('open');
   $('lnmodal')?.classList.remove('open');
-  $('lntip').style.display = 'none';
+  lnTipHide();
   lnTrap?.release();
   lnTrap = null;
   lnFocusReturn = null;
@@ -811,7 +820,7 @@ export function installTimelineModal(){
     }
     const span = e.target.closest?.('.lnspan');
     if (span){
-      $('lntip').style.display = 'none';
+      lnTipHide();
       return;
     }
   });
@@ -821,13 +830,13 @@ export function installTimelineModal(){
     if (!span || !tip) return;
     const label = span.dataset.lnlabel || '';
     tip.textContent = label.slice(0, 80);
-    const r = span.getBoundingClientRect();
-    tip.style.left = r.left + 'px';
-    tip.style.top = (r.top - 32) + 'px';
-    tip.style.display = 'block';
+    // LLMTELEMET-312: #lntip is a themed .qtip instance placed by the one
+    // shared helper — directly above the span, arrow-less.
+    tipPlace(tip, span.getBoundingClientRect(), { mode: 'above', gap: 4, arrow: false });
+    tip.classList.add('on');
   });
   document.addEventListener('mouseout', e => {
-    if (e.target.closest?.('.lnspan')) $('lntip').style.display = 'none';
+    if (e.target.closest?.('.lnspan')) lnTipHide();
   });
   $('lnclose')?.addEventListener('click', lnCloseModal);
   $('lnscrim')?.addEventListener('click', lnCloseModal);

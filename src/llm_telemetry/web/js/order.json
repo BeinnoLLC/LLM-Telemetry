@@ -1210,8 +1210,8 @@
       "name": "paintTrain"
     },
     {
-      "mod": "flow",
-      "name": "qtPlace"
+      "mod": "views",
+      "name": "tipPlace"
     },
     {
       "mod": "flow",
