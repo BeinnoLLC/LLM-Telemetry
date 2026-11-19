@@ -60,7 +60,7 @@ const M = await isolate('main.js', {
     readTheme: () => { calls.readTheme++; },
   },
   'charts.js': { CHART_ANIM_DONE: false, current: 'x' },
-  'views.js': { render: () => { calls.render++; } },
+  'views.js': { render: () => { calls.render++; }, resetUnattrPattern: () => {} },
   'live.js': { mergeDelegations: list => { calls.merged.push(list); return { merged: list.length }; } },
   'router.js': {
     pickView: v => { calls.pickView.push(v); },

@@ -1,6 +1,7 @@
 // Unit tests for drawer.js — session finder, transcript rendering, log timeline.
 // Expected values derived by hand from the source, not captured from output.
 import { isolate } from './lib/isolate.mjs';
+import { css } from './lib/tokens.mjs';
 import assert from 'node:assert/strict';
 
 let pass = 0, fail = 0;
@@ -17,7 +18,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
 
   const q1 = D.sfParseQuery('model:opus tool:patch cost>1 dur>1h free text');
@@ -52,7 +53,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
 
   const S = { id:'s1', title:'Fix the parser', model:'gpt-5', source:'cli', tools:['patch','read'], cost:1.25, dur:7200, branch:'main', cwd_tail:'/repo', end:'completed' };
@@ -81,7 +82,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
 
   const S = { id:'s1', title:'Fix the <parser>', model:'gpt-5', source:'cli', tools:['patch','read'], cost:1.25, dur:7200, branch:'main', cwd_tail:'/repo' };
@@ -115,7 +116,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[{id:'x'}] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[{id:'x'}] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
   const html4 = D2.sfRowsHtml([], '');
   ok(html4.includes('No sessions match.'), 'rows: empty with sessions → No sessions match.');
@@ -135,7 +136,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[S, S2] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[S, S2] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
   D3.sfRender();
   ok(relems.sflist.innerHTML.includes('sfrow sfactive" id="sfrow-0"'), 'render: first row active after sfRender');
@@ -156,7 +157,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[] } } } },
   }, { window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} } });
 
   // tRenderContent: escape → links → code blocks
@@ -201,7 +202,7 @@ const ok = (cond, msg) => eq(!!cond, true, msg);
     'charts.js': { current:'p1' },
     'views.js': { schemaProblem:()=>null },
     'router.js': { pickView:()=>{} },
-    'main.js': { DATA:{ profiles:{ p1:{ session_index:[] } } } },
+    'main.js': { css, DATA:{ profiles:{ p1:{ session_index:[] } } } },
   }, {
     window:{ addEventListener(){}, innerWidth:1280, scrollY:0, scrollTo(){} },
     document:{

@@ -37,8 +37,6 @@
 .items-end{align-items:flex-end}
 .items-baseline{align-items:baseline}
 .justify-between{justify-content:space-between}
-.justify-center{justify-content:center}
-.self-center{align-self:center}
 .w-full{width:100%}
 .relative{position:relative}
 .absolute{position:absolute}
@@ -59,7 +57,6 @@
 .p-2{padding:.5rem}
 .p-3{padding:.75rem}
 .p-4{padding:1rem}
-.p-6{padding:1.5rem}
 .px-1{padding-left:.25rem;padding-right:.25rem}
 .px-1\.5{padding-left:.375rem;padding-right:.375rem}
 .px-2{padding-left:.5rem;padding-right:.5rem}

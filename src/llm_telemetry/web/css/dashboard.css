@@ -235,9 +235,6 @@
       display:inline-block;margin-right:5px;animation:p 2s infinite}
  :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn);box-shadow:none}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
- /* Responsive grid helpers */
- .grid-auto{display:grid;gap:var(--gap);
-   grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
  /* One KPI card for Home's two rows (live + totals): fixed grid rows keep label,
     value baseline, sub-line and viz on the same lines in every card, and a card
     with no viz still reserves its slot, so all cards are 138px. Calm palette
@@ -564,7 +561,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     keeps the strip wrapping without fixed columns on desktop; the <=480px
     override below pins the collapse to exactly 2 columns on phones. */
  .grid-home{display:grid;gap:8px var(--gap);align-items:stretch;
-   grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));grid-template-columns:repeat(4,minmax(0,1fr))}
+   grid-template-columns:repeat(4,minmax(0,1fr))}
  .grid-home > *{min-width:0}
  .homecard{display:block;text-decoration:none;color:inherit;transition:
    transform .12s ease,border-color .12s ease}
@@ -577,7 +574,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* The compact card chrome (LST-178) lives further down, after the
     .kpi-badge rules it refines — stylelint's no-descending-specificity
     requires the base selector first. */
- .grid-2 > *,.grid-auto > *{min-width:0}
+ .grid-2 > *{min-width:0}
  /* ---- Bandwidth -------------------------------------------------------
     Up and down are one card, not two: the pair is only meaningful together
     (a 278:1 ratio is the finding, and two separate cards hide it). Arrows
@@ -672,7 +669,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    background:color-mix(in srgb,var(--bg) 88%,transparent);
    backdrop-filter:blur(8px);border-bottom:1px solid transparent;
    transition:border-color .15s ease}
- .appbar.scrolled{border-bottom-color:var(--border)}
  #hamburger{display:none;background:none;border:1px solid var(--border);
    color:var(--fg);border-radius:var(--radius-ctl);width:38px;height:38px;cursor:pointer;
    font-size:var(--fs-lg);line-height:1;flex:none}
@@ -1459,10 +1455,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    #navtoggle{padding:0;width:44px}
    #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
 
-   /* Live table: the panel (.lvscroll) scrolls sideways INSIDE its card; the
-      page itself never does. */
-   .livegrid{grid-template-columns:minmax(0,1fr)}
-
    /* .olgrid (Ollama host cards, minmax(310px,1fr)) forced to one column —
       310px plus card padding overflows a 360px viewport (#13). */
    .olgrid{grid-template-columns:1fr}
@@ -1669,7 +1661,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qv-liferow .rt-auth{flex:0 0 auto;white-space:nowrap}
 .qv-liferow .qv-lifebar{flex:1 1 80px;min-width:60px}
 .qv-win+.qv-win{border-top:1px solid var(--border)}
-.qv-wname{font-size:var(--fs-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;white-space:normal;overflow:visible;text-overflow:clip}
+.qv-wname{font-size:var(--fs-xs);color:var(--muted);white-space:normal;overflow:visible;text-overflow:clip}
 .qv-pct{font-family:ui-monospace,monospace;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;text-align:right}
 .qv-pct.qv-ok{color:var(--z-ok)}
 .qv-pct.qv-warn{color:var(--z-warn)}
@@ -1867,7 +1859,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:color-mix(in srgb,var(--z-bad) 9%,transparent)}
 .kpi-kinds{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:8px;font-size:13px;font-weight:600;vertical-align:middle;max-width:100%}
 .kpi-kind{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--foreground,var(--fg));min-width:0}
-.kpi-dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
 /* Brand marks for the Claude/Codex agent kinds: 16px (the glyph is the marker,
    12px read as a blob), inherit the kind colour, centred on the text line. */
 svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;fill:currentColor}
@@ -2157,7 +2148,6 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .page,main,.card,.panel,.grid-home,.statgrid,.olgrid,.qtrain,.filterbar{min-width:0;max-width:100%}
   .grid-home,.statgrid,.olgrid,.qtrain,.hsum{grid-template-columns:minmax(0,1fr)}
   .statgrid.live>.stat,.statgrid.totals>.stat{grid-column:1/-1}
-  .grid-home > *{min-width:0}
   div:has(>canvas){width:100%;max-width:100%;min-height:160px}
   canvas{max-width:100%}
   .card:has(table),.panel:has(table){overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -2295,6 +2285,12 @@ canvas, img {
   box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glow) 50%,transparent)}
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
   box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
+
+/* LST-309 (light only): light --z-bad-fg is a deep AA ink for text on the light
+   surfaces, so the alert pill pairs its solid --z-bad fill with --card text
+   (the .qv-astat.qv-bad pattern). Dark keeps --z-bad-fg on the fill, unchanged.
+   Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
+:root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
 
 
 

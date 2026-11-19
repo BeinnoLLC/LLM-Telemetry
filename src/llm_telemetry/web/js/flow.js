@@ -2,10 +2,10 @@
  * Flow: the provider→model→task force graph (layout, drag, focus/dim,
  * tooltip), the task-queue visualisation and the agent cards.
  */
-import { $, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
+import { $, MU, Z, ago, colorOf, esc, escA, hashHue, short } from './palette.js';
 import { current } from './charts.js';
 import { PROV, provLogoSvg, provOf, render, tipPlace } from './views.js';
-import { DATA, css } from './main.js';
+import { DATA, css, hueCss } from './main.js';
 import { inFlight, kindMeta } from './live.js';
 import { profileHue } from './router.js';
 import { lnOpenModal, sfOpenPalette } from './drawer.js';
@@ -91,7 +91,7 @@ function qtDemoWire(q, r, d){
 export function trainBall(it){
   const c = document.createElement('button');
   c.className = 'qt-ball qt-' + it.kind;
-  c.setAttribute('type', 'button');
+  c.setAttribute('type', 'button'); c.setAttribute('aria-label', 'Task (queue item)');   // refined per render
   c.dataset.key = it.key;
   c.tabIndex = 0;
   const g = document.createElement('span'); g.className = 'qt-ball-g'; c.appendChild(g);
@@ -394,10 +394,10 @@ export function paintTrain(queued, running, done){
     c.dataset.state = it.state;
     // Per-profile colour for Hermes balls; engine colour for fleet-wide agents.
     const hue = (it.eng === 'hermes' || !it.eng) ? profileHue(it.profile || '') : null;
-    c.style.setProperty('--k', hue != null ? `hsl(${hue} 65% 52%)` : kindMeta(it.eng).color);
+    c.style.setProperty('--k', hue != null ? hueCss(hue, 'ball') : kindMeta(it.eng).color);
   }, elsewhere);
   const freshD = paintBalls(db, done, (c, it) => {
-    c.style.setProperty('--k', `hsl(${profileHue((it && it.profile) || current || '')} 65% 52%)`);
+    c.style.setProperty('--k', hueCss(profileHue((it && it.profile) || current || ''), 'ball'));
   }, elsewhere);
 
   // line -> yard is an exact identity (same session id in both feeds).
@@ -536,10 +536,14 @@ export function renderAgents(agents){
   agents = agents || [];
   if (!agents.length) { card.hidden = true; return; }
   card.hidden = false;
-  const stateColor = { alive: '#5f9e6e', stale: '#c4a06e', dead: '#c66a6a' };
+  const stateColor = {
+    alive: Z.ok,
+    stale: Z.warn,
+    dead: Z.bad,
+  };
   $('agentslist').innerHTML = agents.map(a => `
     <div class="flex items-center gap-2 text-[length:var(--fs-sm)] py-1.5" style="border-bottom:1px solid var(--border)">
-      <span class="qdotwrap" style="background:${stateColor[a.state] || '#64748b'};width:7px;height:7px;border-radius:999px;flex:none"></span>
+      <span class="qdotwrap" style="background:${stateColor[a.state] || MU};width:7px;height:7px;border-radius:999px;flex:none"></span>
       <span class="font-semibold" style="min-width:5.5rem">${esc(a.state)}</span>
       <span class="muted flex-1 truncate" title="${escA(a.backend)}">${esc(a.host)} · pid ${a.pid} · ${esc(a.profile)}</span>
       <span class="muted">${ago(a.age_s)} ago</span>
@@ -989,9 +993,13 @@ export function flowControls(){
     // fitView() is stashed on the <svg> element by renderFlow each time it
     // rebuilds, so this button always calls whatever is current. +/- give
     // an accessible, keyboard-reachable equivalent to wheel/pinch zoom.
-    `<button data-flowzoom="out" title="Zoom out">&minus;</button>` +
-    `<button data-flowzoom="in" title="Zoom in">+</button>` +
-    `<button data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
+    // aria-label comes FIRST: tests/check_flow_touch.js pins the contiguous
+    // substrings `data-flowzoom="…" title="…"` and
+    // `data-flowfit title="…">Fit<`, so no attribute may sit between the
+    // data-* hook and its title (LLMTELEMET-327).
+    `<button aria-label="Zoom out" data-flowzoom="out" title="Zoom out">&minus;</button>` +
+    `<button aria-label="Zoom in" data-flowzoom="in" title="Zoom in">+</button>` +
+    `<button aria-label="Reset pan/zoom to fit" data-flowfit title="Reset pan/zoom to fit">Fit</button>`;
   box.querySelectorAll('[data-fd]').forEach(b => {
     b.addEventListener('click', () => {
       flowDepth = +b.dataset.fd;

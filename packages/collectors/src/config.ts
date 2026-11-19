@@ -259,6 +259,19 @@ const KNOWN_KEYS = new Set<string>([
   "agent_home", "exclude", "node_reports_dir",
 ]);
 
+/** `load(path)` with LLM_TELEMETRY_AGENT_HOME pinned to `agentHome` for the
+ * duration of the call (the env var is restored after). */
+export function loadWithAgentHome(path: string, agentHome: string): Config {
+  const saved = process.env["LLM_TELEMETRY_AGENT_HOME"];
+  process.env["LLM_TELEMETRY_AGENT_HOME"] = agentHome;
+  try {
+    return load(path);
+  } finally {
+    if (saved === undefined) delete process.env["LLM_TELEMETRY_AGENT_HOME"];
+    else process.env["LLM_TELEMETRY_AGENT_HOME"] = saved;
+  }
+}
+
 /** Load config from disk; profiles come from resolveProfiles(). */
 export function load(path?: string | null): Config {
   const paths = path ? [expand(path)] : candidatePaths();
