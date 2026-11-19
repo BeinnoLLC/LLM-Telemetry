@@ -6,8 +6,8 @@ colors:
   # ONE palette, declared in src/llm_telemetry/web/css/tokens.css (the only file allowed to
   # hold hex/rgb/hsl literals). Names match the CSS custom properties exactly (--bg -> colors.bg).
   # Dark theme = sibling tokens with a `-dark` suffix (Beinno convention); `-dark` reads the
-  # `[data-theme="dark"]` value of the same `--<name>` (tokens.css:160-208).
-  # ---------- Light (`:root, [data-theme="light"]`, tokens.css:58-131) ----------
+  # `[data-theme="dark"]` value of the same `--<name>` (tokens.css:287-387).
+  # ---------- Light (`:root, [data-theme="light"]`, tokens.css:64-196) ----------
   bg: "#fbfbf9"                          # --bg  page surface
   card: "#ffffff"                        # --card  raised surface
   fg: "#1a201c"                          # --fg  body text
@@ -41,9 +41,9 @@ colors:
   state-hover: "rgba(0,0,0,.04)"         # --state-hover  state layer
   state-pressed: "rgba(0,0,0,.08)"       # --state-pressed
   state-focus: "rgba(31,98,201,.25)"     # --state-focus
-  # ---- task-queue jar material (tokens.css:112-130). Declared under `:root`, consumed only by
-  # ---- the LIGHT jar restyle (`:root:not([data-theme="dark"])`, dashboard.css:2251-2292): the
-  # ---- values are theme-independent but dark jars intentionally stay plain (mismatch 12).
+  # ---- task-queue jar material (tokens.css:175-189). BOTH themes declare the same 15 tokens
+  # ---- (LLMTELEMET-317): these are the light values; the dark block (tokens.css:364-386) reproduces
+  # ---- the old dark jar. The light restyle is `:root:not([data-theme="dark"])` (dashboard.css:2228-2274).
   jar-glass: "hsl(220 20% 97%)"          # --jar-glass
   jar-edge: "hsl(220 18% 46%)"           # --jar-edge
   jar-ink: "hsl(225 25% 6%)"             # --jar-ink  jar count/label ink (>=4.5:1 on every marble, tests/check_jars_light.js)
@@ -99,7 +99,7 @@ colors:
   hv-gauge-lo: "{colors.z-ok}"           # --hv-gauge-lo:var(--z-ok)  pressure gauge zones
   hv-gauge-mid: "{colors.z-warn}"        # --hv-gauge-mid:var(--z-warn)
   hv-gauge-hi: "{colors.z-bad}"          # --hv-gauge-hi:var(--z-bad)
-  # ---------- Dark (`[data-theme="dark"]`, tokens.css:160-208) ----------
+  # ---------- Dark (`[data-theme="dark"]`, tokens.css:287-387) ----------
   bg-dark: "#05060a"
   card-dark: "#0f1118"
   fg-dark: "#f5f5f5"
@@ -133,23 +133,23 @@ colors:
   state-hover-dark: "rgba(255,255,255,.06)"
   state-pressed-dark: "rgba(255,255,255,.10)"
   state-focus-dark: "rgba(136,170,255,.40)"
-  # jar material: theme-independent (same value in dark; the jar restyle simply does not run
-  # in dark — see Shapes/Components, mismatch 12). Values duplicated so both themes are explicit.
-  jar-glass-dark: "hsl(220 20% 97%)"
-  jar-edge-dark: "hsl(220 18% 46%)"
-  jar-ink-dark: "hsl(225 25% 6%)"
-  jar-label-dark: "hsl(220 20% 20%)"
-  jar-label-soft-dark: "hsl(220 12% 34%)"
-  jar-lid-top-dark: "hsl(0 0% 100%)"
-  jar-lid-bot-dark: "hsl(220 18% 90%)"
-  jar-shadow-dark: "hsl(220 30% 20% / .34)"
-  jar-glow-dark: "hsl(199 95% 38%)"
-  jar-ring-dark: "hsl(28 95% 36%)"
-  jar-hermes-dark: "hsl(199 90% 41%)"
-  jar-pi-dark: "hsl(265 70% 65%)"
-  jar-claude-dark: "hsl(18 88% 48%)"
-  jar-codex-dark: "hsl(152 75% 33%)"
-  jar-wait-dark: "hsl(215 30% 54%)"
+  # jar material, dark (tokens.css:364-386, LLMTELEMET-317): the exact expressions the dark jar
+  # painted before tokenising (--tint = white, --shade = black); marbles map to --kind-* / --qk-wait.
+  jar-glass-dark: "color-mix(in srgb,var(--tint) 7%,var(--card))"
+  jar-edge-dark: "var(--w30)"
+  jar-ink-dark: "var(--tint)"
+  jar-label-dark: "var(--fg)"
+  jar-label-soft-dark: "var(--muted)"
+  jar-lid-top-dark: "color-mix(in srgb,var(--bg) 40%,var(--tint) 22%)"
+  jar-lid-bot-dark: "color-mix(in srgb,var(--bg) 70%,var(--shade))"
+  jar-shadow-dark: "var(--s60)"
+  jar-glow-dark: "var(--muted)"
+  jar-ring-dark: "var(--z-warn)"
+  jar-hermes-dark: "var(--kind-hermes)"
+  jar-pi-dark: "var(--kind-pi)"
+  jar-claude-dark: "var(--kind-claude)"
+  jar-codex-dark: "var(--kind-codex)"
+  jar-wait-dark: "var(--qk-wait)"
   # fleet-bar surfaces resolve per theme through var(): dark resolves to the values below.
   fb-surface-dark: "#181a21"             # --fb-surface = color-mix(in srgb,var(--fg) 4%,var(--card)) at dark values
   fb-raise-dark: "#24262c"               # --fb-raise   = color-mix(in srgb,var(--fg) 9%,var(--card)) at dark values
@@ -497,8 +497,8 @@ Roles (every value below is the exact `tokens.css` value; dark values are the
 | `--state-hover/-pressed/-focus` | state layers | `rgba(0,0,0,.04)` / `rgba(0,0,0,.08)` / `rgba(31,98,201,.25)` | `rgba(255,255,255,.06)` / `rgba(255,255,255,.10)` / `rgba(136,170,255,.40)` |
 | `--fb-surface` / `--fb-raise` | fleet-bar surfaces (resolve per theme) | `color-mix(in srgb,var(--fg) 4%,var(--card))` / `…9%…` | same expressions at dark values |
 | `--kind-hermes/-pi/-claude/-codex` | agent-kind identity, ONE source | `hsl(199 60% 56%)`, `hsl(265 55% 64%)`, `hsl(18 70% 60%)`, `hsl(152 50% 52%)` | theme-independent (same) |
-| `--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` | light-theme jar material | `hsl(220 20% 97%)`, `hsl(220 18% 46%)`, `hsl(225 25% 6%)`, `hsl(220 20% 20%)`, `hsl(220 12% 34%)`, `hsl(0 0% 100%)`, `hsl(220 18% 90%)`, `hsl(220 30% 20% / .34)`, `hsl(199 95% 38%)`, `hsl(28 95% 36%)` | same values (restyle off in dark, mismatch 12) |
-| `--jar-hermes/-pi/-claude/-codex/-wait` | light-theme ball identity | `hsl(199 90% 41%)`, `hsl(265 70% 65%)`, `hsl(18 88% 48%)`, `hsl(152 75% 33%)`, `hsl(215 30% 54%)` | same values |
+| `--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` | light-theme jar material | `hsl(220 20% 97%)`, `hsl(220 18% 46%)`, `hsl(225 25% 6%)`, `hsl(220 20% 20%)`, `hsl(220 12% 34%)`, `hsl(0 0% 100%)`, `hsl(220 18% 90%)`, `hsl(220 30% 20% / .34)`, `hsl(199 95% 38%)`, `hsl(28 95% 36%)` | `color-mix(in srgb,var(--tint) 7%,var(--card))`, `var(--w30)`, `var(--tint)`, `var(--fg)`, `var(--muted)`, `color-mix(in srgb,var(--bg) 40%,var(--tint) 22%)`, `color-mix(in srgb,var(--bg) 70%,var(--shade))`, `var(--s60)`, `var(--muted)`, `var(--z-warn)` |
+| `--jar-hermes/-pi/-claude/-codex/-wait` | ball identity | `hsl(199 90% 41%)`, `hsl(265 70% 65%)`, `hsl(18 88% 48%)`, `hsl(152 75% 33%)`, `hsl(215 30% 54%)` | `var(--kind-hermes)`, `var(--kind-pi)`, `var(--kind-claude)`, `var(--kind-codex)`, `var(--qk-wait)` |
 | `--hv-fill/-feat/-teeth/-halo` | Hive head body/feature/teeth/halo | `#0a0a0a`, `#f4f1f2`, `#ece2de`, `#5a0f1c` | theme-independent (same) |
 | `--hv-rim-top-0..4` / `--hv-rim-bot-0..4` | Hive rim gradient per anger level 0→1 | `#ff70b0`,`#ff6a96`,`#ff6854`,`#ff6234`,`#ff6026` / `#ff963c`,`#ff8c34`,`#ff7622`,`#ff521c`,`#ff2e1a` | theme-independent (same) |
 | `--hv-mouth-0..4` | Hive mouth per anger level | `#aa768c`,`#a0647a`,`#8c3742`,`#70161e`,`#5c0a10` | theme-independent (same) |
@@ -523,12 +523,12 @@ Colour rules:
   `<head>` sets `data-theme="dark"` before first paint unless
   `localStorage['hermes-dash-theme'] === 'light'`. Runtime toggle + persistence:
   `web/js/main.js:149-160`, then `readTheme()` re-tints Chart.js.
-- Blocks: `:root, [data-theme="light"]` (tokens.css:58) and `[data-theme="dark"]`
-  (tokens.css:160). Light naming is explicit so it resolves to the default values.
+- Blocks: `:root, [data-theme="light"]` (tokens.css:64) and `[data-theme="dark"]`
+  (tokens.css:287). Light naming is explicit so it resolves to the default values.
 - Dark-only widget fixes exist and stay minimal (e.g. `input[type=date]{color-scheme:dark}`,
   dashboard.css:197).
-- Known theme gaps: the jar material restyle is light-only (`:root:not([data-theme="dark"])`,
-  dashboard.css:2251-2292 — mismatch 12), `--elev-0` has no dark sibling (mismatch 17 note),
+- Known theme gaps: `--elev-0` has no dark sibling (mismatch 17 note); the jar material is
+  tokenised in both themes (LLMTELEMET-317, mismatch 12 resolved),
   and the light-only `filter:brightness(.5)` shim on `.lvmodel` (dashboard.css:1936).
 - Any new component must render in BOTH themes through semantic tokens. Never bake a
   colour that only reads on one surface.
@@ -881,13 +881,22 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
 `.qt-n` count + `.qt-body` (glass silhouette, liquid `--fill` with wave) + `.qt-cars`
 (ball pit) + legend.
 
+- **Material tokens (LLMTELEMET-317):** BOTH themes read the 15 `--jar-*` tokens
+  (`--jar-glass/-edge/-ink/-label/-label-soft/-lid-top/-lid-bot/-shadow/-glow/-ring` and the
+  kind marbles `--jar-hermes/-pi/-claude/-codex/-wait`). The light values live in the
+  `:root,[data-theme="light"]` block of `tokens.css`; the `[data-theme="dark"]` block declares
+  the same 15 tokens, each equal to the literal the dark jar painted before tokenising
+  (`--tint` = white, `--shade` = black, `--kind-*`/`--qk-wait` for the marbles), so dark renders
+  unchanged. The shared jar rules and the `#qcard` kind mapping are no longer gated to light;
+  `dashboard.css` holds no raw hex for the jar.
+
 - The three jars are **Depot** (requests queued at an Ollama host), **On the line**
   (running sessions) and **Yard** (finished sessions). There is **no "oven" element** in
   the code — Depot / On the line / Yard are the canonical names (`flow.js:14-17`,
   `aria-label="Depot: waiting"` etc. `dashboard.html:186-188`).
 - Per-jar accent `--jc` (dashboard.css:853-855) drives the lid border, name tint and
   liquid: Depot `var(--muted)` (light: `color-mix(in srgb,var(--jar-edge) 70%,var(--muted))`,
-  dashboard.css:2255), On the line `var(--z-ok)`, Yard `var(--accent)`. It is the ONLY
+  dashboard.css:2237), On the line `var(--z-ok)`, Yard `var(--accent)`. It is the ONLY
   per-jar colour knob — the liquid is tinted from it via `color-mix()`.
 - One task = one ball (`.qt-ball`, keyed DOM reused across 5s polls). Ball size steps
   `QT_MAX:28px` → `QT_MIN:18px` (`flow.js:111-112`) until the pile fits `QT_FILL:0.5`;
@@ -903,7 +912,7 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
   ring + glow, `.qt-warn` ring (`--z-warn`/`--jar-ring`) for waiting-on-approval, `.qt-ghost`
   flight copy, `.qt-arrive`/`.qt-land`/`.qt-leaving` transitions. Ball hue: profile hue for
   Hermes (`profileHue`), `--kind-*` for fleet agents, kind remaps `--jar-hermes/pi/claude/codex`
-  in light (`dashboard.css:2254`).
+  in BOTH themes (`#qcard` remap, `dashboard.css:2231`).
 - Motion: ghost flights Depot→Line (paired by count) and Line→Yard (exact session id),
   600-900ms arcs, 70ms stagger, max 4 concurrent (`qtFly`, flow.js:319-354); splash on
   landing (`qtSplash`, flow.js:308-313); slosh on count change; whole-train sway while
@@ -914,8 +923,9 @@ in a 3-column grid (1 column at `<=900px`), each `.qt-sec` = `.qt-lid` + `.qt-na
   jar sections `role="group"` with labels.
 - `?demoQueue=1` cycles one synthetic task Depot→Line→Yard every 3s for motion preview
   ONLY (`flow.js:66-89`) — it must never run against real traffic displays.
-- Light/dark: dark jars use the base glass treatment; light jars restyle from `--jar-*`
-  (`:root:not([data-theme="dark"])`, dashboard.css:2251-2292). Each marble keeps
+- Light/dark: both themes read the `--jar-*` tokens; dark values reproduce the base glass
+  treatment, light jars additionally restyle from them
+  (`:root:not([data-theme="dark"])`, dashboard.css:2228-2274). Each marble keeps
   ≥3:1 vs `--jar-glass` and its icon ink ≥4.5:1 (`tests/check_jars_light.js`).
 
 Do: provider SVGs only; keyed DOM; splash on landing (not on poll). Don't: letters on
@@ -1164,10 +1174,10 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
 11. **Two dropdown families + 3 chip shapes** — low — `select.chip` (203-211) vs
     `.combo-btn/.combo-pop` (2109-2116), `.chip`/`.fchip`/`.pchip`; one chip spec with
     select/button variants. *ticket: LLMTELEMET-316*
-12. **Jar material tokens are light-only** — med — 15 `--jar-*` (tokens.css:116-130) with
-    the restyle gated `:root:not([data-theme="dark"])` (dashboard.css:2254-2264); either add
-    a dark block or record "dark jars intentionally plain" (recorded here as the current
-    spec). *ticket: LLMTELEMET-317*
+12. **Jar material tokens** — RESOLVED — both themes declare the 15 `--jar-*` tokens (light
+    tokens.css:175-189, dark tokens.css:364-386); the shared jar rules and the `#qcard` kind
+    remap (dashboard.css:2231) apply in both themes, the light refinement stays gated
+    `:root:not([data-theme="dark"])` (dashboard.css:2228-2274). *ticket: LLMTELEMET-317*
 13. **Motion tokens defined but unused; 39 raw durations** — med — `--motion-fast/normal`
     0 uses (tokens.css:109); route transitions through them, add `--motion-slow:300ms`
     (**proposed**). *ticket: LLMTELEMET-318*
