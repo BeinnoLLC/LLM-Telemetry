@@ -9,7 +9,10 @@ const path = require('path');
 
 const CSS = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css', 'dashboard.css');
 const RAW = /\b(?:rgb|rgba|hsl|hsla)\s*\(/gi;
-const TOOLTIP = /^\s*[.#][\w-]*(?:qtip|flowtip)\b/;
+// Exactly .qtip / .flowtip (not .foo-qtip, .qtip-x), optionally with attribute /
+// pseudo / class suffixes on the same element: no whitespace or combinator after it.
+const TOOLTIP_HEAD = /^\.(qtip|flowtip)(?![\w-])/;
+const TOOLTIP = {test: s => { s = s.trim(); return TOOLTIP_HEAD.test(s) && !/[\s>+~]/.test(s.replace(/\[[^\]]*\]/g, '')); }};
 
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
@@ -75,6 +78,12 @@ for (const v of violations) console.log(`      ${v.line}: ${v.hits.join(', ')}  
 // Positive control: the scanner must still SEE the exempt tooltip literals —
 // proves the exemption is scoped to .qtip/.flowtip blocks, not a blanket pass.
 chk(exemptHits.length > 0, `tooltip rules keep their LLMTELEMET-312 literals, exempt (${exemptHits.map(e => e.line).join(', ')})`);
+
+// Negative controls for the selector exemption itself.
+chk(TOOLTIP.test('.qtip') && TOOLTIP.test('.flowtip.on') && TOOLTIP.test('.qtip[data-side=top]::before'), 'exempt: .qtip, .flowtip.on, .qtip[data-side]::before');
+chk(!TOOLTIP.test('.foo-qtip'), 'not exempt: .foo-qtip');
+chk(!TOOLTIP.test('.qtip ~ main .card'), 'not exempt: .qtip ~ main .card');
+chk(!TOOLTIP.test('.qtip .card') && !TOOLTIP.test('.qtip>.card') && !TOOLTIP.test('.qtip-x'), 'not exempt: descendant/child/.qtip-x');
 
 console.log(`${pass} passed, ${fail} failed`);
 if (require.main === module) process.exit(fail ? 1 : 0);

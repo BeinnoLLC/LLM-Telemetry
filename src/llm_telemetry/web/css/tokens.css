@@ -139,11 +139,9 @@
   --s28:rgba(0,0,0,.28);
   --s35:rgba(0,0,0,.35);--s40:rgba(0,0,0,.4);--s45:rgba(0,0,0,.45);--s50:rgba(0,0,0,.5);
   --s55:rgba(0,0,0,.55);--s60:rgba(0,0,0,.6);--s65:rgba(0,0,0,.65);
-  
   --w10:rgba(255,255,255,.1);--w14:rgba(255,255,255,.14);--w18:rgba(255,255,255,.18);
   --w22:rgba(255,255,255,.22);--w30:rgba(255,255,255,.3);
   --w40:rgba(255,255,255,.4);--w45:rgba(255,255,255,.45);--w55:rgba(255,255,255,.55);
-  
 
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
