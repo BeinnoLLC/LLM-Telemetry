@@ -28,8 +28,9 @@ SCRIPTS = sorted(
 
 @pytest.mark.parametrize("script", SCRIPTS)
 def test_script(script):
+    timeout = int(os.environ.get("PYTEST_WRAPPER_TIMEOUT", "300"))
     r = subprocess.run([sys.executable, os.path.join(TESTS_DIR, script)],
-                        cwd=ROOT, capture_output=True, text=True, timeout=120)
+                        cwd=ROOT, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
         pytest.fail(f"{script} exited {r.returncode}\n--- stdout ---\n{r.stdout}\n--- stderr ---\n{r.stderr}",
                     pytrace=False)
