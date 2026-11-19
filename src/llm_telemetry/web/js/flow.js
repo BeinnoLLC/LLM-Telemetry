@@ -122,7 +122,7 @@ export function qtBallIcon(it){
   const svg = /<svg[\s>]/.test(html) ? html.replace(/width:\d+px;height:\d+px;?/, '') : '';
   if (svg) return svg;
   // No brand mark for this provider: a neutral hexagon, never the monogram letters.
-  return '<svg class="qt-generic" viewBox="0 0 24 24" aria-hidden="true" style="fill:#5b6472"><path d="M12 2.6 20.2 7.1v9.8L12 21.4 3.8 16.9V7.1z"/></svg>';
+  return '<svg class="qt-generic" viewBox="0 0 24 24" aria-hidden="true" style="fill:var(--c-neutral)"><path d="M12 2.6 20.2 7.1v9.8L12 21.4 3.8 16.9V7.1z"/></svg>';
 }
 // The legend swatch is filled from the very same icon path as the balls (user rule: the jar
 // legend shows provider icons too, never letters).

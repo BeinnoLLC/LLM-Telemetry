@@ -63,6 +63,30 @@
 
 :root,
 [data-theme="light"]{
+  /* LLMTELEMET-306: chart/status colours read from JS via css() */
+  --c-amber:#c4a06e;
+  --c-ok:#34c38f;
+  --c-sky:#38bdf8;
+  --c-red:#c66a6a;
+  --c-gold:#c2a15c;
+  --c-orange:#fb923c;
+  --c-slate:#7c909c;
+  --c-violet:#9a86b8;
+  --c-teal:#64b5c9;
+  --c-indigo:#818cf8;
+  --c-green:#5f9e6e;
+  --c-neutral:#5b6472;
+  --c-fallback:#888;
+  --chart-0:#5794f2;
+  --chart-1:#73bf69;
+  --chart-2:#ff9830;
+  --chart-3:#b877d9;
+  --chart-4:#f2cc0c;
+  --chart-5:#8ab8ff;
+  --chart-6:#f2495c;
+  --chart-7:#705da0;
+  --chart-8:#37872d;
+  --chart-9:#fade2a;
   /* the reference board look, sampled off Hazem's scorecard screenshot:
      off-white page, pure-white cards, cool green-grey ink, one muted
      #3F8358 emerald accent; pastel tiles ride on the washes below */
@@ -260,6 +284,30 @@
 }
 
 [data-theme="dark"]{
+  /* LLMTELEMET-306: chart/status colours read from JS via css() */
+  --c-amber:#c4a06e;
+  --c-ok:#34c38f;
+  --c-sky:#38bdf8;
+  --c-red:#c66a6a;
+  --c-gold:#c2a15c;
+  --c-orange:#fb923c;
+  --c-slate:#7c909c;
+  --c-violet:#9a86b8;
+  --c-teal:#64b5c9;
+  --c-indigo:#818cf8;
+  --c-green:#5f9e6e;
+  --c-neutral:#5b6472;
+  --c-fallback:#888;
+  --chart-0:#5794f2;
+  --chart-1:#73bf69;
+  --chart-2:#ff9830;
+  --chart-3:#b877d9;
+  --chart-4:#f2cc0c;
+  --chart-5:#8ab8ff;
+  --chart-6:#f2495c;
+  --chart-7:#705da0;
+  --chart-8:#37872d;
+  --chart-9:#fade2a;
   /* base surfaces: Hive neutral blue-grey night values */
   --bg:#05060a;
   --card:#0f1118;
