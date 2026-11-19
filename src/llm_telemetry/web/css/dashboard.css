@@ -1199,11 +1199,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #setsave:disabled{opacity:.45;cursor:not-allowed}
  @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
 
- /* ---- Logs drawer -------------------------------------------------------
-    Fixed to the right edge, above everything, and translated off-screen when
-    closed so it costs nothing until opened. */
- /* Shared right-edge panel: .drawer is the one component, #drawer (logs) and
-    #pdrawer (project detail, .drawer-wide) only differ by z-index/transition. */
+ /* ---- Drawer (the one side-panel component) ----------------------------
+    Fixed to the right edge and translated off-screen when closed so it costs
+    nothing until opened. #drawer (logs) and #pdrawer (project detail,
+    .drawer-wide: 420px, clipped overflow) share every shell property; the ids
+    only set z-index (and #drawer its mobile sheet height). */
  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);
    background:var(--card);border-left:1px solid var(--border);display:flex;
    flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
@@ -1212,6 +1212,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
  .drawer-wide{width:min(420px,92vw);overflow:hidden}
  #drawer{z-index:70}
+ @media(prefers-reduced-motion:reduce){.drawer,.drawer:not(.open){transition:none}}
  #scrim{position:fixed;inset:0;z-index:65;background:var(--s45);opacity:0;
    pointer-events:none;transition:opacity .22s ease}
  #scrim.open{opacity:1;pointer-events:auto}
@@ -1360,7 +1361,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     The drag handle + ~92dvh height + tab strip that scrolls instead of
     wrapping are the same fixes a native app would ship for this. */
  @media(max-width:640px){
-   .drawer{top:auto;right:0;left:0;width:100vw;max-height:92dvh;
+   .drawer{top:auto;right:0;left:0;width:auto;max-height:92dvh;
      border-left:none;border-top:1px solid var(--border);
      border-radius:14px 14px 0 0;transform:translateY(100%)}
    .drawer.open{transform:translateY(0)}

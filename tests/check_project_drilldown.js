@@ -26,8 +26,8 @@ function chk(ok, name, got) {
 
 chk(/export function pdOpen\(project, rows\b/.test(viewsJs), 'pdOpen exists');
 chk(/export function pdClose\(\)/.test(viewsJs), 'pdClose exists');
-chk(/id="pdrawer" role="dialog" aria-modal="true"/.test(html), 'the panel is a proper aria-modal dialog');
-chk(/@media\(max-width:640px\)\{\s*\n\s*#pdrawer\{top:auto;left:0;right:0;bottom:0;width:100vw/.test(html),
+chk(/id="pdrawer" class="drawer drawer-wide" role="dialog" aria-modal="true"/.test(html), 'the panel is a proper aria-modal dialog');
+chk(/@media\(max-width:640px\)\{\s*\n\s*\.drawer\{top:auto;right:0;left:0;width:auto/.test(html),
     'a 640px breakpoint turns the panel into a full-width bottom sheet');
 
 function boot() {

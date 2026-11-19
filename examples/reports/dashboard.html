@@ -1233,12 +1233,15 @@ color:var(--accent2);display:inline-block}
 .setlist{list-style:disc;padding-left:16px;display:flex;flex-direction:column;gap:6px}
 #setsave:disabled{opacity:.45;cursor:not-allowed}
 @media (max-width:640px){ .setfacts2{grid-template-columns:1fr} .setin input{max-width:none} }
-#drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:70;
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);
 background:var(--card);border-left:1px solid var(--border);display:flex;
 flex-direction:column;transform:translateX(100%);transition:transform .22s ease;
-box-shadow:-12px 0 40px var(--s40)}
-#drawer.open{transform:translateX(0)}
-#drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+box-shadow:var(--elev-3)}
+.drawer.open{transform:translateX(0)}
+.drawer:not(.open){visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+.drawer-wide{width:min(420px,92vw);overflow:hidden}
+#drawer{z-index:70}
+@media(prefers-reduced-motion:reduce){.drawer,.drawer:not(.open){transition:none}}
 #scrim{position:fixed;inset:0;z-index:65;background:var(--s45);opacity:0;
 pointer-events:none;transition:opacity .22s ease}
 #scrim.open{opacity:1;pointer-events:auto}
@@ -1313,12 +1316,7 @@ transform:translate(0,8px) scale(1)}
 .lnspan.lntick{width:3px!important;border-radius:1px}
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 #lntip{z-index:90;max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
-#pdrawer{position:fixed;top:0;right:0;bottom:0;z-index:80;
-width:min(420px,92vw);background:var(--card);border-left:1px solid var(--border);
-display:flex;flex-direction:column;overflow:hidden;
-transform:translateX(100%);transition:transform .18s ease;
-box-shadow:-16px 0 40px var(--s35)}
-#pdrawer.open{transform:translateX(0)}
+#pdrawer{z-index:80}
 .pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
 border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
@@ -1332,21 +1330,17 @@ border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .pdsessrow{padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
 .pdsessrow:last-child{border-bottom:none}
 @media(max-width:640px){
-#pdrawer{top:auto;left:0;right:0;bottom:0;width:100vw;max-height:85vh;
-border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0;
-transform:translateY(100%)}
-#pdrawer.open{transform:translateY(0)}
 .tmsg{max-width:96%}
 }
 @media(min-width:641px) and (max-width:1024px){
-#drawer{width:60vw}
+.drawer:not(.drawer-wide){width:60vw}
 }
 @media(max-width:640px){
-#drawer{top:auto;right:0;left:0;width:auto;height:92dvh;max-height:92dvh;
+.drawer{top:auto;right:0;left:0;width:auto;max-height:92dvh;
 border-left:none;border-top:1px solid var(--border);
-border-radius:14px 14px 0 0;
-transform:translateY(100%);box-shadow:0 -12px 40px var(--s40)}
-#drawer.open{transform:translateY(0)}
+border-radius:14px 14px 0 0;transform:translateY(100%)}
+.drawer.open{transform:translateY(0)}
+#drawer{height:92dvh}
 #drawer .dhead{padding-top:6px}
 #draghandle{display:block;width:36px;height:4px;border-radius:2px;
 background:var(--muted);opacity:.5;margin:0 auto 8px;flex-shrink:0}
@@ -2763,7 +2757,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 </div>
 
 <div id="scrim"></div>
-<div id="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
+<div id="drawer" class="drawer" role="dialog" aria-label="Live logs" aria-hidden="true">
  <div id="draghandle"></div>
  <div class="dhead">
   <span class="dot"></span>
@@ -2815,7 +2809,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 <div id="lntip" class="qtip" role="tooltip"></div>
 
 <div id="pdscrim" class="scrim"></div>
-<div id="pdrawer" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
+<div id="pdrawer" class="drawer drawer-wide" role="dialog" aria-modal="true" aria-label="Project detail" aria-hidden="true">
  <div class="pdhead">
   <b id="pdtitle"></b>
   <button id="pdclose" class="chip" type="button" style="margin-left:auto" aria-label="Close details" title="Close (Esc)">&times;</button>

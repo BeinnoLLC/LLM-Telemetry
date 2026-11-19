@@ -809,14 +809,15 @@ dismissible action; don't animate layout shifts.
 
 ### Drawers
 
-Canonical: `#drawer` (dashboard.css:1217-1236) — fixed right, `min(460px,92vw)`, `--card`,
-`border-left`, slide `translateX(100%)` ↔ `.open`, `--elev-3`-class shadow, `#scrim`
-(`z-index:65`, 45% black). Header `.dhead` + filter tabs `.dtabs`/`.dtab` (`.on` =
-accent fill). Responsive: 641-1024px → `60vw`; `<=640px` → bottom sheet (92dvh, top
-corners `14px`, drag handle).
-`#pdrawer` (dashboard.css:1329-1366) is the same shell as `.drawer-detail` (420px;
-`<=640px` bottom sheet, `12px` top corners) — mismatch 9 wants it named as a variant of
-`#drawer` rather than a parallel implementation.
+Canonical: `.drawer` (dashboard.css, "Drawer" block) is the single side-panel component:
+fixed right, `min(460px,92vw)`, `--card`, `border-left`, slide `translateX(100%)` ↔ `.open`,
+`--elev-3` shadow, closed state `visibility:hidden` (out of tab order), `#scrim`
+(`z-index:65`, 45% black). `#drawer` (logs) and `#pdrawer` (project detail) both carry
+`class="drawer"`; the id rules only set `z-index`. Header `.dhead` + filter tabs
+`.dtabs`/`.dtab` (`.on` = accent fill). Variant `.drawer-wide` (420px, clipped overflow) is
+the detail size. Responsive: 641-1024px → `60vw` (not `.drawer-wide`); `<=640px` → bottom
+sheet for both (`width:auto`, 92dvh, top corners `14px`, drag handle). Transitions are off
+under `prefers-reduced-motion`. Guard: `tests/check_one_drawer.js`.
 Do: one drawer component with size variants; scrim + focus trap + Esc. Don't: add a third
 drawer shell.
 
@@ -1153,8 +1154,8 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
    (1325), `.hv-tip` (hive.css:13); unify on `.qtip`. *ticket: LLMTELEMET-312*
 8. **Three modal shells and four scrims** — med — `#tmodal`/`#lnmodal`/`#sfmodal` +
    `#tscrim`/`#lnscrim`/`#sfscrim`/`#pdscrim`; one `.modal` + `.scrim`. *ticket: LLMTELEMET-313*
-9. **Two drawers** — low — `#drawer` (1220) vs `#pdrawer` (1338); name `#pdrawer` the
-   detail-size variant. *ticket: LLMTELEMET-314*
+9. **Two drawers** — RESOLVED — `#drawer` and `#pdrawer` now share the `.drawer` component;
+   `#pdrawer` is the `.drawer-wide` variant. *ticket: LLMTELEMET-314*
 10. **Two app bars** — med — `.appbar` (670) vs `#appbar` (2166-2168); delete the retired
     one, keep `#appbar`. *ticket: LLMTELEMET-315*
 11. **Two dropdown families + 3 chip shapes** — low — `select.chip` (203-211) vs
