@@ -9,6 +9,7 @@
 // table whose first row is the header; whitespace collapsed). Nothing here is
 // captured from output.
 import { isolate } from './lib/isolate.mjs';
+import { rtColor } from './lib/tokens.mjs';
 import { readFileSync } from 'node:fs';
 
 let pass = 0, fail = 0;
@@ -89,7 +90,7 @@ const V = await isolate('views.js', {
     projTrendStacked: () => '', sparkSvg: () => '', weightValue: () => 0 },
   'flow.js': { flowControls: () => '', renderFlow: () => {} },
   'live.js': { renderLive: () => {} },
-  'routerview.js': { renderRouterView: () => {}, routerStat: () => '' },
+  'routerview.js': { renderRouterView: () => {}, routerStat: () => '', rtColor },
   'quotaview.js': { renderQuotaView: () => {}, qvStat: () => '' },
   'router.js': { HOUR_RANGE: null, MODEL_FILTER: '', POWER: '', PROJECT_FILTER: '', PROVIDER_FILTER: '',
     clearCrossFilters: () => {}, hourRowsFor: () => [], pickView: () => {}, setCrossFilter: () => {},

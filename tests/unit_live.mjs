@@ -3,6 +3,7 @@
 // Expected values derived by hand from the source, not captured from output.
 import { isolate } from './lib/isolate.mjs';
 import assert from 'node:assert/strict';
+import { css, hueCss } from './lib/tokens.mjs';
 
 let pass = 0, fail = 0;
 const eq = (actual, expected, msg) => {
@@ -32,7 +33,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // every module into one script (webassets.py strips the `export` keywords).
 // Checks below therefore assert on the DOM/state the function produced BEFORE
 // it stopped, and pin that stop so an unexpected one cannot hide.
-const PAL = await isolate('palette.js', {});   // the real esc/short/fmtB/ago/catOf live.js calls
+// css is stubbed to echo its token: the real catOf resolves its category
+// colours through it (LST-314), and every other name here is pure.
+const PAL = await isolate('palette.js', { 'main.js': { css: v => `var(${v})` } });   // the real esc/short/fmtB/ago/catOf live.js calls
 
 const EL_IDS = ['refresh','livelist','livefanout','livebw','livestamp','repolist','from','to','meta','soundtoggle','livekpis'];
 
@@ -194,7 +197,7 @@ async function boot(opt = {}){
     'routerview.js': {
       installHelp(){ logs.installs.push('installHelp'); },
     },
-    'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3 },
+    'main.js': { DATA: opt.data || { profiles: {} }, SCHEMA_VERSION: 3, css, hueCss },
     // diffdom is NOT stubbed as a no-op: unit_live asserts the rendered row
     // HTML, so this emulates the applier contract — write-on-change only
     // (idle polls leave innerHTML untouched, exactly like the real module).
@@ -339,7 +342,7 @@ const catches = fn => { try { fn(); return false; } catch { return true; } };
   has(html, 'title="Fix the parser — view timeline"', 'renderLive: timeline button tooltip');
   has(html, 'data-title="Fix the parser"', 'renderLive: timeline button carries the title');
   has(html, 'title="Coding"', 'renderLive: the category tooltip is escaped');
-  has(html, 'color:#5f9e6e', 'renderLive: category colour comes from catOf');
+  has(html, 'color:var(--z-ok)', 'renderLive: category colour comes from catOf (--z-ok for Coding)');
   has(html, '>Coding</span>', 'renderLive: the category label is rendered');
   has(html, 'title="opus-4"', 'renderLive: the model badge shows the SHORT model name');
   has(html, 'style="color:#abc123"', 'renderLive: the model badge colour comes from colorOf');

@@ -49,11 +49,16 @@
  *          rose 3.61, slate 3.81, mint 3.16 (all >=3).
  *   DARK   fg 10.9 / muted 5.82 (6.25 on page bg #05060a) / accent 6.64 (accent-ink on accent 7.52) on card; z-ok 5.43,
  *          z-warn 7.03, z-bad 4.67 as text; --pal-* on card 4.84-8.54: all pass, unchanged.
- *   KNOWN, not fixable in tokens alone: --z-*-fg is used both as text on the card
- *          (dark: fine, 10+) and as text on a solid --z-* fill (.navbadge.alert).
- *          In dark the fill pairs are ok 2.68 / warn 2.09 / bad 3.01 and
- *          in light the --z-*-fg tints as text on the card are ~1.2; both need
- *          dashboard.css usages split into dedicated tokens (follow-up).
+ *   LST-309 (design-audit mismatch 4): the light --z-*-fg were pale badge tints
+ *          that worked only on a solid --z-* fill and failed AA as text on the
+ *          light surfaces (1.13-1.22 on --bg/--card). They are now deep inks
+ *          (ok #2d5c3f / warn #6b5216 / bad #8c3a33, >=7:1 on both light
+ *          surfaces; tests/check_zfg_contrast.js recomputes this table). Text
+ *          on a solid --z-* fill pairs the fill with --card instead
+ *          (.navbadge.alert via its light override, .qv-astat.qv-bad), so
+ *          --z-*-fg is text on the surfaces only. DARK unchanged.
+ *   KNOWN: dark .navbadge.alert renders --z-bad-fg on --z-bad at ~3.0:1
+ *          and still fails AA; tracked as a follow-up (not fixed here).
  *   --border is a decorative hairline (1.27:1 both themes), exempt as non-essential. */
 
 :root,
@@ -70,7 +75,12 @@
   --accent:#1f62c9;
   --accent-ink:#ffffff;
   --accent-wash:rgba(31,98,201,.10);
-  --accent2:#7793a2;
+  /* LST-310: --accent2 darkened from #7793a2 (3.13/3.24 — failed body-text AA)
+     to #566e7e, same muted blue-grey family (hue ~204, sat ~19%), so its text
+     uses (.olbadge, .costpulse, .rt-hits) clear AA: 5.16 on --bg, 5.35 on
+     --card, 4.63 on the accent-wash badge surface; chart/bar strokes stay
+     well over the 3:1 graphic floor. Dark is unchanged (6.44/6.00). */
+  --accent2:#566e7e;
   --border-strong:rgba(26,32,28,.22);
   --active-a:#1f62c9;            /* active glow pair, light: blue / green (AA on card) */
   --active-b:#1a7f3c;
@@ -89,9 +99,11 @@
   --z-ok:#39764f;
   --z-warn:#7c6328;
   --z-bad:#a14d47;
-  --z-ok-fg:#e4f0e9;
-  --z-warn-fg:#f4ecd7;
-  --z-bad-fg:#f7e4e4;
+  /* LST-309: deep inks — text on the light surfaces (bg/card), never on a
+     --z-* fill (the filled pill pairs its fill with --card text). */
+  --z-ok-fg:#2d5c3f;
+  --z-warn-fg:#6b5216;
+  --z-bad-fg:#8c3a33;
 
   /* solid chart pastels, slightly deeper for white cards */
   --pal-indigo:#7c86b0;
@@ -101,13 +113,35 @@
   --pal-mint:#5f9e78;
 
   /* LST-213 material layer */
-  --elev-0:none;--elev-1:0 1px 2px rgba(0,0,0,.06),0 1px 1px rgba(0,0,0,.04);
+  --elev-1:0 1px 2px rgba(0,0,0,.06),0 1px 1px rgba(0,0,0,.04);
   --elev-2:0 2px 6px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
   --elev-3:0 6px 16px rgba(0,0,0,.10),0 2px 4px rgba(0,0,0,.06);
-  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:32px;--sp-8:40px;
-  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;
-  --motion-fast:120ms;--motion-normal:200ms;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;
   --state-hover:rgba(0,0,0,.04);--state-pressed:rgba(0,0,0,.08);--state-focus:rgba(31,98,201,.25);
+
+  /* LST-311 overlay shading primitives: the physical darkening/lightening ink
+     behind shadows, scrims and glass highlights (dashboard.css mixes these with
+     transparent). Theme-invariant: painted shading is black/white in both, so
+     these live here once — valid for the dark block below too. */
+  --shade:#000000;
+  --tint:#ffffff;
+  --qk-wait:hsl(215 16% 62%);    /* queue ball fill for 'waiting' (was #qcard-local in dashboard.css) */
+  --ev-hover:rgba(127,127,127,.06);      /* log-drawer event-row hover wash (neutral, theme-invariant) */
+  --combo-mark-bg:rgba(110,159,255,.35); /* combobox search-match highlight (theme-invariant) */
+
+  /* LST-311 shading ramps: the premultiplied-alpha forms of the primitives
+     above. color-mix(in srgb,var(--shade) N%,transparent) renders exactly
+     rgba(0,0,0,.N) (same for --tint/white), so dashboard.css reads var(--sN) /
+     var(--wN) instead of re-mixing at every use. sN = shade at N% alpha,
+     wN = tint at N% alpha (w1p5 = 1.5%). Theme-invariant like the primitives. */
+  --s18:rgba(0,0,0,.18);--s22:rgba(0,0,0,.22);--s25:rgba(0,0,0,.25);--s30:rgba(0,0,0,.3);--s38:rgba(0,0,0,.38);--s70:rgba(0,0,0,.7);--s85:rgba(0,0,0,.85);--w2:rgba(255,255,255,.02);--w5:rgba(255,255,255,.05);--w7:rgba(255,255,255,.07);--w8:rgba(255,255,255,.08);--w13:rgba(255,255,255,.13);--w25:rgba(255,255,255,.25);--w35:rgba(255,255,255,.35);--w88:rgba(255,255,255,.88);--w92:rgba(255,255,255,.92);--w95:rgba(255,255,255,.95);--w1p5:rgba(255,255,255,.015);
+  --fm:ui-monospace,SFMono-Regular,Menlo,monospace;--fm2:ui-monospace,monospace;
+  --s28:rgba(0,0,0,.28);
+  --s35:rgba(0,0,0,.35);--s40:rgba(0,0,0,.4);--s45:rgba(0,0,0,.45);--s50:rgba(0,0,0,.5);
+  --s55:rgba(0,0,0,.55);--s60:rgba(0,0,0,.6);--s65:rgba(0,0,0,.65);
+  --w10:rgba(255,255,255,.1);--w14:rgba(255,255,255,.14);--w18:rgba(255,255,255,.18);
+  --w22:rgba(255,255,255,.22);--w30:rgba(255,255,255,.3);
+  --w40:rgba(255,255,255,.4);--w45:rgba(255,255,255,.45);--w55:rgba(255,255,255,.55);
 
   /* Task-queue jar material for the light theme only (dashboard.css reads these
      through :root:not([data-theme="dark"]) rules, so dark is untouched). Each
@@ -128,6 +162,12 @@
   --jar-claude:hsl(18 88% 48%);
   --jar-codex:hsl(152 75% 33%);
   --jar-wait:hsl(215 30% 54%);
+  /* glass/lid shading inks for the light jar (dashboard.css mixes them with
+     transparent at use). Theme-invariant pair values; only the
+     :root:not([data-theme="dark"]) jar rules consume them. */
+  --jar-glass-shadow:hsl(220 25% 45%);
+  --jar-lid-shadow:hsl(220 30% 20%);
+  --jar-lid-shadow-strong:hsl(220 30% 15%);
 }
 
 /* Fleet bar (replaced the old segmented tab strip). Surfaces are derived
@@ -137,6 +177,11 @@
    Declared on :root only — they resolve per-element, so [data-theme] flips the
    surfaces with it. */
 :root{
+  /* overlay pair (LLMTELEMET-313): the scrim veil and the modal shadow are
+     theme-neutral black veils — identical in light and dark — so they are
+     declared once here and no component shell carries a colour literal. */
+  --scrim-bg:rgba(0,0,0,.55);
+  --elev-modal:0 24px 70px rgba(0,0,0,.5);
   --radius-ctl:10px;
   --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --num:tabular-nums;
@@ -144,10 +189,66 @@
   --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
   --fb-h:32px;
   --fb-r:var(--radius-ctl);
+  --lt-bad:hsl(0 72% 55%);--lt-warn:hsl(38 92% 52%);--lt-ok:hsl(142 65% 45%);--lt-slate:hsl(215 16% 55%);--lt-s14:rgba(148,163,184,.14);--lt-s35:rgba(148,163,184,0.35);--lt-s50:rgba(148,163,184,0.5);--lt-s90:rgba(148,163,184,0.9);--lt-pop:0 4px 14px rgba(0,0,0,.25);
   --kind-hermes:hsl(199 60% 56%);
   --kind-pi:hsl(265 55% 64%);
   --kind-claude:hsl(18 70% 60%);
   --kind-codex:hsl(152 50% 52%);
+  --prov-anthropic:#d97757;
+  --prov-anthropic-fg:hsl(17 40% 58%);
+  --prov-anthropic-chip:hsl(17 38% 52%);
+  --prov-anthropic-bg:hsl(17 40% 55% / .16);
+  --prov-openai:#10a37f;
+  --prov-openai-codex-fg:hsl(162 30% 42%);
+  --prov-openai-codex-bg:hsl(162 30% 42% / .16);
+  --prov-cloud-fg:hsl(205 24% 58%);
+  --prov-cloud-bg:hsl(205 24% 58% / .16);
+  --prov-ollama-cloud-fg:hsl(199 30% 55%);
+  --prov-ollama-cloud-bg:hsl(199 30% 55% / .16);
+  --prov-gemini:#4f8df5;
+  --prov-local:#5b9cf6;
+  --prov-local-fg:hsl(213 28% 62%);
+  --prov-local-bg:hsl(213 28% 62% / .14);
+  --prov-ollama-cloud:#38bdf8;
+  --prov-openrouter:#8b5cf6;
+  --prov-copilot:#a3a3a3;
+  --prov-opencode-go:#7c6cf2;
+  --prov-opencode-go-fg:hsl(250 30% 68%);
+  --prov-opencode-go-bg:hsl(250 30% 68% / .16);
+  --prov-deepseek:#4d6bfe;
+  --prov-nous:#eab308;
+  --prov-nous-fg:#baa984;
+  --prov-nous-bg:hsl(37 30% 55% / .16);
+  --prov-fireworks:#ff663d;
+  --prov-fireworks-fg:#b07a5e;
+  --prov-fireworks-bg:hsl(20 45% 58% / .16);
+  --prov-moa:#f472b6;
+  --prov-moa-fg:#b87383;
+  --prov-moa-bg:hsl(320 30% 66% / .16);
+  --prov-unknown:#8b98ab;
+  --ln-compaction:#c4a06e;
+  --ln-user:#64748b;
+  --pi-mark-coral:#f09082;
+  --pi-mark-blue:#4d9abf;
+  --pi-mark-gold:#f1be58;
+  --spark-neutral:#888;
+  /* LLMTELEMET-307: saturation/lightness for procedural per-profile hues; the hash hue stays in JS (hueCss in main.js). */
+  --hue-chip-s:52%;
+  --hue-chip-l:58%;
+  --hue-ball-s:65%;
+  --hue-ball-l:52%;
+  --hue-tag-bg-s:62%;
+  --hue-tag-bg-l:30%;
+  --hue-tag-fg-s:80%;
+  --hue-tag-fg-l:78%;
+  --hue-tag-bd-s:55%;
+  --hue-tag-bd-l:42%;
+  --hue-dot-s:62%;
+  --hue-dot-l:45%;
+  --hue-icon-bg-s:55%;
+  --hue-icon-bg-l:30%;
+  --hue-icon-fg-s:85%;
+  --hue-icon-fg-l:82%;
   /* Hive (LST-272): Hazem's neon head. Theme-independent (a lit head on its own dark fill). -N = anger keyframe 0, .25, .5, .75, 1. */
   --hv-fill:#0a0a0a;--hv-feat:#f4f1f2;--hv-teeth:#ece2de;--hv-halo:#5a0f1c;
   --hv-rim-top-0:#ff70b0;--hv-rim-top-1:#ff6a96;--hv-rim-top-2:#ff6854;--hv-rim-top-3:#ff6234;--hv-rim-top-4:#ff6026;
@@ -206,4 +307,19 @@
   --elev-2:0 2px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
   --elev-3:0 6px 16px rgba(0,0,0,.40),0 2px 4px rgba(0,0,0,.30);
   --state-hover:rgba(255,255,255,.06);--state-pressed:rgba(255,255,255,.10);--state-focus:rgba(136,170,255,.40);
+
+  /* LST-311 shading primitives + ramps, qk-wait, ev-hover, combo-mark-bg and
+     the light-jar glass/lid inks are theme-invariant: declared once in the
+     :root, [data-theme="light"] block above, valid for both themes. */
 }
+
+/* LST-311: tier-hue semantic tokens (routerview tier chips, tier cards, share
+   bars). A custom property's var() references are substituted at its own
+   computed-value time — verified in Chrome — so these MUST be declared on the
+   elements that carry --h (routerview.js sets it inline on .rt-tier and
+   .rt-tcard; .rt-bar i inherits it from its card). A :root declaration would
+   freeze --h before it exists. Light and dark values are identical (the
+   tier-hue family is theme-invariant), so the two former per-theme copies are
+   merged here into one declaration per family; selector strength is unchanged. */
+:root:not([data-theme="dark"]) .rt-tier,:root[data-theme="dark"] .rt-tier{--rt-tier-fg:hsl(var(--h) 75% 62%);--rt-tier-ink:hsl(var(--h) 75% 55%)}
+:root:not([data-theme="dark"]) .rt-tcard,:root:not([data-theme="dark"]) .rt-bar i,:root[data-theme="dark"] .rt-tcard,:root[data-theme="dark"] .rt-bar i{--rt-card-ink:hsl(var(--h) 60% 50%);--rt-share-ink:hsl(var(--h) 70% 55%)}

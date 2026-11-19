@@ -107,13 +107,16 @@ jobs:
           python3 tools/breakpoint_shots.py --out breakpoint-shots --file examples/reports/costs.html --chrome "$(which google-chrome-stable || which google-chrome)"
 
       - name: Upload breakpoint screenshots
-        if: always()
+        # Only attach reviewable images on PRs, and keep them short-lived:
+        # every push also triggers CI, so uploading on push doubled the
+        # artifact storage (~2.5 GB over 141 runs). 3-day retention.
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: breakpoint-shots
           path: breakpoint-shots/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
 
   # T-0 (LST-281): Next.js workspace gate. Purely additive — the `test` job
   # above is the unchanged Python + legacy-web gate (docs/plans/

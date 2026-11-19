@@ -14,7 +14,7 @@ import {
 import { flowControls, renderFlow } from './flow.js';
 import { attachZoom } from './zoom.js';
 import { kindLogo, meterStat, renderLive, statHtml } from './live.js';
-import { renderRouterView, routerStat, RT_SVG, RT_LOGO } from './routerview.js';
+import { renderRouterView, routerStat, RT_SVG, RT_LOGO, rtColor } from './routerview.js';
 import { renderQuotaView, qvStat, renderLifeQuota } from './quotaview.js';
 import {
   HOUR_RANGE, MODEL_FILTER, POWER, PROJECT_FILTER, PROVIDER_FILTER, clearCrossFilters, hourRowsFor,
@@ -86,7 +86,7 @@ export function flash(msg){
     f.setAttribute('role', 'status');
     f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
       + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
-      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:0 4px 14px rgba(0,0,0,.25);'
+      + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--lt-pop);'
       + 'opacity:0;transition:opacity .2s';
     document.body.appendChild(f);
   }
@@ -147,16 +147,23 @@ export function renderResolution(){
   document.addEventListener('click', e => { if (!el.contains(e.target)) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
 }
 export const PROV = {
-  'anthropic':   {icon:'✳', bg:'hsl(17 40% 55% / .16)',  fg:'hsl(17 40% 58%)'},
-  'opencode-go': {icon:'◈', bg:'hsl(250 30% 68% / .16)', fg:'hsl(250 30% 68%)'},
-  'fireworks':   {icon:'✦', bg:'hsl(20 45% 58% / .16)',   fg:'#b07a5e'},
-  'openai-codex':{icon:'◉', bg:'hsl(162 30% 42% / .16)', fg:'hsl(162 30% 42%)'},
-  'local':       {icon:'▣', bg:'hsl(213 28% 62% / .14)', fg:'hsl(213 28% 62%)'},
-  'moa':         {icon:'⬡', bg:'hsl(320 30% 66% / .16)',  fg:'#b87383'},
-  'cloud':       {icon:'☁', bg:'hsl(205 24% 58% / .16)', fg:'hsl(205 24% 58%)'},
-  'ollama-cloud':{icon:'☁', bg:'hsl(199 30% 55% / .16)', fg:'hsl(199 30% 55%)'},
-  'nous':        {icon:'◆', bg:'hsl(37 30% 55% / .16)',    fg:'#baa984'}
+  'anthropic':{icon:'✳'},
+  'opencode-go':{icon:'◈'},
+  'fireworks':{icon:'✦'},
+  'openai-codex':{icon:'◉'},
+  'local':{icon:'▣'},
+  'moa':{icon:'⬡'},
+  'cloud':{icon:'☁'},
+  'ollama-cloud':{icon:'☁'},
+  'nous':{icon:'◆'}
 };
+// bg/fg resolve through the tokens at read time, so a theme switch is picked up.
+for (const k in PROV){
+  Object.defineProperties(PROV[k], {
+    bg: {get(){return css(`--prov-${k}-bg`)}},
+    fg: {get(){return css(`--prov-${k}-fg`)}},
+  });
+}
 // Provider resolution order, strongest evidence first:
 //   1. billing_base_url — the endpoint the call actually hit. Authoritative.
 //   2. billing_provider — the config slot name ("custom" just means
@@ -206,12 +213,14 @@ export function provOf(p, model, url){
 }
 export function provBadge(p){
   const key=(p||'').toLowerCase().trim();
-  const s=PROV[key]||{icon:'○',bg:'rgba(148,163,184,.14)',fg:MU};
-  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || '#8b98ab', name:key||'unknown'};
+  const s=PROV[key]||{icon:'○',bg:css('--lt-s14'),fg:MU};
+  const fg=rtColor(s.fg);
+  const bg=rtColor(s.bg);
+  const rt = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:s.fg || css('--prov-unknown'), name:key||'unknown'};
   const d = rt.svg && RT_SVG[rt.svg];
-  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rt.c}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
+  const mark = d ? `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;vertical-align:-2px;fill:${rtColor(rt.c)}"><path d="${d}"/></svg>` : `<span style="font-size:var(--fs-xs)">${s.icon}</span>`;
   return `<span class="text-[length:var(--fs-xs)] px-1.5 py-0.5 rounded inline-flex items-center gap-1"
-    style="background:${s.bg};color:${s.fg};border:1px solid ${s.fg}33">
+    style="background:${bg};color:${fg};border:1px solid ${fg}33">
     ${mark}${key}</span>`;
 }
 // Chart-axis labels are plain strings, so a provider is shown as its unicode
@@ -236,10 +245,10 @@ export function provIcon(sm){
 export function provLogoSvg(sm, px, provKey){
   px = px || 14;
   const key = provKey || MODEL_PROV[sm] || provOf('', sm, '');
-  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'#8b98ab', name:key||'unknown'};
+  const s = RT_LOGO[key] || {svg:'', mono:(key||'?').slice(0,2).toUpperCase(), c:'--prov-unknown', name:key||'unknown'};
   const d = s.svg && RT_SVG[s.svg];
-  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${s.c}"><path d="${d}"/></svg>`;
-  return `<span style="color:${s.c};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
+  if (d) return `<svg class="lvprovlogo" viewBox="0 0 24 24" aria-hidden="true" style="width:${px}px;height:${px}px;vertical-align:-2px;fill:${rtColor(s.c)}"><path d="${d}"/></svg>`;
+  return `<span style="color:${rtColor(s.c)};font-size:${Math.round(px*0.42)}px">${esc(s.mono)}</span>`;
 }
 // Prefix a provider glyph to a model label for chart axes/legends.
 export function resendOf(r){
@@ -365,6 +374,52 @@ export function unpricedModels(rows){
 const NOTICE_MS = {info: 6000, ok: 6000, warn: 10000};
 const NOTICE_MAX = 3;
 const NOTICES = {};   // id -> {n, seen, el, timer}
+// LLMTELEMET-312: ONE positioning helper for every .qtip tooltip instance —
+// the task-queue ball cards, the timeline #lntip and the Hive .hv-tip all
+// place through here, so placement has exactly one code path.
+//   opts.mode 'fit'    (default): search the spots around the anchor rect —
+//              below the jar first, never covering its lid (opts.jar);
+//   opts.mode 'above': bottom-aligned above the anchor's left edge (labels);
+//   opts.mode 'follow': track a point (e.g. the cursor) opts.gap px down-right.
+// The result always stays inside the viewport. Sets data-side + --ax/--ay for
+// the .qtip arrow unless opts.arrow === false — arrow-less instances never get
+// a data-side attribute, which is what keeps the arrow off them in CSS.
+export function tipPlace(el, r, opts){
+  opts = opts || {};
+  const mode = opts.mode || 'fit', gap = opts.gap != null ? opts.gap : 8;
+  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+  const w = el.offsetWidth || 240, hgt = el.offsetHeight || 80;
+  let x, y, side = 'top';
+  if (mode === 'follow'){
+    x = Math.max(6, Math.min(r.left + gap, vw - w - 6));
+    y = Math.max(6, Math.min(r.top + gap, vh - hgt - 6));
+  } else if (mode === 'above'){
+    x = Math.max(6, Math.min(r.left, vw - w - 6));
+    y = Math.max(6, r.top - hgt - gap);
+  } else {
+    const jar = opts.jar;
+    const lid = jar && jar.querySelector('.qt-lid');
+    const lr = lid ? lid.getBoundingClientRect() : null;
+    const cx = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6));
+    const cy = Math.max(6, Math.min(r.top + r.height / 2 - hgt / 2, vh - hgt - 6));
+    const jr = jar ? jar.getBoundingClientRect() : r;
+    const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const spots = [[cx, jr.bottom + gap], [cx, jr.top - hgt - gap], [jr.right + gap, cy], [jr.left - w - gap, cy], [cx, r.bottom + gap], [cx, r.top - hgt - gap], [r.right + gap, cy], [r.left - w - gap, cy]];
+    const fits = ([fx, fy]) => fx >= 6 && fy >= 6 && fx + w <= vw - 6 && fy + hgt <= vh - 6
+      && !(lr && hits({ left: fx, top: fy, right: fx + w, bottom: fy + hgt }, lr));
+    const at = Math.max(0, spots.findIndex(fits));
+    const spot = spots.find(fits) || [cx, Math.max(6, Math.min(r.bottom + gap, vh - hgt - 6))];
+    x = spot[0]; y = spot[1];
+    side = ['bottom', 'top', 'right', 'left', 'bottom', 'top', 'right', 'left'][at];
+  }
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  if (opts.arrow !== false){
+    el.dataset.side = side;
+    el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + 'px');
+    el.style.setProperty('--ay', Math.max(14, Math.min(hgt - 14, r.top + r.height / 2 - y)) + 'px');
+  }
+}
 function noticeKey(id){ return 'lt.notice.' + id; }
 function noticeGet(id){ try { return localStorage.getItem(noticeKey(id)); } catch (e) { return null; } }
 function noticeSet(id, v){
@@ -1251,6 +1306,9 @@ export function renderConcurrency(concurrency, fromDate, toDate){
 // sees the hatch texture even if the color itself is indistinguishable
 // from a real project's bar.
 export let _unattrPattern = null;
+export function resetUnattrPattern(){
+  _unattrPattern = null;
+}
 export function unattrPattern(){
   if (_unattrPattern) return _unattrPattern;
   const c = document.createElement('canvas');
@@ -1261,10 +1319,10 @@ export function unattrPattern(){
   // the rest of renderProjects() instead of crashing on a null context;
   // check_projects_card.js still asserts the Unattributed bar uses a
   // DIFFERENT fill style than any real project's PAL color.
-  if (!ctx) return 'rgba(148,163,184,0.5)';
-  ctx.fillStyle = 'rgba(148,163,184,0.35)';
+  if (!ctx) return css('--lt-s50');
+  ctx.fillStyle = css('--lt-s35');
   ctx.fillRect(0, 0, 8, 8);
-  ctx.strokeStyle = 'rgba(148,163,184,0.9)';
+  ctx.strokeStyle = css('--lt-s90');
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, 8); ctx.lineTo(8, 0);
@@ -2058,7 +2116,7 @@ export function renderProjectDistribution(rows){
   const providers = [...providersSeen].sort((a, b) => provTotal(b) - provTotal(a));
 
   const datasets = providers.map(p => {
-    const s = PROV[p] || {icon: '\u25CB', bg: 'rgba(148,163,184,.14)', fg: MU};
+    const s = PROV[p] || {icon: '\u25CB', bg: css('--lt-s14'), fg: MU};
     return {
       label: `${s.icon} ${p}`,
       data: projects.map(proj => {
@@ -2070,7 +2128,7 @@ export function renderProjectDistribution(rows){
         // "every bar sums to 100 (within floating-point tolerance)".
         return total > 0 ? (100 * raw / total) : 0;
       }),
-      backgroundColor: s.fg,
+      backgroundColor: rtColor(s.fg),
       stack: 'proj',
     };
   });
@@ -3149,14 +3207,14 @@ const PRICE_SRC = {
 };
 // Same muted provider set as build_costs.PROV — one calm palette, both places.
 const PROV_META = {
-  anthropic:    {logo: 'claude', color: 'hsl(17 38% 52%)'},
-  'opencode-go':{sig: '\u25C8', color: 'hsl(250 30% 68%)'},
-  fireworks:    {sig: '\u2726', color: '#b07a5e'},
-  'openai-codex':{logo: 'codex', color: 'hsl(162 30% 42%)'},
-  local:        {sig: '\u25A3', color: 'hsl(213 28% 62%)'},
-  moa:          {sig: '\u2B21', color: '#b87383'},
-  cloud:        {sig: '\u2601', color: 'hsl(205 24% 58%)'},
-  nous:         {sig: '\u25C6', color: '#baa984'},
+  anthropic: {logo: 'claude', color: '--prov-anthropic-chip'},
+  'opencode-go':{sig: '\u25C8', color: '--prov-opencode-go-fg'},
+  fireworks: {sig: '\u2726', color: '--prov-fireworks-fg'},
+  'openai-codex':{logo: 'codex', color: '--prov-openai-codex-fg'},
+  local: {sig: '\u25A3', color: '--prov-local-fg'},
+  moa: {sig: '\u2B21', color: '--prov-moa-fg'},
+  cloud: {sig: '\u2601', color: '--prov-cloud-fg'},
+  nous: {sig: '\u25C6', color: '--prov-nous-fg'},
 };
 let priceState = {q: '', tab: 'all'};
 let priceTouched = false; // search keeps its text when re-rendering
@@ -3418,10 +3476,11 @@ function priceRow(m){
   const inf = !used && !provs.length && m.inferred_by ? [m.inferred_by] : [];
   const provHtml = provs.length || inf.length
     ? (provs.length ? provs : inf).map((pv) => {
-        const meta = PROV_META[pv] || {sig: '\u25CF', color: 'hsl(215 16% 55%)'};
+        const meta = PROV_META[pv] || {sig: '\u25CF', color: '--lt-slate'};
         const inferred = !provs.length;
+        const mc = rtColor(meta.color);
         return `<span class="pv-badge${inferred ? ' pv-badge-inferred' : ''}" title="${inferred ? 'Inferred from the model\'s family \u2014 no traffic recorded yet' : 'Observed traffic ran through this provider'}"`
-          + ` style="color:${meta.color};border-color:color-mix(in srgb,${meta.color} 45%,transparent);background:color-mix(in srgb,${meta.color} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
+          + ` style="color:${mc};border-color:color-mix(in srgb,${mc} 45%,transparent);background:color-mix(in srgb,${mc} 12%,var(--card))">${meta.logo ? kindLogo(meta.logo) : meta.sig} ${esc(pv)}</span>`;
       }).join(' ')
     : `<span class="muted" title="${used ? 'Observed traffic ran through this provider, but the telemetry could not attribute it' : 'No observed traffic for this model yet — served-by fills in after your first calls'}">\u2014</span>`;
   // LST-193: the chip now carries the provenance the reviewer asked for — a

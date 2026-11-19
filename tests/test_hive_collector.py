@@ -1,10 +1,13 @@
 """LST-268: Hive collector (llm_telemetry.hive). All timestamps are relative to now."""
 import json
+import logging
 import os
+import re
 import sqlite3
 import time
 
 import pytest
+import yaml
 
 from llm_telemetry import hive
 from llm_telemetry.schema import SCHEMA_VERSION
@@ -257,6 +260,81 @@ def test_collect_real_scan_smoke(home):
     assert snap["hosts"][0]["name"] == "local"
 
 
+# Roster fix: ~/.hermes/fleet/*.yaml is PyYAML-dumped (zero-indent list items,
+# folded multi-line scalars), which the hand reader cannot follow. load_families
+# must use yaml.safe_load, report malformed specs, and fall back to the hand
+# reader only when PyYAML is unavailable.
+ROOT_STYLE = {
+    "family": "root",
+    "parent_home": "~/.hermes",
+    "prefix": "beinno",
+    "max_running": 4,
+    "tracking_rule": ("Tickets live in Plane (plane.beinno.com) ONLY; assign ticket work to "
+                      "beinno-plane. GitHub is for code only (branches, PRs, CI, releases); "
+                      "never create, edit or mirror GitHub issues or Projects items."),
+    "orchestrators": [
+        {"project": "hazem-resume", "name": "beinno-resume-brain", "folder": "/x/hazem-resume-latex",
+         "about": ("Hazem resume maintenance; use beinno-resume-updates specialist. "
+                   "Evidence-backed updates only; compile and inspect PDF.")},
+        {"project": "llm-telemetry", "name": "llm-telemetry-brain", "folder": "/x/LLM-Telemtry"},
+        {"project": "horus", "name": "horus-brain", "folder": "/x/horus"},
+        {"project": "donna", "name": "beinno-donna", "assistant": True, "display": "Donna",
+         "family_title": "Beinno", "folder": "/x/beinno-donna/workspace",
+         "group": ["llm-telemetry-brain", "horus-brain"]},
+    ],
+    "bots": {
+        "git": {"tier": "complex", "display": "Git",
+                "job": ("Git and pull-request specialist for every Beinno project: "
+                        "branches, merges, pull requests."),
+                "pool": [{"provider": "anthropic", "model": "claude-opus-5-5"}]},
+        "designer": {"tier": "complex", "display": "Designer",
+                     "job": ("Expert product and visual designer: turn product goals "
+                             "into high-quality UX flows.")},
+        "missing": {"display": "Nope"},
+    },
+}
+# Exactly how root.yaml lands on disk: PyYAML-dumped, zero-indent list items.
+ROOT_YAML = yaml.dump(ROOT_STYLE, sort_keys=False, default_flow_style=False, width=60)
+
+
+@pytest.fixture
+def root_home(tmp_path):
+    h = tmp_path / "hermes"
+    (h / "fleet").mkdir(parents=True)
+    (h / "fleet" / "root.yaml").write_text(ROOT_YAML)
+    for p in ("beinno-donna", "beinno-git", "beinno-designer"):
+        (h / "profiles" / p).mkdir(parents=True)
+    return h
+
+
+def test_load_families_pyyaml_root_roster(root_home):
+    # the fixture really is root-style: zero-indent list items + a folded about field
+    assert "\n- project: " in ROOT_YAML
+    assert re.search(r"about: .*\n\s+\S", ROOT_YAML)
+    (fam,) = hive.load_families(root_home)
+    assert fam["id"] == "root" and fam["label"] == "Beinno"
+    assert fam["assistant"] == {"id": "beinno-donna", "label": "Donna"}
+    assert [b[0] for b in fam["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+    assert fam["brains"][1][2] == "LLM Telemetry"
+    assert dict(fam["bots"]) == {"beinno-git": "Git", "beinno-designer": "Designer"}
+
+
+def test_load_families_reports_malformed_spec(root_home, caplog):
+    (root_home / "fleet" / "broken.yaml").write_text("family: broken\norchestrators:\n- {name: x\n  bad: [\n")
+    with caplog.at_level(logging.WARNING, logger="llm_telemetry.hive"):
+        fams = hive.load_families(root_home)
+    assert [f["id"] for f in fams] == ["root"]   # the good family still loads
+    assert any("fleet parse error" in r.getMessage() and "broken.yaml" in r.getMessage()
+               for r in caplog.records)
+
+
+def test_read_fleet_spec_falls_back_without_pyyaml(monkeypatch):
+    monkeypatch.setattr(hive, "yaml", None)
+    s = hive.read_fleet_spec(FLEET)
+    assert s["family"] == "acme" and [o["name"] for o in s["orchestrators"]] == [
+        "alpha-brain", "nowinv-brain", "ac-pal"]
+
+
 def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
     now = time.time()
     first = hive.collect(home, now=now, scan=False, hosts=[])
@@ -265,3 +343,142 @@ def test_unreadable_board_keeps_last_good_read(home, monkeypatch):
     again = hive.collect(home, now=now + 5, scan=False, hosts=[])
     assert "acme:t4" in again["tasks"] and again["families"][0]["brains"][0]["counts"]["done"] == 1
     assert hive.diff_tasks(first["tasks"], again["tasks"]) == []   # no phantom events from the hiccup
+
+
+# LLMTELEMET-339: roster spec hardening. Malformed specs must never invent
+# events, crash the snapshot, or disappear silently; bad YAML value types must
+# not take collect down either.
+def test_read_fleet_spec_rejects_list_and_scalar_spec():
+    with pytest.raises(ValueError, match="expected a mapping"):
+        hive.read_fleet_spec("- a\n- b\n")           # the spec is a list
+    with pytest.raises(ValueError, match="expected a mapping"):
+        hive.read_fleet_spec("just a scalar\n")      # the spec is a plain value
+
+
+def test_read_fleet_spec_empty_file_is_empty_mapping():
+    assert hive.read_fleet_spec("") == {}
+    assert hive.read_fleet_spec("# only a comment\n") == {}
+
+
+def test_read_fleet_spec_rejects_bad_section_types():
+    with pytest.raises(ValueError, match="orchestrators"):
+        hive.read_fleet_spec("family: x\norchestrators: 5\n")   # orchestrators is not a list
+    with pytest.raises(ValueError, match="bots"):
+        hive.read_fleet_spec("family: x\nbots: [1, 2]\n")      # bots is not a mapping
+
+
+def test_load_families_empty_spec_file_is_skipped(tmp_path):
+    (tmp_path / "fleet").mkdir()
+    (tmp_path / "fleet" / "blank.yaml").write_text("")
+    errors = []
+    assert hive.load_families(tmp_path, errors=errors) == []
+    assert errors == []   # an empty spec is not an error, it just has no family
+
+
+def test_collect_root_home_zero_indent_spec(root_home):
+    now = time.time()
+    snap = hive.collect(root_home, now=now, scan=False, hosts=[])
+    json.dumps(snap)
+    assert snap["errors"] == []
+    (fam,) = snap["families"]
+    assert fam["id"] == "root" and fam["label"] == "Beinno"
+    assert fam["assistant"]["id"] == "beinno-donna" and fam["assistant"]["label"] == "Donna"
+    assert [b["id"] for b in fam["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+    assert [b["id"] for b in fam["bots"]] == ["beinno-git", "beinno-designer"]   # bot without a profile dir is skipped
+
+
+def test_two_spec_styles_in_one_home(root_home):
+    (root_home / "fleet" / "acme.yaml").write_text(FLEET)
+    for p in ("ac-pal", "ac-git", "alpha-brain"):
+        (root_home / "profiles" / p).mkdir(parents=True)
+    fams = hive.load_families(root_home)
+    by = {f["id"]: f for f in fams}
+    assert set(by) == {"root", "acme"}   # zero-indent PyYAML dump + compact hand style coexist
+    assert by["acme"]["label"] == "Acme Co" and by["acme"]["assistant"] == {"id": "ac-pal", "label": "Pal"}
+    assert dict(by["acme"]["bots"]) == {"ac-git": "Git Bot"}
+    assert by["root"]["label"] == "Beinno"
+    assert [b[0] for b in by["root"]["brains"]] == ["beinno-resume-brain", "llm-telemetry-brain", "horus-brain"]
+
+
+def test_transient_spec_parse_failure_keeps_last_good(home):
+    now = time.time()
+    first = hive.collect(home, now=now, scan=False, hosts=[])
+    assert "acme:t4" in first["tasks"] and first["errors"] == []
+    (home / "fleet" / "acme.yaml").write_text("family: acme\norchestrators:\n- {name: x\n  bad: [\n")   # half-written
+    second = hive.collect(home, now=now + 5, scan=False, hosts=[])
+    assert "acme:t4" in second["tasks"]                          # last good roster, family not dropped
+    assert hive.diff_tasks(first["tasks"], second["tasks"]) == []   # no fake finished/new events
+    (err,) = second["errors"]
+    assert err["file"] == "acme.yaml" and err["error"]           # the failure is shown, not only logged
+
+
+def test_bad_spec_value_types_do_not_crash(tmp_path):
+    (tmp_path / "fleet").mkdir()
+    (tmp_path / "fleet" / "weird.yaml").write_text(
+        "family: 123\nprefix: 456\n"
+        "orchestrators:\n  - project: 7\n    name: 8\n"
+        "  - project: pal\n    name: 9\n    assistant: true\n    display: 10\n    family_title: 11\n"
+        "bots:\n  12:\n    display: 13\n")
+    (tmp_path / "profiles" / "456-12").mkdir(parents=True)
+    (fam,) = hive.load_families(tmp_path)
+    assert fam["id"] == "123" and fam["label"] == "11"
+    assert fam["assistant"] == {"id": "9", "label": "10"}
+    assert fam["brains"] == [("8", "7", "7")]
+    assert fam["bots"] == [("456-12", "13")]
+    snap = hive.collect(tmp_path, now=time.time(), scan=False, hosts=[])
+    json.dumps(snap)
+    assert snap["errors"] == []
+
+
+def _scanner():
+    ns = {"__name__": "t"}
+    exec(hive._SCANNER_CODE, ns)
+    return ns
+
+
+def test_classify_worker_model_flag():
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/pi-worker", "root", "coder", "proj", "--model", "glm-5", "fix LST-12 now"], "/")
+    assert c["model"] == "glm-5" and c["project"] == "proj" and c["task"] == "fix LST-12 now"
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/agent-worker", "claude", "coder", "proj", "--model=sonnet", "do it"], "/")
+    assert c["model"] == "sonnet" and c["engine"] == "claude"
+
+
+def test_classify_worker_model_unknown_is_empty():
+    c = _scanner()["classify"](["/usr/bin/python3", "/bin/pi-worker", "root", "coder", "proj", "fix LST-12 now"], "/")
+    assert c["model"] == ""
+
+
+def test_run_model_from_run_folder(tmp_path):
+    run = tmp_path / "state" / "worker-runs" / "r1"
+    run.mkdir(parents=True)
+    task = "implement the host label feature properly"
+    (run / "request.json").write_text(json.dumps({"task": task}))
+    (run / "result.json").write_text(json.dumps({"ok": True, "model": "opus-x"}))
+    rm = _scanner()["run_model"]
+    assert rm(str(tmp_path), task) == "opus-x"
+    assert rm(str(tmp_path), "a different task entirely here") == ""
+    (run / "result.json").write_text(json.dumps({"ok": True}))
+    assert rm(str(tmp_path), task) == ""   # unknown stays empty, never invented
+
+
+def test_codex_model_from_config(tmp_path, monkeypatch):
+    ns = _scanner()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert ns["codex_model"]() == ""
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text('model = "gpt-x"\n[profiles.a]\nmodel = "other"\n')
+    assert ns["codex_model"]() == "gpt-x"
+
+
+def test_agents_appear_and_disappear_between_collects(home):
+    now = time.time()
+    remote = lambda *a: {"name": "box2", "addr": "box2", "hostname": "box2", "online": True, "checked_at": now, "agents": list(a)}
+    w = worker(id="w9-box2", pid=9, host="box2", parent="unattributed", secs=60, age=60)
+    first = hive.collect(home, now=now, scan=False, hosts=[remote(w)])
+    ids1 = [a["id"] for h in first["hosts"] for a in h["agents"]]
+    assert "w9-box2" in ids1
+    assert [a["host"] for h in first["hosts"] for a in h["agents"] if a["id"] == "w9-box2"] == ["box2"]
+    second = hive.collect(home, now=now + 5, scan=False, hosts=[remote()])
+    assert "w9-box2" not in [a["id"] for h in second["hosts"] for a in h["agents"]]
+    third = hive.collect(home, now=now + 10, scan=False, hosts=[remote(w)])
+    assert "w9-box2" in [a["id"] for h in third["hosts"] for a in h["agents"]]
