@@ -785,6 +785,7 @@ hover accent border; `select.chip` strips native chrome and adds the masked chev
 (`--z-bad` fill + `--z-bad-fg` text — text-on-fill only), provider badge `provBadge`
 (views.js:1166), `.lvst` status pill (99px, `--sc` dot per state), `.pv-badge`, `.lvtag`,
 `.olcap` capability pills. This chip sprawl is mismatch 11.
+Chip spec: height floor `--ctl-md` (32px) applies to `select.chip` and `.combo-btn` only; plain `.chip` keeps border, radius and padding with no height floor. Radius `--radius-ctl` (10px), border `1px solid --border`, padding 6px 12px, font-size `--fs-md`; `select.chip` and `.combo-btn` share this exact spec (border, padding, font-size included). No raw px border-radius on any chip/combo rule.
 Do: one chip spec (height floor `--ctl-md`, radius `--radius-ctl` or pill) with variants.
 Don't: use `--z-*-fg` as chip text on `--card` (fails contrast — mismatch 4).
 
