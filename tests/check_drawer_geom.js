@@ -62,7 +62,23 @@ setTimeout(() => {
   console.log(`  position=${ds.position}  right=${ds.right}  width=${ds.width}` +
               `  transform=${ds.transform}  z-index=${ds.zIndex}  visibility=${ds.visibility}`);
   chk(ds.position === 'fixed', 'drawer is position:fixed');
-  chk(parseInt(ds.zIndex, 10) >= 50, 'drawer z-index is above the page', `(${ds.zIndex})`);
+  let zRaw = ds.zIndex;
+  if (typeof zRaw === 'string' && zRaw.trim().startsWith('var(')) {
+    const m = zRaw.match(/var\(\s*(--[\w-]+)\s*\)/);
+    const name = m ? m[1] : null;
+    let resolved = null;
+    if (name) {
+      const rootStyle = w.getComputedStyle(d.documentElement);
+      const fromProp = rootStyle.getPropertyValue(name).trim();
+      if (fromProp) resolved = fromProp;
+    }
+    if (!resolved) {
+      const htmlMatch = html.match(new RegExp(name + '\\s*:\\s*(\\d+)'));
+      if (htmlMatch) resolved = htmlMatch[1];
+    }
+    if (resolved) zRaw = resolved;
+  }
+  chk(parseInt(zRaw, 10) >= 50, 'drawer z-index is above the page', `(${zRaw})`);
 
   console.log('\n== opening ==');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
