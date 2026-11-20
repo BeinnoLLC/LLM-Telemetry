@@ -520,7 +520,10 @@ padding:6px 10px;font-size:var(--fs-md);color:var(--fg);color-scheme:light}
 select.chip{
 appearance:none; -webkit-appearance:none; -moz-appearance:none;
 background-color:var(--bg); color:var(--fg);
-padding-right:28px; cursor:pointer; position:relative;
+border:1px solid var(--border); border-radius:var(--radius-ctl);
+min-height:var(--ctl-md); box-sizing:border-box;
+padding:6px 28px 6px 12px; font-size:var(--fs-md);
+cursor:pointer; position:relative;
 max-width:100%; min-width:0; text-overflow:ellipsis;
 }
 select.chip:hover{color:var(--fg); border-color:var(--accent)}
@@ -1426,8 +1429,9 @@ grid-template-columns:minmax(0,1fr)}
 .page > .flex.items-end.justify-between{align-items:center}
 .page > .flex.items-end.justify-between > .flex.items-center.gap-2{min-width:0;flex:1 1 auto}
 .page > .flex.items-end.justify-between > div > .muted.flex{flex-wrap:wrap}
-.chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
+.chip, select.chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
 display:inline-flex;align-items:center;justify-content:center}
+select.chip{padding-right:28px}
 #navtoggle{padding:0;width:44px}
 #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
 .olgrid{grid-template-columns:1fr}
@@ -1897,7 +1901,7 @@ text-transform:uppercase;color:var(--muted)}
 .rangepop input[type=date]{height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);padding:0 8px;font-size:14px;color-scheme:dark}
 .btn-apply{min-height:32px;padding:0 16px;border:0;border-radius:var(--radius-ctl);background:var(--accent);color:var(--accent-ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .combo{position:relative}
-.combo-btn{display:inline-flex;align-items:center;gap:8px;background:var(--bg);color:var(--fg);padding:0 12px;font-size:14px;max-width:260px}
+.combo-btn{display:inline-flex;align-items:center;gap:8px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);min-height:var(--ctl-md);box-sizing:border-box;padding:6px 12px;font-size:var(--fs-md);max-width:260px}
 .combo-btn.has{border-color:var(--accent)}
 .combo-l{color:var(--muted)}
 .combo-btn.has .combo-l::after{content:":"}
