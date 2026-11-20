@@ -190,7 +190,6 @@
  [hidden]{display:none !important}
  .rounded-md{border-radius:var(--radius-ctl) !important}
  .chip{border:1px solid var(--border);border-radius:var(--radius-ctl);padding:6px 12px;font-size:var(--fs-md);
-       min-height:var(--ctl-md);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
        cursor:pointer;color:var(--muted);user-select:none;white-space:nowrap}
  .chip:hover{color:var(--fg);border-color:var(--accent)}
  input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-ctl);

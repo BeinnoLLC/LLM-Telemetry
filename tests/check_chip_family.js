@@ -37,9 +37,20 @@ for(const r of chipComboRules){
 }
 check('no raw px border-radius in chip/combo rules', !rawPx);
 
-// mobile tap-target rule keeps .chip at >=44px floor
-const tapRule = css.match(/@media\(max-width:640px\)[\s\S]*?\.chip[^{]*\{[^}]*min-height\s*:\s*44px[^}]*\}/);
-check('mobile tap-target rule includes .chip with min-height 44px', !!tapRule);
+// mobile tap-target rule: exact block whose selector is .chip, select.chip, button inside max-width 640px media
+const tapBlockRe = /@media\(max-width:640px\)[\s\S]*?(\.chip,\s*select\.chip,\s*button)\s*\{([^}]*)\}/;
+const tapMatch = css.match(tapBlockRe);
+const tapBlock = tapMatch ? tapMatch[2] : '';
+check('mobile tap-target exact block present', !!tapMatch);
+check('mobile tap-target block min-height 44px', /min-height\s*:\s*44px/.test(tapBlock));
+check('mobile tap-target block min-width 44px', /min-width\s*:\s*44px/.test(tapBlock));
+
+// base .chip block has no display inline-flex and no min-height
+const baseChipRe = /\.chip\s*\{([^}]*)\}/;
+const baseChipMatch = css.match(baseChipRe);
+const baseChip = baseChipMatch ? baseChipMatch[1] : '';
+check('base .chip has no display inline-flex', !/display\s*:\s*inline-flex/.test(baseChip));
+check('base .chip has no min-height', !/min-height/.test(baseChip));
 
 // mobile tap-target rule keeps select.chip right padding for dropdown arrow
 const tapSelect = css.match(/@media\(max-width:640px\)[\s\S]*?select\.chip\s*\{[^}]*padding-right\s*:\s*28px[^}]*\}/);
