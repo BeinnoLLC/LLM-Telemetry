@@ -24,7 +24,6 @@ function blankComments(src){
   return src.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
 }
 
-// depth-0 scan of a value, count raw NNpx spacing values
 function countRawSpacing(val){
   let count = 0;
   let i = 0, depth = 0, n = val.length;
@@ -39,8 +38,6 @@ function countRawSpacing(val){
         const prev = i>0 ? val[i-1] : '';
         const afterIdx = i + m[0].length;
         const after = afterIdx < n ? val[afterIdx] : '';
-        const prevOk = !'-.,0123456789('.includes(prev) && !(prev && (/[a-zA-Z0-9_]/.test(prev)));
-        // simpler: prev not in set
         const prevBad = (prev === '-' || prev === '.' || prev === ',' || /\d/.test(prev) || prev === '(');
         const afterBad = /[a-zA-Z0-9%]/.test(after);
         if (SP_VALS.has(num) && !prevBad && !afterBad){
@@ -55,23 +52,21 @@ function countRawSpacing(val){
   return count;
 }
 
-// scan declarations in a css file, return array of {prop, value} at depth 0 (top-level decls)
 function findDeclarations(src){
   const decls = [];
-  // regex property: value until ; or }
   let i = 0, n = src.length;
   while (i < n){
-    // find colon
     const colon = src.indexOf(':', i);
     if (colon === -1){ i = n; break; }
-    // property backwards
     let j = colon - 1;
     while (j >= i && /[a-zA-Z0-9_-]/.test(src[j])) j--;
     const prop = src.slice(j+1, colon).trim();
     const prev = j >= 0 ? src[j] : '';
-    // property must not be preceded by letter/digit/_/-
     const propBad = (prev && /[a-zA-Z0-9_-]/.test(prev));
-    // value
+    let startProp = j;
+    while (startProp >= 0 && src[startProp] !== '{' && src[startProp] !== ';') startProp--;
+    const between = src.slice(startProp+1, colon);
+    const plainProp = /^\s*[a-zA-Z_-][a-zA-Z0-9_-]*\s*$/.test(between);
     let k = colon + 1;
     while (k < n && /\s/.test(src[k])) k++;
     let depth = 0;
@@ -80,36 +75,58 @@ function findDeclarations(src){
       const c = src[k];
       if (c === '(') depth++;
       else if (c === ')') depth = Math.max(0,depth-1);
-      else if (depth === 0 && (c === ';' || c === '}')) break;
+      else if (depth === 0 && (c === ';' || c === '}' || c === '{')) break;
       k++;
     }
     const val = src.slice(startVal, k);
-    if (!propBad && prop){
-      decls.push({prop, val, propBad});
+    if (!propBad && prop && plainProp){
+      decls.push({prop, val});
     }
     i = k > i ? k : colon + 1;
-    // advance past terminator
-    if (i < n && (src[i] === ';' || src[i] === '}')) i++;
+    if (i < n && (src[i] === ';' || src[i] === '}' || src[i] === '{')) i++;
   }
   return decls;
 }
 
-// check (a): only tokens.css may declare --sp-1..--sp-8
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
   if (ok){ pass++; console.log(`  ok  ${name}`); }
   else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); }
 };
 
-const files = fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort();
-let anyFail = false;
+const selfCases = [
+  ['.x:hover{padding:8px}', 1],
+  ['.a{margin:0 0 4px}', 1],
+  ['.a{padding:var(--sp-2,8px)}', 0],
+  ['.a{margin:-8px}', 0],
+  ['.a{line-height:8px}', 0],
+  ['@media (max-width:800px){.a{gap:12px}}', 1],
+  ['.a{padding:8px 10px;gap:16px}', 2],
+];
+for (const [css, expected] of selfCases){
+  try {
+    const decls = findDeclarations(css);
+    let total = 0;
+    for (const d of decls){
+      if (!isSpacingProp(d.prop)) continue;
+      total += countRawSpacing(d.val);
+    }
+    const ok = total === expected;
+    if (ok){ pass++; console.log(`  ok  self-test: ${css} counts ${total}`); }
+    else { fail++; console.log(`  FAIL self-test: ${css} counts ${total} (expected ${expected})`); }
+  } catch (e){
+    fail++; console.log(`  FAIL self-test: ${css} threw ${e.message}`);
+  }
+}
 
-// (a)
+const files = fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort();
+
+const chkToken = (ok, name, got) => chk(ok, name, got);
+
 let tokenViolations = [];
 for (const f of files){
   if (f === 'tokens.css') continue;
   const src = blankComments(fs.readFileSync(path.join(CSS_DIR, f), 'utf8'));
-  // find --sp-N declarations
   const re = /--sp-[1-8]\s*:/g;
   const m = src.match(re);
   if (m && m.length){
@@ -118,7 +135,6 @@ for (const f of files){
 }
 chk(tokenViolations.length === 0, `only tokens.css declares --sp-1..--sp-8 (${tokenViolations.join(', ') || 'none elsewhere'})`);
 
-// (b) count raw spacing in dashboard.css, hive.css, utilities.css
 const targets = ['dashboard.css','hive.css','utilities.css'];
 for (const f of targets){
   const src = blankComments(fs.readFileSync(path.join(CSS_DIR, f), 'utf8'));
@@ -131,9 +147,9 @@ for (const f of targets){
   chk(total === 0, `${f}: 0 raw spacing px (found ${total})`);
 }
 
-// tokens.css itself should declare them (positive)
 const tokensSrc = fs.readFileSync(TOKENS, 'utf8');
 const declared = (tokensSrc.match(/--sp-[1-8]\s*:/g) || []).length;
 chk(declared >= 6, `tokens.css declares --sp-1..--sp-8 (${declared})`);
 
 console.log(`${pass} passed, ${fail} failed`);
+if (fail > 0) process.exitCode = 1;
