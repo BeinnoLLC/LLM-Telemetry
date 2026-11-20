@@ -126,7 +126,7 @@
   border-radius:var(--radius-ctl);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-sm);cursor:pointer}
 .fb-more:hover,.fb-pbtn:hover{background:var(--fb-raise)}
 .fb-menu{position:relative;flex:none}
-.fb-pop{position:absolute;z-index:40;top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
+.fb-pop{position:absolute;z-index:var(--layer-pop);top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
   display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--card);border:1px solid var(--border);
   border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px var(--s45)}
 .fb-pop[hidden]{display:none}
@@ -226,7 +226,7 @@
     weight and spacing, so turning a title div into an h2 changes nothing. */
  h1,h2,h3{margin:0;font:inherit}
  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
- .skip{position:fixed;left:8px;top:-60px;z-index:200;padding:8px 14px;border-radius:var(--radius-ctl);background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
+ .skip{position:fixed;left:8px;top:-60px;z-index:var(--layer-skip);padding:8px 14px;border-radius:var(--radius-ctl);background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none}
  .skip:focus{top:8px}
  main:focus{outline:none}
  .lbl{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
@@ -456,7 +456,7 @@ body.hasnav #views{ display:none; }
    than the viewport (width:100% + margin-left) and clipped the right edge. */
 #navdrawer::-webkit-scrollbar{display:none}
 #navdrawer{
-  position:fixed; top:0; left:0; bottom:0; z-index:40;
+  position:fixed; top:0; left:0; bottom:0; z-index:var(--layer-pop);
   width:var(--rail-now);
   background:var(--card); border-right:1px solid var(--border);
   display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
@@ -499,7 +499,7 @@ body.navcollapsed #navdrawer .navitem::after{
   transform:translateY(-50%); white-space:nowrap; background:var(--card);
   border:1px solid var(--border); border-radius:var(--radius-ctl); padding:4px 8px;
   font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
-  transition:opacity var(--motion-fast) ease; z-index:41;
+  transition:opacity var(--motion-fast) ease; z-index:var(--layer-pop-raised);
 }
 body.navcollapsed #navdrawer .navitem:hover::after,
 body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
@@ -522,7 +522,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     transform:translateY(-50%); white-space:nowrap; background:var(--card);
     border:1px solid var(--border); border-radius:var(--radius-ctl); padding:4px 8px;
     font-size:var(--fs-sm); color:var(--fg); opacity:0; pointer-events:none;
-    transition:opacity var(--motion-fast) ease; z-index:41;
+    transition:opacity var(--motion-fast) ease; z-index:var(--layer-pop-raised);
   }
   #navdrawer .navitem:hover::after,
   #navdrawer .navitem:focus-visible::after{ opacity:1; }
@@ -600,9 +600,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
  .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
  .resbad{color:var(--z-warn)}
- .respop{position:absolute;top:22px;left:0;z-index:40;min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px var(--s30)}
+ .respop{position:absolute;top:22px;left:0;z-index:var(--layer-pop);min-width:300px;max-width:440px;padding:12px;box-shadow:0 8px 24px var(--s30)}
  .respop code{font-size:var(--fs-sm)}
- #boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;
+ #boot{position:fixed;inset:0;z-index:var(--layer-boot);background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
        transition:opacity var(--motion-slow) ease}
  #boot.gone{opacity:0;pointer-events:none}
@@ -629,7 +629,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
       >=1200px  expanded (icon + label), pinned, content shifted right
       641-1199  icon rail, labels on hover/tooltip
       <=640px   off-canvas over a scrim, opened from the hamburger      */
- #nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav-w);z-index:64;
+ #nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav-w);z-index:var(--layer-nav);
    background:var(--card);border-right:1px solid var(--border);
    display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
    transition:transform var(--motion-normal) ease,width var(--motion-normal) ease}
@@ -657,7 +657,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
    cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px 4px}
  #navpin:hover{color:var(--accent)}
- #navscrim{display:none;position:fixed;inset:0;z-index:63;background:var(--scrim-bg);
+ #navscrim{display:none;position:fixed;inset:0;z-index:var(--layer-nav-scrim);background:var(--scrim-bg);
    backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity var(--motion-normal) ease}
  #navscrim.open{opacity:1;pointer-events:auto}
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
@@ -769,7 +769,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #refresh,#theme,#soundtoggle,#helpbtn{box-sizing:border-box;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;
    border-radius:var(--radius-ctl);font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
  #helpbtn:hover{color:var(--accent);border-color:var(--accent)}
- #helpwrap{position:fixed;inset:0;z-index:70;display:none}
+ #helpwrap{position:fixed;inset:0;z-index:var(--layer-drawer);display:none}
  #helpwrap.open{display:block}
  #helpscrim{position:absolute;inset:0;background:var(--scrim-bg);backdrop-filter:blur(2px)}
  #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -893,7 +893,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     radial-gradient(circle at 45% 42%,var(--k,var(--qk-wait)) 25%,color-mix(in srgb,var(--k,var(--qk-wait)) 72%,black) 100%);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65);
   transition:transform var(--motion-fast) cubic-bezier(.2,.8,.2,1),box-shadow var(--motion-fast)}
-.qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:900;transform:scale(1.22);outline:0;
+.qt-ball:hover,.qt-ball:focus-visible,.qt-ball.qt-tip-on{z-index:var(--layer-ball-hover);transform:scale(1.22);outline:0;
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w45),0 5px 8px -2px var(--s70)}
 .qt-ball:focus-visible,.qt-ball.qt-tip-on{outline:2px solid var(--accent);outline-offset:2px}
 /* Running = a clip: an upright capsule with a bright inner loop, glowing in its own colour. */
@@ -916,7 +916,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
 .qt-ball.qt-warn{box-shadow:inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
-.qt-overflow{position:absolute;z-index:1000;top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
+.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
   font-size:14px;font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
   background:color-mix(in srgb,var(--fg) 10%,var(--card))}
 .qt-overflow:hover,.qt-overflow:focus-visible{border-color:var(--accent);outline:0}
@@ -924,7 +924,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-ball.qt-arrive{animation:qt-ball-in .7s cubic-bezier(.4,0,.6,1) both}
 .qt-ball.qt-land{animation:qt-ball-land .26s cubic-bezier(.3,1.3,.4,1)}
 .qt-ball.qt-leaving{animation:qt-ball-out .35s ease-in forwards;pointer-events:none}
-.qt-ghost{margin:0;z-index:950;pointer-events:none;transition:none}
+.qt-ghost{margin:0;z-index:var(--layer-ghost);pointer-events:none;transition:none}
 @keyframes qt-ball-pulse{70%,100%{box-shadow:0 0 0 7px transparent}}
 @keyframes qt-ball-pulse-sm{70%,100%{box-shadow:0 0 0 5px transparent}}
 @keyframes qt-ball-in{0%{opacity:0;transform:translateY(calc(var(--drop,60px) * -1))}
@@ -960,7 +960,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the Hive .hv-tip are themed .qtip instances (sizing/level only), and the
    arrow renders only when the shared placer (views.js tipPlace) sets data-side,
    so arrow-less instances never grow one. Visibility is the .on class. */
-.qtip{position:fixed;max-width:300px;font-size:14px;z-index:80;pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity var(--motion-fast);box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip{position:fixed;max-width:300px;font-size:14px;z-index:var(--layer-modal);pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity var(--motion-fast);box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
 .qtip.on{opacity:1}
 .qtip .ft-h,.qtip .ft-r{font-size:14px}
 .qtip[data-side]::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
@@ -1211,9 +1211,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .drawer.open{transform:translateX(0)}
  .drawer:not(.open){visibility:hidden;transition:transform var(--motion-slow) ease,visibility 0s linear var(--motion-slow)}
  .drawer-wide{width:min(420px,92vw);overflow:hidden}
- #drawer{z-index:70}
+ #drawer{z-index:var(--layer-drawer)}
  @media(prefers-reduced-motion:reduce){.drawer,.drawer:not(.open){transition:none}}
- #scrim{position:fixed;inset:0;z-index:65;background:var(--s45);opacity:0;
+ #scrim{position:fixed;inset:0;z-index:var(--layer-scrim);background:var(--s45);opacity:0;
    pointer-events:none;transition:opacity var(--motion-slow) ease}
  #scrim.open{opacity:1;pointer-events:auto}
  .dhead{display:flex;align-items:center;gap:8px;padding:13px 15px;
@@ -1235,13 +1235,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    entrance, pointer-events gate) is declared exactly once here —
    tests/check_modal_shell.js fails if any rule re-declares it. Colours come
    only from tokens.css (--scrim-bg, --elev-modal): identical in light/dark. */
-.scrim{position:fixed;inset:0;z-index:75;background:var(--scrim-bg);opacity:0;
+.scrim{position:fixed;inset:0;z-index:var(--layer-modal-scrim);background:var(--scrim-bg);opacity:0;
   pointer-events:none;transition:opacity var(--motion-normal) ease}
 .scrim.open{opacity:1;pointer-events:auto}
 /* the session finder rides one stack layer up and snaps faster (palette,
    not dialog) */
-.scrim-drop{z-index:85;transition-duration:var(--motion-fast)}
-.modal{position:fixed;top:50%;left:50%;z-index:80;
+.scrim-drop{z-index:var(--layer-drop-scrim);transition-duration:var(--motion-fast)}
+.modal{position:fixed;top:50%;left:50%;z-index:var(--layer-modal);
   max-height:min(82vh,720px);
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
   display:flex;flex-direction:column;overflow:hidden;
@@ -1255,7 +1255,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .modal-lg{width:min(920px,96vw)}                   /* timeline */
 /* drop anchor — the session finder falls in from under the app bar like a
    command palette instead of scaling in centred */
-.modal-drop{top:12vh;z-index:90;transform:translateX(-50%) translateY(-6px);
+.modal-drop{top:12vh;z-index:var(--layer-modal-drop);transform:translateX(-50%) translateY(-6px);
   transition:transform var(--motion-fast) ease,opacity var(--motion-fast) ease}
 .modal-drop.open{transform:translateX(-50%) translateY(0)}
 
@@ -1322,7 +1322,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 #lnhdr{padding:12px 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 /* LLMTELEMET-312: #lntip is a themed .qtip instance (timeline span labels):
    theme/sizing only, never its own shell. */
-#lntip{z-index:90;max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
+#lntip{z-index:var(--layer-tip);max-width:320px;padding:6px 9px;font-size:var(--fs-xs)}
 
 /* P4-07 (#44): project drill-down panel. A right-anchored side panel on
    desktop; a full-width bottom sheet below 640px (the ticket's own
@@ -1331,7 +1331,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    (#pdscrim = .scrim, above), just a different anchor edge so it reads as
    "detail alongside the matrix" rather than "a whole-screen takeover" on
    desktop. */
-#pdrawer{z-index:80}
+#pdrawer{z-index:var(--layer-modal)}
 .pdhead{display:flex;align-items:center;gap:8px;padding:12px 15px;
   border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 .pdhead #pdtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:var(--fs-md)}
@@ -2035,7 +2035,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 /* ---- Notices (UI pass U-1): toast overlay + app-bar chip ---------------------
    The stack floats over the page and never takes layout space, so a notice
    appearing or clearing cannot move anything. Severity colour via --sev. */
-.notices{position:fixed;z-index:60;top:calc(var(--notices-top,var(--bar-h,52px)) + 12px);right:var(--pad,16px);
+.notices{position:fixed;z-index:var(--layer-notice);top:calc(var(--notices-top,var(--bar-h,52px)) + 12px);right:var(--pad,16px);
   width:min(380px,calc(100vw - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{pointer-events:auto;display:grid;grid-template-columns:20px minmax(0,1fr) 32px;gap:10px;
   padding:12px 12px 12px 14px;border-radius:var(--radius-ctl);background:var(--card);
@@ -2090,7 +2090,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-btn.has .combo-l::after{content:":"}
 .combo-v{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .combo-chev{flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
-.combo-pop{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
+.combo-pop{position:absolute;z-index:var(--layer-pop);top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px var(--s45)}
 .combo-q{margin:8px;height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);padding:0 8px;font:inherit;font-size:14px}
 .combo-list{max-height:min(320px,50vh);overflow:auto;border-top:1px solid var(--border)}
@@ -2116,7 +2116,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   .fb-filters{display:inline-flex}
   .filterbar .fb-meta{order:3;flex-basis:100%;margin-left:0;line-height:20px}
   .filterbar .fb-active{order:2}
-  .fb-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:75vh;overflow:auto;flex-direction:column;gap:8px;
+  .fb-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:var(--layer-notice);max-height:75vh;overflow:auto;flex-direction:column;gap:8px;
     padding:16px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -8px 24px var(--s50)}
   .filterbar.sheet-open .fb-sheet{display:flex}
   .fb-sheet .fb-combos{flex-direction:column;flex-wrap:nowrap}
@@ -2140,7 +2140,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 
 /* ---- LST-226/227: app bar (56px). Sticky above the page; clears the nav rail
    the same way .page does. */
-#appbar{position:sticky;top:0;z-index:30;box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
+#appbar{position:sticky;top:0;z-index:var(--layer-appbar);box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
   padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
 body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 #appbar .ab-title{font-weight:650;letter-spacing:-.02em}

@@ -36,7 +36,7 @@ export function showSchemaError(msg){
     el = document.createElement('div');
     el.id = 'schemaerr';
     el.setAttribute('role', 'alert');
-    el.style.cssText = 'position:fixed;inset:0;z-index:100;display:flex;align-items:center;'
+    el.style.cssText = 'position:fixed;inset:0;z-index:var(--layer-alert);display:flex;align-items:center;'
       + 'justify-content:center;background:var(--bg);padding:24px';
     document.body.appendChild(el);
   }
@@ -85,7 +85,7 @@ export function flash(msg){
     f.id = 'flash';
     f.setAttribute('role', 'status');
     f.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);'
-      + 'z-index:80;padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
+      + 'z-index:var(--layer-modal);padding:8px 14px;border-radius:8px;border:1px solid var(--border);'
       + 'background:var(--card);color:var(--fg);font-size:var(--fs-sm);box-shadow:var(--lt-pop);'
       + 'opacity:0;transition:opacity .2s';
     document.body.appendChild(f);
