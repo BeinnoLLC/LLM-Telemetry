@@ -648,12 +648,20 @@ Depth rules:
 - Popovers/menus → `--elev-2` class. Modals/drawers/tooltips → `--elev-3` class.
   The 21 raw `box-shadow` values are mismatch 17; do not add a 22nd.
 
-Z-index: today 27 raw values (skip link 200, toasts 60, nav 63/64, drawer 70, modals 75-90,
-`.qt-ball` hover 900, `.qt-ghost` 950, `.qt-overflow` 1000, JS inline 80/100). **Proposed**
-layer scale (mismatch 14 — not in code yet):
+Z-index: every stacking layer routes through the `--layer-*` scale declared in
+tokens.css (tokens.css:219-238). The prefix is `--layer-` (not `--z-`) because
+`--z-ok`/`--z-warn`/`--z-bad` are colour tokens. Each value equals the raw
+z-index it replaced, so stacking order is unchanged by construction (values 0-9
+and `calc(2 + var(--zr,0))` stay raw: they stack jar interiors inside one
+component shell). Guarded by `tests/check_css_z_layers.js`.
 
-`--z-base:0` / `--z-sticky:10` / `--z-nav:60` / `--z-scrim:65` / `--z-drawer:70` /
-`--z-modal:80` / `--z-tip:90` / `--z-toast:100` / `--z-drag:900`
+`--layer-appbar:30` / `--layer-pop:40` / `--layer-pop-raised:41` /
+`--layer-boot:50` / `--layer-hive-tip:50` / `--layer-notice:60` /
+`--layer-nav-scrim:63` / `--layer-nav:64` / `--layer-scrim:65` /
+`--layer-drawer:70` / `--layer-modal-scrim:75` / `--layer-modal:80` /
+`--layer-drop-scrim:85` / `--layer-modal-drop:90` / `--layer-tip:90` /
+`--layer-alert:100` / `--layer-skip:200` / `--layer-ball-hover:900` /
+`--layer-ghost:950` / `--layer-overflow:1000`
 
 ## Shapes
 
@@ -1188,8 +1196,11 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     in tokens.css (tokens.css:211-214) and every dashboard.css/hive.css `transition` uses them; the keyframe
     animations and the `.8s` jar liquid fills are the listed exceptions (Motion), guarded
     by `tests/check_css_motion_tokens.js`. *ticket: LLMTELEMET-318*
-14. **No z-index layer scale (27 raw values)** — med — proposed `--z-base…--z-drag` scale
-    (Elevation & Depth). *ticket: LLMTELEMET-319*
+14. **Z-index layer scale** — RESOLVED — the `--layer-*` scale (20 tokens, named
+    `--layer-` because `--z-*` is taken by colour tokens) is declared in tokens.css
+    (tokens.css:219-238); every dashboard.css/hive.css `z-index` and js `zIndex` of 10+
+    routes through it with the raw value preserved, guarded by
+    `tests/check_css_z_layers.js` (Elevation & Depth). *ticket: LLMTELEMET-319*
 15. **Spacing scale bypass + drifting `--sp-2`** — med — 299 raw px spacing declarations
     vs 7 `--sp-*` uses; and **`dashboard.css:16` re-declares `--sp-2:6px` while
     `tokens.css:107` says `--sp-2:8px`** (two conflicting values for one name; the fluid
