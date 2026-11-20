@@ -1440,8 +1440,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .page > .flex.items-end.justify-between > div > .muted.flex{flex-wrap:wrap}
 
    /* Every chip/button is a tap target: 44x44 minimum (#13). */
-   button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
+   .chip, select.chip, button{min-height:44px;min-width:44px;padding-left:14px;padding-right:14px;
      display:inline-flex;align-items:center;justify-content:center}
+   select.chip{padding-right:28px}
    #navtoggle{padding:0;width:44px}
    #refresh,#theme,#soundtoggle,#helpbtn{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
 

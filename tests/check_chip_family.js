@@ -37,5 +37,13 @@ for(const r of chipComboRules){
 }
 check('no raw px border-radius in chip/combo rules', !rawPx);
 
+// mobile tap-target rule keeps .chip at >=44px floor
+const tapRule = css.match(/@media\(max-width:640px\)[\s\S]*?\.chip[^{]*\{[^}]*min-height\s*:\s*44px[^}]*\}/);
+check('mobile tap-target rule includes .chip with min-height 44px', !!tapRule);
+
+// mobile tap-target rule keeps select.chip right padding for dropdown arrow
+const tapSelect = css.match(/@media\(max-width:640px\)[\s\S]*?select\.chip\s*\{[^}]*padding-right\s*:\s*28px[^}]*\}/);
+check('mobile tap-target rule keeps select.chip padding-right 28px', !!tapSelect);
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
