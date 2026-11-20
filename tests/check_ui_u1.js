@@ -5,7 +5,9 @@
 // measured pixel values were checked in a real browser (see the pass screenshots).
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
-const html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8').replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
+let html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8').replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
+const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let failed = 0, total = 0;
 const chk = (c, l, x) => { total++; console.log((c ? '  OK   ' : '  FAIL ') + l + (x ? `  (${x})` : '')); if (!c) failed++; };
 const has = re => re.test(html);

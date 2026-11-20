@@ -2,7 +2,9 @@
 // one-row filters, even Explore grid, one control scale, empty-card collapse. Loads the BUILT page CSS.
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
+let html = fs.readFileSync(path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
+const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 const chk = (ok, name) => { if (ok) { pass++; console.log(`  ok  ${name}`); } else { fail++; console.log(`  FAIL ${name}`); } };
 const has = re => re.test(html);

@@ -5,10 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS || path.join(__dirname, '..', 'examples', 'reports');
-const html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8')
+let html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8')
   .replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
 const live = JSON.parse(fs.readFileSync(path.join(REPORTS, 'live-data.json'), 'utf8'));
 
+const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name}${!ok && got !== undefined ? ' — ' + got : ''}`);
