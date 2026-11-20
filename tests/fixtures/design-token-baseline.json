@@ -1,12 +1,12 @@
 [
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 828,
+    "line": 823,
     "matched": "rgba("
   },
   {
     "path": "src/llm_telemetry/web/css/dashboard.css",
-    "line": 966,
+    "line": 961,
     "matched": "rgba(, rgba("
   },
   {

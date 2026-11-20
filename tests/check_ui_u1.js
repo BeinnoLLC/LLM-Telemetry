@@ -5,9 +5,17 @@
 // measured pixel values were checked in a real browser (see the pass screenshots).
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
-const html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8').replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
+let html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8').replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let failed = 0, total = 0;
 const chk = (c, l, x) => { total++; console.log((c ? '  OK   ' : '  FAIL ') + l + (x ? `  (${x})` : '')); if (!c) failed++; };
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 const has = re => re.test(html);
 
 function boot(hash, store) {

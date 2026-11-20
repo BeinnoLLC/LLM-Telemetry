@@ -3,9 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const html = fs.readFileSync(path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
+let html = fs.readFileSync(path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => { if (ok) { pass++; console.log(`  ok  ${name}`); } else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); } };
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 
 function boot(query, reduce) {
   return new JSDOM(html, {

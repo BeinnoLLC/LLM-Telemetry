@@ -8,15 +8,23 @@ const { JSDOM } = require('jsdom');
 
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS
   || path.join(__dirname, '..', 'examples', 'reports');
-const html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8');
+let html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8');
 const live = JSON.parse(fs.readFileSync(path.join(REPORTS, 'live-data.json'), 'utf8'));
 const analytics = JSON.parse(fs.readFileSync(path.join(REPORTS, 'analytics-data.json'), 'utf8'));
 
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
+html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 function chk(ok, name, got) {
   if (ok) { pass++; console.log(`  ok  ${name}`); }
   else { fail++; console.log(`  FAIL ${name}${got !== undefined ? ' — ' + got : ''}`); }
 }
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 
 const HERMES = [{ id: 'h-1', title: 'Hermes job', model: 'openai/gpt-5', category: 'Coding', profile: 'p1', idle_s: 20,
   phase: 'editing', tools: ['read_file', 'terminal'], models: [{ model: 'openai/gpt-5', in_tok: 900, out_tok: 100, calls: 3 }] }];
