@@ -13,11 +13,6 @@
    --fs-md:clamp(14px,.75vw + 10.3px,15px);
    --fs-lg:clamp(15px,1.1vw + 11px,18px);
    --fs-xl:clamp(17px,1.8vw + 11px,24px);
-   --sp-1:4px;  --sp-2:6px;
-   --sp-3:clamp(8px,1vw,10px);
-   --sp-4:clamp(10px,1.4vw,14px);
-   --sp-5:clamp(14px,2vw,20px);
-   --sp-6:clamp(18px,2.8vw,28px);
    /* Gauge sizing — a single knob drives stroke, ticks and readout. */
    --gauge-size:84px;
    /* gauge severity zones + palette: single source = tokens.css */
