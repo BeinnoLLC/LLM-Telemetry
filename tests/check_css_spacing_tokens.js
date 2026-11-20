@@ -62,7 +62,6 @@ function findDeclarations(src){
     while (j >= i && /[a-zA-Z0-9_-]/.test(src[j])) j--;
     const prop = src.slice(j+1, colon).trim();
     const prev = j >= 0 ? src[j] : '';
-    const propBad = (prev && /[a-zA-Z0-9_-]/.test(prev));
     let startProp = j;
     while (startProp >= 0 && src[startProp] !== '{' && src[startProp] !== ';') startProp--;
     const between = src.slice(startProp+1, colon);
@@ -79,7 +78,7 @@ function findDeclarations(src){
       k++;
     }
     const val = src.slice(startVal, k);
-    if (!propBad && prop && plainProp){
+    if (prop && plainProp){
       decls.push({prop, val});
     }
     i = k > i ? k : colon + 1;
@@ -120,8 +119,6 @@ for (const [css, expected] of selfCases){
 }
 
 const files = fs.readdirSync(CSS_DIR).filter(f => f.endsWith('.css')).sort();
-
-const chkToken = (ok, name, got) => chk(ok, name, got);
 
 let tokenViolations = [];
 for (const f of files){
