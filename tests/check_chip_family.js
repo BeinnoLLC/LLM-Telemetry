@@ -46,11 +46,12 @@ check('mobile tap-target block min-height 44px', /min-height\s*:\s*44px/.test(ta
 check('mobile tap-target block min-width 44px', /min-width\s*:\s*44px/.test(tapBlock));
 
 // base .chip block has no display inline-flex and no min-height
-const baseChipRe = /^\.chip\s*\{([^}]*)\}/m;
+const baseChipRe = /^\s*\.chip\s*\{([^}]*)\}/m;
 const baseChipMatch = css.match(baseChipRe);
 const baseChip = baseChipMatch ? baseChipMatch[1] : '';
 check('base .chip has no display inline-flex', !/display\s*:\s*inline-flex/.test(baseChip));
 check('base .chip has no min-height', !/min-height/.test(baseChip));
+check('base .chip block found', !!baseChipMatch);
 
 // mobile tap-target rule keeps select.chip right padding for dropdown arrow
 const tapSelect = css.match(/@media\(max-width:640px\)[\s\S]*?select\.chip\s*\{[^}]*padding-right\s*:\s*28px[^}]*\}/);
