@@ -1283,6 +1283,10 @@
     },
     {
       "mod": "live",
+      "name": "LIVE_FADE_MS"
+    },
+    {
+      "mod": "live",
       "name": "_announceLast"
     },
     {

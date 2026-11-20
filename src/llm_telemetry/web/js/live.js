@@ -20,6 +20,10 @@ import { installHelp } from './routerview.js';
 import { applyDiff, motionReduced, invalidate } from './diffdom.js';
 import { DATA, SCHEMA_VERSION, css, hueCss } from './main.js';
 
+// Must equal --motion-normal (tokens.css:213, 200ms), the #livelist.live-fadeout
+// opacity transition in dashboard.css; the swap fires when the fade ends.
+const LIVE_FADE_MS = 200;
+
 // A live session renders as a ROW DIV + (optionally) the lmpanel DIV, so a
 // "key" owns 1–2 consecutive nodes. Row carries data-tsession; panel carries
 // data-lmp. Anything else (empty-state block, stray nodes) keys as null →
@@ -601,7 +605,7 @@ export function renderLive(){
       const hadRows = box.children.length > 0;
       if (hadRows && !motionReduced()){
         box.classList.add('live-fadeout');
-        setTimeout(() => { swap(); box.classList.remove('live-fadeout'); }, 180);
+        setTimeout(() => { swap(); box.classList.remove('live-fadeout'); }, LIVE_FADE_MS);
       } else swap();
       invalidate(box);
     }
