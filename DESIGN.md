@@ -1022,11 +1022,13 @@ Tokens (tokens.css, theme-independent): `--motion-fast:120ms` (hover/press, tool
 ball settle), `--motion-normal:200ms` (modal, scrim, toast, width/transform tweens),
 `--motion-slow:300ms` (drawer slide, ball repack). Every `transition` in the web css uses
 one of these; raw values map to the nearest token (<=150ms fast, <=260ms normal, else slow).
+Intentional exception: the drawer and `#scrim` were `.22s` and use `--motion-slow`
+(dashboard.css:1209, 1210, 1217) so the slide reads as a larger surface.
 
 | Interaction | Duration | Easing | Where |
 |---|---|---|---|
 | hover/press state layers | `--motion-fast` | `ease` | chips, nav, rows (×16) |
-| drawer slide | `--motion-slow` | `ease` | `#drawer` (dashboard.css:1222) |
+| drawer slide | `--motion-slow` | `ease` | `#drawer` (dashboard.css:1207, transition at 1209) |
 | modal open | `--motion-normal` | `ease` | `#tmodal`/`#lnmodal` |
 | command modal | `--motion-fast` | `ease` | `#sfmodal` |
 | toast in | `--motion-normal` | `ease-out` | `toast-in` |
@@ -1046,7 +1048,7 @@ or one-shot keyframe animations keep raw durations — `.dot`/`p` 2s, `bwpulse` 
 skeleton shimmer; plus the jar liquid-level transitions (`height`/`bottom` `.8s`).
 Route new transitions through `var(--motion-*)`; the guard fails on raw durations.
 
-Reduced motion (`prefers-reduced-motion: reduce`, 15 blocks): all jar/train animation and
+Reduced motion (`prefers-reduced-motion: reduce`, 16 blocks (14 in dashboard.css, 2 in hive.css)): all jar/train animation and
 transitions off (arrivals become a `.12s` fade, ghosts hidden), toast entrance none, drawer
 transitions none, nav transitions none, title gradient freezes, skeleton shimmer off,
 gauge/pulse/dot animations off, `qtFly` refuses to run. Any new animation must join one of
@@ -1068,7 +1070,7 @@ Target sizes: `--ctl-sm:28px` / `--ctl-md:32px` floors; `--ctl-lg:44px` at `<=60
 coarse pointers (`pointer:coarse`) and `<=480px` for `button,a,[role=button],.btn,.chip,.tab`
 (dashboard.css:2037-2042, 2159, 2231-2236). Inside dense tables the whole row is the target.
 
-Motion & forced colors: `prefers-reduced-motion` covered above (15 blocks);
+Motion & forced colors: `prefers-reduced-motion` covered above (16 blocks (14 in dashboard.css, 2 in hive.css));
 `forced-colors:active` currently has **one** block (gradient title → `currentColor`,
 dashboard.css:2248-2249). Hive SVG fills and qt balls are not covered — **mismatch 23**
 (one `@media (forced-colors:active)` block for `.hv-hex`, `.hv-crown`, qt balls).
@@ -1185,7 +1187,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     remap (dashboard.css:2231) apply in both themes, the light refinement stays gated
     `:root:not([data-theme="dark"])` (dashboard.css:2228-2274). *ticket: LLMTELEMET-317*
 13. **Motion tokens** — RESOLVED — `--motion-fast/normal/slow` (120/200/300ms) are declared
-    in tokens.css and every dashboard.css/hive.css `transition` uses them; the keyframe
+    in tokens.css (tokens.css:211-214) and every dashboard.css/hive.css `transition` uses them; the keyframe
     animations and the `.8s` jar liquid fills are the listed exceptions (Motion), guarded
     by `tests/check_css_motion_tokens.js`. *ticket: LLMTELEMET-318*
 14. **No z-index layer scale (27 raw values)** — med — proposed `--z-base…--z-drag` scale

@@ -7235,7 +7235,7 @@ function motionReduced(){
  catch { return false; }
 }
 
-const FADE_MS = 240;
+const FADE_MS = 200;
 function planDiff(beforeKeys, afterKeys){
  const bset = new Set(beforeKeys), aset = new Set(afterKeys);
  const ops = [];
@@ -7390,7 +7390,9 @@ function freshNodes(tmp, html){
  return [...tmp.content.children];
 }
 
-const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };let _announceLast = 0;
+const _internal = { FADE_MS, GHOST, groupsOf, cacheFor, isGhost };const LIVE_FADE_MS = 200;
+
+let _announceLast = 0;
 function liveGroupKeyOf(el){
  if (el.classList && el.classList.contains('liverow')){
  const btn = el.querySelector('[data-tsession]');
@@ -7841,7 +7843,7 @@ function renderLive(){
  const hadRows = box.children.length > 0;
  if (hadRows && !motionReduced()){
  box.classList.add('live-fadeout');
- setTimeout(() => { swap(); box.classList.remove('live-fadeout'); }, 180);
+ setTimeout(() => { swap(); box.classList.remove('live-fadeout'); }, LIVE_FADE_MS);
  } else swap();
  invalidate(box);
  }

@@ -7,7 +7,7 @@ const path = require('path');
 
 const DIR = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css');
 const RAW = /(?<![\w.-])(?:\d*\.\d+|\d+)m?s\b/g;
-const ALLOW = [{ file: 'dashboard.css', prop: 'height', dur: '.8s' }, { file: 'dashboard.css', prop: 'bottom', dur: '.8s' }];
+const ALLOW = [{ file: 'dashboard.css', sel: '.qt-body::before', prop: 'height', dur: '.8s' }, { file: 'dashboard.css', sel: '.qt-body::after', prop: 'bottom', dur: '.8s' }];
 const ZERO = /^0m?s$/;
 
 let pass = 0, fail = 0;
@@ -21,11 +21,13 @@ function scan(file, text) {
   const bad = [];
   for (const m of src.matchAll(/transition(?:-duration|-delay)?\s*:([^;}]*)/g)) {
     const line = src.slice(0, m.index).split('\n').length;
+    const head = src.slice(0, m.index);
+    const sel = head.slice(head.lastIndexOf('}') + 1, head.lastIndexOf('{')).trim().replace(/\s+/g, ' ');
     for (const part of m[1].split(/,(?![^(]*\))/)) {
       const prop = part.trim().split(/\s+/)[0];
       for (const d of part.replace(/var\([^)]*\)/g, '').match(RAW) || []) {
         if (ZERO.test(d)) continue;
-        if (ALLOW.some(a => a.file === file && a.prop === prop && a.dur === d)) continue;
+        if (ALLOW.some(a => a.file === file && a.sel === sel && a.prop === prop && a.dur === d)) continue;
         bad.push(`${file}:${line} ${prop} ${d}`);
       }
     }

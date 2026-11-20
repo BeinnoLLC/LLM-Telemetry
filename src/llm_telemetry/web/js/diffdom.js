@@ -23,7 +23,9 @@ export function motionReduced(){
   catch { return false; }
 }
 
-export const FADE_MS = 240;
+// Ghost fade; equals --motion-normal (200ms) used by the CSS fallback
+// (#livelist .diff-ghost.diff-exit, dashboard.css:706).
+export const FADE_MS = 200;
 const GHOST = 'diff-ghost';
 const EXITY = 'diff-exit';
 const isGhost = (el) => el.classList && el.classList.contains(GHOST);
