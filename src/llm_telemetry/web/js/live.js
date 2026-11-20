@@ -20,7 +20,7 @@ import { installHelp } from './routerview.js';
 import { applyDiff, motionReduced, invalidate } from './diffdom.js';
 import { DATA, SCHEMA_VERSION, css, hueCss } from './main.js';
 
-// Must equal --motion-normal (tokens.css:212, 200ms), the #livelist.live-fadeout
+// Must equal --motion-normal (tokens.css:213, 200ms), the #livelist.live-fadeout
 // opacity transition in dashboard.css; the swap fires when the fade ends.
 const LIVE_FADE_MS = 200;
 

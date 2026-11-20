@@ -1023,7 +1023,7 @@ ball settle), `--motion-normal:200ms` (modal, scrim, toast, width/transform twee
 `--motion-slow:300ms` (drawer slide, ball repack). Every `transition` in the web css uses
 one of these; raw values map to the nearest token (<=150ms fast, <=260ms normal, else slow).
 Intentional exception: the drawer and `#scrim` were `.22s` and use `--motion-slow`
-(dashboard.css:1209, 1210, 1217) so the slide reads as a larger surface.
+(dashboard.css:1209, 1212, 1217) so the slide reads as a larger surface.
 
 | Interaction | Duration | Easing | Where |
 |---|---|---|---|
