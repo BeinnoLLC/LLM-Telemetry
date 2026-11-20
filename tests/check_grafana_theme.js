@@ -9,13 +9,19 @@ let html = fs.readFileSync(path.join(REPORTS, 'dashboard.html'), 'utf8')
   .replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
 const live = JSON.parse(fs.readFileSync(path.join(REPORTS, 'live-data.json'), 'utf8'));
 
-const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
 html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 const chk = (ok, name, got) => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name}${!ok && got !== undefined ? ' — ' + got : ''}`);
   ok ? pass++ : fail++;
 };
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 
 function boot(theme) {
   return new JSDOM(html, {

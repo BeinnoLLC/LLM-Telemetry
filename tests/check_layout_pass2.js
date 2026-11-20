@@ -3,10 +3,16 @@
 const fs = require('fs');
 const path = require('path');
 let html = fs.readFileSync(path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
-const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
 html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let pass = 0, fail = 0;
 const chk = (ok, name) => { if (ok) { pass++; console.log(`  ok  ${name}`); } else { fail++; console.log(`  FAIL ${name}`); } };
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 const has = re => re.test(html);
 
 chk(has(/--fs-xs:13px;/) && has(/--fs-sm:14px;/), 'body text floor: --fs-xs 13px, --fs-sm 14px');

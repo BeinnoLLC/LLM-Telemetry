@@ -6,10 +6,16 @@
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const REPORTS = process.env.LLM_TELEMETRY_REPORTS || require('path').join(__dirname, '..', 'examples', 'reports');
 let html = fs.readFileSync(REPORTS + '/dashboard.html', 'utf8').replace(/<script src="https:\/\/[^"]+"><\/script>/g, '');
-const _sp = {1:'4px',2:'8px',3:'12px',4:'16px',5:'20px',6:'24px'};
+const _sp = {};
+let _spEmpty = false;
+const _spRe = /--sp-(\d+)\s*:\s*([^;}\s]+)/g;
+let _spm;
+while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
+if (Object.keys(_sp).length === 0) _spEmpty = true;
 html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 let failed = 0, total = 0;
 const chk = (c, l, x) => { total++; console.log((c ? '  OK   ' : '  FAIL ') + l + (x ? `  (${x})` : '')); if (!c) failed++; };
+if (_spEmpty) chk(false, 'spacing tokens found in dashboard.html');
 const has = re => re.test(html);
 
 function boot(hash, store) {
