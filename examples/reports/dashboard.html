@@ -153,7 +153,7 @@
 --ev-hover:rgba(127,127,127,.06);
 --combo-mark-bg:rgba(110,159,255,.35);
 --s18:rgba(0,0,0,.18);--s22:rgba(0,0,0,.22);--s25:rgba(0,0,0,.25);--s30:rgba(0,0,0,.3);--s38:rgba(0,0,0,.38);--s70:rgba(0,0,0,.7);--s85:rgba(0,0,0,.85);--w2:rgba(255,255,255,.02);--w5:rgba(255,255,255,.05);--w7:rgba(255,255,255,.07);--w8:rgba(255,255,255,.08);--w13:rgba(255,255,255,.13);--w25:rgba(255,255,255,.25);--w35:rgba(255,255,255,.35);--w88:rgba(255,255,255,.88);--w92:rgba(255,255,255,.92);--w95:rgba(255,255,255,.95);--w1p5:rgba(255,255,255,.015);
---fm:ui-monospace,SFMono-Regular,Menlo,monospace;--fm2:ui-monospace,monospace;
+--fm:var(--mono);--fm2:var(--mono);
 --s28:rgba(0,0,0,.28);
 --s35:rgba(0,0,0,.35);--s40:rgba(0,0,0,.4);--s45:rgba(0,0,0,.45);--s50:rgba(0,0,0,.5);
 --s55:rgba(0,0,0,.55);--s60:rgba(0,0,0,.6);--s65:rgba(0,0,0,.65);
@@ -206,7 +206,7 @@
 --layer-ball-hover:900;
 --layer-ghost:950;
 --layer-overflow:1000;
---font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+--font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 --num:tabular-nums;
 --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
 --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));
@@ -1148,7 +1148,7 @@ color:var(--muted-foreground,var(--muted))}
 .olcap.thinking{border-color:color-mix(in srgb, var(--pal-amber) 50%, transparent);color:var(--pal-amber)}
 .olidle{font-size:var(--fs-sm);color:var(--muted);padding:var(--sp-1) 0}
 .olinstl{display:flex;flex-wrap:wrap;gap:var(--sp-1);padding:2px 0 var(--sp-1)}
-.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono,monospace);padding:1px 6px;border:1px solid var(--border);
+.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono);padding:1px 6px;border:1px solid var(--border);
 border-radius:999px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
 .olinst.olmore{cursor:default}
 .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
@@ -1385,8 +1385,7 @@ background:var(--muted);opacity:.5;margin:0 auto var(--sp-2);flex-shrink:0}
 .dtab{scroll-snap-align:start;flex-shrink:0}
 }
 #draghandle{display:none}
-#dbody{overflow-y:auto;flex:1;padding:var(--sp-1) 0;font-family:ui-monospace,SFMono-Regular,
-Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
+#dbody{overflow-y:auto;flex:1;padding:var(--sp-1) 0;font-family:var(--mono);font-size:var(--fs-sm);line-height:1.45}
 .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
 .ev:hover{background:var(--ev-hover)}
 .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
@@ -1783,7 +1782,7 @@ border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent)
 .lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
-.lvsid{font:var(--fs-xs)/18px var(--mono,monospace);color:var(--muted);padding:0 var(--sp-1);border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
+.lvsid{font:var(--fs-xs)/18px var(--mono);color:var(--muted);padding:0 var(--sp-1);border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
 button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .lvsrc{font-size:var(--fs-xs);line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
 .lvst[data-state=compressing]{--sc:var(--z-warn)}
