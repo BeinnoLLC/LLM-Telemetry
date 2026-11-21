@@ -42,11 +42,11 @@ for (const f of FILES){
 // tokens.css defines the radius tokens
 const tokens = fs.readFileSync(path.join(CSS_DIR, 'tokens.css'), 'utf8');
 const expected = {
-  '--radius-sm': '4px',
-  '--radius-md': '8px',
-  '--radius-lg': '12px',
-  '--radius-pill': '999px',
-  '--radius-full': '50%'
+  '--r-sm': '4px',
+  '--r-md': '8px',
+  '--r-lg': '12px',
+  '--r-pill': '999px',
+  '--r-full': '50%'
 };
 for (const [k,v] of Object.entries(expected)){
   const re = new RegExp(k + '\\s*:\\s*' + v.replace(/%/,'\\%'));
