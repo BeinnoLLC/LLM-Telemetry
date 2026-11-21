@@ -43,6 +43,7 @@ function splitTopCommas(s){
 function parseElevation(part){
   const toks = part.split(/\s+/).filter(t => /^-?[\d.]+px$/.test(t) || t === '0');
   return {
+    n: toks.length,
     x: toks.length>=1 ? parseFloat(toks[0]) : 0,
     y: toks.length>=2 ? parseFloat(toks[1]) : 0,
     blur: toks.length>=3 ? parseFloat(toks[2]) : 0,
@@ -61,10 +62,10 @@ for(const f of ['dashboard.css','hive.css','utilities.css']){
         const part=p.trim();
         if(part.includes('inset')) continue;
         if(part.startsWith('var(')) continue;
-        const toks = part.split(/\s+/).filter(t => /^-?[\d.]+px$/.test(t) || t === '0');
-        if(toks.length < 2) continue;
-        const y = parseFloat(toks[1]);
-        const blur = toks.length>=3 ? parseFloat(toks[2]) : 0;
+        const pe = parseElevation(part);
+        if(pe.n < 2) continue;
+        const y = pe.y;
+        const blur = pe.blur;
         if((y >= 6 || blur >= 12) && !r.selector.includes('.toast') && !r.selector.includes('.fb-sheet')){
           offenders.push({file:f, selector:r.selector, value:part});
         }
