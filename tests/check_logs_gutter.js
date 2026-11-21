@@ -24,7 +24,7 @@ chk(!/mask-image/.test(rule('.qt-cars') || ''), 'jar tiles carry no chopper mask
 chk(!/\n\s*\.n2\{/.test(css), 'dead .n2 rule stays removed');
 chk(/\.fbwrap\{min-width:0\}/.test(css), 'fleet-bar wrapper can shrink (min-width:0)');
 chk(/\.olhead\{[^}]*flex-wrap:wrap/.test(css), '.olhead wraps long hostnames');
-chk(/@media \(max-width:960px\)\{\s*\.fb-label,\.fb-sep,\.kseg \.l\{display:none\}/.test(css), 'fleet-bar labels collapse at 960px');
+chk(/@media \(max-width:1023px\)\{\s*\.fb-label,\.fb-sep,\.kseg \.l\{display:none\}/.test(css), 'fleet-bar labels collapse at 1023px');
 chk(/class="[^"]*\bfbwrap\b[^"]*">\s*<div class="fleetbar" id="tabs"/.test(html), 'dashboard.html wrapper carries .fbwrap');
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
