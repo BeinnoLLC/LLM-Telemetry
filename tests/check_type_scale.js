@@ -54,5 +54,26 @@ chk(!!smMatch && +smMatch[1] >= 14, '--fs-sm floor is >= 14px', smMatch && smMat
 const tokenUsages = (html.match(/text-\[length:var\(--fs-(xs|sm|md|lg|xl)\)\]/g) || []).length;
 chk(tokenUsages > 50, 'the fluid tokens are used broadly across the built page', tokenUsages);
 
+
+// LST-323: no raw 13px/14px font sizes in dashboard.css
+const raw13 = (cssSrc.match(/font-size:\s*13px/g) || []).concat(cssSrc.match(/font:[^;]*\b13px\b/g) || []).filter(x=>!/var\(--fs/.test(x));
+const raw14 = (cssSrc.match(/font-size:\s*14px/g) || []).concat(cssSrc.match(/font:[^;]*\b14px\b/g) || []).filter(x=>!/var\(--fs/.test(x));
+chk(raw13.length === 0, 'dashboard.css has no raw 13px font sizes', raw13.length);
+chk(raw14.length === 0, 'dashboard.css has no raw 14px font sizes', raw14.length);
+
+// --fs-2xl declared
+chk(/--fs-2xl\s*:/.test(cssSrc), '--fs-2xl is declared');
+
+// every var(--fs-NAME) used in any web css file is declared
+const cssDir = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css');
+const fsFiles = fs.readdirSync(cssDir).filter(f => f.endsWith('.css'));
+let allCss = '';
+fsFiles.forEach(f => { allCss += fs.readFileSync(path.join(cssDir, f), 'utf8') + '\n'; });
+const used = new Set((allCss.match(/var\(--fs-[a-z0-9-]+\)/g) || []).map(x => x.match(/--fs-[a-z0-9-]+/)[0]));
+const declared = new Set((allCss.match(/--fs-[a-z0-9-]+\s*:/g) || []).map(x => x.replace(/\s*:/,'')));
+let missing = [];
+used.forEach(t => { if (!declared.has(t)) missing.push(t); });
+chk(missing.length === 0, 'every var(--fs-NAME) used in web css is declared', missing.join(','));
+
 console.log(`\ncheck_type_scale.js  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
