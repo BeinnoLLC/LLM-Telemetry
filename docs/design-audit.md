@@ -136,9 +136,9 @@ Three blocks: `:root, [data-theme="light"]` (`tokens.css:58`), `:root`
 | `--sp-6` | `24px` | shared | tokens.css:107 |
 | `--sp-7` | `32px` | shared | tokens.css:107 |
 | `--sp-8` | `40px` | shared | tokens.css:107 |
-| `--radius-sm` | `4px` | shared | tokens.css:108 |
-| `--radius-md` | `8px` | shared | tokens.css:108 |
-| `--radius-lg` | `12px` | shared | tokens.css:108 |
+| `--r-sm` | `4px` | shared | tokens.css:108 |
+| `--r-md` | `8px` | shared | tokens.css:108 |
+| `--r-lg` | `12px` | shared | tokens.css:108 |
 | `--motion-fast` | `120ms` | shared (unused, see item 13) | tokens.css:109 |
 | `--motion-normal` | `200ms` | shared (unused, see item 13) | tokens.css:109 |
 | `--state-hover` | `rgba(0,0,0,.04)` | `rgba(255,255,255,.06)` | tokens.css:110 / tokens.css:207 |
@@ -248,7 +248,7 @@ times (e.g. `dashboard.css:91` `padding:0 4px 0 8px` companion patterns,
 `1px` ×2, `8px` ×1, `7px` ×1, `13px` ×1 (`dashboard.css:937`), `12px` ×1,
 compound one-offs `9px 9px 5px 5px`, `14px 14px 0 0`, `12px 12px 0 0`,
 `0 0 30px 30px`, `0 0 6px 6px` (jar silhouette, `dashboard.css:882` area).
-Scale tokens `--radius-sm/md/lg` (4/8/12px, `tokens.css:108`) have **0** uses.
+Scale tokens `--r-sm/md/lg` (4/8/12px, `tokens.css:108`) have **0** uses.
 
 **Box shadows.** `var(--elev-*)` uses: **2** (`--elev-1` at `dashboard.css:39`,
 `--elev-2` once). Raw shadow declarations: **21 distinct** values, e.g.
@@ -573,9 +573,9 @@ Confirmed compliant at `f08f40f`, with executed evidence:
 16. **Radius one-offs (13 raw values off scale)** — low — evidence:
     `999px` ×24, `3px` ×16, `2px` ×17, `6px` ×4, `5px` ×3, `7px`, `9px` ×2,
     `13px` (`dashboard.css:937`), compounds like `0 0 30px 30px`;
-    `--radius-sm/md/lg` (tokens.css:108) have 0 uses. Fix: adopt
-    `--radius-ctl`/`--radius-sm/md/lg`, keep `999px`/`50%` as named
-    `--radius-pill`/`--radius-full`.
+    `--r-sm/md/lg` (tokens.css:108) have 0 uses. Fix: adopt
+    `--radius-ctl`/`--r-sm/md/lg`, keep `999px`/`50%` as named
+    `--r-pill`/`--r-full`.
 17. **Shadows off the `--elev-*` scale** — low — evidence: only 2 `--elev-*`
     uses (`dashboard.css:39`) vs 21 distinct raw `box-shadow` values
     (`dashboard.css:843`, `dashboard.css:977`, `dashboard.css:1243`-area

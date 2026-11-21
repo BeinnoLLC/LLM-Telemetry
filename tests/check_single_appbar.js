@@ -85,7 +85,7 @@ for (const [f, text] of js) {
 }
 
 // ---- 7. jsdom smoke (optional, needs built page) -------------------------
-const PAGE = process.env.LST342_PAGE || '/home/hazemhagrass/.hermes/profiles/llm-telemetry-brain/cache/scratch/lst342.html';
+const PAGE = process.env.LST342_PAGE || (process.env.HOME + '/.hermes/profiles/llm-telemetry-brain/cache/scratch/lst342.html');
 const fs2 = require('fs');
 if (!fs2.existsSync(PAGE)) {
   console.log(`  skip jsdom smoke — page missing: ${PAGE}`);
