@@ -74,3 +74,4 @@
 #hive-feed>div{display:flex;gap:var(--sp-2);padding:var(--sp-1) 0}.hv-st-done{color:var(--z-ok)}.hv-st-blocked{color:var(--z-bad)}
 @media(max-width:900px){.hv-panels{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.hv-shake,.hv-flash,.hv-flash-ok{animation:none}}
+@media(forced-colors:active){.hv-hex{fill:Canvas;stroke:CanvasText}.hv-crown{fill:Highlight;stroke:Highlight}}

@@ -2222,7 +2222,7 @@ canvas, img {
   .seg-btn.on,.kseg[aria-pressed="true"],.pchip[aria-current="true"]{box-shadow:0 0 0 1px var(--active-a)}
 }
 /* forced-colors: gradient text would vanish, fall back to system text */
-@media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}}
+@media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}.qt-ball{border:1px solid CanvasText}.qt-ball svg{forced-color-adjust:none}}
 
 /* ---- task queue, marble identity in BOTH themes (LLMTELEMET-317): balls and legend swatches read
    the --jar-* kind tokens. Dark --jar-hermes/pi/claude/codex/wait resolve to --kind-* / --qk-wait
