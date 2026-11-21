@@ -12,7 +12,7 @@ while ((_spm = _spRe.exec(html)) !== null) _sp[_spm[1]] = _spm[2];
 if (Object.keys(_sp).length === 0) _spEmpty = true;
 html = html.replace(/var\(--sp-(\d+)\)/g, (m,n) => _sp[n] || m);
 const _fs = {};
-const _fsRe = /--fs-([A-Za-z0-9_-]+)\s*:\s*([^;}\s]+)/g;
+const _fsRe = /--fs-([A-Za-z0-9_-]+)\s*:\s*([0-9.]+px)\s*[;}]/g;
 let _fsm;
 while ((_fsm = _fsRe.exec(html)) !== null) _fs[_fsm[1]] = _fsm[2];
 html = html.replace(/var\(--fs-([A-Za-z0-9_-]+)\)/g, (m,n) => _fs[n] ? _fs[n] : m);
