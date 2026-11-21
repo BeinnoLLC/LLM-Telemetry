@@ -40,6 +40,15 @@ function splitTopCommas(s){
   return parts;
 }
 
+function parseElevation(part){
+  const toks = part.split(/\s+/).filter(t => /^-?[\d.]+px$/.test(t) || t === '0');
+  return {
+    x: toks.length>=1 ? parseFloat(toks[0]) : 0,
+    y: toks.length>=2 ? parseFloat(toks[1]) : 0,
+    blur: toks.length>=3 ? parseFloat(toks[2]) : 0,
+  };
+}
+
 const offenders=[];
 for(const f of ['dashboard.css','hive.css','utilities.css']){
   const src = fs.readFileSync(path.join(CSS_DIR,f),'utf8');
@@ -52,10 +61,10 @@ for(const f of ['dashboard.css','hive.css','utilities.css']){
         const part=p.trim();
         if(part.includes('inset')) continue;
         if(part.startsWith('var(')) continue;
-        const nums = part.match(/(-?[\d.]+)px/g);
-        if(!nums || nums.length < 2) continue;
-        const y = parseFloat(nums[1]);
-        const blur = nums.length>=3 ? parseFloat(nums[2]) : 0;
+        const toks = part.split(/\s+/).filter(t => /^-?[\d.]+px$/.test(t) || t === '0');
+        if(toks.length < 2) continue;
+        const y = parseFloat(toks[1]);
+        const blur = toks.length>=3 ? parseFloat(toks[2]) : 0;
         if((y >= 6 || blur >= 12) && !r.selector.includes('.toast') && !r.selector.includes('.fb-sheet')){
           offenders.push({file:f, selector:r.selector, value:part});
         }
@@ -92,6 +101,11 @@ for(const f of ['dashboard.css','hive.css','utilities.css']){
   totalBS += (s.match(/box-shadow:/g)||[]).length;
 }
 chk(totalBS > 0, `found box-shadow declarations (${totalBS})`);
+
+const _t1 = parseElevation('0 5px 8px -2px');
+chk(_t1.y === 5 && _t1.blur === 8, 'parser unitless zero: 0 5px 8px -2px -> y 5 blur 8', `y=${_t1.y} blur=${_t1.blur}`);
+const _t2 = parseElevation('0 12px 32px var(--s35)');
+chk(_t2.y === 12 && _t2.blur === 32, 'parser unitless zero: 0 12px 32px var(--s35) -> y 12 blur 32', `y=${_t2.y} blur=${_t2.blur}`);
 
 console.log(`${pass} passed, ${fail} failed`);
 if(fail>0) process.exitCode=1;
