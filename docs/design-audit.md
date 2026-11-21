@@ -100,7 +100,7 @@ Three blocks: `:root, [data-theme="light"]` (`tokens.css:58`), `:root`
 | `--accent` | `#1f62c9` | `#88aaff` | tokens.css:66 / tokens.css:169 |
 | `--accent-ink` | `#ffffff` | `#05060a` | tokens.css:67 / tokens.css:170 |
 | `--accent-wash` | `rgba(31,98,201,.10)` | `rgba(136,170,255,.14)` | tokens.css:68 / tokens.css:171 |
-| `--accent2` | `#7793a2` | `#b877d9` | tokens.css:70 / tokens.css:178 |
+| `--accent2` | `#566e7e` | `#b877d9` | tokens.css:70 / tokens.css:178 |
 | `--border-strong` | `rgba(26,32,28,.22)` | `#262a36` | tokens.css:71 / tokens.css:172 |
 | `--active-a` | `#1f62c9` | `#88aaff` | tokens.css:72 / tokens.css:173 |
 | `--active-b` | `#1a7f3c` | `#55ff88` | tokens.css:73 / tokens.css:174 |
@@ -513,7 +513,7 @@ Confirmed compliant at `f08f40f`, with executed evidence:
    add the pair to `tests/check_hive_tokens.js`.
 5. **`--accent2` light fails body-text AA** — med — evidence: 3.13:1 on `--bg`,
    3.24:1 on `--card` (appendix A9), `tokens.css:70`. Fix: darken light
-   `--accent2` to ≥4.5:1 (e.g. `#5b7383` band) or restrict it to ≥3:1 chart
+   `--accent2` to ≥4.5:1 (shipped `#566e7e`, 5.16/5.35) or restrict it to ≥3:1 chart
    strokes in the DESIGN.md rule.
 6. **Raw rgb/hsl in dashboard.css (66)** — med — evidence: 66 declarations, e.g.
    `dashboard.css:131`, `dashboard.css:606` (`.respop` shadow),
