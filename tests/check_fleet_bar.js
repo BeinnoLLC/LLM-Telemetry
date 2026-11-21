@@ -78,16 +78,16 @@ chk(/var\(--kind-\$\{kind\}\)/.test(liveSrc), 'live.js reads the kind colour fro
 chk(!/tabframe|tabseg|tabkind|tabgrouplabel/.test(css + html.replace(/\/\/.*$/gm, '')),
     'old .tabframe/.tabseg/.tabkind/.tabgrouplabel are gone from CSS and the built page');
 // ---- static: 600px rules --------------------------------------------------
-const m960 = css.match(/@media \(max-width:960px\)\{([\s\S]*?)\n\}/);
-const m600 = css.match(/@media \(max-width:600px\)\{([\s\S]*?)\n\}/);
-chk(!!m960, 'a max-width:960px block collapses the fleet bar before it can overflow the page');
-chk(!!m600, 'a max-width:600px block exists for the fleet bar');
+const m960 = css.match(/@media \(max-width:1023px\)\{([\s\S]*?)\n\}/);
+const m600 = css.match(/@media \(max-width:639px\)\{([\s\S]*?)\n\}/);
+chk(!!m960, 'a max-width:1023px block collapses the fleet bar before it can overflow the page');
+chk(!!m600, 'a max-width:639px block exists for the fleet bar');
 if (m960) {
-  chk(/\.kseg \.l\{display:none\}/.test(m960[1]), '<=960px: kind filters are icon-only (label hidden)');
-  chk(/\.fb-count\{[^}]*clip:rect/.test(m960[1]) && !/\.fb-count\{display:none/.test(m960[1]), '<=960px: the count is visually hidden, not display:none (aria-live stays)');
+  chk(/\.kseg \.l\{display:none\}/.test(m960[1]), '<=1023px: kind filters are icon-only (label hidden)');
+  chk(/\.fb-count\{[^}]*clip:rect/.test(m960[1]) && !/\.fb-count\{display:none/.test(m960[1]), '<=1023px: the count is visually hidden, not display:none (aria-live stays)');
 }
 if (m600) {
-  chk(/\.pchip \.name\{display:none\}/.test(m600[1]), '600px: chips shrink to avatar + glyph (name hidden, kept in aria-label/title)');
+  chk(/\.pchip \.name\{display:none\}/.test(m600[1]), '639px: chips shrink to avatar + glyph (name hidden, kept in aria-label/title)');
 }
 chk(/\.pchip \.name\{[^}]*text-overflow:ellipsis/.test(css), 'chip name has text-overflow:ellipsis');
 chk(/\.fbdlg::backdrop\{[^}]*background/.test(css), 'Manage dialog has a ::backdrop scrim');

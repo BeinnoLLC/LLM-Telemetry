@@ -19,30 +19,30 @@ function chk(ok, name, got) {
 // stack point is exactly 1023, not a rule that swallows a wider band.
 chk(/max-width:1023px\)\{\s*\n\s*\.livegrid\{grid-template-columns:minmax\(0,1fr\)/.test(html),
     '.livegrid stacks at <=1023px (agents panel beside the table from 1024px)');
-chk(!/max-width:834px\)\{\s*\n\s*\.livegrid/.test(html),
-    'the old 834px livegrid rule is gone');
+chk(!/max-width:899px\)\{\s*\n\s*\.livegrid/.test(html),
+    'the old 899px livegrid rule is gone');
 chk(!/max-width:1000px\)\{\s*\n\s*\.livegrid/.test(html),
-    'the old max-width:1000px livegrid rule is gone (it force-stacked 835-1000px landscape unnecessarily)');
+    'the old max-width:1000px livegrid rule is gone (it force-stacked 900-1000px landscape unnecessarily)');
 chk(!/max-width:900px\)\{\s*\n\s*\.livegrid/.test(html) && !/max-width:1024px\)\{\s*\n\s*\.livegrid/.test(html),
     'no OTHER livegrid stacking rule reintroduces a landscape-tablet force-stack');
 
 // Portrait tablet: single-column chart pairs, taller aspect ratio.
-chk(/@media\(min-width:641px\) and \(max-width:834px\) and \(orientation:portrait\)\{[\s\S]{0,120}?\.grid-2\{grid-template-columns:1fr\}/.test(html),
-    'portrait tablet (<=834px) collapses chart pairs to a single column');
-chk(/@media\(min-width:641px\) and \(max-width:834px\) and \(orientation:portrait\)\{[\s\S]{0,250}?canvas\{max-height:min\(/.test(html),
+chk(/@media\(min-width:641px\) and \(max-width:899px\) and \(orientation:portrait\)\{[\s\S]{0,120}?\.grid-2\{grid-template-columns:1fr\}/.test(html),
+    'portrait tablet (<=899px) collapses chart pairs to a single column');
+chk(/@media\(min-width:641px\) and \(max-width:899px\) and \(orientation:portrait\)\{[\s\S]{0,250}?canvas\{max-height:min\(/.test(html),
     'portrait tablet charts use a viewport-height-driven clamp() ceiling, not a fixed px height');
 
 // Landscape tablet: charts still get a real height ceiling (not the desktop
 // default), driven by viewport height so a short landscape window does not
 // force scrolling mid-chart.
-chk(/@media\(min-width:835px\) and \(max-width:1024px\) and \(orientation:landscape\)\{[\s\S]{0,120}?canvas\{max-height:min\(/.test(html),
-    'landscape tablet (835-1024px) charts use a viewport-height clamp() ceiling');
+chk(/@media\(min-width:900px\) and \(max-width:1024px\) and \(orientation:landscape\)\{[\s\S]{0,120}?canvas\{max-height:min\(/.test(html),
+    'landscape tablet (900-1024px) charts use a viewport-height clamp() ceiling');
 
-// Both bands are genuinely disjoint (835 starts exactly where 834 ends) so
+// Both bands are genuinely disjoint (900 starts exactly where 899 ends) so
 // there is no gap or double-match at the boundary.
 const portraitMax = (html.match(/max-width:(\d+)px\) and \(orientation:portrait\)/) || [])[1];
 const landscapeMin = (html.match(/min-width:(\d+)px\) and \(max-width:1024px\) and \(orientation:landscape\)/) || [])[1];
-chk(portraitMax === '834' && landscapeMin === '835', 'portrait/landscape tablet bands are contiguous with no gap or overlap',
+chk(portraitMax === '899' && landscapeMin === '900', 'portrait/landscape tablet bands are contiguous with no gap or overlap',
     `portrait<=${portraitMax}, landscape>=${landscapeMin}`);
 
 // The icon-rail nav is already collapsed by default (#102) — confirm the
