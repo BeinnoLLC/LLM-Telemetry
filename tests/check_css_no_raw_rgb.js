@@ -3,7 +3,7 @@
 // or transparent; the literals live in tokens.css (the sole owner).
 // Exemptions:
 //   * comments (any colour mentioned in prose)
-//   * tooltip rules (.qtip*, .flowtip*) — owned by LLMTELEMET-312
+//   * tooltip rules (.qtip*, .flowtip*) — exemption kept only as a scoped safety net (LLMTELEMET-312 Done, LLMTELEMET-322 tokenised)
 const fs = require('fs');
 const path = require('path');
 
@@ -75,9 +75,9 @@ for (let i = 0; i < src.length; i++) {
 chk(violations.length === 0, `no raw rgb()/hsl() outside comments and tooltip rules (${violations.length} found)`);
 for (const v of violations) console.log(`      ${v.line}: ${v.hits.join(', ')}  ${v.text}`);
 
-// Positive control: the scanner must still SEE the exempt tooltip literals —
-// proves the exemption is scoped to .qtip/.flowtip blocks, not a blanket pass.
-chk(exemptHits.length > 0, `tooltip rules keep their LLMTELEMET-312 literals, exempt (${exemptHits.map(e => e.line).join(', ')})`);
+// LLMTELEMET-322 tokenised the tooltip shadows to var(--elev-3): no exempt
+// literals should remain, proving the exemption is a scoped safety net.
+chk(exemptHits.length === 0, `tooltip rules carry no raw literals, shadows use --elev-3 per LLMTELEMET-322 (${exemptHits.map(e => e.line).join(', ')})`);
 
 // Negative controls for the selector exemption itself.
 chk(TOOLTIP.test('.qtip') && TOOLTIP.test('.flowtip.on') && TOOLTIP.test('.qtip[data-side=top]::before'), 'exempt: .qtip, .flowtip.on, .qtip[data-side]::before');
