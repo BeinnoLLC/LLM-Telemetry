@@ -664,7 +664,7 @@ border:1px solid var(--border)}
 .lmrowbar{display:block;height:6px;border-radius:var(--r-md);min-width:2px}
 .lmbtn{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;font:inherit}
 .lmbtn:hover{color:var(--fg)}
-.lmpanel{margin:-4px 0 var(--sp-1) 26px;padding:6px var(--sp-2);border:1px solid var(--border);border-top:0;
+border-radius:0 0 var(--r-md) var(--r-md);
 border-radius:var(--r-md);
 flex:0 0 auto; min-height:max-content; overflow-x:auto; overflow-y:visible}
 .lmpanel table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
@@ -980,7 +980,7 @@ filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop
 .qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:var(--r-full);pointer-events:none;
 background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),var(--s25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
-border-radius:var(--r-md);border-bottom:3px solid var(--jc);
+border-radius:var(--r-md) var(--r-md) var(--r-md) var(--r-md);border-bottom:3px solid var(--jc);
 background:linear-gradient(180deg,var(--w22) 0 2px,transparent 2px),
 linear-gradient(90deg,var(--s35),transparent 20%,var(--w8) 40%,transparent 60%,var(--s40)),
 linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
@@ -1034,7 +1034,7 @@ box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,black),inset 
 .qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
 border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
 box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:var(--r-pill);border:1.5px solid var(--w40);pointer-events:none}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid var(--w40);pointer-events:none}
 .qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
 rotate:calc(var(--rz,0deg) * -1)}
 .qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:var(--w88);
@@ -1043,12 +1043,12 @@ box-shadow:0 1px 2px var(--s35)}
 .qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
 .qt-run .qt-gl svg{width:50%;height:50%}
 .qt-ghost .qt-gl{rotate:0deg}
-.qt-ball-g{position:absolute;inset:-5px;border-radius:var(--r-full);pointer-events:none;display:none}
+.qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
 .qt-ball.qt-warn{box-shadow:inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
-.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:var(--r-md);cursor:pointer;
+.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
 font-size:var(--fs-sm);font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
 background:color-mix(in srgb,var(--fg) 10%,var(--card))}
 .qt-overflow:hover,.qt-overflow:focus-visible{border-color:var(--accent);outline:0}
@@ -1375,7 +1375,7 @@ border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
 @media(max-width:640px){
 .drawer{top:auto;right:0;left:0;width:auto;max-height:92dvh;
 border-left:none;border-top:1px solid var(--border);
-border-radius:var(--r-md);transform:translateY(100%)}
+border-radius:var(--r-lg) var(--r-lg) 0 0;transform:translateY(100%)}
 .drawer.open{transform:translateY(0)}
 #drawer{height:92dvh}
 #drawer .dhead{padding-top:6px}
