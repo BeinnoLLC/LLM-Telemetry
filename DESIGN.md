@@ -254,9 +254,9 @@ spacing:
   pad: 16px                             # --pad  page padding (dashboard.css:5)
 rounded:
   # Radius scale = tokens.css:108 + --radius-ctl (tokens.css:140). Theme-independent.
-  radius-sm: 4px                        # --radius-sm (0 uses today, mismatch 16)
-  radius-md: 8px                        # --radius-md (0 uses today)
-  radius-lg: 12px                       # --radius-lg (0 uses today)
+  radius-sm: 4px                        # --r-sm (0 uses today, mismatch 16)
+  radius-md: 8px                        # --r-md (0 uses today)
+  radius-lg: 12px                       # --r-lg (0 uses today)
   radius-ctl: 10px                      # --radius-ctl  THE control/card radius (74 uses)
 components:
   # One canonical mapping per repeated component (full spec in the Components prose).
@@ -668,15 +668,15 @@ component shell). Guarded by `tests/check_css_z_layers.js`.
 | Token | Value | Use |
 |---|---|---|
 | `--radius-ctl` | `10px` | THE radius: cards, buttons, chips, inputs, popovers (74 uses) |
-| `--radius-sm` | `4px` | fine elements (declared, 0 uses today) |
-| `--radius-md` | `8px` | medium (declared, 0 uses) |
-| `--radius-lg` | `12px` | modal panels, bottom-sheet corners (declared, 0 uses) |
+| `--r-sm` | `4px` | fine elements (declared, 0 uses today) |
+| `--r-md` | `8px` | medium (declared, 0 uses) |
+| `--r-lg` | `12px` | modal panels, bottom-sheet corners (declared, 0 uses) |
 
 - Raw radii in code: `999px` ×24, `4px` ×18, `2px` ×17, `3px` ×16, `50%` ×14, `99px` ×4,
   `6px` ×4, plus one-offs (`13px`, `7px`, jar silhouette compounds like `0 0 30px 30px`).
   This sprawl is mismatch 16.
-- **Proposed** (mismatch 16, not in code): name `--radius-pill:999px` and
-  `--radius-full:50%` in `tokens.css` and migrate the pills/circles to them.
+- **Proposed** (mismatch 16, not in code): name `--r-pill:999px` and
+  `--r-full:50%` in `tokens.css` and migrate the pills/circles to them.
 - The jar silhouette (`clip-path` quarter-ellipse shoulders + `0 0 30px 30px` bottom,
   dashboard.css:870-874) is artwork, not the radius scale — keep it.
 
@@ -1208,8 +1208,8 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     `--sp-3..6` overrides at dashboard.css:17-20 drift too). Fix: delete the `dashboard.css`
     copies — single source `tokens.css`. *ticket: LLMTELEMET-320*
 16. **Radius one-offs (13 raw values off scale)** — low — `999px` ×24, `3px` ×16, `2px` ×17,
-    `50%` ×14…; `--radius-sm/md/lg` 0 uses. Proposed: `--radius-pill:999px`,
-    `--radius-full:50%` (**proposed** names). *ticket: LLMTELEMET-321*
+    `50%` ×14…; `--r-sm/md/lg` 0 uses. Proposed: `--r-pill:999px`,
+    `--r-full:50%` (**proposed** names). *ticket: LLMTELEMET-321*
 17. **Shadows off the `--elev-*` scale** — low — 2 `--elev-*` uses vs 21 raw `box-shadow`
     values; map popovers to `--elev-2`, modals/tooltips to `--elev-3`; `--elev-0` has no
     dark sibling. *ticket: LLMTELEMET-322*

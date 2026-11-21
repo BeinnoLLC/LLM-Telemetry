@@ -208,6 +208,11 @@
   --scrim-bg:rgba(0,0,0,.55);
   --elev-modal:0 24px 70px rgba(0,0,0,.5);
   --radius-ctl:10px;
+  --r-sm:4px;
+  --r-md:8px;
+  --r-lg:12px;
+  --r-pill:999px;
+  --r-full:50%;
   /* motion scale (LLMTELEMET-318): every UI transition routes through these */
   --motion-fast:120ms;
   --motion-normal:200ms;
