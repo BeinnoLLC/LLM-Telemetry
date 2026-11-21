@@ -107,7 +107,6 @@
 .tabular-nums{font-variant-numeric:tabular-nums}
 .opacity-40{opacity:.4}
 /* Arbitrary-value font sizes the markup spells as text-[length:var(--fs-*)]. */
-.text-\[length\:var\(--fs-2xs\)\]{font-size:var(--fs-2xs)}
 .text-\[length\:var\(--fs-xs\)\]{font-size:var(--fs-xs)}
 .text-\[length\:var\(--fs-sm\)\]{font-size:var(--fs-sm)}
 .text-\[length\:var\(--fs-md\)\]{font-size:var(--fs-md)}
