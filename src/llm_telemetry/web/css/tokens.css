@@ -159,7 +159,7 @@
      var(--wN) instead of re-mixing at every use. sN = shade at N% alpha,
      wN = tint at N% alpha (w1p5 = 1.5%). Theme-invariant like the primitives. */
   --s18:rgba(0,0,0,.18);--s22:rgba(0,0,0,.22);--s25:rgba(0,0,0,.25);--s30:rgba(0,0,0,.3);--s38:rgba(0,0,0,.38);--s70:rgba(0,0,0,.7);--s85:rgba(0,0,0,.85);--w2:rgba(255,255,255,.02);--w5:rgba(255,255,255,.05);--w7:rgba(255,255,255,.07);--w8:rgba(255,255,255,.08);--w13:rgba(255,255,255,.13);--w25:rgba(255,255,255,.25);--w35:rgba(255,255,255,.35);--w88:rgba(255,255,255,.88);--w92:rgba(255,255,255,.92);--w95:rgba(255,255,255,.95);--w1p5:rgba(255,255,255,.015);
-  --fm:ui-monospace,SFMono-Regular,Menlo,monospace;--fm2:ui-monospace,monospace;
+  --fm:var(--mono);--fm2:var(--mono);
   --s28:rgba(0,0,0,.28);
   --s35:rgba(0,0,0,.35);--s40:rgba(0,0,0,.4);--s45:rgba(0,0,0,.45);--s50:rgba(0,0,0,.5);
   --s55:rgba(0,0,0,.55);--s60:rgba(0,0,0,.6);--s65:rgba(0,0,0,.65);
@@ -236,7 +236,7 @@
   --layer-ball-hover:900;
   --layer-ghost:950;
   --layer-overflow:1000;
-  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
   --num:tabular-nums;
   --fb-surface:color-mix(in srgb,var(--fg) 4%,var(--card));
   --fb-raise:color-mix(in srgb,var(--fg) 9%,var(--card));

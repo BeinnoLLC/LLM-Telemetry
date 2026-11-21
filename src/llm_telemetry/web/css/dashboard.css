@@ -1041,7 +1041,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olcap.thinking{border-color:color-mix(in srgb, var(--pal-amber) 50%, transparent);color:var(--pal-amber)}
  .olidle{font-size:var(--fs-sm);color:var(--muted);padding:var(--sp-1) 0}
 .olinstl{display:flex;flex-wrap:wrap;gap:var(--sp-1);padding:2px 0 var(--sp-1)}
-.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono,monospace);padding:1px 6px;border:1px solid var(--border);
+.olinst{font-size:var(--fs-xs,11px);font-family:var(--mono);padding:1px 6px;border:1px solid var(--border);
   border-radius:999px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
 .olinst.olmore{cursor:default}
  .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
@@ -1373,8 +1373,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    .dtab{scroll-snap-align:start;flex-shrink:0}
  }
  #draghandle{display:none}
- #dbody{overflow-y:auto;flex:1;padding:var(--sp-1) 0;font-family:ui-monospace,SFMono-Regular,
-   Menlo,monospace;font-size:var(--fs-sm);line-height:1.45}
+ #dbody{overflow-y:auto;flex:1;padding:var(--sp-1) 0;font-family:var(--mono);font-size:var(--fs-sm);line-height:1.45}
  .ev{display:flex;gap:9px;padding:6px 15px;border-bottom:1px solid var(--border)}
  .ev:hover{background:var(--ev-hover)}
  .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
