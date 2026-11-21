@@ -662,7 +662,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
  .shell{padding-left:var(--shell-pad);transition:padding-left var(--motion-normal) ease}
 
- /* The single top app bar is #appbar (dashboard.css:~2166, markup in
+ /* The single top app bar is #appbar (dashboard.css:2142, markup in
     dashboard.html). The retired .appbar shell and its #hamburger/#barmore/
     #barmenu controls were deleted in LLMTELEMET-315; tests/check_single_appbar.js
     guards against a second app-bar shell rule coming back. */

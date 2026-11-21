@@ -791,14 +791,6 @@
     },
     {
       "mod": "views",
-      "name": "syncAppBar"
-    },
-    {
-      "mod": "views",
-      "name": "initAppBar"
-    },
-    {
-      "mod": "views",
       "name": "priceRow"
     },
     {
