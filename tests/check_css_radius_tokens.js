@@ -20,7 +20,7 @@ function isAllowed(val){
   return true;
 }
 
-let failed = 0;
+let failed = 0, pass = 0;
 for (const f of FILES){
   const src = blankComments(fs.readFileSync(path.join(CSS_DIR, f), 'utf8'));
   const re = /border-radius\s*:\s*([^;}]*)/g;
@@ -30,6 +30,8 @@ for (const f of FILES){
     if (!isAllowed(val)){
       console.log('FAIL', f, 'border-radius:', val);
       failed++;
+    } else {
+      pass++;
     }
   }
 }
@@ -48,8 +50,10 @@ for (const [k,v] of Object.entries(expected)){
   if (!re.test(tokens)){
     console.log('FAIL tokens.css missing', k, v);
     failed++;
+  } else {
+    pass++;
   }
 }
 
-console.log(failed === 0 ? '0 failed' : failed + ' failed');
-process.exit(failed === 0 ? 0 : 1);
+console.log(`${pass} passed, ${failed} failed`);
+if (failed > 0) process.exit(1);

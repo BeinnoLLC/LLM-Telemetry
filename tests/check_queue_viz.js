@@ -8,8 +8,15 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const html = fs.readFileSync(
+let html = fs.readFileSync(
   path.join(__dirname, '..', 'examples', 'reports', 'dashboard.html'), 'utf8');
+
+const _rad = {};
+const _radRe = /--radius-([A-Za-z0-9_-]+)\s*:\s*([^;}\s]+)/g;
+let _radm;
+while ((_radm = _radRe.exec(html)) !== null) _rad[_radm[1]] = _radm[2];
+if (Object.keys(_rad).length === 0) chk(false, 'radius tokens found in dashboard.html');
+html = html.replace(/var\(--radius-([A-Za-z0-9_-]+)\)/g, (m,n) => _rad[n] ? _rad[n] : m);
 
 let pass = 0, fail = 0;
 function chk(ok, name, got) {
