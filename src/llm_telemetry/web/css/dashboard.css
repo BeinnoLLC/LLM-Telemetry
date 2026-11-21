@@ -123,7 +123,7 @@
 .fb-menu{position:relative;flex:none}
 .fb-pop{position:absolute;z-index:var(--layer-pop);top:calc(100% + 6px);right:0;width:min(640px,86vw);max-height:60vh;overflow:auto;
   display:flex;flex-direction:column;gap:var(--sp-2);padding:10px;background:var(--card);border:1px solid var(--border);
-  border-radius:calc(var(--fb-r) + 4px);box-shadow:0 8px 24px var(--s45)}
+  border-radius:calc(var(--fb-r) + 4px);box-shadow:var(--elev-2)}
 .fb-pop[hidden]{display:none}
 .fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:var(--sp-1)}
 .fb-pop .fb-more{align-self:flex-end}
@@ -133,7 +133,7 @@
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
    the ::backdrop (the mock had none). */
 .fbdlg{padding:0;width:min(680px,92vw);max-height:min(76vh,600px);flex-direction:column;overflow:hidden;
-  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 12px 32px var(--s35)}
+  background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:var(--elev-3)}
 .fbdlg[open]{display:flex}
 .fbdlg::backdrop{background:var(--s45)}
 .pk-top{display:flex;align-items:center;gap:var(--sp-2,8px);padding:var(--sp-3);border-bottom:1px solid var(--border)}
@@ -598,7 +598,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
  .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
  .resbad{color:var(--z-warn)}
- .respop{position:absolute;top:22px;left:0;z-index:var(--layer-pop);min-width:300px;max-width:440px;padding:var(--sp-3);box-shadow:0 8px 24px var(--s30)}
+ .respop{position:absolute;top:22px;left:0;z-index:var(--layer-pop);min-width:300px;max-width:440px;padding:var(--sp-3);box-shadow:var(--elev-2)}
  .respop code{font-size:var(--fs-sm)}
  #boot{position:fixed;inset:0;z-index:var(--layer-boot);background:var(--bg);display:flex;
        align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -773,7 +773,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
    width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
    border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 26px;
-   box-shadow:0 24px 60px var(--s50)}
+   box-shadow:var(--elev-3)}
  .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
  .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:var(--sp-4)}
  #helpclose{position:absolute;top:13px;right:15px;cursor:pointer;color:var(--muted);
@@ -820,7 +820,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #flow.zoomedout .lnk{stroke-opacity:.22}
  .flowtip{position:absolute;pointer-events:none;opacity:0;transition:opacity var(--motion-fast);
    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);
-   padding:7px 10px;font-size:var(--fs-sm);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;
+   padding:7px 10px;font-size:var(--fs-sm);box-shadow:var(--elev-3);z-index:5;
    max-width:260px}
  .flowtip.on{opacity:1}
  .flowtip .ft-h{font-weight:600;font-size:var(--fs-sm);margin-bottom:3px}
@@ -958,7 +958,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    the Hive .hv-tip are themed .qtip instances (sizing/level only), and the
    arrow renders only when the shared placer (views.js tipPlace) sets data-side,
    so arrow-less instances never grow one. Visibility is the .on class. */
-.qtip{position:fixed;max-width:300px;font-size:14px;z-index:var(--layer-modal);pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity var(--motion-fast);box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.4);text-wrap:pretty}
+.qtip{position:fixed;max-width:300px;font-size:14px;z-index:var(--layer-modal);pointer-events:none;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));border-radius:var(--radius-ctl);opacity:0;transition:opacity var(--motion-fast);box-shadow:var(--elev-3);text-wrap:pretty}
 .qtip.on{opacity:1}
 .qtip .ft-h,.qtip .ft-r{font-size:14px}
 .qtip[data-side]::before{content:"";position:absolute;width:10px;height:10px;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 55%,var(--border));transform:rotate(45deg);
@@ -2090,7 +2090,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-v{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .combo-chev{flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px)}
 .combo-pop{position:absolute;z-index:var(--layer-pop);top:calc(100% + 4px);left:0;width:min(360px,90vw);display:flex;flex-direction:column;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:0 8px 24px var(--s45)}
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-ctl);box-shadow:var(--elev-2)}
 .combo-q{margin:var(--sp-2);height:32px;box-sizing:border-box;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-ctl);padding:0 var(--sp-2);font:inherit;font-size:14px}
 .combo-list{max-height:min(320px,50vh);overflow:auto;border-top:1px solid var(--border)}
 .combo-opt{display:flex;align-items:center;gap:var(--sp-2);min-height:36px;padding:var(--sp-1) var(--sp-3);font-size:14px;cursor:pointer}
