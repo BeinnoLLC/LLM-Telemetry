@@ -2142,15 +2142,12 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 #appbar{position:sticky;top:0;z-index:var(--layer-appbar);box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
   padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
 body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
-#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
-#appbar .ab-sep{opacity:.4}
-#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #appbar .ab-spacer{flex:1}
-#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
-#appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
-#appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
-#ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
-@media (max-width:640px){ #appbar .ab-title{display:none} #appbar .ab-sep{display:none} #ab-theme{width:44px;height:44px;min-width:44px} }
+#appbar #meta{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+#appbar #meta.old{border-color:currentColor}
+#appbar #meta.stale{border-color:currentColor}
+#appbar #theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar #theme{width:44px;height:44px;min-width:44px} }
 
 /* LST-239/243: Orchestration graph */
 .orch-card{padding:1rem;overflow-x:auto}
@@ -2212,17 +2209,17 @@ canvas, img {
 }
 /* LST-278: Hive animated gradient title. Text stays real text (labels kept);
    the gradient only paints it. Reduced motion: static gradient, no animation. */
-#appbar .ab-title,.page-title,.navbrand .brandword{background:var(--grad-title);background-size:300% 100%;
+.page-title,.navbrand .brandword{background:var(--grad-title);background-size:300% 100%;
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
   animation:hive-title 12s linear infinite}
 @keyframes hive-title{to{background-position:300% 0}}
 @media(prefers-reduced-motion:reduce){
-  #appbar .ab-title,.page-title,.navbrand .brandword{animation:none;background-size:100% 100%}
+  .page-title,.navbrand .brandword{animation:none;background-size:100% 100%}
   .dot,.stamp[data-stamp-state="fresh"]::after,.pchip .live{animation:none;box-shadow:none}
   .seg-btn.on,.kseg[aria-pressed="true"],.pchip[aria-current="true"]{box-shadow:0 0 0 1px var(--active-a)}
 }
 /* forced-colors: gradient text would vanish, fall back to system text */
-@media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}.qt-ball{border:1px solid CanvasText}.qt-ball svg{forced-color-adjust:none}}
+@media(forced-colors:active){.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}.qt-ball{border:1px solid CanvasText}.qt-ball svg{forced-color-adjust:none}}
 
 /* ---- task queue, marble identity in BOTH themes (LLMTELEMET-317): balls and legend swatches read
    the --jar-* kind tokens. Dark --jar-hermes/pi/claude/codex/wait resolve to --kind-* / --qk-wait

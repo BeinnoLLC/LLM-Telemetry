@@ -39,7 +39,7 @@ for (const [f, text] of css) {
   let m;
   while ((m = RULE.exec(text))) {
     const [, sel, body] = m;
-    if (/position:\s*sticky/.test(body) && /(^|[;{\s])top:\s*0/.test(body) &&
+    if (/(?:position:\s*sticky|position:\s*fixed)/.test(body) && /(^|[;{\s])top:\s*0/.test(body) &&
         /display:\s*flex/.test(body) && /align-items:\s*center/.test(body)) {
       shells.push({ f, sel: sel.trim().replace(/\s+/g, ' ') });
     }
@@ -61,7 +61,7 @@ chk(/position:\s*sticky/.test(appbarShell) && /top:\s*0/.test(appbarShell),
 // ---- 4. Markup mounts one app bar ----------------------------------------
 const banners = html.match(/role="banner"/g) || [];
 chk(banners.length === 1, `exactly one role="banner" in the template (${banners.length})`);
-const barIds = html.match(/<div id="appbar"/g) || [];
+const barIds = html.match(/<[^>]+id="appbar"/g) || [];
 chk(barIds.length === 1, `exactly one #appbar element in the template (${barIds.length})`);
 chk(!/class="[^"]*\bappbar\b/.test(html), 'no .appbar markup in the template');
 for (const id of ['hamburger', 'barmore', 'barmenu']) {
