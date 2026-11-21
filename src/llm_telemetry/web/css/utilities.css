@@ -90,8 +90,8 @@
 .border{border:1px solid var(--border)}
 .border-t{border-top:1px solid var(--border)}
 .border-l-2{border-left:2px solid var(--border)}
-.rounded{border-radius:4px}
-.rounded-md{border-radius:6px}
+.rounded{border-radius: var(--radius-sm)}
+.rounded-md{border-radius: var(--radius-md)}
 
 /* ---- type --------------------------------------------------------------- */
 .text-left{text-align:left}

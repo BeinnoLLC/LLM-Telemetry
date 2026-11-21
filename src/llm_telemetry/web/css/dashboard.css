@@ -55,11 +55,11 @@
 .stamp[data-stamp-state="fresh"]{color:var(--z-ok)}
 .stamp-health{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .stamp-health:hover{color:var(--fg)}
-.stamp-health:focus-visible{outline:2px solid var(--state-focus);outline-offset:2px;border-radius:2px}
+.stamp-health:focus-visible{outline:2px solid var(--state-focus);outline-offset:2px;border-radius:var(--radius-md)}
 /* The pulse is only honest while the feed is actually live; a stalled feed
    freezes it, which is the whole point of the indicator. */
 .stamp[data-stamp-state="fresh"]::after{content:"";display:inline-block;width:5px;height:5px;
-  margin-left:5px;border-radius:50%;background:var(--live-dot);box-shadow:var(--glow-live);vertical-align:middle;
+  margin-left:5px;border-radius:var(--radius-full);background:var(--live-dot);box-shadow:var(--glow-live);vertical-align:middle;
   animation:p 2s infinite}
 @media(prefers-reduced-motion:reduce){.stamp[data-stamp-state="fresh"]::after{animation:none}}
  .tabon{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -108,14 +108,14 @@
 .pchip .name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pchip .pfx{color:var(--muted)}
 .pchip .kd{font-size:var(--fs-xs);color:var(--k);line-height:1}
-.pchip .live{width:6px;height:6px;border-radius:50%;background:var(--live-dot);
+.pchip .live{width:6px;height:6px;border-radius:var(--radius-full);background:var(--live-dot);
   box-shadow:var(--glow-live);flex:none}
 .pchip:hover{background:var(--fb-raise)}
 .pchip[data-off="1"]{color:var(--muted)}
 .pchip[data-off="1"] .av{opacity:.5;filter:grayscale(1)}
 .pchip[data-off="1"] .name{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
 .pchip[aria-current="true"]{background:var(--card);box-shadow:var(--glow-active)}
-.pchip[aria-current="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:2px;border-radius:2px;background:var(--accent)}
+.pchip[aria-current="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:2px;border-radius:var(--radius-md);background:var(--accent)}
 .pchip:focus-visible,.kseg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .fb-count{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;padding:0 var(--sp-1)}
 .fb-more,.fb-pbtn{height:var(--fb-h);flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);
@@ -128,7 +128,7 @@
 .fb-pop[hidden]{display:none}
 .fb-pop .fb-strip{flex:none;flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;gap:var(--sp-1)}
 .fb-pop .fb-more{align-self:flex-end}
-.fb-more kbd{font:inherit;font-size:var(--fs-xs);color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:0 var(--sp-1)}
+.fb-more kbd{font:inherit;font-size:var(--fs-xs);color:var(--muted);border:1px solid var(--border);border-radius:var(--radius-md);padding:0 var(--sp-1)}
 .fb-more[aria-expanded="true"],.fb-pbtn[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent-wash);border-color:var(--accent)}
 .fb-more:focus-visible,.fb-pbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Manage dialog: native <dialog>, so focus trap + Esc come free. The scrim is
@@ -160,13 +160,13 @@
 .pk-btn:focus-visible,.pk-q:focus-visible,.pk-on:focus-visible,.pk-hue:focus-visible,.pk-logo:focus-within,.pk-clr:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* on/off checkboxes: a real checked / indeterminate / unchecked treatment */
 .fbdlg input.pk-on{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;flex:none;cursor:pointer;
-  border:1.5px solid var(--muted);border-radius:4px;background:transparent;display:inline-grid;place-content:center}
+  border:1.5px solid var(--muted);border-radius:var(--radius-sm);background:transparent;display:inline-grid;place-content:center}
 .fbdlg input.pk-on:checked{background:var(--accent);border-color:var(--accent)}
 .fbdlg input.pk-on:checked::after{content:"";width:8px;height:4px;border:2px solid var(--accent-ink);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .fbdlg input.pk-on:indeterminate{background:var(--accent-wash);border-color:var(--accent)}
 .fbdlg input.pk-on:indeterminate::after{content:"";width:8px;height:0;border-top:2px solid var(--accent);transform:none;border-left:0;border-right:0;border-bottom:0}
 .lvcov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.2;color:var(--muted);white-space:nowrap}
-.lvsubb{margin-top:0;padding:0 var(--sp-1);border:1px solid var(--border);border-radius:3px;font-size:var(--fs-xs);line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
+.lvsubb{margin-top:0;padding:0 var(--sp-1);border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--fs-xs);line-height:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
 .fbwrap{min-width:0}
 /* the nowrap fleet bar (~880px) must not push the page wider than the viewport */
 @media (max-width:1023px){
@@ -212,10 +212,11 @@
     tracks --muted across both themes instead of being baked to one hex. */
  .selwrap{position:relative; display:inline-flex; max-width:100%; min-width:0}
  .selwrap::after{
+   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
    content:''; position:absolute; right:10px; top:50%; width:10px; height:7px;
    transform:translateY(-50%); pointer-events:none; background:var(--muted);
-   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
-   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+   -webkit-mask:var(--chev) no-repeat center / contain;
+   mask:var(--chev) no-repeat center / contain;
  }
  canvas{width:100% !important;max-height:280px}
  table{font-variant-numeric:tabular-nums;border-collapse:collapse;width:100%}
@@ -230,7 +231,7 @@
  main:focus{outline:none}
  .lbl{font-size:var(--fs-xs);font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
  /* Freshness dot: green while the feed is fresh, amber once its stamp is old or stale. */
- .dot{width:7px;height:7px;border-radius:50%;background:var(--live-dot);box-shadow:var(--glow-live);
+ .dot{width:7px;height:7px;border-radius:var(--radius-full);background:var(--live-dot);box-shadow:var(--glow-live);
       display:inline-block;margin-right:5px;animation:p 2s infinite}
  :has(> .stamp.old,> .stamp.stale) > .dot,.dhead:has(.stamp.old,.stamp.stale) .dot{background:var(--z-warn);box-shadow:none}
  @keyframes p{0%,100%{opacity:1}50%{opacity:.35}}
@@ -268,10 +269,10 @@
  a.stat:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
  .stat-clear{color:var(--z-ok)}
  .stat-alert{display:flex;gap:6px;align-items:center;height:28px;min-width:0;font:400 var(--fs-xs)/28px var(--font);color:var(--fg)}
- .stat-alert .adot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--z-warn)}
+ .stat-alert .adot{flex:none;width:6px;height:6px;border-radius:var(--radius-full);background:var(--z-warn)}
  .stat-alert.crit .adot{background:var(--z-bad)}
  .stat-alert .atext{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .stat-meter{height:6px;margin-top:11px;border-radius:3px;background:var(--state-hover);overflow:hidden;color:var(--muted)}
+ .stat-meter{height:6px;margin-top:11px;border-radius:var(--radius-md);background:var(--state-hover);overflow:hidden;color:var(--muted)}
  .stat-meter>i{display:block;height:100%;width:var(--v);background:currentColor}
  .stat-sub[data-state=ok]~.stat-viz .stat-meter{color:var(--z-ok)}
  .stat-sub[data-state=warn]~.stat-viz .stat-meter{color:var(--z-warn)}
@@ -310,8 +311,8 @@
 .drow{display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(60px,2fr) 42px minmax(90px,1fr);
   align-items:center;gap:var(--sp-2);font-size:var(--fs-sm)}
 .dname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dbar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}
-.dbar span{display:block;height:100%;border-radius:3px}
+.dbar{height:6px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}
+.dbar span{display:block;height:100%;border-radius:var(--radius-md)}
 .dbar span.ok{background:var(--z-ok)}
 .dbar span.bad{background:var(--z-bad)}
 .dpct{text-align:right;font-variant-numeric:tabular-nums}
@@ -321,7 +322,7 @@
 .ditem{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:var(--sp-2);
   padding:3px 0;border-bottom:1px solid var(--border)}
 .ditem:last-child{border-bottom:0}
-.ddot{width:6px;height:6px;border-radius:50%}
+.ddot{width:6px;height:6px;border-radius:var(--radius-full)}
 .ddot.ok{background:var(--z-ok)}
 .ddot.bad{background:var(--z-bad)}
 .dgoal{font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -335,7 +336,7 @@
 .navitem .nvlabel{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
 /* Counts ride on the right; hidden when zero so the rail stays quiet. */
 .navitem .nvbadge{
-  flex:none; font-size:var(--fs-xs); padding:1px 6px; border-radius:999px;
+  flex:none; font-size:var(--fs-xs); padding:1px 6px; border-radius:var(--radius-pill);
   background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent);
 }
 #navdrawer .navsep{ height:1px; background:var(--border); margin:10px 6px; }
@@ -355,23 +356,23 @@ body.hasnav #views{ display:none; }
 .lmhead{display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);text-transform:uppercase;
   letter-spacing:.04em;margin-bottom:5px}
 .lmmet{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;
-  border-radius:999px;padding:1px 7px;font:inherit;font-size:var(--fs-xs);text-transform:uppercase}
+  border-radius:var(--radius-pill);padding:1px 7px;font:inherit;font-size:var(--fs-xs);text-transform:uppercase}
 .lmmet.on{border-color:var(--accent);color:var(--accent);
   background:color-mix(in srgb,var(--accent) 16%,transparent)}
-.lmbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--bg);
+.lmbar{display:flex;height:9px;border-radius:var(--radius-md);overflow:hidden;background:var(--bg);
   border:1px solid var(--border)}
 .lmseg{display:block;height:100%;min-width:2px}
 .lmseg:hover{filter:brightness(1.25)}
 .lmlegend{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3);margin:5px 0 7px;font-size:var(--fs-xs)}
 .lmkey{display:inline-flex;align-items:center;gap:var(--sp-1);white-space:nowrap}
 .lmkey.cur{font-weight:600}
-.lmdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.lmdot{width:7px;height:7px;border-radius:var(--radius-full);flex:0 0 7px}
 .lmcell{width:88px;min-width:88px}
-.lmrowbar{display:block;height:6px;border-radius:3px;min-width:2px}
+.lmrowbar{display:block;height:6px;border-radius:var(--radius-md);min-width:2px}
 .lmbtn{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;font:inherit}
 .lmbtn:hover{color:var(--fg)}
 .lmpanel{margin:-4px 0 var(--sp-1) 26px;padding:6px var(--sp-2);border:1px solid var(--border);border-top:0;
-  border-radius:0 0 6px 6px;
+  border-radius:var(--radius-md);
   /* #livelist is a flex COLUMN with overflow-y:auto, so every child is a flex
      item that shrinks by default. A shrunk panel clipped its own content to
      nothing -- and because overflow-x:auto forces overflow-y from visible to
@@ -395,13 +396,13 @@ body.hasnav #views{ display:none; }
      separated (divider) instead of sitting in the same rhythm as Level/Role/
      Tool/Model/Session. */
 .lgfacets{display:flex;flex-direction:column;gap:2px;margin-top:2px}
-.lgrow{display:flex;align-items:flex-start;gap:var(--sp-3);padding:7px var(--sp-2);border-radius:7px}
+.lgrow{display:flex;align-items:flex-start;gap:var(--sp-3);padding:7px var(--sp-2);border-radius:var(--radius-md)}
 .lgrow:hover{background:color-mix(in srgb,var(--fg) 4%,transparent)}
 .lglbl{flex:0 0 64px;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;
   color:var(--muted);padding-top:5px;font-weight:600}
 .lgchips{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
 .lgchip{border:1px solid var(--border);background:var(--bg);color:var(--muted);
-  border-radius:999px;padding:3px 10px;font-size:var(--fs-sm);cursor:pointer;line-height:1.6;
+  border-radius:var(--radius-pill);padding:3px 10px;font-size:var(--fs-sm);cursor:pointer;line-height:1.6;
   white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;
   transition:border-color var(--motion-fast),color var(--motion-fast),background var(--motion-fast)}
 .lgchip:hover{border-color:var(--accent);color:var(--fg)}
@@ -421,11 +422,11 @@ body.hasnav #views{ display:none; }
 #lgactive .lbl{flex:0 0 auto;margin:0}
 .lgactivechip{display:inline-flex;align-items:center;gap:5px;
   background:color-mix(in srgb,var(--accent) 14%,transparent);
-  border:1px solid var(--accent);color:var(--accent);border-radius:999px;
+  border:1px solid var(--accent);color:var(--accent);border-radius:var(--radius-pill);
   padding:2px 6px 2px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer}
 .lgactivechip:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .lgactivechip .x{opacity:.75;font-weight:700}
-#lgcountbadge{background:var(--accent);color:var(--accent-ink);border-radius:999px;
+#lgcountbadge{background:var(--accent);color:var(--accent-ink);border-radius:var(--radius-pill);
   font-size:var(--fs-xs);font-weight:700;padding:1px 7px;line-height:1.5}
 /* Event rows: monospace timestamps so they form a readable column. */
 .lgev{display:grid;grid-template-columns:70px max-content 1fr;gap:9px;align-items:baseline;
@@ -487,7 +488,7 @@ body.hasnav .page{ margin-left:0; padding-left:calc(var(--rail-now) + var(--pad)
 #navcollapse{
   margin-left:auto; border:0; background:none; cursor:pointer;
   color:var(--muted); font-size:var(--fs-md); line-height:1; padding:var(--sp-1) 6px;
-  border-radius:4px; flex:0 0 auto;
+  border-radius:var(--radius-sm); flex:0 0 auto;
 }
 #navcollapse:hover{ background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--fg); }
 #navcollapse:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
@@ -595,7 +596,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Preloader */
  /* Profile resolution (P5-04, #53) */
  .resinfo{position:relative;margin-left:6px}
- .resbtn{font:inherit;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:9px;padding:0 7px;cursor:pointer}
+ .resbtn{font:inherit;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:var(--radius-md);padding:0 7px;cursor:pointer}
  .resbtn:hover{color:var(--fg);border-color:var(--accent)}
  .resbtn.warn{color:var(--z-warn);border-color:var(--z-warn)88;border-style:solid}
  .resbad{color:var(--z-warn)}
@@ -606,7 +607,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
        transition:opacity var(--motion-slow) ease}
  #boot.gone{opacity:0;pointer-events:none}
  .bars{display:flex;align-items:flex-end;gap:5px;height:34px}
- .bars i{display:block;width:7px;border-radius:2px;background:var(--accent);
+ .bars i{display:block;width:7px;border-radius:var(--radius-md);background:var(--accent);
          animation:bb 1.05s ease-in-out infinite;transform-origin:bottom}
  .bars i:nth-child(1){height:38%;animation-delay:0s}
  .bars i:nth-child(2){height:66%;animation-delay:.12s;background:var(--pal-rose)}
@@ -633,7 +634,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
    transition:transform var(--motion-normal) ease,width var(--motion-normal) ease}
  #nav::-webkit-scrollbar{width:6px}
- #nav::-webkit-scrollbar-thumb,#faillist::-webkit-scrollbar-thumb,#livelist::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+ #nav::-webkit-scrollbar-thumb,#faillist::-webkit-scrollbar-thumb,#livelist::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--radius-sm)}
  .navbrand{display:flex;align-items:center;gap:var(--sp-2);padding:14px 14px var(--sp-3);
    font-weight:700;font-size:var(--fs-sm);letter-spacing:-.01em;flex:none;
    border-bottom:1px solid var(--border)}
@@ -647,11 +648,6 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .navitem:hover{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--fg)}
  .navitem.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);
    border-left-color:var(--accent);font-weight:600}
- .navbadge{margin-left:auto;font-size:var(--fs-xs);font-weight:700;padding:1px 6px;
-   border-radius:999px;background:var(--border);color:var(--fg);flex:none;
-   font-variant-numeric:tabular-nums}
- .navbadge.alert{background:var(--z-bad);color:var(--z-bad-fg)}
- .navbadge[hidden]{display:none}
  .navsep{height:1px;background:var(--border);margin:var(--sp-2) var(--sp-3);flex:none}
  #navpin{margin-left:auto;background:none;border:none;color:var(--muted);
    cursor:pointer;font-size:var(--fs-md);line-height:1;padding:2px var(--sp-1)}
@@ -678,7 +674,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     :focus-visible so keyboard users never lose their place, while mouse
     clicks stay ring-free. */
  :where(a,button,input,select,summary,[tabindex]):focus-visible{
-   outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+   outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-md)}
  /* Speedometer: LAST column, fixed width, so every gauge lands on the same
     vertical line no matter how long the title or model name is. The meta
     column beside it is fixed too — otherwise its width would shift the dial. */
@@ -742,7 +738,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .hm-mon{flex:1 1 0;min-width:0;font-size:var(--fs-xs);color:var(--muted);letter-spacing:.02em}
  .hm-grid{display:flex;gap:3px;width:100%}
  .hm-w{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
- .hm-d{width:100%;aspect-ratio:1;border-radius:2px;display:block;
+ .hm-d{width:100%;aspect-ratio:1;border-radius:var(--radius-md);display:block;
    background:var(--border);transition:transform var(--motion-fast) ease}
  .hm-d:hover{transform:scale(1.35)}
  .hm-d.hm-pad{visibility:hidden}
@@ -756,7 +752,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Key swatches must NOT stretch like the calendar cells. */
  .hm-key .hm-d{width:11px;height:11px;flex:none;aspect-ratio:auto}
  .hm-lg{display:inline-flex;align-items:center;gap:3px;margin-right:7px}
- .hm-sw{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+ .hm-sw{width:9px;height:9px;border-radius:var(--radius-md);display:inline-block;flex:none}
  .hm-sep{width:1px;height:11px;background:var(--border);margin:0 6px}
 
  /* ---- Router help overlay -------------------------------------------
@@ -773,7 +769,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  #helpscrim{position:absolute;inset:0;background:var(--scrim-bg);backdrop-filter:blur(2px)}
  #helppanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
    width:min(900px,94vw);max-height:88vh;overflow-y:auto;background:var(--card);
-   border:1px solid var(--border);border-radius:12px;padding:22px 26px;
+   border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 26px;
    box-shadow:var(--elev-3)}
  .hpt{font-size:var(--fs-lg);font-weight:700;margin-bottom:3px}
  .hpsub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:var(--sp-4)}
@@ -836,15 +832,15 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-yard{--jc:var(--accent)}
 .qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
   filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px var(--jar-edge))}
-.qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:50%;pointer-events:none;
+.qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:var(--radius-full);pointer-events:none;
   background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),var(--s25) 55%,transparent 75%)}
 .qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
-  border-radius:9px 9px 5px 5px;border-bottom:3px solid var(--jc);
+  border-radius:var(--radius-md);border-bottom:3px solid var(--jc);
   background:linear-gradient(180deg,var(--w22) 0 2px,transparent 2px),
     linear-gradient(90deg,var(--s35),transparent 20%,var(--w8) 40%,transparent 60%,var(--s40)),
     linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
   box-shadow:0 0 0 1px var(--w18),0 3px 5px var(--s55),inset 0 -5px 0 -3px var(--s40)}
-.qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:3px;pointer-events:none;
+.qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:var(--radius-md);pointer-events:none;
   background:linear-gradient(180deg,var(--w25),var(--s45));box-shadow:0 2px 3px var(--s50)}
 .qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--jar-label))}
 .qt-n{position:relative;z-index:1;font-weight:700;font-size:var(--fs-sm);line-height:1;color:var(--jar-ink);text-shadow:0 1px 1px var(--s60)}
@@ -860,7 +856,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
   box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tint) 35%,transparent),inset -2px 0 0 var(--w18),inset 0 -3px 0 var(--w14),
     inset 5px 0 8px -4px var(--w14),inset 0 -22px 24px -14px var(--s55)}
-.qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:6px;pointer-events:none;
+.qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:var(--radius-md);pointer-events:none;
   background:linear-gradient(180deg,var(--w55),var(--w22) 60%,var(--w5));filter:blur(2px)}
 .qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
   background:linear-gradient(90deg,var(--s22),transparent 16%,transparent 84%,var(--s18)),
@@ -899,7 +895,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-ball.qt-run{width:calc(var(--sz,28px) * .8);height:calc(var(--sz,28px) * 1.14);margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
   border-radius:999px;rotate:calc(var(--rz,0deg) + 8deg);
   box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 45%,black),0 0 9px 1px color-mix(in srgb,var(--k) 70%,transparent),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65)}
-.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:999px;border:1.5px solid var(--w40);pointer-events:none}
+.qt-ball.qt-run::after{content:"";position:absolute;left:14%;right:14%;top:10%;bottom:10%;border-radius:var(--radius-pill);border:1.5px solid var(--w40);pointer-events:none}
 /* User rule: balls show provider icons. Do not replace with letters. The white contrast disc
    keeps the mark legible on every ball colour at QT_MIN 18px; the icon scales with the ball. */
 .qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
@@ -910,12 +906,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
 .qt-run .qt-gl svg{width:50%;height:50%}
 .qt-ghost .qt-gl{rotate:0deg}
-.qt-ball-g{position:absolute;inset:-5px;border-radius:50%;pointer-events:none;display:none}
+.qt-ball-g{position:absolute;inset:-5px;border-radius:var(--radius-full);pointer-events:none;display:none}
 .qt-run .qt-ball-g{display:block;box-shadow:0 0 0 0 color-mix(in srgb,var(--k) 55%,transparent);animation:qt-ball-pulse 1.8s ease-out infinite}
 .qt-run.qt-sm .qt-ball-g{inset:-3px;animation-name:qt-ball-pulse-sm}
 .qt-ball.qt-warn{box-shadow:inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65),0 0 0 2px var(--z-warn)}
 @media (pointer:coarse){.qt-ball::before{content:"";position:absolute;inset:calc((32px - 100%) / -2)}}
-.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:13px;cursor:pointer;
+.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:var(--radius-md);cursor:pointer;
   font-size:var(--fs-sm);font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
   background:color-mix(in srgb,var(--fg) 10%,var(--card))}
 .qt-overflow:hover,.qt-overflow:focus-visible{border-color:var(--accent);outline:0}
@@ -935,7 +931,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .qtrain.moving .qt-line .qt-jar{transform-origin:50% 92%;animation:qt-sway 5s ease-in-out infinite alternate}
 .qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--jar-label-soft);font-size:var(--fs-xs)}
 .qt-legend span{display:inline-flex;align-items:center;gap:7px}
-.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--k);box-shadow:inset 0 -1px 1px var(--s35),inset 0 1px 1px var(--w35)}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:var(--radius-full);background:var(--k);box-shadow:inset 0 -1px 1px var(--s35),inset 0 1px 1px var(--w35)}
 .qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
 .qt-sw-hermes{--k:var(--kind-hermes)}
 .qt-sw-pi{--k:var(--kind-pi)}
@@ -1000,11 +996,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olname{font-size:var(--fs-md);font-weight:600}
  /* Same inline-element trap as .olfill: <i> needs an explicit display or its
     width/height are ignored (the dot only looked right because of its ring). */
- .oldot{display:block;width:8px;height:8px;border-radius:50%;flex:none}
+ .oldot{display:block;width:8px;height:8px;border-radius:var(--radius-full);flex:none}
  .oldot.up{background:var(--z-ok);box-shadow:0 0 0 3px color-mix(in srgb, var(--z-ok) 18%, transparent)}
  .oldot.down{background:var(--z-bad);box-shadow:0 0 0 3px color-mix(in srgb, var(--z-bad) 18%, transparent)}
  /* "local" badge: same glyph + tint as the local provider badge elsewhere. */
- .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:4px;font-weight:600;
+ .olbadge{font-size:var(--fs-xs);padding:1px 6px;border-radius:var(--radius-sm);font-weight:600;
    background:var(--accent-wash);color:var(--accent2);flex:none}
  .olver{font-size:var(--fs-xs);color:var(--muted);margin-left:auto;flex:none}
  .olurls{font-size:var(--fs-xs);color:var(--muted);margin:-4px 0 var(--sp-2);word-break:break-all}
@@ -1012,11 +1008,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
     the only thing that reads at a glance from across the room. */
  .olrow{display:flex;align-items:center;gap:7px;margin:5px 0;font-size:var(--fs-sm)}
  .ollbl{width:74px;flex:none;color:var(--muted);font-size:var(--fs-xs)}
- .olbar{flex:1;height:7px;border-radius:4px;background:var(--border);overflow:hidden;min-width:40px}
+ .olbar{flex:1;height:7px;border-radius:var(--radius-sm);background:var(--border);overflow:hidden;min-width:40px}
  /* display:block is REQUIRED: <i> defaults to display:inline, and inline
     non-replaced elements ignore width/height entirely — the fill rendered as a
     0x0 box, so every bar looked empty no matter what value it carried. */
- .olfill{display:block;height:100%;border-radius:4px;transition:width var(--motion-slow) ease}
+ .olfill{display:block;height:100%;border-radius:var(--radius-sm);transition:width var(--motion-slow) ease}
  .olfill.good{background:var(--z-ok)}
  .olfill.warn{background:var(--z-warn)}
  .olfill.bad{background:var(--z-bad)}
@@ -1034,7 +1030,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olmod{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0 3px}
  .olmn{font-size:var(--fs-md);font-weight:600}
  /* Capability pills — what this box can actually do (tools/vision/thinking). */
- .olcap{font-size:var(--fs-xs);padding:1px 5px;border-radius:3px;border:1px solid var(--border);
+ .olcap{font-size:var(--fs-xs);padding:1px 5px;border-radius:var(--radius-md);border:1px solid var(--border);
    color:var(--muted-foreground,var(--muted))}
  .olcap.tools{border-color:color-mix(in srgb, var(--pal-indigo) 50%, transparent);color:var(--pal-indigo)}
  .olcap.vision{border-color:color-mix(in srgb, var(--pal-rose) 50%, transparent);color:var(--pal-rose)}
@@ -1042,7 +1038,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .olidle{font-size:var(--fs-sm);color:var(--muted);padding:var(--sp-1) 0}
 .olinstl{display:flex;flex-wrap:wrap;gap:var(--sp-1);padding:2px 0 var(--sp-1)}
 .olinst{font-size:var(--fs-xs,11px);font-family:var(--mono);padding:1px 6px;border:1px solid var(--border);
-  border-radius:999px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
+  border-radius:var(--radius-pill);color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
 .olinst.olmore{cursor:default}
  .olwork{display:flex;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--muted);
    margin-top:var(--sp-2);padding-top:7px;border-top:1px solid var(--border)}
@@ -1083,9 +1079,9 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .ffwrap{display:flex;flex-direction:column;gap:6px}
  .ffrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
  .fflbl{width:48px;flex:none;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
- .frow{padding:var(--sp-1) 6px;border-radius:4px}
+ .frow{padding:var(--sp-1) 6px;border-radius:var(--radius-sm)}
  .frow:hover{background:var(--card)}
- .fcnt{min-width:36px;text-align:center;font-size:var(--fs-xs);font-weight:600;padding:0 6px;border-radius:9px;border:1px solid var(--border);color:var(--muted)}
+ .fcnt{min-width:36px;text-align:center;font-size:var(--fs-xs);font-weight:600;padding:0 6px;border-radius:var(--radius-md);border:1px solid var(--border);color:var(--muted)}
  .fkind{width:72px;text-align:center}
  .fmodel{width:150px}
  .fwhen{min-width:74px;font-variant-numeric:tabular-nums;width:92px}
@@ -1106,7 +1102,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @keyframes cost-pulse{0%,100%{opacity:1}50%{opacity:.35}}
  /* Local electricity cost (P7-04, #68): distinct from billed spend. */
  .elecmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:0;text-transform:none;
-   padding:0 var(--sp-1);border-radius:3px;background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
+   padding:0 var(--sp-1);border-radius:var(--radius-md);background:var(--wash-amber);color:var(--z-warn);vertical-align:1px}
 
 /* The icon chip survives for the Explore strip (.xcard) only; Home's KPI cards
    use .stat and carry no icons. */
@@ -1161,10 +1157,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 
  /* Unpriced / free-tier cost states (P9-05, #82) */
  .unpriced{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-   padding:1px 5px;border-radius:3px;background:color-mix(in srgb, var(--z-bad) 14%, transparent);color:var(--z-bad)}
+   padding:1px 5px;border-radius:var(--radius-md);background:color-mix(in srgb, var(--z-bad) 14%, transparent);color:var(--z-bad)}
  .freetier{color:var(--muted)}
  .ftmark{font-size:var(--fs-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
-   padding:0 var(--sp-1);border-radius:3px;background:var(--wash-indigo);color:var(--pal-indigo);vertical-align:1px}
+   padding:0 var(--sp-1);border-radius:var(--radius-md);background:var(--wash-indigo);color:var(--pal-indigo);vertical-align:1px}
  .costpulse{animation:cost-pulse 2.2s ease-in-out infinite;
    color:var(--accent2);display:inline-block}
  .resendname{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1176,7 +1172,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .setnav button:hover{border-color:var(--accent)}
  .setnav button.is-active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
  .view[data-view="Settings"] > .card{scroll-margin-top:56px}
- .setcustom{margin-left:var(--sp-2);padding:0 6px;border-radius:3px;background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
+ .setcustom{margin-left:var(--sp-2);padding:0 6px;border-radius:var(--radius-md);background:var(--wash-amber);color:var(--z-warn);font-size:var(--fs-xs);letter-spacing:0;text-transform:none}
  .setcustom[hidden]{display:none}
  .setup{cursor:pointer;height:32px;display:inline-flex;align-items:center}
  .setup:focus-within{outline:2px solid var(--accent);outline-offset:2px}
@@ -1219,7 +1215,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    border-bottom:1px solid var(--border);flex-shrink:0}
  .dtabs{display:flex;gap:5px;padding:9px 15px;border-bottom:1px solid var(--border);
    flex-shrink:0;flex-wrap:wrap}
- .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:3px;cursor:pointer;
+ .dtab{font-size:var(--fs-xs);padding:3px 9px;border-radius:var(--radius-md);cursor:pointer;
    border:1px solid var(--border);color:var(--muted);background:transparent}
  .dtab:hover{color:var(--fg);border-color:var(--accent)}
  .dtab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -1280,7 +1276,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .tmsg pre{margin:var(--sp-1) 0 0;padding:var(--sp-2) 10px;background:color-mix(in srgb,var(--fg) 6%,transparent);
   border-radius:var(--radius-ctl);overflow-x:auto;font-family:var(--fm);
   font-size:var(--fs-xs);white-space:pre}
-.tmsg img.timg{max-width:100%;max-height:280px;border-radius:4px;margin-top:var(--sp-1);display:block}
+.tmsg img.timg{max-width:100%;max-height:280px;border-radius:var(--radius-sm);margin-top:var(--sp-1);display:block}
 .tmsg img.timg.tbroken{display:none}
 .tmsg a{color:var(--accent);text-decoration:underline}
 .tmsg .ttoolcall{font-size:var(--fs-xs);font-family:var(--fm);
@@ -1314,10 +1310,10 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 #lnbody{overflow:auto;flex:1;padding:var(--sp-3) 15px}
 .lnlane{display:flex;align-items:center;gap:var(--sp-2);height:22px;position:relative;margin-bottom:2px}
 .lnlanename{width:88px;flex-shrink:0;font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.lntrack{flex:1;position:relative;height:14px;background:var(--bg);border-radius:3px}
-.lnspan{position:absolute;top:0;height:14px;border-radius:2px;cursor:pointer;min-width:2px}
+.lntrack{flex:1;position:relative;height:14px;background:var(--bg);border-radius:var(--radius-md)}
+.lnspan{position:absolute;top:0;height:14px;border-radius:var(--radius-md);cursor:pointer;min-width:2px}
 .lnspan.lnfail{outline:2px solid var(--z-bad);outline-offset:-1px}
-.lnspan.lntick{width:3px!important;border-radius:1px}
+.lnspan.lntick{width:3px!important;border-radius:var(--radius-md)}
 #lnhdr{padding:var(--sp-3) 15px;border-bottom:1px solid var(--border);font-size:var(--fs-xs)}
 /* LLMTELEMET-312: #lntip is a themed .qtip instance (timeline span labels):
    theme/sizing only, never its own shell. */
@@ -1362,11 +1358,11 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  @media(max-width:640px){
    .drawer{top:auto;right:0;left:0;width:auto;max-height:92dvh;
      border-left:none;border-top:1px solid var(--border);
-     border-radius:14px 14px 0 0;transform:translateY(100%)}
+     border-radius:var(--radius-md);transform:translateY(100%)}
    .drawer.open{transform:translateY(0)}
    #drawer{height:92dvh}
    #drawer .dhead{padding-top:6px}
-   #draghandle{display:block;width:36px;height:4px;border-radius:2px;
+   #draghandle{display:block;width:36px;height:4px;border-radius:var(--radius-md);
      background:var(--muted);opacity:.5;margin:0 auto var(--sp-2);flex-shrink:0}
    .dtabs{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;
      -webkit-overflow-scrolling:touch}
@@ -1378,7 +1374,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .ev:hover{background:var(--ev-hover)}
  .ev .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
  .ev .b{min-width:0;flex:1;word-break:break-word}
- .ev .k{display:inline-block;padding:0 5px;border-radius:2px;font-size:var(--fs-xs);
+ .ev .k{display:inline-block;padding:0 5px;border-radius:var(--radius-md);font-size:var(--fs-xs);
    margin-right:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
  /* .k-* chip colours are generated at boot from FKIND (installKindCSS) so the
     drawer, the health bars and the failure filters can never disagree. */
@@ -1500,8 +1496,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .bwps{font-size:var(--fs-xs);margin-top:2px}
  .bwrrow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 58px 52px;align-items:center;gap:var(--sp-2);font-size:var(--fs-sm)}
  .bwrm{font-weight:600}
- .bwrbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
- .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+ .bwrbar{height:8px;background:var(--border);border-radius:var(--radius-sm);overflow:hidden}
+ .bwrbar i{display:block;height:100%;background:var(--accent);border-radius:var(--radius-sm)}
  .bwrrow.hot .bwrbar i{background:var(--z-bad)}
  .bwrx{text-align:right;font-variant-numeric:tabular-nums}
  .bwrflag{font-size:var(--fs-xs);color:var(--z-bad);white-space:nowrap}
@@ -1553,12 +1549,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    tab's own content. Sticky so the way back is always in reach on a long page. */
 .rt-pages{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem;position:sticky;top:0;z-index:3;
   background:var(--bg);padding:.35rem 0}
-.rt-page{font-size:var(--fs-sm);padding:.3rem .8rem;border:1px solid var(--border);border-radius:999px;
+.rt-page{font-size:var(--fs-sm);padding:.3rem .8rem;border:1px solid var(--border);border-radius:var(--radius-pill);
   background:transparent;color:var(--muted);cursor:pointer;font:inherit;line-height:1.4}
 .rt-page:hover{border-color:var(--accent);color:var(--fg)}
 .rt-page:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .rt-page-on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--fg)}
-.rt-logo{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;width:var(--px);height:var(--px);border-radius:5px;
+.rt-logo{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;width:var(--px);height:var(--px);border-radius:var(--radius-md);
   background:color-mix(in srgb,var(--c) 16%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent);overflow:hidden}
 .rt-mono{font-size:calc(var(--px) * .5);font-weight:700;color:var(--c);line-height:1}
 .rt-logo-svg{width:66%;height:66%;fill:var(--c)}
@@ -1568,13 +1564,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-slot{color:var(--muted);font-size:var(--fs-xs);white-space:nowrap}
 .rt-hits{font-size:var(--fs-xs);color:var(--accent2);font-variant-numeric:tabular-nums}
 .rt-models{display:flex;flex-wrap:wrap;gap:.3rem}
-.rt-auth,.rt-st,.rt-mode,.rt-default{display:inline-block;font-size:var(--fs-xs);padding:.05rem .45rem;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+.rt-auth,.rt-st,.rt-mode,.rt-default{display:inline-block;font-size:var(--fs-xs);padding:.05rem .45rem;border-radius:var(--radius-pill);border:1px solid var(--border);white-space:nowrap}
 .rt-ok{color:var(--z-ok);border-color:color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card))}
 .rt-warn{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 33%,transparent);background:color-mix(in srgb,var(--z-warn) 8%,var(--card))}
 .rt-bad{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 33%,transparent);background:color-mix(in srgb,var(--z-bad) 8%,var(--card))}
 .rt-mute{color:var(--muted)}
 .rt-default{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
-.rt-tier{display:inline-block;font-size:var(--fs-xs);font-weight:600;padding:.05rem .5rem;border-radius:999px;
+.rt-tier{display:inline-block;font-size:var(--fs-xs);font-weight:600;padding:.05rem .5rem;border-radius:var(--radius-pill);
   color:var(--rt-tier-fg);background:color-mix(in srgb,var(--rt-tier-ink) 14%,transparent);border:1px solid color-mix(in srgb,var(--rt-tier-ink) 35%,transparent)}
 .rt-strip{display:flex;align-items:stretch;gap:.4rem;overflow-x:auto;padding-bottom:.25rem}
 .rt-step{flex:1 1 0;min-width:130px;display:flex;flex-direction:column;gap:.15rem;padding:.6rem;border:1px solid var(--border);border-radius:var(--radius-ctl);background:var(--bg);font-size:var(--fs-sm)}
@@ -1592,12 +1588,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .rt-tcard{border:1px solid color-mix(in srgb,var(--rt-card-ink) 35%,transparent);border-top:3px solid var(--rt-share-ink);border-radius:var(--radius-ctl);padding:.6rem;background:var(--bg);display:flex;flex-direction:column;gap:.35rem;min-width:0}
 .rt-thead{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
 .rt-share{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
-.rt-bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden}
+.rt-bar{height:4px;border-radius:var(--radius-md);background:var(--border);overflow:hidden}
 .rt-bar i{display:block;height:100%;background:var(--rt-share-ink)}
 .rt-doc{font-size:var(--fs-xs);color:var(--muted)}
 .rt-sub{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:.15rem}
 .rt-whys{display:flex;flex-wrap:wrap;gap:.25rem}
-.rt-why{font-size:var(--fs-xs);padding:.05rem .4rem;border-radius:4px;background:var(--card);border:1px solid var(--border)}
+.rt-why{font-size:var(--fs-xs);padding:.05rem .4rem;border-radius:var(--radius-sm);background:var(--card);border:1px solid var(--border)}
 .rt-foot{display:flex;flex-direction:column;gap:.3rem;font-size:var(--fs-xs);margin-top:auto;padding-top:.3rem;border-top:1px dashed var(--border)}
 .rt-fb summary{cursor:pointer;color:var(--muted)}
 .rt-fb .rt-models{margin-top:.3rem}
@@ -1626,8 +1622,8 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    0x0 (see tests/check_inline_sized_elements.js). Level colours reuse the
    Router tab's green/amber/red; 'mute' is the honest colour for "no reading"
    and must never fall back to green, or an unknown quota reads as healthy. */
-.qv-track{display:block;width:100%;height:8px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
-.qv-fill{display:block;height:100%;border-radius:999px;background:var(--muted);transition:width var(--motion-normal) ease}
+.qv-track{display:block;width:100%;height:8px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
+.qv-fill{display:block;height:100%;border-radius:var(--radius-pill);background:var(--muted);transition:width var(--motion-normal) ease}
 .qv-fill.qv-ok{background:var(--z-ok)}
 .qv-fill.qv-warn{background:var(--z-warn)}
 .qv-fill.qv-bad{background:var(--z-bad)}
@@ -1661,13 +1657,13 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
   background:color-mix(in srgb,var(--fg) 2%,transparent)}
 .qv-prov.qv-near{border-color:color-mix(in srgb,var(--z-bad) 55%,var(--border));box-shadow:inset 3px 0 0 var(--z-bad)}
 .qv-head{display:flex;align-items:center;gap:.55rem;margin-bottom:.55rem;flex-wrap:wrap}
-.qv-head > .qv-pct{margin-left:auto;font-size:var(--fs-sm);font-weight:700;border-radius:999px;padding:.1rem .55rem;
+.qv-head > .qv-pct{margin-left:auto;font-size:var(--fs-sm);font-weight:700;border-radius:var(--radius-pill);padding:.1rem .55rem;
   background:color-mix(in srgb,currentColor 12%,transparent)}
 .qv-ident{display:flex;flex-direction:column;gap:.1rem;min-width:0}
 .qv-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 .qv-name{font-size:var(--fs-md);line-height:1.2}
 .qv-plan{font-size:var(--fs-xs);color:var(--muted)}
-.qv-free{font-size:var(--fs-xs);color:var(--z-ok);border:1px solid color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card));border-radius:999px;padding:0 .4rem}
+.qv-free{font-size:var(--fs-xs);color:var(--z-ok);border:1px solid color-mix(in srgb,var(--z-ok) 33%,transparent);background:color-mix(in srgb,var(--z-ok) 8%,var(--card));border-radius:var(--radius-pill);padding:0 .4rem}
 .qv-wins-none{font-size:var(--fs-xs)}
 .qv-balrow{padding:.35rem 0;font-size:var(--fs-xs)}
 .qv-bal{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.2rem}
@@ -1709,7 +1705,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* The dot repeats what the status text says, so the verdict is legible
    without parsing words. It is never the only carrier of the state: the text
    beside it names it, which is what a colour-blind reader gets. */
-.qv-adot{width:.5rem;height:.5rem;border-radius:999px;background:var(--muted);
+.qv-adot{width:.5rem;height:.5rem;border-radius:var(--radius-pill);background:var(--muted);
   flex:0 0 auto;align-self:center}
 .qv-acct[data-level="ok"]   .qv-adot{background:var(--z-ok)}
 .qv-acct[data-level="warn"] .qv-adot{background:var(--z-warn)}
@@ -1728,7 +1724,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    greyscale scan: a dead key is a solid filled block (loudest, needs a human),
    a spent key an outlined one, an unknown key no more than quiet text. */
 .qv-astat{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;
-  border:1px solid transparent;border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
+  border:1px solid transparent;border-radius:var(--radius-pill);padding:.05rem .4rem;white-space:nowrap}
 .qv-astat.qv-ok{color:var(--z-ok-fg);border-color:color-mix(in srgb,var(--z-ok) 45%,transparent)}
 .qv-astat.qv-warn{color:var(--z-warn-fg);border-color:color-mix(in srgb,var(--z-warn) 45%,transparent)}
 .qv-astat.qv-bad{color:var(--card);background:var(--z-bad);border-color:var(--z-bad)}
@@ -1767,7 +1763,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
    with usage read identically: identity line, then metrics. */
 .qv-auchips{display:inline-flex;gap:.3rem;flex-wrap:wrap;flex-basis:100%}
 .qv-achip{font-size:var(--fs-xs);font-variant-numeric:tabular-nums;
-  border:1px solid var(--border);border-radius:999px;padding:.05rem .4rem;white-space:nowrap}
+  border:1px solid var(--border);border-radius:var(--radius-pill);padding:.05rem .4rem;white-space:nowrap}
 .qv-achip.qv-ok{color:var(--z-ok-fg);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}
 .qv-achip.qv-warn{color:var(--z-warn-fg);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
 .qv-achip.qv-bad{color:var(--z-bad-fg);border-color:color-mix(in srgb,var(--z-bad) 40%,transparent)}
@@ -1820,12 +1816,12 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 .pv-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
 .pv-unused td{color:var(--muted)}
 .pv-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:var(--fs-xs);
-  padding:.06rem .42rem;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+  padding:.06rem .42rem;border-radius:var(--radius-md);border:1px solid transparent;white-space:nowrap}
 /* Inferred serving provider: dashed border marks provenance (nothing was
    observed — the family was recognised from the model's name) */
 .pv-badge.pv-badge-inferred{border-style:dashed;opacity:.82}
 .pv-src{font-size:var(--fs-xs);text-transform:none;letter-spacing:0;
-  color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:99px;white-space:nowrap}
+  color:var(--muted);padding:.06rem .42rem;border:1px solid var(--border);border-radius:var(--radius-md);white-space:nowrap}
 .pv-src-local{color:var(--accent)}
 /* LST-193: a manual override is not a fetched price; give it the warning hue
    so a reviewer's eye stops on the number that a human, not a catalogue, set. */
@@ -1834,7 +1830,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
 /* The Prices header pill: same three states as the age cuts, so the sheet's
    freshness reads at a glance before any number is trusted. */
 .pv-freshpill{text-transform:none;letter-spacing:0;font-size:var(--fs-xs);margin-left:.4rem;
-  padding:.05rem .4rem;border:1px solid var(--border);border-radius:99px;color:var(--muted);white-space:nowrap}
+  padding:.05rem .4rem;border:1px solid var(--border);border-radius:var(--radius-md);color:var(--muted);white-space:nowrap}
 .pv-freshpill[data-fresh-state="fresh"]{color:var(--z-ok);border-color:color-mix(in srgb,var(--z-ok) 40%,transparent)}
 .pv-freshpill[data-fresh-state="old"],.notice-chip[data-sev=warn]{color:var(--z-warn);border-color:color-mix(in srgb,var(--z-warn) 40%,transparent)}
 .pv-freshpill[data-fresh-state="stale"]{color:var(--z-bad);border-color:color-mix(in srgb,var(--z-bad) 50%,transparent);
@@ -1853,8 +1849,8 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
  .lgt td{padding:2px var(--sp-2);text-align:right;white-space:nowrap;border-top:1px solid var(--border)}
  .lgt td:nth-child(2){text-align:left;width:100%}
  .lgt td:first-child,.lgt th:first-child{width:14px;padding-right:0}
- .lgt i{display:block;width:10px;height:3px;border-radius:1px}
- .lgt button{all:unset;cursor:pointer;color:var(--fg);border-radius:2px}
+ .lgt i{display:block;width:10px;height:3px;border-radius:var(--radius-md)}
+ .lgt button{all:unset;cursor:pointer;color:var(--fg);border-radius:var(--radius-md)}
  .lgt button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
  .lgt tr.off{opacity:.45}
  .lgt tr.off button{text-decoration:line-through}
@@ -1867,7 +1863,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
    header sticks against the page scroll under the 56px app bar. Rows are
    48-64px tall with two-line cells (primary on top, muted detail beneath);
    sizes are fixed px so the table reads the same at every viewport. */
-.lvscroll{overflow-x:auto;overflow-y:visible;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;
+.lvscroll{overflow-x:auto;overflow-y:visible;min-height:0;flex:1;min-width:0;border:1px solid var(--border);border-radius:var(--radius-md);
   /* Eight tracks (Elapsed rides on the State cell's second line). Kind/State/
      Tokens/Cost/Load are fixed to their content width; Session, Model and Last
      activity share the slack and WRAP to two lines (line-clamp, full text in
@@ -1924,7 +1920,7 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvs1{line-height:1.3}
 .lvs2{overflow:hidden;line-height:1.25;flex-wrap:wrap;align-content:flex-start;height:20px;row-gap:var(--sp-6)}
 .lvs2>.lvtag{line-height:16px}
-.lvrow .chip.lntimelinebtn{font-size:var(--fs-xs);line-height:16px;padding:0 var(--sp-2);border-radius:999px;flex:none}
+.lvrow .chip.lntimelinebtn{font-size:var(--fs-xs);line-height:16px;padding:0 var(--sp-2);border-radius:var(--radius-pill);flex:none}
 .lvrow .chip{padding:0 6px;line-height:18px;flex:none;font-size:var(--fs-xs)}
 .lvrow .lmbtn{padding:0;line-height:18px;flex:0 1 auto}
 .lvrow .pv-badge{flex:none}
@@ -1932,17 +1928,17 @@ svg[data-kindlogo]{display:inline-block;width:16px;height:16px;flex:none;vertica
 .lvcatl,.lvsub,.lvswitch,.lvago{font-size:var(--fs-xs);flex:none}
 .lvago{color:var(--muted);font-variant-numeric:tabular-nums}
 .lvswitch{color:var(--z-warn)}
-.lvtag{font-size:var(--fs-xs);padding:0 6px;border-radius:4px;flex:none}
+.lvtag{font-size:var(--fs-xs);padding:0 6px;border-radius:var(--radius-sm);flex:none}
 .lvphase{color:var(--muted);font-size:var(--fs-xs);line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal;min-width:0;flex:1 1 6ch}
-.lvtool{font-size:var(--fs-xs);line-height:18px;padding:0 6px;border-radius:4px;background:var(--border);color:var(--fg);flex:none}
+.lvtool{font-size:var(--fs-xs);line-height:18px;padding:0 6px;border-radius:var(--radius-sm);background:var(--border);color:var(--fg);flex:none}
 .lvst{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:600;padding:2px 9px;line-height:18px;
-  border-radius:99px;border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg);white-space:nowrap;max-width:none}
-.lvst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc)}
+  border-radius:var(--radius-md);border:1px solid color-mix(in srgb,var(--sc) 55%,transparent);background:color-mix(in srgb,var(--sc) 14%,transparent);color:var(--fg);white-space:nowrap;max-width:none}
+.lvst::before{content:"";width:7px;height:7px;border-radius:var(--radius-full);background:var(--sc)}
 .lvst[data-state=running]{--sc:var(--z-ok)}
 .lvst[data-state=waiting]{--sc:var(--z-warn)}
-.lvsid{font:var(--fs-xs)/18px var(--mono);color:var(--muted);padding:0 var(--sp-1);border-radius:3px;flex:none;background:none;border:0;min-height:0;min-width:0}
+.lvsid{font:var(--fs-xs)/18px var(--mono);color:var(--muted);padding:0 var(--sp-1);border-radius:var(--radius-md);flex:none;background:none;border:0;min-height:0;min-width:0}
 button.lvsid{cursor:pointer;text-decoration:underline dotted}
-.lvsrc{font-size:var(--fs-xs);line-height:18px;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
+.lvsrc{font-size:var(--fs-xs);line-height:18px;padding:0 6px;border-radius:var(--radius-md);border:1px solid var(--border);color:var(--muted);flex:none;text-transform:uppercase;letter-spacing:.04em}
 .lvst[data-state=compressing]{--sc:var(--z-warn)}
 .lvst[data-state=idle]{--sc:var(--muted)}
 .lvrow .lvc-kind .pv-badge{padding:var(--sp-1);font-size:18px}
@@ -1992,7 +1988,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .dt th[aria-sort=ascending] .dt-ar,.dt th[aria-sort=descending] .dt-ar,.fsort [aria-sort=ascending] .dt-ar,.fsort [aria-sort=descending] .dt-ar{opacity:1;color:var(--accent)}
 .dt-wrap{max-height:70vh;overflow:auto;-webkit-overflow-scrolling:touch}
 .dt-cap{caption-side:top;text-align:left;padding:0 0 var(--sp-2);position:sticky;left:0}
-.dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.dt-dens{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
 .dt-dens button{all:unset;cursor:pointer;padding:3px 10px;font-size:var(--fs-xs);color:var(--muted);padding:0 10px}
 .dt-dens button.on{background:var(--accent-wash);color:var(--fg)}
 .dt-dens button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
@@ -2098,7 +2094,7 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 .combo-opt.dim{opacity:.55}
 .combo-tick{flex:none;width:14px;color:var(--accent)}
 .combo-name{flex:1;min-width:0;overflow-wrap:anywhere}
-.combo-name mark{background:var(--combo-mark-bg);color:var(--fg);border-radius:2px}
+.combo-name mark{background:var(--combo-mark-bg);color:var(--fg);border-radius:var(--radius-md)}
 .combo-n{flex:none;color:var(--muted);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
 .combo-none{padding:var(--sp-3);font-size:var(--fs-sm)}
 .combo-foot{display:flex;justify-content:flex-end;padding:var(--sp-2);border-top:1px solid var(--border)}
@@ -2146,7 +2142,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 #appbar .ab-sep{opacity:.4}
 #appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #appbar .ab-spacer{flex:1}
-#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+#appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--radius-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 #appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
 #ab-theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
@@ -2185,7 +2181,7 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 
 /* state.js renderers */
 .state-skeleton { padding: var(--sp-3); }
-.skel-line { height: 12px; margin: var(--sp-2) 0; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
+.skel-line { height: 12px; margin: var(--sp-2) 0; border-radius:var(--radius-sm); background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s infinite; }
 @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
 .state-empty, .state-error { padding: var(--sp-4); text-align: center; }
