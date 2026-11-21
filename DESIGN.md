@@ -1238,3 +1238,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
     `Impact,"Arial Black"` (line 121), 9 radius one-offs, font stack missing `Roboto`,
     4 variables vs 60+ tokens, permanently dark. Reconcile during the Hive move
     (LLMTELEMET-267/H-9); light theme out of scope unless Hazem asks. *ticket: LLMTELEMET-330*
+
+## Breakpoints
+
+Scale: 360 480 640 900 1024 1280 1600. A width query is on scale when max-width is N or N-1 and min-width is N or N+1.
