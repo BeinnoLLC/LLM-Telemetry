@@ -449,7 +449,7 @@ function noticeArm(id){
 // covers the header buttons; it follows the header as the page scrolls. On phones
 // the CSS docks it to the bottom instead.
 function noticePlace(){
-  const box = document.getElementById('notices'), head = document.getElementById('appbar');
+  const box = document.getElementById('notices'), head = document.querySelector('.pagehead');
   if (!box || !head || !head.getBoundingClientRect) return;
   if (!box.dataset.placed){
     box.dataset.placed = '1';
