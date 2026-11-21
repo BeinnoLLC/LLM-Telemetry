@@ -456,7 +456,7 @@ function noticePlace(){
     window.addEventListener('scroll', noticePlace, {passive: true});
     window.addEventListener('resize', noticePlace);
   }
-  box.style.top = window.innerWidth <= 599 ? '' : (Math.max(head.getBoundingClientRect().bottom, 0) + 12) + 'px';
+  box.style.top = window.innerWidth <= 640 ? '' : (Math.max(head.getBoundingClientRect().bottom, 0) + 12) + 'px';
 }
 function noticeShow(id){
   const st = NOTICES[id], box = document.getElementById('notices');
