@@ -17,7 +17,7 @@ colors:
   accent: "#1f62c9"                      # --accent  the one accent (Grafana blue)
   accent-ink: "#ffffff"                  # --accent-ink  text/icon on accent fills
   accent-wash: "rgba(31,98,201,.10)"     # --accent-wash
-  accent2: "#7793a2"                     # --accent2  charts' secondary (see Accessibility: proposed AA change)
+  accent2: "#566e7e"                     # --accent2  charts' secondary (shipped LST-310)
   border-strong: "rgba(26,32,28,.22)"    # --border-strong
   active-a: "#1f62c9"                    # --active-a  active glow pair
   active-b: "#1a7f3c"                    # --active-b
@@ -483,7 +483,7 @@ Roles (every value below is the exact `tokens.css` value; dark values are the
 | `--accent` (`colors.accent`) | the one accent | `#1f62c9` | `#88aaff` |
 | `--accent-ink` (`colors.accent-ink`) | text/icon on accent fills | `#ffffff` | `#05060a` |
 | `--accent-wash` (`colors.accent-wash`) | accent tint surface | `rgba(31,98,201,.10)` | `rgba(136,170,255,.14)` |
-| `--accent2` (`colors.accent2`) | charts' secondary | `#7793a2` | `#b877d9` |
+| `--accent2` (`colors.accent2`) | charts' secondary | `#566e7e` | `#b877d9` |
 | `--active-a` / `--active-b` | active glow pair | `#1f62c9` / `#1a7f3c` | `#88aaff` / `#55ff88` |
 | `--live-dot` (`colors.live-dot`) | fresh-feed dot | `#1a7f3c` | `#55ff88` |
 | `--wash-indigo/-rose/-slate/-amber/-mint` | pastel family washes on cards | `rgba(99,110,164,.12)` etc. | `rgba(87,148,242,.14)` etc. |
@@ -1117,8 +1117,8 @@ proposals).
 
 | Failing pair | Current | Proposed replacement | New ratio | Notes |
 |---|---|---|---|---|
-| `--accent2` on `--bg` (light) | 3.13 | `--accent2` light = **`#5b7383`** (proposed) | 4.80 | also ≥3:1 as chart stroke |
-| `--accent2` on `--card` (light) | 3.24 | `#5b7383` (proposed) | 4.97 | dark `--accent2:#b877d9` unchanged (6.00-6.44) |
+| `--accent2` on `--bg` (light) | 3.13 | `--accent2` light = **`#566e7e`** (shipped) | 5.16 | also ≥3:1 as chart stroke |
+| `--accent2` on `--card` (light) | 3.24 | `#566e7e` (shipped) | 5.35 | dark `--accent2:#b877d9` unchanged (6.00-6.44) |
 | `--z-ok-fg` on `--bg` (light) | 1.13 | text-on-surface uses **`--z-ok` `#39764f`** via new `--z-ok-text` (proposed) | 5.23 | keep `--z-ok-fg` for text on the solid fill only |
 | `--z-ok-fg` on `--card` (light) | 1.17 | `--z-ok-text` = `#39764f` (proposed) | 5.41 | e.g. `.dkpi-n.ok`, `.lgtag.assistant`, `.qv-keysum b` today misuse `--z-ok-fg` on card (dashboard.css:312, 443, 1715) |
 | `--z-warn-fg` on `--bg` (light) | 1.14 | **`--z-warn-text` = `#7c6328`** (proposed) | 5.52 | same split |
@@ -1175,7 +1175,7 @@ Code vs. spec gaps from `docs/design-audit.md` §10. Plane tickets are filed sep
    `--z-*-text` for text-on-surface, `--z-*-fg` strictly text-on-fill (dark fill pairs
    also need the proposed dark badge ink). *ticket: LLMTELEMET-309*
 5. **`--accent2` light fails body-text AA** — med — 3.13/3.24:1 (tokens.css:70); proposed
-   `#5b7383`. *ticket: LLMTELEMET-310*
+   `#566e7e` (shipped). *ticket: LLMTELEMET-310*
 6. **Raw rgb/hsl in dashboard.css (66)** — med — e.g. dashboard.css:131, 606, 1936; fix:
    stylelint value allow-list (`var()|color-mix()|transparent`). *ticket: LLMTELEMET-311*
 7. **Three tooltip implementations** — med — `.qtip` (dashboard.css:977-984), `#lntip`
