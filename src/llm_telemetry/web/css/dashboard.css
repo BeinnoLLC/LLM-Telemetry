@@ -2146,8 +2146,10 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 #appbar #meta{font-size:var(--fs-xs);padding:3px 10px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
 #appbar #meta.old{border-color:currentColor}
 #appbar #meta.stale{border-color:currentColor}
+#appbar .ab-sep{opacity:.4}
 #appbar #theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
 @media (max-width:640px){ #appbar #theme{width:44px;height:44px;min-width:44px} }
+@media (max-width:640px){ #appbar .ab-sep{display:none} }
 
 /* LST-239/243: Orchestration graph */
 .orch-card{padding:1rem;overflow-x:auto}

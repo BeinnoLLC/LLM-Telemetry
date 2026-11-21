@@ -74,5 +74,45 @@ for (const [f, text] of js) {
   chk(!hit, `${f}: no JS for a second app bar`, hit && hit[0]);
 }
 
+// ---- 6. No JS builds a second bar --------------------------------------
+for (const [f, text] of js) {
+  const t1 = text.match(/role\s*=\s*["']banner["']/);
+  chk(!t1, `${f}: no template string with role=banner`, t1 && t1[0]);
+  const t2 = text.match(/id\s*=\s*["']appbar["']/);
+  chk(!t2, `${f}: no template string with id=appbar`, t2 && t2[0]);
+  const t3 = text.match(/classList\.add\([^)]*['"]appbar['"]/);
+  chk(!t3, `${f}: no classList.add of appbar`, t3 && t3[0]);
+}
+
+// ---- 7. jsdom smoke (optional, needs built page) -------------------------
+const PAGE = process.env.LST342_PAGE || '/home/hazemhagrass/.hermes/profiles/llm-telemetry-brain/cache/scratch/lst342.html';
+const fs2 = require('fs');
+if (!fs2.existsSync(PAGE)) {
+  console.log(`  skip jsdom smoke — page missing: ${PAGE}`);
+} else {
+  let JSDOM;
+  try { JSDOM = require('jsdom').JSDOM; } catch (e) { JSDOM = null; }
+  if (!JSDOM) {
+    console.log('  skip jsdom smoke — jsdom not installed');
+  } else {
+    const dom = new JSDOM(fs2.readFileSync(PAGE, 'utf8'), { runScripts: 'dangerously', url: 'http://localhost/' });
+    const doc = dom.window.document;
+    const banners = doc.querySelectorAll('[role="banner"]');
+    chk(banners.length === 1, `jsdom: exactly one role=banner (${banners.length})`);
+    const h1s = doc.querySelectorAll('h1');
+    chk(h1s.length === 1, `jsdom: exactly one h1 (${h1s.length})`);
+    const toggles = Array.from(doc.querySelectorAll('button')).filter(b => b.getAttribute('aria-label') === 'Toggle theme');
+    chk(toggles.length === 1, `jsdom: exactly one Toggle theme button (${toggles.length})`);
+    if (toggles.length === 1 && typeof toggles[0].onclick === 'function') {
+      const before = doc.documentElement.getAttribute('data-theme');
+      toggles[0].click();
+      const after = doc.documentElement.getAttribute('data-theme');
+      chk(before !== after, `jsdom: clicking toggle changes data-theme (${before} -> ${after})`);
+    } else if (toggles.length === 1) {
+      console.log('  skip jsdom click — handler not attached in jsdom');
+    }
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
