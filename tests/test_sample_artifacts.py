@@ -10,6 +10,13 @@ looking.
 This test rebuilds each page into a temporary directory from the committed
 fixtures (never touching `examples/`) and compares byte for byte.
 
+Both sides of the comparison come from the committed state (`git show HEAD:`)
+when git is available, not from the working tree: a checkout where someone
+rebuilt `examples/reports/` — refreshing `sample-catalog.json` from the live
+pricing cache or re-running the build — must not fail a test whose job is to
+prove the *committed* pair is reproducible (LLMTELEMET-305). A checkout
+without git (tarball export) falls back to the on-disk files.
+
 One field in the pages is genuinely time-dependent — the `Generated <date>`
 line — and `normalise()` is the only place that forgives it. Everything else,
 including the ranking windows and the price sheet, comes from the pinned inputs
@@ -69,6 +76,19 @@ def build(name, module, out_dir):
     proc = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True)
     return proc, " ".join(cmd)
 
+def committed_text(rel):
+    """The committed bytes of a repo file — the stable fixture the test runs
+    against (LLMTELEMET-305). Working-tree rebuilds are deliberately ignored;
+    without git (tarball export) fall back to the on-disk file."""
+    try:
+        proc = subprocess.run(["git", "show", "HEAD:" + rel], cwd=ROOT,
+                              capture_output=True, text=True)
+        if proc.returncode == 0:
+            return proc.stdout
+    except OSError:
+        pass
+    return open(os.path.join(ROOT, rel), encoding="utf-8").read()
+
 
 targets = [
     ("dashboard.html", "llm_telemetry.build_dashboard"),
@@ -78,19 +98,19 @@ tmp = tempfile.mkdtemp(prefix="sample-artifacts-")
 try:
     for name in os.listdir(REPORTS):
         if name.endswith(".json"):
-            shutil.copy2(os.path.join(REPORTS, name), os.path.join(tmp, name))
+            with open(os.path.join(tmp, name), "w", encoding="utf-8") as fh:
+                fh.write(committed_text(os.path.join("examples", "reports", name)))
 
     for name, module in targets:
         proc, cmd = build(name, module, tmp)
         built = os.path.join(tmp, name)
-        committed = os.path.join(REPORTS, name)
         if proc.returncode != 0 or not os.path.isfile(built):
             tail = (proc.stderr or proc.stdout).strip().splitlines()
             chk(False, f"{name}: builds from the sample inputs", tail[-1] if tail else "no output")
             continue
         chk(True, f"{name}: builds from the sample inputs")
         got = normalise(open(built, encoding="utf-8").read())
-        want = normalise(open(committed, encoding="utf-8").read())
+        want = normalise(committed_text(os.path.join("examples", "reports", name)))
         if got == want:
             chk(True, f"{name}: matches the committed artifact")
         else:
