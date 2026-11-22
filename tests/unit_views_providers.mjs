@@ -83,6 +83,8 @@ const created = [], clickHandlers = [];
 const fakeDocument = {
   createElement(tag){ const e = mkEl(''); e.tag = tag; return e; },
   getElementById(id){ return DOM.get(id) || null; },
+  // views.js noticePlace() reads .pagehead via querySelector; no header stub here.
+  querySelector(){ return null; },
   addEventListener(type, fn){ if (type === 'click') clickHandlers.push(fn); },
   body: { appendChild(el){ created.push(el); if (el.id) DOM.set(el.id, el); } },
   // views.js installs its kind-palette stylesheet at load time.

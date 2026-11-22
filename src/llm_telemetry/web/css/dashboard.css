@@ -660,7 +660,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  /* Content is pushed, not overlapped, whenever the drawer is pinned open. */
  .shell{padding-left:var(--shell-pad);transition:padding-left var(--motion-normal) ease}
 
- /* The single top app bar is #appbar (dashboard.css:~2166, markup in
+ /* The single top app bar is #appbar (dashboard.css:2142, markup in
     dashboard.html). The retired .appbar shell and its #hamburger/#barmore/
     #barmenu controls were deleted in LLMTELEMET-315; tests/check_single_appbar.js
     guards against a second app-bar shell rule coming back. */
@@ -2137,10 +2137,23 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
 #appbar{position:sticky;top:0;z-index:var(--layer-appbar);box-sizing:border-box;height:56px;display:flex;align-items:center;gap:10px;
   padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
 body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
-#appbar .ab-title{font-weight:650;letter-spacing:-.02em}
-#appbar .ab-sep{opacity:.4}
-#appbar .ab-tab{font-weight:500;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #appbar .ab-spacer{flex:1}
+#appbar #meta{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#appbar #meta.old{border-color:currentColor}
+#appbar #meta.stale{border-color:currentColor}
+#appbar .ab-sep{opacity:.4}
+#appbar #theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
+@media (max-width:640px){ #appbar #theme{width:44px;height:44px;min-width:44px} }
+@media (max-width:640px){ #appbar .ab-sep{display:none} }
+/* LST-342: the merged header must fit phone widths — the crumb truncates, the
+   bytes/req readout hides below 640px, and the freshness stamp (the spec's
+   named header stamp) stays visible. */
+#appbar #crumb{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){ #appbar #resinfo{display:none} }
+/* Same sweep: long chip rows wrap and status text may break anywhere so no
+   Settings or Prices toolbar scrolls horizontally at 390px. */
+#priceTabs{flex-wrap:wrap}
+#setmsg{min-width:0;overflow-wrap:anywhere}
 #appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 #appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
