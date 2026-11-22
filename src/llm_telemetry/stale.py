@@ -34,8 +34,8 @@ def policy_seconds(name, env=None):
     return int(hours * 3600)
 
 
-def _ts(value):
-    if value in (None, ""):
+def _ts(value, utc=False):
+    if value is None:
         return None
     if isinstance(value, (int, float)):
         return float(value) / 1000 if value > 1e12 else float(value)
@@ -43,12 +43,18 @@ def _ts(value):
         dt = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return None
+    if utc and dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
     return dt.timestamp()
 
 
-def stamp(value):
-    """Epoch seconds for a payload timestamp, or None. Sample builds age against their own snapshot."""
-    return _ts(value)
+def stamp(value, utc=False):
+    """Epoch seconds for a payload timestamp, or None. Sample builds age against their own snapshot.
+
+    `utc=True` parses naive stamps as UTC so the sample's pinned `now` is
+    identical on every machine regardless of its timezone (LLMTELEMET-305);
+    real builds keep local parsing for naive stamps written on-site."""
+    return _ts(value, utc=utc)
 
 
 def _error(payload):
@@ -60,17 +66,17 @@ def _error(payload):
     return str(err) if err else None
 
 
-def _stamp(name, payload):
+def _stamp(name, payload, utc=False):
     if name == "prices":
-        return _ts(payload.get("fetched_at")) or _ts(payload.get("fetched"))
+        return _ts(payload.get("fetched_at"), utc=utc) or _ts(payload.get("fetched"), utc=utc)
     if name == "rankings":
-        return _ts(payload.get("fetched_at"))
+        return _ts(payload.get("fetched_at"), utc=utc)
     if name == "analytics":
-        return _ts(payload.get("generated"))
-    return _ts(payload.get("collected_at"))
+        return _ts(payload.get("generated"), utc=utc)
+    return _ts(payload.get("collected_at"), utc=utc)
 
 
-def compute(reports_dir, now=None, env=None):
+def compute(reports_dir, now=None, env=None, utc=False):
     """-> {source: {age_s, policy_s, stale, last_error, timer, cadence_s}}.
 
     A source with no artifact or no timestamp has age_s None and is not stale:
@@ -89,7 +95,7 @@ def compute(reports_dir, now=None, env=None):
             pass
         if not isinstance(payload, dict):
             payload = {}
-        ts = _stamp(name, payload)
+        ts = _stamp(name, payload, utc=utc)
         age = None if ts is None else max(0, int(now - ts))
         out[name] = {"age_s": age, "policy_s": policy,
                      "stale": age is not None and age > policy,
