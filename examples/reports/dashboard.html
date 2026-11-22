@@ -1961,6 +1961,8 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 @media (max-width:640px){ #appbar .ab-sep{display:none} }
 #appbar #crumb{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){ #appbar #resinfo{display:none} }
+#priceTabs{flex-wrap:wrap}
+#setmsg{min-width:0;overflow-wrap:anywhere}
 #appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 #appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
@@ -2063,8 +2065,6 @@ box-shadow:0 0 0 2px var(--jar-glow),0 0 8px 3px color-mix(in srgb,var(--jar-glo
 :root:not([data-theme="dark"]) #qcard .qt-sw-ring{--k:var(--jar-wait);background:var(--jar-glass);
 box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
 :root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
-#priceTabs{flex-wrap:wrap}
-#setmsg{min-width:0;overflow-wrap:anywhere}
 .hv-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3)}
 .hv-views{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:var(--sp-3)}
 .hv-snd{display:inline-flex;gap:6px;align-items:center;margin-left:auto}

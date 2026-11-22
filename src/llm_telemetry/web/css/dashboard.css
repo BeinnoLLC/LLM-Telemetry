@@ -2150,6 +2150,10 @@ body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
    named header stamp) stays visible. */
 #appbar #crumb{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:640px){ #appbar #resinfo{display:none} }
+/* Same sweep: long chip rows wrap and status text may break anywhere so no
+   Settings or Prices toolbar scrolls horizontally at 390px. */
+#priceTabs{flex-wrap:wrap}
+#setmsg{min-width:0;overflow-wrap:anywhere}
 #appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 #appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
@@ -2281,12 +2285,6 @@ canvas, img {
    (the .qv-astat.qv-bad pattern). Dark keeps --z-bad-fg on the fill, unchanged.
    Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
 :root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
-
-/* LST-342 phone-width sweep (check_mobile_overflow.js): long chip rows wrap and
-   status text may break anywhere so no view scrolls horizontally at 390px.
-   Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
-#priceTabs{flex-wrap:wrap}
-#setmsg{min-width:0;overflow-wrap:anywhere}
 
 
 
