@@ -47,6 +47,8 @@ const fakeDocument = {
   getElementById: el,
   createElement: tag => { const e = mkEl(); e.tag = tag; return e; },
   documentElement: Object.assign(mkEl(), { dataset: { theme: 'dark' } }),
+  // views.js noticePlace() reads .pagehead via querySelector; no header stub here.
+  querySelector: () => null,
   querySelectorAll: () => [],
   addEventListener() {}, body: mkEl(), head: mkEl(),
 };

@@ -2138,13 +2138,18 @@ button.lvsid{cursor:pointer;text-decoration:underline dotted}
   padding:0 var(--pad);background:var(--card);border-bottom:1px solid var(--border)}
 body.hasnav #appbar{padding-left:calc(var(--rail-now) + var(--pad))}
 #appbar .ab-spacer{flex:1}
-#appbar #meta{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);white-space:nowrap}
+#appbar #meta{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #appbar #meta.old{border-color:currentColor}
 #appbar #meta.stale{border-color:currentColor}
 #appbar .ab-sep{opacity:.4}
 #appbar #theme{box-sizing:border-box;width:36px;height:36px;min-width:36px;padding:0}
 @media (max-width:640px){ #appbar #theme{width:44px;height:44px;min-width:44px} }
 @media (max-width:640px){ #appbar .ab-sep{display:none} }
+/* LST-342: the merged header must fit phone widths — the crumb truncates, the
+   bytes/req readout hides below 640px, and the freshness stamp (the spec's
+   named header stamp) stays visible. */
+#appbar #crumb{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){ #appbar #resinfo{display:none} }
 #appbar .ab-fresh{font-size:var(--fs-xs);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 #appbar .ab-fresh[data-fresh-state=old]{color:var(--z-warn);border-color:currentColor}
 #appbar .ab-fresh[data-fresh-state=stale]{color:var(--z-bad);border-color:currentColor}
@@ -2276,6 +2281,12 @@ canvas, img {
    (the .qv-astat.qv-bad pattern). Dark keeps --z-bad-fg on the fill, unchanged.
    Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
 :root:not([data-theme="dark"]) .navbadge.alert{color:var(--card)}
+
+/* LST-342 phone-width sweep (check_mobile_overflow.js): long chip rows wrap and
+   status text may break anywhere so no view scrolls horizontally at 390px.
+   Lives at EOF so tests/fixtures/design-token-baseline.json line numbers hold. */
+#priceTabs{flex-wrap:wrap}
+#setmsg{min-width:0;overflow-wrap:anywhere}
 
 
 
