@@ -651,7 +651,7 @@ body.navcollapsed #navdrawer .navitem:focus-visible::after{ opacity:1; }
  .navbadge{margin-left:auto;font-size:var(--fs-xs);font-weight:700;padding:1px 6px;
    border-radius:var(--r-pill);background:var(--border);color:var(--fg);flex:none;
    font-variant-numeric:tabular-nums}
- .navbadge.alert{background:var(--z-bad);color:var(--z-bad-fg)}
+ .navbadge.alert{background:var(--z-bad);color:var(--card)}
  .navbadge[hidden]{display:none}
  .navsep{height:1px;background:var(--border);margin:var(--sp-2) var(--sp-3);flex:none}
   #navscrim{display:none;position:fixed;inset:0;z-index:var(--layer-nav-scrim);background:var(--scrim-bg);

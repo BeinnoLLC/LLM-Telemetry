@@ -3,9 +3,9 @@
 // from tokens.css (WCAG 2.1 sRGB relative-luminance formula) and fails below
 // 4.5:1 in EITHER theme. The dark --z-*-fg values are pinned to their Hive
 // values so the light-theme contrast fix can never drift the dark palette
-// ("dark theme stays unchanged"). The filled pill (.navbadge.alert light
-// override, .qv-astat.qv-bad) pairs its --z-bad fill with --card text; that
-// pair is guarded here too.
+// ("dark theme stays unchanged"). The filled pill (.navbadge.alert base rule,
+// .qv-astat.qv-bad) pairs its --z-bad fill with --card text in both themes;
+// that pair is guarded here too (LLMTELEMET-340 made the dark pill match).
 const fs = require('fs');
 const path = require('path');
 const WEB = path.join(__dirname, '..', 'src', 'llm_telemetry', 'web', 'css');
@@ -32,8 +32,8 @@ for (const [name, b] of [['dark', dark], ['light', light]]) {
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--bg', bg]);
     pairs.push([`--z-${z}-fg`, tok(b, `z-${z}-fg`), '--card', card]);
   }
-  // filled pill: --card text on the solid --z-bad fill for .qv-astat.qv-bad
-  pairs.push(['--card on --z-bad fill for .qv-astat.qv-bad', card, '--z-bad fill', tok(b, 'z-bad')]);
+  // filled pill: --card text on the solid --z-bad fill (.navbadge.alert, .qv-astat.qv-bad)
+  pairs.push(['--card on --z-bad fill for .navbadge.alert/.qv-astat.qv-bad', card, '--z-bad fill', tok(b, 'z-bad')]);
   for (const [fn, f, bn, bgc] of pairs) {
     const r = f && bgc ? ratio(f, bgc) : 0;
     console.log(`  ${name.padEnd(6)} ${(fn + ' ' + f).padEnd(19)}${(bn + ' ' + bgc).padEnd(19)}${r.toFixed(2).padStart(5)}  4.5`);
@@ -43,6 +43,11 @@ for (const [name, b] of [['dark', dark], ['light', light]]) {
 // LST-309: light navbadge alert override must exist in dashboard.css
 const navbadgeRule = /:root:not\(\[data-theme="dark"\]\) \.navbadge\.alert\s*\{[^}]*color:\s*var\(--card\)/.test(dashboard);
 chk(navbadgeRule, 'light .navbadge.alert sets color:var(--card) in dashboard.css', navbadgeRule);
+// LLMTELEMET-340: the dark pill pairs --card text with the --z-bad fill too
+const navbadgeBase = /\.navbadge\.alert\s*\{[^}]*background:\s*var\(--z-bad\)[^}]*color:\s*var\(--card\)/.test(dashboard);
+chk(navbadgeBase, '.navbadge.alert pairs --z-bad fill with --card text in dashboard.css', navbadgeBase);
+const darkPill = ratio(tok(dark, 'card'), tok(dark, 'z-bad'));
+chk(darkPill >= 4.5, 'dark --card on --z-bad fill for .navbadge.alert >= 4.5', darkPill.toFixed(2));
 // dark theme stays unchanged (LLMTELEMET-309 fixes the light values only)
 const D = { 'z-ok-fg': '#dff0e4', 'z-warn-fg': '#f4ecda', 'z-bad-fg': '#f7e3e3' };
 for (const [k, v] of Object.entries(D)) {
