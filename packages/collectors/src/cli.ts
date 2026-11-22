@@ -31,6 +31,7 @@ import { collectRankingsAsync, readPrevious } from "./collectRankings.js";
 import { collectTranscripts } from "./collectTranscripts.js";
 import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
+import { build as buildCosts, writeCostsData } from "./collectCosts.js";
 
 export interface CliIo {
   out: (line: string) => void;
@@ -111,8 +112,28 @@ export const COMMANDS: Record<string, Command> = {
   },
   // --- stubs: mirror cli.py one-to-one, land with their T-ticket ---
   dashboard: stub("dashboard — build dashboard.html (replaced by `next build`)", "T-20..T-25"),
-  costs: stub("costs — write costs-data.json", "T-17"),
-  pricing: stub("pricing — refresh the OpenRouter price catalogue cache", "T-17"),
+  costs: {
+    summary: "costs — write costs-data.json",
+    status: "ported",
+    run: async (_name, io, args, cfg) => {
+      const outArg = args[0];
+      const c = cfg();
+      const d = await buildCosts();
+      const out = outArg ?? (c.reports_dir + "/costs-data.json");
+      const res = writeCostsData(d, process.env, c);
+      io.out(`costs: ${d.models.length} models -> ${res}`);
+      return 0;
+    },
+  },
+  pricing: {
+    summary: "pricing — refresh the OpenRouter price catalogue cache",
+    status: "ported",
+    run: async (_name, io, _args, cfg) => {
+      const [catalog, src] = await fetchCatalog(cfg());
+      io.out(`pricing: ${Object.keys(catalog).length} entries (${src})`);
+      return 0;
+    },
+  },
   rankings: {
     summary: "rankings — write rankings-data.json [OUT]",
     status: "ported",
