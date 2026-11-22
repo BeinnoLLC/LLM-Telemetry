@@ -2011,16 +2011,16 @@ min-height: 44px;
 min-width: 44px;
 }
 }
-.page-title,.navbrand .brandword{background:var(--grad-title);background-size:300% 100%;
+#appbar .ab-title,.page-title,.navbrand .brandword{background:var(--grad-title);background-size:300% 100%;
 -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
 animation:hive-title 12s linear infinite}
 @keyframes hive-title{to{background-position:300% 0}}
 @media(prefers-reduced-motion:reduce){
-.page-title,.navbrand .brandword{animation:none;background-size:100% 100%}
+#appbar .ab-title,.page-title,.navbrand .brandword{animation:none;background-size:100% 100%}
 .dot,.stamp[data-stamp-state="fresh"]::after,.pchip .live{animation:none;box-shadow:none}
 .seg-btn.on,.kseg[aria-pressed="true"],.pchip[aria-current="true"]{box-shadow:0 0 0 1px var(--active-a)}
 }
-@media(forced-colors:active){.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}.qt-ball{border:1px solid CanvasText}.qt-ball svg{forced-color-adjust:none}}
+@media(forced-colors:active){#appbar .ab-title,.page-title,.navbrand .brandword{-webkit-text-fill-color:currentColor;background:none}.qt-ball{border:1px solid CanvasText}.qt-ball svg{forced-color-adjust:none}}
 #qcard{--kind-hermes:var(--jar-hermes);--kind-pi:var(--jar-pi);--kind-claude:var(--jar-claude);--kind-codex:var(--jar-codex);--qk-wait:var(--jar-wait)}
 :root:not([data-theme="dark"]) #qcard .qt-sec{--jc:color-mix(in srgb,var(--jar-edge) 70%,var(--muted))}
 :root:not([data-theme="dark"]) #qcard .qt-line{--jc:var(--z-ok)}
@@ -2155,7 +2155,7 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
   <circle cx="21" cy="5" r="1.8" fill="currentColor" stroke="none"/>
   <path d="M3 21h18" opacity=".35"/>
  </svg>
- <h1 class="page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</h1><span class="sr-only" id="h1view">Home</span>
+ <h1 class="ab-title page-title" style="font-size:clamp(16px,2.5vw,22px);font-weight:650;letter-spacing:-.02em">LLM Telemetry</h1><span class="sr-only" id="h1view">Home</span>
  <span class="ab-sep" aria-hidden="true">/</span>
  <span id="crumb" aria-live="polite" class="font-medium" style="color:var(--fg)"></span>
  <span class="ab-spacer"></span>
@@ -2164,9 +2164,9 @@ box-shadow:none;outline:2px dashed var(--jar-ring);outline-offset:1px}
  <button id="theme" class="chip" type="button" aria-label="Toggle theme" title="Toggle theme">&#9788;</button>
 </div>
 <main class="page flex flex-col gap-4" id="main" tabindex="-1">
- <div class="flex gap-2 items-center flex-wrap fbwrap page-toolbar pagehead">
+ <div class="flex gap-2 items-center flex-wrap page-toolbar pagehead">
    <button id="navtoggle" class="chip" type="button" aria-expanded="false" aria-controls="navdrawer" aria-label="Open navigation">&#9776;</button>
-   <div class="fleetbar" id="tabs" data-kind="all"></div>
+   <div class="fbwrap"><div class="fleetbar" id="tabs" data-kind="all"></div></div>
    <span id="noticechips" class="noticechips"></span>
    <button id="refresh" class="chip" type="button" aria-label="Refresh data" title="Refresh data">&#8635;</button>
    <button id="soundtoggle" class="chip" type="button" aria-pressed="true"
