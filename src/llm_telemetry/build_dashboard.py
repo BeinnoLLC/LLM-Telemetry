@@ -93,7 +93,7 @@ def _shown_path(f):
     return "~" + f[len(home):] if f.startswith(home + os.sep) else os.path.basename(f)
 
 
-data["stale"] = _stale.compute(CFG.reports_dir, now=_stale.stamp(data.get("generated")) if data.get("sample") else None)
+data["stale"] = _stale.compute(CFG.reports_dir, now=_stale.stamp(data.get("generated"), utc=True) if data.get("sample") else None, utc=bool(data.get("sample")))
 
 _kwh, _gw, _hw = _E.tariff(CFG)
 _d = _Config()
