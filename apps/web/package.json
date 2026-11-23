@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:parity": "vitest run --config tests/parity/vitest.config.mts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
