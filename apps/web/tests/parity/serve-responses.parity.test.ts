@@ -27,6 +27,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { HEADER, handleSettingsGet, handleSettingsPost } from "../../lib/api/settings";
 import { REFRESH, handleRefreshPost, resetRefresh } from "../../lib/api/refresh";
+import { resolvePython } from "./python";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = resolve(HERE, "..", "..");
@@ -34,20 +35,6 @@ const REPO_ROOT = resolve(WEB_ROOT, "..", "..");
 const SRC = join(REPO_ROOT, "src");
 const ORACLE = join(HERE, "serve_oracle.py");
 const STAMP = 1714975689; // fixed mtime for generated_at parity
-
-/** From packages/collectors/parity/pythonProducer.ts — no hardcoded home paths. */
-function resolvePython(here: string): string | null {
-  const envPy = process.env["LLM_TELEMETRY_PARITY_PYTHON"];
-  if (envPy) return envPy;
-  const res = spawnSync("git", ["rev-parse", "--git-common-dir"], {
-    cwd: here,
-    encoding: "utf8",
-  });
-  if (res.status !== 0 || !res.stdout.trim()) return null;
-  const mainRepo = dirname(resolve(here, res.stdout.trim()));
-  const python = join(mainRepo, ".venv", "bin", "python");
-  return existsSync(python) ? python : null;
-}
 
 const python = resolvePython(WEB_ROOT);
 
