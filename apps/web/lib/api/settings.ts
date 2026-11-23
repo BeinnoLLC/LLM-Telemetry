@@ -216,15 +216,53 @@ export function isLoopback(ip: string | null | undefined): boolean {
   return lower === "::1" || lower === "0:0:0:0:0:0:0:1";
 }
 
-/** Peer IP from proxy headers, falling back to the injectable direct peer. */
-export function peerIp(headers: Headers, directPeer?: string | null): string | null {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
+const TRUTHY_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
+
+type EnvReader = Readonly<Record<string, string | undefined>>;
+
+/** Only an explicit truthy flag enables trust in client-supplied proxy headers. */
+export function trustProxyFromEnv(env: EnvReader = process.env): boolean {
+  const value = env["LLM_TELEMETRY_TRUST_PROXY"];
+  return value !== undefined && TRUTHY_ENV_VALUES.has(value.trim().toLowerCase());
+}
+
+export interface PeerDeps {
+  /** Direct peer used when no trusted proxy supplies a peer (loopback by default). */
+  directPeer?: string | null;
+  /** Trust proxy headers; false unless explicitly enabled in the environment. */
+  trustProxy?: boolean;
+}
+
+/** Route-level peer deps: socket-equivalent peer plus the explicit proxy flag. */
+export function peerDepsFromEnv(env: EnvReader = process.env): Required<PeerDeps> {
+  const configuredPeer = env["LLM_TELEMETRY_PEER_IP"]?.trim();
+  return {
+    directPeer: configuredPeer || "127.0.0.1",
+    trustProxy: trustProxyFromEnv(env),
+  };
+}
+
+/**
+ * Peer IP. Proxy headers are ignored by default: Next fills x-forwarded-for
+ * only when a client did not send one, so a spoofed value must never pass a
+ * loopback guard. In trusted-proxy mode the rightmost XFF hop is the proxy
+ * that appended the value, so the peer is the entry immediately to its left.
+ */
+export function peerIp(
+  headers: Headers,
+  directPeer?: string | null,
+  trustProxy = false,
+): string | null {
+  if (trustProxy) {
+    const forwarded = headers.get("x-forwarded-for");
+    if (forwarded) {
+      const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
+      const peer = hops.length >= 2 ? hops[hops.length - 2] : undefined;
+      if (peer) return peer;
+    }
+    const real = headers.get("x-real-ip")?.trim();
+    if (real) return real;
   }
-  const real = headers.get("x-real-ip");
-  if (real && real.trim()) return real.trim();
   return directPeer ?? null;
 }
 
@@ -313,17 +351,19 @@ export function parseContentLength(value: string | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export interface SettingsRequestDeps extends SettingsEnv {
-  /** Direct peer used when no proxy header is present (loopback by default). */
-  directPeer?: string | null;
+export interface SettingsRequestDeps extends SettingsEnv, PeerDeps {
   /** Fully overrides peer derivation, for tests and the parity harness. */
   peer?: (request: Request) => string | null | undefined;
 }
 
 function requestPeer(request: Request, d: SettingsRequestDeps): string | null {
-  return d.peer
-    ? d.peer(request) ?? null
-    : peerIp(request.headers, d.directPeer === undefined ? "127.0.0.1" : d.directPeer);
+  if (d.peer) return d.peer(request) ?? null;
+  const envDeps = peerDepsFromEnv(d.env ?? process.env);
+  return peerIp(
+    request.headers,
+    d.directPeer === undefined ? envDeps.directPeer : d.directPeer,
+    d.trustProxy ?? envDeps.trustProxy,
+  );
 }
 
 /** GET /api/settings: always 200; `writable` mirrors the loopback guard. */

@@ -99,9 +99,50 @@ describe("startRefresh() — detached, injectable", () => {
 });
 
 describe("POST /api/refresh responses", () => {
-  it("enforces the loopback guard and the required header", async () => {
+  it("cannot be fooled into rebuilding by a spoofed loopback header", async () => {
+    const starter = vi.fn(() => ({ pid: 1 }));
+    const remote = await handleRefreshPost(request(validHeaders({
+      "x-forwarded-for": "127.0.0.1",
+      "x-real-ip": "127.0.0.1",
+    })), {
+      reportsDir,
+      directPeer: "203.0.113.4",
+      starter,
+    });
+    expect(remote.status).toBe(403);
+    expect(await remote.json()).toEqual({ error: "a rebuild can only be triggered from this machine" });
+    expect(starter).not.toHaveBeenCalled();
+  });
+
+  it("uses trusted proxy headers only when the env flag is set", async () => {
+    const starter = vi.fn(() => ({ pid: 1, unref: vi.fn() }));
+    const deps = {
+      reportsDir,
+      directPeer: "192.0.2.10",
+      env: { LLM_TELEMETRY_TRUST_PROXY: "1", NODE_ENV: "test" as const },
+      starter,
+      now: () => 100,
+    };
+    const remote = await handleRefreshPost(
+      request(validHeaders({ "x-forwarded-for": "203.0.113.9, 127.0.0.1" })),
+      deps,
+    );
+    expect(remote.status).toBe(403);
+    expect(starter).not.toHaveBeenCalled();
+
+    const local = await handleRefreshPost(
+      request(validHeaders({ "x-forwarded-for": "127.0.0.1, 127.0.0.1" })),
+      deps,
+    );
+    expect(local.status).toBe(202);
+    expect((await local.json() as { accepted: boolean }).accepted).toBe(true);
+    expect(starter).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the loopback guard and the required header", async () => {
     const remote = await handleRefreshPost(request(validHeaders({ "x-forwarded-for": "203.0.113.4" })), {
       reportsDir,
+      directPeer: "203.0.113.4",
     });
     expect(remote.status).toBe(403);
     expect(await remote.json()).toEqual({ error: "a rebuild can only be triggered from this machine" });

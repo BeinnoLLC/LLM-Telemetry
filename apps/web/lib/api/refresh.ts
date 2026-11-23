@@ -16,9 +16,11 @@ import {
   candidatePaths,
   isLoopback,
   parseContentLength,
+  peerDepsFromEnv,
   peerIp,
   pyJsonResponse,
   type FsLike,
+  type PeerDeps,
 } from "./settings";
 
 export { HEADER };
@@ -49,7 +51,7 @@ export function resetRefresh(): void {
   REFRESH.last_at = null;
 }
 
-export interface RefreshDeps {
+export interface RefreshDeps extends PeerDeps {
   /** Unix time in seconds; defaults to Date.now()/1000. */
   now?: () => number;
   /** Signal-0 PID probe; defaults to process.kill(pid, 0). */
@@ -63,13 +65,13 @@ export interface RefreshDeps {
   fs?: FsLike;
   env?: NodeJS.ProcessEnv;
   home?: string;
-  /** Direct-peer override; proxy headers still win when present. */
-  directPeer?: string | null;
   /** Fully overrides peer derivation (used by the parity harness). */
   peer?: (request: Request) => string | null | undefined;
 }
 
 function defaults(d: RefreshDeps = {}): Required<Pick<RefreshDeps, "now" | "alive" | "python" | "fs" | "env" | "directPeer">> {
+  const env = d.env ?? process.env;
+  const envDeps = peerDepsFromEnv(env);
   return {
     now: d.now ?? (() => Date.now() / 1000),
     alive: d.alive ?? ((pid: number) => {
@@ -91,8 +93,8 @@ function defaults(d: RefreshDeps = {}): Required<Pick<RefreshDeps, "now" | "aliv
       chmodSync: (p, m) => import_fs.chmodSync(p, m),
       unlinkSync: (p) => import_fs.unlinkSync(p),
     },
-    env: d.env ?? process.env,
-    directPeer: d.directPeer === undefined ? "127.0.0.1" : d.directPeer,
+    env,
+    directPeer: d.directPeer === undefined ? envDeps.directPeer : d.directPeer,
   };
 }
 
@@ -217,7 +219,14 @@ export function currentGeneratedAt(d: RefreshDeps = {}): string | null {
  * a peer, a clock, a fake PID probe and a fake starter.
  */
 export async function handleRefreshPost(request: Request, d: RefreshDeps = {}): Promise<Response> {
-  const peer = d.peer ? d.peer(request) : peerIp(request.headers, defaults(d).directPeer);
+  const cfg = defaults(d);
+  const peer = d.peer
+    ? d.peer(request) ?? null
+    : peerIp(
+      request.headers,
+      cfg.directPeer,
+      d.trustProxy ?? peerDepsFromEnv(cfg.env).trustProxy,
+    );
   if (!isLoopback(peer)) {
     return pyJsonResponse(403, { error: "a rebuild can only be triggered from this machine" });
   }

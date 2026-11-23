@@ -25,8 +25,10 @@ import {
   current,
   handleSettingsGet,
   handleSettingsPost,
+  peerIp,
   save,
   tilde,
+  trustProxyFromEnv,
   validate,
 } from "../../lib/api/settings";
 
@@ -171,6 +173,37 @@ describe("save() — atomic merge and mode preservation", () => {
   });
 });
 
+describe("peerIp() — proxy-header trust", () => {
+  it("ignores x-forwarded-for and x-real-ip by default", () => {
+    const headers = new Headers({
+      "x-forwarded-for": "127.0.0.1",
+      "x-real-ip": "::1",
+    });
+    expect(peerIp(headers, "203.0.113.4")).toBe("203.0.113.4");
+    expect(peerIp(headers, "203.0.113.4", false)).toBe("203.0.113.4");
+    expect(trustProxyFromEnv({})).toBe(false);
+    expect(trustProxyFromEnv({ LLM_TELEMETRY_TRUST_PROXY: "0" })).toBe(false);
+    expect(trustProxyFromEnv({ LLM_TELEMETRY_TRUST_PROXY: "1" })).toBe(true);
+  });
+
+  it("uses the rightmost non-proxy entry only in trusted-proxy mode", () => {
+    expect(peerIp(
+      new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.2, 127.0.0.1" }),
+      "192.0.2.10",
+      true,
+    )).toBe("10.0.0.2");
+    expect(peerIp(
+      new Headers({ "x-forwarded-for": "203.0.113.9, 127.0.0.1" }),
+      "192.0.2.10",
+      true,
+    )).toBe("203.0.113.9");
+    expect(peerIp(new Headers({ "x-real-ip": "203.0.113.9" }), "192.0.2.10", true))
+      .toBe("203.0.113.9");
+    expect(peerIp(new Headers({ "x-forwarded-for": "127.0.0.1" }), "192.0.2.10", true))
+      .toBe("192.0.2.10");
+  });
+});
+
 describe("GET /api/settings", () => {
   it("reports values, config_file and loopback writability", async () => {
     writeFileSync(cfg, JSON.stringify({ electricity_rate_kwh: 0.1 }));
@@ -190,23 +223,55 @@ describe("GET /api/settings", () => {
     });
   });
 
-  it("uses x-forwarded-for first hop, then x-real-ip, for peer writability", async () => {
-    const cases: Array<[Record<string, string>, boolean]> = [
-      [{ "x-forwarded-for": "203.0.113.9, 127.0.0.1" }, false],
-      [{ "x-real-ip": "203.0.113.9" }, false],
-      [{ "x-forwarded-for": "::1" }, true],
-      [{ "x-forwarded-for": "127.0.0.1", "x-real-ip": "203.0.113.9" }, true],
+  it("ignores spoofed proxy headers for peer writability by default", async () => {
+    const cases: Record<string, string>[] = [
+      { "x-forwarded-for": "127.0.0.1" },
+      { "x-real-ip": "::1" },
+      { "x-forwarded-for": "203.0.113.9, 127.0.0.1", "x-real-ip": "127.0.0.1" },
     ];
-    for (const [extra, writable] of cases) {
-      const res = handleSettingsGet(request({}, extra), { env, home: root });
-      expect((await res.json() as { writable: boolean }).writable).toBe(writable);
+    for (const extra of cases) {
+      const res = handleSettingsGet(request({}, extra), {
+        env, home: root, directPeer: "203.0.113.4",
+      });
+      expect((await res.json() as { writable: boolean }).writable).toBe(false);
     }
+  });
+
+  it("honours trusted proxy headers only when the env flag is set", async () => {
+    const trustedEnv = { ...env, LLM_TELEMETRY_TRUST_PROXY: "1" };
+    const remote = handleSettingsGet(
+      request({}, { "x-forwarded-for": "203.0.113.9, 127.0.0.1" }),
+      { env: trustedEnv, home: root, directPeer: "192.0.2.10" },
+    );
+    expect((await remote.json() as { writable: boolean }).writable).toBe(false);
+
+    const local = handleSettingsGet(
+      request({}, { "x-forwarded-for": "127.0.0.1, 127.0.0.1" }),
+      { env: trustedEnv, home: root, directPeer: "192.0.2.10" },
+    );
+    expect((await local.json() as { writable: boolean }).writable).toBe(true);
   });
 });
 
 describe("POST /api/settings", () => {
+  it("cannot be fooled into writing by a spoofed loopback header", async () => {
+    writeFileSync(cfg, JSON.stringify({ gpu_draw_watts: 350 }));
+    const res = await handleSettingsPost(
+      jsonPost('{"gpu_draw_watts":400}', {
+        "x-forwarded-for": "127.0.0.1",
+        "x-real-ip": "127.0.0.1",
+      }),
+      { env, home: root, directPeer: "203.0.113.4" },
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "settings can only be changed from this machine" });
+    expect(JSON.parse(readFileSync(cfg, "utf8"))).toEqual({ gpu_draw_watts: 350 });
+  });
+
   it("keeps the loopback guard and required header", async () => {
-    const remote = await handleSettingsPost(jsonPost("{}", { "x-forwarded-for": "203.0.113.4" }), { env, home: root });
+    const remote = await handleSettingsPost(jsonPost("{}", { "x-forwarded-for": "127.0.0.1" }), {
+      env, home: root, directPeer: "203.0.113.4",
+    });
     expect(remote.status).toBe(403);
     expect(await remote.json()).toEqual({ error: "settings can only be changed from this machine" });
 
