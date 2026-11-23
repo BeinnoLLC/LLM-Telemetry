@@ -432,24 +432,24 @@ export function ageLabel(seconds: number | null): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-export function catalogFreshness(source: string, now?: number): any {
+export function catalogFreshness(source: string, _now?: number): Record<string, unknown> {
   return { state: source === "live" ? "live" : "cache", age_s: null, age: "", ttl: ttlLabel(), detail: source };
 }
 
-export function isDeadEndpoint(baseUrl: any): boolean {
+export function isDeadEndpoint(baseUrl: unknown): boolean {
   const u = String(baseUrl ?? "").toLowerCase();
   return /^(?:\w+:\/\/)?(?:127\.0\.0\.1|localhost|\[::1\]):9(?:[/?#]|$)/.test(u);
 }
 
-export function servingProviderHint(model: string | null, catalog: any): string | null {
+export function servingProviderHint(model: string | null, catalog: Record<string, unknown> | null): string | null {
   const m = String(model ?? "").trim();
   if (!m) return null;
   const lm = m.toLowerCase();
   if (lm.startsWith("nous:") || (catalog && catalog["nous:" + m])) return "nous";
   if (lm.startsWith("accounts/fireworks/")) return "fireworks";
   if (m.includes("/")) return (String(m).split("/", 1)[0] as string).toLowerCase();
-  const oid = (ALIASES as any)?.[m];
-  const resolved = oid || (catalog && (catalog[m] ? m : null)) || resolveCatalogId(m, catalog);
+  const oid = ALIASES[m];
+  const resolved = oid || (catalog && (catalog[m] ? m : null)) || resolveCatalogId(m, catalog as Catalog);
   if (resolved && String(resolved).toLowerCase().startsWith("accounts/fireworks/")) return "fireworks";
   if (resolved && !String(resolved).startsWith(NOUS_PREFIX)) {
     return (String(resolved ?? "").split("/", 1)[0] as string).toLowerCase();
@@ -472,11 +472,15 @@ export function servingProviderHint(model: string | null, catalog: any): string 
   return null;
 }
 
-export function nousRatesFor(model: string | null, catalog: any): any {
+export function nousRatesFor(model: string | null, catalog: Record<string, unknown> | null): [number, number, number] | null {
   const p = catalog?.[NOUS_PREFIX + (model ?? "")];
   if (!p) return null;
   try {
-    return [Number(p.prompt ?? 0), Number(p.completion ?? 0), Number(p.input_cache_read ?? 0)];
+    return [
+      Number((p as Record<string, unknown>).prompt ?? 0),
+      Number((p as Record<string, unknown>).completion ?? 0),
+      Number((p as Record<string, unknown>).input_cache_read ?? 0),
+    ];
   } catch {
     return null;
   }

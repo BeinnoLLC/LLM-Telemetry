@@ -116,10 +116,8 @@ export const COMMANDS: Record<string, Command> = {
     summary: "costs — write costs-data.json",
     status: "ported",
     run: async (_name, io, args, cfg) => {
-      const outArg = args[0];
       const c = cfg();
       const d = await buildCosts();
-      const out = outArg ?? (c.reports_dir + "/costs-data.json");
       const res = writeCostsData(d, process.env, c);
       io.out(`costs: ${d.models.length} models -> ${res}`);
       return 0;

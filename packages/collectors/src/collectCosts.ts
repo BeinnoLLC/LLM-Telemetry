@@ -1,9 +1,92 @@
+import * as fs from "node:fs";
+import * as nodePath from "node:path";
+
 import { Config, get as getConfig } from "./config.js";
 import * as P from "./pricing.js";
 import { stamp } from "./schema.js";
 import { localRates as energyLocalRates, PREFILL_SPEEDUP, CACHE_SPEEDUP, tariff } from "./energy.js";
-import { pyRound } from "./pySemantics.js";
 import { fetchCatalog } from "./pricingFetch.js";
+
+type Dict = Record<string, unknown>;
+
+interface TrafficRow {
+  model?: string | null;
+  base_url?: string | null;
+  calls?: number | null;
+  inp?: number | null;
+  outp?: number | null;
+  cread?: number | null;
+  market_value_usd?: number | null;
+  provider?: string | null;
+  cost_class?: string | null;
+}
+
+interface TrafficProfile {
+  rows?: unknown;
+}
+
+interface TrafficData {
+  profiles?: Record<string, unknown>;
+  sample?: boolean;
+}
+
+interface Aggregate {
+  calls: number;
+  inp: number;
+  outp: number;
+  cache: number;
+  cost: number;
+  providers: Set<string>;
+  profiles: Set<string>;
+  local: boolean;
+}
+
+interface CostModel {
+  model: string;
+  short: string | undefined;
+  oid: string;
+  in_1m: number | null;
+  out_1m: number | null;
+  cache_1m: number | null;
+  source: string;
+  tps: number | null;
+  used: boolean;
+  rate_origin: string;
+  calls: number;
+  inp: number;
+  outp: number;
+  cache: number;
+  cost: number;
+  energy: number | null;
+  providers: string[];
+  served_by: string;
+  inferred_by: string;
+  profiles: string[];
+}
+
+interface OllamaCatalogEntry {
+  name?: string | null;
+}
+
+interface OllamaHost {
+  catalog?: unknown;
+}
+
+interface OllamaData {
+  hosts?: unknown;
+}
+
+interface CostsData extends Dict {
+  models: CostModel[];
+}
+
+function asDict(value: unknown): Dict {
+  return value !== null && typeof value === "object" ? value as Dict : {};
+}
+
+function asIterable(value: unknown): Iterable<unknown> {
+  return (value ?? []) as Iterable<unknown>;
+}
 
 export function localRates(model: string | null): [number, number, number, number] {
   const cfg = getConfig();
@@ -11,33 +94,41 @@ export function localRates(model: string | null): [number, number, number, numbe
   return [r.rates[0], r.rates[1], r.rates[2], r.tps];
 }
 
-export function rateSource(model: string | null, catalog: any): string {
+export function rateSource(model: string | null, catalog: Dict): string {
   if (P.isLocal(model)) return "local";
   if (P.isFreeTier(model)) return "free-tier";
-  const rr = P.rateOrigin(model, catalog, getConfig()) as any; const origin = rr?.[0]; const rt = rr?.[1];
+  const rr = P.rateOrigin(model, catalog, getConfig());
+  const origin = rr?.[0] ?? "";
+  const rt = rr?.[1];
   if (!rt) return "unpriced";
   return origin === "catalog" ? "openrouter" : "vendor";
 }
 
-export function rateOriginTag(model: string | null, catalog: any): string {
+export function rateOriginTag(model: string | null, catalog: Dict): string {
   if (P.isLocal(model)) return "local";
   if (P.isFreeTier(model)) return "free-tier";
-  const rr = P.rateOrigin(model, catalog, getConfig()) as any; const origin = rr?.[0]; const rt = rr?.[1];
+  const rr = P.rateOrigin(model, catalog, getConfig());
+  const origin = rr?.[0] ?? "";
+  const rt = rr?.[1];
   return rt ? (origin || "") : "";
 }
 
-export function installedLocalModels(ollama: any): Set<string> {
+export function installedLocalModels(ollama: unknown): Set<string> {
+  const data = asDict(ollama) as OllamaData;
   const out = new Set<string>();
-  for (const h of (ollama?.hosts ?? [])) {
-    for (const c of (h?.catalog ?? [])) {
-      if (c?.name) out.add(c.name);
+  for (const h of asIterable(data.hosts)) {
+    const host = asDict(h) as OllamaHost;
+    for (const c of asIterable(host.catalog)) {
+      const entry = asDict(c) as OllamaCatalogEntry;
+      if (entry.name) out.add(String(entry.name));
     }
   }
   return out;
 }
 
-export function resolveServingProvider(row: any): string {
-  const url = String(row?.base_url ?? "").toLowerCase();
+export function resolveServingProvider(row: unknown): string {
+  const r = asDict(row);
+  const url = String(r.base_url ?? "").toLowerCase();
   if (url.includes("fireworks.ai") || url.includes("openrouter.ai")) {
     return url.includes("fireworks.ai") ? "fireworks" : "openrouter";
   }
@@ -45,7 +136,7 @@ export function resolveServingProvider(row: any): string {
   if (url.includes("api.anthropic.com")) return "anthropic";
   if (url.includes("nousresearch.com")) return "nous";
   if (url.includes("ollama.com")) return "ollama-cloud";
-  const model = String(row?.model ?? "").trim().toLowerCase();
+  const model = String(r.model ?? "").trim().toLowerCase();
   if (model.startsWith("gpt-")) return "openai-codex";
   if (model.startsWith("stepfun/") || model.startsWith("step-") || model.includes("hermes-")) return "nous";
   if (model.includes("claude")) return "anthropic";
@@ -53,7 +144,7 @@ export function resolveServingProvider(row: any): string {
   return "";
 }
 
-export function inferCatalogProvider(model: string | null, catalog: any): string {
+export function inferCatalogProvider(model: string | null, catalog: Dict): string {
   try {
     return P.servingProviderHint(model, catalog) ?? "";
   } catch {
@@ -61,34 +152,53 @@ export function inferCatalogProvider(model: string | null, catalog: any): string
   }
 }
 
-export function observedTraffic(data: any): Record<string, any> {
-  const seen: Record<string, any> = {};
-  const get = (m: string) => {
-    if (!seen[m]) seen[m] = { calls: 0, inp: 0, outp: 0, cache: 0, cost: 0.0, providers: new Set(), profiles: new Set(), local: false };
-    return seen[m];
+export function observedTraffic(data: unknown): Record<string, Aggregate> {
+  const source = asDict(data) as TrafficData;
+  const seen: Record<string, Aggregate> = {};
+  const get = (m: string): Aggregate => {
+    if (!seen[m]) {
+      seen[m] = {
+        calls: 0,
+        inp: 0,
+        outp: 0,
+        cache: 0,
+        cost: 0.0,
+        providers: new Set<string>(),
+        profiles: new Set<string>(),
+        local: false,
+      };
+    }
+    return seen[m] as Aggregate;
   };
-  for (const [pname, prof] of Object.entries(data?.profiles ?? {})) {
-    for (const r of (prof as any)?.rows ?? []) {
-      if (P.isDeadEndpoint(r?.base_url)) continue;
-      const e = get(r?.model ?? "");
-      e.calls += r?.calls ?? 0;
-      e.inp += r?.inp ?? 0;
-      e.outp += r?.outp ?? 0;
-      e.cache += r?.cread ?? 0;
-      e.cost += r?.market_value_usd ?? 0.0;
-      if (r?.provider) e.providers.add(r.provider);
-      else if (e.providers.size === 0) {
-        const fb = resolveServingProvider(r);
-        if (fb) e.providers.add(fb);
+  for (const [pname, prof] of Object.entries(source.profiles ?? {})) {
+    const profile = asDict(prof) as TrafficProfile;
+    for (const item of asIterable(profile.rows)) {
+      const r = asDict(item) as TrafficRow;
+      if (P.isDeadEndpoint(r.base_url)) continue;
+      const e = get(String(r.model ?? ""));
+      e.calls += r.calls ?? 0;
+      e.inp += r.inp ?? 0;
+      e.outp += r.outp ?? 0;
+      e.cache += r.cread ?? 0;
+      e.cost += r.market_value_usd ?? 0.0;
+      if (r.provider) {
+        e.providers.add(String(r.provider));
+      } else if (e.providers.size === 0) {
+        const fb = resolveServingProvider(item);
+        if (fb) {
+          e.providers.add(fb);
+        }
       }
-      if (r?.cost_class === "local") e.local = true;
+      if (r.cost_class === "local") {
+        e.local = true;
+      }
       e.profiles.add(pname);
     }
   }
   return seen;
 }
 
-export function assemble(data: any, catalog: any, installed: Set<string> | string[] = []): any[] {
+export function assemble(data: unknown, catalog: Dict, installed: Set<string> | string[] = []): CostModel[] {
   const installedSet = installed instanceof Set ? installed : new Set(installed);
   const seen = observedTraffic(data);
   const localNames = new Set(installedSet);
@@ -104,29 +214,29 @@ export function assemble(data: any, catalog: any, installed: Set<string> | strin
 
   for (const m of Object.keys(seen)) {
     if (localNames.has(m)) continue;
-    const oid = (P.ALIASES as any)?.[m] || P.resolveCatalogId(m, catalog);
+    const oid = P.ALIASES?.[m] || P.resolveCatalogId(m, catalog);
     if (oid && oid !== m) universe.delete(oid);
   }
   for (const w of [...Object.keys(P.WEB_RATES ?? {}), ...Object.keys(P.RATE_OVERRIDES ?? {})]) {
-    const oid = (P.ALIASES as any)?.[w];
+    const oid = P.ALIASES?.[w];
     if (oid && oid !== w && !P.isLocal(w)) universe.delete(oid);
   }
   universe.delete("");
 
-  const models: any[] = [];
+  const models: CostModel[] = [];
   for (const model of universe) {
-    const agg: any = seen[model];
+    const agg: Aggregate | undefined = seen[model];
     const used = !!(agg && agg.calls);
     const local = localNames.has(model) || P.isLocal(model);
     let source = local ? "local" : rateSource(model, catalog);
-    let nousRt: any = null;
+    let nousRt: [number, number, number] | null = null;
     if (!local && agg && new Set(agg.providers).size === 1 && agg.providers.has("nous")) {
       nousRt = P.nousRatesFor ? P.nousRatesFor(model, catalog) : null;
-      if (nousRt) source = nousRt.some((x: any) => x) ? "nous" : "free-tier";
+      if (nousRt) source = nousRt.some((x) => x) ? "nous" : "free-tier";
     }
-    let tps: any = null;
-    let energy: any = null;
-    let ri: any = null, ro: any = null, rc: any = null;
+    let tps: number | null = null;
+    let energy: number | null = null;
+    let ri: number | null = null, ro: number | null = null, rc: number | null = null;
     if (source === "local") {
       const lr = localRates(model);
       ri = lr[0]; ro = lr[1]; rc = lr[2]; tps = lr[3];
@@ -142,7 +252,16 @@ export function assemble(data: any, catalog: any, installed: Set<string> | strin
         source = "unpriced";
       }
     }
-    const a = agg || { calls: 0, inp: 0, outp: 0, cache: 0, cost: 0.0, providers: new Set(), profiles: new Set() };
+    const a: Aggregate = agg || {
+      calls: 0,
+      inp: 0,
+      outp: 0,
+      cache: 0,
+      cost: 0.0,
+      providers: new Set<string>(),
+      profiles: new Set<string>(),
+      local: false,
+    };
     let hint = "";
     if (!agg) {
       if (installedSet.has(model)) hint = "local";
@@ -150,7 +269,7 @@ export function assemble(data: any, catalog: any, installed: Set<string> | strin
     }
     models.push({
       model, short: model.split("/").pop(),
-      oid: local ? "" : ((P.ALIASES as any)?.[model] || P.resolveCatalogId(model, catalog) || ""),
+      oid: local ? "" : (P.ALIASES?.[model] || P.resolveCatalogId(model, catalog) || ""),
       in_1m: ri, out_1m: ro, cache_1m: rc,
       source, tps, used,
       rate_origin: rateOriginTag(model, catalog),
@@ -164,24 +283,25 @@ export function assemble(data: any, catalog: any, installed: Set<string> | strin
   }
   models.sort((x, y) => {
     if ((x.out_1m == null) !== (y.out_1m == null)) return x.out_1m == null ? 1 : -1;
-    return (Number(y.out_1m ?? 0) - Number(x.out_1m ?? 0)) || String(x.model).localeCompare(String(y.model));
+    return (Number(y.out_1m ?? 0) - Number(x.out_1m ?? 0))
+      || (x.model < y.model ? -1 : (x.model > y.model ? 1 : 0));
   });
   return models;
 }
 
-export async function build(): Promise<any> {
+export async function build(): Promise<CostsData> {
   const cfg = getConfig();
   // analytics collection skipped in node port (data provided by caller typically); read existing
-  const dataPath = (cfg as any).reports_dir ? (cfg as any).reports_dir + "/analytics-data.json" : "";
-  let data: any = {};
-  try { const fs = require("fs"); data = JSON.parse(fs.readFileSync(dataPath, "utf8")); } catch (e) { data = {}; }
+  const dataPath = cfg.reports_dir ? cfg.reports_dir + "/analytics-data.json" : "";
+  let data: unknown = {};
+  try { data = JSON.parse(fs.readFileSync(dataPath, "utf8")); } catch { data = {}; }
   const [catalog, src] = await fetchCatalog(cfg);
-  let ollama: any = {};
+  let ollama: unknown = {};
   const op = cfg.reports_dir + "/ollama-data.json";
-  try { ollama = JSON.parse(require("fs").readFileSync(op, "utf8")); } catch {}
+  try { ollama = JSON.parse(fs.readFileSync(op, "utf8")); } catch {}
   const models = assemble(data, catalog, installedLocalModels(ollama));
   const [kwh, gpuW, hostW] = tariff(cfg);
-  const d: any = {
+  const d: CostsData = {
     models,
     catalog_size: P.catalogSize(catalog),
     catalog_source: src || "cache",
@@ -194,7 +314,7 @@ export async function build(): Promise<any> {
     prefill: PREFILL_SPEEDUP,
     cachex: CACHE_SPEEDUP,
   };
-  if (data?.sample) d.sample = true;
+  if ((data as TrafficData).sample) d.sample = true;
   return stamp(d);
 }
 
@@ -202,14 +322,12 @@ export function costsDataPath(env: NodeJS.ProcessEnv = process.env, cfg?: Config
   const p = env.LLM_TELEMETRY_COSTS_DATA;
   if (p) return p;
   const c = cfg ?? getConfig();
-  return (c as any).reports_dir + "/costs-data.json";
+  return c.reports_dir + "/costs-data.json";
 }
 
-export function writeCostsData(d: any, env: NodeJS.ProcessEnv = process.env, cfg?: Config): string {
+export function writeCostsData(d: unknown, env: NodeJS.ProcessEnv = process.env, cfg?: Config): string {
   const path = costsDataPath(env, cfg);
-  const fs = require("fs");
-  const pathMod = require("path");
-  fs.mkdirSync(pathMod.dirname(path), { recursive: true });
+  fs.mkdirSync(nodePath.dirname(path), { recursive: true });
   fs.writeFileSync(path, JSON.stringify(d, (k, v) => (v instanceof Set ? [...v] : v)));
   return path;
 }
