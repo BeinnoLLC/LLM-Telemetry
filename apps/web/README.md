@@ -49,6 +49,33 @@ address immediately to its left is used as the peer; `x-real-ip` is consulted
 only in this mode. Set `LLM_TELEMETRY_PEER_IP` to the proxy's address when the
 route cannot otherwise derive a reliable direct peer.
 
+## Report-data endpoints (T-19 / LST-290)
+
+`GET /api/sessions/[profile]/[id]` serves the raw bytes of
+`<reports>/sessions/<profile>/<id>.json` (the `.json` suffix on `id` is
+optional). `GET` and `HEAD /api/data/[name]` serve the allowlisted artifacts
+`live-data.json`, `analytics-data.json`, `logs-data.json`, `quota-data.json`,
+`router-data.json`, `transcripts.json`, `rankings-data.json`,
+`kanban-data.json`, `costs-data.json` and `ollama-data.json`. The reports
+directory comes from the shared `lib/live-feed/artifacts.ts` resolver
+(`LLM_TELEMETRY_REPORTS_DIR` or config), not a second implementation.
+
+Every response carries the Python server's no-cache headers
+(`Cache-Control: no-store, no-cache, must-revalidate, max-age=0`,
+`Pragma: no-cache`, `Expires: 0`); served files also carry
+`Content-Type: application/json`, `Content-Length` and a `Last-Modified` in
+the same format as `SimpleHTTPRequestHandler`. Paths are confined to the
+reports directory: empty, dotted, slash/backslash-bearing, NUL-bearing,
+absolute and outward-symlinked segments are refused.
+
+**Intentional 404 difference:** `SimpleHTTPRequestHandler` returns an HTML
+error page with `Content-Type: text/html;charset=utf-8` for a missing or
+rejected file. These routes return HTTP 404 with
+`Content-Type: application/json` and the body `{"error": "not found"}` so
+Next clients get a predictable JSON error. The no-cache headers and status
+match Python; the parity harness asserts this documented body/Content-Type
+divergence explicitly.
+
 This package is an npm workspace member of the repo root
 (`npm ci` at the repo root installs it). New npm dependencies may only be
 added inside `apps/web`, pinned exactly, with the root `package-lock.json`
