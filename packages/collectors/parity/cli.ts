@@ -40,6 +40,13 @@ export interface RunCaseOptions {
   outBase?: string;
   /** Inject a deliberate mismatch into the node side before diffing. */
   seed?: boolean;
+  /** Await an async nodeCollector (costs). Sync by default: existing callers
+   * keep their synchronous API. Set by the CLI dispatch at the bottom. */
+  async?: boolean;
+}
+
+function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
+  return typeof (value as Promise<T>).then === "function";
 }
 
 export interface RunCaseResult {
@@ -55,8 +62,18 @@ export interface RunCaseResult {
 export function runCase(
   c: ParityCase,
   root: string,
+  opts?: RunCaseOptions & { async?: false },
+): RunCaseResult;
+export function runCase(
+  c: ParityCase,
+  root: string,
+  opts: RunCaseOptions & { async: true },
+): Promise<RunCaseResult>;
+export function runCase(
+  c: ParityCase,
+  root: string,
   opts: RunCaseOptions = {},
-): RunCaseResult {
+): RunCaseResult | Promise<RunCaseResult> {
   const outBase = opts.outBase ?? join(root, "out");
   const fixturePath = join(root, "fixtures", c.fixture);
   const pyDir = join(outBase, "py", c.name);
@@ -93,41 +110,51 @@ export function runCase(
     return fail(String(err));
   }
   const collector = c.nodeCollector;
-  try {
-    nodeProduce(fixturePath, nodeDir, c.artifact, c.tag, collector ? () => collector(inputsDir, nowS) : undefined);
-  } catch (err) {
-    return fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
-  }
+  const finish = (): RunCaseResult => {
+    const nopts = c.keepKeys || c.extraDropKeys
+      ? { dropKeys: [...RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)), ...(c.extraDropKeys ?? [])] }
+      : {};
+    const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown, nopts);
+    const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown, nopts);
+    const leaves = countLeaves(pyNorm);
 
-  const nopts = c.keepKeys || c.extraDropKeys
-    ? { dropKeys: [...RUN_STAMP_KEYS.filter((k) => !c.keepKeys?.includes(k)), ...(c.extraDropKeys ?? [])] }
-    : {};
-  const pyNorm = normalize(JSON.parse(readFileSync(join(pyDir, c.artifact), "utf8")) as unknown, nopts);
-  const nodeNorm = normalize(JSON.parse(readFileSync(join(nodeDir, c.artifact), "utf8")) as unknown, nopts);
-  const leaves = countLeaves(pyNorm);
-
-  if (!opts.seed) {
-    const diffs = structuralDiff(pyNorm, nodeNorm);
+    if (!opts.seed) {
+      const diffs = structuralDiff(pyNorm, nodeNorm);
+      return {
+        name: c.name,
+        status: diffs.length === 0 ? "ok" : "fail",
+        diffs,
+        leaves,
+      };
+    }
+    const { seed, diffs } = seedAndDiff(pyNorm, nodeNorm);
     return {
       name: c.name,
       status: diffs.length === 0 ? "ok" : "fail",
       diffs,
       leaves,
+      seededPath: seed.path,
     };
-  }
-  const { seed, diffs } = seedAndDiff(pyNorm, nodeNorm);
-  return {
-    name: c.name,
-    status: diffs.length === 0 ? "ok" : "fail",
-    diffs,
-    leaves,
-    seededPath: seed.path,
   };
+  const nodeError = (err: unknown): RunCaseResult =>
+    fail(`node producer (T-4 platform writeArtifact) failed: ${String(err)}`);
+  try {
+    const produced = nodeProduce(
+      fixturePath, nodeDir, c.artifact, c.tag,
+      collector ? () => collector(inputsDir, nowS) : undefined,
+    );
+    if (isPromise(produced)) return produced.then(finish, nodeError);
+    return finish();
+  } catch (err) {
+    return nodeError(err);
+  }
 }
 
 export interface RunParityOptions {
   out?: (line: string) => void;
   outBase?: string;
+  /** Await async node collectors (costs). Default false for existing callers. */
+  async?: boolean;
 }
 
 const USAGE = `usage: npm run parity -- [options] [case…]
@@ -147,8 +174,68 @@ options:
   -h, --help        this text
 `;
 
+function selfTestReport(
+  c: ParityCase,
+  res: RunCaseResult,
+  out: (line: string) => void,
+): boolean {
+  if (res.status !== "fail" || res.diffs.length !== 1) {
+    out(
+      `self-test FAIL ${c.name}: seeded mismatch at ${res.seededPath ?? "?"} ` +
+        `was NOT detected as exactly one field diff ` +
+        `(${res.diffs.length} diffs, status ${res.status}${res.error ? `: ${res.error}` : ""})`,
+    );
+    return false;
+  }
+  const d = res.diffs[0] as DiffEntry;
+  const exact = d.kind === "value" && d.path === res.seededPath;
+  out(
+    `self-test ${exact ? "OK" : "FAIL"} ${c.name}: seeded mismatch detected ` +
+      `at ${res.seededPath} (${d.path}, kind ${d.kind})`,
+  );
+  return exact;
+}
+
+function reportCase(
+  c: ParityCase,
+  res: RunCaseResult,
+  seed: boolean,
+  out: (line: string) => void,
+  failed: number,
+): number {
+  if (res.status === "error") {
+    out(`parity ${c.name}: ERROR — ${res.error ?? "unknown"}`);
+    return failed + 1;
+  }
+  const label = seed ? " (seeded mismatch injected)" : "";
+  if (res.status === "ok") {
+    out(
+      `parity ${c.name}: PARITY OK${label} — 0 differences ` +
+        `(${res.leaves} fields compared: py vs node on ${c.fixture})`,
+    );
+    return failed;
+  }
+  out(
+    `parity ${c.name}: PARITY FAIL${label} — ${res.diffs.length} difference(s) ` +
+      `(${res.leaves} fields compared: expected=py actual=node)`,
+  );
+  for (const line of formatDiffs(res.diffs)) out(`  ${line}`);
+  return failed + 1;
+}
+
 /** Dispatch. Returns the process exit code (0 ok, 1 diffs/error, 2 usage). */
-export function runParity(argv: string[], opts: RunParityOptions = {}): number {
+export function runParity(
+  argv: string[],
+  opts?: RunParityOptions & { async?: false },
+): number;
+export function runParity(
+  argv: string[],
+  opts: RunParityOptions & { async: true },
+): Promise<number>;
+export function runParity(
+  argv: string[],
+  opts: RunParityOptions = {},
+): number | Promise<number> {
   const out = opts.out ?? ((line: string) => console.log(line));
   const selfTest = argv.includes("--self-test");
   const seed = argv.includes("--seed-mismatch");
@@ -169,52 +256,42 @@ export function runParity(argv: string[], opts: RunParityOptions = {}): number {
   const cases = selected.length ? selected : [...CASES];
   const root = parityRoot();
 
+  // Preserve the original serial case order: async collectors only change how
+  // the node side is produced, not when each case runs (env pins are global).
+  const runAsync = async (seedValue: boolean): Promise<RunCaseResult[]> => {
+    const results: RunCaseResult[] = [];
+    for (const c of cases) {
+      results.push(await runCase(c, root, { outBase: opts.outBase, seed: seedValue, async: true }));
+    }
+    return results;
+  };
+  const checkSelf = (results: RunCaseResult[]): number => {
+    let ok = true;
+    results.forEach((res, i) => {
+      ok = selfTestReport(cases[i] as ParityCase, res, out) && ok;
+    });
+    return ok ? 0 : 1;
+  };
+  const finish = (results: RunCaseResult[]): number => {
+    let failed = 0;
+    results.forEach((res, i) => {
+      failed = reportCase(cases[i] as ParityCase, res, seed, out, failed);
+    });
+    return failed === 0 ? 0 : 1;
+  };
+
   if (selfTest) {
+    if (opts.async === true) return runAsync(true).then(checkSelf);
     let ok = true;
     for (const c of cases) {
-      const res = runCase(c, root, { outBase: opts.outBase, seed: true });
-      if (res.status !== "fail" || res.diffs.length !== 1) {
-        out(
-          `self-test FAIL ${c.name}: seeded mismatch at ${res.seededPath ?? "?"} ` +
-            `was NOT detected as exactly one field diff ` +
-            `(${res.diffs.length} diffs, status ${res.status}${res.error ? `: ${res.error}` : ""})`,
-        );
-        ok = false;
-        continue;
-      }
-      const d = res.diffs[0] as DiffEntry;
-      const exact = d.kind === "value" && d.path === res.seededPath;
-      out(
-        `self-test ${exact ? "OK" : "FAIL"} ${c.name}: seeded mismatch detected ` +
-          `at ${res.seededPath} (${d.path}, kind ${d.kind})`,
-      );
-      ok = ok && exact;
+      ok = selfTestReport(c, runCase(c, root, { outBase: opts.outBase, seed: true }), out) && ok;
     }
     return ok ? 0 : 1;
   }
-
+  if (opts.async === true) return runAsync(seed).then(finish);
   let failed = 0;
   for (const c of cases) {
-    const res = runCase(c, root, { outBase: opts.outBase, seed });
-    if (res.status === "error") {
-      out(`parity ${c.name}: ERROR — ${res.error ?? "unknown"}`);
-      failed += 1;
-      continue;
-    }
-    const label = seed ? " (seeded mismatch injected)" : "";
-    if (res.status === "ok") {
-      out(
-        `parity ${c.name}: PARITY OK${label} — 0 differences ` +
-          `(${res.leaves} fields compared: py vs node on ${c.fixture})`,
-      );
-      continue;
-    }
-    failed += 1;
-    out(
-      `parity ${c.name}: PARITY FAIL${label} — ${res.diffs.length} difference(s) ` +
-        `(${res.leaves} fields compared: expected=py actual=node)`,
-    );
-    for (const line of formatDiffs(res.diffs)) out(`  ${line}`);
+    failed = reportCase(c, runCase(c, root, { outBase: opts.outBase, seed }), seed, out, failed);
   }
   return failed === 0 ? 0 : 1;
 }
@@ -222,5 +299,11 @@ export function runParity(argv: string[], opts: RunParityOptions = {}): number {
 const self = fileURLToPath(import.meta.url);
 const invoked = process.argv[1] ? resolve(process.argv[1]) : null;
 if (invoked && invoked === self) {
-  process.exit(runParity(process.argv.slice(2)));
+  Promise.resolve(runParity(process.argv.slice(2), { async: true })).then(
+    (code) => process.exit(code),
+    (err: unknown) => {
+      console.error(err);
+      process.exit(1);
+    },
+  );
 }

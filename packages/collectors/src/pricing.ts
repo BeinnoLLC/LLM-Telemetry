@@ -433,6 +433,12 @@ export function ageLabel(seconds: number | null): string {
 }
 
 export function catalogFreshness(source: string, _now?: number): Record<string, unknown> {
+  // Python pricing.catalog_freshness() short-circuits a pinned catalogue to
+  // state="pinned" with no age/detail. The costs parity case pins the
+  // catalogue, so the generic "cache" label was a real Node/Python diff.
+  if ((source || "").trim().split(" ", 1)[0] === "pinned") {
+    return { state: "pinned", age_s: null, age: "", ttl: ttlLabel(), detail: "" };
+  }
   return { state: source === "live" ? "live" : "cache", age_s: null, age: "", ttl: ttlLabel(), detail: source };
 }
 
