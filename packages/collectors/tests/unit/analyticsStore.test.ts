@@ -21,9 +21,9 @@ import {
   type RawEvent,
 } from "../../src/analyticsStore.js";
 import { parsePy, pyDumps, PyFloat } from "../../src/pyJson.js";
+import { resolvePython } from "../../parity/pythonProducer.js";
 import { makeTmpDir } from "./helpers.js";
 
-const PYTHON = "/home/hazemhagrass/workspace/beinno/LLM-Telemtry/.venv/bin/python";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PY_SRC = join(REPO_ROOT, "src");
 
@@ -35,12 +35,13 @@ const PY_IMPORTS = [
 
 /** Run a Python snippet with `db` = argv[1] and print its `result` as JSON. */
 function py(body: string, args: string[] = [], extraEnv: Record<string, string> = {}): unknown {
-  if (!fs.existsSync(PYTHON)) throw new Error(`missing python oracle: ${PYTHON}`);
+  const py = resolvePython(process.cwd());
+  if (py === null) throw new Error("no python with llm_telemetry (set LLM_TELEMETRY_PARITY_PYTHON)");
   const code = `${PY_IMPORTS}\ndb = sys.argv[1]\n${body}\nsys.stdout.write(json.dumps(result))\n`;
   // Some snippets (enum values) never touch `db`, but the script always has
   // an argv[1] so the same code shape works everywhere.
   const argv = args.length === 0 ? [join(PY_SRC, "unused.db")] : args;
-  const res = spawnSync(PYTHON, ["-c", code, ...argv], {
+  const res = spawnSync(py, ["-c", code, ...argv], {
     encoding: "utf8",
     timeout: 60_000,
     env: { ...process.env, PYTHONPATH: PY_SRC, ...extraEnv },
