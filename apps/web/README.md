@@ -26,6 +26,7 @@ until the plan §12 cutover with Hazem's explicit OK.
 | `npm run lint` | ESLint (flat config, `next/core-web-vitals` + `next/typescript`) |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
 | `npm run test` | vitest (jsdom) unit tests |
+| `npm run test:parity` | T-19 serve.py response/status diff harness (Python oracle) |
 | `npm run test:e2e` | Playwright smoke (system Chrome channel) |
 
 This package is an npm workspace member of the repo root
