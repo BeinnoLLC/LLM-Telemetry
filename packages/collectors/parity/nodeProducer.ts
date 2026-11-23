@@ -23,31 +23,54 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export type CollectorFn = () => Record<string, unknown> | Promise<Record<string, unknown>>;
+
+function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
+  return typeof (value as Promise<T>).then === "function";
+}
+
 /** Load `fixturePath`, stamp + schema-check + write it into `outDir` through
- * the T-4 platform. */
+ * the T-4 platform. Collectors that must await I/O (buildCosts) go through the
+ * Promise overload; existing sync cases keep the same sync signature. */
 export function produce(
   fixturePath: string,
   outDir: string,
   artifact: string,
   tag: SchemaTag | null,
   collector?: () => Record<string, unknown>,
-): ProduceResult {
-  let parsed: unknown;
-  if (collector) {
-    parsed = collector();
-  } else {
-    parsed = JSON.parse(readFileSync(fixturePath, "utf8"));
-  }
-  if (!isRecord(parsed)) {
-    throw new Error(`fixture root must be a JSON object: ${fixturePath}`);
-  }
-  // A bare Config has no filesystem side effects (T-4 port deliberately does
-  // not mkdir) and keeps the single-writer guard pointed at the real Python
-  // reports dirs while we write into parity/out/node/… .
-  const cfg = new Config();
-  return writeArtifact(artifact, parsed, {
-    outDir,
-    tag: tag ?? undefined,
-    cfg,
-  });
+): ProduceResult;
+export function produce(
+  fixturePath: string,
+  outDir: string,
+  artifact: string,
+  tag: SchemaTag | null,
+  collector: () => Promise<Record<string, unknown>>,
+): Promise<ProduceResult>;
+export function produce(
+  fixturePath: string,
+  outDir: string,
+  artifact: string,
+  tag: SchemaTag | null,
+  collector: CollectorFn | undefined,
+): ProduceResult | Promise<ProduceResult>;
+export function produce(
+  fixturePath: string,
+  outDir: string,
+  artifact: string,
+  tag: SchemaTag | null,
+  collector?: CollectorFn,
+): ProduceResult | Promise<ProduceResult> {
+  const write = (parsed: unknown): ProduceResult => {
+    if (!isRecord(parsed)) {
+      throw new Error(`fixture root must be a JSON object: ${fixturePath}`);
+    }
+    // A bare Config has no filesystem side effects (T-4 port deliberately does
+    // not mkdir) and keeps the single-writer guard pointed at the real Python
+    // reports dirs while we write into parity/out/node/… .
+    const cfg = new Config();
+    return writeArtifact(artifact, parsed, { outDir, tag: tag ?? undefined, cfg });
+  };
+  if (!collector) return write(JSON.parse(readFileSync(fixturePath, "utf8")));
+  const parsed = collector();
+  return isPromise(parsed) ? parsed.then(write) : write(parsed);
 }

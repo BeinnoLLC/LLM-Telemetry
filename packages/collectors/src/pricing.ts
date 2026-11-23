@@ -415,3 +415,79 @@ export function pyRound(x: number, digits: number): number {
 export function catalogSize(catalog: Catalog): number {
   return Object.keys(catalog).filter((k) => !k.startsWith(NOUS_PREFIX)).length;
 }
+
+export function ttlLabel(seconds?: number): string {
+  const TTL = 6 * 3600;
+  const s = seconds === undefined ? TTL : seconds;
+  if (s % 86400 === 0) return `${s / 86400}d`;
+  if (s % 3600 === 0) return `${s / 3600}h`;
+  return `${Math.floor(s / 60)}m`;
+}
+
+export function ageLabel(seconds: number | null): string {
+  if (seconds === null || seconds === undefined) return "";
+  const s = Math.max(0, Math.floor(seconds));
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
+export function catalogFreshness(source: string, _now?: number): Record<string, unknown> {
+  // Python pricing.catalog_freshness() short-circuits a pinned catalogue to
+  // state="pinned" with no age/detail. The costs parity case pins the
+  // catalogue, so the generic "cache" label was a real Node/Python diff.
+  if ((source || "").trim().split(" ", 1)[0] === "pinned") {
+    return { state: "pinned", age_s: null, age: "", ttl: ttlLabel(), detail: "" };
+  }
+  return { state: source === "live" ? "live" : "cache", age_s: null, age: "", ttl: ttlLabel(), detail: source };
+}
+
+export function isDeadEndpoint(baseUrl: unknown): boolean {
+  const u = String(baseUrl ?? "").toLowerCase();
+  return /^(?:\w+:\/\/)?(?:127\.0\.0\.1|localhost|\[::1\]):9(?:[/?#]|$)/.test(u);
+}
+
+export function servingProviderHint(model: string | null, catalog: Record<string, unknown> | null): string | null {
+  const m = String(model ?? "").trim();
+  if (!m) return null;
+  const lm = m.toLowerCase();
+  if (lm.startsWith("nous:") || (catalog && catalog["nous:" + m])) return "nous";
+  if (lm.startsWith("accounts/fireworks/")) return "fireworks";
+  if (m.includes("/")) return (String(m).split("/", 1)[0] as string).toLowerCase();
+  const oid = ALIASES[m];
+  const resolved = oid || (catalog && (catalog[m] ? m : null)) || resolveCatalogId(m, catalog as Catalog);
+  if (resolved && String(resolved).toLowerCase().startsWith("accounts/fireworks/")) return "fireworks";
+  if (resolved && !String(resolved).startsWith(NOUS_PREFIX)) {
+    return (String(resolved ?? "").split("/", 1)[0] as string).toLowerCase();
+  }
+  const WEB = WEB_RATES || {};
+  const RO = RATE_OVERRIDES || {};
+  if (WEB[lm] || RO[lm]) {
+    if (lm.endsWith(":cloud") || lm.endsWith("-cloud")) return "ollama-cloud";
+    if (lm.startsWith("gpt-")) return "openai";
+    if (lm.startsWith("kimi-")) return "moonshotai";
+    if (lm.startsWith("minimax-")) return "minimax";
+    if (lm.startsWith("deepseek-")) return "deepseek";
+    if (lm.startsWith("glm-")) return "z-ai";
+    if (lm.startsWith("qwen")) return "qwen";
+    if (lm.startsWith("nemotron-")) return "nvidia";
+    if (lm.startsWith("accounts/fireworks/")) return "fireworks";
+    return "ollama-cloud";
+  }
+  if (isLocal(m)) return "local";
+  return null;
+}
+
+export function nousRatesFor(model: string | null, catalog: Record<string, unknown> | null): [number, number, number] | null {
+  const p = catalog?.[NOUS_PREFIX + (model ?? "")];
+  if (!p) return null;
+  try {
+    return [
+      Number((p as Record<string, unknown>).prompt ?? 0),
+      Number((p as Record<string, unknown>).completion ?? 0),
+      Number((p as Record<string, unknown>).input_cache_read ?? 0),
+    ];
+  } catch {
+    return null;
+  }
+}

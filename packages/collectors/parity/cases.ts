@@ -21,6 +21,7 @@ import { parsePy } from "../src/pyJson.js";
 import { collectSessionTimelines } from "../src/collectSessionTimeline.js";
 import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
+import { build as buildCosts } from "../src/collectCosts.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
 import { join } from "node:path";
 import type { SchemaTag } from "../src/schemaCheck.js";
@@ -38,7 +39,10 @@ export interface ParityCase {
   /** When set, the node side runs this real collector instead of copying the
    * fixture, so a stub/incomplete port FAILS parity instead of passing. For a
    * `dbInputs` case it receives the generated inputs dir. */
-  nodeCollector?: (inputsDir: string, nowS: number) => Record<string, unknown>;
+  nodeCollector?: (
+    inputsDir: string,
+    nowS: number,
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   /** When set, BOTH producers read generated DB inputs (the analytics fixture
    * generator under py/) instead of the JSON fixture: the Python side runs its
    * real collector (py/produce_analytics.py), the Node side `nodeCollector`. */
@@ -170,6 +174,41 @@ export const CASES: readonly ParityCase[] = [
     inputs: { generator: "make_timeline_fixture.py", producer: "produce_timeline.py" },
     nodeCollector: (inputsDir, nowS) =>
       collectSessionTimelines({ cfg: inputsConfig(inputsDir), now: new Date(nowS * 1000) }),
+  },
+  {
+    // T-17 (LLMTELEMET-288). Both producers read the same fixed reports dir,
+    // pinned catalogue and config. build() is async on the Node side because
+    // fetchCatalog() is async; the harness awaits it (see cli.ts / nodeProducer.ts).
+    name: "costs",
+    fixture: "costs-data.json",
+    artifact: "costs-data.json",
+    tag: null,
+    inputs: { generator: "make_costs_fixture.py", producer: "produce_costs.py" },
+    nodeCollector: async (inputsDir) => {
+      const keys = [
+        "LLM_TELEMETRY_CONFIG",
+        "LLM_TELEMETRY_CATALOG",
+        "LLM_TELEMETRY_AGENT_HOME",
+        "LLM_TELEMETRY_NO_COLLECT",
+      ] as const;
+      const saved = keys.map((k) => process.env[k]);
+      process.env["LLM_TELEMETRY_CONFIG"] = join(inputsDir, "config.json");
+      process.env["LLM_TELEMETRY_CATALOG"] = join(inputsDir, "catalog.json");
+      process.env["LLM_TELEMETRY_AGENT_HOME"] = join(inputsDir, "agent");
+      process.env["LLM_TELEMETRY_NO_COLLECT"] = "1";
+      // Read the same generated config the Python producer uses, and fail here
+      // if the fixture is malformed rather than deep inside the collector.
+      inputsConfig(inputsDir);
+      try {
+        return await buildCosts();
+      } finally {
+        keys.forEach((k, i) => {
+          const value = saved[i];
+          if (value === undefined) delete process.env[k];
+          else process.env[k] = value;
+        });
+      }
+    },
   },
 ];
 
