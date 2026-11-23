@@ -15,14 +15,121 @@ export class PyFloat {
 
 type Src = { source?: string };
 
-/** `json.loads` with integral floats preserved as `PyFloat`. */
+/** Internal marker for the non-standard constants Python's json accepts. */
+const PY_CONST = "\u0000py-json-constant:";
+
+/** Mask `NaN`/`Infinity`/`-Infinity` outside JSON strings so JSON.parse can
+ * read what `json.dumps(..., allow_nan=True)` writes. */
+function maskPyConstants(text: string): string {
+  const tokens = ["-Infinity", "Infinity", "NaN"];
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i] as string;
+    if (ch === `"`) {
+      out += ch;
+      i += 1;
+      while (i < text.length) {
+        const c = text[i] as string;
+        out += c;
+        i += 1;
+        if (c === "\\") {
+          if (i < text.length) {
+            out += text[i] as string;
+            i += 1;
+          }
+        } else if (c === `"`) {
+          break;
+        }
+      }
+      continue;
+    }
+    const token = tokens.find((t) => text.startsWith(t, i));
+    if (token !== undefined) {
+      out += JSON.stringify(PY_CONST + token);
+      i += token.length;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
+/** Turn the masked constants back into JS numbers. */
+function unmaskPyConstants(v: unknown): unknown {
+  if (typeof v === "string" && v.startsWith(PY_CONST)) {
+    const token = v.slice(PY_CONST.length);
+    if (token === "NaN") return NaN;
+    if (token === "Infinity") return Infinity;
+    if (token === "-Infinity") return -Infinity;
+  }
+  if (v instanceof PyFloat) return v;
+  if (Array.isArray(v)) return v.map(unmaskPyConstants);
+  if (v !== null && typeof v === "object") {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, unmaskPyConstants(x)]),
+    );
+  }
+  return v;
+}
+
+/** `json.loads` with integral floats preserved as `PyFloat`. Accepts the
+ * `NaN`/`Infinity` tokens Python's `json.dumps` writes by default. */
 export function parsePy(text: string): unknown {
-  return JSON.parse(text, function (_k: string, v: unknown, ctx?: Src) {
+  const parsed = JSON.parse(maskPyConstants(text), function (_k: string, v: unknown, ctx?: Src) {
     if (typeof v === "number" && Number.isInteger(v) && ctx?.source !== undefined && /[.eE]/.test(ctx.source)) {
       return new PyFloat(v);
     }
     return v;
   } as (this: unknown, key: string, value: unknown) => unknown);
+  return unmaskPyConstants(parsed);
+}
+
+/** JSON string literal with Python's `ensure_ascii=True` escaping. */
+function jsonQuote(s: string): string {
+  let out = `"`;
+  for (const ch of s) {
+    const cp = ch.codePointAt(0) as number;
+    if (ch === `"` || ch === "\\") out += "\\" + ch;
+    else if (ch === "\b") out += "\\b";
+    else if (ch === "\f") out += "\\f";
+    else if (ch === "\n") out += "\\n";
+    else if (ch === "\r") out += "\\r";
+    else if (ch === "\t") out += "\\t";
+    else if (cp < 0x20 || cp >= 0x7f) {
+      if (cp <= 0xffff) {
+        out += "\\u" + cp.toString(16).padStart(4, "0");
+      } else {
+        const u = cp - 0x10000;
+        out += "\\u" + (0xd800 + (u >> 10)).toString(16).padStart(4, "0");
+        out += "\\u" + (0xdc00 + (u & 0x3ff)).toString(16).padStart(4, "0");
+      }
+    } else out += ch;
+  }
+  return out + `"`;
+}
+
+/** `json.dumps(v)` with its default separators (`", "`, `": "`), insertion
+ * order and `ensure_ascii=True`. Use `PyFloat` for values Python would hold as
+ * floats: a plain JS `1` is an int and dumps as `1`, a `PyFloat(1)` as `1.0`. */
+export function pyDumps(v: unknown): string {
+  const special = (x: number): string | null =>
+    Number.isNaN(x) ? "NaN" : x === Infinity ? "Infinity" : x === -Infinity ? "-Infinity" : null;
+  const walk = (x: unknown): string => {
+    if (x === null || x === undefined) return "null";
+    if (typeof x === "string") return jsonQuote(x);
+    if (typeof x === "boolean") return x ? "true" : "false";
+    if (x instanceof PyFloat) return special(x.value) ?? floatRepr(x.value);
+    if (typeof x === "number") {
+      return special(x) ?? (Number.isInteger(x) ? String(x) : floatRepr(x));
+    }
+    if (typeof x === "bigint") return x.toString();
+    if (Array.isArray(x)) return "[" + x.map(walk).join(", ") + "]";
+    const o = x as Record<string, unknown>;
+    return "{" + Object.keys(o).map((k) => jsonQuote(k) + ": " + walk(o[k])).join(", ") + "}";
+  };
+  return walk(v);
 }
 
 /** The JS number inside a number / PyFloat, else null. */
