@@ -28,6 +28,7 @@ Build first (`npm run build -w @llm-telemetry/collectors`); the CLI runs from
 | transcripts | `transcripts.json` | none |
 | rankings | `rankings-data.json` | none |
 | timeline | `session-timelines.json` (merged `build_all()` view; placeholder fixture) | none |
+| ingest | `ingest-data.json` (SQLite table dump; real ingest CLI on a synthetic HOME) | none |
 
 T-16 (LLMTELEMET-287) cases `router`, `quota`, `logs`, `transcripts`, `rankings`,
 `timeline` and `ollama` run the REAL Python collector (`py/produce_<name>.py`)

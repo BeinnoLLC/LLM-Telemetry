@@ -23,6 +23,7 @@ import { collectQuota } from "../src/collectQuota.js";
 import { collectRouter } from "../src/collectRouter.js";
 import { build as buildCosts } from "../src/collectCosts.js";
 import { Config, loadWithAgentHome } from "../src/config.js";
+import { runNodeIngest } from "./ingestDb.js";
 import { join } from "node:path";
 import type { SchemaTag } from "../src/schemaCheck.js";
 
@@ -209,6 +210,18 @@ export const CASES: readonly ParityCase[] = [
         });
       }
     },
+  },
+  {
+    // T-18 (LLMTELEMET-289). Both producers run the real ingest CLI on the
+    // same synthetic HOME and diff every SQLite table row (minus the
+    // wall-clock created_at column) plus the sqlite_master SQL text.
+    name: "ingest",
+    fixture: "ingest-data.json",
+    artifact: "ingest-data.json",
+    tag: null,
+    keepKeys: ["timestamp"],
+    inputs: { generator: "make_ingest_fixture.py", producer: "produce_ingest.py" },
+    nodeCollector: (inputsDir) => runNodeIngest(inputsDir),
   },
 ];
 

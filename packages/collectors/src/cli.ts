@@ -32,6 +32,8 @@ import { collectTranscripts } from "./collectTranscripts.js";
 import { appendHistory, collectQuota, historySample, HISTORY_NAME } from "./collectQuota.js";
 import { fetchCatalog } from "./pricingFetch.js";
 import { build as buildCosts, writeCostsData } from "./collectCosts.js";
+import { main as ingestPiMain } from "./ingestPi.js";
+import { main as ingestAllMain } from "./ingestAll.js";
 
 export interface CliIo {
   out: (line: string) => void;
@@ -338,8 +340,16 @@ export const COMMANDS: Record<string, Command> = {
   },
   serve: stub("serve — serve reports/ (replaced by the Next.js app)", "T-19"),
   doctor: stub("doctor — read-only preflight", "T-27"),
-  ingest: stub("ingest — ingest PI and Hermes telemetry into the analytics store", "T-18"),
-  "ingest-pi": stub("ingest-pi — ingest PI agent sessions into the analytics store", "T-18"),
+  ingest: {
+    summary: "ingest — ingest PI and Hermes telemetry into the analytics store [--db PATH] [-v] [-s]",
+    status: "ported",
+    run: (_name, io, args) => ingestAllMain(args, io),
+  },
+  "ingest-pi": {
+    summary: "ingest-pi — ingest PI agent sessions into the analytics store [--db PATH] [-v] [-s]",
+    status: "ported",
+    run: (_name, io, args) => ingestPiMain(args, io),
+  },
 };
 
 const USAGE = `usage: node cli.js <command>
