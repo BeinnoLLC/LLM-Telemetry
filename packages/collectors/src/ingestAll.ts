@@ -10,7 +10,6 @@ import * as os from "node:os";
 import { join } from "node:path";
 import {
   AnalyticsStore,
-  DEFAULT_DB_PATH,
   EventSource,
   getStore,
 } from "./analyticsStore.js";
@@ -29,6 +28,10 @@ const stdIo: IngestAllIo = {
   err: (line) => console.error(line),
 };
 
+/** Node's shadow DB stays separate from the Python collector's analytics.db.
+ * The shared DEFAULT_DB_PATH constant is intentionally left untouched. */
+const NODE_DEFAULT_DB_PATH = "~/.local/share/llm-telemetry/analytics-node.db";
+
 const PROG = "llm-telemetry ingest";
 const USAGE = `usage: ${PROG} [-h] [--db DB] [--pi-only] [--hermes-only]\n` +
   `                            [--verbose] [--stats]`;
@@ -40,7 +43,7 @@ Ingest PI and Hermes telemetry into the analytics store.
 options:
   -h, --help     show this help message and exit
   --db DB        Path to analytics SQLite database (default:
-                 ~/.local/share/llm-telemetry/analytics.db)
+                 ~/.local/share/llm-telemetry/analytics-node.db)
   --pi-only      Only ingest PI agents
   --hermes-only  Only ingest Hermes profiles
   --verbose, -v  Enable verbose logging
@@ -418,7 +421,7 @@ function argError(io: IngestAllIo, message: string): null {
 /** The subset of argparse used by ingest_all.main. */
 function parseArgs(argv: string[], io: IngestAllIo): ParsedArgs | null {
   const parsed: ParsedArgs = {
-    db: DEFAULT_DB_PATH, piOnly: false, hermesOnly: false,
+    db: NODE_DEFAULT_DB_PATH, piOnly: false, hermesOnly: false,
     verbose: false, stats: false, help: false,
   };
   const unknown: string[] = [];

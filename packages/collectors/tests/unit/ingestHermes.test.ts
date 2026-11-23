@@ -331,7 +331,10 @@ describe("combined ingest command port (Python is the spec)", () => {
     const mod = await import("../../src/ingestAll.js");
     const { io, out } = capture();
     expect(mod.main(["--help"], io)).toBe(0);
-    expect(out.join("\n").trimEnd()).toBe(help.stdout.trimEnd());
+    const nodeHelp = out.join("\n").trimEnd();
+    expect(nodeHelp).toContain("analytics-node.db");
+    expect(nodeHelp.replaceAll("analytics-node.db", "analytics.db"))
+      .toBe(help.stdout.trimEnd());
 
     for (const bad of [
       ["--bogus"], ["--pi-only=x"], ["--h"], ["--db"], ["--db", "-x"], ["--", "extra"],

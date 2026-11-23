@@ -17,7 +17,6 @@ import * as os from "node:os";
 import { join } from "node:path";
 import {
   AnalyticsStore,
-  DEFAULT_DB_PATH,
   EventSource,
   EventType,
   getStore,
@@ -38,6 +37,10 @@ const stdIo: IngestPiIo = {
 };
 
 const PROG = "llm-telemetry ingest-pi";
+/** Node's shadow DB stays separate from the Python collector's analytics.db.
+ * The shared DEFAULT_DB_PATH constant is intentionally left untouched. */
+const NODE_DEFAULT_DB_PATH = "~/.local/share/llm-telemetry/analytics-node.db";
+
 const USAGE = `usage: ${PROG} [-h] [--db DB] [--verbose] [--stats]`;
 // Exact argparse help at the default 80-column width.
 const HELP = `${USAGE}
@@ -47,7 +50,7 @@ Ingest PI agent sessions into the analytics store.
 options:
   -h, --help     show this help message and exit
   --db DB        Path to analytics SQLite database (default:
-                 ~/.local/share/llm-telemetry/analytics.db)
+                 ~/.local/share/llm-telemetry/analytics-node.db)
   --verbose, -v  Enable verbose logging
   --stats, -s    Print statistics after ingestion`;
 
@@ -376,7 +379,7 @@ function argError(io: IngestPiIo, message: string): null {
 /** The subset of argparse used by ingest_pi.py: --db, --verbose/-v,
  * --stats/-s, -h/--help (including prefixes, `=`, and short clusters). */
 function parseArgs(argv: string[], io: IngestPiIo): ParsedArgs | null {
-  const parsed: ParsedArgs = { db: DEFAULT_DB_PATH, verbose: false, stats: false, help: false };
+  const parsed: ParsedArgs = { db: NODE_DEFAULT_DB_PATH, verbose: false, stats: false, help: false };
   const unknown: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;

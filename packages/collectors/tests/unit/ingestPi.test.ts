@@ -232,7 +232,10 @@ describe("PI ingest port (Python is the spec)", () => {
     expect(mod.main(["--help"], helpIo)).toBe(0);
     const pyHelp = runPythonArgs(home, ["--help"]);
     expect(pyHelp.status).toBe(0);
-    expect(helpOut.join("\n").trimEnd()).toBe(pyHelp.stdout.trimEnd());
+    const nodeHelp = helpOut.join("\n").trimEnd();
+    expect(nodeHelp).toContain("analytics-node.db");
+    expect(nodeHelp.replaceAll("analytics-node.db", "analytics.db"))
+      .toBe(pyHelp.stdout.trimEnd());
   });
 
   it("wires the real command into the collector CLI", () => {
