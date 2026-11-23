@@ -3,6 +3,7 @@ import * as P from "./pricing.js";
 import { stamp } from "./schema.js";
 import { localRates as energyLocalRates, PREFILL_SPEEDUP, CACHE_SPEEDUP, tariff } from "./energy.js";
 import { pyRound } from "./pySemantics.js";
+import { fetchCatalog } from "./pricingFetch.js";
 
 export function localRates(model: string | null): [number, number, number, number] {
   const cfg = getConfig();
@@ -163,7 +164,7 @@ export function assemble(data: any, catalog: any, installed: Set<string> | strin
   }
   models.sort((x, y) => {
     if ((x.out_1m == null) !== (y.out_1m == null)) return x.out_1m == null ? 1 : -1;
-    return (-(y.out_1m || 0)) - (-(x.out_1m || 0)) || String(x.model).localeCompare(String(y.model));
+    return (Number(y.out_1m ?? 0) - Number(x.out_1m ?? 0)) || String(x.model).localeCompare(String(y.model));
   });
   return models;
 }
@@ -174,8 +175,7 @@ export async function build(): Promise<any> {
   const dataPath = (cfg as any).reports_dir ? (cfg as any).reports_dir + "/analytics-data.json" : "";
   let data: any = {};
   try { const fs = require("fs"); data = JSON.parse(fs.readFileSync(dataPath, "utf8")); } catch (e) { data = {}; }
-  const catalog = P.cachedCatalog(cfg); const src = "cache";
-  // pricingFetch should be used by caller; here use cachedCatalog
+  const [catalog, src] = await fetchCatalog(cfg);
   let ollama: any = {};
   const op = cfg.reports_dir + "/ollama-data.json";
   try { ollama = JSON.parse(require("fs").readFileSync(op, "utf8")); } catch {}
