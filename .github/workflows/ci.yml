@@ -153,6 +153,9 @@ jobs:
       - name: Unit tests (vitest, jsdom)
         run: npm run test -w apps/web
 
+      - name: serve.py response parity (T-19, Python oracle)
+        run: npm run test:parity -w apps/web
+
       - name: E2E smoke (Playwright, system Chrome — no browser download)
         run: npm run test:e2e -w apps/web
 
