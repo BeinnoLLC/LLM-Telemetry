@@ -12,6 +12,20 @@ const WEB_ROOT = join(REPO_ROOT, "apps", "web");
 const ORACLE = join(WEB_ROOT, "tests", "parity", "serve_static.py");
 const FROZEN = new Date("2026-09-25T13:51:12Z");
 const SHOTS = resolve(WEB_ROOT, "test-results");
+const FEED_POLL_URL = "http://localhost:8481/api/events/stream?since=0";
+
+// ?since= selects the finite polling form, not the capped SSE stream. Warm the
+// Next feed before the pages subscribe so their first stream cannot race the
+// collector's "warming up" 503 window.
+async function warmNextFeed(): Promise<void> {
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const response = await fetch(FEED_POLL_URL);
+    await response.body?.cancel();
+    if (response.status !== 503) return;
+    if (attempt < 20) await new Promise((ok) => setTimeout(ok, 250));
+  }
+  throw new Error("Next live feed still returned HTTP 503 after 20 attempts");
+}
 
 function startOracle(fixture: string, python: string): {
   child: ChildProcess;
@@ -75,6 +89,7 @@ test("Home numbers match the Python oracle on identical fixtures", async ({ brow
       page.on("pageerror", (error) => errors.push(`${label}: ${error.message}`));
       await page.clock.install({ time: FROZEN });
     }
+    await warmNextFeed();
     await Promise.all([
       py.goto(`http://127.0.0.1:${port}/dashboard.html`),
       next.goto("/"),
