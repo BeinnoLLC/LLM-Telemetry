@@ -92,12 +92,14 @@ describe("format helpers", () => {
     expect(compact("2500")).toBe("2.5K");
   });
 
-  it("parses both ISO and numeric epoch generated values", () => {
+  it("parses local ISO and seconds/millisecond epoch generated values", () => {
     expect(parseGenerated("2026-09-25T13:51:09")).toBe(
-      Date.parse("2026-09-25T13:51:09Z") / 1000,
+      new Date(2026, 8, 25, 13, 51, 9).getTime() / 1000,
     );
     expect(parseGenerated(1790000000)).toBe(1790000000);
     expect(parseGenerated("1790000000")).toBe(1790000000);
+    expect(parseGenerated(1790000000123)).toBe(1790000000);
+    expect(parseGenerated("1790000000123")).toBe(1790000000);
     expect(parseGenerated(null)).toBeNull();
   });
 });

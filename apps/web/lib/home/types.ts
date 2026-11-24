@@ -107,9 +107,10 @@ export interface QuotaData extends Artifact {
   profiles?: Record<
     string,
     JsonRecord & {
-      providers?: Array<
-        JsonRecord & { attention?: NumLike; unavailable_reason?: string }
-      >;
+      // Collectors store a keyed map; older fixtures use a list.
+      providers?:
+        | Array<JsonRecord & { attention?: NumLike; unavailable_reason?: string | null }>
+        | Record<string, JsonRecord & { attention?: NumLike; unavailable_reason?: string | null }>;
     }
   >;
   summary?: JsonRecord & { available?: NumLike; providers?: NumLike };

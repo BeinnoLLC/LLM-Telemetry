@@ -7,22 +7,27 @@ import type { NumLike } from "./types";
  * null/NaN/"" become 0. */
 export const num = (value: unknown): number => +(value as number) || 0;
 
-/** `generated` is ISO in current artifacts and a numeric epoch in older ones
- * (RUN B risks). Timezone-less sample ISO strings are UTC, as in the frozen
- * parity fixture: src/llm_telemetry/web/dashboard.html sample data. */
+/** `generated` is a local, zone-less ISO string written by
+ * `datetime.now().isoformat()` (src/llm_telemetry/collect_live.py:295) or a
+ * numeric epoch in older artifacts. Port of freshness() in
+ * src/llm_telemetry/web/js/palette.js:359-367: plain Date.parse (local time),
+ * and values above 1e12 are millisecond epochs divided by 1000 and floored. */
 export function parseGenerated(value: unknown): number | null {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "number") return epochSeconds(value);
   if (typeof value !== "string" || !value.trim()) return null;
-  const epoch = Number(value);
-  if (Number.isFinite(epoch)) return epoch;
-  const utc =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) &&
-    !/(?:Z|[+-]\d{2}:?\d{2})$/.test(value)
-      ? `${value}Z`
-      : value;
-  const ms = Date.parse(utc);
-  return Number.isFinite(ms) ? ms / 1000 : null;
+  if (/^-?\d+(?:\.\d+)?$/.test(value.trim())) return epochSeconds(Number(value));
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
 }
+
+function epochSeconds(value: number): number | null {
+  if (!Number.isFinite(value)) return null;
+  return value > 1e12 ? Math.floor(value / 1000) : value;
+}
+
+/** Port of fmt() in src/llm_telemetry/web/js/palette.js:150. The name
+ * `compact` is the T-20 convention; `fmt` keeps parity with the oracle. */
+export const fmt = (value: NumLike): string => compact(value);
 
 /** Compact number: port of fmt() in
  * src/llm_telemetry/web/js/palette.js:150 (B/M/K suffixes, one decimal). */
@@ -37,6 +42,39 @@ export function compact(value: NumLike): string {
   }
   return String(Math.round(n));
 }
+
+/** Binary byte units: port of fmtB() in
+ * src/llm_telemetry/web/js/palette.js:152-156 (its `B` suffix is bytes,
+ * not billions; toFixed uses two decimals below 10). */
+export function fmtB(value: NumLike): string {
+  const n = num(value);
+  for (const [unit, divisor] of [
+    ["TB", 1099511627776],
+    ["GB", 1073741824],
+    ["MB", 1048576],
+    ["KB", 1024],
+  ] as const) {
+    if (n >= divisor) return (n / divisor).toFixed(n / divisor < 10 ? 2 : 1) + ` ${unit}`;
+  }
+  return `${Math.round(n)} B`;
+}
+
+/** Exact port of money() in src/llm_telemetry/web/js/palette.js:162:
+ * falsy values (including 0) render an em dash, never $0.00. */
+export function money(value: NumLike): string {
+  if (!value) return "—";
+  return (
+    "$" +
+    num(value).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
+/** Port of short() in src/llm_telemetry/web/js/palette.js:164. */
+export const short = (model: unknown): string =>
+  model == null ? "" : String(model).split("/").pop() ?? "";
 
 /** Short age shown in the UI: port of ago() in
  * src/llm_telemetry/web/js/palette.js:253 (s/m/h/d, rounded). */
