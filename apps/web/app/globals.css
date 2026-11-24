@@ -1,21 +1,27 @@
-/*
- * T-0 (LST-281) minimal base styling only. The full semantic theme token
- * system (styles/tokens.css, WCAG AA audit, prefers-reduced-motion handling)
- * is T-1 / LLMTELEMET-278 per docs/plans/node-nextjs-migration.md §4.
- */
-:root {
-  color-scheme: dark;
-}
+@import "../styles/tokens.css";
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-body {
-  background: #05060a;
-  color: #f5f5f5;
-  font-family: Inter, system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: var(--sp-4);
+    font-variant-numeric: var(--num);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
 }
