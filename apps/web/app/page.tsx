@@ -6,6 +6,7 @@ import ExploreCards from "@/components/home/ExploreCards";
 import HomeSeries from "@/components/home/HomeSeries";
 import LiveKpis from "@/components/home/LiveKpis";
 import LiveTable from "@/components/home/LiveTable";
+import TaskQueue from "@/components/home/TaskQueue";
 import { loadHomeSnapshot } from "@/lib/home/load";
 
 function pickName(profiles: Record<string, unknown> | undefined): string {
@@ -23,6 +24,7 @@ export default async function HomePage() {
       <h1>Home</h1>
       <LiveKpis initial={snapshot} name={name} />
       <AnalyticsKpis profile={profile} />
+      <TaskQueue initial={snapshot} name={name} />
       <ExploreCards
         profile={profile}
         name={name}
