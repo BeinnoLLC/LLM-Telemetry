@@ -17,7 +17,9 @@ export interface LiveKpisProps {
 }
 
 export default function LiveKpis({ initial, name }: LiveKpisProps) {
-  const live = useLiveHome(initial);
+  // The KPI subscription is the single sound listener; TaskQueue and
+  // LiveTable keep their own view-only subscriptions.
+  const live = useLiveHome(initial, { sound: true });
   const [ring, setRing] = useState<ThroughputState>(EMPTY_THROUGHPUT);
   const profiles = live.live?.profiles;
 

@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 
 import { checkSchemaVersion } from "../../lib/home/schema";
+import { homeSound, soundAlerts } from "../../lib/home/sound-client";
 import type { HomeSnapshot, JsonRecord, LiveData } from "../../lib/home/types";
 import {
   CAP_RETRY_MS,
@@ -37,11 +38,24 @@ interface PollPayload {
 
 /** EventSource has no status code, so a 503 cap (lib/live-feed/http.ts:84-86)
  * is detected by a short probe after `onerror`. */
-export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
+export function useLiveHome(
+  initial: HomeSnapshot,
+  options: { sound?: boolean } = {},
+): LiveHomeState {
   const [state, setState] = useState<LiveHomeState>(() => ({
     ...initial,
     counters: null,
   }));
+
+  const feedSound = options.sound === true;
+  useEffect(() => {
+    if (!feedSound) return;
+    // The server snapshot is the silent baseline; every later merged frame is
+    // diffed once here (live.js:1049-1052, 1062-1086).
+    const engine = homeSound();
+    engine.checkCompletions(state.live?.profiles);
+    engine.checkCriticalAlerts(soundAlerts(state));
+  }, [feedSound, state]);
 
   useEffect(() => {
     let disposed = false;
@@ -52,6 +66,12 @@ export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
     let inflight: Promise<void> | null = null;
     let pending = false;
     let seq: number | null = null;
+
+    // live.js:1032-1037: a hidden tab keeps polling only while sound is on.
+    const paused = (): boolean =>
+      typeof document !== "undefined" &&
+      document.hidden &&
+      !homeSound().isEnabled();
 
     const apply = (frame: JsonRecord, event: string): void => {
       const at = Number(frame.seq);
@@ -71,7 +91,7 @@ export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
     };
 
     const fetchLive = async (): Promise<void> => {
-      if (inflight) return;
+      if (paused() || inflight) return;
       inflight = (async () => {
         try {
           const res = await fetch(LIVE_URL, { cache: "no-store" }); // live.js:1040
@@ -113,7 +133,7 @@ export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
     const startPolling = (): void => {
       if (disposed || poll !== null) return;
       const tick = async (): Promise<void> => {
-        if (disposed) return;
+        if (disposed || paused()) return;
         try {
           // feed.ts:61-63: `since(n)` replays frames > n or resets.
           const res = await fetch(`${STREAM_URL}?since=${seq ?? 0}`, {
@@ -148,6 +168,11 @@ export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
       if (disposed || source !== failed) return;
       failed.close();
       source = null;
+      if (paused()) {
+        // Keep the fallback timer alive: unmuting while hidden resumes it.
+        startPolling();
+        return;
+      }
       probe?.abort();
       probe = new AbortController();
       try {
@@ -171,9 +196,14 @@ export function useLiveHome(initial: HomeSnapshot): LiveHomeState {
       startPolling();
     };
 
+    const onVisible = (): void => {
+      if (!document.hidden && !source && !retry) openStream();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     openStream();
     return () => {
       disposed = true;
+      document.removeEventListener("visibilitychange", onVisible);
       source?.close();
       source = null;
       probe?.abort();

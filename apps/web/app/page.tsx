@@ -6,6 +6,7 @@ import ExploreCards from "@/components/home/ExploreCards";
 import HomeSeries from "@/components/home/HomeSeries";
 import LiveKpis from "@/components/home/LiveKpis";
 import LiveTable from "@/components/home/LiveTable";
+import SoundToggle from "@/components/home/SoundToggle";
 import TaskQueue from "@/components/home/TaskQueue";
 import { loadHomeSnapshot } from "@/lib/home/load";
 
@@ -22,6 +23,7 @@ export default async function HomePage() {
   return (
     <main className="view home-view">
       <h1>Home</h1>
+      <SoundToggle />
       <LiveKpis initial={snapshot} name={name} />
       <AnalyticsKpis profile={profile} />
       <TaskQueue initial={snapshot} name={name} />
