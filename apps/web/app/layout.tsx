@@ -4,6 +4,7 @@ import AppShell from "@/components/AppShell";
 import LegacyHashRedirect from "@/components/LegacyHashRedirect";
 import "./globals.css";
 import "../styles/home-base.css";
+import "../styles/home-kpis.css";
 
 export const metadata: Metadata = {
   title: "LLM Telemetry",
