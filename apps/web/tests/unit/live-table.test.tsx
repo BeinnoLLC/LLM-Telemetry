@@ -2,6 +2,7 @@
 // The component is mounted into jsdom so header clicks exercise real React
 // state; EventSource is stubbed because useLiveHome only needs it for I/O.
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -131,8 +132,9 @@ describe("Home live table (RUN D2)", () => {
 
 describe("home-live-table.css contract", () => {
   it("keeps the roomy 52-64px, two-line grid with token-only sizing", () => {
+    const web = process.cwd();
     const css = readFileSync(
-      new URL("../../styles/home-live-table.css", import.meta.url),
+      resolve(dirname(web), "web", "styles/home-live-table.css"),
       "utf8",
     );
     for (const rule of ["min-height:52px", "max-height:64px", "font-size:var(--fs-sm)", "--lvcols"]) {
