@@ -1,0 +1,16 @@
+/* LLMTELEMET-292 (T-21 RUN B): shared frame for the Life/Flow jar scene.
+   The three-jar grid, balls and legend come from T-20's home-jars sheet;
+   the app main region remains the only scroll container. */
+.lf-jar-scene {
+  min-width: 0;
+}
+
+.lf-jar-scene .qtrain {
+  overflow: visible;
+}
+
+@media (max-width: 48rem) {
+  .lf-jar-scene .qtrain {
+    gap: var(--sp-2);
+  }
+}
