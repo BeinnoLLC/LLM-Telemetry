@@ -5,6 +5,7 @@ import AnalyticsKpis from "@/components/home/AnalyticsKpis";
 import ExploreCards from "@/components/home/ExploreCards";
 import HomeSeries from "@/components/home/HomeSeries";
 import LiveKpis from "@/components/home/LiveKpis";
+import LiveTable from "@/components/home/LiveTable";
 import { loadHomeSnapshot } from "@/lib/home/load";
 
 function pickName(profiles: Record<string, unknown> | undefined): string {
@@ -29,10 +30,7 @@ export default async function HomePage() {
         quota={snapshot.quota}
       />
       <HomeSeries profile={profile} />
-      <section id="home-live-table" className="home-section" aria-label="In progress now">
-        <h2>In progress now</h2>
-        <p>The live session table lands here in RUN D.</p>
-      </section>
+      <LiveTable initial={snapshot} name={name} />
     </main>
   );
 }
