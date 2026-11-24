@@ -8,6 +8,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import JarScene from "../../components/life-flow/JarScene";
 import LifeQuota from "../../components/life-flow/LifeQuota";
 import type { HomeSnapshot, JsonRecord, QuotaData } from "../../lib/home-board/types";
 import { resolveLifeView } from "../../lib/life-flow/load-life";
@@ -60,6 +61,38 @@ describe("Life snapshot selection", () => {
     // Home's merged "All" is not a quota profile: Python falls back to key 0.
     expect(resolveLifeView(snapshot(payload), "All").name).toBe("work");
     expect(resolveLifeView(snapshot(null)).profile).toBeNull();
+  });
+});
+
+describe("Life page composition", () => {
+  it("renders one jar scene before the quota card, as dashboard.html does", () => {
+    const page = readFileSync(
+      join(repoRoot, "apps/web/app/life/page.tsx"),
+      "utf8",
+    );
+    expect(page.indexOf("<JarScene")).toBeGreaterThan(-1);
+    expect(page.indexOf("<JarScene")).toBeLessThan(page.indexOf("<LifeQuota"));
+
+    const host = renderHost(
+      createElement(
+        "div",
+        null,
+        createElement(JarScene, { initial: snapshot(payload), name: "work" }),
+        createElement(LifeQuota, {
+          name: "work",
+          profile: work,
+          quota: payload,
+        }),
+      ),
+    );
+    const jars = host.querySelectorAll(".qtrain");
+    const quota = host.querySelector("#lifequota");
+    expect(jars).toHaveLength(1);
+    expect(!!quota).toBe(true);
+    expect(
+      jars[0].compareDocumentPosition(quota!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
 
