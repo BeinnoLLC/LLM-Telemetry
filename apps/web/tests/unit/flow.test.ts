@@ -143,4 +143,31 @@ describe("Flow tooltip copy", () => {
     expect(flowChats(root, rows, work.node_sessions)).toEqual([]);
     expect(flowChats(model, rows, null)).toEqual([]);
   });
+
+  it("keeps chats on the model that actually served a shared task name", () => {
+    const alpha = "hosts/acme/alpha-3";
+    const beta = "hosts/acme/beta-3";
+    const shared: AnalyticsRow[] = [
+      { date: "2026-09-25", model: alpha, provider: "opencode-go", task: "main", calls: 3 },
+      { date: "2026-09-25", model: alpha, provider: "opencode-go", task: "review", calls: 2 },
+      { date: "2026-09-25", model: beta, provider: "opencode-go", task: "main", calls: 5 },
+    ];
+    const sessions: Record<string, unknown> = {
+      [`${alpha}\tmain`]: [{ id: "a-main", title: "Alpha main chat", calls: 3 }],
+      [`${alpha}\treview`]: [{ id: "a-review", title: "Alpha review chat", calls: 2 }],
+      [`${beta}\tmain`]: [{ id: "b-main", title: "Beta main chat", calls: 5 }],
+    };
+    const root = flowData(shared);
+    const models = root.kids[0].kids;
+    expect(models.map((model) => model.name).sort()).toEqual(["alpha-3", "beta-3"]);
+    const alphaNode = models.find((model) => model.name === "alpha-3")!;
+    const betaNode = models.find((model) => model.name === "beta-3")!;
+    const alphaTask = alphaNode.kids.find((task) => task.name === "main")!;
+    const betaTask = betaNode.kids.find((task) => task.name === "main")!;
+    expect(flowChats(alphaTask, shared, sessions).map((chat) => chat.id)).toEqual(["a-main"]);
+    expect(flowChats(betaTask, shared, sessions).map((chat) => chat.id)).toEqual(["b-main"]);
+    expect(flowChats(alphaNode, shared, sessions).map((chat) => chat.id).sort())
+      .toEqual(["a-main", "a-review"]);
+    expect(flowChats(betaNode, shared, sessions).map((chat) => chat.id)).toEqual(["b-main"]);
+  });
 });

@@ -220,14 +220,18 @@ export interface FlowChat {
 }
 
 /** flow.js:602-617 — node_sessions is keyed by FULL model id + task. The
- * Python tree stores short names, so rows supply the full ids. */
+ * Python tree stores short names, so rows supply the full ids. A node may only
+ * claim ids whose short() resolves to that node's model: two models sharing a
+ * task name must not share chats. */
 export function flowChats(
   node: FlowNode,
   rows: readonly AnalyticsRow[],
   sessions: Record<string, unknown> | null | undefined,
 ): FlowChat[] {
   if (!sessions || (node.kind !== "task" && node.kind !== "model")) return [];
-  const full = [...new Set(rows.map((row) => String(row.model ?? "")).filter(Boolean))];
+  const wanted = node.kind === "task" ? node.parentModel : node.name;
+  const full = [...new Set(rows.map((row) => String(row.model ?? "")).filter(Boolean))]
+    .filter((model) => short(model) === wanted);
   const keys: string[] = [];
   if (node.kind === "task") {
     full.forEach((model) => keys.push(`${model}\t${node.name}`));
