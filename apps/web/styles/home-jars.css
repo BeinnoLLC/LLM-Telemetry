@@ -1,0 +1,80 @@
+/* LLMTELEMET-291 (T-20 RUN E2): the three task-queue jars ported from
+   src/llm_telemetry/web/css/dashboard.css:828-941. Only shared --* colour
+   tokens are used; fly/slosh keyframes are replaced by one flat transition.
+   Balls keep their keyed DOM across polls; qtFit owns packing and +N. */
+.qtrain{position:relative;display:grid;gap:18px;align-items:stretch;
+  grid-template-columns:repeat(3,minmax(0,1fr))}
+.qt-sec{position:relative;min-width:0;display:flex;flex-direction:column;--jc:var(--muted)}
+.qt-line{--jc:var(--z-ok)}
+.qt-yard{--jc:var(--accent)}
+.qt-jar{position:relative;flex:1;display:flex;flex-direction:column;padding:0 6px;
+  filter:drop-shadow(0 0 .7px color-mix(in srgb,var(--tint) 75%,transparent)) drop-shadow(0 0 1px var(--jar-edge))}
+.qt-sec::before{content:"";position:absolute;z-index:0;left:6%;right:6%;bottom:14px;height:22px;border-radius:var(--r-full);pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,var(--jar-shadow),var(--s25) 55%,transparent 75%)}
+.qt-lid{position:relative;z-index:4;align-self:center;width:52%;min-width:84px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-md);border-bottom:3px solid var(--jc);
+  background:linear-gradient(180deg,var(--w22) 0 2px,transparent 2px),
+    linear-gradient(90deg,var(--s35),transparent 20%,var(--w8) 40%,transparent 60%,var(--s40)),
+    linear-gradient(180deg,var(--jar-lid-top),var(--jar-lid-bot));
+  box-shadow:0 0 0 1px var(--w18),0 3px 5px var(--s55),inset 0 -5px 0 -3px var(--s40)}
+.qt-lid::after{content:"";position:absolute;left:-3px;right:-3px;bottom:-3px;height:6px;border-radius:var(--r-sm);pointer-events:none;
+  background:linear-gradient(180deg,var(--w25),var(--s45));box-shadow:0 2px 3px var(--s50)}
+.qt-name{position:relative;z-index:1;margin-top:10px;text-align:center;font-size:var(--fs-sm);font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:color-mix(in srgb,var(--jc) 55%,var(--jar-label))}
+.qt-n{position:relative;z-index:1;font-weight:700;font-size:var(--fs-sm);line-height:1;color:var(--jar-ink);text-shadow:0 1px 1px var(--s60)}
+.qt-body{position:relative;flex:1;display:flex;flex-direction:column;margin-top:-6px;min-height:300px;padding:84px var(--sp-2) 14px;
+  border-radius:0 0 30px 30px;overflow:hidden;
+  clip-path:polygon(26% 0,26% 16px,21.5% 17px,17.1% 21px,13% 27px,9.3% 35px,6.1% 45px,3.5% 56px,1.6% 69px,.4% 82px,0 96px,0 100%,100% 100%,100% 96px,99.6% 82px,98.4% 69px,96.5% 56px,93.9% 45px,90.7% 35px,87% 27px,82.9% 21px,78.5% 17px,74% 16px,74% 0);
+  background:linear-gradient(90deg,transparent calc(100% - 16px),var(--w10) calc(100% - 11px),transparent calc(100% - 5px)) no-repeat,
+    linear-gradient(180deg,transparent calc(100% - 12px),var(--w13)) no-repeat,
+    linear-gradient(90deg,var(--w10),var(--w2) 14%,var(--w1p5) 86%,var(--w7)),
+    linear-gradient(180deg,color-mix(in srgb,var(--tint) 7%,transparent),color-mix(in srgb,var(--tint) 2%,transparent));
+  -webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);
+  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tint) 35%,transparent),inset -2px 0 0 var(--w18),inset 0 -3px 0 var(--w14),
+    inset 5px 0 8px -4px var(--w14),inset 0 -22px 24px -14px var(--s55)}
+.qt-jar::after{content:"";position:absolute;z-index:3;left:17px;top:100px;bottom:48px;width:9px;border-radius:var(--r-md);pointer-events:none;
+  background:linear-gradient(180deg,var(--w55),var(--w22) 60%,var(--w5));filter:blur(2px)}
+.qt-body::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill,0%);pointer-events:none;
+  background:linear-gradient(90deg,var(--s22),transparent 16%,transparent 84%,var(--s18)),
+    linear-gradient(180deg,color-mix(in srgb,var(--jc) 12%,transparent),color-mix(in srgb,var(--jc) 36%,var(--s85)));
+  transition:height var(--motion-slow) ease}
+.qt-body::after{content:"";position:absolute;left:0;right:0;bottom:var(--fill,0%);height:12px;margin-bottom:-2px;pointer-events:none;
+  background:radial-gradient(ellipse 30px 10px at 50% 100%,color-mix(in srgb,var(--jc) 60%,var(--w95) 20%) 98%,transparent) 0 0/60px 12px repeat-x,
+    radial-gradient(ellipse 18px 5px at 50% 100%,color-mix(in srgb,var(--jc) 40%,var(--w95) 30%) 98%,transparent) 15px 2px/36px 12px repeat-x;
+  border-bottom:2px solid color-mix(in srgb,var(--jc) 30%,var(--w95) 70%);
+  transition:bottom var(--motion-slow) ease}
+.qt-cars{position:relative;z-index:1;flex:1;min-width:0;min-height:0;overflow:hidden}
+.qt-cars:not(:has(.qt-ball))::after{content:attr(data-empty);position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--jar-label-soft);font-size:var(--fs-sm)}
+.qt-ball{position:absolute;z-index:calc(2 + var(--zr,0));display:flex;align-items:center;justify-content:center;
+  min-width:18px;min-height:18px;width:var(--sz,28px);height:var(--sz,28px);
+  margin:calc(var(--sz,28px) / -2) 0 0 calc(var(--sz,28px) / -2);
+  padding:0;border:0;border-radius:50%;cursor:pointer;color:inherit;rotate:var(--rz,0deg);
+  background:radial-gradient(circle at 32% 26%,var(--w95) 0,var(--w92) 8%,transparent 21%),
+    radial-gradient(circle at 36% 30%,var(--w30),transparent 50%),
+    radial-gradient(circle at 70% 80%,var(--s38),transparent 60%),
+    radial-gradient(circle at 45% 42%,var(--k,var(--qk-wait)) 25%,color-mix(in srgb,var(--k,var(--qk-wait)) 72%,var(--s85)) 100%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,var(--s85)),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65);
+  transition:left var(--motion-slow) ease,top var(--motion-slow) ease,width var(--motion-slow) ease,height var(--motion-slow) ease,transform var(--motion-fast) ease}
+.qt-ball:hover,.qt-ball:focus-visible{z-index:var(--layer-ball-hover);transform:scale(1.22);outline:0}
+.qt-ball:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.qt-ball.qt-run{width:max(18px,calc(var(--sz,28px) * .8));height:max(18px,calc(var(--sz,28px) * 1.14));
+  margin:calc(var(--sz,28px) * -.57) 0 0 calc(var(--sz,28px) * -.4);
+  border-radius:var(--r-pill);rotate:calc(var(--rz,0deg) + 8deg);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--k,var(--qk-wait)) 45%,var(--s85)),0 0 9px 1px color-mix(in srgb,var(--k,var(--qk-wait)) 70%,transparent),inset 0 -2px 3px var(--s35),inset 0 1px 1.5px var(--w40),0 3px 3px -1px var(--s65)}
+.qt-run .qt-gl{rotate:calc(var(--rz,0deg) * -1 - 8deg)}
+/* User rule: an SVG brand mark and a contrast disc, never a letter. */
+.qt-gl{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  rotate:calc(var(--rz,0deg) * -1)}
+.qt-gl::before{content:"";position:absolute;width:82%;height:82%;border-radius:50%;background:var(--w88);
+  box-shadow:0 1px 2px var(--s35)}
+.qt-gl svg{width:60%;height:60%;position:relative;fill:var(--jar-ink)}
+.qt-overflow{position:absolute;z-index:var(--layer-overflow);top:2px;right:2px;min-width:40px;height:26px;padding:0 9px;border-radius:var(--r-lg);
+  font-size:var(--fs-sm);font-weight:600;line-height:1;font-family:inherit;color:var(--fg);border:1px solid var(--border);
+  background:color-mix(in srgb,var(--fg) 10%,var(--card))}
+.qtrain:focus-within .qt-ball{transition-duration:var(--motion-fast)}
+.qt-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;color:var(--jar-label-soft);font-size:var(--fs-xs)}
+.qt-legend span{display:inline-flex;align-items:center;gap:7px}
+.qt-sw{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:var(--r-full);background:var(--k,var(--qk-wait));box-shadow:inset 0 -1px 1px var(--s35),inset 0 1px 1px var(--w35)}
+.qt-sw .qt-gl{position:relative;inset:auto;width:100%;height:100%;rotate:none}
+.qt-sw-wait{--k:var(--qk-wait)}
+.qt-sw-glow{--k:var(--jar-glow);box-shadow:0 0 0 3px color-mix(in srgb,var(--jar-glow) 30%,transparent)}
+.qt-sw-ring{--k:var(--muted);box-shadow:0 0 0 2px var(--jar-ring)}

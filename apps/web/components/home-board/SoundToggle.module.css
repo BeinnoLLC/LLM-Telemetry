@@ -1,0 +1,51 @@
+/* LLMTELEMET-291 (T-20 RUN F2): one control anatomy, semantic tokens only. */
+.toggle {
+  --st-gap: var(--sp-2);
+  --st-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--st-gap);
+  min-height: var(--sp-6);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-input);
+  border-radius: var(--st-radius);
+  background: var(--card);
+  box-shadow: var(--elev-1);
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--st-font-size, 0.875rem);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.toggle:hover {
+  background: var(--state-hover);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: var(--sp-5);
+  height: var(--sp-5);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.toggle[aria-pressed="false"] .icon {
+  background: var(--card);
+  color: var(--muted);
+}
