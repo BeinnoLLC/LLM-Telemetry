@@ -12,7 +12,7 @@
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font);
-    font-size: var(--sp-4);
+    font-size: 14px; /* matches Python --fs:14px (css/dashboard.css:5) */
     font-variant-numeric: var(--num);
   }
 
