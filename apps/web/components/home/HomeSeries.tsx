@@ -45,7 +45,12 @@ export default function HomeSeries({ profile, now }: HomeSeriesProps) {
         </svg>
         <figcaption className="series-legend">
           {series.labels.map((label, index) => (
-            <span key={label} className="series-legend-item">
+            <span
+              key={label}
+              className="series-legend-item"
+              data-calls={series.calls[index]}
+              data-tokens={series.tokens[index]}
+            >
               <span className="series-hour">{label}</span>
               <span className="series-numbers">
                 {hasData

@@ -7,16 +7,18 @@ import { useEffect, useState } from "react";
 
 import { EMPTY_THROUGHPUT, liveKpis, sampleThroughput, throughputFor } from "../../lib/home/kpis";
 import type { ThroughputState } from "../../lib/home/kpis";
-import type { HomeSnapshot } from "../../lib/home/types";
+import type { HomeSnapshot, JsonRecord } from "../../lib/home/types";
 import StatCard from "./StatCard";
 import { useLiveHome } from "./useLiveHome";
 
 export interface LiveKpisProps {
   initial: HomeSnapshot;
   name: string;
+  /** Analytics alerts; the live artifact has no per-profile alert rows. */
+  alerts?: JsonRecord[] | null;
 }
 
-export default function LiveKpis({ initial, name }: LiveKpisProps) {
+export default function LiveKpis({ initial, name, alerts = null }: LiveKpisProps) {
   // The KPI subscription is the single sound listener; TaskQueue and
   // LiveTable keep their own view-only subscriptions.
   const live = useLiveHome(initial, { sound: true });
@@ -35,6 +37,7 @@ export default function LiveKpis({ initial, name }: LiveKpisProps) {
     live.live?.pi_live,
     live.live?.agent_live,
     throughputFor(name, ring),
+    alerts,
   );
 
   return (
@@ -50,6 +53,7 @@ export default function LiveKpis({ initial, name }: LiveKpisProps) {
           state={stat.state}
           title={stat.title}
           detail={stat.detail}
+          chips={stat.chips}
         />
       ))}
     </section>

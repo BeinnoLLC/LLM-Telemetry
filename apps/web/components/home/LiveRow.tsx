@@ -3,7 +3,7 @@
 // LLMTELEMET-291 (T-20 RUN D2): one roomy, two-line live session row.
 // Every value comes from the RUN D1 shaped LiveRow (live.js:416-443). Text is
 // rendered as JSX text/attributes, so untrusted DB titles are escaped by React.
-import { ago, fmt, fmtB, money } from "../../lib/home/format";
+import { ago, fmt, fmtB } from "../../lib/home/format";
 import type { LiveKind, LiveRow } from "../../lib/home/live-rows";
 import ModelBadge from "./ModelBadge";
 
@@ -34,6 +34,10 @@ export default function LiveRow({ row }: LiveRowProps) {
     row.downBytes === null ? null : `↓ ${fmtB(row.downBytes)}`,
   ].filter(Boolean).join(" ");
   const load = row.load === null ? "—" : `${Math.round(row.load)}%`;
+  // live.js:518 / 534: PI prints four decimals, Claude/Codex use usd().
+  const cost = !row.costUsd ? "—"
+    : row.kind === "pi" ? `$${row.costUsd.toFixed(4)}`
+      : `$${row.costUsd.toFixed(row.costUsd < 1 ? 3 : 2)}`;
 
   return (
     <div
@@ -87,7 +91,7 @@ export default function LiveRow({ row }: LiveRowProps) {
               {plan}
             </span>
           ) : (
-            <span>{row.costUsd === null ? "—" : money(row.costUsd)}</span>
+            <span>{cost}</span>
           )}
           <span className="lv-s2">
             {row.subscription ? "not in total" : "est. cost"}
@@ -101,7 +105,7 @@ export default function LiveRow({ row }: LiveRowProps) {
         </div>
         {row.tools.length > 0 ? (
           <div className="lv-tools" title={row.tools.join(", ")}>
-            {row.tools.slice(0, 3).map((tool, index) => (
+            {row.tools.slice(0, 5).map((tool, index) => (
               <span className="lv-tool" key={`${tool}-${index}`} title={tool}>
                 {tool}
               </span>

@@ -42,6 +42,8 @@ export interface KpiStat {
   title?: string;
   detail?: string;
   href?: string;
+  /** live.js:153-165: icon + "N Label" chips with no separator. */
+  chips?: { letter: string; text: string }[];
   series?: number[];
 }
 export type LiveKpiKey = "sessions" | "agents" | "throughput" | "alerts";
@@ -210,6 +212,7 @@ export function liveKpis(
   piLive: JsonRecord[] | null | undefined,
   agentLive: JsonRecord[] | null | undefined,
   tput: ThroughputWindow,
+  analyticsAlerts?: JsonRecord[] | null,
 ): KpiStat[] {
   const merged = name === "All" && !!profiles;
   const flying = inFlight(profile, piLive, agentLive);
@@ -223,6 +226,9 @@ export function liveKpis(
     .filter((kind) => counts.get(kind))
     .map((kind) => `${counts.get(kind)} ${labels[kind]}`)
     .join(" · ");
+  const chips = kinds
+    .filter((kind) => counts.get(kind))
+    .map((kind) => ({ letter: labels[kind][0], text: `${counts.get(kind)} ${labels[kind]}` }));
 
   const agents = merged
     ? mergedField(profiles, "agents")
@@ -230,9 +236,11 @@ export function liveKpis(
   const alive = agents ? agents.filter((agent) => agent.state === "alive").length : 0;
   const down = (agents?.length ?? 0) - alive;
 
-  const alerts = merged
+  // Python keeps alerts on the analytics profile, not the live slice
+  // (views.js:697-711); main.js merge does not copy them onto All.
+  const alerts = analyticsAlerts ?? (merged
     ? mergedField(profiles, "alerts")
-    : list((profile as JsonRecord | undefined)?.alerts);
+    : list((profile as JsonRecord | undefined)?.alerts));
   const sorted = [...(alerts ?? [])].sort(
     (a, b) =>
       (SEVERITY_RANK[String(a.severity)] ?? 9) - (SEVERITY_RANK[String(b.severity)] ?? 9),
@@ -252,6 +260,7 @@ export function liveKpis(
       value: hasLive ? flying.length : null,
       display: shown(hasLive ? flying.length : null),
       sub: kindSub || (hasLive ? "open right now" : "no live session data"),
+      chips: chips.length ? chips : undefined,
     },
     agents && agents.length
       ? {

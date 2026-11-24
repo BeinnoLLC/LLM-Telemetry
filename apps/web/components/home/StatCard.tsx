@@ -15,6 +15,7 @@ export interface StatCardProps {
   title?: string;
   detail?: string;
   viz?: ReactNode;
+  chips?: { letter: string; text: string }[];
 }
 
 export default function StatCard({
@@ -27,6 +28,7 @@ export default function StatCard({
   title,
   detail,
   viz,
+  chips,
 }: StatCardProps) {
   // LST-252: long uppercase titles must wrap inside the card, never escape it.
   const wrap = label.trim().length > 11 ? " stat-label-wrap" : "";
@@ -42,7 +44,15 @@ export default function StatCard({
         {display}
         {unit ? <span className="stat-unit">{unit}</span> : null}
       </div>
-      <div className="stat-sub">{sub}</div>
+      <div className="stat-sub">
+        {chips?.length
+          ? chips.map((chip) => (
+              <span className="kpi-kind" key={chip.text}>
+                <span aria-hidden="true">{chip.letter}</span>{chip.text}
+              </span>
+            ))
+          : sub}
+      </div>
       <div className="stat-viz">
         {viz ?? (detail ? <span className="stat-detail">{detail}</span> : null)}
       </div>
