@@ -28,6 +28,9 @@ export interface FlowNode {
   depth?: number;
   x?: number;
   y?: number;
+  /** Layout scratch values, set by the renderer's force simulation. */
+  vx?: number;
+  vy?: number;
 }
 
 export interface FlowLink {

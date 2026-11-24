@@ -1,0 +1,58 @@
+/* LLMTELEMET-292 (T-21 RUN C2): Flow graph shell copied in shape from
+   dashboard.css:820-826 and .flowctl at 975-979. Tokens only: no colour
+   literal and no nested scroll container. */
+.flow-card { position: relative; min-width: 0; padding: 1rem; }
+.flow-head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.flow-sub { font-size: var(--fs-xs); text-transform: none; letter-spacing: 0; }
+.flowctl { display: flex; gap: var(--sp-1); align-items: center; margin-left: auto; }
+.flowctl button {
+  font-size: var(--fs-xs);
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-ctl);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.flowctl button.on { border-color: var(--accent); color: var(--accent); }
+.flowwrap { position: relative; width: 100%; height: 560px; min-width: 0; }
+.flowwrap svg#flow { display: block; width: 100%; height: 100%; }
+.flowwrap svg#flow.focus .nd:not(.on) { opacity: .18; }
+.flowwrap svg#flow.focus .lnk:not(.on) { opacity: .12; }
+.lnk { fill: none; stroke: var(--border); stroke-linecap: round; }
+.nd { cursor: grab; outline: none; }
+.nd.dragging, .nd:focus-visible .flow-disc { stroke-width: 3; }
+.nd-mark { fill: var(--fg); pointer-events: none; }
+.nd-label {
+  fill: var(--muted);
+  font-size: var(--fs-xs);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.nd.prov .nd-label { fill: var(--fg); font-weight: 600; }
+.flowtip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-fast);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  padding: 7px 10px;
+  font-size: var(--fs-sm);
+  box-shadow: var(--elev-3);
+  z-index: 5;
+  max-width: 260px;
+}
+.flowtip.on { opacity: 1; }
+.flowtip .ft-h { font-weight: 600; font-size: var(--fs-sm); margin-bottom: 3px; }
+.flowtip .ft-r, .flowtip .ft-c {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--muted);
+}
+.flowtip .ft-r b, .flowtip .ft-c b { color: var(--fg); font-weight: 600; }
+.flowtip .ft-s { margin-top: 5px; color: var(--muted); font-size: var(--fs-xs); }
