@@ -4,8 +4,8 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import SoundToggle from "../../components/home/SoundToggle";
-import { createSoundEngine } from "../../lib/home/sound";
+import SoundToggle from "../../components/home-board/SoundToggle";
+import { createSoundEngine } from "../../lib/home-board/sound";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

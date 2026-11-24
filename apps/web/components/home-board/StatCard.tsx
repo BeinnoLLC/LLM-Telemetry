@@ -3,7 +3,7 @@
 // fixed slots so CSS can keep baselines aligned and heights equal.
 import type { ReactNode } from "react";
 
-import type { KpiState } from "../../lib/home/kpis";
+import type { KpiState } from "../../lib/home-board/kpis";
 
 export interface StatCardProps {
   label: string;

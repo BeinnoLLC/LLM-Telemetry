@@ -1,15 +1,15 @@
 // LLMTELEMET-291 (T-20 RUN C2): Home composition. The server loads one
 // snapshot; every number below comes from the RUN C1 pure derivations. RUN D
 // replaces only the final placeholder section.
-import AnalyticsKpis from "@/components/home/AnalyticsKpis";
-import ExploreCards from "@/components/home/ExploreCards";
-import HomeSeries from "@/components/home/HomeSeries";
-import LiveKpis from "@/components/home/LiveKpis";
-import LiveTable from "@/components/home/LiveTable";
-import SoundToggle from "@/components/home/SoundToggle";
-import TaskQueue from "@/components/home/TaskQueue";
-import { homeProfileName, mergedAnalyticsProfile, withMergedLiveProfile } from "@/lib/home/all-profile";
-import { loadHomeSnapshot } from "@/lib/home/load";
+import AnalyticsKpis from "@/components/home-board/AnalyticsKpis";
+import ExploreCards from "@/components/home-board/ExploreCards";
+import HomeSeries from "@/components/home-board/HomeSeries";
+import LiveKpis from "@/components/home-board/LiveKpis";
+import LiveTable from "@/components/home-board/LiveTable";
+import SoundToggle from "@/components/home-board/SoundToggle";
+import TaskQueue from "@/components/home-board/TaskQueue";
+import { homeProfileName, mergedAnalyticsProfile, withMergedLiveProfile } from "@/lib/home-board/all-profile";
+import { loadHomeSnapshot } from "@/lib/home-board/load";
 
 // The Home snapshot comes from the runtime reports dir (the parity fixture
 // during RUN G), so it must never be frozen into the build output.

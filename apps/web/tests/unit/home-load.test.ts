@@ -13,10 +13,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { compact, num, parseGenerated } from "../../lib/home/format";
-import { loadHomeSnapshot } from "../../lib/home/load";
-import { EXPECTED_SCHEMA_VERSION } from "../../lib/home/schema";
-import type { HomeSnapshot } from "../../lib/home/types";
+import { compact, num, parseGenerated } from "../../lib/home-board/format";
+import { loadHomeSnapshot } from "../../lib/home-board/load";
+import { EXPECTED_SCHEMA_VERSION } from "../../lib/home-board/schema";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 
 const repoRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
 const samples = join(repoRoot, "examples/reports");

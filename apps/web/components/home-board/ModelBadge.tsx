@@ -4,7 +4,7 @@
 // Names arrive already shortened by live-rows.ts (palette.js short(), never a
 // letter/glyph proxy). Helper counts and switch notes are fed by that same
 // shaped row; this component only lays them out as a two-line cell.
-import type { LiveRow } from "../../lib/home/live-rows";
+import type { LiveRow } from "../../lib/home-board/live-rows";
 
 interface ModelBadgeProps {
   row: LiveRow;

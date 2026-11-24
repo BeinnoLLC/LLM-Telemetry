@@ -10,9 +10,9 @@ import {
   liveKpis,
   sampleThroughput,
   throughputFor,
-} from "../../lib/home/kpis";
-import type { KpiStat } from "../../lib/home/kpis";
-import type { LiveProfile } from "../../lib/home/types";
+} from "../../lib/home-board/kpis";
+import type { KpiStat } from "../../lib/home-board/kpis";
+import type { LiveProfile } from "../../lib/home-board/types";
 
 const session = (id: string, calls: number, inTok: number, outTok: number) => ({
   id,

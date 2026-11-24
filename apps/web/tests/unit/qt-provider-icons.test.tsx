@@ -8,9 +8,9 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import TaskQueue from "../../components/home/TaskQueue";
-import { HEXAGON_PATH, RT_LOGO, RT_SVG } from "../../lib/home/provider-icons";
-import type { HomeSnapshot } from "../../lib/home/types";
+import TaskQueue from "../../components/home-board/TaskQueue";
+import { HEXAGON_PATH, RT_LOGO, RT_SVG } from "../../lib/home-board/provider-icons";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -5,8 +5,8 @@
 // and flips it (live.js:999-1025).
 import { useEffect, useState } from "react";
 
-import type { SoundEngine } from "../../lib/home/sound";
-import { homeSound } from "../../lib/home/sound-client";
+import type { SoundEngine } from "../../lib/home-board/sound";
+import { homeSound } from "../../lib/home-board/sound-client";
 import styles from "./SoundToggle.module.css";
 
 export interface SoundToggleProps {

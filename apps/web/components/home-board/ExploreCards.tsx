@@ -1,12 +1,12 @@
 // LLMTELEMET-291 (T-20 RUN C2): the Explore strip. Every headline value is the
 // one already derived by exploreCards() from the same date-scoped rows.
-import { exploreCards } from "../../lib/home/kpis";
+import { exploreCards } from "../../lib/home-board/kpis";
 import type {
   AnalyticsProfile,
   NumLike,
   QuotaData,
   RouterData,
-} from "../../lib/home/types";
+} from "../../lib/home-board/types";
 
 export interface ExploreCardsProps {
   profile: AnalyticsProfile | null | undefined;

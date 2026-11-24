@@ -8,7 +8,7 @@ import {
   providerIcon,
   providerOf,
   type ProviderIconKind,
-} from "../../lib/home/provider-icons";
+} from "../../lib/home-board/provider-icons";
 
 describe("SVG-only provider icons (RUN E1)", () => {
   it("uses the Anthropic brand path for Claude models", () => {

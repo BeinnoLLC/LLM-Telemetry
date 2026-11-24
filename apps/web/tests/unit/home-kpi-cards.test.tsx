@@ -5,10 +5,10 @@ import { createElement, type ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import AnalyticsKpis from "../../components/home/AnalyticsKpis";
-import LiveKpis from "../../components/home/LiveKpis";
-import StatCard from "../../components/home/StatCard";
-import type { HomeSnapshot } from "../../lib/home/types";
+import AnalyticsKpis from "../../components/home-board/AnalyticsKpis";
+import LiveKpis from "../../components/home-board/LiveKpis";
+import StatCard from "../../components/home-board/StatCard";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 
 function render(node: ReactElement): HTMLElement {
   const host = document.createElement("div");

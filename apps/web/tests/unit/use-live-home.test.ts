@@ -8,9 +8,9 @@ import {
   STREAM_URL,
   useLiveHome,
   type LiveHomeState,
-} from "../../components/home/useLiveHome";
-import { EXPECTED_SCHEMA_VERSION } from "../../lib/home/schema";
-import type { HomeSnapshot, LiveData } from "../../lib/home/types";
+} from "../../components/home-board/useLiveHome";
+import { EXPECTED_SCHEMA_VERSION } from "../../lib/home-board/schema";
+import type { HomeSnapshot, LiveData } from "../../lib/home-board/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;

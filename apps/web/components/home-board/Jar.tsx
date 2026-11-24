@@ -4,7 +4,7 @@
 // src/llm_telemetry/web/dashboard.html:161-172. qtFit does the deterministic
 // packing and the +N rollup; this component only paints the result. A fixed
 // box is passed in (jsdom has no ResizeObserver), so packing is testable.
-import { qtFit, type QueueBall as QueueBallData, type QueueKind } from "../../lib/home/queue";
+import { qtFit, type QueueBall as QueueBallData, type QueueKind } from "../../lib/home-board/queue";
 import QueueBall from "./QueueBall";
 
 export interface JarProps {

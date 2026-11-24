@@ -4,9 +4,9 @@
 // Yard — fed by the RUN B live snapshot and shaped by the RUN E1 queue
 // functions. No value is re-derived here; the legend and every ball use the
 // same SVG-only providerIcon source.
-import { buildTaskQueue } from "../../lib/home/queue";
-import { providerIcon } from "../../lib/home/provider-icons";
-import type { HomeSnapshot } from "../../lib/home/types";
+import { buildTaskQueue } from "../../lib/home-board/queue";
+import { providerIcon } from "../../lib/home-board/provider-icons";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 import "../../styles/home-jars.css";
 import Jar from "./Jar";
 import { useLiveHome } from "./useLiveHome";

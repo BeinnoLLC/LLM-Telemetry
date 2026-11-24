@@ -2,14 +2,14 @@
 // Port of src/llm_telemetry/web/js/live.js:1032-1090 (`pollLive` merge):
 // per-profile live/active/tools_recent/logs/agents, then global errors,
 // ollama, pi_live and agent_live. No DOM, no fetch, no React state here.
-import { num } from "../../lib/home/format";
+import { num } from "../../lib/home-board/format";
 import type {
   HomeSnapshot,
   JsonRecord,
   LiveData,
   LiveProfile,
   LiveSession,
-} from "../../lib/home/types";
+} from "../../lib/home-board/types";
 
 const COUNTERS = ["calls", "in_tok", "out_tok"] as const;
 

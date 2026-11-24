@@ -4,9 +4,9 @@
 // the existing T-3 stream. Initial render is pure; all I/O starts in useEffect.
 import { useEffect, useState } from "react";
 
-import { checkSchemaVersion } from "../../lib/home/schema";
-import { homeSound, soundAlerts } from "../../lib/home/sound-client";
-import type { HomeSnapshot, JsonRecord, LiveData } from "../../lib/home/types";
+import { checkSchemaVersion } from "../../lib/home-board/schema";
+import { homeSound, soundAlerts } from "../../lib/home-board/sound-client";
+import type { HomeSnapshot, JsonRecord, LiveData } from "../../lib/home-board/types";
 import {
   CAP_RETRY_MS,
   LIVE_URL,

@@ -1,9 +1,9 @@
 // LLMTELEMET-291 (T-20 RUN C2): the 6h Home series as a small inline SVG.
 // Only the hour buckets from the pure home6h() derivation are plotted; no
 // Chart.js canvas and no state/model breakdown charts.
-import { fmt } from "../../lib/home/format";
-import { home6h } from "../../lib/home/kpis";
-import type { AnalyticsProfile } from "../../lib/home/types";
+import { fmt } from "../../lib/home-board/format";
+import { home6h } from "../../lib/home-board/kpis";
+import type { AnalyticsProfile } from "../../lib/home-board/types";
 
 export interface HomeSeriesProps {
   profile: AnalyticsProfile | null | undefined;

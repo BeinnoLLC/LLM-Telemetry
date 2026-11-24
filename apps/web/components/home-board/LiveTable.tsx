@@ -7,9 +7,9 @@
 // anchors alive across five-second polls.
 import { useMemo, useState } from "react";
 
-import { buildLiveRows, sortRows } from "../../lib/home/live-rows";
-import type { LiveSortKey } from "../../lib/home/live-rows";
-import type { HomeSnapshot } from "../../lib/home/types";
+import { buildLiveRows, sortRows } from "../../lib/home-board/live-rows";
+import type { LiveSortKey } from "../../lib/home-board/live-rows";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 import LiveHeader, { type LiveSortState } from "./LiveHeader";
 import LiveRow from "./LiveRow";
 import { useLiveHome } from "./useLiveHome";

@@ -3,7 +3,7 @@
 // LLMTELEMET-291 (T-20 RUN D2): nine sortable headers over eight grid tracks.
 // Elapsed is a second header inside the State track because its value is the
 // second line of every State cell (live.js:349-369, 445-456).
-import type { LiveSortKey, SortDir } from "../../lib/home/live-rows";
+import type { LiveSortKey, SortDir } from "../../lib/home-board/live-rows";
 
 export interface LiveSortState {
   key: LiveSortKey | null;

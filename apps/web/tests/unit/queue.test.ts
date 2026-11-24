@@ -3,8 +3,8 @@
 // Fixtures use collector-shaped data; no demo/synthetic queue entries.
 import { describe, expect, it } from "vitest";
 
-import { buildTaskQueue, qtFit, qtSeed } from "../../lib/home/queue";
-import type { HomeSnapshot } from "../../lib/home/types";
+import { buildTaskQueue, qtFit, qtSeed } from "../../lib/home-board/queue";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 
 const snapshot = (queues: [string, number][] = [["box-a", 2], ["box-b", 1]]): HomeSnapshot => ({
   analytics: {

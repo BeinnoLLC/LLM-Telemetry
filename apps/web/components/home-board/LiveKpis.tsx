@@ -5,9 +5,9 @@
 // the 300s throughput ring, never arithmetic on payload fields.
 import { useEffect, useState } from "react";
 
-import { EMPTY_THROUGHPUT, liveKpis, sampleThroughput, throughputFor } from "../../lib/home/kpis";
-import type { ThroughputState } from "../../lib/home/kpis";
-import type { HomeSnapshot, JsonRecord } from "../../lib/home/types";
+import { EMPTY_THROUGHPUT, liveKpis, sampleThroughput, throughputFor } from "../../lib/home-board/kpis";
+import type { ThroughputState } from "../../lib/home-board/kpis";
+import type { HomeSnapshot, JsonRecord } from "../../lib/home-board/types";
 import StatCard from "./StatCard";
 import { useLiveHome } from "./useLiveHome";
 

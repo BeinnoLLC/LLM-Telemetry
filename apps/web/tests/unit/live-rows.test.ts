@@ -12,9 +12,9 @@ import {
   inFlightRows,
   liveFanouts,
   sortRows,
-} from "../../lib/home/live-rows";
-import type { LiveRow } from "../../lib/home/live-rows";
-import type { HomeSnapshot } from "../../lib/home/types";
+} from "../../lib/home-board/live-rows";
+import type { LiveRow } from "../../lib/home-board/live-rows";
+import type { HomeSnapshot } from "../../lib/home-board/types";
 
 const home = (
   live: NonNullable<HomeSnapshot["live"]>,

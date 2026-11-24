@@ -6,8 +6,8 @@
 // mark keeps it legible at that size.
 import type { CSSProperties } from "react";
 
-import { providerIcon } from "../../lib/home/provider-icons";
-import { QT_MIN, type QueueBall as QueueBallData } from "../../lib/home/queue";
+import { providerIcon } from "../../lib/home-board/provider-icons";
+import { QT_MIN, type QueueBall as QueueBallData } from "../../lib/home-board/queue";
 
 export interface QueueBallProps {
   ball: QueueBallData;

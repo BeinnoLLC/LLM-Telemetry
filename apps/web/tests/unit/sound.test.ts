@@ -12,8 +12,8 @@ import {
   type OscillatorLike,
   type SoundClock,
   type UnlockTarget,
-} from "../../lib/home/sound";
-import type { AlertRow, LiveProfile } from "../../lib/home/types";
+} from "../../lib/home-board/sound";
+import type { AlertRow, LiveProfile } from "../../lib/home-board/types";
 
 /** One oscillator start is pushed per note, exactly like the old jsdom fake. */
 class FakeAudioContext implements AudioContextLike {

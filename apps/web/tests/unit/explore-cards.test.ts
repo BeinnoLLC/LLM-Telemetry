@@ -3,14 +3,14 @@
 // mirroring views.js:1014-1122 and palette.js:150-162.
 import { describe, expect, it } from "vitest";
 
-import { fmt, fmtB, money } from "../../lib/home/format";
+import { fmt, fmtB, money } from "../../lib/home-board/format";
 import {
   analyticsTotals,
   exploreCards,
   quotaStat,
   routerStat,
-} from "../../lib/home/kpis";
-import type { AnalyticsProfile, QuotaData, RouterData } from "../../lib/home/types";
+} from "../../lib/home-board/kpis";
+import type { AnalyticsProfile, QuotaData, RouterData } from "../../lib/home-board/types";
 
 const profile: AnalyticsProfile = {
   rows: [

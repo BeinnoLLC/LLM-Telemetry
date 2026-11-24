@@ -3,8 +3,8 @@
 // LLMTELEMET-291 (T-20 RUN D2): one roomy, two-line live session row.
 // Every value comes from the RUN D1 shaped LiveRow (live.js:416-443). Text is
 // rendered as JSX text/attributes, so untrusted DB titles are escaped by React.
-import { ago, fmt, fmtB } from "../../lib/home/format";
-import type { LiveKind, LiveRow } from "../../lib/home/live-rows";
+import { ago, fmt, fmtB } from "../../lib/home-board/format";
+import type { LiveKind, LiveRow } from "../../lib/home-board/live-rows";
 import ModelBadge from "./ModelBadge";
 
 const KIND_LABEL: Record<LiveKind, string> = {

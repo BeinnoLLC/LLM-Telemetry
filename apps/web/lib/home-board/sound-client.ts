@@ -1,5 +1,5 @@
 // LLMTELEMET-291 (T-20 RUN F2): browser adapter for the pure RUN F1 engine.
-// All tone shaping, debouncing and diffing stays in lib/home/sound.ts; this
+// All tone shaping, debouncing and diffing stays in lib/home-board/sound.ts; this
 // file only supplies Web Audio, localStorage and one shared instance.
 import {
   createSoundEngine,
