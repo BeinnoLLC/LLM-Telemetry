@@ -21,6 +21,10 @@ const payload = JSON.parse(
 ) as AnalyticsData;
 const rows = payload.profiles?.work?.rows ?? [];
 const sessions = (payload.profiles?.work?.node_sessions ?? null) as Record<string, unknown> | null;
+const realChatList = Object.values(sessions ?? {}).find(
+  (entry) => Array.isArray(entry) && entry.length > 0,
+) as unknown[] | undefined;
+const realChat = realChatList?.[0] as Record<string, unknown> | undefined;
 
 let host: HTMLDivElement;
 let root: Root;
@@ -99,7 +103,11 @@ describe("FlowTip", () => {
     const html = renderToString(createElement(FlowTip, {
       node,
       rootCalls: rootNode.calls,
-      chats: [{ id: "s1", title: "Real chat", calls: 7 }],
+      chats: [{
+        id: String(realChat?.id ?? ""),
+        title: String(realChat?.title ?? ""),
+        calls: Number(realChat?.calls ?? 0),
+      }],
     }));
     const hostEl = document.createElement("div");
     hostEl.innerHTML = html;
@@ -107,9 +115,10 @@ describe("FlowTip", () => {
     expect(hostEl.querySelector(".ft-h")?.textContent).toBe(node.name);
     expect([...hostEl.querySelectorAll(".ft-r span")].map((n) => n.textContent))
       .toEqual(["calls", "est. cost", "tasks"]);
+    expect(realChat?.title, "sample artifact must carry a real chat").toBeTruthy();
     expect(hostEl.querySelector(".ft-s")?.textContent).toBe("chats");
-    expect(hostEl.querySelector(".ft-c span")?.textContent).toBe("Real chat");
-    expect(hostEl.querySelector(".ft-c b")?.textContent).toBe("7");
+    expect(hostEl.querySelector(".ft-c span")?.textContent).toBe(String(realChat?.title));
+    expect(hostEl.querySelector(".ft-c b")?.textContent).toBe(Number(realChat?.calls).toLocaleString());
   });
 
   it("leaves an empty tooltip when no node is hovered", () => {
