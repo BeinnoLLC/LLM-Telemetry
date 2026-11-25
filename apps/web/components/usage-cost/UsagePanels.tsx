@@ -6,6 +6,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fmtB } from "../../lib/home-board/format";
 import { HEXAGON_PATH } from "../../lib/home-board/provider-icons";
 import {
   refreshTransfer,
@@ -29,14 +30,16 @@ function ProviderMark({
   color: string;
 }) {
   return (
-    <svg
-      className="up-mark"
-      viewBox={MARK_VIEW}
-      aria-hidden="true"
-      style={{ color }}
-    >
-      <path d={path ?? HEXAGON_PATH} fill="currentColor" />
-    </svg>
+    <span className="up-mark-disc" data-provider-mark="true">
+      <svg
+        className="up-mark"
+        viewBox={MARK_VIEW}
+        aria-hidden="true"
+        style={{ color }}
+      >
+        <path d={path ?? HEXAGON_PATH} fill="currentColor" />
+      </svg>
+    </span>
   );
 }
 
@@ -75,8 +78,9 @@ function TransferCard({ initial }: { initial: PanelsModel["transfer"] }) {
 function BandwidthTrend({ panel }: { panel: BandwidthPanel }) {
   const W = 640;
   const H = 220;
-  const LEFT = 36;
-  const RIGHT = W - 44;
+  // Room on both sides for five numeric tick labels (views.js:309-312).
+  const LEFT = 48;
+  const RIGHT = W - 72;
   const TOP = 18;
   const BOTTOM = H - 30;
   const leftPeak = Math.max(
@@ -92,6 +96,8 @@ function BandwidthTrend({ panel }: { panel: BandwidthPanel }) {
   const xAt = (i: number) => LEFT + slot * (i + 0.5);
   const yAt = (value: number, axis: "left" | "right") =>
     BOTTOM - (Math.max(0, value) / (axis === "left" ? leftPeak : rightPeak)) * (BOTTOM - TOP);
+  // Chart.js showed five ticks and gridlines per axis (views.js:309-312).
+  const tickFractions = [0, 0.25, 0.5, 0.75, 1];
   return (
     <div className="uc-plot up-plot">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Bandwidth trend by day">
@@ -102,6 +108,31 @@ function BandwidthTrend({ panel }: { panel: BandwidthPanel }) {
         <text className="uc-axis" x={RIGHT} y={TOP - 6} textAnchor="end" data-axis-label="right">
           {panel.axes.right}
         </text>
+        {(["left", "right"] as const).flatMap((axis) => {
+          const peak = axis === "left" ? leftPeak : rightPeak;
+          return tickFractions.map((fraction) => {
+            const y = yAt(peak * fraction, axis);
+            return (
+              <g key={`${axis}-${fraction}`} data-tick-axis={axis} data-grid-axis={axis}>
+                <line
+                  className={`uc-grid up-grid${axis === "right" ? " up-grid-right" : ""}`}
+                  x1={LEFT}
+                  y1={y}
+                  x2={RIGHT}
+                  y2={y}
+                />
+                <text
+                  className="uc-axis up-tick"
+                  x={axis === "left" ? LEFT - 6 : RIGHT + 6}
+                  y={y + 3}
+                  textAnchor={axis === "left" ? "end" : "start"}
+                >
+                  {fmtB(peak * fraction)}
+                </text>
+              </g>
+            );
+          });
+        })}
         {panel.trend.map((series) => {
           const barW = Math.min(20, slot * 0.5);
           return (
@@ -205,7 +236,7 @@ function BandwidthCard({ panel }: { panel: BandwidthPanel }) {
                     data-x={row.x.toFixed(2)}
                     title={`${row.sent.toLocaleString("en-US")} prompt tokens sent · ${row.fresh.toLocaleString("en-US")} fresh · ${row.calls.toLocaleString("en-US")} calls`}
                   >
-                    <span className="up-resend-name" style={{ color: row.color }}>
+                    <span className="up-resend-name">
                       <ProviderMark path={row.icon} color={row.color} />
                       {row.label}
                     </span>
@@ -333,7 +364,7 @@ function LatencyRows({
     <>
       {rows.map((row) => (
         <div className="up-lat-row" key={row.name} data-name={row.name} data-n={row.n}>
-          <span className="up-lat-name" title={row.name} style={{ color: row.color }}>
+          <span className="up-lat-name" title={row.name}>
             {isModel && <ProviderMark path={row.icon} color={row.color} />}
             {row.name}
           </span>
@@ -376,7 +407,6 @@ function LatencyCard({ panel }: { panel: LatencyPanel }) {
 }
 
 function UnattributedCard({ panel }: { panel: UnattributedPanel }) {
-  if (panel.empty) return null;
   const W = 640;
   const H = 180;
   const PAD = 36;
@@ -386,8 +416,14 @@ function UnattributedCard({ panel }: { panel: UnattributedPanel }) {
   return (
     <section className="uc-card up-card up-wide" data-panel="unattributed">
       <h2>Unattributed cost</h2>
-      <p className="uc-meta" data-testid="projhdr">{panel.header}</p>
-      <div className="uc-plot up-plot">
+      {panel.empty ? (
+        <p className="up-empty" data-unattributed-empty="true">
+          No cost recorded in this range.
+        </p>
+      ) : (
+        <>
+          <p className="uc-meta" data-testid="projhdr">{panel.header}</p>
+          <div className="uc-plot up-plot">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Cost by project">
           <defs>
             <pattern id="uc-unattr-hatch" width="8" height="8" patternUnits="userSpaceOnUse">
@@ -421,11 +457,13 @@ function UnattributedCard({ panel }: { panel: UnattributedPanel }) {
               </g>
             );
           })}
-        </svg>
-      </div>
-      <p className="up-note" title={panel.tooltip}>
-        {UNATTR_LABEL} — {panel.tooltip}
-      </p>
+          </svg>
+          </div>
+          <p className="up-note" title={panel.tooltip}>
+            {UNATTR_LABEL} — {panel.tooltip}
+          </p>
+        </>
+      )}
     </section>
   );
 }

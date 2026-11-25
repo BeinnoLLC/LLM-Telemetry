@@ -514,7 +514,9 @@ export interface LatencyPanel {
 }
 
 function latencyRow(name: string, bucket: LatencyBucket, isModel: boolean): LatencyRowModel {
-  const key = provOf("", name, "");
+  // views.js:1325/1345 resolve the brand from the SHORT model name, not the
+  // full "provider/model" slug (which would always land on the generic mark).
+  const key = provOf("", short(name), "");
   return {
     name,
     n: num(bucket.n),
@@ -547,10 +549,11 @@ export function deriveLatency(lat: LatencyData | undefined = {}): LatencyPanel {
       .map(([name, bucket]) => latencyRow(name, bucket, false)),
     slowest: slowest.map((row) => ({
       session: String(row.session ?? ""),
-      model: String(row.model ?? UNATTR_LABEL),
+      // A turn without a model is unknown, not unattributed COST (views.js:1345).
+      model: String(row.model || "(unknown)"),
       seconds: num(row.s),
       secondsText: `${num(row.s)}s`,
-      icon: providerMark(provOf("", row.model, "")),
+      icon: providerMark(provOf("", short(row.model), "")),
     })),
   };
 }
@@ -746,9 +749,14 @@ export function deriveRepoBranch(data: RepoBranchData | undefined = {}): RepoBra
   };
 }
 
-/** Stable DOM id for aria-controls; derived from the repo name, never random. */
+/** Stable DOM id for aria-controls; derived from the repo name, never random.
+ * Every non-alphanumeric is encoded as `_<base36 code point>_` (including `_`
+ * itself), so "a/b", "a-b" and "a b" cannot collapse onto one id. */
 export function repoRowId(repo: string): string {
-  return `uc-repo-${repo.replace(/[^a-zA-Z0-9_-]+/g, "-")}`;
+  const encoded = Array.from(repo, (ch) =>
+    /[A-Za-z0-9]/.test(ch) ? ch : `_${ch.codePointAt(0)!.toString(36)}_`,
+  ).join("");
+  return `uc-repo-${encoded}`;
 }
 
 export interface FlatRepoRow extends RepoBranchRowModel {
@@ -818,7 +826,11 @@ export function derivePanels(
     ? filters.profile
     : keys[0] ?? null;
   const profile = profileKey ? profiles[profileKey] : undefined;
-  const rows = filterRows(profile?.rows ?? [], filters);
+  // Other panels stay cross-filtered; unattributed cost is a date-scoped
+  // project roll-up (views.js:622-626,742) and must not shrink when the user
+  // filters by model/provider/project.
+  const dateRows = filterRows(profile?.rows ?? [], { from: filters.from, to: filters.to });
+  const rows = filterRows(dateRows, filters);
   return {
     profile: profileKey,
     transfer: deriveTransfer(rows),
@@ -830,7 +842,7 @@ export function derivePanels(
       snapshot.ollama?.hosts ?? [],
     ),
     latency: deriveLatency(profile?.latency),
-    unattributed: deriveUnattributed(rows, filters.exclude),
+    unattributed: deriveUnattributed(dateRows, filters.exclude),
     repos: deriveRepoBranch(profile?.repo_branch),
   };
 }

@@ -48,14 +48,17 @@ async function readArtifact<T extends Artifact>(
 }
 
 /** Resolve the reports dir once, then load the artifacts in parallel. Ollama
- * is optional: it only feeds the queue-depth "now" reference line. */
+ * is optional: it only feeds the queue-depth "now" reference line. Mirroring
+ * collect_live.py:256-270, ANY failure to read/parse/validate that one file
+ * degrades it to null; analytics and costs stay strict so a broken payload is
+ * never silently rendered as an empty dashboard. */
 export async function loadUsageSnapshot(
   dir: string = reportsDir(),
 ): Promise<UsageSnapshot> {
   const [analytics, costs, ollama] = await Promise.all([
     readArtifact<AnalyticsData>(dir, "analytics"),
     readArtifact<CostsData>(dir, "costs"),
-    readArtifact<OllamaData>(dir, "ollama"),
+    readArtifact<OllamaData>(dir, "ollama").catch(() => null),
   ]);
   return { analytics, costs, ollama, dir };
 }

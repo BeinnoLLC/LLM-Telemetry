@@ -70,6 +70,20 @@
   stroke-width: 1;
 }
 
+/* Bandwidth trend: five numeric ticks and horizontal gridlines per axis. */
+.up-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.up-grid-right {
+  stroke-dasharray: 2 4;
+}
+
+.up-tick {
+  font-variant-numeric: var(--num);
+}
+
 .uc-series polyline {
   fill: none;
   stroke-width: 2;
@@ -259,10 +273,23 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
+  color: var(--fg);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.up-mark-disc {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
 }
 
 .up-mark {
@@ -296,7 +323,7 @@
 }
 
 .up-resend-flag {
-  color: var(--c-red);
+  color: var(--z-bad);
   font-size: 0.6875rem;
 }
 
@@ -322,6 +349,7 @@
   flex: 1 1 auto;
   align-items: center;
   gap: var(--sp-1);
+  color: var(--fg);
   min-width: 0;
   overflow: hidden;
   font-weight: 600;

@@ -1,10 +1,17 @@
 // LLMTELEMET-293 (T-22 RUN B): pure port checks for the six panels and their
 // edge cases. No network, no invented fixture values beyond the snapshot the
 // test itself supplies; the renderer assertion checks markup, not pixels.
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import UsagePanels from "../../components/usage-cost/UsagePanels";
+import { fmtB } from "../../lib/home-board/format";
+import { loadUsageSnapshot } from "../../lib/usage-cost/load";
+import { providerMark } from "../../lib/usage-cost/usage";
 import {
   deriveBandwidth,
   deriveConcurrency,
@@ -26,6 +33,8 @@ import type {
   OllamaHost,
   UsageSnapshot,
 } from "../../lib/usage-cost/types";
+
+const webRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 const DAY = {
   up_bytes: 2026,
@@ -177,6 +186,47 @@ function snapshot(overrides: Partial<AnalyticsProfile> = {}): UsageSnapshot {
   };
 }
 
+describe("loadUsageSnapshot (optional ollama artifact)", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "lst-293-panels-"));
+    writeFileSync(join(dir, "analytics-data.json"), JSON.stringify({ schema_version: 3, profiles: {} }));
+    writeFileSync(join(dir, "costs-data.json"), JSON.stringify({ schema_version: 3 }));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("1. tolerates ollama read, JSON and schema errors while analytics/costs stay strict", async () => {
+    const missing = await loadUsageSnapshot(dir);
+    expect(missing.ollama).toBeNull();
+    expect(missing.analytics?.schema_version).toBe(3);
+    expect(missing.costs?.schema_version).toBe(3);
+
+    writeFileSync(join(dir, "ollama-data.json"), "{not json");
+    const badJson = await loadUsageSnapshot(dir);
+    expect(badJson.ollama).toBeNull();
+    expect(badJson.analytics).not.toBeNull();
+
+    writeFileSync(join(dir, "ollama-data.json"), JSON.stringify({ schema_version: 99 }));
+    const badSchema = await loadUsageSnapshot(dir);
+    expect(badSchema.ollama).toBeNull();
+    expect(badSchema.costs).not.toBeNull();
+
+    writeFileSync(join(dir, "ollama-data.json"), JSON.stringify({ schema_version: 3, hosts: [{ queue: 2 }] }));
+    expect((await loadUsageSnapshot(dir)).ollama?.hosts).toHaveLength(1);
+  });
+
+  it("still refuses a broken analytics or costs artifact", async () => {
+    writeFileSync(join(dir, "ollama-data.json"), "{not json");
+    writeFileSync(join(dir, "analytics-data.json"), JSON.stringify({ schema_version: 99 }));
+    await expect(loadUsageSnapshot(dir)).rejects.toThrow(/analytics-data\.json: schema_version 99/);
+    writeFileSync(join(dir, "analytics-data.json"), JSON.stringify({ schema_version: 3, profiles: {} }));
+    writeFileSync(join(dir, "costs-data.json"), "{not json");
+    await expect(loadUsageSnapshot(dir)).rejects.toThrow(/costs-data\.json: invalid JSON/);
+  });
+});
+
 describe("transfer panel (views.js:973-1012)", () => {
   it("sums byte columns, keeps LAN separate and shows the round-trip ratio", () => {
     const panel = deriveTransfer(rows());
@@ -302,6 +352,17 @@ describe("latency panel (views.js:1315-1352)", () => {
     expect(panel.byModel[0].icon?.length).toBeGreaterThan(1);
   });
 
+  it("2/9. resolves provider marks from the short model and labels an unknown slowest model", () => {
+    const panel = deriveLatency({
+      by_model: { "ollama/qwen3:8b": { n: 1, p90: 2 } },
+      slowest: [{ session: "s-2" }, { session: "s-3", model: "" }],
+    });
+    expect(panel.byModel[0].icon).toBe(providerMark("local"));
+    expect(panel.byModel[0].icon).not.toBe(providerMark("cloud"));
+    expect(panel.slowest.map((row) => row.model)).toEqual(["(unknown)", "(unknown)"]);
+    expect(panel.slowest[0].icon).toBe(providerMark("cloud"));
+  });
+
   it("hides the whole card when the collector wrote no model buckets", () => {
     const panel = deriveLatency({ by_endpoint: { "/v1/chat": { p90: 1 } } });
     expect(panel.hidden).toBe(true);
@@ -332,7 +393,12 @@ describe("unattributed cost and repo/branch rows (views.js:1413-1527)", () => {
     ]);
     expect(panel.repos[0].costText).toBe("$2.50");
     expect(panel.unattrText).toContain("Unattributed: $0.30 of $2.80");
-    expect(repoRowId("zeta/repo")).toBe("uc-repo-zeta-repo");
+    expect(repoRowId("zeta/repo")).toBe("uc-repo-zeta_1b_repo");
+    // 4. non-alphanumerics are code-point encoded, so similar names cannot collide.
+    expect(repoRowId("a/b")).toBe("uc-repo-a_1b_b");
+    expect(repoRowId("a-b")).toBe("uc-repo-a_19_b");
+    expect(repoRowId("a b")).toBe("uc-repo-a_w_b");
+    expect(new Set([repoRowId("a/b"), repoRowId("a-b"), repoRowId("a b")]).size).toBe(3);
     expect(flattenRepoRows(panel.repos, new Set())).toHaveLength(2);
     const expanded = flattenRepoRows(panel.repos, new Set(["zeta"]));
     expect(expanded).toHaveLength(4);
@@ -359,6 +425,17 @@ describe("snapshot integration and the six edge cases", () => {
     // A different profile picks different data; nothing leaks across profiles.
     const other = derivePanels(snapshot(), { profile: "missing" });
     expect(other.profile).toBe("work");
+  });
+
+  it("3. unattributed cost uses date-only rows; other panels stay cross-filtered", () => {
+    const dateOnly = derivePanels(snapshot(), { from: "2026-11-01", to: "2026-11-01" });
+    expect(dateOnly.unattributed.totalCost).toBeCloseTo(1.25);
+    expect(dateOnly.unattributed.buckets.map((bucket) => bucket.name)).toEqual(["work"]);
+    const cross = derivePanels(snapshot(), { model: "no-such-model" });
+    expect(cross.transfer.hidden).toBe(true);
+    expect(cross.transfer.seen).toBe(false);
+    expect(cross.unattributed.totalCost).toBeCloseTo(2.3);
+    expect(cross.unattributed.buckets.map((bucket) => bucket.name)).toEqual(["work", UNATTR_LABEL]);
   });
 
   it("1. an empty snapshot hides every artifact-backed card", () => {
@@ -396,6 +473,54 @@ describe("snapshot integration and the six edge cases", () => {
     expect(sticky.hidden).toBe(false);
     const cleared = deriveConcurrency(concurrency(), "2026-12-01", "2026-12-31");
     expect(cleared.series).toHaveLength(0);
+  });
+
+  it("5. draws fmtB ticks and horizontal gridlines on both bandwidth axes", () => {
+    const model = derivePanels(snapshot());
+    const markup = renderToStaticMarkup(createElement(UsagePanels, { model }));
+    for (const axis of ["left", "right"]) {
+      expect((markup.match(new RegExp(`data-tick-axis="${axis}"`, "g")) ?? []).length).toBe(5);
+      expect((markup.match(new RegExp(`data-grid-axis="${axis}"`, "g")) ?? []).length).toBe(5);
+    }
+    const peakOf = (axis: "left" | "right") => Math.max(
+      1,
+      ...model.bandwidth.trend.filter((s) => s.axis === axis).flatMap((s) => s.values),
+    );
+    expect(markup).toContain(fmtB(0));
+    expect(markup).toContain(fmtB(peakOf("left") / 2));
+    expect(markup).toContain(fmtB(peakOf("right") / 2));
+    expect(markup).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it("6. uses the accessible danger token for the re-send flag", () => {
+    const css = readFileSync(join(webRoot, "styles/usage-cost-charts.css"), "utf8");
+    const flag = css.match(/\.up-resend-flag\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(flag).toContain("var(--z-bad)");
+    expect(flag).not.toContain("var(--c-red)");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it("7. keeps provider colour on SVG marks, never on 12px text", () => {
+    const markup = renderToStaticMarkup(createElement(UsagePanels, { model: derivePanels(snapshot()) }));
+    expect(markup).not.toMatch(/class="up-(?:resend|lat)-name"[^>]*style=/);
+    expect((markup.match(/class="up-mark-disc"/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect(markup).toContain('style="color:var(--prov-local)"');
+    const css = readFileSync(join(webRoot, "styles/usage-cost-charts.css"), "utf8");
+    for (const selector of [".up-resend-name", ".up-lat-name"]) {
+      const rule = css.match(new RegExp(`${selector}\\s*\\{[^}]*\\}`))?.[0] ?? "";
+      expect(rule).toContain("color: var(--fg)");
+    }
+    expect(css).toContain(".up-mark-disc");
+  });
+
+  it("8. keeps the unattributed card and shows an empty state for an empty range", () => {
+    const markup = renderToStaticMarkup(createElement(UsagePanels, {
+      model: derivePanels({ analytics: null, costs: null, dir: "/empty" }),
+    }));
+    expect(markup).toContain('data-panel="unattributed"');
+    expect(markup).toContain('data-unattributed-empty="true"');
+    expect(markup).toContain("No cost recorded in this range.");
+    expect(markup).not.toContain("data-value=");
   });
 
   it("renders provider marks, aria controls and panel markers without literal hex", () => {
