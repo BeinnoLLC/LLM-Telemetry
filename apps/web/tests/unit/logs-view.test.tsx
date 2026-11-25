@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LogsView from "../../components/sessions-logs/LogsView";
 import { providerIcon } from "../../lib/home-board/provider-icons";
-import type { LogsPayload } from "../../lib/sessions-logs/logs";
+import { EMPTY_SELECTION, filteredLogs, type LogsPayload } from "../../lib/sessions-logs/logs";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -99,6 +99,7 @@ function leafWith(text: string): HTMLElement {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  window.history.replaceState({}, "", "/logs");
   Object.defineProperty(URL, "createObjectURL", {
     configurable: true,
     writable: true,
@@ -241,6 +242,101 @@ describe("T-23 RUN C Logs view", () => {
     const text = await blob.text();
     expect(text.split("\n").length).toBe(expectedRows + 1);
     expect(text.startsWith("when,level,role,tool,model,session,title,preview")).toBe(true);
+  });
+
+  it("wraps schema failures in the exact Python outer error sentence", async () => {
+    stubFetch({ unexpected: true }, 200);
+    await renderView();
+    await waitFor(() => document.querySelector(".lgerror") !== null);
+    expect(document.querySelector(".lgerror")!.textContent).toBe(
+      "Could not load logs-data.json (logs-data.json is a stale payload (no schema_version) — re-run `llm-telemetry dashboard`). Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.",
+    );
+  });
+
+  it("rejects a stringified schema_version with the strict mismatch wording", async () => {
+    stubFetch({ schema_version: "3", profiles: {} }, 200);
+    await renderView();
+    await waitFor(() => document.querySelector(".lgerror") !== null);
+    expect(document.querySelector(".lgerror")!.textContent).toBe(
+      'Could not load logs-data.json (logs-data.json has schema_version "3", this page expects 3 — re-run `llm-telemetry dashboard`). Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.',
+    );
+  });
+
+  it("selects ?profile=personal instead of the first payload profile", async () => {
+    window.history.replaceState({}, "", "/logs?profile=personal");
+    stubFetch();
+    await renderView();
+    await waitFor(() => rows().length > 0);
+
+    const modelFacet = (name: string) =>
+      fixture.profiles[name].facets.model!.find((facet) => facet.v === "claude-opus-5")!.n;
+    expect(modelFacet("personal")).not.toBe(modelFacet("work"));
+    const chip = document.querySelector<HTMLElement>(
+      '[data-facet="model"][data-val="claude-opus-5"] .n',
+    )!;
+    expect(chip.textContent).toBe(String(modelFacet("personal")));
+  });
+
+  it("uses the real session label as the chip tooltip", async () => {
+    stubFetch();
+    await renderView();
+    await waitFor(() => rows().length > 0);
+    const chip = document.querySelector<HTMLElement>(
+      '[data-facet="session"][data-val="s_alpha01"]',
+    )!;
+    expect(chip.textContent).toContain("Billing service");
+    expect(chip.getAttribute("title")).toBe("Billing service");
+    expect(chip.getAttribute("title")).not.toBe("s_alpha0");
+  });
+
+  it("adds two chips in one facet as an OR set and removes them independently", async () => {
+    stubFetch();
+    await renderView();
+    await waitFor(() => rows().length > 0);
+
+    const chips = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[data-facet="level"]'),
+    );
+    expect(chips.length).toBeGreaterThan(1);
+    const [first, second] = chips;
+
+    await click(first);
+    const afterFirst = document.querySelector("#lgcount")!.textContent;
+    await click(second);
+    expect(first.classList.contains("on")).toBe(true);
+    expect(second.classList.contains("on")).toBe(true);
+    expect(document.querySelector("#lgcountbadge")?.textContent?.trim()).toBe(
+      "2 filters active",
+    );
+    // The table itself is capped at 200 rows; the matched-count badge proves
+    // the two level chips widened the set instead of replacing the first.
+    const twoLevels = [first.getAttribute("data-val")!, second.getAttribute("data-val")!];
+    const expectedCount = filteredLogs(
+      fixture.profiles.work,
+      { ...EMPTY_SELECTION, level: twoLevels },
+      24,
+      "",
+    ).length;
+    expect(document.querySelector("#lgcount")!.textContent).toBe(
+      `${expectedCount} shown`,
+    );
+    expect(document.querySelector("#lgcount")!.textContent).not.toBe(afterFirst);
+
+    await click(first);
+    expect(first.classList.contains("on")).toBe(false);
+    expect(second.classList.contains("on")).toBe(true);
+    expect(document.querySelector("#lgcountbadge")?.textContent?.trim()).toBe(
+      "1 filter active",
+    );
+  });
+
+  it("shows the exact oracle overflow-note wording when the display cap is passed", async () => {
+    stubFetch();
+    await renderView();
+    await waitFor(() => rows().length > 0);
+    expect(document.querySelector("#lgnote")?.textContent).toBe(
+      "Showing the newest 200 of 683 matches — narrow the filters to see more.",
+    );
   });
 
   it("shows the exact lazy-load error when the artifact is missing", async () => {

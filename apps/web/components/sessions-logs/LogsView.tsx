@@ -10,11 +10,10 @@ import { providerIcon } from "../../lib/home-board/provider-icons";
 import {
   activeLabel,
   buildLogsCsv,
-  CURRENT_COLLECTOR_SCHEMA,
   EMPTY_SELECTION,
   LOGS_FACET_KEYS,
   LOGS_FACET_LABELS,
-  facetLabel,
+  LOGS_ROW_CAP,
   filteredLogs,
   firstLogsProfile,
   fmtLogsCount,
@@ -22,12 +21,13 @@ import {
   logRowClass,
   logsCapNote,
   logsFacetGroups,
-  logsLoadError,
   logsOverflowNote,
+  logsRenderError,
   logsSchemaProblem,
   logsScope,
   logTag,
   logTime,
+  requestedLogsProfile,
   type LogsFacetKey,
   type LogsPayload,
   type LogsProfile,
@@ -44,7 +44,6 @@ const WINDOWS: ReadonlyArray<{ value: LogsWindow; label: string }> = [
   { value: 0, label: "All loaded" },
 ];
 
-const ROW_CAP = 200;
 const SEARCH_PLACEHOLDER = "Search text, tool, session…";
 
 /** SVG-only provider mark; never a letter or two-letter monogram. */
@@ -61,6 +60,7 @@ function ProviderMark({ model, className }: { model: string; className: string }
   );
 }
 
+/** drawer.js:221-226 — a chip is a Set toggle: click again to remove it. */
 function toggleValue(
   selection: LogsSelection,
   key: LogsFacetKey,
@@ -69,7 +69,7 @@ function toggleValue(
   const current = selection[key];
   const next = current.includes(value)
     ? current.filter((item) => item !== value)
-    : [value];
+    : [...current, value];
   return { ...selection, [key]: next };
 }
 
@@ -85,43 +85,49 @@ export default function LogsView() {
   const [windowHours, setWindowHours] = useState<LogsWindow>(24);
   const [query, setQuery] = useState("");
   const [openRows, setOpenRows] = useState<ReadonlySet<number>>(new Set());
+  // Python's drawer reads LOGS.profiles[current]; the merged "All" analytics
+  // tab has no logs profile, so an absent/unknown ?profile= falls back to the
+  // first real key. The query is the only profile choice this read-only page
+  // needs — no profile editor and no second fetch.
+  const [requestedProfile] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : requestedLogsProfile(window.location.search),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     const url = `${LOGS_URL}?t=${Date.now()}`;
     fetch(url, { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
-        if (!response.ok) throw new Error(String(response.status));
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = (await response.json()) as LogsPayload;
-        const problem = logsSchemaProblem(data, CURRENT_COLLECTOR_SCHEMA);
+        const problem = logsSchemaProblem(data);
         if (problem) throw new Error(problem);
-        if (!firstLogsProfile(data)) throw new Error("logs-data.json: no profile to display");
+        if (!firstLogsProfile(data, requestedProfile)) {
+          throw new Error("logs-data.json: no profile to display");
+        }
         setPayload(data);
       })
       .catch((caught: unknown) => {
         if (controller.signal.aborted) return;
-        const message = caught instanceof Error ? caught.message : String(caught);
-        setError(
-          message.startsWith("Could not load logs-data.json")
-            ? message
-            : /schema_version|not a JSON object|no profile/.test(message)
-              ? message
-              : logsLoadError(message),
-        );
+        const detail = caught instanceof Error ? caught.message : String(caught);
+        setError(logsRenderError(detail));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [requestedProfile]);
 
-  const profile: LogsProfile | null = useMemo(() => firstLogsProfile(payload), [payload]);
+  const profile: LogsProfile | null = useMemo(
+    () => firstLogsProfile(payload, requestedProfile),
+    [payload, requestedProfile],
+  );
   const groups = useMemo(() => (profile ? logsFacetGroups(profile) : []), [profile]);
   const rows: readonly LogEvent[] = useMemo(
     () => (profile ? filteredLogs(profile, selection, windowHours, query) : []),
     [profile, selection, windowHours, query],
   );
-  const visible = rows.slice(0, ROW_CAP);
+  const visible = rows.slice(0, LOGS_ROW_CAP);
   const filters = activeCount(selection);
 
   const activeChips = LOGS_FACET_KEYS.flatMap((key) =>
@@ -219,7 +225,7 @@ export default function LogsView() {
                         type="button"
                         data-facet={group.key}
                         data-val={item.value}
-                        title={facetLabel(group.key, { v: item.value })}
+                        title={item.label}
                         onClick={() =>
                           setSelection((previous) =>
                             toggleValue(previous, group.key, item.value),
@@ -307,7 +313,7 @@ export default function LogsView() {
                   </div>
                 );
               })}
-              {rows.length > ROW_CAP ? (
+              {rows.length > LOGS_ROW_CAP ? (
                 <div id="lgnote" className="muted lg-xs">
                   {logsOverflowNote(rows.length)}
                 </div>

@@ -8,6 +8,8 @@ export interface LogsChipDom {
   facet: string;
   value: string;
   label: string;
+  /** Native tooltip; oracle uses the item label, not the raw value. */
+  title: string;
   count: string;
   on: boolean;
   /** Provider brand SVG path on model chips; empty on every other facet. */
@@ -70,6 +72,7 @@ export async function readLogsDom(page: Page, _side: LogsSide): Promise<LogsDom>
       facet: string;
       value: string;
       label: string;
+      title: string;
       count: string;
       on: boolean;
       svgPath: string;
@@ -80,6 +83,7 @@ export async function readLogsDom(page: Page, _side: LogsSide): Promise<LogsDom>
         facet: element.getAttribute("data-facet") ?? "",
         value: element.getAttribute("data-val") ?? "",
         label: text(clone),
+        title: element.getAttribute("title") ?? "",
         count: text(element.querySelector(".n")),
         on: element.classList.contains("on"),
         svgPath: element.querySelector("svg path")?.getAttribute("d") ?? "",
@@ -123,13 +127,22 @@ export async function readLogsDom(page: Page, _side: LogsSide): Promise<LogsDom>
       };
     });
 
+    // The cap is disclosed on both stacks: Next uses #lgnote; the oracle
+    // appends an unlabelled sibling div only above its 1,200-row cap.
+    const nextNote = text(document.querySelector("#lgnote"));
+    const noteText = nextNote
+      || [...document.querySelectorAll("#lglist > div:not(.lgev)")]
+        .map((element) => text(element))
+        .find((value) => value.startsWith("Showing the newest"))
+      || "";
+
     return {
       view: document.querySelector('[data-view="Logs"]') !== null,
       scope: text(document.querySelector("#lgscope")),
       count: text(document.querySelector("#lgcount")),
       cap: text(document.querySelector("#lgcap")),
       badge: text(document.querySelector("#lgcountbadge")),
-      note: text(document.querySelector("#lgnote")),
+      note: noteText,
       searchPlaceholder: document.querySelector("#lgq")?.getAttribute("placeholder") ?? "",
       facets,
       windows,

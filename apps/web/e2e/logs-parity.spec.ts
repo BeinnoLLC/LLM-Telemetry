@@ -52,14 +52,39 @@ function startOracle(fixture: string, python: string): {
  * asserted: Next draws provider brand SVGs on model chips and expanded rows,
  * where the frozen Python build renders text-only labels; and T-23 caps the
  * Next table at 200 rows (with #lgnote) where Python draws up to 1200. Those
- * two documented differences are normalised after being checked. Everything
- * else — counts, labels, facets, timestamps, previews, CSV — is verbatim.
+ * two documented differences are normalised after being checked. The overflow
+ * note itself is never blanked: both stacks' real note text is read, asserted
+ * against the oracle's own sentence, and carried into the DOM comparison.
+ * Everything else — counts, labels, facets, timestamps, previews, CSV — is
+ * verbatim.
  */
+function oracleNotes(countText: string): { python: string; next: string } {
+  const displayed = countText.replace(/\s+shown$/, "").trim();
+  const multiplier = displayed.endsWith("K") ? 1e3
+    : displayed.endsWith("M") ? 1e6
+    : displayed.endsWith("B") ? 1e9 : 1;
+  const matched = Number.parseFloat(displayed) * multiplier;
+  if (!Number.isFinite(matched)) throw new Error(`unparsed row count: ${countText}`);
+  return {
+    python: matched > 1200
+      ? `Showing the newest 1,200 of ${displayed} matches — narrow the filters to see more.`
+      : "",
+    next: matched > 200
+      ? `Showing the newest 200 of ${displayed} matches — narrow the filters to see more.`
+      : "",
+  };
+}
+
 function canonicalizeLogsDom(
   dom: LogsDom,
   side: LogsSide,
   checkIcons: boolean,
+  notes: { python: string; next: string },
 ): LogsDom {
+  // The oracle is silent below its own 1,200-row cap; Next discloses its
+  // 200-row cap. Assert each real note before mirroring the Next disclosure
+  // into both sides, so the compared DOM keeps the note under test.
+  expect(dom.note).toBe(side === "python" ? notes.python : notes.next);
   const modelChips = dom.facets
     .flatMap((facet) => facet.chips)
     .filter((chip) => chip.facet === "model");
@@ -74,10 +99,9 @@ function canonicalizeLogsDom(
   }
   return {
     ...dom,
-    // T-23's 200-row table cap is asserted in the unit suite; the oracle still
-    // draws up to 1200. Compare only the shared prefix, and ignore the note
-    // that exists solely to disclose the Next cap.
-    note: "",
+    // Cap prefix: the 200-row cap is disclosed in `note` (asserted above),
+    // while the oracle still draws up to 1200 rows.
+    note: notes.next,
     facets: dom.facets.map((facet) => ({
       ...facet,
       chips: facet.chips.map((chip) =>
@@ -135,8 +159,9 @@ test("Logs filters, window, search, rows and CSV match the Python oracle", async
     const compare = async (label: string): Promise<void> => {
       const expectedRaw = await readLogsDom(py, "python");
       const actualRaw = await readLogsDom(next, "next");
-      const expected = canonicalizeLogsDom(expectedRaw, "python", true);
-      const actual = canonicalizeLogsDom(actualRaw, "next", true);
+      const notes = oracleNotes(expectedRaw.count);
+      const expected = canonicalizeLogsDom(expectedRaw, "python", true, notes);
+      const actual = canonicalizeLogsDom(actualRaw, "next", true, notes);
       console.log("RUN C compared " + JSON.stringify({
         state: label,
         scope: expected.scope,
@@ -178,6 +203,31 @@ test("Logs filters, window, search, rows and CSV match the Python oracle", async
     ]);
     await Promise.all([py.waitForTimeout(100), next.waitForTimeout(100)]);
     await compare("clear-facets");
+
+    // RUN C finding 1: two chips in one facet must be additive (Set OR),
+    // not a single-select replacement, on both stacks.
+    const levels = await py.locator('[data-facet="level"]').count();
+    expect(levels).toBeGreaterThan(1);
+    expect(await next.locator('[data-facet="level"]').count()).toBe(levels);
+    for (const index of [0, 1]) {
+      await Promise.all([
+        py.locator('[data-facet="level"]').nth(index).click(),
+        next.locator('[data-facet="level"]').nth(index).click(),
+      ]);
+      await Promise.all([py.waitForTimeout(100), next.waitForTimeout(100)]);
+    }
+    expect(await py.locator('[data-facet="level"].on').count()).toBe(2);
+    expect(await next.locator('[data-facet="level"].on').count()).toBe(2);
+    expect(await py.locator("#lgactive [data-unfacet]").count()).toBe(2);
+    expect(await next.locator("#lgactive [data-unfacet]").count()).toBe(2);
+    await compare("two-level-facets-OR");
+
+    // Leave the clean state the search/expand steps below assume.
+    await Promise.all([
+      py.locator("#lgclear").click(),
+      next.locator("#lgclear").click(),
+    ]);
+    await Promise.all([py.waitForTimeout(100), next.waitForTimeout(100)]);
 
     await Promise.all([
       py.locator('[data-win="24"]').click(),
@@ -243,7 +293,7 @@ test("Logs filters, window, search, rows and CSV match the Python oracle", async
       await page.screenshot({ path: join(SHOTS, `logs-${label}-1920x1080.png`) });
     }
     console.log(`RUN C parity comparisons: ${comparisons}`);
-    expect(comparisons).toBe(14);
+    expect(comparisons).toBe(15);
     expect(errors).toEqual([]);
   } finally {
     oracle.child.kill("SIGTERM");

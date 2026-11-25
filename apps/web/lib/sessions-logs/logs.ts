@@ -47,6 +47,8 @@ export type LogsWindow = 0 | 1 | 6 | 24;
  */
 export const LOGS_PAYLOAD_SHAPE_VERSION = 2;
 export const CURRENT_COLLECTOR_SCHEMA = 3;
+/** T-23 display cap; disclosed with the oracle's overflow-note wording. */
+export const LOGS_ROW_CAP = 200;
 
 export interface LogEvent {
   ts: number;
@@ -94,37 +96,58 @@ export const EMPTY_SELECTION: LogsSelection = Object.freeze({
   kind: [],
 });
 
-/** drawer.js:98-113 — schema_version guard, with the oracle's exact wording. */
+/** views.js:25-31 — strict schema guard, with the oracle's exact wording. */
 export function logsSchemaProblem(
   payload: unknown,
-  expected: number = LOGS_PAYLOAD_SHAPE_VERSION,
+  expected: number = CURRENT_COLLECTOR_SCHEMA,
 ): string | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return "logs-data.json: not a JSON object";
   }
-  const version = Number((payload as LogsPayload).schema_version);
-  if (!Number.isFinite(version)) {
-    return `logs-data.json has a non-numeric schema_version (${String(
-      (payload as LogsPayload).schema_version,
-    )}) — re-run the collector`;
+  const record = payload as Partial<LogsPayload>;
+  if (!("schema_version" in record)) {
+    return "logs-data.json is a stale payload (no schema_version) — re-run `llm-telemetry dashboard`";
   }
-  if (version !== expected) {
-    return `logs-data.json: schema_version ${String(version)} does not match ${expected}`;
+  // Strict identity, not Number() coercion: a string "3" is stale too.
+  if (record.schema_version !== expected) {
+    return `logs-data.json has schema_version ${JSON.stringify(
+      record.schema_version,
+    )}, this page expects ${expected} — re-run \`llm-telemetry dashboard\``;
   }
   return null;
 }
 
-/** HTTP/non-OK fetch message, identical to drawer.js:loadLogs(). */
-export function logsLoadError(status: number | string): string {
-  return `Could not load logs-data.json (HTTP ${status}). Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.`;
+/** drawer.js:162-163 — the one outer wrapper around every load failure. */
+export function logsRenderError(detail: string): string {
+  return `Could not load logs-data.json (${detail}). Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.`;
 }
 
-/** logs.js:lgProfile — the drawer never honours the analytics "All" profile. */
-export function firstLogsProfile(payload: LogsPayload | null): LogsProfile | null {
+/** HTTP/non-OK fetch message, identical to drawer.js:loadLogs(). */
+export function logsLoadError(status: number | string): string {
+  return logsRenderError(`HTTP ${status}`);
+}
+
+/**
+ * drawer.js:92-97 — `LOGS.profiles[current]` wins when the page names a
+ * profile; the first real key is only the fallback for the merged "All" tab.
+ */
+export function requestedLogsProfile(search: string): string | null {
+  if (typeof search !== "string") return null;
+  return new URLSearchParams(search).get("profile");
+}
+
+export function firstLogsProfile(
+  payload: LogsPayload | null,
+  requested?: string | null,
+): LogsProfile | null {
   if (!payload) return null;
-  const names = Object.keys(payload.profiles ?? {});
+  const profiles = payload.profiles ?? {};
+  if (requested && Object.prototype.hasOwnProperty.call(profiles, requested)) {
+    return profiles[requested] ?? null;
+  }
+  const names = Object.keys(profiles);
   if (names.length === 0) return null;
-  return payload.profiles[names[0]] ?? null;
+  return profiles[names[0]] ?? null;
 }
 
 /** drawer.js:246-252 — chip captions. Model and session values stay shortened. */
@@ -174,7 +197,8 @@ export function logsFacetGroups(profile: LogsProfile): LogsFacetGroup[] {
     return [{
       key,
       label: LOGS_FACET_LABELS[key],
-      items: raw.slice(0, 24).map((facet) => ({
+      // drawer.js:121-125 renders every shipped facet value; no silent 24-item cut.
+      items: raw.map((facet) => ({
         value: facet.v,
         label: facetLabel(key, facet),
         count: fmtLogsCount(facet.n),
@@ -218,9 +242,9 @@ export function matchesLogs(
       : key === "kind"
         ? (event.kind || "")
         : String(event[key] ?? "");
-    // Chips carry the raw facet value; keep set semantics so a future
-    // multi-select cannot silently widen the result set.
-    if (!chosen.includes(value)) return false;
+    // drawer.js:100-105 — each facet is a Set: selected values are OR, so an
+    // event matches when it carries any one of them. Facets themselves AND.
+    if (chosen.length > 0 && !chosen.some((selected) => selected === value)) return false;
   }
   const needle = query.trim().toLowerCase();
   return needle === "" || logHaystack(event).includes(needle);
@@ -268,8 +292,11 @@ export function logsCapNote(profile: LogsProfile): string {
   )} in the last ${profile.window_h || 24}h — filter counts cover the full window`;
 }
 
+/** drawer.js:213-215 — the oracle's sentence, with this page's 200-row cap. */
 export function logsOverflowNote(matched: number): string {
-  return `showing newest ${fmtLogsCount(200)} of ${fmtLogsCount(matched)} matching events`;
+  return `Showing the newest ${fmtLogsCount(LOGS_ROW_CAP)} of ${fmtLogsCount(
+    matched,
+  )} matches — narrow the filters to see more.`;
 }
 
 /**

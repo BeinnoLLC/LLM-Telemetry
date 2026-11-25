@@ -17,6 +17,8 @@ import {
   logsCapNote,
   logsFacetGroups,
   logsLoadError,
+  logsOverflowNote,
+  logsRenderError,
   logsSchemaProblem,
   logsScope,
   LOGS_FACET_KEYS,
@@ -24,6 +26,7 @@ import {
   logHaystack,
   logTag,
   logTime,
+  requestedLogsProfile,
   type LogsPayload,
   type LogsProfile,
   type LogsSelection,
@@ -44,31 +47,47 @@ const select = (facet: keyof LogsSelection, value: string): LogsSelection => ({
 });
 
 describe("T-23 RUN C logs payload guard", () => {
-  it("reports the exact stale-schema error for a wrong version", () => {
-    expect(logsSchemaProblem({ schema_version: 1 })).toBe(
-      "logs-data.json: schema_version 1 does not match 2",
+  it("uses views.js's exact stale-payload and version-mismatch wording", () => {
+    expect(logsSchemaProblem(null)).toBe("logs-data.json: not a JSON object");
+    expect(logsSchemaProblem([])).toBe("logs-data.json: not a JSON object");
+    expect(logsSchemaProblem({})).toBe(
+      "logs-data.json is a stale payload (no schema_version) — re-run `llm-telemetry dashboard`",
     );
-    expect(LOGS_PAYLOAD_SHAPE_VERSION).toBe(2);
-    expect(logsSchemaProblem({ schema_version: 2 })).toBeNull();
+    expect(logsSchemaProblem({ schema_version: 1 })).toBe(
+      "logs-data.json has schema_version 1, this page expects 3 — re-run `llm-telemetry dashboard`",
+    );
+    // Strict !==, like views.js:29: a stringified version is stale too.
+    expect(logsSchemaProblem({ schema_version: "3" })).toBe(
+      'logs-data.json has schema_version "3", this page expects 3 — re-run `llm-telemetry dashboard`',
+    );
+    expect(logsSchemaProblem({ schema_version: 3 })).toBeNull();
   });
 
   it("accepts the version the checked-in fixture and Python oracle render", () => {
     expect(fixture.schema_version).toBe(CURRENT_COLLECTOR_SCHEMA);
-    expect(logsSchemaProblem(fixture, CURRENT_COLLECTOR_SCHEMA)).toBeNull();
-    expect(logsSchemaProblem({ schema_version: 2 }, CURRENT_COLLECTOR_SCHEMA)).toBe(
-      "logs-data.json: schema_version 2 does not match 3",
+    expect(logsSchemaProblem(fixture)).toBeNull();
+    expect(LOGS_PAYLOAD_SHAPE_VERSION).toBe(2);
+    expect(logsSchemaProblem({ schema_version: 2 })).toBe(
+      "logs-data.json has schema_version 2, this page expects 3 — re-run `llm-telemetry dashboard`",
     );
   });
 
-  it("uses the Python 404 wording verbatim", () => {
-    expect(logsLoadError(404)).toBe(
-      "Could not load logs-data.json (HTTP 404). Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.",
-    );
+  it("uses the Python outer wrapper for HTTP and every other detail", () => {
+    const hint =
+      "Run llm-telemetry logs, and note that fetch is blocked when the page is opened from file://.";
+    expect(logsLoadError(404)).toBe(`Could not load logs-data.json (HTTP 404). ${hint}`);
+    expect(logsRenderError("boom")).toBe(`Could not load logs-data.json (boom). ${hint}`);
+    expect(logsRenderError(`HTTP 500`)).toBe(logsLoadError(500));
   });
 
-  it("always picks the first profile and never merges", () => {
+  it("honours the chosen profile before falling back to the first key", () => {
     expect(Object.keys(fixture.profiles)[0]).toBe("work");
     expect(profile).toBe(fixture.profiles.work);
+    expect(requestedLogsProfile("?profile=personal&x=1")).toBe("personal");
+    expect(requestedLogsProfile("")).toBeNull();
+    expect(firstLogsProfile(fixture, "personal")).toBe(fixture.profiles.personal);
+    expect(firstLogsProfile(fixture, "missing")).toBe(fixture.profiles.work);
+    expect(firstLogsProfile(fixture, "All")).toBe(fixture.profiles.work);
     expect(firstLogsProfile(null)).toBeNull();
     expect(firstLogsProfile({ schema_version: 3, profiles: {} })).toBeNull();
   });
@@ -100,6 +119,19 @@ describe("T-23 RUN C logs facets and filters", () => {
     ).toBe(false);
   });
 
+  it("renders every shipped facet value instead of truncating at 24", () => {
+    const many = Array.from({ length: 30 }, (_, index) => ({
+      v: `tool-${index}`,
+      n: index + 1,
+    }));
+    const group = logsFacetGroups({
+      ...profile,
+      facets: { ...profile.facets, tool: many },
+    }).find((item) => item.key === "tool")!;
+    expect(group.items).toHaveLength(30);
+    expect(group.items[29]).toEqual({ value: "tool-29", label: "tool-29", count: "30" });
+  });
+
   it("filters on generated-relative window, facets and every search field", () => {
     const all = filteredLogs(profile, EMPTY_SELECTION, 24, "");
     expect(all.length).toBe(profile.events.length);
@@ -128,6 +160,20 @@ describe("T-23 RUN C logs facets and filters", () => {
     expect(search.every((event) => logHaystack(event).includes("timeout"))).toBe(true);
   });
 
+  it("ORs selected values inside one facet and ANDs across facets", () => {
+    const [first, second] = profile.facets.tool!.slice(0, 2).map((facet) => facet.v);
+    const both: LogsSelection = { ...EMPTY_SELECTION, tool: [first, second] };
+    const union = filteredLogs(profile, both, 24, "");
+    const expected = profile.events.filter((event) => event.tool === first || event.tool === second);
+    expect(union.length).toBe(expected.length);
+    expect(union.length).toBeGreaterThan(
+      filteredLogs(profile, select("tool", first), 24, "").length,
+    );
+    const narrowed = filteredLogs(profile, { ...both, role: ["tool"] }, 24, "");
+    expect(narrowed.every((event) => event.tool === first || event.tool === second)).toBe(true);
+    expect(narrowed.every((event) => event.role === "tool")).toBe(true);
+  });
+
   it("resolves every facet key and never invents a tag", () => {
     for (const key of LOGS_FACET_KEYS) {
       const group = logsFacetGroups(profile).find((item) => item.key === key)!;
@@ -144,6 +190,12 @@ describe("T-23 RUN C logs facets and filters", () => {
     expect(logsCapNote(profile)).toContain(fmtLogsCount(profile.events_shown));
     expect(logsCapNote(profile)).toContain(fmtLogsCount(profile.events_total));
     expect(logsCapNote({ ...profile, capped: false })).toBe("");
+    expect(logsOverflowNote(683)).toBe(
+      "Showing the newest 200 of 683 matches — narrow the filters to see more.",
+    );
+    expect(logsOverflowNote(2340)).toBe(
+      "Showing the newest 200 of 2.3K matches — narrow the filters to see more.",
+    );
   });
 });
 
