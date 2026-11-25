@@ -2,7 +2,7 @@
 // cross-filters as Usage, and datasets produced entirely by cost.ts. The
 // stale-price notice is an inline chip: it never becomes a red page banner.
 import ChartCard from "@/components/ChartCard";
-import CostTables from "@/components/usage-cost/CostTables";
+import CostTables, { StalePriceChip } from "@/components/usage-cost/CostTables";
 import { deriveCost } from "@/lib/usage-cost/cost";
 import { loadUsageSnapshot } from "@/lib/usage-cost/load";
 import type { UsageFilters } from "@/lib/usage-cost/types";
@@ -48,17 +48,20 @@ export default async function CostPage({
           ? `${cost.profile} · ${cost.rowCount.toLocaleString("en-US")} rows`
           : "n/a — no profile rows in the snapshot"}
       </p>
-      {cost.stale.visible && (
-        <span className="uc-stale-chip" data-fresh-state={cost.stale.state} role="status">
-          {cost.stale.text}
-        </span>
-      )}
+      <StalePriceChip chip={cost.stale} />
       <div className="cost-grid">
         <ChartCard
           id="cModelCost"
           title="Cost by model"
           kind="hbar"
-          points={cost.modelCosts}
+          points={cost.modelCosts.map((point) => ({
+            ...point,
+            // views.js:797-800 — dollar labels and tooltip on the cost chart.
+            valueText: `$${point.value.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+          }))}
           seriesLabel="Est. cost"
           seriesFormat="compact"
           empty={cost.empty}

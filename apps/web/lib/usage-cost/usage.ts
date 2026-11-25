@@ -25,6 +25,8 @@ export interface ChartPoint {
   color: string;
   /** SVG path data for provider marks; never a letter or monogram. */
   icon?: string;
+  /** Opt-in display text (e.g. dollars); the numeric value still scales the bar. */
+  valueText?: string;
 }
 
 export interface ChartSeries {

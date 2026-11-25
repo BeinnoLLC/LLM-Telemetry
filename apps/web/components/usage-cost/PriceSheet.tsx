@@ -196,7 +196,8 @@ export default function PriceSheet({ data }: { data: CostsData | null }) {
           </p>
         </div>
         <div className="pv-controls">
-          <input className="chip pv-search" data-testid="priceSearch" placeholder="Search model, provider or source…"
+          <input className="chip pv-search" data-testid="priceSearch" aria-label="Search models, providers and sources"
+                 placeholder="Search model, provider or source…"
                  value={query} onChange={(event) => setQuery(event.target.value)} />
           <div className="pv-tabs" data-testid="priceTabs">
             {PRICE_TABS.map(([key, label]) => (

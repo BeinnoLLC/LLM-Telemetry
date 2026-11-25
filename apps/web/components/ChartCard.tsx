@@ -65,7 +65,7 @@ function HorizontalBars({ points, empty }: { points: readonly ChartPoint[]; empt
             <text className="uc-label" x={PAD + 20} y={y + 4}>{point.label}</text>
             <rect className="uc-track" x={PAD + 140} y={y - 5} width={track} height={10} rx={3} />
             <rect className="uc-bar" x={PAD + 140} y={y - 5} width={width} height={10} rx={3} style={{ fill: point.color }} />
-            <text className="uc-value" x={W - PAD} y={y + 4} textAnchor="end">{point.value.toLocaleString("en-US")}</text>
+            <text className="uc-value" x={W - PAD} y={y + 4} textAnchor="end">{point.valueText ?? point.value.toLocaleString("en-US")}</text>
           </g>
         );
       })}

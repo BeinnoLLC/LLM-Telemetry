@@ -159,22 +159,39 @@ describe("attribution and the stale-price chip", () => {
     expect(model.byRoot[0].totalText).toBe("$3.0000");
   });
 
-  it("uses the collector stale record first and keeps the chip inline", () => {
-    const chip = stalePriceChip(
-      { age_s: 100, state: "fresh" },
-      { prices: { stale: true, age_s: 90000, policy_s: 259200 } },
-    );
-    expect(chip.visible).toBe(true);
-    expect(chip.state).toBe("stale");
-    expect(chip.text).toMatch(/Rates last refreshed .* ago \(policy 3d\); costs use the last good price sheet\./);
-    expect(stalePriceChip({ age_s: 100 }, { prices: { stale: false, age_s: 100 } }).visible).toBe(false);
+  it("uses artifact costs.freshness with the 72h cut and keeps the chip inline", () => {
+    const chip = stalePriceChip({
+      generated: "2026-11-25T10:00:00",
+      age_s: 100,
+      state: "fresh",
+    });
+    expect(chip.visible).toBe(false);
+    expect(chip.state).toBe("fresh");
+    expect(chip.text).toBe("");
+    expect(stalePriceChip({ state: "pinned" }).visible).toBe(false);
   });
 
-  it("falls back to the price-sheet freshness with the 72h cut", () => {
-    expect(stalePriceChip({ age_s: 3600 }, undefined).visible).toBe(false);
-    const old = stalePriceChip({ age_s: 3 * 24 * 3600 }, undefined);
+  it("derives the chip from costs.freshness/generated with the 72h policy", () => {
+    const old = stalePriceChip({
+      generated: "2026-11-25T10:00:00",
+      age_s: 3 * 24 * 3600,
+      state: "stale",
+    });
     expect(old.visible).toBe(true);
     expect(old.state).toBe("stale");
+    expect(old.text).toBe("Rates last refreshed 3d ago (policy 3d); costs use the last good price sheet.");
+    const model = deriveCost(snapshot(
+      [row({ market_value_usd: 2 })],
+      {
+        costs: {
+          models: [],
+          generated: "2026-11-25T10:00:00",
+          freshness: { generated: "2026-11-25T10:00:00", age_s: 3 * 24 * 3600, state: "stale" },
+        },
+      },
+    ));
+    expect(model.stale.state).toBe("stale");
+    expect(model.stale.text).toBe(old.text);
   });
 
   it("composes one cost model from a snapshot", () => {

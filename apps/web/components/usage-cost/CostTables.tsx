@@ -1,7 +1,7 @@
 // LLMTELEMET-293 (T-22 RUN C): Cost tab tables and its two hand-drawn charts.
 // All numbers arrive from lib/usage-cost/cost.ts; every colour is a token and
 // every provider mark is the brand SVG path, never a letter or monogram.
-import { compact, fmtB } from "../../lib/home-board/format";
+import { compact, fmt, fmtB } from "../../lib/home-board/format";
 import { HEXAGON_PATH } from "../../lib/home-board/provider-icons";
 import {
   RESEND_MIN,
@@ -9,6 +9,7 @@ import {
   type CostModel,
   type CostTaskPoint,
   type ProviderCostRow,
+  type StaleChip,
 } from "../../lib/usage-cost/cost";
 
 const VIEW_BOX = "0 0 640 220";
@@ -18,6 +19,17 @@ function Mark({ path, color }: { path?: string; color: string }) {
     <svg className="uc-prov-mark" viewBox="0 0 24 24" aria-hidden="true" style={{ color }}>
       <path d={path ?? HEXAGON_PATH} fill="currentColor" />
     </svg>
+  );
+}
+
+/** views.js:2590-2614 — inline status chip in the Cost view; never a page-wide
+ * red banner. The warning colour comes from --z-warn in usage-cost-charts.css. */
+export function StalePriceChip({ chip }: { chip: StaleChip }) {
+  if (!chip.visible) return null;
+  return (
+    <span className="uc-stale-chip" data-fresh-state={chip.state} role="status">
+      {chip.text}
+    </span>
   );
 }
 
@@ -167,9 +179,9 @@ function ModelTable({ model }: { model: CostModel }) {
                   <span className="uc-model-name" style={{ color: row.color }}>{row.model}</span></td>
                 <td>{row.provider}</td>
                 <td className="uc-num">{row.calls.toLocaleString("en-US")}</td>
-                <td className="uc-num">{fmtB(row.inp)}</td>
-                <td className="uc-num">{fmtB(row.outp)}</td>
-                <td className="uc-num">{fmtB(row.cache)}</td>
+                <td className="uc-num">{fmt(row.inp)}</td>
+                <td className="uc-num">{fmt(row.outp)}</td>
+                <td className="uc-num">{fmt(row.cache)}</td>
                 <td className="uc-num uc-bw-up">{fmtB(row.up)}</td>
                 <td className="uc-num uc-bw-down">{fmtB(row.down)}</td>
                 <td className="uc-num" data-cost-kind={row.costKind} title={row.costTitle || undefined}>{row.costText}</td>

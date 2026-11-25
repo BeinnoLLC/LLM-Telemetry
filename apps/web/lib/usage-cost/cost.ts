@@ -428,27 +428,10 @@ export function attributionPanel(data: AttributionData | undefined): Attribution
   };
 }
 
-type StaleRecord = { stale?: boolean; age_s?: number | string | null; policy_s?: number | string | null };
-
-/** views.js:2590-2614 — an inline chip, not a page-wide red banner. The
- * collector's stale.prices record wins; the artifact's price freshness is the
- * fallback, with the same 72h policy cut used by the Prices pill. */
-export function stalePriceChip(
-  freshness: Record<string, unknown> | undefined,
-  stale: Record<string, unknown> | undefined,
-): StaleChip {
-  const price = (stale?.prices ?? null) as StaleRecord | null;
-  if (price) {
-    const age = price.age_s == null ? null : Math.max(0, num(price.age_s));
-    if (!price.stale) return { visible: false, state: "fresh", text: "" };
-    const policy = price.policy_s == null ? "72h" : ago(num(price.policy_s));
-    const shown = age == null ? "no data" : ago(age);
-    return {
-      visible: true,
-      state: "stale",
-      text: `Rates last refreshed ${shown} ago (policy ${policy}); costs use the last good price sheet.`,
-    };
-  }
+/** views.js:2590-2614 — an inline chip, not a page-wide red banner. Only the
+ * artifact-backed costs.freshness feeds it, with the same 72h policy cut used
+ * by the Prices pill; collector-only freshness records are not in artifacts. */
+export function stalePriceChip(freshness: Record<string, unknown> | undefined): StaleChip {
   const fresh = freshness ?? {};
   const age = fresh.age_s == null ? null : Math.max(0, num(fresh.age_s));
   const state = fresh.state === "pinned" ? "fresh" : age == null ? "unknown" : age >= 3 * DAY_MS ? "stale" : "fresh";
@@ -475,7 +458,6 @@ export function deriveCost(snapshot: UsageSnapshot, f: UsageFilters = {}): CostM
   const providerRows = providerCostRows(rows);
   const modelRows = modelCostRows(rows);
   const resend = sessionResends(profile, f.from, f.to);
-  const staleRecord = snapshot.analytics?.stale as Record<string, unknown> | undefined;
   const byModel = agg(rows, (r) => short(r.model), (r) => r.market_value_usd)
     .slice(0, 8)
     .map(([key, value]) => ({
@@ -505,7 +487,7 @@ export function deriveCost(snapshot: UsageSnapshot, f: UsageFilters = {}): CostM
       ? `${resend.length} sessions · $${resend.reduce((sum, row) => sum + row.cost, 0).toFixed(2)} of re-sent context`
       : `No session in this range has at least ${RESEND_MIN} calls to average.`,
     attribution: attributionPanel(profile?.attribution),
-    stale: stalePriceChip(snapshot.costs?.freshness, staleRecord),
+    stale: stalePriceChip(snapshot.costs?.freshness),
   };
 }
 
