@@ -1,0 +1,118 @@
+/* LLMTELEMET-293 (T-22 RUN A): Usage charts. Colour comes only from the
+   forwarded Python token sheet; no component carries a literal colour. */
+.usage-view {
+  max-width: 84rem;
+}
+
+.uc-meta {
+  margin: calc(var(--sp-2) * -1) 0 var(--sp-4);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.uc-card {
+  min-width: 0;
+  padding: var(--sp-4);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+}
+
+.uc-card > h2 {
+  margin: 0 0 var(--sp-3);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.uc-plot {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.uc-svg,
+.uc-plot svg {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+}
+
+.uc-point .uc-label,
+.uc-point .uc-value,
+.uc-axis,
+.uc-empty-text {
+  fill: var(--muted);
+  font-family: var(--font);
+  font-size: 11px;
+}
+
+.uc-point .uc-value {
+  fill: var(--fg);
+  font-variant-numeric: var(--num);
+}
+
+.uc-point .uc-track {
+  fill: var(--state-hover);
+}
+
+.uc-point .uc-bar {
+  stroke: none;
+}
+
+.uc-axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.uc-series polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.uc-empty-text {
+  font-size: 0.875rem;
+}
+
+.uc-legend {
+  width: 100%;
+  margin-top: var(--sp-3);
+  border-collapse: collapse;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.uc-legend th,
+.uc-legend td {
+  padding: var(--sp-1);
+  border-top: var(--nav-border-width, 1px) solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.uc-legend th:first-child,
+.uc-legend th:nth-child(2),
+.uc-legend td:first-child,
+.uc-legend td:nth-child(2) {
+  text-align: left;
+}
+
+.uc-legend i {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-ctl);
+}
+
+@media (max-width: 64rem) {
+  .usage-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
