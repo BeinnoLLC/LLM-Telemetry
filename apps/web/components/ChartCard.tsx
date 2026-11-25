@@ -39,6 +39,12 @@ function statText(value: number | null, format: "count" | "compact" = "compact")
   return format === "count" ? Math.round(value).toLocaleString("en-US") : compact(value);
 }
 
+/** Opt-in SVG tooltip: only points with display text (cost dollars) get a title. */
+function pointTitle(point: ChartPoint): string | undefined {
+  const text = point.valueText ?? point.value.toLocaleString("en-US");
+  return point.valueText === undefined ? undefined : text;
+}
+
 function HorizontalBars({ points, empty }: { points: readonly ChartPoint[]; empty: boolean }) {
   if (empty || !points.length) {
     return <text className="uc-empty-text" x={W / 2} y={H / 2} textAnchor="middle">n/a</text>;
@@ -51,6 +57,7 @@ function HorizontalBars({ points, empty }: { points: readonly ChartPoint[]; empt
       {points.map((point, i) => {
         const y = TOP + i * rowH + rowH / 2;
         const width = (Math.abs(point.value) / scale) * track;
+        const tip = pointTitle(point);
         return (
           <g
             className="uc-point"
@@ -59,6 +66,7 @@ function HorizontalBars({ points, empty }: { points: readonly ChartPoint[]; empt
             data-value={String(point.value)}
             data-provider={point.icon ? point.key : undefined}
           >
+            {tip === undefined ? null : <title>{tip}</title>}
             <svg x={PAD} y={y - 7} width={14} height={14} viewBox="0 0 24 24" aria-hidden="true" style={{ color: point.color }}>
               <path d={point.icon ?? HEXAGON_PATH} fill="currentColor" />
             </svg>
@@ -87,6 +95,7 @@ function VerticalBars({ points, empty }: { points: readonly ChartPoint[]; empty:
         const height = (Math.abs(point.value) / scale) * plot;
         const x = PAD + i * slot + (slot - barW) / 2;
         const y = BOTTOM - height;
+        const tip = pointTitle(point);
         return (
           <g
             className="uc-point"
@@ -94,6 +103,7 @@ function VerticalBars({ points, empty }: { points: readonly ChartPoint[]; empty:
             data-label={point.label}
             data-value={String(point.value)}
           >
+            {tip === undefined ? null : <title>{tip}</title>}
             <rect className="uc-bar" x={x} y={y} width={barW} height={height} rx={2} style={{ fill: point.color }} />
             <text className="uc-axis" x={x + barW / 2} y={H - 10} textAnchor="middle">{point.label}</text>
           </g>

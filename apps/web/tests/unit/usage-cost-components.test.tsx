@@ -113,6 +113,30 @@ describe("cost chart dollar labels (views.js:797-800)", () => {
     }));
     expect(host.querySelector(".uc-value")?.textContent).toBe("1,500");
   });
+
+  it("exposes the dollar value as an opt-in SVG point tooltip", () => {
+    const dollarPoint = { key: "m", label: "m", value: 1.5, color: "var(--chart-1)", valueText: "$1.50" };
+    for (const kind of ["hbar", "bar"] as const) {
+      render(createElement(ChartCard, {
+        id: "cModelCost",
+        title: "Cost by model",
+        kind,
+        points: [dollarPoint],
+      }));
+      const point = host.querySelector<SVGGElement>(".uc-point");
+      expect(point?.querySelector("title")?.textContent).toContain("$");
+      expect(point?.querySelector("title")?.textContent).toBe("$1.50");
+    }
+
+    render(createElement(ChartCard, {
+      id: "cCalls",
+      title: "Calls",
+      kind: "hbar",
+      points: [{ key: "m", label: "m", value: 1500, color: "var(--chart-1)" }],
+    }));
+    const plain = host.querySelector<SVGGElement>(".uc-point");
+    expect(plain?.querySelector("title")).toBeNull();
+  });
 });
 
 describe("Prices tabs and search interaction (views.js:3424-3453)", () => {
