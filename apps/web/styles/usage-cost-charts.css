@@ -116,3 +116,302 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* T-22 RUN B: transfer / bandwidth / concurrency / latency / cost panels.
+   Every colour below is a forwarded Python token; no literal hex. */
+.usage-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+.up-card h3 {
+  margin: var(--sp-4) 0 var(--sp-2);
+  color: var(--fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.up-wide {
+  grid-column: 1 / -1;
+}
+
+.up-muted,
+.up-caption,
+.up-kpi-sub {
+  color: var(--muted);
+}
+
+.up-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.up-note {
+  margin: var(--sp-3) 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* Transfers: metered up/down stay together; LAN is a separate, unmetered line. */
+.up-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4);
+}
+
+.up-leg {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+}
+
+.up-arrow {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.up-up {
+  color: var(--c-amber);
+}
+
+.up-down {
+  color: var(--c-sky);
+}
+
+.up-big {
+  color: var(--fg);
+  font-size: 1.25rem;
+  font-variant-numeric: var(--num);
+  font-weight: 600;
+}
+
+.up-caption {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.up-ratio {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Bandwidth KPI tiles and the dual-axis trend. */
+.up-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.up-kpi {
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+}
+
+.up-kpi-value {
+  color: var(--fg);
+  font-size: 1.125rem;
+  font-variant-numeric: var(--num);
+  font-weight: 600;
+}
+
+.up-kpi-label {
+  margin-top: var(--sp-1);
+  color: var(--fg);
+  font-size: 0.8125rem;
+}
+
+.up-kpi-sub {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.up-plot {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.up-plot svg {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+}
+
+/* Re-send rows: a bar plus a text value, so the ranking is not colour-only. */
+.up-resend-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(4rem, 2fr) 3.5rem 4rem;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-resend-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-mark {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.up-resend-track {
+  display: block;
+  height: 0.5rem;
+  border-radius: var(--radius-ctl);
+  background: var(--state-hover);
+}
+
+.up-resend-track i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-ctl);
+  background: var(--c-amber);
+}
+
+.up-resend-row.hot .up-resend-track i {
+  background: var(--c-red);
+}
+
+.up-resend-x {
+  color: var(--fg);
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.up-resend-flag {
+  color: var(--c-red);
+  font-size: 0.6875rem;
+}
+
+/* Concurrency peak label; the empty state replaces, never overlays, the plot. */
+.up-peak {
+  margin: 0 0 var(--sp-2);
+  color: var(--fg);
+  font-size: 0.8125rem;
+}
+
+/* Latency rows: brand mark on models only; endpoints stay text. */
+.up-lat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-lat-name {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-lat-rate {
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+/* Repo & branch cost: expandable rows with an always-present aria target. */
+.up-repo-list {
+  width: 100%;
+}
+
+.up-repo-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 2fr) repeat(3, minmax(4rem, 1fr)) 5rem;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-repo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.up-repo-toggle:focus-visible {
+  outline: var(--nav-border-width, 1px) solid var(--accent);
+  outline-offset: var(--sp-1);
+}
+
+.up-chevron {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
+.up-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-repo-row[data-unattributed="true"] .up-name {
+  color: var(--muted);
+}
+
+.up-num,
+.up-cost {
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.up-num {
+  color: var(--muted);
+}
+
+.up-cost {
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.up-branch-list {
+  border-left: var(--nav-border-width, 1px) solid var(--border);
+  padding-left: var(--sp-4);
+}
+
+.up-branch-row {
+  grid-template-columns: minmax(8rem, 2fr) repeat(3, minmax(4rem, 1fr)) 5rem;
+}
+
+@media (max-width: 64rem) {
+  .usage-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

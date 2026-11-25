@@ -12,12 +12,14 @@ import type {
   AnalyticsData,
   Artifact,
   CostsData,
+  OllamaData,
   UsageSnapshot,
 } from "./types";
 
 const FILES = {
   analytics: "analytics-data.json",
   costs: "costs-data.json",
+  ollama: "ollama-data.json",
 } as const;
 
 async function readArtifact<T extends Artifact>(
@@ -45,13 +47,15 @@ async function readArtifact<T extends Artifact>(
   return parsed as T;
 }
 
-/** Resolve the reports dir once, then load analytics and costs in parallel. */
+/** Resolve the reports dir once, then load the artifacts in parallel. Ollama
+ * is optional: it only feeds the queue-depth "now" reference line. */
 export async function loadUsageSnapshot(
   dir: string = reportsDir(),
 ): Promise<UsageSnapshot> {
-  const [analytics, costs] = await Promise.all([
+  const [analytics, costs, ollama] = await Promise.all([
     readArtifact<AnalyticsData>(dir, "analytics"),
     readArtifact<CostsData>(dir, "costs"),
+    readArtifact<OllamaData>(dir, "ollama"),
   ]);
-  return { analytics, costs, dir };
+  return { analytics, costs, ollama, dir };
 }

@@ -28,6 +28,93 @@ export interface AnalyticsRow {
   market_value_usd?: number | string | null;
   billed_usd?: number | string | null;
   priced?: boolean;
+  /** Per-row transfer bytes (bandwidth.py / collect_analytics.py). */
+  up_bytes?: number | string | null;
+  down_bytes?: number | string | null;
+  lan_up_bytes?: number | string | null;
+  lan_down_bytes?: number | string | null;
+}
+
+/** Bandwidth history row from bandwidth_history.py, as carried in analytics. */
+export interface BandwidthDailyRow {
+  date?: string;
+  model?: string;
+  provider?: string;
+  up_bytes?: number | string | null;
+  down_bytes?: number | string | null;
+  lan_up_bytes?: number | string | null;
+  lan_down_bytes?: number | string | null;
+  input_tokens?: number | string | null;
+  cache_read_tokens?: number | string | null;
+  cache_write_tokens?: number | string | null;
+  output_tokens?: number | string | null;
+  calls?: number | string | null;
+  bytes_per_token?: number | string | null;
+  frozen?: boolean;
+}
+
+/** Hour-keyed concurrency sample from concurrency.py. */
+export interface ConcurrencyRow {
+  hour?: string;
+  top?: number | string | null;
+  sub?: number | string | null;
+}
+
+/** Server-computed latency percentile bucket (latency.py); never recomputed. */
+export interface LatencyBucket {
+  n?: number | string | null;
+  p50?: number | string | null;
+  p90?: number | string | null;
+  p99?: number | string | null;
+  tok_s?: number | string | null;
+}
+
+export interface LatencySlowRow {
+  session?: string;
+  model?: string;
+  s?: number | string | null;
+  ts?: number | string | null;
+}
+
+export interface LatencyData {
+  by_model?: Record<string, LatencyBucket>;
+  by_endpoint?: Record<string, LatencyBucket>;
+  slowest?: LatencySlowRow[];
+  idle_threshold_s?: number | string | null;
+  idle_n?: number | string | null;
+}
+
+/** Repo/branch cost rows from collect_repo_branch.py. */
+export interface RepoBranchBucket {
+  branch?: string;
+  sessions?: number | string | null;
+  calls?: number | string | null;
+  tokens?: number | string | null;
+  cost?: number | string | null;
+}
+
+export interface RepoCostRow {
+  repo?: string;
+  sessions?: number | string | null;
+  calls?: number | string | null;
+  tokens?: number | string | null;
+  cost?: number | string | null;
+  branches?: RepoBranchBucket[];
+}
+
+export interface RepoBranchData {
+  repos?: RepoCostRow[];
+}
+
+/** One Ollama host entry. Only `queue` is read, and it is a live snapshot. */
+export interface OllamaHost {
+  [key: string]: unknown;
+  queue?: number | string | null;
+}
+
+export interface OllamaData extends Artifact {
+  [key: string]: unknown;
+  hosts?: OllamaHost[];
 }
 
 export interface HourRow {
@@ -56,6 +143,10 @@ export interface AnalyticsProfile {
   max_date?: string;
   active?: number;
   live?: unknown[];
+  bandwidth_daily?: BandwidthDailyRow[];
+  concurrency?: ConcurrencyRow[];
+  latency?: LatencyData;
+  repo_branch?: RepoBranchData;
 }
 
 export interface AnalyticsData extends Artifact {
@@ -92,6 +183,8 @@ export interface CostsData extends Artifact {
 export interface UsageSnapshot {
   analytics: AnalyticsData | null;
   costs: CostsData | null;
+  /** Live Ollama host snapshot; only used for the queue-depth "now" line. */
+  ollama?: OllamaData | null;
   dir: string;
 }
 
@@ -103,6 +196,8 @@ export interface UsageFilters {
   project?: string;
   provider?: string;
   model?: string;
+  /** Hide the Unattributed bucket from the project cost chart. */
+  exclude?: boolean;
 }
 
 export interface DateBounds {

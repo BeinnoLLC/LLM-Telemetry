@@ -3,7 +3,9 @@
 // mirror the day inputs and the three cross-filters; nothing is invented when
 // an artifact or a range is empty.
 import ChartCard from "@/components/ChartCard";
+import UsagePanels from "@/components/usage-cost/UsagePanels";
 import { loadUsageSnapshot } from "@/lib/usage-cost/load";
+import { derivePanels } from "@/lib/usage-cost/panels";
 import { deriveUsage } from "@/lib/usage-cost/usage";
 import type { UsageFilters } from "@/lib/usage-cost/types";
 import "../../styles/usage-cost-charts.css";
@@ -30,9 +32,11 @@ export default async function UsagePage({
     project: one(query, "project"),
     provider: one(query, "provider"),
     model: one(query, "model"),
+    exclude: one(query, "exclude") === "1",
   };
   const snapshot = await loadUsageSnapshot();
   const usage = deriveUsage(snapshot, filters);
+  const panels = derivePanels(snapshot, filters);
   const empty = usage.rowCount === 0;
 
   return (
@@ -103,6 +107,7 @@ export default async function UsagePage({
           empty={empty}
         />
       </div>
+      <UsagePanels model={panels} />
     </main>
   );
 }
