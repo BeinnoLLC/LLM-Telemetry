@@ -247,7 +247,7 @@ function Attribution({ model }: { model: AttributionModel }) {
     <section className="uc-card" data-panel="attribution">
       <h2>Cost attribution</h2>
       <div className="uc-attrib-grid">
-        <div>
+        <div data-attr-group="source">
           <h3>By source</h3>
           {model.bySource.map((row) => (
             <div className="uc-attrib-row" key={row.source}>
@@ -256,7 +256,7 @@ function Attribution({ model }: { model: AttributionModel }) {
             </div>
           ))}
         </div>
-        <div>
+        <div data-attr-group="tool">
           <h3>By tool</h3>
           {model.byTool.length
             ? model.byTool.map((row) => (
@@ -267,7 +267,7 @@ function Attribution({ model }: { model: AttributionModel }) {
             ))
             : <p className="uc-muted">No tool-result tokens in range.</p>}
         </div>
-        <div>
+        <div data-attr-group="root">
           <h3>By root session</h3>
           {model.byRoot.map((row) => (
             <div className="uc-attrib-row" key={row.id}>
@@ -279,7 +279,7 @@ function Attribution({ model }: { model: AttributionModel }) {
           ))}
         </div>
         {model.byCron.length > 0 && (
-          <div data-panel="attribution-cron">
+          <div data-panel="attribution-cron" data-attr-group="cron">
             <h3>By cron</h3>
             {model.byCron.map((row) => (
               <div className="uc-attrib-row" key={row.name}>

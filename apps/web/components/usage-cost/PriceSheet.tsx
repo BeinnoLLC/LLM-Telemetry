@@ -111,7 +111,17 @@ function WhatIf({
   selected: number | null;
   onSelect: (index: number) => void;
 }) {
-  const [inputs, setInputs] = useState<WhatIfInputs>(EMPTY_INPUTS);
+  // The Python page seeds the cached field from the selected model's observed
+  // cache mix on install and only re-seeds it while the field is empty. Mirror
+  // that so later model changes keep the operator's explicit token count.
+  const [inputs, setInputs] = useState<WhatIfInputs>(() => {
+    const initial = selected == null ? undefined : models[selected];
+    const mix = initial ? cacheMix(initial) : null;
+    return {
+      ...EMPTY_INPUTS,
+      cached: mix === null ? "" : String(Math.round(mix * 100)),
+    };
+  });
   const groups = whatIfGroups(models);
   const model = selected == null ? undefined : models[selected];
   const result = model ? whatIfCalculate(model, inputs) : null;
@@ -129,7 +139,12 @@ function WhatIf({
                     onSelect(index);
                     const chosen = models[index];
                     const mix = chosen ? cacheMix(chosen) : null;
-                    change("cached", mix == null ? "" : String(Math.round(mix * 100)));
+                    setInputs((previous) => ({
+                      ...previous,
+                      cached: previous.cached.trim()
+                        ? previous.cached
+                        : mix == null ? "" : String(Math.round(mix * 100)),
+                    }));
                   }}>
             {groups.map((group) => (
               <optgroup key={group.key} label={group.label}>
@@ -191,7 +206,7 @@ export default function PriceSheet({ data }: { data: CostsData | null }) {
               · updated {shell.fresh.label} · {shell.sourceLabel}
             </span>
           </p>
-          <p className="uc-meta">
+          <p className="uc-meta" data-testid="price-shell-sub">
             {shell.catalogSize} models in catalogue · {shell.usedCount} with observed traffic · generated {shell.generated}
           </p>
         </div>
@@ -227,8 +242,8 @@ export default function PriceSheet({ data }: { data: CostsData | null }) {
           </tbody>
         </table>
       </div>
-      <p className="uc-meta">{rows.length} shown of {models.length}</p>
-      <p className="uc-meta">{shell.note}</p>
+      <p className="uc-meta" data-testid="price-shown">{rows.length} shown of {models.length}</p>
+      <p className="uc-meta" data-testid="price-note">{shell.note}</p>
       <WhatIf models={models} selected={selected} onSelect={setSelected} />
     </main>
   );

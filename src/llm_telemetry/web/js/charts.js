@@ -99,6 +99,12 @@ export function mk(id,type,labels,datasets,opts={}){const el=$(id); if(!el)retur
   }
   const ch = new Chart(el,{type,data:{labels,datasets},options:o});
   charts.push(ch);
+  // Parity hook: expose the provider-distribution categories and counts that
+  // are painted on this canvas as data, so the DOM parity test can compare
+  // them with the SVG chart without reading pixels. No visible change.
+  if (el.id === 'cProvDist'){
+    el.dataset.parity = JSON.stringify({labels: labels || [], values: (datasets[0] && datasets[0].data) || []});
+  }
   if (lgt) legendTable(ch, el, lgt, datasets);
 }
 
