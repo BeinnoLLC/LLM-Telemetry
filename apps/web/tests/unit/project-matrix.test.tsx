@@ -56,6 +56,20 @@ describe("ProjectMatrix DOM", () => {
     expect(headers[1].textContent).toContain("step-3.7-flash:free");
   });
 
+  it("uses row provider evidence for the header identity, including custom local slots", () => {
+    mount([
+      row({
+        project: "atlas",
+        model: "mystery-model",
+        provider: "custom",
+        base_url: "https://example.invalid/v1",
+        act: 1,
+      }),
+    ], "cost");
+    // views.js:209: custom with no identifying URL is local, not cloud.
+    expect(modelHeaders()[0].getAttribute("data-provider")).toBe("local");
+  });
+
   it("separates empty cells from formatted zero cells", () => {
     mount([
       row({ project: "atlas", model: "a", act: 0 }),
@@ -104,6 +118,38 @@ describe("ProjectMatrix DOM", () => {
     act(() => button.click());
     expect(rowLabels()).toEqual(["nova", "atlas"]);
     expect(button.querySelector(".dt-ar")?.textContent).toBe("▼");
+  });
+
+  it("sorts the +N more column by the hidden rest value, not the grand total", () => {
+    const rows: SessionRow[] = [];
+    for (let index = 0; index < 8; index += 1) {
+      rows.push(row({ project: "atlas", model: `m${index}`, act: 150 }));
+      rows.push(row({ project: "nova", model: `m${index}`, act: 100 }));
+    }
+    // Tail is hidden; atlas has a smaller tail but a larger grand total.
+    rows.push(row({ project: "atlas", model: "tail", act: 1 }));
+    rows.push(row({ project: "nova", model: "tail", act: 50 }));
+    mount(rows, "cost");
+
+    const buttons = [...host.querySelectorAll<HTMLButtonElement>("#projmatrix thead button")];
+    const restButton = buttons[buttons.length - 2];
+    expect(restButton.textContent).toContain("+1 more");
+    const restCell = host.querySelector<HTMLElement>("#projmatrix tbody tr td[data-v]")!;
+    expect(restCell.textContent).toBe("$1.00");
+    expect(restCell.getAttribute("data-v")).toBe("$1.00");
+
+    act(() => restButton.click());
+    expect(rowLabels()).toEqual(["atlas", "nova"]);
+    act(() => restButton.click());
+    expect(rowLabels()).toEqual(["nova", "atlas"]);
+
+    // Sorting Total descending gives the opposite order: the rest column
+    // cannot be a stand-in for the grand total.
+    const totalButton = buttons[buttons.length - 1];
+    expect(totalButton.textContent).toContain("Total");
+    act(() => totalButton.click()); // asc
+    act(() => totalButton.click()); // desc
+    expect(rowLabels()).toEqual(["atlas", "nova"]);
   });
 
   it("keeps one scroll wrapper and shows the empty message only when empty", () => {

@@ -28,6 +28,17 @@ function ariaSort(sort: SortState, column: number): "none" | "ascending" | "desc
   return sort.dir === "asc" ? "ascending" : "descending";
 }
 
+// table.js:36-52 parseNum on the value the cell actually renders. The rest
+// cell carries that rendered value in data-v, so a hidden tail is sorted by
+// its own figure, never by the grand total.
+function parseCellNumber(raw: string | number | null): number | null {
+  if (raw === null) return null;
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+  const cleaned = raw.replace(/[$,\s]/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) && cleaned !== "" ? n : null;
+}
+
 export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps) {
   const providers = useMemo(() => buildModelProviders(rows), [rows]);
   const data = useMemo(() => buildMatrix(rows, axis, (model) => {
@@ -47,30 +58,45 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
   };
 
   const sortedRows = useMemo(() => {
+    const pinned = data.rows.filter((row) => row.project === "Unattributed");
     if (!sort) return data.rows;
+    // table.js:96-127: pinned rows are removed, the rest is sorted, then the
+    // pinned rows are put back before the first pinned anchor (last here).
+    const body = data.rows.filter((row) => row.project !== "Unattributed");
     const column = sort.column;
-    const value = (project: string, rowIndex: number): string | number | null => {
-      const row = data.rows[rowIndex];
+    const totalColumn = data.columns.length + (data.rest ? 2 : 1);
+    const restValue = (row: (typeof data.rows)[number]): string | number | null => {
+      if (!data.rest) return null;
+      const raw = row.rest > 0 ? fmt(row.rest) : "—";
+      return parseCellNumber(raw);
+    };
+    const value = (row: (typeof data.rows)[number]): string | number | null => {
       if (column === 0) return row.project;
-      if (column > data.columns.length) return row.total;
+      if (column === totalColumn) return row.total;
+      if (data.rest && column === data.columns.length + 1) return restValue(row);
       const cell = row.cells[column - 1];
       return cell?.touched ? cell.value : null;
     };
-    return [...data.rows].sort((a, b) => {
-      const ai = data.rows.indexOf(a);
-      const bi = data.rows.indexOf(b);
-      const left = value(a.project, ai);
-      const right = value(b.project, bi);
-      if (left === null && right === null) return 0;
-      if (left === null) return 1;
-      if (right === null) return -1;
+    const keyed = body.map((row, index) => ({ row, index, value: value(row) }));
+    keyed.sort((left, right) => {
+      const emptyLeft = left.value === null || left.value === "";
+      const emptyRight = right.value === null || right.value === "";
+      // Empty values end up last in both directions, as in sortValues().
+      if (emptyLeft || emptyRight) {
+        if (emptyLeft && emptyRight) return left.index - right.index;
+        return emptyLeft ? 1 : -1;
+      }
       const comparison =
-        typeof left === "number" && typeof right === "number"
-          ? left - right
-          : String(left).localeCompare(String(right));
-      return sort.dir === "asc" ? comparison : -comparison;
+        typeof left.value === "number" && typeof right.value === "number"
+          ? left.value - right.value
+          : String(left.value).localeCompare(String(right.value), undefined, {
+              numeric: true,
+              sensitivity: "base",
+            });
+      return (sort.dir === "asc" ? comparison : -comparison) || left.index - right.index;
     });
-  }, [data, sort]);
+    return [...keyed.map((entry) => entry.row), ...pinned];
+  }, [data, sort, fmt]);
 
   const activate = (project: string, model?: string): void => {
     if (model === undefined) onOpen(project);
@@ -127,6 +153,7 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
                       data-dt-label={column.label}
                       data-dt-sortable="1"
                       data-dt-num="1"
+                      data-provider={column.provider}
                     >
                       <button
                         type="button"
@@ -188,7 +215,10 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
                       </td>
                     ))}
                     {data.rest && (
-                      <td className="sm-pad sm-num sm-muted">
+                      <td
+                        className="sm-pad sm-num sm-muted"
+                        data-v={row.rest > 0 ? fmt(row.rest) : "—"}
+                      >
                         {row.rest > 0 ? fmt(row.rest) : "—"}
                       </td>
                     )}

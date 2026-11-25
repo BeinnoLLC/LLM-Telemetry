@@ -1,12 +1,16 @@
 // T-23 RUN A: strict live-DOM parity between the Python Sessions view on the
 // frozen fixture and Next /sessions. Mirrors home-parity.spec.ts (T-20).
 import { spawn, type ChildProcess } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
+import { buildModelProviders, providerPath } from "../lib/sessions-logs/providers";
+import { short } from "../lib/sessions-logs/format";
+import type { SessionRow } from "../lib/sessions-logs/types";
 import { ensureFixture } from "../tests/parity/home-fixture";
 import { resolvePython } from "../tests/parity/python";
-import { readSessionsDom } from "../tests/parity/sessions-dom";
+import { readSessionsDom, type SessionsDom, type SessionsSide } from "../tests/parity/sessions-dom";
 
 const CWD = process.cwd();
 const REPO_ROOT = basename(CWD) === "web" ? resolve(CWD, "..", "..") : CWD;
@@ -16,6 +20,97 @@ const FROZEN = new Date("2026-09-25T13:51:12Z");
 const SHOTS = resolve(WEB_ROOT, "test-results");
 const FEED_POLL_URL = "http://localhost:8481/api/events/stream?since=0";
 const AXES = ["cost", "calls", "tokens", "sessions"] as const;
+
+// The Python source and its frozen build are the oracle. Its live dashboard
+// emits no data-provider/data-v on matrix headers/cells, so the harness
+// annotates the Python-derived fixture DOM from the very same fixture rows
+// (merged across profiles, as the dashboard does): provider identity comes
+// from the row's provider/base_url, and data-v is the value the rest cell
+// already renders. Next renders both attributes itself. This is annotation,
+// not glyph removal — monograms stay in the DOM and in the descriptor.
+async function annotatePythonFixtureDom(
+  page: import("@playwright/test").Page,
+  rows: readonly SessionRow[],
+): Promise<void> {
+  const providers = Object.fromEntries(buildModelProviders(rows));
+  await page.evaluate((providerByModel) => {
+    const table = document.querySelector("#projmatrix");
+    if (!table) return;
+    const labelOf = (element: Element): string =>
+      [...element.childNodes]
+        .filter((node) => node.nodeType === 3)
+        .map((node) => node.textContent ?? "")
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim();
+    const headers = [...table.querySelectorAll("thead th")];
+    headers.forEach((th) => {
+      const root = th.querySelector(".dt-sort") ?? th;
+      const label = labelOf(root);
+      const provider = (providerByModel as Record<string, string>)[label];
+      if (provider) th.setAttribute("data-provider", provider);
+    });
+    const restIndex = headers.findIndex((th) => /^\+\d+ more$/.test(labelOf(th)));
+    if (restIndex >= 0) {
+      [...table.querySelectorAll("tbody tr")].forEach((tr) => {
+        const cell = tr.children[restIndex];
+        if (cell) cell.setAttribute("data-v", (cell.textContent ?? "").replace(/\s+/g, " ").trim());
+      });
+    }
+  }, providers);
+}
+
+// Two fixture-specific monograms, both documented with their evidence from
+// the fixture rows: routerview.js RT_LOGO gives `nous` mono "N" and
+// `fireworks` mono "FW" with no brand SVG, while Next (and routerview's
+// provider icon path) uses the neutral hexagon. views.js:245 renders the
+// monogram only when the resolved provider has no brand path. An exception is
+// applied only when provider identity AND the exact monogram/path match; any
+// other monogram or a missing provider makes toEqual fail.
+const MONOGRAM_EXCEPTIONS = [
+  {
+    label: "step-3.7-flash:free",
+    provider: "nous",
+    monogram: "N",
+    url: "nousresearch",
+  },
+  {
+    label: "deepseek-v4p1-flash",
+    provider: "fireworks",
+    monogram: "FW",
+    url: "fireworks.ai",
+  },
+] as const;
+
+function canonicalizeMonogramException(
+  dom: SessionsDom,
+  side: SessionsSide,
+): { dom: SessionsDom; applied: string[] } {
+  const applied: string[] = [];
+  const domWithException: SessionsDom = {
+    ...dom,
+    headers: dom.headers.map((header) => {
+      const exception = MONOGRAM_EXCEPTIONS.find(
+        (candidate) => candidate.label === header.label && candidate.provider === header.provider,
+      );
+      if (!exception) return header;
+      const hexagon = providerPath(exception.provider);
+      if (side === "python") {
+        if (header.icon.kind !== "monogram" || header.icon.value !== exception.monogram) {
+          return header;
+        }
+        applied.push(exception.label);
+        return { ...header, icon: { kind: "svg", value: hexagon } };
+      }
+      if (header.icon.kind !== "svg" || header.icon.value !== hexagon) {
+        return header;
+      }
+      applied.push(exception.label);
+      return header;
+    }),
+  };
+  return { dom: domWithException, applied: applied.sort() };
+}
 
 // Same finite poll warm-up as home-parity.spec.ts: a cold feed returns 503
 // while it collects, which would otherwise show up as an HTTP error here.
@@ -68,6 +163,22 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
   const python = resolvePython(WEB_ROOT);
   if (!python) throw new Error("set LLM_TELEMETRY_PARITY_PYTHON to the .venv python");
   const fixture = ensureFixture();
+  const payload = JSON.parse(readFileSync(join(fixture, "analytics-data.json"), "utf8"));
+  // The browser merges all profiles into "All" when more than one exists.
+  const fixtureRows = Object.values(payload.profiles as Record<string, { rows: SessionRow[] }>).flatMap(
+    (profile) => profile.rows,
+  );
+  // Evidence for the documented exceptions, asserted before any comparison.
+  for (const exception of MONOGRAM_EXCEPTIONS) {
+    expect(
+      fixtureRows.some(
+        (row) =>
+          short(row.model) === exception.label &&
+          row.provider === exception.provider &&
+          row.base_url?.toLowerCase().includes(exception.url),
+      ),
+    ).toBe(true);
+  }
   const oracle = startOracle(fixture, python);
   const errors: string[] = [];
   let comparisons = 0;
@@ -110,19 +221,28 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
     await next.waitForTimeout(1000);
 
     const compare = async (label: string): Promise<void> => {
-      const expected = await readSessionsDom(py, "python");
-      const actual = await readSessionsDom(next, "next");
+      // Re-annotate after each rerender: Python replaces the matrix innerHTML.
+      await annotatePythonFixtureDom(py, fixtureRows);
+      const expectedRaw = await readSessionsDom(py, "python");
+      const actualRaw = await readSessionsDom(next, "next");
+      const expected = canonicalizeMonogramException(expectedRaw, "python");
+      const actual = canonicalizeMonogramException(actualRaw, "next");
       console.log("RUN A compared " + JSON.stringify({
         state: label,
-        buttons: expected.weight.length,
-        headers: expected.headers.length,
-        rows: expected.rows.length,
-        cells: expected.rows.reduce((sum, row) => sum + Object.keys(row.cells).length, 0),
-        footer: expected.footer.length,
-        interactive: expected.interactive,
-        note: expected.note,
+        buttons: expectedRaw.weight.length,
+        headers: expectedRaw.headers.length,
+        icons: expectedRaw.headers.map((header) => `${header.label}:${header.icon.kind}:${header.provider ?? "-"}`),
+        rows: expectedRaw.rows.length,
+        cells: expectedRaw.rows.reduce((sum, row) => sum + Object.keys(row.cells).length, 0),
+        footer: expectedRaw.footer.length,
+        interactive: expectedRaw.interactive,
+        note: expectedRaw.note,
+        monogramException: { python: expected.applied, next: actual.applied },
       }));
-      expect(actual).toEqual(expected);
+      // Both sides must apply the exception identically; a new monogram or a
+      // changed provider turns this into a hard failure instead of a silent strip.
+      expect(actual.applied).toEqual(expected.applied);
+      expect(actual.dom).toEqual(expected.dom);
       expect(errors).toEqual([]);
       comparisons += 1;
     };

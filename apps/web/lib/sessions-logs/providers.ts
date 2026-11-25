@@ -58,6 +58,11 @@ export function provOf(row: Pick<SessionRow, "provider" | "base_url" | "model">)
     return "nous";
   }
   if (model.startsWith("gpt-")) return "openai-codex";
+  // views.js:209 — a custom OpenAI-compatible slot with no identifying URL
+  // belongs to the local endpoint, not to a guessed remote provider. Keep
+  // this after every model heuristic so a named model still wins.
+  if (key === "custom") return "local";
+  // Nothing identified it, so it is remote — not local hardware.
   return "cloud";
 }
 
@@ -71,11 +76,27 @@ export function buildModelProviders(rows: readonly SessionRow[]): Map<string, st
   return map;
 }
 
+/**
+ * Provider for a shortened model label.
+ *
+ * Pass the rows, not just a model name: the row's provider/base_url is the
+ * evidence Python uses, and a bare `provOf({ model })` would silently discard
+ * it. A prebuilt `buildModelProviders(rows)` map is accepted too for callers
+ * that already computed it.
+ */
+export function modelProvider(model: string, rows: readonly SessionRow[]): string;
+export function modelProvider(model: string, map: ReadonlyMap<string, string>): string;
 export function modelProvider(
   model: string,
-  map: ReadonlyMap<string, string>,
+  evidence: readonly SessionRow[] | ReadonlyMap<string, string>,
 ): string {
-  return map.get(short(model)) ?? provOf({ model: short(model) });
+  const name = short(model);
+  // `buildModelProviders` keeps the first row's evidence for each model —
+  // exactly the Python derivation — so the row's provider and base_url win.
+  const map: ReadonlyMap<string, string> = Array.isArray(evidence)
+    ? buildModelProviders(evidence)
+    : (evidence as ReadonlyMap<string, string>);
+  return map.get(name) ?? provOf({ provider: "", base_url: "", model: name });
 }
 
 /** routerview.js:37-59 — RT_LOGO.svg resolved through RT_SVG; providers with

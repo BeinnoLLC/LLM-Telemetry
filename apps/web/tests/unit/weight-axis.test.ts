@@ -39,8 +39,11 @@ describe("weight axis labels and formatters", () => {
 
   it("adds the sessions explanation only on the sessions axis", () => {
     expect(weightNote("cost")).toBe("Showing cost ($). ");
-    expect(weightNote("sessions")).toContain("Showing sessions. ");
-    expect(weightNote("sessions")).toContain("Unattributed share");
+    // Exact live Python sentence (views.js note appended to the prefix), not
+    // substrings — a drift in wording must fail this test.
+    expect(weightNote("sessions")).toBe(
+      "Showing sessions. Sessions weighting is the mode most likely to show a large Unattributed share — that is expected and not hidden.",
+    );
     for (const axis of ["cost", "calls", "tokens"] as WeightAxis[]) {
       expect(weightNote(axis)).not.toContain("Unattributed");
     }
