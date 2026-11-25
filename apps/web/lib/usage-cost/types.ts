@@ -27,6 +27,8 @@ export interface AnalyticsRow {
   cost_class?: string;
   market_value_usd?: number | string | null;
   billed_usd?: number | string | null;
+  energy_usd?: number | string | null;
+  rate_source?: string;
   priced?: boolean;
   /** Per-row transfer bytes (bandwidth.py / collect_analytics.py). */
   up_bytes?: number | string | null;
@@ -133,8 +135,53 @@ export interface HourRow {
   base_url?: string;
 }
 
+/** Session-level context re-send row from collect_analytics.py. */
+export interface ResendSessionRow {
+  id?: string;
+  title?: string;
+  model?: string;
+  calls?: number | string | null;
+  ctx_per_call?: number | string | null;
+  cread_pct?: number | string | null;
+  resend_usd?: number | string | null;
+  cost_class?: string;
+  priced?: boolean;
+  last?: number | string | null;
+}
+
+/** Collector-priced cost attribution; no client-side pricing happens here. */
+export interface AttributionData {
+  by_source?: Array<{
+    source?: string;
+    cost?: number | string | null;
+    tokens?: number | string | null;
+    sessions?: number | string | null;
+  }>;
+  by_root?: Array<{
+    id?: string;
+    title?: string;
+    own?: number | string | null;
+    descendants?: number | string | null;
+    total?: number | string | null;
+  }>;
+  by_cron?: Array<{
+    name?: string;
+    runs?: number | string | null;
+    total?: number | string | null;
+    avg?: number | string | null;
+    monthly_projection?: number | string | null;
+  }>;
+  by_tool?: Array<{
+    tool?: string;
+    tokens?: number | string | null;
+    cost?: number | string | null;
+  }>;
+}
+
 export interface AnalyticsProfile {
   [key: string]: unknown;
+  resend?: ResendSessionRow[];
+  attribution?: AttributionData;
   rows?: AnalyticsRow[];
   hours?: HourRow[];
   /** Optional higher-resolution payload used by the hour-range UI. */
@@ -168,6 +215,18 @@ export interface CostModel {
   calls?: number | string | null;
   cost?: number | string | null;
   providers?: string[];
+  used?: number | string | null;
+  inp?: number | string | null;
+  outp?: number | string | null;
+  cache?: number | string | null;
+  energy?: number | string | null;
+  market_value_usd?: number | string | null;
+  billed_usd?: number | string | null;
+  rate_origin?: string;
+  override?: boolean;
+  base_url?: string;
+  served_by?: string[] | string;
+  inferred_by?: string[] | string;
 }
 
 export interface CostsData extends Artifact {

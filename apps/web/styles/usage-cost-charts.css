@@ -443,3 +443,381 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* T-22 RUN C: Cost and Prices pages. Colour remains token-only; provider
+   marks are SVGs supplied by the derivations, never letters. */
+.cost-view,
+.prices-view {
+  max-width: 84rem;
+}
+
+.cost-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.cost-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.cost-panels > :nth-child(n + 3) {
+  grid-column: 1 / -1;
+}
+
+.uc-stale-chip {
+  display: inline-block;
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-1) var(--sp-3);
+  border: var(--nav-border-width, 1px) solid var(--z-warn);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--z-warn-fg);
+  font-size: 0.8125rem;
+}
+
+.uc-prov-mark {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  vertical-align: middle;
+}
+
+.uc-num {
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.uc-muted {
+  color: var(--muted);
+}
+
+.uc-strong {
+  font-weight: 600;
+}
+
+.uc-nodata {
+  padding: var(--sp-4);
+  color: var(--muted);
+  text-align: center;
+}
+
+.uc-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.uc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.uc-table th {
+  padding: var(--sp-2);
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.uc-table th.uc-num {
+  text-align: right;
+}
+
+.uc-table td {
+  padding: var(--sp-2);
+  border-top: var(--nav-border-width, 1px) solid var(--border);
+  border-top-style: solid;
+  border-top-color: var(--border);
+  vertical-align: middle;
+}
+
+.uc-prov-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.uc-model-name {
+  font-weight: 600;
+}
+
+.uc-bar-track {
+  display: block;
+  width: 100%;
+  min-width: 5rem;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.uc-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.uc-task-cell {
+  min-width: 10rem;
+}
+
+.uc-task-cell .uc-muted {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.uc-unpriced-note {
+  margin: var(--sp-3) 0 0;
+  color: var(--z-warn-fg);
+  font-size: 0.8125rem;
+}
+
+.uc-cost-bar {
+  opacity: 0.5;
+}
+
+.uc-cost-call-line {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.uc-cost-call-point {
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.uc-cost-value {
+  fill: var(--z-warn-fg);
+}
+
+.uc-doughnut {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.uc-doughnut svg {
+  width: 12rem;
+  max-width: 50%;
+}
+
+.uc-donut-track,
+.uc-donut-slice {
+  fill: none;
+  stroke-width: 22;
+}
+
+.uc-donut-track {
+  stroke: var(--border);
+}
+
+.uc-donut-slice {
+  transform: rotate(-90deg);
+  transform-origin: 100px 100px;
+}
+
+.uc-donut-legend {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.uc-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.uc-attrib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.uc-attrib-grid h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: 0.875rem;
+}
+
+.uc-attrib-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.uc-attrib-row .uc-strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Prices sheet */
+.pv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+}
+
+.pv-head h1 {
+  margin: 0;
+}
+
+.pv-freshpill-wrap {
+  margin: var(--sp-2) 0;
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+  text-transform: uppercase;
+}
+
+.pv-freshpill {
+  padding: var(--sp-1) var(--sp-2);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  color: var(--fg);
+  text-transform: none;
+}
+
+.pv-freshpill.old {
+  border-color: var(--z-warn);
+  color: var(--z-warn-fg);
+}
+
+.pv-freshpill.stale {
+  border-color: var(--z-bad);
+  color: var(--z-bad-fg);
+}
+
+.pv-controls,
+.pv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pv-search,
+.pv-input {
+  min-width: 13rem;
+  padding: var(--sp-2);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.chip {
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs, 0.75rem);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.chip.pt-tab.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pv-wrap {
+  padding: 0;
+}
+
+.pv-tbl .pv-unused {
+  color: var(--muted);
+}
+
+.pv-src {
+  display: inline-block;
+  margin-right: var(--sp-1);
+  padding: 0 var(--sp-1);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  font-size: var(--fs-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.pv-src-override {
+  color: var(--z-warn-fg);
+}
+
+.pv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-right: var(--sp-1);
+  padding: 0 var(--sp-2);
+  border: var(--nav-border-width, 1px) solid;
+  border-radius: var(--radius-ctl);
+  font-size: var(--fs-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.pv-badge-inferred {
+  border-style: dashed;
+}
+
+.pv-whatif {
+  margin-top: var(--sp-4);
+}
+
+.pv-whatif-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
+
+.pv-whatif-fields label {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.pv-label {
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.pv-whatif-total {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-lg, 1.25rem);
+  font-weight: 600;
+}
+
+@media (max-width: 64rem) {
+  .cost-panels,
+  .uc-attrib-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cost-panels > :nth-child(n + 3) {
+    grid-column: auto;
+  }
+}
