@@ -38,6 +38,16 @@
   transform: translateX(0);
 }
 
+/* dashboard.css:1206 — a translated-off drawer still sits in the Tab order
+ * unless it is hidden. Hide only when closed so the open panel stays visible
+ * and focusable. */
+#pdrawer:not(.open) {
+  visibility: hidden;
+  transition:
+    transform var(--motion-normal) ease,
+    visibility 0s linear var(--motion-normal);
+}
+
 #pdrawer .pdhead {
   align-items: center;
   border-bottom: 1px solid var(--border);

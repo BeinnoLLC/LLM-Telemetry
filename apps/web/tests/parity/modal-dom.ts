@@ -6,10 +6,11 @@ import type { Page } from "playwright";
 export interface DrawerDom {
   hidden: string | null;
   open: boolean;
+  visibility: string;
   scrimOpen: boolean;
   title: string;
   sections: string[];
-  recent: string[];
+  recent: Array<{ tag: string; text: string }>;
 }
 
 export interface TranscriptOpener {
@@ -41,23 +42,35 @@ export interface ModalDom {
 }
 
 /** Re-arm the first recent-session row on either side with the same real
- * session id/profile from the frozen artifacts. The visible text is set on
- * both sides so the modal title agrees too. */
+ * session id/text from the frozen artifacts. The Python drawer emits plain
+ * divs, so its oracle row needs the transcript data attributes; the Next row
+ * is shipped already and must keep its own profile from the loaded artifact.
+ * Asserting that shipped attribute is the point of the parity case — never
+ * overwrite it here. */
 export async function armTranscriptOpener(
   page: Page,
   opener: TranscriptOpener,
+  side: "python" | "next",
 ): Promise<void> {
-  await page.evaluate((value) => {
-    const row = document.querySelector<HTMLElement>(
-      "#pdbody .pdsessrow, #pdbody .ttitlebtn, #pdbody .pdsection:last-child > .muted",
-    );
-    if (!row) throw new Error("no drawer session opener");
-    row.classList.add("ttitlebtn");
-    row.textContent = value.text;
-    row.setAttribute("data-tsession", value.id);
-    row.setAttribute("data-tprofile", value.profile);
-    row.tabIndex = 0;
-  }, opener);
+  await page.evaluate(
+    ({ value, source }) => {
+      const row = document.querySelector<HTMLElement>(
+        "#pdbody .pdsessrow, #pdbody .ttitlebtn, #pdbody .pdsection:last-child > .muted",
+      );
+      if (!row) throw new Error("no drawer session opener");
+      if (source === "next") {
+        const shipped = row.getAttribute("data-tprofile");
+        if (shipped) throw new Error(`Next opener profile was rewritten: ${shipped}`);
+      } else {
+        row.setAttribute("data-tprofile", value.profile);
+      }
+      row.classList.add("ttitlebtn");
+      row.textContent = value.text;
+      row.setAttribute("data-tsession", value.id);
+      row.tabIndex = 0;
+    },
+    { value: opener, source: side },
+  );
 }
 
 export async function readDrawerDom(page: Page): Promise<DrawerDom> {
@@ -80,6 +93,7 @@ export async function readDrawerDom(page: Page): Promise<DrawerDom> {
     return {
       hidden: drawer?.getAttribute("aria-hidden") ?? null,
       open: drawer?.classList.contains("open") ?? false,
+      visibility: drawer ? getComputedStyle(drawer).visibility : "",
       scrimOpen: scrim?.classList.contains("open") ?? false,
       title: text(drawer?.querySelector("#pdtitle")),
       // Python's template leaves whitespace between adjacent spans; React does
@@ -91,7 +105,7 @@ export async function readDrawerDom(page: Page): Promise<DrawerDom> {
         ...(drawer?.querySelectorAll(
           "#pdbody .pdsessrow, #pdbody .pdsection:last-child > .muted",
         ) ?? []),
-      ].map((node) => text(node).replace(/\s/g, "")),
+      ].map((node) => ({ tag: node.tagName, text: text(node).replace(/\s/g, "") })),
     };
   });
 }

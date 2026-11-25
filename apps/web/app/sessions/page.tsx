@@ -13,7 +13,7 @@ import TranscriptModal, {
 import WeightToggle from "@/components/sessions-logs/WeightToggle";
 import { readWeight, saveWeight } from "@/lib/sessions-logs/aggregate";
 import { weightNote } from "@/lib/sessions-logs/format";
-import { loadAnalyticsProfile } from "@/lib/sessions-logs/load";
+import { loadAnalyticsProfile, sessionOpeners } from "@/lib/sessions-logs/load";
 import type { SessionRow, WeightAxis } from "@/lib/sessions-logs/types";
 import "@/styles/project-drawer.css";
 import "@/styles/sessions-matrix.css";
@@ -24,32 +24,6 @@ interface DrawerState {
   model?: string;
 }
 
-interface RecentSession {
-  id?: unknown;
-}
-
-interface PayloadWithSessions {
-  profiles?: Record<string, { recent_sessions?: RecentSession[] }>;
-}
-
-/** Real session id from the loaded artifact; never a synthesised placeholder.
- * The note row in the drawer carries it as its transcript opener. */
-function firstSessionOpener(
-  payload: object,
-  profileName: string,
-): DrawerOpener | undefined {
-  const source = payload as PayloadWithSessions;
-  const profile =
-    source.profiles?.[profileName] ?? Object.values(source.profiles ?? {})[0];
-  const recent = Array.isArray(profile?.recent_sessions) ? profile.recent_sessions : [];
-  for (const item of recent) {
-    if (item && item.id !== null && item.id !== undefined && item.id !== "") {
-      return { id: String(item.id), profile: profileName };
-    }
-  }
-  return undefined;
-}
-
 export default function SessionsPage() {
   const [axis, setAxis] = useState<WeightAxis>("cost");
   const [rows, setRows] = useState<readonly SessionRow[]>([]);
@@ -57,6 +31,7 @@ export default function SessionsPage() {
   const [transcript, setTranscript] = useState<TranscriptSession | null>(null);
   const [profile, setProfile] = useState("");
   const [opener, setOpener] = useState<DrawerOpener | undefined>(undefined);
+  const [sessionProfiles, setSessionProfiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setAxis(readWeight());
@@ -66,9 +41,14 @@ export default function SessionsPage() {
     const controller = new AbortController();
     loadAnalyticsProfile(controller.signal)
       .then((loaded) => {
+        const openers = sessionOpeners(loaded.payload, loaded.profileName);
         setRows(loaded.rows);
-        setProfile(loaded.profileName);
-        setOpener(firstSessionOpener(loaded.payload, loaded.profileName));
+        // main.js:86 keeps the owning profile on every merged recent session.
+        // The drawer must use it instead of the synthetic "All" name, or the
+        // transcript lookup resolves to zero messages.
+        setProfile(openers.opener?.profile ?? loaded.profileName);
+        setOpener(openers.opener);
+        setSessionProfiles(openers.profiles);
       })
       .catch(() => setRows([]));
     return () => controller.abort();
@@ -113,6 +93,7 @@ export default function SessionsPage() {
         model={drawer?.model}
         profile={profile}
         opener={opener}
+        sessionProfiles={sessionProfiles}
         onClose={() => setDrawer(null)}
         onSession={(id, targetProfile, title) =>
           setTranscript({ id, profile: targetProfile, title })

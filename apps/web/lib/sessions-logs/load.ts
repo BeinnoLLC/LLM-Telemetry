@@ -57,27 +57,79 @@ export async function loadLogsProfile(signal?: AbortSignal): Promise<{
   };
 }
 
-const transcripts = new Map<string, unknown[]>();
-
-/** drawer.js:504-546 — one on-demand fetch per (profile, id), cached for the
- * drawer session. The cache-buster is the only query parameter; the API serves
- * the whole allowlisted artifact, just like the Python static GET. */
+/** drawer.js:520-527 — every open refetches the bounded artifact; a closed
+ * modal never holds a stale cache. The cache-buster is the only query
+ * parameter; the API serves the whole allowlisted artifact, just like the
+ * Python static GET. */
 export async function loadTranscript(
   profile: string,
   id: string,
   now: number,
   signal?: AbortSignal,
 ): Promise<unknown[]> {
-  const key = `${profile}|${id}`;
-  const cached = transcripts.get(key);
-  if (cached) return cached;
   const url = `${TRANSCRIPTS_URL}?${new URLSearchParams({ t: String(Math.floor(now)) })}`;
   const response = await fetch(url, { signal, cache: "no-store" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const payload = (await response.json()) as TranscriptData;
   const messages =
     (payload.profiles?.[profile]?.[id] ?? payload.sessions?.[id] ?? []) as unknown[];
-  const values = Array.isArray(messages) ? messages : [];
-  transcripts.set(key, values);
-  return values;
+  return Array.isArray(messages) ? messages : [];
+}
+
+interface RecentSession {
+  id?: unknown;
+  profile?: unknown;
+}
+
+type SessionProfiles = Record<string, { recent_sessions?: RecentSession[] }>;
+
+export interface SessionOpener {
+  id: string;
+  profile: string;
+}
+
+export interface SessionOpeners {
+  opener?: SessionOpener;
+  profiles: Record<string, string>;
+}
+
+function recentId(value: unknown): string {
+  return typeof value === "string" || typeof value === "number" ? String(value) : "";
+}
+
+/** main.js:86 — the merge annotates every recent session with the real profile
+ * key that owns it (`{...r, profile: n}`). Callers rendering the merged "All"
+ * view must use that key, never the synthetic profile name, when opening a
+ * transcript or the messages resolve to zero. */
+export function sessionOpeners(payload: object, profileName: string): SessionOpeners {
+  const source = payload as { profiles?: SessionProfiles };
+  const entries = Object.entries(source.profiles ?? {}).filter(([name]) => name !== "All");
+  const profiles: Record<string, string> = {};
+  for (const [name, profile] of entries) {
+    for (const item of profile?.recent_sessions ?? []) {
+      const id = recentId(item?.id);
+      if (!id) continue;
+      profiles[id] =
+        typeof item?.profile === "string" && item.profile ? item.profile : name;
+    }
+  }
+  const ordered =
+    profileName && profileName !== "All"
+      ? [...entries.filter(([name]) => name === profileName), ...entries.filter(([name]) => name !== profileName)]
+      : entries;
+  for (const [name, profile] of ordered) {
+    for (const item of profile?.recent_sessions ?? []) {
+      const id = recentId(item?.id);
+      if (id) return { opener: { id, profile: profiles[id] ?? name }, profiles };
+    }
+  }
+  return { profiles };
+}
+
+/** Real (profile, id) pair shipped to the drawer as its fallback opener. */
+export function firstSessionOpener(
+  payload: object,
+  profileName: string,
+): SessionOpener | undefined {
+  return sessionOpeners(payload, profileName).opener;
 }

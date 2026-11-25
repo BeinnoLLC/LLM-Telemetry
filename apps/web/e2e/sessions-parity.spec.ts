@@ -334,6 +334,17 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
         py.locator("#pdrawer:not(.open)").waitFor({ state: "attached" }),
         next.locator("#pdrawer:not(.open)").waitFor({ state: "attached" }),
       ]);
+      // Both sides hide a closed drawer with a delayed visibility transition;
+      // wait for the computed state instead of racing the duration.
+      await Promise.all(
+        [py, next].map((page) =>
+          expect
+            .poll(() =>
+              page.evaluate(() => getComputedStyle(document.querySelector("#pdrawer")!).visibility),
+            )
+            .toBe("hidden"),
+        ),
+      );
     };
     const compareDrawer = async (label: string): Promise<void> => {
       const expected = await readDrawerDom(py);
@@ -343,7 +354,16 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       const comparable = <T extends typeof expected>(value: T) =>
         value.open
           ? value
-          : { hidden: value.hidden, open: value.open, scrimOpen: value.scrimOpen };
+          : {
+              hidden: value.hidden,
+              open: value.open,
+              visibility: value.visibility,
+              scrimOpen: value.scrimOpen,
+            };
+      if (expected.open) {
+        expect(actual.visibility, `${label}: open drawer must be visible`).toBe("visible");
+        expect(expected.visibility, `${label}: oracle open drawer`).toBe("visible");
+      }
       expect(comparable(actual), label).toEqual(comparable(expected));
       expect(errors, label).toEqual([]);
       comparisons += 1;
@@ -365,7 +385,10 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       ]);
     };
     const clickOpener = async (opener: TranscriptOpener): Promise<void> => {
-      await Promise.all([armTranscriptOpener(py, opener), armTranscriptOpener(next, opener)]);
+      await Promise.all([
+        armTranscriptOpener(py, opener, "python"),
+        armTranscriptOpener(next, opener, "next"),
+      ]);
       await Promise.all([
         py.locator("#pdbody .ttitlebtn[data-tsession]").click(),
         next.locator("#pdbody .ttitlebtn[data-tsession]").click(),
@@ -374,6 +397,21 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
         py.locator("#tmodal.open").waitFor({ state: "attached" }),
         next.locator("#tmodal.open").waitFor({ state: "attached" }),
       ]);
+    };
+    // The page renders the synthetic "All" profile but the frozen artifact has
+    // two real profiles. The Next transcript opener must resolve the owning
+    // profile from the loaded sessions data — never the merged name — or the
+    // message lookup would return nothing.
+    const assertMergedProfile = async (
+      opener: Pick<TranscriptOpener, "id" | "profile">,
+    ): Promise<void> => {
+      const shipped = await next.locator("#ttimelinebtn").getAttribute("data-tprofile");
+      expect(shipped, "Next opened the transcript with the owning profile").toBe(opener.profile);
+      expect(opener.profile, "fixture must exercise a merged profile").not.toBe("All");
+      expect(analyticsProfiles).toHaveProperty("work");
+      expect(analyticsProfiles).toHaveProperty("personal");
+      comparisons += 1;
+      console.log(`PASS parity: merged profile resolves ${shipped} (#${comparisons})`);
     };
 
     await openDrawer();
@@ -391,6 +429,7 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       py.locator("#tbody .tmsg").first().waitFor({ state: "attached" }),
       next.locator("#tbody .tmsg").first().waitFor({ state: "attached" }),
     ]);
+    await assertMergedProfile(messageSession);
     await compareModal("transcript messages");
     await closeModal();
     await closeDrawer();
@@ -460,7 +499,7 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
     }
 
     expect(errors, "No browser console/network errors on either side").toEqual([]);
-    expect(comparisons, "matrix + weight + drawer + 3 modal states").toBe(10);
+    expect(comparisons, "matrix + weight + drawer + merged profile + 3 modal states").toBe(11);
     console.log(`PARITY_COMPARISONS=${comparisons}`);
   } finally {
     oracle.child.kill("SIGTERM");

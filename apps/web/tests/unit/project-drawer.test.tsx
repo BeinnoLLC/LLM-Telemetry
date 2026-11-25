@@ -134,13 +134,34 @@ describe("ProjectDrawer", () => {
     }
   });
 
+  it("opens a real session with its owning profile, never the merged All name", () => {
+    const onSession = vi.fn();
+    mount({
+      rows: [row({ project: "atlas", session_id: "s-work", act: 1 })],
+      profile: "All",
+      opener: { id: "s-work", profile: "work" },
+      sessionProfiles: { "s-work": "work" },
+      onSession,
+    });
+    const chip = section("Recent sessions").querySelector<HTMLElement>(".ttitlebtn");
+    expect(chip?.tagName).toBe("BUTTON");
+    expect(chip?.getAttribute("data-tsession")).toBe("s-work");
+    expect(chip?.getAttribute("data-tprofile")).toBe("work");
+    expect(chip?.getAttribute("data-tprofile")).not.toBe("All");
+    act(() => chip?.click());
+    expect(onSession).toHaveBeenCalledWith("s-work", "work", "s-work");
+  });
+
   it("traps Tab, closes on Escape and scrim, and restores focus to the opener", () => {
     const opener = document.createElement("button");
     opener.textContent = "atlas";
     document.body.appendChild(opener);
     opener.focus();
     const onClose = vi.fn();
-    mount({ onClose });
+    // A real recent session exists in the loaded artifact, but this project
+    // has none in range: the note stays a div and the opener only supplies
+    // the real profile fallback.
+    mount({ onClose, profile: "All", opener: { id: "s-work", profile: "work" } });
     const drawer = host.querySelector<HTMLElement>("#pdrawer")!;
     const scrim = host.querySelector<HTMLElement>("#pdscrim")!;
     const body = host.querySelector<HTMLElement>("#pdbody")!;
@@ -156,7 +177,13 @@ describe("ProjectDrawer", () => {
         new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }),
       );
     });
-    expect(document.activeElement?.className).toContain("ttitlebtn");
+    expect(document.activeElement).toBe(host.querySelector("#pdclose"));
+    // The "no session ids" note is a plain div in Python; it must not become a
+    // focusable empty button on Next (dashboard.css:1206 hides the panel too).
+    const note = section("Recent sessions").querySelector<HTMLElement>(".pdsessrow");
+    expect(note?.tagName).toBe("DIV");
+    expect(note?.hasAttribute("tabindex")).toBe(false);
+    expect(note?.dataset.tsession ?? "").toBe("");
 
     act(() => {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));

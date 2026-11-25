@@ -72,6 +72,8 @@ export interface ProjectDrawerProps {
   model?: string;
   profile?: string;
   opener?: DrawerOpener;
+  /** id -> owning profile from the loaded merged artifact (main.js:86). */
+  sessionProfiles?: Readonly<Record<string, string>>;
   onClose: () => void;
   onSession: (sessionId: string, profile: string, title: string) => void;
 }
@@ -82,6 +84,7 @@ export default function ProjectDrawer({
   model,
   profile,
   opener,
+  sessionProfiles,
   onClose,
   onSession,
 }: ProjectDrawerProps) {
@@ -98,10 +101,15 @@ export default function ProjectDrawer({
 
   /** Read the data attributes at click time so the arrow stays honest even if
    * a harness re-arms the opener; the Python oracle reads them too. */
-  const openFromButton = (event: MouseEvent<HTMLButtonElement>): void => {
+  const openFromButton = (event: MouseEvent<HTMLElement>): void => {
     const button = event.currentTarget;
     const id = button.dataset.tsession ?? "";
-    const targetProfile = button.dataset.tprofile || profile || opener?.profile || "";
+    const targetProfile =
+      button.dataset.tprofile ||
+      sessionProfiles?.[id] ||
+      profile ||
+      opener?.profile ||
+      "";
     const title = button.textContent?.trim() || id;
     if (id) onSession(id, targetProfile, title);
   };
@@ -188,7 +196,9 @@ export default function ProjectDrawer({
                 <SessionIndexChip
                   key={session.id}
                   sessionId={session.id}
-                  profile={profile || opener?.profile || ""}
+                  profile={
+                    sessionProfiles?.[session.id] || opener?.profile || profile || ""
+                  }
                   onClick={openFromButton}
                 >
                   {session.id}
@@ -199,7 +209,7 @@ export default function ProjectDrawer({
               ))
             ) : (
               <SessionIndexChip
-                sessionId={opener?.id ?? ""}
+                sessionId=""
                 profile={profile || opener?.profile || ""}
                 muted
                 onClick={openFromButton}
