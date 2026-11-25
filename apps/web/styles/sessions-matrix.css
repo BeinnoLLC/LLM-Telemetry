@@ -1,0 +1,152 @@
+/* T-23 RUN A: Sessions weighting + matrix. Every colour comes from the
+ * forwarded token sheet; no hex literal and no provider letter monogram. */
+.sm-view {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+.sm-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  padding: var(--sp-4);
+}
+
+.sm-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  font-weight: 600;
+}
+
+.sm-subtitle {
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.sm-note {
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
+.sm-weight {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.sm-chip {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  padding: var(--sp-1) var(--sp-3);
+  text-transform: none;
+}
+
+.sm-chip:hover,
+.sm-chip:focus-visible {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.sm-chip.on {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.sm-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sm-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.sm-table .sm-pad {
+  padding: var(--sp-2);
+}
+
+.sm-table .sm-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-table .sm-left {
+  text-align: left;
+}
+
+.sm-table .sm-muted {
+  color: var(--muted);
+}
+
+.sm-table .sm-normal {
+  font-weight: 400;
+}
+
+.sm-table .sm-strong {
+  font-weight: 600;
+}
+
+.sm-table .sm-model {
+  white-space: nowrap;
+}
+
+.sm-table .sm-model .lvprovlogo {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: var(--sp-1);
+  fill: currentColor;
+  vertical-align: -0.15em;
+}
+
+.sm-table .dt-sort {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.sm-table .dt-ar {
+  color: var(--muted);
+  display: inline-block;
+  margin-left: var(--sp-1);
+  font-size: 0.8em;
+}
+
+.sm-table .sm-project,
+.sm-table [role="button"].sm-num {
+  cursor: pointer;
+}
+
+.sm-table .sm-project:focus-visible,
+.sm-table [role="button"].sm-num:focus-visible,
+.sm-table .dt-sort:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sm-foot {
+  border-top: 1px solid var(--border);
+}
+
+.sm-empty {
+  font-size: 0.85rem;
+  margin-top: var(--sp-3);
+}
