@@ -20,6 +20,7 @@ export interface SessionRow extends JsonRecord {
   provider?: string;
   base_url?: string;
   project?: string;
+  task?: string;
   session_id?: string | number | null;
   calls?: NumLike;
   inp?: NumLike;
@@ -51,6 +52,7 @@ export interface SessionLogsData extends Artifact {
 
 export interface TranscriptData extends Artifact {
   sessions?: Record<string, JsonRecord>;
+  profiles?: Record<string, JsonRecord>;
 }
 
 export interface WeightLabel {
@@ -97,4 +99,36 @@ export interface AnalyticsProfileResult {
   version: number;
   profileName: string;
   payload: AnalyticsData;
+}
+
+export interface DetailBucket {
+  label: string;
+  key: string;
+  provider?: string;
+  cost: number;
+  pct: string;
+}
+
+export interface DetailSession {
+  id: string;
+  date: string;
+}
+
+export interface ProjectDetail {
+  project: string;
+  sessions: string;
+  calls: number;
+  inp: number;
+  outp: number;
+  cread: number;
+  cwrite: number;
+  act: number;
+  est: number;
+  firstSeen: string;
+  lastSeen: string;
+  models: DetailBucket[];
+  providers: DetailBucket[];
+  tasks: DetailBucket[];
+  recent: DetailSession[];
+  hasSessionIds: boolean;
 }

@@ -9,6 +9,12 @@ import { buildModelProviders, providerPath } from "../lib/sessions-logs/provider
 import { short } from "../lib/sessions-logs/format";
 import type { SessionRow } from "../lib/sessions-logs/types";
 import { ensureFixture } from "../tests/parity/home-fixture";
+import {
+  armTranscriptOpener,
+  readDrawerDom,
+  readModalDom,
+  type TranscriptOpener,
+} from "../tests/parity/modal-dom";
 import { resolvePython } from "../tests/parity/python";
 import { readSessionsDom, type SessionsDom, type SessionsSide } from "../tests/parity/sessions-dom";
 
@@ -165,9 +171,35 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
   const fixture = ensureFixture();
   const payload = JSON.parse(readFileSync(join(fixture, "analytics-data.json"), "utf8"));
   // The browser merges all profiles into "All" when more than one exists.
-  const fixtureRows = Object.values(payload.profiles as Record<string, { rows: SessionRow[] }>).flatMap(
-    (profile) => profile.rows,
+  const analyticsProfiles = payload.profiles as Record<
+    string,
+    { rows: SessionRow[]; recent_sessions?: Array<{ id?: unknown }> }
+  >;
+  const fixtureRows = Object.values(analyticsProfiles).flatMap((profile) => profile.rows);
+  const transcriptPayload = JSON.parse(readFileSync(join(fixture, "transcripts.json"), "utf8"));
+  const transcriptProfiles = transcriptPayload.profiles as Record<
+    string,
+    Record<string, unknown[]>
+  >;
+  const transcriptCandidates = Object.entries(transcriptProfiles).flatMap(
+    ([profile, sessions]) =>
+      Object.entries(sessions).map(([id, messages]) => ({ profile, id, messages })),
   );
+  const messagePick = transcriptCandidates.find(
+    (candidate) => Array.isArray(candidate.messages) && candidate.messages.length > 0,
+  );
+  expect(messagePick, "frozen transcript fixture needs a message-bearing session").toBeTruthy();
+  const messageSession = messagePick as {
+    profile: string;
+    id: string;
+    messages: unknown[];
+  };
+  const transcriptIds = new Set(transcriptCandidates.map((candidate) => candidate.id));
+  const missingIds = Object.values(analyticsProfiles)
+    .flatMap((profile) => profile.recent_sessions ?? [])
+    .map((session) => (session && session.id ? String(session.id) : ""))
+    .filter((id) => id && !transcriptIds.has(id));
+  expect(missingIds.length, "need real ids for empty/error states").toBeGreaterThan(1);
   // Evidence for the documented exceptions, asserted before any comparison.
   for (const exception of MONOGRAM_EXCEPTIONS) {
     expect(
@@ -181,6 +213,9 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
   }
   const oracle = startOracle(fixture, python);
   const errors: string[] = [];
+  // The intentional HTTP 503 for the error-state comparison is suppressed
+  // only inside that one window; every other failure still fails the test.
+  let expectHttpError = false;
   let comparisons = 0;
   try {
     const port = await oracle.port;
@@ -191,16 +226,18 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
     const [py, next] = await Promise.all(contexts.map((context) => context.newPage()));
     for (const [label, page] of [["python", py], ["next", next]] as const) {
       page.on("console", (message) => {
-        if (message.type() === "error") {
+        if (message.type() === "error" && !expectHttpError) {
           errors.push(`${label}: ${message.text()} @ ${message.location().url}`);
         }
       });
       page.on("response", (response) => {
-        if (response.status() >= 400) {
+        if (response.status() >= 400 && !expectHttpError) {
           errors.push(`${label}: HTTP ${response.status()} ${response.url()}`);
         }
       });
-      page.on("pageerror", (error) => errors.push(`${label}: ${error.message}`));
+      page.on("pageerror", (error) => {
+        if (!expectHttpError) errors.push(`${label}: ${error.message}`);
+      });
       await page.clock.install({ time: FROZEN });
     }
     await warmNextFeed();
@@ -278,8 +315,153 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       }
     }
     console.log(`RUN A parity comparisons: ${comparisons}`);
-    expect(comparisons).toBe(5);
-    expect(errors).toEqual([]);
+
+    // RUN B: one drawer text comparison, then three modal states. The frozen
+    // artifacts supply every id — no stand-in session is invented.
+    const openDrawer = async (): Promise<void> => {
+      await Promise.all([
+        py.locator('#projmatrix tbody tr:first-child td:first-child[role="button"]').click(),
+        next.locator('#projmatrix tbody tr:first-child td:first-child[role="button"]').click(),
+      ]);
+      await Promise.all([
+        py.locator("#pdrawer.open").waitFor({ state: "attached" }),
+        next.locator("#pdrawer.open").waitFor({ state: "attached" }),
+      ]);
+    };
+    const closeDrawer = async (): Promise<void> => {
+      await Promise.all([py.keyboard.press("Escape"), next.locator("#pdclose").click()]);
+      await Promise.all([
+        py.locator("#pdrawer:not(.open)").waitFor({ state: "attached" }),
+        next.locator("#pdrawer:not(.open)").waitFor({ state: "attached" }),
+      ]);
+    };
+    const compareDrawer = async (label: string): Promise<void> => {
+      const expected = await readDrawerDom(py);
+      const actual = await readDrawerDom(next);
+      // A closed drawer keeps its last HTML in Python but unmounts in Next;
+      // only the user-visible open state is comparable when closed.
+      const comparable = <T extends typeof expected>(value: T) =>
+        value.open
+          ? value
+          : { hidden: value.hidden, open: value.open, scrimOpen: value.scrimOpen };
+      expect(comparable(actual), label).toEqual(comparable(expected));
+      expect(errors, label).toEqual([]);
+      comparisons += 1;
+      console.log(`PASS parity: ${label} (#${comparisons})`);
+    };
+    const compareModal = async (label: string): Promise<void> => {
+      const expected = await readModalDom(py);
+      const actual = await readModalDom(next);
+      expect(actual, label).toEqual(expected);
+      expect(errors, label).toEqual([]);
+      comparisons += 1;
+      console.log(`PASS parity: ${label} (#${comparisons})`);
+    };
+    const closeModal = async (): Promise<void> => {
+      await Promise.all([py.keyboard.press("Escape"), next.locator("#tclose").click()]);
+      await Promise.all([
+        py.locator("#tmodal:not(.open)").waitFor({ state: "attached" }),
+        next.locator("#tmodal:not(.open)").waitFor({ state: "attached" }),
+      ]);
+    };
+    const clickOpener = async (opener: TranscriptOpener): Promise<void> => {
+      await Promise.all([armTranscriptOpener(py, opener), armTranscriptOpener(next, opener)]);
+      await Promise.all([
+        py.locator("#pdbody .ttitlebtn[data-tsession]").click(),
+        next.locator("#pdbody .ttitlebtn[data-tsession]").click(),
+      ]);
+      await Promise.all([
+        py.locator("#tmodal.open").waitFor({ state: "attached" }),
+        next.locator("#tmodal.open").waitFor({ state: "attached" }),
+      ]);
+    };
+
+    await openDrawer();
+    await compareDrawer("drawer open");
+    await closeDrawer();
+    await compareDrawer("drawer closed");
+
+    await openDrawer();
+    await clickOpener({
+      id: messageSession.id,
+      profile: messageSession.profile,
+      text: messageSession.id,
+    });
+    await Promise.all([
+      py.locator("#tbody .tmsg").first().waitFor({ state: "attached" }),
+      next.locator("#tbody .tmsg").first().waitFor({ state: "attached" }),
+    ]);
+    await compareModal("transcript messages");
+    await closeModal();
+    await closeDrawer();
+
+    await openDrawer();
+    await clickOpener({
+      id: missingIds[0],
+      profile: messageSession.profile,
+      text: missingIds[0],
+    });
+    await Promise.all([
+      py.locator("#tbody .e-msg").waitFor({ state: "attached" }),
+      next.locator("#tbody .e-msg").waitFor({ state: "attached" }),
+    ]);
+    await compareModal("transcript empty state");
+    await closeModal();
+    await closeDrawer();
+
+    await openDrawer();
+    const fail = async (route: {
+      fulfill: (options: object) => Promise<void>;
+      continue: () => Promise<void>;
+    }): Promise<void> => {
+      if (expectHttpError) {
+        await route.fulfill({
+          status: 503,
+          contentType: "text/plain",
+          body: "Service Unavailable",
+        });
+      } else {
+        await route.continue();
+      }
+    };
+    await py.route("**/transcripts.json*", fail);
+    await next.route("**/api/data/transcripts.json*", fail);
+    expectHttpError = true;
+    await clickOpener({
+      id: missingIds[1],
+      profile: messageSession.profile,
+      text: missingIds[1],
+    });
+    await Promise.all([
+      py.locator("#tbody .e-hint").waitFor({ state: "attached" }),
+      next.locator("#tbody .e-hint").waitFor({ state: "attached" }),
+    ]);
+    await compareModal("transcript error state");
+    expectHttpError = false;
+    await closeModal();
+    await closeDrawer();
+    await py.unroute("**/transcripts.json*", fail);
+    await next.unroute("**/api/data/transcripts.json*", fail);
+
+    // Final screenshots: the drawer and message modal, on both sides, at 1280x800.
+    const shots = [
+      ["py", py, "#projmatrix", "sessions-matrix-python.png"],
+      ["next", next, "#projmatrix", "sessions-matrix-next.png"],
+    ] as const;
+    for (const [side, page, selector, name] of shots) {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.waitForTimeout(1200);
+      await page.locator(selector).screenshot({ path: join(fixture, name) });
+      await page.screenshot({ path: join(fixture, name.replace(".png", "-page.png")), fullPage: true });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: join(fixture, name.replace(".png", "-mobile.png")), fullPage: true });
+      console.log(`saved ${side} screenshot: ${name}`);
+    }
+
+    expect(errors, "No browser console/network errors on either side").toEqual([]);
+    expect(comparisons, "matrix + weight + drawer + 3 modal states").toBe(10);
+    console.log(`PARITY_COMPARISONS=${comparisons}`);
   } finally {
     oracle.child.kill("SIGTERM");
     await Promise.race([

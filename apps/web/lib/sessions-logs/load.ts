@@ -57,21 +57,27 @@ export async function loadLogsProfile(signal?: AbortSignal): Promise<{
   };
 }
 
-const transcripts = new Map<string, Record<string, unknown>>();
+const transcripts = new Map<string, unknown[]>();
 
-/** One fetch per (profile, id, day); cached in memory for the drawer session. */
+/** drawer.js:504-546 — one on-demand fetch per (profile, id), cached for the
+ * drawer session. The cache-buster is the only query parameter; the API serves
+ * the whole allowlisted artifact, just like the Python static GET. */
 export async function loadTranscript(
   profile: string,
   id: string,
   now: number,
   signal?: AbortSignal,
-): Promise<Record<string, unknown>> {
-  const key = `${profile}|${id}|${Math.floor(now)}`;
+): Promise<unknown[]> {
+  const key = `${profile}|${id}`;
   const cached = transcripts.get(key);
   if (cached) return cached;
-  const url = `${TRANSCRIPTS_URL}?${new URLSearchParams({ profile, id, t: String(Math.floor(now)) })}`;
-  const payload = await getJson<TranscriptData>(url, signal);
-  const data = (payload.sessions?.[id] ?? {}) as Record<string, unknown>;
-  transcripts.set(key, data);
-  return data;
+  const url = `${TRANSCRIPTS_URL}?${new URLSearchParams({ t: String(Math.floor(now)) })}`;
+  const response = await fetch(url, { signal, cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const payload = (await response.json()) as TranscriptData;
+  const messages =
+    (payload.profiles?.[profile]?.[id] ?? payload.sessions?.[id] ?? []) as unknown[];
+  const values = Array.isArray(messages) ? messages : [];
+  transcripts.set(key, values);
+  return values;
 }

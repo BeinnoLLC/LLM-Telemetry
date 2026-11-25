@@ -1,10 +1,14 @@
 // T-23 RUN A: weighting + project × model aggregation. Exact port of
 // charts.js:189-217 and views.js:1528-1620; the Python DOM is the oracle.
 import { num, short } from "./format";
+import { modelProvider, provOf } from "./providers";
 import type {
+  DetailBucket,
+  DetailSession,
   MatrixColumn,
   MatrixData,
   MatrixRow,
+  ProjectDetail,
   SessionRow,
   WeightAxis,
 } from "./types";
@@ -143,5 +147,83 @@ export function buildMatrix(
     rest,
     rows: matrixRows,
     grandTotal: weightValue([...rows], axis),
+  };
+}
+
+/** views.js:1651-1745 — the drill-down's numbers. Actual and estimated cost
+ * stay separate; the denominator is `totalAct || totalEst`, never their sum. */
+export function buildProjectDetail(
+  rows: readonly SessionRow[],
+  project: string,
+): ProjectDetail {
+  const group = rows.filter((row) => (row.project || "Unattributed") === project);
+  const ids = Array.from(
+    new Set(
+      group
+        .map((row) => row.session_id)
+        .filter((id) => Boolean(id))
+        .map((id) => String(id)),
+    ),
+  );
+  const dates = group
+    .map((row) => (row.date == null ? "" : String(row.date)))
+    .filter((date) => date.length > 0)
+    .sort();
+  const sum = (pick: (row: SessionRow) => number): number =>
+    group.reduce((total, row) => total + pick(row), 0);
+  const totalAct = sum((row) => num(row.act));
+  const totalEst = sum((row) => num(row.est));
+  const denominator = totalAct || totalEst;
+  const cost = (row: SessionRow): number => num(row.act) || num(row.est);
+  const pct = (value: number): string =>
+    (denominator > 0 ? (100 * value) / denominator : 0).toFixed(0);
+
+  const byModel = new Map<string, number>();
+  const byProvider = new Map<string, number>();
+  const byTask = new Map<string, number>();
+  group.forEach((row) => {
+    const model = row.model == null ? "" : String(row.model);
+    const provider = provOf(row);
+    const task = String(row.task || "unspecified") || "unspecified";
+    byModel.set(model, (byModel.get(model) ?? 0) + cost(row));
+    byProvider.set(provider, (byProvider.get(provider) ?? 0) + cost(row));
+    byTask.set(task, (byTask.get(task) ?? 0) + cost(row));
+  });
+  const buckets = (map: Map<string, number>, limit?: number): DetailBucket[] => {
+    const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
+    return (limit === undefined ? entries : entries.slice(0, limit)).map(([key, value]) => ({
+      key,
+      label: key,
+      cost: value,
+      pct: pct(value),
+    }));
+  };
+  const models = buckets(byModel, 6).map((bucket) => ({
+    ...bucket,
+    label: short(bucket.key),
+    provider: modelProvider(bucket.key, rows),
+  }));
+  const recent: DetailSession[] = ids.slice(0, 12).map((id) => {
+    const row = group.find((candidate) => String(candidate.session_id ?? "") === id);
+    return { id, date: row && row.date != null ? String(row.date) : "" };
+  });
+
+  return {
+    project,
+    sessions: ids.length ? String(ids.length) : "—",
+    calls: sum((row) => num(row.calls)),
+    inp: sum((row) => num(row.inp)),
+    outp: sum((row) => num(row.outp)),
+    cread: sum((row) => num(row.cread)),
+    cwrite: sum((row) => num(row.cwrite)),
+    act: totalAct,
+    est: totalEst,
+    firstSeen: dates.length ? (dates[0] as string) : "—",
+    lastSeen: dates.length ? (dates[dates.length - 1] as string) : "—",
+    models,
+    providers: buckets(byProvider),
+    tasks: buckets(byTask, 6),
+    recent,
+    hasSessionIds: recent.length > 0,
   };
 }

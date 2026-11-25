@@ -1,0 +1,166 @@
+/* T-23 RUN B: project drill-down drawer. Colours and layers come only from
+ * the forwarded token sheet; provider identity is an SVG path, never a letter. */
+#pdscrim {
+  background: var(--scrim-bg);
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  transition: opacity var(--motion-fast) ease;
+  z-index: var(--layer-scrim);
+}
+
+#pdscrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#pdrawer {
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  bottom: 0;
+  box-shadow: var(--elev-modal);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  max-width: min(46rem, 100vw);
+  overflow: hidden;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transform: translateX(100%);
+  transition: transform var(--motion-normal) ease;
+  width: 100%;
+  z-index: var(--layer-drawer);
+}
+
+#pdrawer.open {
+  transform: translateX(0);
+}
+
+#pdrawer .pdhead {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+#pdrawer .pdhead b {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+#pdbody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+}
+
+#pdbody:focus,
+#tbody:focus {
+  outline: none;
+}
+
+#pdrawer .chip,
+#tmodal .chip {
+  appearance: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: var(--sp-2);
+}
+
+#pdrawer .chip:focus-visible,
+#tmodal .chip:focus-visible,
+#pdbody .ttitlebtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+#pdbody .pdsection {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--sp-4);
+}
+
+#pdbody .pdsection:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+#pdbody .lbl {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--sp-2);
+  text-transform: uppercase;
+}
+
+#pdbody .pdstat {
+  align-items: baseline;
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: space-between;
+  padding: var(--sp-1) 0;
+}
+
+#pdbody .pdstat .k {
+  color: var(--muted);
+  display: inline-flex;
+  gap: var(--sp-1);
+}
+
+#pdbody .lvprovlogo {
+  display: inline-block;
+  fill: currentColor;
+  height: 0.9em;
+  vertical-align: -0.1em;
+  width: 0.9em;
+}
+
+#pdbody .muted {
+  color: var(--muted);
+}
+
+#pdbody .pdcost-actual,
+#pdbody .pdcost-est {
+  font-variant-numeric: tabular-nums;
+}
+
+#pdbody .ttitlebtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--fg);
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  padding: var(--sp-1) 0;
+  text-align: left;
+  width: 100%;
+}
+
+#pdbody .ttitlebtn:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  #pdrawer {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    bottom: 0;
+    left: 0;
+    max-width: none;
+    top: auto;
+    transform: translateY(100%);
+  }
+
+  #pdrawer.open {
+    transform: translateY(0);
+  }
+}

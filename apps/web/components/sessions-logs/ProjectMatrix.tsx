@@ -98,7 +98,14 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
     return [...keyed.map((entry) => entry.row), ...pinned];
   }, [data, sort, fmt]);
 
-  const activate = (project: string, model?: string): void => {
+  const activate = (
+    project: string,
+    model?: string,
+    opener?: HTMLElement,
+  ): void => {
+    // Keep the clicked cell as document.activeElement so the shared focus trap
+    // can hand focus back to it when the drawer closes.
+    opener?.focus();
     if (model === undefined) onOpen(project);
     else onOpen(project, model);
   };
@@ -106,10 +113,11 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
     event: KeyboardEvent<HTMLElement>,
     project: string,
     model?: string,
+    opener?: HTMLElement,
   ): void => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      activate(project, model);
+      activate(project, model, opener ?? event.currentTarget);
     }
   };
 
@@ -185,8 +193,8 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
                       role="button"
                       tabIndex={0}
                       data-project={row.project}
-                      onClick={() => activate(row.project)}
-                      onKeyDown={(event) => onKey(event, row.project)}
+                      onClick={(event) => activate(row.project, undefined, event.currentTarget)}
+                      onKeyDown={(event) => onKey(event, row.project, undefined, event.currentTarget)}
                     >
                       {row.project}
                     </td>
@@ -204,7 +212,11 @@ export default function ProjectMatrix({ rows, axis, onOpen }: ProjectMatrixProps
                             ? `${row.project} × ${short(cell.model)}: ${fmt(cell.value)} ${unit}`
                             : undefined
                         }
-                        onClick={cell.touched ? () => activate(row.project, cell.model) : undefined}
+                        onClick={
+                          cell.touched
+                            ? (event) => activate(row.project, cell.model, event.currentTarget)
+                            : undefined
+                        }
                         onKeyDown={
                           cell.touched
                             ? (event) => onKey(event, row.project, cell.model)
