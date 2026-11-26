@@ -1,6 +1,6 @@
 // T-23 RUN A: weighting + project × model aggregation. Exact port of
 // charts.js:189-217 and views.js:1528-1620; the Python DOM is the oracle.
-import { num, short } from "./format";
+import { WEIGHT_LABELS, num, short } from "./format";
 import { modelProvider, provOf } from "./providers";
 import type {
   DetailBucket,
@@ -15,6 +15,37 @@ import type {
 import { WEIGHT_AXES, WEIGHT_KEY } from "./types";
 
 export const PROJ_MATRIX_MAX_COLS = 8;
+export const PROJ_TREND_TOP_N = 6;
+
+/** views.js:149-159 / 216 — the shared PROV glyph table. These are the
+ * oracle's chart-legend symbols, not provider-ball letters: jar balls keep
+ * using the SVG icons from provider-icons.ts and never use this table. */
+export const PROV_GLYPHS: Readonly<Record<string, string>> = {
+  anthropic: "✳",
+  "opencode-go": "◈",
+  fireworks: "✦",
+  "openai-codex": "◉",
+  local: "▣",
+  moa: "⬡",
+  cloud: "☁",
+  "ollama-cloud": "☁",
+  nous: "◆",
+};
+
+export function provLegendLabel(provider: string): string {
+  return `${PROV_GLYPHS[provider] ?? "○"} ${provider}`;
+}
+
+/** One stacked segment. `value` is the number Chart.js would plot (raw in
+ * absolute mode, percent in normalised/stacked mode); `raw` stays available
+ * so parity can inspect both data-value and data-share at any toggle state. */
+export interface ChartSegment {
+  key: string;
+  label: string;
+  raw: number;
+  share: number;
+  value: number;
+}
 
 /** charts.js:203-217. Sessions count DISTINCT non-empty ids; rows without an
  * id still contribute one anonymous unit each. Tokens include cache read and
@@ -226,4 +257,199 @@ export function buildProjectDetail(
     recent,
     hasSessionIds: recent.length > 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// T-23 RUN D — distribution / trend derivation, ported line-for-line from
+// views.js:2048-2285. The Python dashboard's live Chart.js config is the
+// oracle: both charts are driven by the SAME weightValue() as the matrix, so
+// a weight change can never make them disagree about their unit.
+
+export interface DistributionBar {
+  project: string;
+  /** Sum of plotted values across every series (100 when normalised). */
+  total: number;
+  /** Sum of plotted values for the series still switched on. */
+  visibleTotal: number;
+  segments: ChartSegment[];
+}
+
+export interface DistributionData {
+  empty: boolean;
+  axis: WeightAxis;
+  axisTitle: string;
+  normalized: boolean;
+  providers: ChartSegment[];
+  bars: DistributionBar[];
+  grandTotal: number;
+}
+
+/** views.js:2048-2140. Provider order is the GLOBAL provider weight under the
+ * current axis (the cost axis is the act||est order); this keeps segment order
+ * identical across every project bar, exactly as the oracle does. */
+export function buildProjectDistribution(
+  rows: readonly SessionRow[],
+  axis: WeightAxis,
+  normalized = false,
+  hidden: ReadonlySet<string> = new Set(),
+): DistributionData {
+  const axisTitle = normalized ? "% of project total" : WEIGHT_LABELS[axis].axis;
+  if (!rows.length) {
+    return {
+      empty: true,
+      axis,
+      axisTitle,
+      normalized,
+      providers: [],
+      bars: [],
+      grandTotal: 0,
+    };
+  }
+
+  const byProject = new Map<string, Map<string, SessionRow[]>>();
+  const providerSeen = new Set<string>();
+  rows.forEach((row) => {
+    const project = row.project || "Unattributed";
+    const provider = provOf(row);
+    if (!byProject.has(project)) byProject.set(project, new Map());
+    const groups = byProject.get(project)!;
+    if (!groups.has(provider)) groups.set(provider, []);
+    groups.get(provider)!.push(row);
+    providerSeen.add(provider);
+  });
+
+  const projectTotal = (project: string): number =>
+    weightValue([...byProject.get(project)!.values()].flat(), axis);
+  const projects = [...byProject.keys()].sort((a, b) => {
+    if (a === "Unattributed") return 1;
+    if (b === "Unattributed") return -1;
+    return projectTotal(b) - projectTotal(a);
+  });
+  const providerTotal = (provider: string): number =>
+    weightValue(
+      projects.flatMap((project) => byProject.get(project)!.get(provider) ?? []),
+      axis,
+    );
+  const providers = [...providerSeen].sort((a, b) => providerTotal(b) - providerTotal(a));
+  const grandTotal = projects.reduce((sum, project) => sum + projectTotal(project), 0);
+
+  const providerSegments: ChartSegment[] = providers.map((provider) => {
+    const raw = providerTotal(provider);
+    const share = grandTotal > 0 ? (100 * raw) / grandTotal : 0;
+    return { key: provider, label: provLegendLabel(provider), raw, share, value: normalized ? share : raw };
+  });
+
+  const bars: DistributionBar[] = projects.map((project) => {
+    const projectRows = [...byProject.get(project)!.values()].flat();
+    const total = weightValue(projectRows, axis);
+    const segments = providers.map((provider) => {
+      const group = byProject.get(project)!.get(provider) ?? [];
+      const raw = weightValue(group, axis);
+      const share = total > 0 ? (100 * raw) / total : 0;
+      return {
+        key: provider,
+        label: provLegendLabel(provider),
+        raw,
+        share,
+        value: normalized ? share : raw,
+      };
+    });
+    return {
+      project,
+      total: segments.reduce((sum, segment) => sum + segment.value, 0),
+      visibleTotal: segments.reduce(
+        (sum, segment) => sum + (hidden.has(segment.key) ? 0 : segment.value),
+        0,
+      ),
+      segments,
+    };
+  });
+
+  return { empty: false, axis, axisTitle, normalized, providers: providerSegments, bars, grandTotal };
+}
+
+export interface TrendData {
+  empty: boolean;
+  axis: WeightAxis;
+  axisTitle: string;
+  stacked: boolean;
+  series: ChartSegment[];
+  days: Array<{ day: string; total: number; visibleTotal: number; segments: ChartSegment[] }>;
+}
+
+/** views.js:2173-2263. Top-N ranking uses the current axis total — the same
+ * measure that orders the matrix rows — and the remainder is folded into one
+ * explicit "Other (+N)" series instead of being silently dropped. */
+export function buildProjectTrend(
+  rows: readonly SessionRow[],
+  axis: WeightAxis,
+  stacked = false,
+  hidden: ReadonlySet<string> = new Set(),
+): TrendData {
+  const axisTitle = stacked ? "% of day total" : WEIGHT_LABELS[axis].axis;
+  if (!rows.length) {
+    return { empty: true, axis, axisTitle, stacked, series: [], days: [] };
+  }
+
+  const days = [...new Set(rows.map((row) => String(row.date ?? "")))].sort();
+  const byProjDate = new Map<string, Map<string, SessionRow[]>>();
+  rows.forEach((row) => {
+    const project = row.project || "Unattributed";
+    const day = String(row.date ?? "");
+    if (!byProjDate.has(project)) byProjDate.set(project, new Map());
+    const byDate = byProjDate.get(project)!;
+    if (!byDate.has(day)) byDate.set(day, []);
+    byDate.get(day)!.push(row);
+  });
+  const projectTotal = (project: string): number =>
+    weightValue([...byProjDate.get(project)!.values()].flat(), axis);
+  const allProjects = [...byProjDate.keys()].sort((a, b) => {
+    if (a === "Unattributed") return 1;
+    if (b === "Unattributed") return -1;
+    return projectTotal(b) - projectTotal(a);
+  });
+  const shown = allProjects.slice(0, PROJ_TREND_TOP_N);
+  const rest = allProjects.slice(PROJ_TREND_TOP_N);
+
+  const seriesKeys = [
+    ...shown,
+    ...(rest.length ? [`Other (+${rest.length})`] : []),
+  ];
+  const groupFor = (key: string, day: string): SessionRow[] => {
+    if (key.startsWith("Other (+") && !byProjDate.has(key)) {
+      return rest.flatMap((project) => byProjDate.get(project)!.get(day) ?? []);
+    }
+    return byProjDate.get(key)?.get(day) ?? [];
+  };
+
+  const seriesTotals = seriesKeys.map((key) =>
+    days.reduce((sum, day) => sum + weightValue(groupFor(key, day), axis), 0),
+  );
+  const series: ChartSegment[] = seriesKeys.map((key, index) => {
+    const raw = seriesTotals[index] ?? 0;
+    const grandTotal = seriesTotals.reduce((sum, value) => sum + value, 0);
+    const share = grandTotal > 0 ? (100 * raw) / grandTotal : 0;
+    return { key, label: key, raw, share, value: stacked ? share : raw };
+  });
+
+  const chartDays = days.map((day) => {
+    const rawValues = seriesKeys.map((key) => weightValue(groupFor(key, day), axis));
+    const dayTotal = rawValues.reduce((sum, value) => sum + value, 0);
+    const segments: ChartSegment[] = seriesKeys.map((key, index) => {
+      const raw = rawValues[index] ?? 0;
+      const share = dayTotal > 0 ? (100 * raw) / dayTotal : 0;
+      return { key, label: key, raw, share, value: stacked ? share : raw };
+    });
+    return {
+      day,
+      total: segments.reduce((sum, segment) => sum + segment.value, 0),
+      visibleTotal: segments.reduce(
+        (sum, segment) => sum + (hidden.has(segment.key) ? 0 : segment.value),
+        0,
+      ),
+      segments,
+    };
+  });
+
+  return { empty: false, axis, axisTitle, stacked, series, days: chartDays };
 }

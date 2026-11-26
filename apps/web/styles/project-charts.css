@@ -1,0 +1,164 @@
+/* T-23 RUN D — project distribution / trend cards. Presentational only: the
+ * numbers come from lib/sessions-logs/aggregate.ts and the palette comes from
+ * tokens.css. No colour literals and no extra scroll containers live here. */
+.pc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+  min-width: 0;
+}
+
+.pc-card {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  min-width: 0;
+}
+
+.pc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.pc-title {
+  margin: 0;
+  font-size: var(--fs-sm, 0.85rem);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--fg, var(--text, inherit));
+}
+
+.pc-sub {
+  margin-left: 4px;
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.pc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--muted);
+  text-transform: none;
+  cursor: pointer;
+}
+
+.pc-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.pc-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 360px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.pc-axis,
+.pc-tick,
+.pc-label {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.pc-label {
+  font-size: 11px;
+  text-anchor: end;
+}
+
+.pc-track {
+  fill: var(--surface-2, var(--bg-soft, transparent));
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.pc-baseline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.pc-seg,
+.pc-trend-seg {
+  stroke: var(--surface, transparent);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.pc-hidden {
+  display: none;
+}
+
+.pc-empty {
+  margin: 8px 0;
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--muted);
+}
+
+.pc-empty[hidden] {
+  display: none;
+}
+
+.pc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.pc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg, var(--text, inherit));
+  font-size: var(--fs-xs, 0.75rem);
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.pc-legend-item[aria-pressed="false"] {
+  opacity: 0.45;
+}
+
+.pc-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.pc-legend-item:hover {
+  border-color: var(--accent2, var(--accent));
+}
+
+.pc-legend-item:focus-visible,
+.pc-toggle:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .pc-grid {
+    gap: 12px;
+  }
+  .pc-svg {
+    max-height: none;
+  }
+}

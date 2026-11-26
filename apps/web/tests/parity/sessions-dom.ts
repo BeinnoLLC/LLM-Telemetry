@@ -138,3 +138,257 @@ export async function readSessionsDom(
     };
   });
 }
+
+// ---------------------------------------------------------------------------
+// T-23 RUN D — project chart parity. The Python dashboard draws both charts
+// with Chart.js on <canvas>, while the Next.js port is presentational SVG.
+// There is no Canvas API in the parity harness, so pixel/canvas comparison is
+// impossible. Instead we normalise BOTH renderings into this one descriptor:
+// legend text, aria-pressed visibility, axis title, empty-state copy and every
+// plotted value. On the Python side the values come from the live Chart.js
+// config; on the Next side from the data-value / data-share attributes on each
+// <rect>. In normalised/stacked mode Chart.js plots the percentage, so the
+// descriptor compares that against data-share; in absolute mode it compares
+// against data-value. data-value remains on every segment in every mode so no
+// measurement is invented or dropped.
+
+interface ChartLike {
+  data: { labels: unknown[]; datasets: Array<{ label?: string; data?: unknown[] }> };
+  options?: {
+    scales?: {
+      x?: { title?: { text?: string } };
+      y?: { title?: { text?: string } };
+    };
+  };
+}
+
+interface ChartApiLike {
+  getChart?: (canvas: Element | null) => ChartLike | null;
+}
+
+export interface ChartSegmentDom {
+  value: number;
+  share: number;
+  hidden: boolean;
+}
+
+export interface ChartLegendEntryDom {
+  label: string;
+  pressed: string | null;
+}
+
+export interface DistributionChartDom {
+  axisTitle: string;
+  normalized: boolean;
+  empty: { text: string; hidden: boolean };
+  providers: ChartLegendEntryDom[];
+  bars: Array<{
+    project: string;
+    total: number;
+    visibleTotal: number;
+    segments: ChartSegmentDom[];
+  }>;
+}
+
+export interface TrendChartDom {
+  axisTitle: string;
+  stacked: boolean;
+  empty: { text: string; hidden: boolean };
+  series: ChartLegendEntryDom[];
+  days: Array<{
+    day: string;
+    total: number;
+    visibleTotal: number;
+    segments: ChartSegmentDom[];
+  }>;
+}
+
+export interface ProjectChartsDom {
+  distribution: DistributionChartDom;
+  trend: TrendChartDom;
+}
+
+export async function readProjectChartsDom(
+  page: Page,
+  side: "python" | "next",
+): Promise<ProjectChartsDom> {
+  return page.evaluate((which) => {
+    const clean = (value: string | null | undefined): string =>
+      (value ?? "").replace(/\s+/g, " ").trim();
+    const text = (element: Element | null | undefined): string => clean(element?.textContent);
+    const number = (value: unknown): number => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    // Three decimals is enough to catch a wrong weight without tripping over
+    // float noise from a percentage division.
+    const round = (value: number): number => Math.round(value * 1000) / 1000;
+    const emptyOf = (id: string): { text: string; hidden: boolean } => {
+      const node = document.querySelector(`#${id}`);
+      return { text: text(node), hidden: node?.hasAttribute("hidden") ?? true };
+    };
+    const legendOf = (id: string): ChartLegendEntryDom[] =>
+      [...(document.querySelector(`#${id}`)?.querySelectorAll("button") ?? [])].map((button) => ({
+        label: text(button),
+        pressed: button.getAttribute("aria-pressed"),
+      }));
+    const axisFromWeight = (): string => {
+      const axis =
+        document.querySelector('#projweight button[aria-pressed="true"]')?.getAttribute("data-w") ?? "cost";
+      const labels: Record<string, string> = {
+        cost: "Cost ($)",
+        calls: "Calls",
+        tokens: "Tokens",
+        sessions: "Sessions",
+      };
+      return labels[axis] ?? "Cost ($)";
+    };
+    const sharesOf = (values: number[]): number[] => {
+      const total = values.reduce((sum, value) => sum + value, 0);
+      return values.map((value) => (total > 0 ? (100 * value) / total : 0));
+    };
+    const hiddenOf = (legend: ChartLegendEntryDom[], index: number): boolean =>
+      legend[index]?.pressed === "false";
+
+    const normalized = document.querySelector<HTMLInputElement>("#projdistnorm")?.checked ?? false;
+    const stacked = document.querySelector<HTMLInputElement>("#projtrendstack")?.checked ?? false;
+    const distEmpty = emptyOf("projdistempty");
+    const trendEmpty = emptyOf("projtrendempty");
+
+    let distribution: DistributionChartDom;
+    let trend: TrendChartDom;
+
+    if (which === "python") {
+      const api = (window as unknown as { Chart?: ChartApiLike }).Chart;
+      const distChart = api?.getChart?.(document.querySelector("#cProjDist")) ?? null;
+      const distLegend = legendOf("projdistlegend");
+      const distLabels = (distChart?.data.labels ?? []).map((label) => clean(String(label)));
+      const distSets = distChart?.data.datasets ?? [];
+      distribution = {
+        axisTitle: clean(
+          distChart?.options?.scales?.x?.title?.text ??
+            (normalized ? "% of project total" : axisFromWeight()),
+        ),
+        normalized,
+        empty: distEmpty,
+        providers: distSets.map((dataset, index) => ({
+          label: clean(dataset.label),
+          pressed: distLegend[index]?.pressed ?? null,
+        })),
+        bars: distLabels.map((project, index) => {
+          const values = distSets.map((dataset) => number(dataset.data?.[index]));
+          const shares = sharesOf(values);
+          const segments = values.map((value, seriesIndex) => ({
+            value: round(normalized ? shares[seriesIndex]! : value),
+            share: round(shares[seriesIndex]!),
+            hidden: hiddenOf(distLegend, seriesIndex),
+          }));
+          return {
+            project,
+            total: round(segments.reduce((sum, segment) => sum + segment.value, 0)),
+            visibleTotal: round(
+              segments.reduce((sum, segment) => sum + (segment.hidden ? 0 : segment.value), 0),
+            ),
+            segments,
+          };
+        }),
+      };
+
+      const trendChart = api?.getChart?.(document.querySelector("#cProjTrend")) ?? null;
+      const trendLegend = legendOf("projtrendlegend");
+      const trendLabels = (trendChart?.data.labels ?? []).map((label) => clean(String(label)));
+      const trendSets = trendChart?.data.datasets ?? [];
+      trend = {
+        axisTitle: clean(
+          trendChart?.options?.scales?.y?.title?.text ??
+            (stacked ? "% of day total" : axisFromWeight()),
+        ),
+        stacked,
+        empty: trendEmpty,
+        series: trendSets.map((dataset, index) => ({
+          label: clean(dataset.label),
+          pressed: trendLegend[index]?.pressed ?? null,
+        })),
+        days: trendLabels.map((day, index) => {
+          const values = trendSets.map((dataset) => number(dataset.data?.[index]));
+          const shares = sharesOf(values);
+          const segments = values.map((value, seriesIndex) => ({
+            value: round(stacked ? shares[seriesIndex]! : value),
+            share: round(shares[seriesIndex]!),
+            hidden: hiddenOf(trendLegend, seriesIndex),
+          }));
+          return {
+            day,
+            total: round(segments.reduce((sum, segment) => sum + segment.value, 0)),
+            visibleTotal: round(
+              segments.reduce((sum, segment) => sum + (segment.hidden ? 0 : segment.value), 0),
+            ),
+            segments,
+          };
+        }),
+      };
+    } else {
+      const distSvg = document.querySelector("#cProjDist");
+      const distLegend = legendOf("projdistlegend");
+      distribution = {
+        axisTitle: clean(
+          distSvg?.getAttribute("data-axis-title") ??
+            (normalized ? "% of project total" : axisFromWeight()),
+        ),
+        normalized,
+        empty: distEmpty,
+        providers: distLegend,
+        bars: [...(distSvg?.querySelectorAll(".pc-bar") ?? [])].map((group) => {
+          const segments = [...group.querySelectorAll(".pc-seg")].map((rect) => {
+            const share = number(rect.getAttribute("data-share"));
+            return {
+              value: round(normalized ? share : number(rect.getAttribute("data-value"))),
+              share: round(share),
+              hidden: rect.getAttribute("data-hidden") === "true",
+            };
+          });
+          return {
+            project: clean(group.getAttribute("data-project")),
+            total: round(segments.reduce((sum, segment) => sum + segment.value, 0)),
+            visibleTotal: round(
+              segments.reduce((sum, segment) => sum + (segment.hidden ? 0 : segment.value), 0),
+            ),
+            segments,
+          };
+        }),
+      };
+
+      const trendSvg = document.querySelector("#cProjTrend");
+      const trendLegend = legendOf("projtrendlegend");
+      trend = {
+        axisTitle: clean(
+          trendSvg?.getAttribute("data-axis-title") ??
+            (stacked ? "% of day total" : axisFromWeight()),
+        ),
+        stacked,
+        empty: trendEmpty,
+        series: trendLegend,
+        days: [...(trendSvg?.querySelectorAll(".pc-day") ?? [])].map((group) => {
+          const segments = [...group.querySelectorAll(".pc-trend-seg")].map((rect) => {
+            const share = number(rect.getAttribute("data-share"));
+            return {
+              value: round(stacked ? share : number(rect.getAttribute("data-value"))),
+              share: round(share),
+              hidden: rect.getAttribute("data-hidden") === "true",
+            };
+          });
+          return {
+            day: clean(group.getAttribute("data-day")),
+            total: round(segments.reduce((sum, segment) => sum + segment.value, 0)),
+            visibleTotal: round(
+              segments.reduce((sum, segment) => sum + (segment.hidden ? 0 : segment.value), 0),
+            ),
+            segments,
+          };
+        }),
+      };
+    }
+
+    return { distribution, trend };
+  }, side);
+}

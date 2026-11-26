@@ -16,7 +16,12 @@ import {
   type TranscriptOpener,
 } from "../tests/parity/modal-dom";
 import { resolvePython } from "../tests/parity/python";
-import { readSessionsDom, type SessionsDom, type SessionsSide } from "../tests/parity/sessions-dom";
+import {
+  readProjectChartsDom,
+  readSessionsDom,
+  type SessionsDom,
+  type SessionsSide,
+} from "../tests/parity/sessions-dom";
 
 const CWD = process.cwd();
 const REPO_ROOT = basename(CWD) === "web" ? resolve(CWD, "..", "..") : CWD;
@@ -284,7 +289,30 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       comparisons += 1;
     };
 
+    const compareCharts = async (label: string): Promise<void> => {
+      const expected = await readProjectChartsDom(py, "python");
+      const actual = await readProjectChartsDom(next, "next");
+      console.log(
+        "RUN D compared " +
+          JSON.stringify({
+            state: label,
+            providers: expected.distribution.providers.map((entry) => entry.label),
+            projects: expected.distribution.bars.map((bar) => bar.project),
+            days: expected.trend.days.map((day) => day.day),
+            series: expected.trend.series.map((entry) => entry.label),
+            distAxis: expected.distribution.axisTitle,
+            trendAxis: expected.trend.axisTitle,
+          }),
+      );
+      expect(actual.distribution, `${label}: project distribution`).toEqual(expected.distribution);
+      expect(actual.trend, `${label}: project trend`).toEqual(expected.trend);
+      expect(errors, label).toEqual([]);
+      comparisons += 1;
+      console.log(`PASS parity: ${label} charts (#${comparisons})`);
+    };
+
     await compare("default");
+    await compareCharts("default charts");
     for (const axis of AXES) {
       await Promise.all([
         py.locator(`#projweight button[data-w="${axis}"]`).click(),
@@ -292,6 +320,7 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       ]);
       await Promise.all([py.waitForTimeout(100), next.waitForTimeout(100)]);
       await compare(axis);
+      await compareCharts(`${axis} charts`);
     }
 
     for (const [width, height] of [[1920, 1080], [1280, 800]]) {
@@ -315,6 +344,91 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       }
     }
     console.log(`RUN A parity comparisons: ${comparisons}`);
+
+    // RUN D hardening: one scroll container only, keyboard-operable legend
+    // buttons with visible focus rings, and aria-hidden kept in sync with the
+    // empty state. These are next-side invariants, not oracle comparisons.
+    const hardening = await next.evaluate(() => {
+      const dist = document.querySelector("#cProjDist");
+      const trend = document.querySelector("#cProjTrend");
+      const legend = [...document.querySelectorAll(".pc-legend-item")];
+      const scrollers = [
+        ...document.querySelectorAll("#projdistcard *, #projtrendcard *"),
+      ].filter((node) => {
+        const overflow = getComputedStyle(node).overflowX;
+        return overflow === "auto" || overflow === "scroll";
+      });
+      return {
+        scrollers: scrollers.length,
+        distHidden: dist?.getAttribute("aria-hidden"),
+        trendHidden: trend?.getAttribute("aria-hidden"),
+        legendButtons: legend.length,
+        keyboard: legend.every(
+          (button) =>
+            button.tagName === "BUTTON" &&
+            button.getAttribute("aria-pressed") !== null &&
+            button.getAttribute("tabindex") !== "-1",
+        ),
+      };
+    });
+    expect(hardening.scrollers).toBe(0);
+    expect(hardening.distHidden).toBe("false");
+    expect(hardening.trendHidden).toBe("false");
+    expect(hardening.legendButtons).toBeGreaterThan(0);
+    expect(hardening.keyboard).toBe(true);
+    const ring = await next.evaluate(() =>
+      [...document.styleSheets].some((sheet) => {
+        try {
+          return [...sheet.cssRules].some(
+            (rule) => rule.cssText.includes(":focus-visible") && rule.cssText.includes("outline"),
+          );
+        } catch {
+          return false;
+        }
+      }),
+    );
+    expect(ring, "legend buttons need a focus-visible outline rule").toBe(true);
+
+    // Reset to cost, then exercise the two chart toggles and both legends.
+    await Promise.all([
+      py.locator('#projweight button[data-w="cost"]').click(),
+      next.locator('#projweight button[data-w="cost"]').click(),
+    ]);
+    await Promise.all([py.waitForTimeout(100), next.waitForTimeout(100)]);
+    await compareCharts("cost charts restored");
+
+    const toggleBoth = async (selector: string): Promise<void> => {
+      await Promise.all([py.locator(selector).check(), next.locator(selector).check()]);
+      await Promise.all([py.waitForTimeout(150), next.waitForTimeout(150)]);
+    };
+    const untoggleBoth = async (selector: string): Promise<void> => {
+      await Promise.all([py.locator(selector).uncheck(), next.locator(selector).uncheck()]);
+      await Promise.all([py.waitForTimeout(150), next.waitForTimeout(150)]);
+    };
+    await toggleBoth("#projdistnorm");
+    await compareCharts("distribution normalised");
+    await untoggleBoth("#projdistnorm");
+    await compareCharts("distribution absolute again");
+    await toggleBoth("#projtrendstack");
+    await compareCharts("trend stacked");
+    await untoggleBoth("#projtrendstack");
+    await compareCharts("trend absolute again");
+
+    const hideFirst = async (selector: string): Promise<void> => {
+      await Promise.all([
+        py.locator(`${selector} button`).first().click(),
+        next.locator(`${selector} button`).first().click(),
+      ]);
+      await Promise.all([py.waitForTimeout(150), next.waitForTimeout(150)]);
+    };
+    await hideFirst("#projdistlegend");
+    await compareCharts("distribution legend hidden");
+    await hideFirst("#projdistlegend");
+    await compareCharts("distribution legend shown");
+    await hideFirst("#projtrendlegend");
+    await compareCharts("trend legend hidden");
+    await hideFirst("#projtrendlegend");
+    await compareCharts("trend legend shown");
 
     // RUN B: one drawer text comparison, then three modal states. The frozen
     // artifacts supply every id — no stand-in session is invented.
@@ -498,8 +612,60 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       console.log(`saved ${side} screenshot: ${name}`);
     }
 
+    // RUN D empty states, last: shrink the frozen fixture to zero rows on the
+    // Next side and move the oracle's date window off the fixture range. Only
+    // the empty-state copy/visibility is compared — Python keeps a stale
+    // distribution legend at zero rows while Next clears it, which is a
+    // known oracle quirk, not a data difference.
+    const emptyPayload = JSON.parse(JSON.stringify(payload)) as {
+      profiles: Record<string, { rows: unknown[] }>;
+    };
+    Object.values(emptyPayload.profiles).forEach((profile) => {
+      profile.rows = [];
+    });
+    await next.route("**/api/data/analytics-data.json*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(emptyPayload),
+      }),
+    );
+    await py.evaluate(() => {
+      for (const id of ["#from", "#to"]) {
+        const input = document.querySelector<HTMLInputElement>(id);
+        if (input) {
+          input.value = "1999-01-01";
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    });
+    await next.reload();
+    await Promise.all([
+      py.locator("#projdistempty:not([hidden])").waitFor({ state: "attached" }),
+      py.locator("#projtrendempty:not([hidden])").waitFor({ state: "attached" }),
+      next.locator("#projdistempty:not([hidden])").waitFor({ state: "attached" }),
+      next.locator("#projtrendempty:not([hidden])").waitFor({ state: "attached" }),
+    ]);
+    const expectedEmpty = await readProjectChartsDom(py, "python");
+    const actualEmpty = await readProjectChartsDom(next, "next");
+    expect(actualEmpty.distribution.empty, "distribution empty state").toEqual(
+      expectedEmpty.distribution.empty,
+    );
+    expect(actualEmpty.trend.empty, "trend empty state").toEqual(expectedEmpty.trend.empty);
+    expect(
+      await next.locator("#cProjDist").getAttribute("aria-hidden"),
+      "empty chart must be aria-hidden",
+    ).toBe("true");
+    expect(
+      await next.locator("#cProjTrend").getAttribute("aria-hidden"),
+      "empty chart must be aria-hidden",
+    ).toBe("true");
+    expect(errors, "empty states").toEqual([]);
+    comparisons += 1;
+    console.log(`PASS parity: chart empty states (#${comparisons})`);
+
     expect(errors, "No browser console/network errors on either side").toEqual([]);
-    expect(comparisons, "matrix + weight + drawer + merged profile + 3 modal states").toBe(11);
+    expect(comparisons, "matrix + weight + charts + drawer + merged profile + 3 modal states").toBe(26);
     console.log(`PARITY_COMPARISONS=${comparisons}`);
   } finally {
     oracle.child.kill("SIGTERM");

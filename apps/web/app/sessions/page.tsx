@@ -1,10 +1,12 @@
 "use client";
 
-// T-23 RUN B: Sessions page shell. RUN A's matrix and weight control stay
-// untouched; the drawer and transcript modal are now wired in, with the Python
-// dashboard as the DOM/text oracle.
+// T-23 RUN B + D: Sessions page shell. RUN A's matrix and weight control stay
+// untouched; RUN B wired in the drawer and transcript modal, and RUN D added
+// the two presentational project charts, all with the Python dashboard as the
+// DOM/text oracle.
 import { useEffect, useState } from "react";
 
+import ProjectCharts from "@/components/sessions-logs/ProjectCharts";
 import ProjectDrawer, { type DrawerOpener } from "@/components/sessions-logs/ProjectDrawer";
 import ProjectMatrix from "@/components/sessions-logs/ProjectMatrix";
 import TranscriptModal, {
@@ -15,6 +17,7 @@ import { readWeight, saveWeight } from "@/lib/sessions-logs/aggregate";
 import { weightNote } from "@/lib/sessions-logs/format";
 import { loadAnalyticsProfile, sessionOpeners } from "@/lib/sessions-logs/load";
 import type { SessionRow, WeightAxis } from "@/lib/sessions-logs/types";
+import "@/styles/project-charts.css";
 import "@/styles/project-drawer.css";
 import "@/styles/sessions-matrix.css";
 import "@/styles/transcript-modal.css";
@@ -86,6 +89,7 @@ export default function SessionsPage() {
           axis={axis}
           onOpen={(project, model) => setDrawer({ project, model })}
         />
+        <ProjectCharts rows={rows} axis={axis} />
       </section>
       <ProjectDrawer
         rows={rows}
