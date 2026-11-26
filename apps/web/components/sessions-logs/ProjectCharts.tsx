@@ -7,7 +7,7 @@
 // chart value exposed as data-* attributes, the axis title and the empty-state
 // text against the oracle's live Chart.js config, which is reachable in the
 // browser. Geometry below is deliberately simple; it carries no extra data.
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   buildProjectDistribution,
   buildProjectTrend,
@@ -85,8 +85,16 @@ export default function ProjectCharts({ rows, axis }: ProjectChartsProps) {
   const [hiddenProviders, setHiddenProviders] = useState<ReadonlySet<string>>(() => new Set());
   const [hiddenSeries, setHiddenSeries] = useState<ReadonlySet<string>>(() => new Set());
 
-  // The oracle keeps Chart.js dataset visibility when a weight/toggle changes,
-  // so visibility is intentionally NOT reset here.
+  // views.js:1784 + router.js:1485-1492 destroy and recreate both Chart.js
+  // charts on a weight-axis or toggle change, then renderProjDistLegend and
+  // renderProjTrendLegend (views.js:2157, :2276) rebuild every button with
+  // aria-pressed="true". Hidden legend state must reset on exactly those
+  // events (and when the rows change); a legend click alone must still hide
+  // and show its dataset.
+  useEffect(() => {
+    setHiddenProviders(new Set<string>());
+    setHiddenSeries(new Set<string>());
+  }, [rows, axis, distNormalized, trendStacked]);
 
   const distribution = useMemo(
     () => buildProjectDistribution(rows, axis, distNormalized, hiddenProviders),

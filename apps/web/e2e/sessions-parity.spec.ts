@@ -3,7 +3,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { buildModelProviders, providerPath } from "../lib/sessions-logs/providers";
 import { short } from "../lib/sessions-logs/format";
@@ -311,6 +311,75 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
       console.log(`PASS parity: ${label} charts (#${comparisons})`);
     };
 
+    // The oracle destroys/recreates both Chart.js charts on a weight-axis or
+    // toggle change and rebuilds each legend with aria-pressed="true". The
+    // derived DOM above already compares those values; this extra read hits
+    // Next's literal aria-pressed and data-visible-total attributes so a
+    // hidden series surviving a reset cannot pass by accident.
+    const readVisibleTotals = (page: Page) =>
+      page.evaluate(() => {
+        const round = (value: number): number => Math.round(value * 1000) / 1000;
+        return {
+          distribution: [...document.querySelectorAll("#cProjDist .pc-bar")].map((group) => ({
+            project: group.getAttribute("data-project"),
+            visibleTotal: round(Number(group.getAttribute("data-visible-total"))),
+          })),
+          trend: [...document.querySelectorAll("#cProjTrend .pc-day")].map((group) => ({
+            day: group.getAttribute("data-day"),
+            visibleTotal: round(Number(group.getAttribute("data-visible-total"))),
+          })),
+        };
+      });
+
+    const compareChartsAfterReset = async (label: string): Promise<void> => {
+      await compareCharts(label);
+      const pressed = async (page: Page, selector: string) =>
+        page
+          .locator(`${selector} button`)
+          .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-pressed")));
+      for (const [selector, name] of [
+        ["#projdistlegend", "provider"],
+        ["#projtrendlegend", "series"],
+      ] as const) {
+        expect(await pressed(next, selector), `${label}: ${name} aria-pressed`).toEqual(
+          await pressed(py, selector),
+        );
+      }
+      const expected = await readProjectChartsDom(py, "python");
+      const actual = await readVisibleTotals(next);
+      const expectedDistribution = expected.distribution.bars.map((bar) => ({
+        project: bar.project,
+        visibleTotal: bar.visibleTotal,
+      }));
+      const expectedTrend = expected.trend.days.map((day) => ({
+        day: day.day,
+        visibleTotal: day.visibleTotal,
+      }));
+      // The derived DOM comparison above is exact after its 3-decimal
+      // rounding; the raw SVG attribute carries unrounded percentage noise
+      // (Python sums rounded shares to 99.999/100.001 where Next sums to
+      // 100). Allow only that noise, never a hidden dataset's full weight.
+      const compareTotals = <T extends { visibleTotal: number }>(
+        received: readonly T[],
+        wanted: readonly T[],
+        name: string,
+      ): void => {
+        expect(received.length, `${label}: ${name} row count`).toBe(wanted.length);
+        received.forEach((row, index) => {
+          expect(
+            Math.abs(row.visibleTotal - wanted[index]!.visibleTotal),
+            `${label}: ${name} data-visible-total row ${index}`,
+          ).toBeLessThanOrEqual(0.002);
+        });
+      };
+      expect(actual.distribution.map((row) => row.project)).toEqual(
+        expectedDistribution.map((row) => row.project),
+      );
+      expect(actual.trend.map((row) => row.day)).toEqual(expectedTrend.map((row) => row.day));
+      compareTotals(actual.distribution, expectedDistribution, "distribution");
+      compareTotals(actual.trend, expectedTrend, "trend");
+    };
+
     await compare("default");
     await compareCharts("default charts");
     for (const axis of AXES) {
@@ -429,6 +498,35 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
     await compareCharts("trend legend hidden");
     await hideFirst("#projtrendlegend");
     await compareCharts("trend legend shown");
+
+    // Review finding: a hidden legend must not survive an axis or toggle
+    // change. The oracle destroys/recreates its charts on each of those
+    // events and rebuilds the legends with aria-pressed="true"; Next must do
+    // the same. Legend clicks themselves still hide/show (asserted above).
+    const changeAxisBoth = async (weight: string): Promise<void> => {
+      await Promise.all([
+        py.locator(`#projweight button[data-w="${weight}"]`).click(),
+        next.locator(`#projweight button[data-w="${weight}"]`).click(),
+      ]);
+      await Promise.all([py.waitForTimeout(200), next.waitForTimeout(200)]);
+    };
+    await hideFirst("#projdistlegend");
+    await hideFirst("#projtrendlegend");
+    await changeAxisBoth("calls");
+    await compareChartsAfterReset("hidden legends then calls axis");
+
+    await hideFirst("#projdistlegend");
+    await toggleBoth("#projdistnorm");
+    await compareChartsAfterReset("hidden provider then distribution normalised");
+    await untoggleBoth("#projdistnorm");
+
+    await hideFirst("#projtrendlegend");
+    await toggleBoth("#projtrendstack");
+    await compareChartsAfterReset("hidden series then trend stacked");
+    await untoggleBoth("#projtrendstack");
+
+    await changeAxisBoth("cost");
+    await compareCharts("cost charts restored after legend resets");
 
     // RUN B: one drawer text comparison, then three modal states. The frozen
     // artifacts supply every id — no stand-in session is invented.
@@ -665,7 +763,7 @@ test("Sessions weighting and matrix match the Python oracle on identical fixture
     console.log(`PASS parity: chart empty states (#${comparisons})`);
 
     expect(errors, "No browser console/network errors on either side").toEqual([]);
-    expect(comparisons, "matrix + weight + charts + drawer + merged profile + 3 modal states").toBe(26);
+    expect(comparisons, "matrix + weight + charts + legend resets + drawer + merged profile + 3 modal states").toBe(30);
     console.log(`PARITY_COMPARISONS=${comparisons}`);
   } finally {
     oracle.child.kill("SIGTERM");
