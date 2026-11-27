@@ -11,7 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
-import { resolvePython } from "./python";
+import { pythonSampleEnv, resolvePython } from "./python";
 
 // Playwright compiles the config as CJS or ESM depending on the package type;
 // cwd is always the repo root for both `npx playwright test -c ...` and the
@@ -48,14 +48,7 @@ export function ensureFixture(): string {
       cwd: REPO_ROOT,
       encoding: "utf8",
       timeout: 120_000,
-      env: {
-        ...process.env,
-        PYTHONPATH: join(REPO_ROOT, "src"),
-        LLM_TELEMETRY_NO_COLLECT: "1",
-        LLM_TELEMETRY_CONFIG: "examples/sample-config.json",
-        LLM_TELEMETRY_AGENT_HOME: "examples/agent-home",
-        LLM_TELEMETRY_CATALOG: "examples/reports/sample-catalog.json",
-      },
+      env: pythonSampleEnv(REPO_ROOT),
     },
   );
   if (built.status !== 0) {
@@ -63,4 +56,23 @@ export function ensureFixture(): string {
   }
   writeFileSync(READY, "ok\n");
   return FIX;
+}
+
+/** T-21 Life/Flow use the very same frozen sample as T-20 Home. */
+export function ensureLifeFlowFixture(): string {
+  return ensureFixture();
+}
+
+/** ?since= selects finite polling, not the capped SSE stream. Warm the Next
+ * feed before Life subscribes so its first stream cannot hit the collector's
+ * "warming up" 503 window. Shared with the Home parity spec. */
+export async function warmNextFeed(): Promise<void> {
+  const url = "http://localhost:8481/api/events/stream?since=0";
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const response = await fetch(url);
+    await response.body?.cancel();
+    if (response.status !== 503) return;
+    if (attempt < 20) await new Promise((ok) => setTimeout(ok, 250));
+  }
+  throw new Error("Next live feed still returned HTTP 503 after 20 attempts");
 }

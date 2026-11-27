@@ -1,72 +1,22 @@
-import { spawn, type ChildProcess } from "node:child_process";
 import { basename, join, resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
 import { nextDom, pythonDom } from "../tests/parity/home-dom";
-import { ensureFixture } from "../tests/parity/home-fixture";
-import { resolvePython } from "../tests/parity/python";
+import { ensureFixture, warmNextFeed } from "../tests/parity/home-fixture";
+import { resolvePython, startParityOracle } from "../tests/parity/python";
 
 const CWD = process.cwd();
 const REPO_ROOT = basename(CWD) === "web" ? resolve(CWD, "..", "..") : CWD;
 const WEB_ROOT = join(REPO_ROOT, "apps", "web");
-const ORACLE = join(WEB_ROOT, "tests", "parity", "serve_static.py");
 const FROZEN = new Date("2026-09-25T13:51:12Z");
 const SHOTS = resolve(WEB_ROOT, "test-results");
-const FEED_POLL_URL = "http://localhost:8481/api/events/stream?since=0";
-
-// ?since= selects the finite polling form, not the capped SSE stream. Warm the
-// Next feed before the pages subscribe so their first stream cannot race the
-// collector's "warming up" 503 window.
-async function warmNextFeed(): Promise<void> {
-  for (let attempt = 1; attempt <= 20; attempt += 1) {
-    const response = await fetch(FEED_POLL_URL);
-    await response.body?.cancel();
-    if (response.status !== 503) return;
-    if (attempt < 20) await new Promise((ok) => setTimeout(ok, 250));
-  }
-  throw new Error("Next live feed still returned HTTP 503 after 20 attempts");
-}
-
-function startOracle(fixture: string, python: string): {
-  child: ChildProcess;
-  port: Promise<number>;
-} {
-  const child = spawn(
-    python,
-    [ORACLE, join(REPO_ROOT, "src"), fixture],
-    {
-      cwd: WEB_ROOT,
-      env: { ...process.env, PYTHONPATH: join(REPO_ROOT, "src") },
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
-  let stderr = "";
-  child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-  const port = new Promise<number>((ok, fail) => {
-    let out = "";
-    const timer = setTimeout(() => fail(new Error(`oracle timeout: ${stderr}`)), 15_000);
-    child.once("exit", (code) => {
-      clearTimeout(timer);
-      fail(new Error(`oracle exited ${code}: ${stderr}`));
-    });
-    child.stdout.on("data", (chunk: Buffer) => {
-      out += chunk.toString();
-      const match = /(\d{2,5})/.exec(out);
-      if (match) {
-        clearTimeout(timer);
-        ok(Number(match[1]));
-      }
-    });
-  });
-  return { child, port };
-}
 
 test("Home numbers match the Python oracle on identical fixtures", async ({ browser }) => {
   test.setTimeout(180_000);
   const python = resolvePython(WEB_ROOT);
   if (!python) throw new Error("set LLM_TELEMETRY_PARITY_PYTHON to the .venv python");
   const fixture = ensureFixture();
-  const oracle = startOracle(fixture, python);
+  const oracle = startParityOracle(fixture, python, REPO_ROOT, WEB_ROOT);
   const errors: string[] = [];
   try {
     const port = await oracle.port;
