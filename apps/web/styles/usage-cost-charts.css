@@ -1,0 +1,823 @@
+/* LLMTELEMET-293 (T-22 RUN A): Usage charts. Colour comes only from the
+   forwarded Python token sheet; no component carries a literal colour. */
+.usage-view {
+  max-width: 84rem;
+}
+
+.uc-meta {
+  margin: calc(var(--sp-2) * -1) 0 var(--sp-4);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.uc-card {
+  min-width: 0;
+  padding: var(--sp-4);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+}
+
+.uc-card > h2 {
+  margin: 0 0 var(--sp-3);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.uc-plot {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.uc-svg,
+.uc-plot svg {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+}
+
+.uc-point .uc-label,
+.uc-point .uc-value,
+.uc-axis,
+.uc-empty-text {
+  fill: var(--muted);
+  font-family: var(--font);
+  font-size: 11px;
+}
+
+.uc-point .uc-value {
+  fill: var(--fg);
+  font-variant-numeric: var(--num);
+}
+
+.uc-point .uc-track {
+  fill: var(--state-hover);
+}
+
+.uc-point .uc-bar {
+  stroke: none;
+}
+
+.uc-axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+/* Bandwidth trend: five numeric ticks and horizontal gridlines per axis. */
+.up-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.up-grid-right {
+  stroke-dasharray: 2 4;
+}
+
+.up-tick {
+  font-variant-numeric: var(--num);
+}
+
+.uc-series polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.uc-empty-text {
+  font-size: 0.875rem;
+}
+
+.uc-legend {
+  width: 100%;
+  margin-top: var(--sp-3);
+  border-collapse: collapse;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.uc-legend th,
+.uc-legend td {
+  padding: var(--sp-1);
+  border-top: var(--nav-border-width, 1px) solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.uc-legend th:first-child,
+.uc-legend th:nth-child(2),
+.uc-legend td:first-child,
+.uc-legend td:nth-child(2) {
+  text-align: left;
+}
+
+.uc-legend i {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-ctl);
+}
+
+@media (max-width: 64rem) {
+  .usage-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* T-22 RUN B: transfer / bandwidth / concurrency / latency / cost panels.
+   Every colour below is a forwarded Python token; no literal hex. */
+.usage-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+.up-card h3 {
+  margin: var(--sp-4) 0 var(--sp-2);
+  color: var(--fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.up-wide {
+  grid-column: 1 / -1;
+}
+
+.up-muted,
+.up-caption,
+.up-kpi-sub {
+  color: var(--muted);
+}
+
+.up-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.up-note {
+  margin: var(--sp-3) 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* Transfers: metered up/down stay together; LAN is a separate, unmetered line. */
+.up-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4);
+}
+
+.up-leg {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+}
+
+.up-arrow {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.up-up {
+  color: var(--c-amber);
+}
+
+.up-down {
+  color: var(--c-sky);
+}
+
+.up-big {
+  color: var(--fg);
+  font-size: 1.25rem;
+  font-variant-numeric: var(--num);
+  font-weight: 600;
+}
+
+.up-caption {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.up-ratio {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Bandwidth KPI tiles and the dual-axis trend. */
+.up-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.up-kpi {
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+}
+
+.up-kpi-value {
+  color: var(--fg);
+  font-size: 1.125rem;
+  font-variant-numeric: var(--num);
+  font-weight: 600;
+}
+
+.up-kpi-label {
+  margin-top: var(--sp-1);
+  color: var(--fg);
+  font-size: 0.8125rem;
+}
+
+.up-kpi-sub {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.up-plot {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.up-plot svg {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+}
+
+/* Re-send rows: a bar plus a text value, so the ranking is not colour-only. */
+.up-resend-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(4rem, 2fr) 3.5rem 4rem;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-resend-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--fg);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-mark-disc {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+}
+
+.up-mark {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.up-resend-track {
+  display: block;
+  height: 0.5rem;
+  border-radius: var(--radius-ctl);
+  background: var(--state-hover);
+}
+
+.up-resend-track i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-ctl);
+  background: var(--c-amber);
+}
+
+.up-resend-row.hot .up-resend-track i {
+  background: var(--c-red);
+}
+
+.up-resend-x {
+  color: var(--fg);
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.up-resend-flag {
+  color: var(--z-bad);
+  font-size: 0.6875rem;
+}
+
+/* Concurrency peak label; the empty state replaces, never overlays, the plot. */
+.up-peak {
+  margin: 0 0 var(--sp-2);
+  color: var(--fg);
+  font-size: 0.8125rem;
+}
+
+/* Latency rows: brand mark on models only; endpoints stay text. */
+.up-lat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-lat-name {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--fg);
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-lat-rate {
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+/* Repo & branch cost: expandable rows with an always-present aria target. */
+.up-repo-list {
+  width: 100%;
+}
+
+.up-repo-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 2fr) repeat(3, minmax(4rem, 1fr)) 5rem;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: 0.75rem;
+}
+
+.up-repo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.up-repo-toggle:focus-visible {
+  outline: var(--nav-border-width, 1px) solid var(--accent);
+  outline-offset: var(--sp-1);
+}
+
+.up-chevron {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
+.up-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-repo-row[data-unattributed="true"] .up-name {
+  color: var(--muted);
+}
+
+.up-num,
+.up-cost {
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.up-num {
+  color: var(--muted);
+}
+
+.up-cost {
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.up-branch-list {
+  border-left: var(--nav-border-width, 1px) solid var(--border);
+  padding-left: var(--sp-4);
+}
+
+.up-branch-row {
+  grid-template-columns: minmax(8rem, 2fr) repeat(3, minmax(4rem, 1fr)) 5rem;
+}
+
+@media (max-width: 64rem) {
+  .usage-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* T-22 RUN C: Cost and Prices pages. Colour remains token-only; provider
+   marks are SVGs supplied by the derivations, never letters. */
+.cost-view,
+.prices-view {
+  max-width: 84rem;
+}
+
+.cost-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.cost-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.cost-panels > :nth-child(n + 3) {
+  grid-column: 1 / -1;
+}
+
+.uc-stale-chip {
+  display: inline-block;
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-1) var(--sp-3);
+  border: var(--nav-border-width, 1px) solid var(--z-warn);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--z-warn-fg);
+  font-size: 0.8125rem;
+}
+
+.uc-prov-mark {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  vertical-align: middle;
+}
+
+.uc-num {
+  font-variant-numeric: var(--num);
+  text-align: right;
+}
+
+.uc-muted {
+  color: var(--muted);
+}
+
+.uc-strong {
+  font-weight: 600;
+}
+
+.uc-nodata {
+  padding: var(--sp-4);
+  color: var(--muted);
+  text-align: center;
+}
+
+.uc-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.uc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.uc-table th {
+  padding: var(--sp-2);
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.uc-table th.uc-num {
+  text-align: right;
+}
+
+.uc-table td {
+  padding: var(--sp-2);
+  border-top: var(--nav-border-width, 1px) solid var(--border);
+  border-top-style: solid;
+  border-top-color: var(--border);
+  vertical-align: middle;
+}
+
+.uc-prov-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.uc-model-name {
+  font-weight: 600;
+}
+
+.uc-bar-track {
+  display: block;
+  width: 100%;
+  min-width: 5rem;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.uc-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.uc-task-cell {
+  min-width: 10rem;
+}
+
+.uc-task-cell .uc-muted {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.uc-unpriced-note {
+  margin: var(--sp-3) 0 0;
+  color: var(--z-warn-fg);
+  font-size: 0.8125rem;
+}
+
+.uc-cost-bar {
+  opacity: 0.5;
+}
+
+.uc-cost-call-line {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.uc-cost-call-point {
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.uc-cost-value {
+  fill: var(--z-warn-fg);
+}
+
+.uc-doughnut {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.uc-doughnut svg {
+  width: 12rem;
+  max-width: 50%;
+}
+
+.uc-donut-track,
+.uc-donut-slice {
+  fill: none;
+  stroke-width: 22;
+}
+
+.uc-donut-track {
+  stroke: var(--border);
+}
+
+.uc-donut-slice {
+  transform: rotate(-90deg);
+  transform-origin: 100px 100px;
+}
+
+.uc-donut-legend {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.uc-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.uc-attrib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.uc-attrib-grid h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: 0.875rem;
+}
+
+.uc-attrib-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: var(--nav-border-width, 1px) solid var(--border);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.uc-attrib-row .uc-strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Prices sheet */
+.pv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+}
+
+.pv-head h1 {
+  margin: 0;
+}
+
+.pv-freshpill-wrap {
+  margin: var(--sp-2) 0;
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+  text-transform: uppercase;
+}
+
+.pv-freshpill {
+  padding: var(--sp-1) var(--sp-2);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  color: var(--fg);
+  text-transform: none;
+}
+
+.pv-freshpill.old {
+  border-color: var(--z-warn);
+  color: var(--z-warn-fg);
+}
+
+.pv-freshpill.stale {
+  border-color: var(--z-bad);
+  color: var(--z-bad-fg);
+}
+
+.pv-controls,
+.pv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pv-search,
+.pv-input {
+  min-width: 13rem;
+  padding: var(--sp-2);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.chip {
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs, 0.75rem);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.chip.pt-tab.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pv-wrap {
+  padding: 0;
+}
+
+.pv-tbl .pv-unused {
+  color: var(--muted);
+}
+
+.pv-src {
+  display: inline-block;
+  margin-right: var(--sp-1);
+  padding: 0 var(--sp-1);
+  border: var(--nav-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-ctl);
+  font-size: var(--fs-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.pv-src-override {
+  color: var(--z-warn-fg);
+}
+
+.pv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-right: var(--sp-1);
+  padding: 0 var(--sp-2);
+  border: var(--nav-border-width, 1px) solid;
+  border-radius: var(--radius-ctl);
+  font-size: var(--fs-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.pv-badge-inferred {
+  border-style: dashed;
+}
+
+.pv-whatif {
+  margin-top: var(--sp-4);
+}
+
+.pv-whatif-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
+
+.pv-whatif-fields label {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.pv-label {
+  color: var(--muted);
+  font-size: var(--fs-xs, 0.75rem);
+}
+
+.pv-whatif-total {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-lg, 1.25rem);
+  font-weight: 600;
+}
+
+@media (max-width: 64rem) {
+  .cost-panels,
+  .uc-attrib-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cost-panels > :nth-child(n + 3) {
+    grid-column: auto;
+  }
+}

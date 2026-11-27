@@ -863,7 +863,7 @@ export function render(){
     Object.entries(pCost).sort((a,b)=>b[1].mkt-a[1].mkt).map(([pr,v])=>{
       const s=PROV[pr]||{icon:'○',fg:MU};
       const barW=Math.max(2,v.mkt/pmx*100);
-      return `<tr style="border-top:1px solid ${BD}">
+      return `<tr data-provider="${esc(pr)}" style="border-top:1px solid ${BD}">
         <td class="py-1.5">${provBadge(pr)}</td>
         <td class="text-right text-[length:var(--fs-xs)]">${v.calls.toLocaleString()}</td>
         <td class="text-right text-[length:var(--fs-xs)]">${fmt(v.tok)}</td>
@@ -3257,7 +3257,7 @@ function pricesShell(data){
     </div>
   </div>
   <div id="pricesTableWrap" class="pv-wrap card"></div>
-  <div class="muted mt-2" style="font-size:var(--fs-xs)">Costs shown at each model\u2019s own rate; local models burn electricity (energy), never the vendor metre.</div>
+  <div class="muted mt-2" data-parity="price-note" style="font-size:var(--fs-xs)">Costs shown at each model\u2019s own rate; local models burn electricity (energy), never the vendor metre.</div>
   ${priceWhatIfShell()}
 }`;
 }
@@ -3435,7 +3435,7 @@ function renderPriceTable(data){
   </tr></thead><tbody>
   ${rows.map(m => priceRow(m)).join('') || '<tr><td colspan="9" class="muted" style="padding:1rem">No models match.</td></tr>'}
   </tbody></table>
-  <div class="muted p-2" style="font-size:var(--fs-xs)">${rows.length} shown of ${data.models.length}</div>`;
+  <div class="muted p-2" data-parity="price-shown" style="font-size:var(--fs-xs)">${rows.length} shown of ${data.models.length}</div>`;
   enhanceTable(wrap.querySelector('table'), 'pv-tbl');
 }
 

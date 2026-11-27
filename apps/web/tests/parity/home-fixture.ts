@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
@@ -23,11 +25,29 @@ const WEB_ROOT = join(REPO_ROOT, "apps", "web");
 /** Short deterministic temp path: Chrome fails on long Unix socket paths. */
 export const FIX = join(tmpdir(), "lst291-home-fixture");
 const READY = join(FIX, ".ready");
+const STAMP = join(FIX, ".source-stamp");
+// The built page embeds these files. A stale temp fixture from an earlier
+// worktree must not survive a source edit; rebuild it when their bytes change.
+const SOURCE_FILES = [
+  "src/llm_telemetry/web/dashboard.html",
+  "src/llm_telemetry/web/js/charts.js",
+  "src/llm_telemetry/web/js/views.js",
+];
+
+function sourceStamp(): string {
+  const hash = createHash("sha256");
+  for (const file of SOURCE_FILES) hash.update(readFileSync(join(REPO_ROOT, file)));
+  return hash.digest("hex");
+}
 
 /** Copy the privacy-safe sample artifacts and freeze the Python page once.
  * Never writes examples/reports and never reads the live ~/.hermes reports. */
 export function ensureFixture(): string {
-  if (existsSync(READY) && existsSync(join(FIX, "dashboard.html"))) return FIX;
+  if (
+    existsSync(READY) && existsSync(STAMP) &&
+    existsSync(join(FIX, "dashboard.html")) &&
+    readFileSync(STAMP, "utf8").trim() === sourceStamp()
+  ) return FIX;
   rmSync(FIX, { recursive: true, force: true });
   mkdirSync(FIX, { recursive: true });
   const samples = join(REPO_ROOT, "examples", "reports");
@@ -54,6 +74,10 @@ export function ensureFixture(): string {
   if (built.status !== 0) {
     throw new Error(`fixture build failed: ${built.stderr || built.stdout}`);
   }
+  if (!existsSync(join(FIX, "dashboard.html"))) {
+    throw new Error("fixture build produced no dashboard.html");
+  }
+  writeFileSync(STAMP, sourceStamp() + "\n");
   writeFileSync(READY, "ok\n");
   return FIX;
 }
