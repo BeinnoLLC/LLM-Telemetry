@@ -1,0 +1,156 @@
+/* T-23 RUN B: session transcript modal. Mirrors the dashboard's #tmodal
+ * shell and .tmsg/.empty surfaces using tokens only. */
+#tscrim {
+  background: var(--scrim-bg);
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  transition: opacity var(--motion-fast) ease;
+  z-index: var(--layer-modal-scrim);
+}
+
+#tscrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#tmodal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  box-shadow: var(--elev-modal);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  left: 50%;
+  max-height: min(80vh, 52rem);
+  max-width: min(48rem, calc(100vw - 2 * var(--sp-4)));
+  opacity: 0;
+  padding: 0;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -46%);
+  transition: opacity var(--motion-fast) ease, transform var(--motion-normal) ease;
+  width: 100%;
+  z-index: var(--layer-modal);
+}
+
+#tmodal.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+#tmodal .thead {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+#tmodal .t-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#tmodal .t-sub {
+  font-size: 0.8rem;
+}
+
+#tmodal .thead .chip:first-of-type {
+  margin-left: auto;
+}
+
+#tbody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+}
+
+#tbody .tmsg {
+  border-left: 2px solid var(--border);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+#tbody .tmsg.role-user {
+  border-left-color: var(--accent);
+}
+
+#tbody .tmsg.role-tool {
+  border-left-color: var(--muted);
+}
+
+#tbody .trole {
+  color: var(--muted);
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: var(--sp-1);
+  text-transform: lowercase;
+}
+
+#tbody .tmsg p {
+  margin: var(--sp-1) 0;
+}
+
+#tbody pre {
+  background: var(--wash-slate);
+  border-radius: var(--r-sm);
+  overflow-x: auto;
+  padding: var(--sp-2);
+  white-space: pre-wrap;
+}
+
+#tbody a {
+  color: var(--accent);
+}
+
+#tbody .ttoolcall {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: var(--sp-1);
+}
+
+#tbody .timg {
+  border-radius: var(--r-sm);
+  display: block;
+  margin-top: var(--sp-2);
+  max-width: 100%;
+}
+
+#tbody .tbroken {
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: var(--sp-2);
+}
+
+#tbody .empty {
+  color: var(--muted);
+  padding: var(--sp-5) var(--sp-2);
+  text-align: center;
+}
+
+#tbody .e-ico {
+  font-size: 1.5rem;
+}
+
+#tbody .e-msg {
+  color: var(--fg);
+  margin-top: var(--sp-2);
+}
+
+#tbody .e-hint {
+  font-size: 0.85rem;
+  margin-top: var(--sp-1);
+}
+
+@media (max-width: 640px) {
+  #tmodal {
+    max-height: calc(100vh - 2 * var(--sp-4));
+  }
+}

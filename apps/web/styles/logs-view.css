@@ -1,0 +1,253 @@
+/* T-23 RUN C: Logs page shell. Colours/spacing/radii come only from the shared
+ * token sheet; there are no literal hex colours or font-letter icon fallbacks. */
+.lg-view {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.lg-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+}
+
+.lg-view [hidden] {
+  display: none !important;
+}
+
+.lg-xs {
+  font-size: 0.8125rem;
+}
+
+.lg-head,
+.lg-listhead,
+.lg-active,
+.lglbl,
+.lgfacet,
+.lgchips,
+.lg-tools {
+  font-size: 0.8125rem;
+}
+
+.lg-head,
+.lg-listhead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.lg-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.lg-search {
+  min-width: 16rem;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--bg);
+  color: var(--fg);
+  padding: 0 var(--sp-2);
+  font: inherit;
+}
+
+.lg-search:focus-visible,
+.lgchip:focus-visible,
+.lgactivechip:focus-visible,
+.lg-view .chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lg-badge {
+  border-radius: var(--r-pill);
+  background: var(--accent-wash);
+  color: var(--accent);
+  padding: 0 var(--sp-2);
+}
+
+.lg-active {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--accent-wash);
+}
+
+.lg-active.show {
+  display: flex;
+}
+
+.lgactivechip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  padding: 2px var(--sp-2);
+  cursor: pointer;
+}
+
+.lgactivechip .lbl {
+  color: var(--muted);
+}
+
+.lgactivechip .x {
+  color: var(--z-bad-fg);
+}
+
+.lgfacets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lgfacet {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.lglbl {
+  min-width: 4.5rem;
+  flex: none;
+  color: var(--muted);
+}
+
+.lgchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.lgchip,
+.lg-view .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-ctl);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 2px var(--sp-2);
+  cursor: pointer;
+}
+
+.lgchip.on,
+.lg-view .chip.on {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.lgchip .n {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lgprovlogo {
+  width: 0.9em;
+  height: 0.9em;
+  flex: none;
+  fill: currentColor;
+}
+
+.lglist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: var(--sp-3);
+  max-height: 60vh;
+  min-height: 3rem;
+  overflow: auto;
+}
+
+.lgev {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.lgev:hover {
+  background: var(--accent-wash);
+}
+
+.lgev.open {
+  background: var(--accent-wash);
+}
+
+.lgts {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lgtag {
+  flex: none;
+  min-width: 4.5rem;
+  border-radius: var(--r-sm);
+  background: var(--accent-wash);
+  color: var(--accent);
+  padding: 0 var(--sp-1);
+}
+
+.lgtag.error {
+  background: var(--accent-wash);
+  color: var(--z-bad-fg);
+}
+
+.lgmsg {
+  min-width: 0;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.lgmeta {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.lgmeta .lgprovlogo {
+  vertical-align: -0.1em;
+  margin-right: 0.2em;
+}
+
+.lgerror {
+  color: var(--z-bad-fg);
+}
+
+@media (max-width: 720px) {
+  .lg-view {
+    padding: var(--sp-2);
+  }
+
+  .lg-tools {
+    margin-left: 0;
+  }
+
+  .lg-search {
+    min-width: 0;
+    width: 100%;
+  }
+}
